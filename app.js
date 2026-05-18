@@ -3293,12 +3293,26 @@ function generateReport() {
     }
 
     answersHtml += `
-      <div class="report-answer ${answerClass}">
-        <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-        <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
-        ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
-      </div>
-    `;
+    <div class="report-answer ${answerClass}">
+      <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
+
+      <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
+
+      ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
+
+      ${
+        trackExpiry && expiryApplies && expiryDate
+          ? `<br><strong>Expiry Date:</strong> ${escapeHtml(expiryDate)}`
+          : ''
+      }
+
+      ${
+        trackExpiry && !expiryApplies
+          ? `<br><strong>Expiry:</strong> Not applicable`
+          : ''
+      }
+    </div>
+  `;
   });
 
   closeReportSection();
@@ -3977,6 +3991,18 @@ async function shareReport() {
     const noteField = document.getElementById(`note_${index}`);
     const itemNote = noteField ? noteField.value.trim() : '';
 
+    const expiryField =
+      document.querySelector(`.expiry-date[data-index="${index}"]`);
+
+    const expiryDate =
+      expiryField ? expiryField.value : '';
+
+    const trackExpiry =
+      isExpiryTrackedChecklistItem(item);
+
+    const expiryApplies =
+      isExpiryApplicableAnswer(answer);
+      
     if (rawAnswer === 'Not answered' && !itemNote) {
       return;
     }
@@ -4007,6 +4033,18 @@ async function shareReport() {
 
     if (itemNote) {
       checklistText += `Note: ${itemNote}\n`;
+    }
+
+    if (trackExpiry && expiryApplies && expiryDate) {
+      checklistText += `Expiry Date: ${expiryDate}\n`;
+    }
+
+    if (trackExpiry && !expiryApplies) {
+      checklistText += `Expiry: Not applicable\n`;
+    }
+
+    if (trackExpiry && expiryApplies && !expiryDate) {
+      checklistText += `Expiry Date: Missing\n`;
     }
 
     checklistText += `\n`;
