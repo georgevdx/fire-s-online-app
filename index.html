@@ -6,7 +6,7 @@
   <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=42">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -21,6 +21,7 @@
     <div>
       <h1>FireyeSA</h1>
       <p class="subtitle">Fire Safety App</p>
+      <p id="appVersion" class="brand-version">Version loading...</p>
     </div>
   </div>
 
@@ -36,23 +37,35 @@
       </div>
 
       <div id="syncTools">
+        <div class="cloud-section-title">Account</div>
         <input id="loginEmail" type="email" placeholder="Email">
         <input id="loginPassword" type="password" placeholder="Password">
 
         <button id="loginBtn" type="button">Login</button>
         <button id="signupBtn" type="button">Sign Up</button>
 
+        <div class="cloud-section-title">Sync</div>
         <button id="syncUploadBtn" type="button">Upload Sync</button>
         <button id="syncDownloadBtn" type="button">Download Sync</button>
         <button id="syncMergeBtn" type="button">Merge Sync</button>
       </div>
 
       <div id="syncStatus" class="note"></div>
+
+      <div class="app-info">
+        <div class="cloud-section-title">App Info</div>
+        <div><strong>App:</strong> FireyeSA</div>
+        <div><strong>Version:</strong> <span id="cloudAppVersion">Loading...</span></div>
+        <div><strong>Storage:</strong> Local + Cloud Sync</div>
+        <div><strong>Backups:</strong> Export before major changes</div>
+        <div class="cloud-section-title">Admin</div>
+        <button id="adminExportBackupBtn" type="button">Export Backup</button>
+      </div>
     </div>
   </div>
 </header>
 
-  <div id="backupTools" class="backup-actions">
+  <div id="backupTools" class="backup-actions" style="display:none;">
   <button id="exportBackupBtn" type="button">Export Backup</button>
 
   <label class="backup-import-btn">
@@ -279,7 +292,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=42"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
