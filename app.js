@@ -1515,12 +1515,9 @@ function updateExpiryInputState(selectEl) {
 
   const expiryApplies = isExpiryApplicableAnswer(selectEl.value);
 
-  if (!expiryApplies) {
-    expiryField.value = '';
-  }
-
   expiryField.disabled = !expiryApplies;
   expiryWrapper.classList.toggle('expiry-disabled', !expiryApplies);
+}
 
 function getProjectExpiryCounts(project) {
   const counts = {
