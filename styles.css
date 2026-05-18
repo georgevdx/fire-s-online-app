@@ -1699,3 +1699,9 @@ button:hover {
   padding: 8px;
   margin-top: 6px;
 }
+
+.expiry-chip-missing {
+  background: #eeeeee;
+  color: #555;
+  border: 1px solid #ccc;
+}
