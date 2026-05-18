@@ -2100,15 +2100,23 @@ if (currentFilter === 'expiry-scheduled') {
       ${expiryCounts.total > 0 ? `
       <div class="project-expiry-summary">
         <span class="project-expiry-label">Equipment</span>
+
         <span class="project-expiry-chip expiry-chip-overdue">
           Expired: ${expiryCounts.overdue}
         </span>
+
         <span class="project-expiry-chip expiry-chip-soon">
           Due soon: ${expiryCounts.soon}
         </span>
+
         <span class="project-expiry-chip expiry-chip-scheduled">
           Scheduled: ${expiryCounts.scheduled}
         </span>
+
+        <span class="project-expiry-chip expiry-chip-missing">
+          Missing: ${expiryCounts.missing}
+        </span>
+
         ${expiryCounts.overdue > 0 ? `
         <button
           type="button"
