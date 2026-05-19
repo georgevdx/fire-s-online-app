@@ -170,6 +170,20 @@ button:hover {
   border: 1px solid #cbd5e1;
 }
 
+.hidden-module-field {
+  display: none;
+}
+
+.module-heading {
+  margin: 14px 0 8px;
+  padding: 10px 12px;
+  border-left: 5px solid #b71c1c;
+  background: #fff5f5;
+  color: #8f1515;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
 .project-address {
   margin: 8px 0;
   color: #333;

@@ -13,7 +13,7 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
-const APP_VERSION = 'v69';
+const APP_VERSION = 'v70';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2038,42 +2038,6 @@ function renderDashboardMetrics() {
     p.answers?.some(a => a.answer === 'No')
   ).length;
 
-  const moduleCounts = Object.keys(inspectionTemplates || {}).reduce((counts, moduleName) => {
-    counts[moduleName] = 0;
-    return counts;
-  }, {});
-
-  projects.forEach(project => {
-    const moduleName = normalizeProductType(project.productType);
-    if (!moduleCounts[moduleName]) {
-      moduleCounts[moduleName] = 0;
-    }
-    moduleCounts[moduleName]++;
-  });
-
-  const moduleCardsHtml = Object.keys(moduleCounts)
-    .map(moduleName => {
-      const typeNames = Object.keys(inspectionTemplates[moduleName] || {});
-      const typePreview = typeNames.slice(0, 2).join(' / ');
-      const extraCount = Math.max(typeNames.length - 2, 0);
-
-      return `
-        <div class="metric-card module-metric-card"
-          data-filter="${getModuleFilterKey(moduleName)}"
-          onclick="setFilter('${getModuleFilterKey(moduleName)}')">
-          <div class="metric-number">${moduleCounts[moduleName]}</div>
-          <div>
-            <div class="metric-label">${escapeHtml(moduleName)}</div>
-            <div class="metric-subtext">
-              ${escapeHtml(typePreview || 'No inspection types')}
-              ${extraCount > 0 ? ` +${extraCount}` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    })
-    .join('');
-
   const inspectionStatusCounts = projects.reduce((counts, project) => {
     const status = getProjectInspectionStatus(project);
     counts[status.filter] = (counts[status.filter] || 0) + 1;
@@ -2129,15 +2093,6 @@ function renderDashboardMetrics() {
             High Risk
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="metric-group metric-group-secondary">
-      <div class="metric-section-title">
-        Inspection modules
-      </div>
-      <div class="metric-row metric-row-modules">
-        ${moduleCardsHtml || '<div class="note">No inspection modules found.</div>'}
       </div>
     </div>
 
@@ -2387,7 +2342,6 @@ function renderProjectsList() {
       project.projectName ||
       [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
       'Untitled Project';
-    const moduleName = normalizeProductType(project.productType);
     const expiryCounts = getProjectExpiryCounts(project);
     const highRiskSummary = getHighRiskSummary(project);
     const inspectionStatus = getProjectInspectionStatus(project);
@@ -2410,14 +2364,6 @@ function renderProjectsList() {
       <div class="project-badges">
         <span class="project-sync ${syncStatus.class}">
           ${syncStatus.label}
-        </span>
-
-        <span class="project-module-badge">
-          ${escapeHtml(moduleName)}
-        </span>
-
-        <span class="project-type-badge">
-          ${escapeHtml(project.inspectionType || 'No type')}
         </span>
 
         <span class="project-follow ${followStatus.class}">
@@ -2526,14 +2472,6 @@ function renderProjectsList() {
       ` : ''}
 
       <div class="project-meta-grid">
-        <div>
-          <span>Module</span>
-          <strong>${escapeHtml(moduleName || '-')}</strong>
-        </div>
-        <div>
-          <span>Type</span>
-          <strong>${escapeHtml(project.inspectionType || '-')}</strong>
-        </div>
         <div>
           <span>Inspector</span>
           <strong>${escapeHtml(project.inspectorName || '-')}</strong>
