@@ -966,31 +966,20 @@ function initAuthStateListener() {
 
     const projects = getProjects();
 
-    const rows = projects.map(project => ({
+    const rows = projects.map(project => {
+    const cloudMetadata =
+      getProjectCloudMetadata(project, userData.user.id);
+
+    return {
       id: project.id,
       user_id: userData.user.id,
 
-      company_id:
-        project.companyId || null,
-
-      created_by_user_id:
-        project.createdByUserId || userData.user.id,
-
-      last_edited_by_user_id:
-        project.lastEditedByUserId || userData.user.id,
-
-      company_access_status:
-        project.companyAccessStatus || null,
-
-      created_by_email:
-        project.createdByEmail || '',
-
-      last_edited_by_email:
-        project.lastEditedByEmail || '',
+      ...cloudMetadata,
 
       inspection_data: project,
       updated_at: new Date().toISOString()
-    }));
+    };
+  });
 
     const { error } = await supabaseClient
       .from('inspections')
@@ -1095,31 +1084,20 @@ async function mergeSync() {
   renderProjectsList();
   showProjectList();
 
-  const rows = mergedProjects.map(project => ({
-    id: project.id,
-    user_id: userData.user.id,
+  const rows = mergedProjects.map(project => {
+  const cloudMetadata =
+      getProjectCloudMetadata(project, userData.user.id);
 
-    company_id:
-      project.companyId || null,
+    return {
+      id: project.id,
+      user_id: userData.user.id,
 
-    created_by_user_id:
-      project.createdByUserId || userData.user.id,
+      ...cloudMetadata,
 
-    last_edited_by_user_id:
-      project.lastEditedByUserId || userData.user.id,
-
-    company_access_status:
-      project.companyAccessStatus || null,
-
-    created_by_email:
-      project.createdByEmail || '',
-
-    last_edited_by_email:
-      project.lastEditedByEmail || '',
-
-    inspection_data: project,
-    updated_at: new Date().toISOString()
-  }));
+      inspection_data: project,
+      updated_at: new Date().toISOString()
+    };
+  });
 
   const { error: uploadError } = await supabaseClient
     .from('inspections')
