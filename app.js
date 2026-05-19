@@ -1610,6 +1610,30 @@ function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
 }
 
+function withTimeout(promise, timeoutMs = 5000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Request timed out')),
+        timeoutMs
+      )
+    )
+  ]);
+}
+
+function withTimeout(promise, timeoutMs = 5000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Request timed out')),
+        timeoutMs
+      )
+    )
+  ]);
+}
+
 async function loadUserAccessProfile() {
   currentUserProfile = null;
   currentCompanyAccess = null;
@@ -1627,11 +1651,14 @@ async function loadUserAccessProfile() {
     const user = userData.user;
 
     const { data: profile, error: profileError } =
-      await supabaseClient
-        .from('profiles')
-        .select('id, email, full_name, role')
-        .eq('id', user.id)
-        .single();
+      await withTimeout(
+        supabaseClient
+          .from('profiles')
+          .select('id, email, full_name, role')
+          .eq('id', user.id)
+          .single(),
+        5000
+      );
 
     if (profileError) {
       console.error('Profile load failed:', profileError);
@@ -1657,23 +1684,26 @@ async function loadUserAccessProfile() {
     }
 
     const { data: membership, error: membershipError } =
-      await supabaseClient
-        .from('company_members')
-        .select(`
-          company_id,
-          role,
-          status,
-          companies (
-            id,
-            name,
+      await withTimeout(
+        supabaseClient
+          .from('company_members')
+          .select(`
+            company_id,
+            role,
             status,
-            plan
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle();
+            companies (
+              id,
+              name,
+              status,
+              plan
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle(),
+        5000
+      );
 
     if (membershipError) {
       console.error('Membership load failed:', membershipError);
