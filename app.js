@@ -206,6 +206,14 @@ function autoSaveProject() {
 
   const accessMetadata = getAccessMetadata();
   
+  const siteId = [
+    projectAddress?.toLowerCase().trim(),
+    mallName?.toLowerCase().trim(),
+    unitNumber?.toLowerCase().trim()
+  ]
+    .filter(Boolean)
+    .join('|');
+
   if (!projectName && !inspectorName) return;
 
   const answers = [];
@@ -267,6 +275,12 @@ function autoSaveProject() {
         companyAccessStatus:
           accessMetadata.companyAccessStatus,
 
+        siteId,
+
+        inspectionNumber:
+          projects[index].inspectionNumber ||
+          generateInspectionNumber(),
+
         syncPending: true,
         syncError: false,
 
@@ -320,6 +334,9 @@ function autoSaveProject() {
       companyAccessStatus:
         accessMetadata.companyAccessStatus,
       
+      siteId,
+      inspectionNumber: generateInspectionNumber(),
+
       syncPending: true,
       syncError: false,
 
