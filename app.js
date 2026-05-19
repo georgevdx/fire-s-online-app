@@ -13,7 +13,7 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
-const APP_VERSION = 'v66';
+const APP_VERSION = 'v69';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -194,6 +194,8 @@ function autoSaveProject() {
   const inMall = inMallField.value;
   const mallName = mallNameField.value.trim();
   const unitNumber = unitNumberField.value.trim();
+  const productType = normalizeProductType(getEl('productType').value);
+  const inspectionType = getEl('inspectionType').value;
   
   if (!projectName && !inspectorName) return;
 
@@ -247,6 +249,8 @@ function autoSaveProject() {
       contactPerson,
       contactTel,
       contactEmail,
+      productType,
+      inspectionType,
       inspectorName,
       occupancy,
       answers,
@@ -277,6 +281,8 @@ function autoSaveProject() {
       contactPerson,
       contactTel,
       contactEmail,
+      productType,
+      inspectionType,
       inspectorName,
       occupancy,
       answers,
@@ -1152,6 +1158,7 @@ async function loadData() {
     inspectionTemplates = await loadJson('templates.json');
     
     initApp();
+    migrateLegacyProductTypes();
     initAuthStateListener();
     renderProjectsList();
     await restoreCloudSession();
@@ -1254,24 +1261,6 @@ function initApp() {
     });
   }
   populateOccupancies();
-  function populateProductTypes() {
-  const select = getEl('productType');
-
-  select.innerHTML = '';
-
-  Object.keys(inspectionTemplates).forEach(moduleName => {
-    const option = document.createElement('option');
-
-    option.value = moduleName;
-    option.textContent = moduleName;
-
-    select.appendChild(option);
-  });
-
-  if (!select.value && Object.keys(inspectionTemplates).length > 0) {
-    select.value = Object.keys(inspectionTemplates)[0];
-  }
-}
   populateProductTypes();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
@@ -1355,6 +1344,54 @@ function populateOccupancies() {
   });
 }
 
+function getDefaultProductType() {
+  const productTypes = Object.keys(inspectionTemplates || {});
+
+  if (productTypes.includes('Fire Safety Compliance')) {
+    return 'Fire Safety Compliance';
+  }
+
+  return productTypes[0] || '';
+}
+
+function normalizeProductType(productType) {
+  if (productType === 'Fire Safety Officer') {
+    return 'Fire Safety Compliance';
+  }
+
+  if (productType && inspectionTemplates[productType]) {
+    return productType;
+  }
+
+  return getDefaultProductType();
+}
+
+function getModuleFilterKey(moduleName) {
+  return `module-${String(moduleName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')}`;
+}
+
+function populateProductTypes(preferredProductType) {
+  const select = getEl('productType');
+  const productTypes = Object.keys(inspectionTemplates || {});
+  const selectedProductType = normalizeProductType(
+    preferredProductType || select.value
+  );
+
+  select.innerHTML = '';
+
+  productTypes.forEach(moduleName => {
+    const option = document.createElement('option');
+    option.value = moduleName;
+    option.textContent = moduleName;
+    select.appendChild(option);
+  });
+
+  select.value = selectedProductType;
+}
+
 function getProjects() {
   const saved = localStorage.getItem('fireyeProjects');
   return saved ? JSON.parse(saved) : [];
@@ -1362,6 +1399,30 @@ function getProjects() {
 
 function setProjects(projects) {
   localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+}
+
+function migrateLegacyProductTypes() {
+  const projects = getProjects();
+  let changed = false;
+
+  const migratedProjects = projects.map(project => {
+    const normalizedProductType = normalizeProductType(project.productType);
+
+    if (project.productType === normalizedProductType) {
+      return project;
+    }
+
+    changed = true;
+
+    return {
+      ...project,
+      productType: normalizedProductType
+    };
+  });
+
+  if (changed) {
+    setProjects(migratedProjects);
+  }
 }
 
 function createNewProject() {
@@ -1375,7 +1436,7 @@ function createNewProject() {
     existingHistoryPanel.remove();
   }
 
-  getEl('productType').value = 'Fire Safety Compliance';
+  populateProductTypes('Fire Safety Compliance');
   updateInspectionTypeOptions();
   clearInputValue('organisationName');
   clearInputValue('siteName');
@@ -1739,7 +1800,7 @@ function getProjectInspectionStatus(project) {
 }
 
 function getChecklistForProject(project) {
-  const productType = project.productType || 'Fire Safety Compliance';
+  const productType = normalizeProductType(project.productType);
   const inspectionType = project.inspectionType || '';
   const occupancy = project.occupancy || '';
 
@@ -1977,6 +2038,42 @@ function renderDashboardMetrics() {
     p.answers?.some(a => a.answer === 'No')
   ).length;
 
+  const moduleCounts = Object.keys(inspectionTemplates || {}).reduce((counts, moduleName) => {
+    counts[moduleName] = 0;
+    return counts;
+  }, {});
+
+  projects.forEach(project => {
+    const moduleName = normalizeProductType(project.productType);
+    if (!moduleCounts[moduleName]) {
+      moduleCounts[moduleName] = 0;
+    }
+    moduleCounts[moduleName]++;
+  });
+
+  const moduleCardsHtml = Object.keys(moduleCounts)
+    .map(moduleName => {
+      const typeNames = Object.keys(inspectionTemplates[moduleName] || {});
+      const typePreview = typeNames.slice(0, 2).join(' / ');
+      const extraCount = Math.max(typeNames.length - 2, 0);
+
+      return `
+        <div class="metric-card module-metric-card"
+          data-filter="${getModuleFilterKey(moduleName)}"
+          onclick="setFilter('${getModuleFilterKey(moduleName)}')">
+          <div class="metric-number">${moduleCounts[moduleName]}</div>
+          <div>
+            <div class="metric-label">${escapeHtml(moduleName)}</div>
+            <div class="metric-subtext">
+              ${escapeHtml(typePreview || 'No inspection types')}
+              ${extraCount > 0 ? ` +${extraCount}` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
   const inspectionStatusCounts = projects.reduce((counts, project) => {
     const status = getProjectInspectionStatus(project);
     counts[status.filter] = (counts[status.filter] || 0) + 1;
@@ -2032,6 +2129,15 @@ function renderDashboardMetrics() {
             High Risk
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="metric-group metric-group-secondary">
+      <div class="metric-section-title">
+        Inspection modules
+      </div>
+      <div class="metric-row metric-row-modules">
+        ${moduleCardsHtml || '<div class="note">No inspection modules found.</div>'}
       </div>
     </div>
 
@@ -2173,12 +2279,16 @@ function renderProjectsList() {
     const address = (project.projectAddress || '').toLowerCase();
     const mallName = (project.mallName || '').toLowerCase();
     const unitNumber = (project.unitNumber || '').toLowerCase();
+    const moduleName = normalizeProductType(project.productType).toLowerCase();
+    const inspectionType = (project.inspectionType || '').toLowerCase();
 
     const matchesSearch =
       placeName.includes(searchText) ||
       address.includes(searchText) ||
       mallName.includes(searchText) ||
-      unitNumber.includes(searchText);
+      unitNumber.includes(searchText) ||
+      moduleName.includes(searchText) ||
+      inspectionType.includes(searchText);
 
     if (!matchesSearch) return false;
   }
@@ -2204,6 +2314,10 @@ function renderProjectsList() {
     return project.answers?.some(
       a => a.answer === 'No'
     );
+  }
+
+  if (currentFilter.startsWith('module-')) {
+    return getModuleFilterKey(normalizeProductType(project.productType)) === currentFilter;
   }
 
   if (currentFilter.startsWith('inspection-')) {
@@ -2273,6 +2387,7 @@ function renderProjectsList() {
       project.projectName ||
       [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
       'Untitled Project';
+    const moduleName = normalizeProductType(project.productType);
     const expiryCounts = getProjectExpiryCounts(project);
     const highRiskSummary = getHighRiskSummary(project);
     const inspectionStatus = getProjectInspectionStatus(project);
@@ -2295,6 +2410,14 @@ function renderProjectsList() {
       <div class="project-badges">
         <span class="project-sync ${syncStatus.class}">
           ${syncStatus.label}
+        </span>
+
+        <span class="project-module-badge">
+          ${escapeHtml(moduleName)}
+        </span>
+
+        <span class="project-type-badge">
+          ${escapeHtml(project.inspectionType || 'No type')}
         </span>
 
         <span class="project-follow ${followStatus.class}">
@@ -2404,6 +2527,14 @@ function renderProjectsList() {
 
       <div class="project-meta-grid">
         <div>
+          <span>Module</span>
+          <strong>${escapeHtml(moduleName || '-')}</strong>
+        </div>
+        <div>
+          <span>Type</span>
+          <strong>${escapeHtml(project.inspectionType || '-')}</strong>
+        </div>
+        <div>
           <span>Inspector</span>
           <strong>${escapeHtml(project.inspectorName || '-')}</strong>
         </div>
@@ -2429,11 +2560,19 @@ function openProject(projectId, focusMode) {
 
   currentProjectId = project.id;
  
-  getEl('productType').value = project.productType || 'Fire Safety Compliance';
-  updateInspectionTypeOptions();
+  populateProductTypes(project.productType);
+  updateInspectionTypeOptions(project.inspectionType);
   getEl('organisationName').value = project.organisationName || '';
   getEl('siteName').value = project.siteName || '';
-  getEl('inspectionType').value = project.inspectionType || getEl('inspectionType').value;
+  const inspectionTypeSelect = getEl('inspectionType');
+  if (
+    project.inspectionType &&
+    Array.from(inspectionTypeSelect.options).some(
+      option => option.value === project.inspectionType
+    )
+  ) {
+    inspectionTypeSelect.value = project.inspectionType;
+  }
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
@@ -2655,7 +2794,7 @@ function saveProject() {
   const contactTel = getEl('contactTel').value.trim();
   const contactEmail = getEl('contactEmail').value.trim();
   
-  const productType = getEl('productType').value;
+  const productType = normalizeProductType(getEl('productType').value);
   const inspectionType = getEl('inspectionType').value;
   
   const followUpRequired = getEl('followUpRequired').value;
@@ -2974,9 +3113,16 @@ function updateDisplay() {
   renderChecklist(selected);
 }
 
-function updateInspectionTypeOptions() {
-  const productType = getEl('productType').value;
+function updateInspectionTypeOptions(preferredInspectionType) {
+  const productSelect = getEl('productType');
+  const productType = normalizeProductType(productSelect.value);
   const inspectionSelect = getEl('inspectionType');
+  const currentInspectionType =
+    preferredInspectionType || inspectionSelect.value;
+
+  if (productSelect.value !== productType) {
+    productSelect.value = productType;
+  }
 
   inspectionSelect.innerHTML = '';
 
@@ -2998,10 +3144,14 @@ function updateInspectionTypeOptions() {
     option.textContent = type;
     inspectionSelect.appendChild(option);
   });
+
+  inspectionSelect.value = inspectionTypes.includes(currentInspectionType)
+    ? currentInspectionType
+    : inspectionTypes[0];
 }
 
 function getActiveTemplateChecklist() {
-  const productType = getEl('productType').value;
+  const productType = normalizeProductType(getEl('productType').value);
   const inspectionType = getEl('inspectionType').value;
   const occupancy = getEl('occupancySelect').value;
 
@@ -3014,7 +3164,10 @@ function getActiveTemplateChecklist() {
     return template.flatMap(section =>
       section.items
         .filter(item => {
-          const applicableTo = item["Applicable To"] || ["All"];
+          const applicableToRaw = item["Applicable To"] || ["All"];
+          const applicableTo = Array.isArray(applicableToRaw)
+            ? applicableToRaw
+            : [applicableToRaw];
 
           return (
             applicableTo.includes("All") ||
@@ -3167,7 +3320,7 @@ function generateReport() {
   const contactPerson = getEl('contactPerson').value.trim();
   const contactTel = getEl('contactTel').value.trim();
   const contactEmail = getEl('contactEmail').value.trim();
-  const productType = getEl('productType').value;
+  const productType = normalizeProductType(getEl('productType').value);
   const inspectionType = getEl('inspectionType').value;
 
   const selectedChecklist = getActiveTemplateChecklist() || [];
@@ -4018,7 +4171,7 @@ async function shareReport() {
   const mallName = getEl('mallName').value.trim() || '-';
   const unitNumber = getEl('unitNumber').value.trim() || '-';
 
-  const productType = getEl('productType').value || '-';
+  const productType = normalizeProductType(getEl('productType').value) || '-';
   const inspectionType = getEl('inspectionType').value || '-';
 
   const selectedChecklist = getActiveTemplateChecklist() || [];

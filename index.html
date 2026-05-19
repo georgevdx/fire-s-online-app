@@ -6,7 +6,7 @@
   <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=66">
+  <link rel="stylesheet" href="styles.css?v=69">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -182,11 +182,7 @@
   <div class="form-row">
     <label for="productType">Inspection Module</label>
     <select id="productType">
-      <option value="Fire Safety Compliance">Fire Safety Compliance</option>
-      <option value="Commercial">Commercial</option>
-      <option value="Industrial">Industrial</option>
-      <option value="Retail">Retail</option>
-      <option value="Hospitality">Hospitality</option>
+      <option value="">Loading modules...</option>
     </select>
   </div>
 
@@ -310,7 +306,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=66"></script>
+  <script src="app.js?v=69"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

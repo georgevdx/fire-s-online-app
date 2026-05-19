@@ -148,6 +148,28 @@ button:hover {
   margin: 10px 0;
 }
 
+.project-module-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  background: #eef2ff;
+  color: #1e3a8a;
+  border: 1px solid #bfdbfe;
+}
+
+.project-type-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
 .project-address {
   margin: 8px 0;
   color: #333;
@@ -1473,6 +1495,25 @@ button:hover {
   transition: 0.2s ease;
 }
 
+.module-metric-card {
+  min-width: 160px;
+}
+
+.module-metric-card .metric-label {
+  max-width: 180px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.metric-subtext {
+  margin-top: 3px;
+  max-width: 220px;
+  color: #777;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 .metric-card:hover {
   transform: translateY(-2px);
 }
@@ -1542,7 +1583,8 @@ button:hover {
 }
 
 .metric-active .metric-number,
-.metric-active .metric-label {
+.metric-active .metric-label,
+.metric-active .metric-subtext {
   color: white;
 }
 
