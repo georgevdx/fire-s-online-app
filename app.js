@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v73';
+const APP_VERSION = 'v74';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2245,7 +2245,7 @@ function updateProjectReadinessPanel() {
 
   if (completion.noCount > 0) {
     actionButtons.push(`
-      <button type="button" onclick="focusFirstCurrentIssue()">
+      <button type="button" data-readiness-action="finding">
         Review Finding
       </button>
     `);
@@ -2253,7 +2253,7 @@ function updateProjectReadinessPanel() {
 
   if (completion.unanswered > 0) {
     actionButtons.push(`
-      <button type="button" onclick="focusFirstUnansweredChecklistItem()">
+      <button type="button" data-readiness-action="unanswered">
         Review Unanswered
       </button>
     `);
@@ -2261,7 +2261,7 @@ function updateProjectReadinessPanel() {
 
   if (expiryCounts.overdue > 0) {
     actionButtons.push(`
-      <button type="button" onclick="focusFirstCurrentExpiry('overdue')">
+      <button type="button" data-readiness-action="expiry-overdue">
         Review Expired
       </button>
     `);
@@ -2269,7 +2269,7 @@ function updateProjectReadinessPanel() {
 
   if (expiryCounts.soon > 0) {
     actionButtons.push(`
-      <button type="button" onclick="focusFirstCurrentExpiry('soon')">
+      <button type="button" data-readiness-action="expiry-soon">
         Review Due Soon
       </button>
     `);
@@ -2277,7 +2277,7 @@ function updateProjectReadinessPanel() {
 
   if (expiryCounts.missing > 0) {
     actionButtons.push(`
-      <button type="button" onclick="focusFirstCurrentExpiry('missing')">
+      <button type="button" data-readiness-action="expiry-missing">
         Review Missing Expiry
       </button>
     `);
@@ -2285,7 +2285,7 @@ function updateProjectReadinessPanel() {
 
   if (dataQuality.count > 0) {
     actionButtons.push(`
-      <button type="button" onclick="focusFirstMissingProjectInfo()">
+      <button type="button" data-readiness-action="info">
         Review Info
       </button>
     `);
@@ -2350,6 +2350,8 @@ function updateProjectReadinessPanel() {
       </div>
     ` : ''}
   `;
+
+  bindReadinessActionButtons(panel);
 }
 
 function getChecklistForProject(project) {
@@ -2428,30 +2430,7 @@ function focusFirstProjectIssue(project) {
   const row = field?.closest('.checklist-row');
 
   if (!row) return;
-
-  const section = row.closest('.section-group');
-
-  if (section) {
-    section.classList.remove('hidden');
-
-    const sectionIndex = section.id.replace('section_', '');
-    const arrow = document.getElementById(`arrow_${sectionIndex}`);
-
-    if (arrow) {
-      arrow.textContent = 'v';
-    }
-  }
-
-  row.classList.add('issue-focus');
-
-  row.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center'
-  });
-
-  setTimeout(() => {
-    row.classList.remove('issue-focus');
-  }, 3000);
+  openChecklistRow(row, field);
 }
 
 function openChecklistRow(row, focusTarget) {
@@ -2550,6 +2529,65 @@ function focusFirstMissingProjectInfo() {
     }
   }
 }
+
+function setReadinessMessage(message) {
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = message;
+  }
+}
+
+function bindReadinessActionButtons(panel) {
+  panel
+    .querySelectorAll('[data-readiness-action]')
+    .forEach(button => {
+      button.addEventListener('click', () => {
+        handleReadinessAction(button.dataset.readinessAction);
+      });
+    });
+}
+
+function handleReadinessAction(action) {
+  if (action === 'finding') {
+    focusFirstCurrentIssue();
+    setReadinessMessage('Jumped to first finding.');
+    return;
+  }
+
+  if (action === 'unanswered') {
+    focusFirstUnansweredChecklistItem();
+    setReadinessMessage('Jumped to first unanswered item.');
+    return;
+  }
+
+  if (action === 'expiry-overdue') {
+    focusFirstCurrentExpiry('overdue');
+    setReadinessMessage('Jumped to first expired equipment item.');
+    return;
+  }
+
+  if (action === 'expiry-soon') {
+    focusFirstCurrentExpiry('soon');
+    setReadinessMessage('Jumped to first equipment item due soon.');
+    return;
+  }
+
+  if (action === 'expiry-missing') {
+    focusFirstCurrentExpiry('missing');
+    setReadinessMessage('Jumped to first missing expiry date.');
+    return;
+  }
+
+  if (action === 'info') {
+    focusFirstMissingProjectInfo();
+    setReadinessMessage('Jumped to first missing project info field.');
+  }
+}
+
+window.focusFirstCurrentIssue = focusFirstCurrentIssue;
+window.focusFirstCurrentExpiry = focusFirstCurrentExpiry;
+window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
+window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
