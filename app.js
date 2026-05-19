@@ -910,6 +910,25 @@ function initAuthStateListener() {
     const rows = projects.map(project => ({
       id: project.id,
       user_id: userData.user.id,
+
+      company_id:
+        project.companyId || null,
+
+      created_by_user_id:
+        project.createdByUserId || userData.user.id,
+
+      last_edited_by_user_id:
+        project.lastEditedByUserId || userData.user.id,
+
+      company_access_status:
+        project.companyAccessStatus || null,
+
+      created_by_email:
+        project.createdByEmail || '',
+
+      last_edited_by_email:
+        project.lastEditedByEmail || '',
+
       inspection_data: project,
       updated_at: new Date().toISOString()
     }));
@@ -1020,6 +1039,25 @@ async function mergeSync() {
   const rows = mergedProjects.map(project => ({
     id: project.id,
     user_id: userData.user.id,
+
+    company_id:
+      project.companyId || null,
+
+    created_by_user_id:
+      project.createdByUserId || userData.user.id,
+
+    last_edited_by_user_id:
+      project.lastEditedByUserId || userData.user.id,
+
+    company_access_status:
+      project.companyAccessStatus || null,
+
+    created_by_email:
+      project.createdByEmail || '',
+
+    last_edited_by_email:
+      project.lastEditedByEmail || '',
+
     inspection_data: project,
     updated_at: new Date().toISOString()
   }));
@@ -2950,6 +2988,25 @@ async function uploadSingleInspection(project) {
       .upsert({
         id: project.id,
         user_id: userData.user.id,
+
+        company_id:
+          project.companyId || null,
+
+        created_by_user_id:
+          project.createdByUserId || userData.user.id,
+
+        last_edited_by_user_id:
+          project.lastEditedByUserId || userData.user.id,
+
+        company_access_status:
+          project.companyAccessStatus || null,
+
+        created_by_email:
+          project.createdByEmail || '',
+
+        last_edited_by_email:
+          project.lastEditedByEmail || '',
+
         inspection_data: project,
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
