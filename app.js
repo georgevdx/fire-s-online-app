@@ -1545,6 +1545,7 @@ async function loadUserAccessProfile() {
 
     if (userError || !userData || !userData.user) {
       updateAccessUI();
+      renderProjectsList();
       return;
     }
 
@@ -1576,6 +1577,7 @@ async function loadUserAccessProfile() {
       };
 
       updateAccessUI();
+      renderProjectsList();
       return;
     }
 
