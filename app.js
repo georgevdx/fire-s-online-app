@@ -866,34 +866,47 @@ async function loginUser() {
     syncStatus.textContent = 'Logging in...';
   }
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
 
-  if (error) {
-    alert(`Login failed: ${error.message}`);
-    if (syncStatus) syncStatus.textContent = `Login failed: ${error.message}`;
-    return;
+    console.log('Login result:', { data, error });
+
+    if (error) {
+      alert(`Login failed: ${error.message}`);
+      if (syncStatus) {
+        syncStatus.textContent = `Login failed: ${error.message}`;
+      }
+      return;
+    }
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Logged in successfully.';
+    }
+
+    updateSyncUI();
+
+    safeDownloadNewerCloudInspections();
+    uploadPendingInspections();
+
+  } catch (error) {
+    console.error('Login crashed:', error);
+
+    if (syncStatus) {
+      syncStatus.textContent = `Login crashed: ${error.message}`;
+    }
+
+    alert(`Login crashed: ${error.message}`);
   }
-
-  if (syncStatus) {
-    syncStatus.textContent = 'Logged in successfully.';
-  }
-
-  await updateSyncUI();
-// await loadUserAccessProfile();
-
-safeDownloadNewerCloudInspections();
-uploadPendingInspections();
 }
 
 function initAuthStateListener() {
   if (!supabaseClient?.auth?.onAuthStateChange) return;
 
-  supabaseClient.auth.onAuthStateChange(async () => {
-    await updateSyncUI();
-    await loadUserAccessProfile();
+  supabaseClient.auth.onAuthStateChange(() => {
+    updateSyncUI();
   });
 }
 
@@ -1169,22 +1182,27 @@ async function restoreCloudSession() {
     const { data, error } = await supabaseClient.auth.getSession();
 
     if (error) {
-      if (syncStatus) syncStatus.textContent = `Cloud session check failed: ${error.message}`;
-      await updateSyncUI();
-      await loadUserAccessProfile();
+      if (syncStatus) {
+        syncStatus.textContent = `Cloud session check failed: ${error.message}`;
+      }
+
+      updateSyncUI();
       return;
     }
 
-    await updateSyncUI();
-// await loadUserAccessProfile();
+    updateSyncUI();
 
-if (data && data.session) {
-  safeDownloadNewerCloudInspections();
-  uploadPendingInspections();
-}
+    if (data && data.session) {
+      safeDownloadNewerCloudInspections();
+      uploadPendingInspections();
+    }
+
   } catch (error) {
     console.error('Cloud session restore failed:', error);
-    if (syncStatus) syncStatus.textContent = 'Cloud session could not be restored.';
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Cloud session could not be restored.';
+    }
   }
 }
 
