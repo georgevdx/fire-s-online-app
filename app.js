@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v75';
+const APP_VERSION = 'v77';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1871,6 +1871,14 @@ function applyInspectionAccessFilter(query, userId) {
   return query.eq('user_id', userId);
 }
 
+function applyInspectionDeleteFilter(query, userId) {
+  if (currentUserProfile?.companyId) {
+    return query.eq('company_id', currentUserProfile.companyId);
+  }
+
+  return query.eq('user_id', userId);
+}
+
 function getProjects() {
   const saved = localStorage.getItem('fireyeProjects');
   return saved ? JSON.parse(saved) : [];
@@ -2370,10 +2378,19 @@ function updateProjectReadinessPanel() {
   const cardEnd = count =>
     count > 0 ? 'button' : 'div';
 
-  const cardClass = count =>
+  const cardClass = (count, stateClass = '') =>
+    [
+      'readiness-chip',
+      count > 0 ? 'readiness-chip-action' : '',
+      count > 0 ? stateClass : ''
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+  const cardHint = count =>
     count > 0
-      ? 'readiness-chip readiness-chip-action'
-      : 'readiness-chip';
+      ? '<span class="readiness-review-hint">Review</span>'
+      : '';
 
   panel.innerHTML = `
     <div class="readiness-top">
@@ -2391,34 +2408,40 @@ function updateProjectReadinessPanel() {
     </div>
 
     <div class="readiness-grid">
-      <${cardAction(completion.noCount, 'finding')} class="${cardClass(completion.noCount)}">
+      <${cardAction(completion.noCount, 'finding')} class="${cardClass(completion.noCount, 'readiness-danger')}">
         <strong>${completion.noCount}</strong>
         <span>No / Findings</span>
+        ${cardHint(completion.noCount)}
       </${cardEnd(completion.noCount)}>
 
-      <${cardAction(completion.unanswered, 'unanswered')} class="${cardClass(completion.unanswered)}">
+      <${cardAction(completion.unanswered, 'unanswered')} class="${cardClass(completion.unanswered, 'readiness-progress')}">
         <strong>${completion.unanswered}</strong>
         <span>Unanswered</span>
+        ${cardHint(completion.unanswered)}
       </${cardEnd(completion.unanswered)}>
 
-      <${cardAction(expiryCounts.overdue, 'expiry-overdue')} class="${cardClass(expiryCounts.overdue)}">
+      <${cardAction(expiryCounts.overdue, 'expiry-overdue')} class="${cardClass(expiryCounts.overdue, 'readiness-danger')}">
         <strong>${expiryCounts.overdue}</strong>
         <span>Expired</span>
+        ${cardHint(expiryCounts.overdue)}
       </${cardEnd(expiryCounts.overdue)}>
 
-      <${cardAction(expiryCounts.soon, 'expiry-soon')} class="${cardClass(expiryCounts.soon)}">
+      <${cardAction(expiryCounts.soon, 'expiry-soon')} class="${cardClass(expiryCounts.soon, 'readiness-warning-state')}">
         <strong>${expiryCounts.soon}</strong>
         <span>Due Soon</span>
+        ${cardHint(expiryCounts.soon)}
       </${cardEnd(expiryCounts.soon)}>
 
-      <${cardAction(expiryCounts.missing, 'expiry-missing')} class="${cardClass(expiryCounts.missing)}">
+      <${cardAction(expiryCounts.missing, 'expiry-missing')} class="${cardClass(expiryCounts.missing, 'readiness-warning-state')}">
         <strong>${expiryCounts.missing}</strong>
         <span>Expiry Missing</span>
+        ${cardHint(expiryCounts.missing)}
       </${cardEnd(expiryCounts.missing)}>
 
-      <${cardAction(dataQuality.count, 'info')} class="${cardClass(dataQuality.count)}">
+      <${cardAction(dataQuality.count, 'info')} class="${cardClass(dataQuality.count, 'readiness-warning-state')}">
         <strong>${dataQuality.count}</strong>
         <span>Info Missing</span>
+        ${cardHint(dataQuality.count)}
       </${cardEnd(dataQuality.count)}>
     </div>
 
@@ -3839,12 +3862,17 @@ async function deleteProject() {
     return;
   }
 
-  const { data, error } = await supabaseClient
+  let deleteQuery = supabaseClient
   .from('inspections')
   .delete()
-  .eq('id', idToDelete)
-  .eq('user_id', userData.user.id)
-  .select();
+  .eq('id', idToDelete);
+
+  deleteQuery = applyInspectionDeleteFilter(
+    deleteQuery,
+    userData.user.id
+  );
+
+  const { data, error } = await deleteQuery.select();
 
   if (error) {
     console.error('Cloud delete failed:', error);

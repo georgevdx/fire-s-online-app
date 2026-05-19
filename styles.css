@@ -1999,6 +1999,33 @@ button.readiness-chip:focus {
   outline: none;
 }
 
+.readiness-chip-action {
+  border-width: 2px;
+}
+
+.readiness-danger {
+  background: #ffebee;
+  border-color: #e57373;
+}
+
+.readiness-warning-state {
+  background: #fff3e0;
+  border-color: #ffb74d;
+}
+
+.readiness-progress {
+  background: #e3f2fd;
+  border-color: #64b5f6;
+}
+
+.readiness-warning-state strong {
+  color: #ef6c00;
+}
+
+.readiness-progress strong {
+  color: #1565c0;
+}
+
 .readiness-chip strong {
   display: block;
   font-size: 20px;
@@ -2011,6 +2038,18 @@ button.readiness-chip:focus {
   font-size: 11px;
   font-weight: 800;
   color: #444;
+}
+
+.readiness-chip .readiness-review-hint {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #b71c1c;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .readiness-warning {
