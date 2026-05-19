@@ -1825,6 +1825,40 @@ function getAccessMetadata() {
   };
 }
 
+function getProjectCloudMetadata(project, userId) {
+  return {
+    company_id:
+      project.companyId ||
+      currentUserProfile?.companyId ||
+      null,
+
+    created_by_user_id:
+      project.createdByUserId ||
+      currentUserProfile?.id ||
+      userId,
+
+    last_edited_by_user_id:
+      project.lastEditedByUserId ||
+      currentUserProfile?.id ||
+      userId,
+
+    company_access_status:
+      project.companyAccessStatus ||
+      currentCompanyAccess?.status ||
+      null,
+
+    created_by_email:
+      project.createdByEmail ||
+      currentUserProfile?.email ||
+      '',
+
+    last_edited_by_email:
+      project.lastEditedByEmail ||
+      currentUserProfile?.email ||
+      ''
+  };
+}
+
 function getProjects() {
   const saved = localStorage.getItem('fireyeProjects');
   return saved ? JSON.parse(saved) : [];
@@ -3370,36 +3404,22 @@ async function uploadSingleInspection(project) {
       return;
     }
 
-    if (syncStatus) syncStatus.textContent = 'Uploading saved inspection...';
+   if (syncStatus) syncStatus.textContent = 'Uploading saved inspection...';
 
-    const { error } = await supabaseClient
-      .from('inspections')
-      .upsert({
-        id: project.id,
-        user_id: userData.user.id,
+const cloudMetadata =
+  getProjectCloudMetadata(project, userData.user.id);
 
-        company_id:
-          project.companyId || null,
+const { error } = await supabaseClient
+  .from('inspections')
+  .upsert({
+    id: project.id,
+    user_id: userData.user.id,
 
-        created_by_user_id:
-          project.createdByUserId || userData.user.id,
+    ...cloudMetadata,
 
-        last_edited_by_user_id:
-          project.lastEditedByUserId || userData.user.id,
-
-        company_access_status:
-          project.companyAccessStatus || null,
-
-        created_by_email:
-          project.createdByEmail || '',
-
-        last_edited_by_email:
-          project.lastEditedByEmail || '',
-
-        inspection_data: project,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
-
+    inspection_data: project,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'id' });
     if (error) {
       console.error('Single upload failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud upload failed: ${error.message}`;
