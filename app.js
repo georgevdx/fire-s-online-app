@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v71';
+const APP_VERSION = 'v73';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -152,6 +152,7 @@ let autoSaveTimer = null;
 
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
+  updateProjectReadinessPanel();
 
   autoSaveTimer = setTimeout(() => {
     autoSaveProject();
@@ -173,15 +174,7 @@ function autoSaveProject() {
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
 
-  if (!siteName) {
-    alert(
-      'Please enter a Site / Branch / Location to distinguish this premises.'
-    );
-
-    getEl('siteName').focus();
-
-    return;
-  }
+  if (!siteName) return;
 
   if (
     !projectAddressField ||
@@ -1424,6 +1417,11 @@ function initApp() {
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
+  getEl('organisationName').addEventListener('input', scheduleAutoSave);
+  getEl('siteName').addEventListener('input', scheduleAutoSave);
+  getEl('contactPerson').addEventListener('input', scheduleAutoSave);
+  getEl('contactTel').addEventListener('input', scheduleAutoSave);
+  getEl('contactEmail').addEventListener('input', scheduleAutoSave);
   getEl('inspectorName').addEventListener('input', scheduleAutoSave);
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
   const exportBtn = document.getElementById('exportBtn');
@@ -1439,7 +1437,10 @@ function initApp() {
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', scheduleAutoSave);
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
-  getEl('inMall').addEventListener('change', toggleMallFields);
+  getEl('inMall').addEventListener('change', () => {
+    toggleMallFields();
+    scheduleAutoSave();
+  });
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
   getEl('followUpRequired').addEventListener('change', scheduleAutoSave);
@@ -1857,6 +1858,7 @@ function showProjectList() {
 function showProjectForm() {
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'block';
+  updateProjectReadinessPanel();
 }
 
 function getFollowUpStatus(project) {
@@ -2164,6 +2166,192 @@ function getProjectInspectionStatus(project) {
   };
 }
 
+function getCurrentFormProjectSnapshot() {
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
+  const streetNumber = getEl('streetNumber').value.trim();
+  const addressLine = getEl('projectAddress').value.trim();
+  const productType = normalizeProductType(getEl('productType').value);
+  const inspectionType = getEl('inspectionType').value;
+  const occupancy = getEl('occupancySelect').value;
+  const selectedChecklist = getActiveTemplateChecklist() || [];
+
+  const answers = [];
+
+  document.querySelectorAll('.answer-select').forEach((field, index) => {
+    const noteField = document.getElementById(`note_${index}`);
+    const expiryField =
+      document.querySelector(`.expiry-date[data-index="${index}"]`);
+
+    answers.push({
+      itemIndex: index,
+      itemNumber:
+        selectedChecklist[index]?.["Item Number"] ||
+        String(index + 1),
+      answer: field.value,
+      note: noteField ? noteField.value.trim() : '',
+      expiryDate: expiryField ? expiryField.value : null
+    });
+  });
+
+  return {
+    id: currentProjectId,
+    organisationName,
+    siteName,
+    projectName:
+      [organisationName, siteName]
+        .filter(Boolean)
+        .join(' '),
+    streetNumber,
+    addressLine,
+    projectAddress: combineStreetAddress(streetNumber, addressLine),
+    gps: getEl('gps').value.trim(),
+    inMall: getEl('inMall').value || 'No',
+    mallName: getEl('mallName').value.trim(),
+    unitNumber: getEl('unitNumber').value.trim(),
+    contactPerson: getEl('contactPerson').value.trim(),
+    contactTel: getEl('contactTel').value.trim(),
+    contactEmail: getEl('contactEmail').value.trim(),
+    inspectorName: getEl('inspectorName').value.trim(),
+    productType,
+    inspectionType,
+    occupancy,
+    answers
+  };
+}
+
+function updateProjectReadinessPanel() {
+  const panel = document.getElementById('projectReadinessPanel');
+  if (!panel) return;
+
+  if (getEl('projectFormSection').style.display === 'none') {
+    panel.innerHTML = '';
+    return;
+  }
+
+  const project = getCurrentFormProjectSnapshot();
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+  const status = getProjectInspectionStatus(project);
+  const percent = completion.total
+    ? Math.round((completion.answered / completion.total) * 100)
+    : 0;
+
+  const missingText = dataQuality.count > 0
+    ? dataQuality.missing.join(', ')
+    : 'None';
+  const actionButtons = [];
+
+  if (completion.noCount > 0) {
+    actionButtons.push(`
+      <button type="button" onclick="focusFirstCurrentIssue()">
+        Review Finding
+      </button>
+    `);
+  }
+
+  if (completion.unanswered > 0) {
+    actionButtons.push(`
+      <button type="button" onclick="focusFirstUnansweredChecklistItem()">
+        Review Unanswered
+      </button>
+    `);
+  }
+
+  if (expiryCounts.overdue > 0) {
+    actionButtons.push(`
+      <button type="button" onclick="focusFirstCurrentExpiry('overdue')">
+        Review Expired
+      </button>
+    `);
+  }
+
+  if (expiryCounts.soon > 0) {
+    actionButtons.push(`
+      <button type="button" onclick="focusFirstCurrentExpiry('soon')">
+        Review Due Soon
+      </button>
+    `);
+  }
+
+  if (expiryCounts.missing > 0) {
+    actionButtons.push(`
+      <button type="button" onclick="focusFirstCurrentExpiry('missing')">
+        Review Missing Expiry
+      </button>
+    `);
+  }
+
+  if (dataQuality.count > 0) {
+    actionButtons.push(`
+      <button type="button" onclick="focusFirstMissingProjectInfo()">
+        Review Info
+      </button>
+    `);
+  }
+
+  panel.innerHTML = `
+    <div class="readiness-top">
+      <div>
+        <div class="readiness-title">Inspection Readiness</div>
+        <div class="readiness-subtitle">
+          ${completion.answered}/${completion.total} checklist items answered (${percent}%)
+        </div>
+      </div>
+
+      <span class="project-inspection-status ${escapeHtml(status.class)}">
+        ${escapeHtml(status.label)}
+        <small>${escapeHtml(status.detail)}</small>
+      </span>
+    </div>
+
+    <div class="readiness-grid">
+      <div class="readiness-chip">
+        <strong>${completion.noCount}</strong>
+        <span>No / Findings</span>
+      </div>
+
+      <div class="readiness-chip">
+        <strong>${completion.unanswered}</strong>
+        <span>Unanswered</span>
+      </div>
+
+      <div class="readiness-chip">
+        <strong>${expiryCounts.overdue}</strong>
+        <span>Expired</span>
+      </div>
+
+      <div class="readiness-chip">
+        <strong>${expiryCounts.soon}</strong>
+        <span>Due Soon</span>
+      </div>
+
+      <div class="readiness-chip">
+        <strong>${expiryCounts.missing}</strong>
+        <span>Expiry Missing</span>
+      </div>
+
+      <div class="readiness-chip">
+        <strong>${dataQuality.count}</strong>
+        <span>Info Missing</span>
+      </div>
+    </div>
+
+    ${dataQuality.count > 0 ? `
+      <div class="readiness-warning">
+        Missing project info: ${escapeHtml(missingText)}
+      </div>
+    ` : ''}
+
+    ${actionButtons.length > 0 ? `
+      <div class="readiness-actions">
+        ${actionButtons.join('')}
+      </div>
+    ` : ''}
+  `;
+}
+
 function getChecklistForProject(project) {
   const productType = normalizeProductType(project.productType);
   const inspectionType = project.inspectionType || '';
@@ -2264,6 +2452,103 @@ function focusFirstProjectIssue(project) {
   setTimeout(() => {
     row.classList.remove('issue-focus');
   }, 3000);
+}
+
+function openChecklistRow(row, focusTarget) {
+  if (!row) return;
+
+  const section = row.closest('.section-group');
+
+  if (section) {
+    section.classList.remove('hidden');
+
+    const sectionIndex = section.id.replace('section_', '');
+    const arrow = document.getElementById(`arrow_${sectionIndex}`);
+
+    if (arrow) {
+      arrow.textContent = 'v';
+    }
+  }
+
+  row.classList.add('issue-focus');
+
+  row.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+
+  if (focusTarget) {
+    focusTarget.focus();
+  }
+
+  setTimeout(() => {
+    row.classList.remove('issue-focus');
+  }, 3000);
+}
+
+function focusFirstCurrentIssue() {
+  focusFirstProjectIssue(getCurrentFormProjectSnapshot());
+}
+
+function focusFirstCurrentExpiry(expiryStatus) {
+  focusFirstProjectExpiry(getCurrentFormProjectSnapshot(), expiryStatus);
+}
+
+function focusFirstUnansweredChecklistItem() {
+  const field = Array.from(
+    document.querySelectorAll('.answer-select')
+  ).find(select => !select.value);
+
+  if (!field) return;
+
+  openChecklistRow(field.closest('.checklist-row'), field);
+}
+
+function focusInputField(field) {
+  if (!field) return;
+
+  field.classList.add('field-focus');
+  field.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+  field.focus();
+
+  setTimeout(() => {
+    field.classList.remove('field-focus');
+  }, 3000);
+}
+
+function focusFirstMissingProjectInfo() {
+  const missingChecks = [
+    () => !getEl('siteName').value.trim() && getEl('siteName'),
+    () => !getEl('inspectorName').value.trim() && getEl('inspectorName'),
+    () => !combineStreetAddress(
+      getEl('streetNumber').value.trim(),
+      getEl('projectAddress').value.trim()
+    ) && getEl('projectAddress'),
+    () => !getEl('contactPerson').value.trim() && getEl('contactPerson'),
+    () => (
+      !getEl('contactTel').value.trim() &&
+      !getEl('contactEmail').value.trim()
+    ) && getEl('contactTel'),
+    () => (
+      getEl('inMall').value === 'Yes' &&
+      !getEl('mallName').value.trim()
+    ) && getEl('mallName'),
+    () => (
+      getEl('inMall').value === 'Yes' &&
+      !getEl('unitNumber').value.trim()
+    ) && getEl('unitNumber')
+  ];
+
+  for (const check of missingChecks) {
+    const field = check();
+    if (field) {
+      focusInputField(field);
+      return;
+    }
+  }
 }
 
 function focusFirstProjectExpiry(project, expiryStatus) {
@@ -3679,6 +3964,7 @@ function renderChecklist(selected) {
 
   chkDiv.innerHTML = html;
   updateAnswerSummary();
+  updateProjectReadinessPanel();
 }
 
 function escapeHtml(value) {
@@ -4833,6 +5119,8 @@ function updateAnswerSummary() {
   if (summary) {
     summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
   }
+
+  updateProjectReadinessPanel();
 }
 function renderSiteHistory(project) {
 

@@ -2008,3 +2008,27 @@ button:hover {
   font-size: 12px;
   font-weight: 700;
 }
+
+.readiness-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.readiness-actions button {
+  width: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #b71c1c;
+  background: #fff;
+  color: #b71c1c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.field-focus {
+  outline: 3px solid #f57c00 !important;
+  outline-offset: 2px;
+  background: #fff8e1 !important;
+}
