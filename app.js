@@ -1538,39 +1538,95 @@ async function loadUserAccessProfile() {
   currentCompanyAccess = null;
 
   try {
-    const { data: userData, error } =
+    const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
 
-    if (error || !userData || !userData.user) {
+    if (userError || !userData || !userData.user) {
       updateAccessUI();
       return;
     }
 
     const user = userData.user;
 
-    // Temporary profile until Supabase company tables are created.
+    const { data: profile, error: profileError } =
+      await supabaseClient
+        .from('profiles')
+        .select('id, email, full_name, role')
+        .eq('id', user.id)
+        .single();
+
+    if (profileError) {
+      console.error('Profile load failed:', profileError);
+
+      currentUserProfile = {
+        id: user.id,
+        email: user.email,
+        fullName: user.email,
+        role: 'inspector',
+        companyId: null,
+        companyName: 'Local / Personal Workspace'
+      };
+
+      currentCompanyAccess = {
+        status: 'active',
+        plan: 'development',
+        source: 'fallback'
+      };
+
+      updateAccessUI();
+      return;
+    }
+
+    const { data: membership, error: membershipError } =
+      await supabaseClient
+        .from('company_members')
+        .select(`
+          company_id,
+          role,
+          status,
+          companies (
+            id,
+            name,
+            status,
+            plan
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+
+    if (membershipError) {
+      console.error('Membership load failed:', membershipError);
+    }
+
+    const company =
+      membership?.companies || null;
+
     currentUserProfile = {
-      id: user.id,
-      email: user.email,
-      fullName: user.email,
-      role: 'inspector',
-      companyId: null,
-      companyName: 'Local / Personal Workspace'
+      id: profile.id,
+      email: profile.email || user.email,
+      fullName: profile.full_name || profile.email || user.email,
+      role: membership?.role || profile.role || 'inspector',
+      companyId: company?.id || membership?.company_id || null,
+      companyName: company?.name || 'Local / Personal Workspace'
     };
 
-    // Temporary access while commercial company access is being built.
     currentCompanyAccess = {
-      status: 'active',
-      plan: 'development',
-      source: 'temporary'
+      status: company?.status || 'active',
+      plan: company?.plan || 'development',
+      membershipStatus: membership?.status || 'active',
+      source: company ? 'supabase' : 'fallback'
     };
 
     updateAccessUI();
 
   } catch (error) {
     console.error('Access profile load failed:', error);
+
     currentUserProfile = null;
     currentCompanyAccess = null;
+
     updateAccessUI();
   }
 }
