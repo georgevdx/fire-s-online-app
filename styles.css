@@ -1982,6 +1982,21 @@ button:hover {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background: #f7f7f7;
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+
+button.readiness-chip {
+  cursor: pointer;
+}
+
+button.readiness-chip:hover,
+button.readiness-chip:focus {
+  border-color: #b71c1c;
+  background: #fff5f5;
+  outline: none;
 }
 
 .readiness-chip strong {
@@ -2007,24 +2022,6 @@ button:hover {
   color: #6d3c00;
   font-size: 12px;
   font-weight: 700;
-}
-
-.readiness-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.readiness-actions button {
-  width: auto;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #b71c1c;
-  background: #fff;
-  color: #b71c1c;
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .field-focus {

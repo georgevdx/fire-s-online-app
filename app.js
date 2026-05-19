@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v74';
+const APP_VERSION = 'v75';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2241,55 +2241,18 @@ function updateProjectReadinessPanel() {
   const missingText = dataQuality.count > 0
     ? dataQuality.missing.join(', ')
     : 'None';
-  const actionButtons = [];
+  const cardAction = (count, action) =>
+    count > 0
+      ? `button type="button" data-readiness-action="${action}"`
+      : 'div';
 
-  if (completion.noCount > 0) {
-    actionButtons.push(`
-      <button type="button" data-readiness-action="finding">
-        Review Finding
-      </button>
-    `);
-  }
+  const cardEnd = count =>
+    count > 0 ? 'button' : 'div';
 
-  if (completion.unanswered > 0) {
-    actionButtons.push(`
-      <button type="button" data-readiness-action="unanswered">
-        Review Unanswered
-      </button>
-    `);
-  }
-
-  if (expiryCounts.overdue > 0) {
-    actionButtons.push(`
-      <button type="button" data-readiness-action="expiry-overdue">
-        Review Expired
-      </button>
-    `);
-  }
-
-  if (expiryCounts.soon > 0) {
-    actionButtons.push(`
-      <button type="button" data-readiness-action="expiry-soon">
-        Review Due Soon
-      </button>
-    `);
-  }
-
-  if (expiryCounts.missing > 0) {
-    actionButtons.push(`
-      <button type="button" data-readiness-action="expiry-missing">
-        Review Missing Expiry
-      </button>
-    `);
-  }
-
-  if (dataQuality.count > 0) {
-    actionButtons.push(`
-      <button type="button" data-readiness-action="info">
-        Review Info
-      </button>
-    `);
-  }
+  const cardClass = count =>
+    count > 0
+      ? 'readiness-chip readiness-chip-action'
+      : 'readiness-chip';
 
   panel.innerHTML = `
     <div class="readiness-top">
@@ -2307,46 +2270,40 @@ function updateProjectReadinessPanel() {
     </div>
 
     <div class="readiness-grid">
-      <div class="readiness-chip">
+      <${cardAction(completion.noCount, 'finding')} class="${cardClass(completion.noCount)}">
         <strong>${completion.noCount}</strong>
         <span>No / Findings</span>
-      </div>
+      </${cardEnd(completion.noCount)}>
 
-      <div class="readiness-chip">
+      <${cardAction(completion.unanswered, 'unanswered')} class="${cardClass(completion.unanswered)}">
         <strong>${completion.unanswered}</strong>
         <span>Unanswered</span>
-      </div>
+      </${cardEnd(completion.unanswered)}>
 
-      <div class="readiness-chip">
+      <${cardAction(expiryCounts.overdue, 'expiry-overdue')} class="${cardClass(expiryCounts.overdue)}">
         <strong>${expiryCounts.overdue}</strong>
         <span>Expired</span>
-      </div>
+      </${cardEnd(expiryCounts.overdue)}>
 
-      <div class="readiness-chip">
+      <${cardAction(expiryCounts.soon, 'expiry-soon')} class="${cardClass(expiryCounts.soon)}">
         <strong>${expiryCounts.soon}</strong>
         <span>Due Soon</span>
-      </div>
+      </${cardEnd(expiryCounts.soon)}>
 
-      <div class="readiness-chip">
+      <${cardAction(expiryCounts.missing, 'expiry-missing')} class="${cardClass(expiryCounts.missing)}">
         <strong>${expiryCounts.missing}</strong>
         <span>Expiry Missing</span>
-      </div>
+      </${cardEnd(expiryCounts.missing)}>
 
-      <div class="readiness-chip">
+      <${cardAction(dataQuality.count, 'info')} class="${cardClass(dataQuality.count)}">
         <strong>${dataQuality.count}</strong>
         <span>Info Missing</span>
-      </div>
+      </${cardEnd(dataQuality.count)}>
     </div>
 
     ${dataQuality.count > 0 ? `
       <div class="readiness-warning">
         Missing project info: ${escapeHtml(missingText)}
-      </div>
-    ` : ''}
-
-    ${actionButtons.length > 0 ? `
-      <div class="readiness-actions">
-        ${actionButtons.join('')}
       </div>
     ` : ''}
   `;
