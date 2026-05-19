@@ -882,10 +882,10 @@ async function loginUser() {
   }
 
   await updateSyncUI();
-  await loadUserAccessProfile();
+// await loadUserAccessProfile();
 
-  safeDownloadNewerCloudInspections();
-  uploadPendingInspections();
+safeDownloadNewerCloudInspections();
+uploadPendingInspections();
 }
 
 function initAuthStateListener() {
@@ -1176,12 +1176,12 @@ async function restoreCloudSession() {
     }
 
     await updateSyncUI();
-    await loadUserAccessProfile();
+// await loadUserAccessProfile();
 
-    if (data && data.session) {
-      safeDownloadNewerCloudInspections();
-      uploadPendingInspections();
-    }
+if (data && data.session) {
+  safeDownloadNewerCloudInspections();
+  uploadPendingInspections();
+}
   } catch (error) {
     console.error('Cloud session restore failed:', error);
     if (syncStatus) syncStatus.textContent = 'Cloud session could not be restored.';
