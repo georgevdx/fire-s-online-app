@@ -368,7 +368,35 @@ function autoSaveProject() {
     };
 
     currentProjectId = newProject.id;
+    
     projects.push(newProject);
+
+    const previousSiteInspections = projects.filter(
+      p =>
+        p.siteId === newProject.siteId &&
+        p.id !== newProject.id
+    );
+
+    newProject.previousInspectionCount =
+      previousSiteInspections.length;
+
+    newProject.hasSiteHistory =
+      previousSiteInspections.length > 0;
+
+    const previousNoAnswers =
+      previousSiteInspections.flatMap(
+        p => (p.answers || [])
+          .filter(a => a.answer === 'No')
+          .map(a => a.itemNumber)
+      );
+
+    newProject.repeatFindings =
+      (answers || [])
+        .filter(a =>
+          a.answer === 'No' &&
+          previousNoAnswers.includes(a.itemNumber)
+        )
+        .map(a => a.itemNumber);
   }
 
   setProjects(projects);
