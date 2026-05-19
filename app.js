@@ -1236,9 +1236,9 @@ async function loadData() {
     initApp();
     migrateLegacyProductTypes();
     initAuthStateListener();
-    await restoreCloudSession();
-    renderProjectsList();
     
+    renderProjectsList();
+    await restoreCloudSession();
 
   } catch (error) {
     console.error('Data loading error:', error);
