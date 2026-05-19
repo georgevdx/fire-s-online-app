@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v70';
+const APP_VERSION = 'v71';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4302,7 +4302,7 @@ function generateReport() {
       <div class="report-line"><strong>Contact Person:</strong> ${escapeHtml(contactPerson || '-')}</div>
       <div class="report-line"><strong>Telephone:</strong> ${escapeHtml(contactTel || '-')}</div>
       <div class="report-line"><strong>Email:</strong> ${escapeHtml(contactEmail || '-')}</div>
-      <div class="report-line"><strong>Inspection Module:</strong> ${escapeHtml(productType)}</div>
+      <div class="report-line"><strong>Compliance Area:</strong> ${escapeHtml(productType)}</div>
       <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
       ${currentProject && currentProject.linkedToInspectionId ? `
       <div class="report-line">
@@ -4713,7 +4713,7 @@ Place Name: ${projectName}
 Contact Person: ${contactPerson}
 Telephone: ${contactTel}
 Email: ${contactEmail}
-Inspection Module: ${productType}
+Compliance Area: ${productType}
 Inspection Type: ${inspectionType}
 Address: ${projectAddress}
 GPS: ${gps}
