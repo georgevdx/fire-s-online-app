@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v80';
+const APP_VERSION = 'v82';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -160,7 +160,7 @@ function scheduleAutoSave() {
 }
 
 function autoSaveProject() {
-  
+  try {
   const inspectorNameField = document.getElementById('inspectorName');
   const occupancyField = document.getElementById('occupancySelect');
   const projectAddressField = document.getElementById('projectAddress');
@@ -173,8 +173,6 @@ function autoSaveProject() {
   const contactEmail = getEl('contactEmail').value.trim();
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
-
-  if (!siteName) return;
 
   if (
     !projectAddressField ||
@@ -189,7 +187,8 @@ function autoSaveProject() {
   const projectName =
     [organisationName, siteName]
       .filter(Boolean)
-      .join(' ');
+      .join(' ') ||
+    `Draft Inspection ${new Date().toLocaleDateString()}`;
 
   const inspectorName = inspectorNameField.value.trim();
   const occupancy = occupancyField.value;
@@ -214,7 +213,7 @@ function autoSaveProject() {
     .filter(Boolean)
     .join('|');
 
-  if (!projectName && !inspectorName) return;
+  if (!projectName && !inspectorName && currentPhotos.length === 0) return;
 
   const answers = [];
   const selectedChecklist =
@@ -417,6 +416,14 @@ function autoSaveProject() {
       });
   } else {
     console.warn('Auto upload skipped: autosaved project not found.');
+  }
+  } catch (error) {
+    console.error('Auto save failed:', error);
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent =
+        'Auto save failed. Press Save before closing the app.';
+    }
   }
 }
 
@@ -1837,18 +1844,6 @@ function withTimeout(promise, timeoutMs = 5000) {
   ]);
 }
 
-function withTimeout(promise, timeoutMs = 5000) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Request timed out')),
-        timeoutMs
-      )
-    )
-  ]);
-}
-
 async function loadUserAccessProfile() {
   currentUserProfile = null;
   currentCompanyAccess = null;
@@ -1894,6 +1889,7 @@ async function loadUserAccessProfile() {
       };
 
       updateAccessUI();
+      renderCompanyAdminPanel();
       renderProjectsList();
       return;
     }
@@ -2053,7 +2049,28 @@ function getProjects() {
 }
 
 function setProjects(projects) {
-  localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+  try {
+    localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    localStorage.setItem('fireyeProjectsLastGood', JSON.stringify({
+      savedAt: new Date().toISOString(),
+      appVersion: APP_VERSION,
+      projects
+    }));
+  } catch (error) {
+    console.error('Project storage failed:', error);
+
+    const message =
+      'Save failed: this device/browser storage may be full. Export a backup before closing the app.';
+
+    const saveMessage = document.getElementById('saveMessage');
+    const syncStatus = document.getElementById('syncStatus');
+
+    if (saveMessage) saveMessage.textContent = message;
+    if (syncStatus) syncStatus.textContent = message;
+
+    alert(message);
+    throw error;
+  }
 }
 
 function migrateLegacyProductTypes() {
@@ -3792,7 +3809,8 @@ function saveProject() {
   const projectName =
     [organisationName, siteName]
       .filter(Boolean)
-      .join(' ');
+      .join(' ') ||
+    `Draft Inspection ${new Date().toLocaleDateString()}`;
 
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
@@ -5194,6 +5212,8 @@ function getRefinedReportData() {
 }
 
 function buildRefinedPhotoAppendix() {
+  const photoCount = currentPhotos.length;
+
   if (!currentPhotos.length) {
     return `
       <div class="refined-appendix">
@@ -5207,6 +5227,9 @@ function buildRefinedPhotoAppendix() {
     <div class="report-page-break"></div>
     <div class="refined-appendix">
       <h2>Annexure A - Photo Evidence</h2>
+      <div class="refined-attachment-note">
+        ${photoCount} photo${photoCount === 1 ? '' : 's'} attached as supporting inspection evidence.
+      </div>
       <div class="report-photos">
         ${currentPhotos.map((photo, index) => `
           <div class="report-photo-card">
@@ -5284,6 +5307,7 @@ function generateRefinedReport() {
       </tr>
     `).join('')
     : '<tr><td colspan="4">No equipment expiry dates captured.</td></tr>';
+  const photoCount = currentPhotos.length;
 
   reportContent.innerHTML = `
     <div class="refined-report">
@@ -5327,6 +5351,12 @@ function generateRefinedReport() {
         The inspection observations, findings, corrective actions and supporting photo evidence are recorded below in a neat
         print-ready format generated from the FireyeSA app.
       </p>
+
+      <div class="refined-attachment-index">
+        <strong>Attachments:</strong>
+        Annexure A - Photo Evidence
+        (${photoCount} photo${photoCount === 1 ? '' : 's'})
+      </div>
 
       <h2>Findings and Corrective Action</h2>
       ${findingsHtml}
@@ -5421,8 +5451,8 @@ function handlePhotoUpload(event) {
     const img = new Image();
 
     img.onload = function() {
-      const maxWidth = 1200;
-      const maxHeight = 1200;
+      const maxWidth = 900;
+      const maxHeight = 900;
 
       let width = img.width;
       let height = img.height;
@@ -5440,7 +5470,7 @@ function handlePhotoUpload(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.68);
 
       currentPhotos.push({
       src: compressedDataUrl,
@@ -5449,10 +5479,11 @@ function handlePhotoUpload(event) {
       });
 
       renderPhotos();
-      scheduleAutoSave();
+      autoSaveProject();
 
       if (saveMessage) {
-        saveMessage.textContent = 'Photo added.';
+        saveMessage.textContent =
+          `Photo added and saved (${currentPhotos.length} photo${currentPhotos.length === 1 ? '' : 's'}).`;
       }
     };
 

@@ -1384,6 +1384,19 @@ button:hover {
   grid-column: 1 / -1;
 }
 
+.refined-attachment-index,
+.refined-attachment-note {
+  margin: 12px 0;
+  padding: 10px;
+  border-left: 5px solid #b71c1c;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #4a1111;
+  font-weight: 700;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .refined-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -1458,6 +1471,21 @@ button:hover {
   color: #b71c1c;
   border-bottom: 2px solid #b71c1c;
   padding-bottom: 6px;
+}
+
+.refined-appendix .report-photo-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.refined-appendix .report-photo-header {
+  font-size: 13px;
+  font-weight: 900;
+  color: #b71c1c;
+  margin-bottom: 4px;
 }
 
 .cloud-sync-card {
