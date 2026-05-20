@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v77';
+const APP_VERSION = 'v80';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -439,6 +439,10 @@ function formatProjectDate(value) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or FireyeSA support.'
     );
+    return;
+  }
+
+  if (!confirmReportQuality('export this PDF')) {
     return;
   }
 
@@ -1423,6 +1427,32 @@ function initApp() {
   if (showSyncToolsBtn) {
     showSyncToolsBtn.addEventListener('click', showSyncTools);
   }
+  const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
+  if (homeLoginRouteBtn) {
+    homeLoginRouteBtn.addEventListener('click', openLoginRoute);
+  }
+
+  const homeInspectionRouteBtn = document.getElementById('homeInspectionRouteBtn');
+  if (homeInspectionRouteBtn) {
+    homeInspectionRouteBtn.addEventListener('click', showProjectList);
+  }
+
+  const homeServicesRouteBtn = document.getElementById('homeServicesRouteBtn');
+  if (homeServicesRouteBtn) {
+    homeServicesRouteBtn.addEventListener('click', showServices);
+  }
+
+  const servicesBackBtn = document.getElementById('servicesBackBtn');
+  if (servicesBackBtn) {
+    servicesBackBtn.addEventListener('click', showHome);
+  }
+
+  document.querySelectorAll('[data-service]').forEach(button => {
+    button.addEventListener('click', () => {
+      requestAdditionalService(button.dataset.service);
+    });
+  });
+
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
   const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -1481,6 +1511,22 @@ function initApp() {
     });
   }
   getEl('shareBtn').addEventListener('click', shareReport);
+  const refinedReportBtn = document.getElementById('refinedReportBtn');
+  if (refinedReportBtn) {
+    refinedReportBtn.addEventListener('click', generateRefinedReport);
+  }
+
+  const refinedPdfBtn = document.getElementById('refinedPdfBtn');
+  if (refinedPdfBtn) {
+    refinedPdfBtn.addEventListener('click', exportRefinedReport);
+  }
+
+  const servicesRefinedReportBtn =
+    document.getElementById('servicesRefinedReportBtn');
+  if (servicesRefinedReportBtn) {
+    servicesRefinedReportBtn.addEventListener('click', showProjectList);
+  }
+
   getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
   getEl('streetNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
@@ -1529,6 +1575,7 @@ function initApp() {
   });
     updateInspectionTypeOptions();
     toggleMallFields();
+    showHome();
   }
 
 function populateOccupancies() {
@@ -2100,15 +2147,71 @@ function showProjectList() {
     reportSection.style.display = 'none';
   }
 
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'none';
   getEl('projectListSection').style.display = 'block';
   getEl('projectFormSection').style.display = 'none';
   renderProjectsList();
 }
 
 function showProjectForm() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'none';
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'block';
   updateProjectReadinessPanel();
+}
+
+function showHome() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'block';
+  if (servicesSection) servicesSection.style.display = 'none';
+  getEl('projectListSection').style.display = 'none';
+  getEl('projectFormSection').style.display = 'none';
+}
+
+function showServices() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'block';
+  getEl('projectListSection').style.display = 'none';
+  getEl('projectFormSection').style.display = 'none';
+}
+
+function openLoginRoute() {
+  const cloudDropdown = document.getElementById('cloudDropdown');
+  const syncTools = document.getElementById('syncTools');
+  const loginEmail = document.getElementById('loginEmail');
+
+  if (cloudDropdown) cloudDropdown.style.display = 'block';
+  if (syncTools) syncTools.style.display = 'block';
+  if (loginEmail) {
+    loginEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    loginEmail.focus();
+  }
+}
+
+function requestAdditionalService(serviceName) {
+  const message =
+    `${serviceName} request noted. This service route is ready for the next build step.`;
+
+  const syncStatus = document.getElementById('syncStatus');
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (syncStatus) syncStatus.textContent = message;
+  if (saveMessage) saveMessage.textContent = message;
+
+  alert(message);
 }
 
 function getFollowUpStatus(project) {
@@ -2414,6 +2517,50 @@ function getProjectInspectionStatus(project) {
     filter: 'inspection-complete',
     detail: `${completion.answered}/${completion.total} answered`
   };
+}
+
+function getReportQualityWarnings(project) {
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+  const warnings = [];
+
+  if (completion.noCount > 0) {
+    warnings.push(`${completion.noCount} finding${completion.noCount === 1 ? '' : 's'} marked No`);
+  }
+
+  if (completion.unanswered > 0) {
+    warnings.push(`${completion.unanswered} unanswered checklist item${completion.unanswered === 1 ? '' : 's'}`);
+  }
+
+  if (expiryCounts.overdue > 0) {
+    warnings.push(`${expiryCounts.overdue} expired equipment item${expiryCounts.overdue === 1 ? '' : 's'}`);
+  }
+
+  if (expiryCounts.soon > 0) {
+    warnings.push(`${expiryCounts.soon} equipment expiry item${expiryCounts.soon === 1 ? '' : 's'} due soon`);
+  }
+
+  if (expiryCounts.missing > 0) {
+    warnings.push(`${expiryCounts.missing} missing expiry date${expiryCounts.missing === 1 ? '' : 's'}`);
+  }
+
+  if (dataQuality.count > 0) {
+    warnings.push(`missing project info: ${dataQuality.missing.join(', ')}`);
+  }
+
+  return warnings;
+}
+
+function confirmReportQuality(actionLabel) {
+  const warnings =
+    getReportQualityWarnings(getCurrentFormProjectSnapshot());
+
+  if (warnings.length === 0) return true;
+
+  return confirm(
+    `Report quality check:\n\n- ${warnings.join('\n- ')}\n\nContinue to ${actionLabel}?`
+  );
 }
 
 function getCurrentFormProjectSnapshot() {
@@ -4991,6 +5138,273 @@ function generateReport() {
   getEl('reportSection').style.display = 'block';
 }
 
+function getRefinedReportData() {
+  const project = getCurrentFormProjectSnapshot();
+  const currentProject = getProjects().find(
+    p => p.id === currentProjectId
+  );
+  const selectedChecklist = getActiveTemplateChecklist() || [];
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+  const findings = [];
+  const expiryItems = [];
+
+  selectedChecklist.forEach((item, index) => {
+    const answerField = document.getElementById(`check_${index}`);
+    const answer = answerField ? answerField.value : '';
+    const noteField = document.getElementById(`note_${index}`);
+    const note = noteField ? noteField.value.trim() : '';
+    const expiryField =
+      document.querySelector(`.expiry-date[data-index="${index}"]`);
+    const expiryDate = expiryField ? expiryField.value : '';
+    const trackExpiry = isExpiryTrackedChecklistItem(item);
+    const expiryApplies = isExpiryApplicableAnswer(answer);
+
+    if (answer === 'No') {
+      findings.push({
+        itemNumber: item["Item Number"] || String(index + 1),
+        item: item["Checklist Item"] || '',
+        finding: item["Non Compliance Text"] || item["Checklist Item"] || '',
+        correctiveAction: item["Corrective Action"] || '',
+        reference: item["Reference"] || '',
+        note
+      });
+    }
+
+    if (trackExpiry && expiryApplies && expiryDate) {
+      expiryItems.push({
+        itemNumber: item["Item Number"] || String(index + 1),
+        item: item["Checklist Item"] || '',
+        expiryDate,
+        status: getExpiryStatus(expiryDate)
+      });
+    }
+  });
+
+  return {
+    project,
+    currentProject,
+    completion,
+    expiryCounts,
+    dataQuality,
+    findings,
+    expiryItems
+  };
+}
+
+function buildRefinedPhotoAppendix() {
+  if (!currentPhotos.length) {
+    return `
+      <div class="refined-appendix">
+        <h2>Annexure A - Photo Evidence</h2>
+        <div class="note">No photo evidence attached.</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="report-page-break"></div>
+    <div class="refined-appendix">
+      <h2>Annexure A - Photo Evidence</h2>
+      <div class="report-photos">
+        ${currentPhotos.map((photo, index) => `
+          <div class="report-photo-card">
+            <div class="report-photo-header">Photo ${index + 1}</div>
+            <div class="report-photo-time">
+              Captured:
+              ${photo.timestamp ? escapeHtml(new Date(photo.timestamp).toLocaleString()) : 'Not recorded'}
+            </div>
+            <img
+              src="${photo.src}"
+              class="report-photo-img"
+              alt="Refined report photo ${index + 1}"
+            >
+            <div class="report-photo-note">
+              <strong>Photo Note:</strong>
+              ${escapeHtml(photo.note || 'No note added.')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function generateRefinedReport() {
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow viewing reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  const data = getRefinedReportData();
+  const {
+    project,
+    currentProject,
+    completion,
+    expiryCounts,
+    dataQuality,
+    findings,
+    expiryItems
+  } = data;
+  const reportContent = getEl('reportContent');
+  const inspectionNumber = currentProject?.inspectionNumber || '-';
+  const projectName = project.projectName || 'Business Name';
+  const companyBranch =
+    [project.organisationName, project.siteName]
+      .filter(Boolean)
+      .join(' / ') || projectName;
+  const reportDate = new Date().toLocaleDateString();
+  const inspectorName = project.inspectorName || '-';
+  const address = project.projectAddress || '-';
+
+  const findingsHtml = findings.length > 0
+    ? findings.map(finding => `
+      <div class="refined-finding">
+        <div class="refined-finding-title">
+          ${escapeHtml(finding.itemNumber)}. ${escapeHtml(finding.item)}
+        </div>
+        <div><strong>Finding:</strong> ${escapeHtml(finding.finding)}</div>
+        ${finding.note ? `<div><strong>Inspector Note:</strong> ${escapeHtml(finding.note)}</div>` : ''}
+        ${finding.correctiveAction ? `<div><strong>Corrective Action:</strong> ${escapeHtml(finding.correctiveAction)}</div>` : ''}
+        ${finding.reference ? `<div class="note"><strong>Reference:</strong> ${escapeHtml(finding.reference)}</div>` : ''}
+      </div>
+    `).join('')
+    : '<div class="note">No non-compliances recorded during this inspection.</div>';
+
+  const expiryHtml = expiryItems.length > 0
+    ? expiryItems.map(item => `
+      <tr>
+        <td>${escapeHtml(item.itemNumber)}</td>
+        <td>${escapeHtml(item.item)}</td>
+        <td>${escapeHtml(item.expiryDate)}</td>
+        <td>${escapeHtml(item.status)}</td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="4">No equipment expiry dates captured.</td></tr>';
+
+  reportContent.innerHTML = `
+    <div class="refined-report">
+      <div class="refined-header">
+        <img src="icon-192.png" alt="FireyeSA logo">
+        <div>
+          <h1>FIREYESA</h1>
+          <div>Refined Fire Safety Inspection Report</div>
+        </div>
+      </div>
+
+      <div class="refined-meta-grid">
+        <div><strong>My ref:</strong> ${escapeHtml(inspectionNumber)}</div>
+        <div><strong>Project Id:</strong> ${escapeHtml(currentProject?.id || '-')}</div>
+        <div><strong>Tel:</strong> ${escapeHtml(project.contactTel || '-')}</div>
+        <div><strong>Contact person:</strong> ${escapeHtml(project.contactPerson || '-')}</div>
+        <div><strong>Cell:</strong> ${escapeHtml(project.contactTel || '-')}</div>
+        <div><strong>Company/Branch:</strong> ${escapeHtml(companyBranch)}</div>
+        <div><strong>Email:</strong> ${escapeHtml(project.contactEmail || '-')}</div>
+        <div><strong>Business Name:</strong> ${escapeHtml(projectName)}</div>
+        <div class="refined-full"><strong>Address:</strong> ${escapeHtml(address)}</div>
+        <div><strong>Date of letter:</strong> ${escapeHtml(reportDate)}</div>
+      </div>
+
+      <h2>Fire Safety Inspection Confirmation</h2>
+      <p>
+        This letter serves as confirmation of a Fire Safety Inspection carried out on the above-mentioned premises by
+        <strong>${escapeHtml(inspectorName)}</strong> from <strong>FireyeSA</strong> on
+        <strong>${escapeHtml(reportDate)}</strong>.
+      </p>
+
+      <div class="refined-summary-grid">
+        <div><strong>${completion.answered}/${completion.total}</strong><span>Items Answered</span></div>
+        <div><strong>${completion.noCount}</strong><span>Findings</span></div>
+        <div><strong>${expiryCounts.overdue}</strong><span>Expired</span></div>
+        <div><strong>${expiryCounts.missing + dataQuality.count}</strong><span>Missing Data</span></div>
+      </div>
+
+      <h2>Inspection Outcome</h2>
+      <p>
+        The inspection observations, findings, corrective actions and supporting photo evidence are recorded below in a neat
+        print-ready format generated from the FireyeSA app.
+      </p>
+
+      <h2>Findings and Corrective Action</h2>
+      ${findingsHtml}
+
+      <h2>Equipment Expiry Summary</h2>
+      <table class="refined-table">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Equipment / Item</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${expiryHtml}</tbody>
+      </table>
+
+      <div class="refined-signoff">
+        <div>Issued by:</div>
+        <div class="signature-line">Inspector Signature</div>
+        <div><strong>${escapeHtml(inspectorName)}</strong></div>
+      </div>
+
+      <div class="report-disclaimer">
+        Disclaimer: This report records observations made at the time of inspection and should be read together with applicable fire safety legislation, standards, municipal by-laws and competent professional judgement where required.
+      </div>
+
+      <div class="report-generated">
+        Generated by FireyeSA Fire Safety App | Version ${APP_VERSION}
+      </div>
+
+      ${buildRefinedPhotoAppendix()}
+    </div>
+  `;
+
+  getEl('reportSection').style.display = 'block';
+  reportContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function exportRefinedReport() {
+  if (!confirmReportQuality('export this refined PDF')) {
+    return;
+  }
+
+  generateRefinedReport();
+
+  const element = document.getElementById('reportContent');
+  const project = getCurrentFormProjectSnapshot();
+  const safeProjectName =
+    sanitizeFileName(project.projectName || 'Inspection');
+  const reportDate =
+    new Date().toISOString().slice(0, 10);
+
+  const opt = {
+    margin: [15, 12, 15, 12],
+    filename: `FireyeSA_Refined_Report_${safeProjectName}_${reportDate}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 1,
+      useCORS: true,
+      scrollY: 0,
+      windowWidth: element.scrollWidth
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+    pagebreak: {
+      mode: ['avoid-all', 'css', 'legacy']
+    }
+  };
+
+  setTimeout(() => {
+    html2pdf().set(opt).from(element).save();
+  }, 300);
+}
+
 
 function handlePhotoUpload(event) {
   const file = event.target.files[0];
@@ -5106,6 +5520,10 @@ async function shareReport() {
     alert(
       'Your company access does not allow sharing reports. Please contact your company admin or FireyeSA support.'
     );
+    return;
+  }
+
+  if (!confirmReportQuality('share this report')) {
     return;
   }
 
