@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v83';
+const APP_VERSION = 'v84';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -847,7 +847,7 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
 
     exportEmergencyBackup(`import-${sourceLabel}`);
 
-    setProjects(backup.projects);
+    setProjects(filterDeletedProjects(backup.projects));
     currentProjectId = null;
     currentPhotos = [];
 
@@ -1042,7 +1042,9 @@ async function downloadSync() {
     return;
   }
 
-  const projects = data.map(row => row.inspection_data);
+  const projects = filterDeletedProjects(
+    data.map(row => row.inspection_data)
+  );
 
   setProjects(projects);
   currentProjectId = null;
@@ -1080,7 +1082,9 @@ async function mergeSync() {
     return;
   }
 
-  const cloudProjects = data.map(row => row.inspection_data);
+  const cloudProjects = filterDeletedProjects(
+    data.map(row => row.inspection_data)
+  );
 
   const mergedMap = new Map();
 
@@ -1317,6 +1321,7 @@ async function safeDownloadNewerCloudInspections() {
 
     data.forEach(row => {
       const cloudProject = row.inspection_data;
+      if (isProjectDeleted(cloudProject?.id)) return;
       const localProject = mergedMap.get(cloudProject.id);
 
       if (!localProject) {
@@ -1571,6 +1576,11 @@ function initApp() {
   const showLastBackupBtn = document.getElementById('showLastBackupBtn');
   if (showLastBackupBtn) {
     showLastBackupBtn.addEventListener('click', showLastBackupText);
+  }
+  const clearLocalInspectionsBtn =
+    document.getElementById('clearLocalInspectionsBtn');
+  if (clearLocalInspectionsBtn) {
+    clearLocalInspectionsBtn.addEventListener('click', clearLocalInspections);
   }
   const importPastedBackupBtn = document.getElementById('importPastedBackupBtn');
   if (importPastedBackupBtn) {
@@ -2069,6 +2079,34 @@ function setProjects(projects) {
   }
 }
 
+function getDeletedProjectIds() {
+  try {
+    const raw = localStorage.getItem('fireyeDeletedProjectIds');
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn('Could not read deleted project register:', error);
+    return {};
+  }
+}
+
+function markProjectDeleted(projectId) {
+  if (!projectId) return;
+
+  const deleted = getDeletedProjectIds();
+  deleted[projectId] = new Date().toISOString();
+  localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+}
+
+function isProjectDeleted(projectId) {
+  return !!getDeletedProjectIds()[projectId];
+}
+
+function filterDeletedProjects(projects) {
+  return (projects || []).filter(project =>
+    project && !isProjectDeleted(project.id)
+  );
+}
+
 function cleanupStorageSafetyCopy() {
   try {
     localStorage.removeItem('fireyeProjectsLastGood');
@@ -2233,6 +2271,31 @@ function requestAdditionalService(serviceName) {
   if (saveMessage) saveMessage.textContent = message;
 
   alert(message);
+}
+
+function clearLocalInspections() {
+  const confirmed = confirm(
+    'Clear all inspections saved in this browser only? Cloud data and other devices will not be cleared. Export a backup first if unsure. Continue?'
+  );
+
+  if (!confirmed) return;
+
+  getProjects().forEach(project => {
+    markProjectDeleted(project.id);
+  });
+
+  setProjects([]);
+  currentProjectId = null;
+  currentPhotos = [];
+  renderProjectsList();
+  showProjectList();
+
+  const message = 'Local inspections cleared on this device.';
+  const syncStatus = document.getElementById('syncStatus');
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (syncStatus) syncStatus.textContent = message;
+  if (saveMessage) saveMessage.textContent = message;
 }
 
 function getFollowUpStatus(project) {
@@ -4136,6 +4199,7 @@ async function deleteProject() {
   if (!confirmed) return;
 
   const idToDelete = currentProjectId;
+  markProjectDeleted(idToDelete);
   
   let projects = getProjects();
   projects = projects.filter(p => p.id !== currentProjectId);
