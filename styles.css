@@ -2365,3 +2365,19 @@ button.readiness-chip:focus {
   box-sizing: border-box;
   resize: vertical;
 }
+
+@media (max-width: 700px) {
+  .service-request-form textarea,
+  #serviceMessage {
+    width: 100%;
+    max-width: none;
+    min-height: 180px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .service-request-form input {
+    width: 100%;
+    max-width: none;
+  }
+}
