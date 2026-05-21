@@ -1447,6 +1447,15 @@ async function updateSyncUI() {
         : 'none';
   }
 
+  const cloudAdminPanel = document.getElementById('cloudAdminPanel');
+
+  if (cloudAdminPanel) {
+    cloudAdminPanel.style.display =
+      isLoggedIn && canUseAdminSyncTools(authEmail)
+        ? 'block'
+        : 'none';
+  }
+
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
@@ -1502,8 +1511,15 @@ function showSyncTools() {
   const syncTools = document.getElementById('syncTools');
   const backupTools = document.getElementById('backupTools');
 
-  if (syncTools) syncTools.style.display = 'block';
-  if (backupTools) backupTools.style.display = 'grid';
+  if (syncTools) {
+    syncTools.style.display = 'block';
+  }
+
+  // Keep old top-page backup tools hidden.
+  // Admin backup buttons are already inside the Cloud dropdown.
+  if (backupTools) {
+    backupTools.style.display = 'none';
+  }
 }
 
 async function safeDownloadNewerCloudInspections() {

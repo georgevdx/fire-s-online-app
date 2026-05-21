@@ -32,9 +32,17 @@
 
     <div id="cloudDropdown" class="cloud-dropdown" style="display:none;">
       <div id="cloudConnectedView" style="display:none;">
-        <div class="sync-connected">Cloud Sync: Connected</div>
-        <button id="showSyncToolsBtn" type="button">Admin / Sync Tools</button>
-      </div>
+      <div class="sync-connected">Cloud Sync: Connected</div>
+
+      <button id="refreshSyncBtn" type="button">
+        Refresh / Sync Data
+      </button>
+
+      <button id="showSyncToolsBtn" type="button">
+        Admin / Sync Tools
+      </button>
+    
+    </div>
 
       <div id="syncTools">
         <div class="cloud-section-title">Account</div>
@@ -52,7 +60,7 @@
 
       <div id="syncStatus" class="note"></div>
 
-      <div class="app-info">
+      <div id="cloudAdminPanel" class="app-info" style="display:none;">
         <div class="cloud-section-title">App Info</div>
         <div><strong>App:</strong> FireyeSA</div>
         <div><strong>Version:</strong> <span id="cloudAppVersion">Loading...</span></div>
