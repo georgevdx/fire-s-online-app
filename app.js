@@ -1150,12 +1150,7 @@ function initAuthStateListener() {
   if (!supabaseClient?.auth?.onAuthStateChange) return;
 
   supabaseClient.auth.onAuthStateChange(() => {
-    loadUserAccessProfile()
-      .then(() => updateSyncUI())
-      .catch(error => {
-        console.error('Access reload after auth change failed:', error);
-        updateSyncUI();
-      });
+    updateSyncUI();
   });
 }
 
@@ -1415,8 +1410,6 @@ async function updateSyncUI() {
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
 
   let isLoggedIn = false;
-
-  let isLoggedIn = false;
   let authEmail = '';
 
   try {
@@ -1434,7 +1427,7 @@ async function updateSyncUI() {
   }
 
   if (connectedView) {
-  connectedView.style.display = isLoggedIn ? 'block' : 'none';
+    connectedView.style.display = isLoggedIn ? 'block' : 'none';
   }
 
   if (syncTools) {
@@ -1448,11 +1441,12 @@ async function updateSyncUI() {
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
 
   if (showSyncToolsBtn) {
-  showSyncToolsBtn.style.display =
-    isLoggedIn && canUseAdminSyncTools(authEmail)
-      ? 'block'
-      : 'none';
-}
+    showSyncToolsBtn.style.display =
+      isLoggedIn && canUseAdminSyncTools(authEmail)
+        ? 'block'
+        : 'none';
+  }
+
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
