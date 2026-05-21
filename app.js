@@ -3370,6 +3370,51 @@ function previousProjectPage() {
   scrollToFirstVisibleProject();
 }
 
+function getFilterLabel(filter) {
+  const labels = {
+    all: 'All inspections',
+    followups: 'Follow-ups',
+    soon: 'Due soon',
+    overdue: 'Overdue',
+    risk: 'High risk',
+    'inspection-attention': 'Needs attention',
+    'inspection-warning': 'Missing data',
+    'inspection-progress': 'In progress',
+    'inspection-complete': 'Completed',
+    'inspection-draft': 'Draft',
+    'expiry-overdue': 'Expired equipment',
+    'expiry-soon': 'Equipment due soon',
+    'expiry-scheduled': 'Equipment scheduled',
+    'expiry-missing': 'Equipment date missing'
+  };
+
+  return labels[filter] || 'Filtered inspections';
+}
+
+function updateActiveFilterStatus(resultCount) {
+  const status = document.getElementById('activeFilterStatus');
+
+  if (!status) return;
+
+  if (currentFilter === 'all') {
+    status.style.display = 'none';
+    status.innerHTML = '';
+    return;
+  }
+
+  status.style.display = 'flex';
+  status.innerHTML = `
+    <span>
+      Filter: <strong>${escapeHtml(getFilterLabel(currentFilter))}</strong>
+      (${resultCount})
+    </span>
+
+    <button type="button" onclick="setFilter('all')">
+      Clear
+    </button>
+  `;
+}
+
 function renderProjectsList() {
   const projects = getProjects();
   updateAppInfo();
@@ -3456,6 +3501,8 @@ function renderProjectsList() {
 
   return true; // default = all
 });
+
+  updateActiveFilterStatus(filteredProjects.length);
 
   filteredProjects.sort((a, b) => {
     const getProjectPriority = project => {
