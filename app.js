@@ -1141,6 +1141,8 @@ async function loginUser() {
       loginPasswordField.value = '';
     }
 
+    closeCloudDropdown();
+
     updateSyncUI();
 
     loadUserAccessProfile()
