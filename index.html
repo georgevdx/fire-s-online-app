@@ -170,21 +170,24 @@
 
     <section id="projectListSection" class="card" style="display:none;">
       <div class="toolbar">
-        <h2>Projects</h2>
-        <button id="newProjectBtn" type="button">New Project</button>
-      </div>
-      
-      <div id="dashboardMetrics" class="dashboard-metrics"></div>
+  <h2>Projects</h2>
+  <button id="newProjectBtn" type="button">New Project</button>
+  </div>
 
-      <input
-        id="projectSearch"
-        type="text"
-        placeholder="Search by place name, address, mall/centre, or unit"
-        style="margin:12px 0; width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"
-      >
-      <div id="reminderBanner" class="reminder-banner" style="display:none;"></div>
-     
-      <div id="projectsList"></div>
+  <input
+    id="projectSearch"
+    type="text"
+    placeholder="Search by place name, address, mall/centre, or unit"
+    class="project-search-top"
+  >
+
+  <div id="projectPagingControls" class="project-paging-controls"></div>
+
+  <div id="dashboardMetrics" class="dashboard-metrics"></div>
+
+  <div id="reminderBanner" class="reminder-banner" style="display:none;"></div>
+
+  <div id="projectsList"></div>
     </section>
 
     <section id="projectFormSection" style="display:none;">

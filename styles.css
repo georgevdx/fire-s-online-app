@@ -2216,3 +2216,36 @@ button.readiness-chip:focus {
   outline-offset: 2px;
   background: #fff8e1 !important;
 }
+
+.project-search-top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 12px 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid #b71c1c;
+  background: #fff;
+}
+
+.project-paging-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+
+.project-paging-controls button {
+  width: auto;
+  max-width: none;
+  padding: 8px 12px;
+}
+
+.project-paging-controls span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+}

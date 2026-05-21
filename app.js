@@ -1,11 +1,16 @@
 ﻿let currentFilter = 'all';
+let currentProjectPage = 1;
+const PROJECTS_PER_PAGE = 10;
 function setFilter(filter) {
   currentFilter =
     currentFilter === filter && filter !== 'all'
       ? 'all'
       : filter;
+
+  currentProjectPage = 1;
   renderProjectsList();
   updateDashboardSelection();
+  scrollToFirstVisibleProject();
 }
 let occupancies = [];
 let requirements = [];
@@ -184,6 +189,8 @@ function autoSaveProject() {
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
 
+  const finalComments = getEl('finalComments').value.trim();
+
   if (!siteName) return;
 
   if (
@@ -315,11 +322,12 @@ function autoSaveProject() {
         inspectionType,
         inspectorName,
         occupancy,
-        answers,
+        answers,        
         followUpRequired: getEl('followUpRequired').value,
         followUpDate: getEl('followUpDate').value,
         followUpNotes: getEl('followUpNotes').value.trim(),
-        photos: currentPhotos,      
+        finalComments,
+        photos: currentPhotos,
         lastSaved: new Date().toISOString()
       };
     }
@@ -1711,7 +1719,11 @@ function initApp() {
   getEl('followUpRequired').addEventListener('change', scheduleAutoSave);
   getEl('followUpDate').addEventListener('input', scheduleAutoSave);
   getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
-  getEl('projectSearch').addEventListener('input', renderProjectsList);
+  getEl('projectSearch').addEventListener('input', () => {
+    currentProjectPage = 1;
+    renderProjectsList();
+    scrollToFirstVisibleProject();
+  });
   getEl('productType').addEventListener('change', () => {
     updateInspectionTypeOptions();
     updateDisplay();
@@ -3292,6 +3304,40 @@ function getSyncStatus(project) {
   return { label: 'Synced', class: 'sync-synced' };
 }
 
+function scrollToFirstVisibleProject() {
+  setTimeout(() => {
+    const firstCard = document.querySelector('.project-card');
+
+    if (firstCard) {
+      firstCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      return;
+    }
+
+    const listSection = document.getElementById('projectListSection');
+    if (listSection) {
+      listSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, 80);
+}
+
+function nextProjectPage() {
+  currentProjectPage += 1;
+  renderProjectsList();
+  scrollToFirstVisibleProject();
+}
+
+function previousProjectPage() {
+  currentProjectPage = Math.max(1, currentProjectPage - 1);
+  renderProjectsList();
+  scrollToFirstVisibleProject();
+}
+
 function renderProjectsList() {
   const projects = getProjects();
   updateAppInfo();
@@ -3406,12 +3452,56 @@ function renderProjectsList() {
     return bTime - aTime;
   });
 
+  const totalPages = Math.max(
+  1,
+  Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+);
+
+  if (currentProjectPage > totalPages) {
+    currentProjectPage = totalPages;
+  }
+
+  const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
+  const visibleProjects = filteredProjects.slice(
+    startIndex,
+    startIndex + PROJECTS_PER_PAGE
+  );
+
+  const pagingControls = document.getElementById('projectPagingControls');
+
+  if (pagingControls) {
+    pagingControls.innerHTML = `
+      <button
+        type="button"
+        onclick="previousProjectPage()"
+        ${currentProjectPage === 1 ? 'disabled' : ''}
+      >
+        Previous
+      </button>
+
+      <span>
+        Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
+        -
+        ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
+        of ${filteredProjects.length}
+      </span>
+
+      <button
+        type="button"
+        onclick="nextProjectPage()"
+        ${currentProjectPage >= totalPages ? 'disabled' : ''}
+      >
+        Next
+      </button>
+    `;
+  }
+
   if (filteredProjects.length === 0) {
     container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
     return;
   }
 
-  filteredProjects.forEach(project => {
+  visibleProjects.forEach(project => {
 
     const syncStatus = getSyncStatus(project);
     const followStatus = getFollowUpStatus(project);
@@ -3569,10 +3659,7 @@ function renderProjectsList() {
           <span>Last saved</span>
           <strong>${escapeHtml(lastSaved)}</strong>
         </div>
-        <div>
-          <span>Saved by</span>
-          <strong>${escapeHtml(project.lastEditedByEmail || project.createdByEmail || '-')}</strong>
-        </div>
+        
       </div>
     `;
     container.appendChild(card);
@@ -3616,6 +3703,7 @@ function openProject(projectId, focusMode) {
   getEl('followUpRequired').value = project.followUpRequired || 'No';
   getEl('followUpDate').value = project.followUpDate || '';
   getEl('followUpNotes').value = project.followUpNotes || '';
+  getEl('finalComments').value = project.finalComments || '';
   toggleMallFields();
 
   currentPhotos = project.photos || [];
@@ -3841,6 +3929,8 @@ function saveProject() {
   const followUpDate = getEl('followUpDate').value;
   const followUpNotes = getEl('followUpNotes').value.trim();
   
+  const finalComments = getEl('finalComments').value.trim();
+  
   const accessMetadata = getAccessMetadata();
   
   const answers = [];
@@ -3935,6 +4025,7 @@ function saveProject() {
       followUpRequired,
       followUpDate,
       followUpNotes,
+      finalComments,
       photos: currentPhotos,
       lastSaved: new Date().toISOString()
     };
@@ -3999,6 +4090,7 @@ function saveProject() {
       followUpRequired: getEl('followUpRequired').value,
       followUpDate: getEl('followUpDate').value,
       followUpNotes: getEl('followUpNotes').value.trim(),
+      finalComments,
       lastSaved: new Date().toISOString()
     };
       currentProjectId = newProject.id;
@@ -5756,3 +5848,5 @@ window.addEventListener('online', safeDownloadNewerCloudInspections);
 window.addEventListener('online', uploadPendingInspections);
 window.addEventListener('online', resolvePendingGpsAddresses);
 window.updatePhotoNote = updatePhotoNote;
+window.nextProjectPage = nextProjectPage;
+window.previousProjectPage = previousProjectPage;
