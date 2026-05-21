@@ -2447,8 +2447,10 @@ function renderServiceRequestsList() {
       <div><strong>Name / Company:</strong> ${escapeHtml(request.clientName || '-')}</div>
       <div><strong>Phone:</strong> ${escapeHtml(request.clientPhone || '-')}</div>
       <div><strong>Email:</strong> ${escapeHtml(request.clientEmail || '-')}</div>
-      <div><strong>Message:</strong> ${escapeHtml(request.message || '-')}</div>
-      <div class="note">
+      <div class="service-request-message">
+      <strong>Message:</strong>
+      <span>${escapeHtml(request.message || '-')}</span>
+    </div><div class="note">
         Saved: ${request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}
       </div>
     </div>

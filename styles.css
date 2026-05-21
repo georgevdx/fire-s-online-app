@@ -2423,3 +2423,30 @@ button.readiness-chip:focus {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+.service-request-card {
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.service-request-card div {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.service-request-message {
+  display: block;
+  max-width: 100%;
+  margin-top: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.service-request-message strong {
+  display: block;
+  margin-bottom: 4px;
+}
