@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v82';
+const APP_VERSION = 'v83';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -571,21 +571,33 @@ function updateGpsMapPreview() {
   const preview = document.getElementById('gpsMapPreview');
   const frame = document.getElementById('gpsMapFrame');
   const link = document.getElementById('openMapsLink');
+  const status = document.getElementById('gpsMapStatus');
 
   if (!preview || !frame || !link) return;
 
   const urls = getGpsMapUrls(getEl('gps').value);
 
   if (!urls) {
-    preview.hidden = true;
+    preview.hidden = false;
+    frame.hidden = true;
     frame.removeAttribute('src');
     link.href = '#';
+    link.classList.add('disabled-link');
+    if (status) {
+      status.hidden = false;
+      status.textContent = 'Map will show here after GPS is captured.';
+    }
     return;
   }
 
   preview.hidden = false;
+  frame.hidden = false;
   frame.src = urls.embed;
   link.href = urls.maps;
+  link.classList.remove('disabled-link');
+  if (status) {
+    status.hidden = true;
+  }
 }
 
 function applyAddressLookupResult(data, fallbackText) {

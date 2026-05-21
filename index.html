@@ -6,7 +6,7 @@
   <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=80">
+  <link rel="stylesheet" href="styles.css?v=83">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -222,6 +222,21 @@
     <div class="field-stack">
       <input id="gps" type="text" placeholder="-25.7479, 28.2293" autocomplete="off">
       <button id="useLocationBtn" type="button">Use Current Location</button>
+      <div id="gpsMapPreview" class="gps-map-preview">
+        <div id="gpsMapStatus" class="gps-map-status">
+          Map will show here after GPS is captured.
+        </div>
+        <iframe
+          id="gpsMapFrame"
+          title="Inspection location map"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+        <div class="gps-map-actions">
+          <span>Pin drop from GPS reference</span>
+          <a id="openMapsLink" href="#" target="_blank" rel="noopener">Open in Maps</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -388,7 +403,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=80"></script>
+  <script src="app.js?v=83"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
