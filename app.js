@@ -1150,7 +1150,12 @@ function initAuthStateListener() {
   if (!supabaseClient?.auth?.onAuthStateChange) return;
 
   supabaseClient.auth.onAuthStateChange(() => {
-    updateSyncUI();
+    loadUserAccessProfile()
+      .then(() => updateSyncUI())
+      .catch(error => {
+        console.error('Access reload after auth change failed:', error);
+        updateSyncUI();
+      });
   });
 }
 
@@ -1411,9 +1416,14 @@ async function updateSyncUI() {
 
   let isLoggedIn = false;
 
+  let isLoggedIn = false;
+  let authEmail = '';
+
   try {
     const { data, error } = await supabaseClient.auth.getUser();
+
     isLoggedIn = !error && !!(data && data.user);
+    authEmail = data?.user?.email || '';
   } catch (error) {
     console.error('Cloud status check failed:', error);
   }
@@ -1438,11 +1448,11 @@ async function updateSyncUI() {
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
 
   if (showSyncToolsBtn) {
-    showSyncToolsBtn.style.display =
-      isLoggedIn && canUseAdminSyncTools()
-        ? 'block'
-        : 'none';
-  }
+  showSyncToolsBtn.style.display =
+    isLoggedIn && canUseAdminSyncTools(authEmail)
+      ? 'block'
+      : 'none';
+}
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
@@ -1960,14 +1970,19 @@ function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
 }
 
-function canUseAdminSyncTools() {
+function isAllowedAdminEmail(email) {
   const allowedEmails = [
-    'georgevdx@gmail.com',
-    'johandb1974ik@gmail.com',
-    'johandb@live.com'
+    'georgevdx@gmail.com'
   ];
 
+  return allowedEmails.includes(
+    String(email || '').toLowerCase()
+  );
+}
+
+function canUseAdminSyncTools(emailOverride) {
   const currentEmail =
+    emailOverride ||
     currentUserProfile?.email ||
     '';
 
@@ -1975,24 +1990,19 @@ function canUseAdminSyncTools() {
     isSuperAdmin() ||
     isCompanyOwner() ||
     isManager() ||
-    allowedEmails.includes(currentEmail.toLowerCase())
+    isAllowedAdminEmail(currentEmail)
   );
 }
 
-function canViewServiceRequests() {
-  const allowedEmails = [
-    'georgevdx@gmail.com',
-    'johandb1974ik@gmail.com',
-    'johandb@live.com'
-  ];
-
+function canViewServiceRequests(emailOverride) {
   const currentEmail =
+    emailOverride ||
     currentUserProfile?.email ||
     '';
 
   return (
     isSuperAdmin() ||
-    allowedEmails.includes(currentEmail.toLowerCase())
+    isAllowedAdminEmail(currentEmail)
   );
 }
 
