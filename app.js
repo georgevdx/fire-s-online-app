@@ -1171,14 +1171,14 @@ async function logoutUser() {
     updateAccessUI();
     updateSyncUI();
 
-    if (syncStatus) {
-      syncStatus.textContent = 'Logged out.';
+    const cloudDropdown = document.getElementById('cloudDropdown');
+
+    if (cloudDropdown) {
+      cloudDropdown.style.display = 'none';
     }
-  } catch (error) {
-    console.error('Logout crashed:', error);
 
     if (syncStatus) {
-      syncStatus.textContent = `Logout crashed: ${error.message}`;
+      syncStatus.textContent = 'Logged out.';
     }
   }
 }
