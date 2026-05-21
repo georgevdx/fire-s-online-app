@@ -166,6 +166,49 @@
       </button>
     </div>
   </div>
+  <div id="serviceRequestForm" class="service-request-form" style="display:none;">
+  <h3>Request Service</h3>
+
+  <div class="form-row">
+    <label for="selectedService">Selected Service</label>
+    <input id="selectedService" type="text" readonly>
+  </div>
+
+  <div class="form-row">
+    <label for="serviceClientName">Name / Company</label>
+    <input id="serviceClientName" type="text" placeholder="Enter name or company">
+  </div>
+
+  <div class="form-row">
+    <label for="serviceClientPhone">Phone</label>
+    <input id="serviceClientPhone" type="tel" placeholder="Enter phone number">
+  </div>
+
+  <div class="form-row">
+    <label for="serviceClientEmail">Email</label>
+    <input id="serviceClientEmail" type="email" placeholder="Enter email address">
+  </div>
+
+  <div class="form-row">
+    <label for="serviceMessage">Message / Scope</label>
+    <textarea
+      id="serviceMessage"
+      placeholder="Briefly describe what support is needed..."
+    ></textarea>
+  </div>
+
+  <div class="button-row">
+    <button id="submitServiceRequestBtn" type="button">
+      Submit Request
+    </button>
+
+    <button id="cancelServiceRequestBtn" type="button" class="secondary-btn">
+      Cancel
+    </button>
+  </div>
+
+  <div id="serviceRequestStatus" class="note"></div>
+</div>
 </section>
 
     <section id="projectListSection" class="card" style="display:none;">
