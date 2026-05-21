@@ -1875,6 +1875,12 @@ function initApp() {
     logoutBtn.addEventListener('click', logoutUser);
   }
 
+  const homeLogoutBtn = document.getElementById('homeLogoutBtn');
+
+  if (homeLogoutBtn) {
+    homeLogoutBtn.addEventListener('click', logoutUser);
+  }
+
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
   getEl('saveBtn').addEventListener('click', saveProject);
@@ -2568,6 +2574,7 @@ function setCloudMenuVisible(isVisible) {
 function updateHomeAccessCards() {
   const connectCard = document.getElementById('connectCard');
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
+  const homeLogoutBtn = document.getElementById('homeLogoutBtn');
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
 
   const isLoggedIn = !!currentUserProfile;
@@ -2577,9 +2584,14 @@ function updateHomeAccessCards() {
     connectCard.style.display = 'block';
   }
 
-  // Hide only the Login/Register shortcut after login.
+  // Hide Login/Register after login.
   if (homeLoginRouteBtn) {
     homeLoginRouteBtn.style.display = isLoggedIn ? 'none' : 'inline-block';
+  }
+
+  // Show frontpage Logout only after login.
+  if (homeLogoutBtn) {
+    homeLogoutBtn.style.display = isLoggedIn ? 'inline-block' : 'none';
   }
 
   // Cloud button must stay visible on the front page.
