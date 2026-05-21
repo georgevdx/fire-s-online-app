@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v81';
+const APP_VERSION = 'v82';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -545,6 +545,49 @@ function parseGpsInput(value) {
   return { lat, lon };
 }
 
+function getGpsMapUrls(gpsValue) {
+  const parsed = parseGpsInput(gpsValue);
+
+  if (!parsed) return null;
+
+  const { lat, lon } = parsed;
+  const mapRange = 0.003;
+  const bbox = [
+    lon - mapRange,
+    lat - mapRange,
+    lon + mapRange,
+    lat + mapRange
+  ].map(value => value.toFixed(6)).join('%2C');
+  const marker = `${lat.toFixed(6)}%2C${lon.toFixed(6)}`;
+  const query = encodeURIComponent(`${lat.toFixed(6)},${lon.toFixed(6)}`);
+
+  return {
+    embed: `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}`,
+    maps: `https://www.google.com/maps/search/?api=1&query=${query}`
+  };
+}
+
+function updateGpsMapPreview() {
+  const preview = document.getElementById('gpsMapPreview');
+  const frame = document.getElementById('gpsMapFrame');
+  const link = document.getElementById('openMapsLink');
+
+  if (!preview || !frame || !link) return;
+
+  const urls = getGpsMapUrls(getEl('gps').value);
+
+  if (!urls) {
+    preview.hidden = true;
+    frame.removeAttribute('src');
+    link.href = '#';
+    return;
+  }
+
+  preview.hidden = false;
+  frame.src = urls.embed;
+  link.href = urls.maps;
+}
+
 function applyAddressLookupResult(data, fallbackText) {
   const streetNumber =
     getStreetNumberFromAddress(data.address || {}) ||
@@ -601,6 +644,7 @@ async function useCurrentLocation() {
 
     const gpsText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
     getEl('gps').value = gpsText;
+    updateGpsMapPreview();
 
     try {
       const data = await reverseLookupBestAddress(lat, lon);
@@ -1555,7 +1599,10 @@ function initApp() {
   getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
   getEl('streetNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
-  getEl('gps').addEventListener('input', scheduleAutoSave);
+  getEl('gps').addEventListener('input', () => {
+    updateGpsMapPreview();
+    scheduleAutoSave();
+  });
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
   getEl('inMall').addEventListener('change', () => {
     toggleMallFields();
@@ -2031,6 +2078,7 @@ function createNewProject() {
   clearInputValue('streetNumber');
   clearInputValue('projectAddress');
   clearInputValue('gps');
+  updateGpsMapPreview();
   getEl('inMall').value = 'No';
   clearInputValue('mallName');
   clearInputValue('unitNumber');
@@ -3460,6 +3508,7 @@ function openProject(projectId, focusMode) {
   getEl('streetNumber').value = project.streetNumber || '';
   getEl('projectAddress').value = project.addressLine || project.projectAddress || '';
   getEl('gps').value = project.gps || '';
+  updateGpsMapPreview();
   getEl('inMall').value = project.inMall || 'No';
   getEl('mallName').value = project.mallName || '';
   getEl('unitNumber').value = project.unitNumber || '';
