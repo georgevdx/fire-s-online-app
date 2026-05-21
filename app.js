@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v83';
+const APP_VERSION = 'v84';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -615,6 +615,91 @@ function applyAddressLookupResult(data, fallbackText) {
     : 'Street number was not found. Please add the street number manually before saving this inspection.';
 
   scheduleAutoSave();
+}
+
+function projectNeedsOfflineAddressLookup(project) {
+  if (!project || !parseGpsInput(project.gps)) return false;
+
+  const addressLine =
+    String(project.addressLine || project.projectAddress || '').trim();
+  const streetNumber = String(project.streetNumber || '').trim();
+
+  if (!addressLine) return true;
+  if (addressLine === String(project.gps || '').trim()) return true;
+  if (project.gpsAddressResolvedAt) return false;
+
+  return !streetNumber;
+}
+
+function applyAddressLookupToProject(project, data) {
+  const streetNumber =
+    getStreetNumberFromAddress(data.address || {}) ||
+    getStreetNumberFromDisplayName(data.display_name);
+  const addressLine =
+    buildAddressLineWithoutStreetNumber(data.address || {}) ||
+    data.display_name ||
+    project.addressLine ||
+    project.projectAddress ||
+    '';
+
+  return {
+    ...project,
+    streetNumber: streetNumber || project.streetNumber || '',
+    addressLine,
+    projectAddress: combineStreetAddress(
+      streetNumber || project.streetNumber || '',
+      addressLine
+    ),
+    gpsAddressResolvedAt: new Date().toISOString(),
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+}
+
+async function resolvePendingGpsAddresses() {
+  if (!navigator.onLine) return;
+
+  const projects = getProjects();
+  let changed = false;
+
+  for (let index = 0; index < projects.length; index++) {
+    const project = projects[index];
+
+    if (!projectNeedsOfflineAddressLookup(project)) continue;
+
+    const parsed = parseGpsInput(project.gps);
+
+    try {
+      const data = await reverseLookupBestAddress(parsed.lat, parsed.lon);
+      projects[index] = applyAddressLookupToProject(project, data);
+      changed = true;
+    } catch (error) {
+      console.warn('Pending GPS address lookup failed:', project.id, error);
+    }
+  }
+
+  if (!changed) return;
+
+  setProjects(projects);
+
+  const currentProject =
+    currentProjectId &&
+    projects.find(project => project.id === currentProjectId);
+
+  if (currentProject && projectNeedsOfflineAddressLookup(currentProject) === false) {
+    getEl('streetNumber').value = currentProject.streetNumber || '';
+    getEl('projectAddress').value =
+      currentProject.addressLine || currentProject.projectAddress || '';
+    getEl('saveMessage').textContent =
+      'Address updated from saved GPS after signal returned.';
+  }
+
+  renderProjectsList();
+  uploadPendingInspections()
+    .catch(error => {
+      console.warn('Upload after GPS address lookup failed:', error);
+    });
 }
 
 async function lookupAddressFromGpsInput() {
@@ -1454,6 +1539,7 @@ async function loadData() {
     
     renderProjectsList();
     await restoreCloudSession();
+    resolvePendingGpsAddresses();
 
   } catch (error) {
     console.error('Data loading error:', error);
@@ -5668,4 +5754,5 @@ window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
 window.addEventListener('online', safeDownloadNewerCloudInspections);
 window.addEventListener('online', uploadPendingInspections);
+window.addEventListener('online', resolvePendingGpsAddresses);
 window.updatePhotoNote = updatePhotoNote;
