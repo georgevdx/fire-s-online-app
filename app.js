@@ -1146,6 +1146,43 @@ async function loginUser() {
   }
 }
 
+async function logoutUser() {
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (syncStatus) {
+    syncStatus.textContent = 'Logging out...';
+  }
+
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+      if (syncStatus) {
+        syncStatus.textContent = `Logout failed: ${error.message}`;
+      }
+
+      alert(`Logout failed: ${error.message}`);
+      return;
+    }
+
+    currentUserProfile = null;
+    currentCompanyAccess = null;
+
+    updateAccessUI();
+    updateSyncUI();
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Logged out.';
+    }
+  } catch (error) {
+    console.error('Logout crashed:', error);
+
+    if (syncStatus) {
+      syncStatus.textContent = `Logout crashed: ${error.message}`;
+    }
+  }
+}
+
 function initAuthStateListener() {
   if (!supabaseClient?.auth?.onAuthStateChange) return;
 
@@ -1763,6 +1800,13 @@ function initApp() {
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
   getEl('loginBtn').addEventListener('click', loginUser);
   getEl('signupBtn').addEventListener('click', signupUser);
+  
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logoutUser);
+  }
+
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
   getEl('saveBtn').addEventListener('click', saveProject);
