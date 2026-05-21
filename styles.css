@@ -2466,3 +2466,27 @@ button.readiness-chip:focus {
   margin-bottom: 0;
   margin-right: 4px;
 }
+
+.service-request-message {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  text-align: left;
+  line-height: 1.25;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.service-request-message strong {
+  display: inline;
+  margin: 0 4px 0 0;
+  padding: 0;
+  text-align: left;
+}
+
+.service-request-message span {
+  display: inline;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
