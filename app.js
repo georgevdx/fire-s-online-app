@@ -1912,6 +1912,23 @@ function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
 }
 
+function canViewServiceRequests() {
+  const allowedEmails = [
+    'georgevdx@gmail.com',
+    'johandb1974ik@gmail.com',
+    'johandb@live.com'
+  ];
+
+  const currentEmail =
+    currentUserProfile?.email ||
+    '';
+
+  return (
+    isSuperAdmin() ||
+    allowedEmails.includes(currentEmail.toLowerCase())
+  );
+}
+
 function withTimeout(promise, timeoutMs = 5000) {
   return Promise.race([
     promise,
@@ -2312,8 +2329,24 @@ function showServices() {
 
   if (homeSection) homeSection.style.display = 'none';
   if (servicesSection) servicesSection.style.display = 'block';
+
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
+
+  const viewServiceRequestsBtn =
+    document.getElementById('viewServiceRequestsBtn');
+
+  const serviceRequestsList =
+    document.getElementById('serviceRequestsList');
+
+  if (viewServiceRequestsBtn) {
+    viewServiceRequestsBtn.style.display =
+      canViewServiceRequests() ? 'block' : 'none';
+  }
+
+  if (serviceRequestsList && !canViewServiceRequests()) {
+    serviceRequestsList.style.display = 'none';
+  }
 }
 
 function openLoginRoute() {
@@ -2414,6 +2447,11 @@ function submitServiceRequest() {
 }
 
 function renderServiceRequestsList() {
+  if (!canViewServiceRequests()) {
+    alert('Service requests are only available to FireyeSA admin.');
+    return;
+  }
+
   const list = document.getElementById('serviceRequestsList');
 
   if (!list) return;
@@ -2447,10 +2485,13 @@ function renderServiceRequestsList() {
       <div><strong>Name / Company:</strong> ${escapeHtml(request.clientName || '-')}</div>
       <div><strong>Phone:</strong> ${escapeHtml(request.clientPhone || '-')}</div>
       <div><strong>Email:</strong> ${escapeHtml(request.clientEmail || '-')}</div>
+
       <div class="service-request-message">
-      <strong>Message:</strong>
-      <span>${escapeHtml(request.message || '-')}</span>
-    </div><div class="note">
+        <strong>Message:</strong>
+        <span>${escapeHtml(request.message || '-')}</span>
+      </div>
+
+      <div class="note">
         Saved: ${request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}
       </div>
     </div>
