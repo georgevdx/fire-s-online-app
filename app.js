@@ -1961,7 +1961,22 @@ function canManageCompany() {
 }
 
 function canUseAdminSyncTools() {
-  return isSuperAdmin() || isCompanyOwner() || isManager();
+  const allowedEmails = [
+    'georgevdx@gmail.com',
+    'johandb1974ik@gmail.com',
+    'johandb@live.com'
+  ];
+
+  const currentEmail =
+    currentUserProfile?.email ||
+    '';
+
+  return (
+    isSuperAdmin() ||
+    isCompanyOwner() ||
+    isManager() ||
+    allowedEmails.includes(currentEmail.toLowerCase())
+  );
 }
 
 function canViewServiceRequests() {
@@ -2038,6 +2053,7 @@ async function loadUserAccessProfile() {
       };
 
       updateAccessUI();
+      updateSyncUI();
       renderProjectsList();
       return;
     }
@@ -2088,6 +2104,7 @@ async function loadUserAccessProfile() {
     };
 
     updateAccessUI();
+    updateSyncUI();
 
   } catch (error) {
     console.error('Access profile load failed:', error);
