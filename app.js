@@ -1487,17 +1487,12 @@ async function updateSyncUI() {
   const syncButtonsSection = document.getElementById('syncButtonsSection');
   const syncButtonsPanel = document.getElementById('syncButtonsPanel');
 
-  const canShowSyncButtons =
-    isLoggedIn && canUseAdminSyncTools(authEmail);
-
   if (syncButtonsSection) {
-    syncButtonsSection.style.display =
-      canShowSyncButtons ? 'block' : 'none';
+    syncButtonsSection.style.display = 'none';
   }
 
   if (syncButtonsPanel) {
-    syncButtonsPanel.style.display =
-      canShowSyncButtons ? 'block' : 'none';
+    syncButtonsPanel.style.display = 'none';
   }
 
   const cloudAdminPanel = document.getElementById('cloudAdminPanel');
@@ -1563,16 +1558,15 @@ function showSyncTools() {
 
   const syncTools = document.getElementById('syncTools');
   const backupTools = document.getElementById('backupTools');
+  const syncButtonsSection = document.getElementById('syncButtonsSection');
+  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
 
-  if (syncTools) {
-    syncTools.style.display = 'block';
-  }
+  if (syncTools) syncTools.style.display = 'block';
 
-  // Keep old top-page backup tools hidden.
-  // Admin backup buttons are already inside the Cloud dropdown.
-  if (backupTools) {
-    backupTools.style.display = 'none';
-  }
+  if (syncButtonsSection) syncButtonsSection.style.display = 'block';
+  if (syncButtonsPanel) syncButtonsPanel.style.display = 'block';
+
+  if (backupTools) backupTools.style.display = 'none';
 }
 
 async function safeDownloadNewerCloudInspections() {
