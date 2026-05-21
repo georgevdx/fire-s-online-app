@@ -3338,6 +3338,41 @@ function previousProjectPage() {
   scrollToFirstVisibleProject();
 }
 
+function scrollToFirstVisibleProject() {
+  setTimeout(() => {
+    const firstCard = document.querySelector('.project-card');
+
+    if (firstCard) {
+      firstCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      return;
+    }
+
+    const listSection = document.getElementById('projectListSection');
+
+    if (listSection) {
+      listSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, 80);
+}
+
+function nextProjectPage() {
+  currentProjectPage += 1;
+  renderProjectsList();
+  scrollToFirstVisibleProject();
+}
+
+function previousProjectPage() {
+  currentProjectPage = Math.max(1, currentProjectPage - 1);
+  renderProjectsList();
+  scrollToFirstVisibleProject();
+}
+
 function renderProjectsList() {
   const projects = getProjects();
   updateAppInfo();
@@ -3451,7 +3486,50 @@ function renderProjectsList() {
 
     return bTime - aTime;
   });
+  const totalPages = Math.max(
+  1,
+  Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+);
 
+if (currentProjectPage > totalPages) {
+  currentProjectPage = totalPages;
+}
+
+const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
+
+const visibleProjects = filteredProjects.slice(
+  startIndex,
+  startIndex + PROJECTS_PER_PAGE
+);
+
+const pagingControls = document.getElementById('projectPagingControls');
+
+if (pagingControls) {
+  pagingControls.innerHTML = `
+    <button
+      type="button"
+      onclick="previousProjectPage()"
+      ${currentProjectPage === 1 ? 'disabled' : ''}
+    >
+      Previous
+    </button>
+
+    <span>
+      Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
+      -
+      ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
+      of ${filteredProjects.length}
+    </span>
+
+    <button
+      type="button"
+      onclick="nextProjectPage()"
+      ${currentProjectPage >= totalPages ? 'disabled' : ''}
+    >
+      Next
+    </button>
+  `;
+}
   const totalPages = Math.max(
   1,
   Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
@@ -5840,6 +5918,8 @@ function renderSiteHistory(project) {
 loadData();
 window.openProject = openProject;
 window.scheduleAutoSave = scheduleAutoSave;
+window.nextProjectPage = nextProjectPage;
+window.previousProjectPage = previousProjectPage;
 window.toggleChecklistSection = toggleChecklistSection;
 window.toggleSection = toggleSection;
 window.expandAllSections = expandAllSections;
