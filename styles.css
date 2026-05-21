@@ -2490,3 +2490,39 @@ button.readiness-chip:focus {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+.service-request-form {
+  clear: both;
+  margin-top: 18px;
+}
+
+.service-request-form .form-row {
+  margin-bottom: 12px;
+}
+
+.service-request-form input,
+.service-request-form textarea {
+  width: 100%;
+  max-width: none;
+}
+
+.service-request-form .button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.service-request-form .button-row button {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 700px) {
+  .service-request-form .button-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.service-request-form textarea {
+  min-height: 130px;
+}
