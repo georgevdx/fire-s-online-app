@@ -1645,6 +1645,16 @@ function initApp() {
     });
   });
 
+  const submitServiceRequestBtn = document.getElementById('submitServiceRequestBtn');
+  if (submitServiceRequestBtn) {
+    submitServiceRequestBtn.addEventListener('click', submitServiceRequest);
+  }
+
+  const cancelServiceRequestBtn = document.getElementById('cancelServiceRequestBtn');
+  if (cancelServiceRequestBtn) {
+    cancelServiceRequestBtn.addEventListener('click', cancelServiceRequest);
+  }
+
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
   const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -2314,16 +2324,87 @@ function openLoginRoute() {
 }
 
 function requestAdditionalService(serviceName) {
-  const message =
-    `${serviceName} is currently a placeholder until business partner input is added.`;
+  const form = document.getElementById('serviceRequestForm');
+  const selectedService = document.getElementById('selectedService');
+  const status = document.getElementById('serviceRequestStatus');
 
-  const syncStatus = document.getElementById('syncStatus');
-  const saveMessage = document.getElementById('saveMessage');
+  if (!form || !selectedService) return;
 
-  if (syncStatus) syncStatus.textContent = message;
-  if (saveMessage) saveMessage.textContent = message;
+  selectedService.value = serviceName || '';
 
-  alert(message);
+  if (status) {
+    status.textContent = '';
+  }
+
+  form.style.display = 'block';
+
+  form.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function cancelServiceRequest() {
+  const form = document.getElementById('serviceRequestForm');
+  const status = document.getElementById('serviceRequestStatus');
+
+  if (form) {
+    form.style.display = 'none';
+  }
+
+  if (status) {
+    status.textContent = '';
+  }
+}
+
+function submitServiceRequest() {
+  const selectedService = document.getElementById('selectedService')?.value.trim();
+  const clientName = document.getElementById('serviceClientName')?.value.trim();
+  const clientPhone = document.getElementById('serviceClientPhone')?.value.trim();
+  const clientEmail = document.getElementById('serviceClientEmail')?.value.trim();
+  const message = document.getElementById('serviceMessage')?.value.trim();
+  const status = document.getElementById('serviceRequestStatus');
+
+  if (!selectedService) {
+    if (status) status.textContent = 'Select a service first.';
+    return;
+  }
+
+  if (!clientName || (!clientPhone && !clientEmail)) {
+    if (status) {
+      status.textContent = 'Enter your name/company and at least a phone number or email.';
+    }
+    return;
+  }
+
+  const requests = JSON.parse(
+    localStorage.getItem('fireyeServiceRequests') || '[]'
+  );
+
+  requests.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    selectedService,
+    clientName,
+    clientPhone,
+    clientEmail,
+    message,
+    createdAt: new Date().toISOString(),
+    status: 'new'
+  });
+
+  localStorage.setItem(
+    'fireyeServiceRequests',
+    JSON.stringify(requests)
+  );
+
+  if (status) {
+    status.textContent = 'Service request saved. FireyeSA can follow up from this request.';
+  }
+
+  document.getElementById('serviceClientName').value = '';
+  document.getElementById('serviceClientPhone').value = '';
+  document.getElementById('serviceClientEmail').value = '';
+  document.getElementById('serviceMessage').value = '';
 }
 
 function getFollowUpStatus(project) {
