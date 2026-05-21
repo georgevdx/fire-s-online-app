@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v84';
+const APP_VERSION = 'v85';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -510,6 +510,83 @@ async function reverseLookupAddress(lat, lon, zoom = 19) {
   return response.json();
 }
 
+function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+  const earthRadius = 6371000;
+  const toRadians = value => value * Math.PI / 180;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function buildAddressFromOsmTags(tags = {}) {
+  const address = {
+    house_number: tags['addr:housenumber'] || '',
+    road: tags['addr:street'] || '',
+    suburb:
+      tags['addr:suburb'] ||
+      tags['addr:neighbourhood'] ||
+      '',
+    city:
+      tags['addr:city'] ||
+      tags['addr:town'] ||
+      tags['addr:village'] ||
+      '',
+    state: tags['addr:province'] || tags['addr:state'] || '',
+    postcode: tags['addr:postcode'] || ''
+  };
+
+  return {
+    address,
+    display_name: buildStreetAddress(address)
+  };
+}
+
+async function lookupNearestNumberedAddress(lat, lon) {
+  const query = `
+    [out:json][timeout:8];
+    (
+      node(around:45,${lat},${lon})["addr:housenumber"];
+      way(around:45,${lat},${lon})["addr:housenumber"];
+      relation(around:45,${lat},${lon})["addr:housenumber"];
+    );
+    out center tags 20;
+  `;
+  const response = await fetch(
+    `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Nearest numbered address lookup failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const candidates = (data.elements || [])
+    .map(element => {
+      const candidateLat = element.lat || element.center?.lat;
+      const candidateLon = element.lon || element.center?.lon;
+
+      if (!candidateLat || !candidateLon || !element.tags?.['addr:housenumber']) {
+        return null;
+      }
+
+      return {
+        ...buildAddressFromOsmTags(element.tags),
+        distance: getDistanceInMeters(lat, lon, candidateLat, candidateLon)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.distance - b.distance);
+
+  return candidates[0] || null;
+}
+
 async function reverseLookupBestAddress(lat, lon) {
   const zoomLevels = [19, 18, 17];
   let bestResult = null;
@@ -527,6 +604,17 @@ async function reverseLookupBestAddress(lat, lon) {
     if (streetNumber) {
       return result;
     }
+  }
+
+  try {
+    const nearestNumberedAddress =
+      await lookupNearestNumberedAddress(lat, lon);
+
+    if (nearestNumberedAddress) {
+      return nearestNumberedAddress;
+    }
+  } catch (error) {
+    console.warn('Nearest numbered address lookup failed:', error);
   }
 
   return bestResult;
