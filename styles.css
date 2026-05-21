@@ -2526,3 +2526,54 @@ button.readiness-chip:focus {
 .service-request-form textarea {
   min-height: 130px;
 }
+
+.service-request-form {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  clear: both;
+
+  margin-top: 18px;
+  padding: 16px;
+
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.service-request-form h3 {
+  margin: 0 0 14px 0;
+  color: #111;
+}
+
+.service-request-form .form-row {
+  margin-bottom: 12px;
+}
+
+.service-request-form input,
+.service-request-form textarea {
+  width: 100%;
+  max-width: none;
+}
+
+.service-request-form textarea {
+  min-height: 150px;
+  font-size: 16px;
+}
+
+.service-request-form .button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.service-request-form .button-row button {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 700px) {
+  .service-request-form .button-row {
+    grid-template-columns: 1fr;
+  }
+}
