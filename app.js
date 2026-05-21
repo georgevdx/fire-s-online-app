@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v80';
+const APP_VERSION = 'v81';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -77,9 +77,19 @@ function getStreetNumberFromAddress(address = {}) {
   return (
     address.house_number ||
     address.building_number ||
+    address.house_name ||
     address.unit ||
     ''
   );
+}
+
+function getStreetNumberFromDisplayName(displayName = '') {
+  const firstPart = String(displayName)
+    .split(',')[0]
+    .trim();
+
+  const match = firstPart.match(/^(\d+[A-Za-z]?(?:[-/]\d+[A-Za-z]?)?)/);
+  return match ? match[1] : '';
 }
 
 function buildAddressLineWithoutStreetNumber(address = {}) {
@@ -488,9 +498,9 @@ function formatProjectDate(value) {
 }, 300);
 }
 
-async function reverseLookupAddress(lat, lon) {
+async function reverseLookupAddress(lat, lon, zoom = 19) {
   const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=${zoom}&addressdetails=1&namedetails=1&extratags=1`
   );
 
   if (!response.ok) {
@@ -498,6 +508,28 @@ async function reverseLookupAddress(lat, lon) {
   }
 
   return response.json();
+}
+
+async function reverseLookupBestAddress(lat, lon) {
+  const zoomLevels = [19, 18, 17];
+  let bestResult = null;
+
+  for (const zoom of zoomLevels) {
+    const result = await reverseLookupAddress(lat, lon, zoom);
+    const streetNumber =
+      getStreetNumberFromAddress(result.address || {}) ||
+      getStreetNumberFromDisplayName(result.display_name);
+
+    if (!bestResult) {
+      bestResult = result;
+    }
+
+    if (streetNumber) {
+      return result;
+    }
+  }
+
+  return bestResult;
 }
 
 function parseGpsInput(value) {
@@ -514,16 +546,18 @@ function parseGpsInput(value) {
 }
 
 function applyAddressLookupResult(data, fallbackText) {
-  const streetNumber = getStreetNumberFromAddress(data.address || {});
+  const streetNumber =
+    getStreetNumberFromAddress(data.address || {}) ||
+    getStreetNumberFromDisplayName(data.display_name);
   const addressLine = buildAddressLineWithoutStreetNumber(data.address || {});
 
-  getEl('streetNumber').value = streetNumber;
+  getEl('streetNumber').value = streetNumber || '';
   getEl('projectAddress').value =
     addressLine || data.display_name || fallbackText;
 
   getEl('saveMessage').textContent = streetNumber
-    ? 'Street number and address found from GPS.'
-    : 'Address found from GPS. Street number was not found, please add it manually.';
+    ? 'Precise address found with street number from GPS.'
+    : 'Street number was not found. Please add the street number manually before saving this inspection.';
 
   scheduleAutoSave();
 }
@@ -540,7 +574,7 @@ async function lookupAddressFromGpsInput() {
   getEl('saveMessage').textContent = 'Finding address from GPS...';
 
   try {
-    const data = await reverseLookupAddress(parsed.lat, parsed.lon);
+    const data = await reverseLookupBestAddress(parsed.lat, parsed.lon);
     applyAddressLookupResult(data, `${parsed.lat}, ${parsed.lon}`);
   } catch (error) {
     console.error('GPS address lookup failed:', error);
@@ -569,7 +603,7 @@ async function useCurrentLocation() {
     getEl('gps').value = gpsText;
 
     try {
-      const data = await reverseLookupAddress(lat, lon);
+      const data = await reverseLookupBestAddress(lat, lon);
       applyAddressLookupResult(data, `${lat}, ${lon}`);
     } catch (err) {
       console.error("Address fetch failed:", err);
@@ -596,8 +630,8 @@ async function useCurrentLocation() {
   },
   {
     enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 60000
+    timeout: 25000,
+    maximumAge: 0
   }
 );
 }
