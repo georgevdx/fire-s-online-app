@@ -2568,15 +2568,23 @@ function setCloudMenuVisible(isVisible) {
 function updateHomeAccessCards() {
   const connectCard = document.getElementById('connectCard');
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
+  const cloudMenuBtn = document.getElementById('cloudMenuBtn');
 
   const isLoggedIn = !!currentUserProfile;
 
+  // Keep the card visible, because it contains Cloud / Cloud connected / Logout access.
   if (connectCard) {
-    connectCard.style.display = isLoggedIn ? 'none' : 'block';
+    connectCard.style.display = 'block';
   }
 
+  // Hide only the Login/Register shortcut after login.
   if (homeLoginRouteBtn) {
     homeLoginRouteBtn.style.display = isLoggedIn ? 'none' : 'inline-block';
+  }
+
+  // Cloud button must stay visible on the front page.
+  if (cloudMenuBtn) {
+    cloudMenuBtn.style.display = 'inline-block';
   }
 }
 
