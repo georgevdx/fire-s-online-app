@@ -1650,6 +1650,12 @@ function initApp() {
     submitServiceRequestBtn.addEventListener('click', submitServiceRequest);
   }
 
+  const viewServiceRequestsBtn = document.getElementById('viewServiceRequestsBtn');
+
+  if (viewServiceRequestsBtn) {
+    viewServiceRequestsBtn.addEventListener('click', renderServiceRequestsList);
+  }
+
   const cancelServiceRequestBtn = document.getElementById('cancelServiceRequestBtn');
   if (cancelServiceRequestBtn) {
     cancelServiceRequestBtn.addEventListener('click', cancelServiceRequest);
@@ -2405,6 +2411,48 @@ function submitServiceRequest() {
   document.getElementById('serviceClientPhone').value = '';
   document.getElementById('serviceClientEmail').value = '';
   document.getElementById('serviceMessage').value = '';
+}
+
+function renderServiceRequestsList() {
+  const list = document.getElementById('serviceRequestsList');
+
+  if (!list) return;
+
+  const requests = JSON.parse(
+    localStorage.getItem('fireyeServiceRequests') || '[]'
+  );
+
+  if (list.style.display === 'none' || list.style.display === '') {
+    list.style.display = 'block';
+  } else {
+    list.style.display = 'none';
+    return;
+  }
+
+  if (requests.length === 0) {
+    list.innerHTML = '<div class="empty-state">No service requests saved yet.</div>';
+    return;
+  }
+
+  const sortedRequests = [...requests].sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  list.innerHTML = sortedRequests.map(request => `
+    <div class="service-request-card">
+      <div class="service-request-title">
+        ${escapeHtml(request.selectedService || 'Service Request')}
+      </div>
+
+      <div><strong>Name / Company:</strong> ${escapeHtml(request.clientName || '-')}</div>
+      <div><strong>Phone:</strong> ${escapeHtml(request.clientPhone || '-')}</div>
+      <div><strong>Email:</strong> ${escapeHtml(request.clientEmail || '-')}</div>
+      <div><strong>Message:</strong> ${escapeHtml(request.message || '-')}</div>
+      <div class="note">
+        Saved: ${request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}
+      </div>
+    </div>
+  `).join('');
 }
 
 function getFollowUpStatus(project) {

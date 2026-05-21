@@ -2381,3 +2381,29 @@ button.readiness-chip:focus {
     max-width: none;
   }
 }
+
+.service-requests-admin {
+  margin-top: 14px;
+}
+
+.service-requests-list {
+  margin-top: 12px;
+}
+
+.service-request-card {
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-left: 5px solid #b71c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.service-request-title {
+  margin-bottom: 8px;
+  color: #b71c1c;
+  font-weight: 900;
+  font-size: 15px;
+}
