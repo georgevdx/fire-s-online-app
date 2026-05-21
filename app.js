@@ -1484,6 +1484,22 @@ async function updateSyncUI() {
         : 'none';
   }
 
+  const syncButtonsSection = document.getElementById('syncButtonsSection');
+  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
+
+  const canShowSyncButtons =
+    isLoggedIn && canUseAdminSyncTools(authEmail);
+
+  if (syncButtonsSection) {
+    syncButtonsSection.style.display =
+      canShowSyncButtons ? 'block' : 'none';
+  }
+
+  if (syncButtonsPanel) {
+    syncButtonsPanel.style.display =
+      canShowSyncButtons ? 'block' : 'none';
+  }
+
   const cloudAdminPanel = document.getElementById('cloudAdminPanel');
 
   if (cloudAdminPanel) {
