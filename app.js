@@ -1142,6 +1142,7 @@ async function loginUser() {
     }
 
     closeCloudDropdown();
+    updateHomeAccessCards();
 
     updateSyncUI();
 
@@ -1189,6 +1190,7 @@ async function logoutUser() {
     currentUserProfile = null;
     currentCompanyAccess = null;
 
+    updateHomeAccessCards();
     updateAccessUI();
     updateSyncUI();
 
@@ -2147,7 +2149,8 @@ async function loadUserAccessProfile() {
 
     if (userError || !userData || !userData.user) {
       updateAccessUI();
-      renderProjectsList();
+      updateSyncUI();
+      updateHomeAccessCards();
       return;
     }
 
@@ -2183,6 +2186,7 @@ async function loadUserAccessProfile() {
 
       updateAccessUI();
       updateSyncUI();
+      updateHomeAccessCards();
       renderProjectsList();
       return;
     }
@@ -2234,6 +2238,7 @@ async function loadUserAccessProfile() {
 
     updateAccessUI();
     updateSyncUI();
+    updateHomeAccessCards();
 
   } catch (error) {
     console.error('Access profile load failed:', error);
@@ -2242,6 +2247,8 @@ async function loadUserAccessProfile() {
     currentCompanyAccess = null;
 
     updateAccessUI();
+    updateSyncUI();
+    updateHomeAccessCards();
   }
 }
 
@@ -2558,11 +2565,27 @@ function setCloudMenuVisible(isVisible) {
   }
 }
 
+function updateHomeAccessCards() {
+  const connectCard = document.getElementById('connectCard');
+  const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
+
+  const isLoggedIn = !!currentUserProfile;
+
+  if (connectCard) {
+    connectCard.style.display = isLoggedIn ? 'none' : 'block';
+  }
+
+  if (homeLoginRouteBtn) {
+    homeLoginRouteBtn.style.display = isLoggedIn ? 'none' : 'inline-block';
+  }
+}
+
 function showHome() {
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
   setCloudMenuVisible(true);
+  updateHomeAccessCards();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
@@ -2599,14 +2622,32 @@ function showServices() {
 }
 
 function openLoginRoute() {
+  if (currentUserProfile) {
+    closeCloudDropdown();
+    updateHomeAccessCards();
+
+    const syncStatus = document.getElementById('syncStatus');
+
+    if (syncStatus) {
+      syncStatus.textContent = 'You are already logged in.';
+    }
+
+    return;
+  }
+
   const cloudDropdown = document.getElementById('cloudDropdown');
   const syncTools = document.getElementById('syncTools');
   const loginEmail = document.getElementById('loginEmail');
 
   if (cloudDropdown) cloudDropdown.style.display = 'block';
   if (syncTools) syncTools.style.display = 'block';
+
   if (loginEmail) {
-    loginEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    loginEmail.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+
     loginEmail.focus();
   }
 }
