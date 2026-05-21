@@ -2321,3 +2321,17 @@ button.readiness-chip:focus {
   color: #555;
   text-align: center;
 }
+
+.active-filter-status button {
+  width: auto !important;
+  min-width: 0;
+  max-width: none;
+
+  padding: 5px 8px;
+  font-size: 11px;
+  line-height: 1;
+
+  border-radius: 999px;
+  background: #555;
+  white-space: nowrap;
+}
