@@ -2701,3 +2701,86 @@ button.readiness-chip:focus {
 .service-request-detail-card {
   margin-top: 12px;
 }
+
+.inspection-project-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.inspection-project-list-item {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: 1.4fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  background: #fff;
+  color: #222;
+  border: 1px solid #ddd;
+  border-left: 5px solid #b71c1c;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.inspection-project-list-item:hover,
+.inspection-project-list-item:focus {
+  background: #fff5f5;
+  border-color: #b71c1c;
+  outline: none;
+}
+
+.inspection-project-list-title {
+  font-weight: 900;
+  color: #222;
+}
+
+.inspection-project-list-meta {
+  font-size: 12px;
+  font-weight: 800;
+  color: #666;
+}
+
+.inspection-project-list-status,
+.inspection-project-list-follow {
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.inspection-project-list-address {
+  grid-column: 1 / -1;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.project-summary-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.project-summary-close-btn,
+.project-summary-open-btn {
+  width: auto;
+  max-width: none;
+  padding: 10px 14px;
+}
+
+.project-summary-detail-card {
+  margin-top: 12px;
+}
+
+@media (max-width: 700px) {
+  .inspection-project-list-item {
+    grid-template-columns: 1fr;
+  }
+
+  .inspection-project-list-address {
+    grid-column: auto;
+  }
+}

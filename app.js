@@ -4254,26 +4254,120 @@ function renderProjectsList() {
     return;
   }
 
-  visibleProjects.forEach(project => {
+  window.currentProjectsListView = visibleProjects;
 
-    const syncStatus = getSyncStatus(project);
-    const followStatus = getFollowUpStatus(project);
-    const projectAddress =
-      project.projectAddress ||
-      combineStreetAddress(project.streetNumber, project.addressLine);
-    const lastSaved = formatProjectDate(project.lastSaved);
-    const projectTitle =
-      project.projectName ||
-      [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
-      'Untitled Project';
-    const expiryCounts = getProjectExpiryCounts(project);
-    const highRiskSummary = getHighRiskSummary(project);
-    const inspectionStatus = getProjectInspectionStatus(project);
-    const dataQuality = getProjectDataQuality(project);
+container.innerHTML = `
+  <div id="projectListView" class="inspection-project-list">
+    ${visibleProjects.map((project, index) => {
+      const followStatus = getFollowUpStatus(project);
+      const inspectionStatus = getProjectInspectionStatus(project);
+      const projectTitle =
+        project.projectName ||
+        [project.organisationName, project.siteName]
+          .filter(Boolean)
+          .join(' ') ||
+        'Untitled Project';
 
-    const card = document.createElement('div');
-    card.className = 'project-card';
-    card.innerHTML = `
+      const projectAddress =
+        project.projectAddress ||
+        combineStreetAddress(project.streetNumber, project.addressLine) ||
+        'No address captured';
+
+      return `
+        <button
+          type="button"
+          class="inspection-project-list-item"
+          onclick="openProjectSummaryCard(${index})"
+        >
+          <span class="inspection-project-list-title">
+            ${escapeHtml(projectTitle)}
+          </span>
+
+          <span class="inspection-project-list-meta">
+            ${escapeHtml(project.inspectionNumber || '-')}
+          </span>
+
+          <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+            ${escapeHtml(inspectionStatus.label)}
+          </span>
+
+          <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+            ${escapeHtml(followStatus.label)}
+          </span>
+
+          <span class="inspection-project-list-address">
+            ${escapeHtml(projectAddress)}
+          </span>
+        </button>
+      `;
+    }).join('')}
+  </div>
+
+  <div
+    id="projectSummaryDetailCard"
+    class="project-summary-detail-card"
+    style="display:none;"
+  ></div>
+`;
+}
+
+
+function openProjectSummaryCard(index) {
+  const projects = window.currentProjectsListView || [];
+  const project = projects[index];
+
+  const listView = document.getElementById('projectListView');
+  const detailCard = document.getElementById('projectSummaryDetailCard');
+
+  if (!project || !detailCard) return;
+
+  const syncStatus = getSyncStatus(project);
+  const followStatus = getFollowUpStatus(project);
+  const inspectionStatus = getProjectInspectionStatus(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const highRiskSummary = getHighRiskSummary(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  const projectTitle =
+    project.projectName ||
+    [project.organisationName, project.siteName]
+      .filter(Boolean)
+      .join(' ') ||
+    'Untitled Project';
+
+  const projectAddress =
+    project.projectAddress ||
+    combineStreetAddress(project.streetNumber, project.addressLine) ||
+    'No address captured';
+
+  const lastSaved = formatProjectDate(project.lastSaved);
+
+  if (listView) {
+    listView.style.display = 'none';
+  }
+
+  detailCard.style.display = 'block';
+
+  detailCard.innerHTML = `
+    <div class="project-summary-actions">
+      <button
+        type="button"
+        class="secondary-btn project-summary-close-btn"
+        onclick="closeProjectSummaryCard()"
+      >
+        Close
+      </button>
+
+      <button
+        type="button"
+        class="project-summary-open-btn"
+        onclick="openProject('${escapeHtml(project.id)}')"
+      >
+        Open Inspection
+      </button>
+    </div>
+
+    <div class="project-card">
       <div class="project-card-top">
         <div>
           <h3>${escapeHtml(projectTitle)}</h3>
@@ -4281,118 +4375,70 @@ function renderProjectsList() {
             ${escapeHtml(project.inspectionNumber || '-')}
           </div>
         </div>
-
-        <button class="small-btn project-open-btn" onclick="openProject('${project.id}')">Open</button>
       </div>
 
       <div class="project-badges">
-        <span class="project-sync ${syncStatus.class}">
-          ${syncStatus.label}
+        <span class="project-sync ${escapeHtml(syncStatus.class)}">
+          ${escapeHtml(syncStatus.label)}
         </span>
 
-        <span class="project-follow ${followStatus.class}">
-          ${followStatus.label}
-          ${project.followUpDate ? `(${project.followUpDate})` : ''}
+        <span class="project-follow ${escapeHtml(followStatus.class)}">
+          ${escapeHtml(followStatus.label)}
+          ${project.followUpDate ? `(${escapeHtml(project.followUpDate)})` : ''}
         </span>
 
-        <span class="project-inspection-status ${inspectionStatus.class}">
-          ${inspectionStatus.label}
-          <small>${inspectionStatus.detail}</small>
+        <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
+          ${escapeHtml(inspectionStatus.label)}
+          <small>${escapeHtml(inspectionStatus.detail)}</small>
         </span>
       </div>
-
-      ${project.hasSiteHistory ? `
-      <div class="project-history">
-        Site history: ${project.previousInspectionCount || 0} previous inspection(s)
-      </div>
-    ` : ''}
 
       ${dataQuality.count > 0 ? `
-      <div class="project-data-quality">
-        Missing project info: ${escapeHtml(dataQuality.missing.slice(0, 4).join(', '))}
-        ${dataQuality.count > 4 ? `+ ${dataQuality.count - 4} more` : ''}
-      </div>
+        <div class="project-data-quality">
+          Missing project info:
+          ${escapeHtml(dataQuality.missing.slice(0, 4).join(', '))}
+          ${dataQuality.count > 4 ? `+ ${dataQuality.count - 4} more` : ''}
+        </div>
       ` : ''}
 
       <div class="project-address">
-        ${escapeHtml(projectAddress || 'No address captured')}
+        ${escapeHtml(projectAddress)}
       </div>
 
       ${highRiskSummary.count > 0 ? `
-      <div class="project-risk-summary">
-        <div class="project-risk-count">
-          High Risk: ${highRiskSummary.count} non-compliance item${highRiskSummary.count === 1 ? '' : 's'}
+        <div class="project-risk-summary">
+          <div class="project-risk-count">
+            High Risk:
+            ${highRiskSummary.count}
+            non-compliance item${highRiskSummary.count === 1 ? '' : 's'}
+          </div>
+
+          <div class="project-risk-text">
+            ${escapeHtml(highRiskSummary.text)}
+          </div>
         </div>
-        <div class="project-risk-text">
-          ${escapeHtml(highRiskSummary.text)}
-        </div>
-        <button
-          type="button"
-          class="small-btn project-review-btn"
-          onclick="openProject('${project.id}', 'issues')"
-        >
-          Review Issues
-        </button>
-      </div>
       ` : ''}
 
       ${expiryCounts.total > 0 ? `
-      <div class="project-expiry-summary">
-        <span class="project-expiry-label">Equipment</span>
+        <div class="project-expiry-summary">
+          <span class="project-expiry-label">Equipment</span>
 
-        <span class="project-expiry-chip expiry-chip-overdue">
-          Expired: ${expiryCounts.overdue}
-        </span>
+          <span class="project-expiry-chip expiry-chip-overdue">
+            Expired: ${expiryCounts.overdue}
+          </span>
 
-        <span class="project-expiry-chip expiry-chip-soon">
-          Due soon: ${expiryCounts.soon}
-        </span>
+          <span class="project-expiry-chip expiry-chip-soon">
+            Due soon: ${expiryCounts.soon}
+          </span>
 
-        <span class="project-expiry-chip expiry-chip-scheduled">
-          Scheduled: ${expiryCounts.scheduled}
-        </span>
+          <span class="project-expiry-chip expiry-chip-scheduled">
+            Scheduled: ${expiryCounts.scheduled}
+          </span>
 
-        <span class="project-expiry-chip expiry-chip-missing">
-          Date missing: ${expiryCounts.missing}
-        </span>
-
-        ${expiryCounts.overdue > 0 ? `
-        <button
-          type="button"
-          class="small-btn project-expiry-review-btn expiry-review-overdue"
-          onclick="openProject('${project.id}', 'expiry-overdue')"
-        >
-          Review Expired
-        </button>
-        ` : ''}
-        ${expiryCounts.soon > 0 ? `
-        <button
-          type="button"
-          class="small-btn project-expiry-review-btn expiry-review-soon"
-          onclick="openProject('${project.id}', 'expiry-soon')"
-        >
-          Review Due Soon
-        </button>
-        ` : ''}
-        ${expiryCounts.scheduled > 0 ? `
-        <button
-          type="button"
-          class="small-btn project-expiry-review-btn expiry-review-scheduled"
-          onclick="openProject('${project.id}', 'expiry-scheduled')"
-        >
-          Review Scheduled
-        </button>
-        ` : ''}
-        ${expiryCounts.missing > 0 ? `
-        <button
-          type="button"
-          class="small-btn project-expiry-review-btn expiry-review-missing"
-          onclick="openProject('${project.id}', 'expiry-missing')"
-        >
-          Add Missing Dates
-        </button>
-        ` : ''}
-      </div>
+          <span class="project-expiry-chip expiry-chip-missing">
+            Date missing: ${expiryCounts.missing}
+          </span>
+        </div>
       ` : ''}
 
       <div class="project-meta-grid">
@@ -4400,25 +4446,49 @@ function renderProjectsList() {
           <span>Company</span>
           <strong>${escapeHtml(project.companyName || 'Local / Personal Workspace')}</strong>
         </div>
+
         <div>
           <span>Inspector</span>
           <strong>${escapeHtml(project.inspectorName || '-')}</strong>
         </div>
+
         <div>
           <span>Occupancy</span>
           <strong>${escapeHtml(project.occupancy || '-')}</strong>
         </div>
+
         <div>
           <span>Last saved</span>
           <strong>${escapeHtml(lastSaved)}</strong>
         </div>
-        
       </div>
-    `;
-    container.appendChild(card);
+    </div>
+  `;
+
+  detailCard.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
   });
 }
 
+function closeProjectSummaryCard() {
+  const listView = document.getElementById('projectListView');
+  const detailCard = document.getElementById('projectSummaryDetailCard');
+
+  if (detailCard) {
+    detailCard.style.display = 'none';
+    detailCard.innerHTML = '';
+  }
+
+  if (listView) {
+    listView.style.display = 'grid';
+
+    listView.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+}
 
 function openProject(projectId, focusMode) {
   const projects = getProjects();
@@ -6608,4 +6678,6 @@ window.previousProjectPage = previousProjectPage;
 window.openServiceRequestCard = openServiceRequestCard;
 window.backToServiceRequestList = backToServiceRequestList;
 window.markServiceRequestFollowedUp = markServiceRequestFollowedUp;
+window.openProjectSummaryCard = openProjectSummaryCard;
+window.closeProjectSummaryCard = closeProjectSummaryCard;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
