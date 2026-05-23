@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fireyesa-cache-v112';
+const CACHE_NAME = 'fireyesa-cache-v88';
 
 const FILES_TO_CACHE = [
   './',
