@@ -1291,40 +1291,7 @@ async function refreshSyncData() {
     }
   }
 }
-  let backgroundSyncInProgress = false;
-
-async function runBackgroundSync(reason = 'background') {
-  if (backgroundSyncInProgress) return;
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
-
-    backgroundSyncInProgress = true;
-
-    try {
-      const { data, error } = await supabaseClient.auth.getUser();
-
-      if (error || !data?.user) {
-        return;
-      }
-
-      await uploadPendingInspections();
-      await safeDownloadNewerCloudInspections();
-      await uploadPendingInspections();
-
-      renderProjectsList();
-
-      const syncStatus = document.getElementById('syncStatus');
-
-      if (syncStatus) {
-        syncStatus.textContent = `Auto sync complete (${reason}).`;
-      }
-    } catch (error) {
-      console.warn(`Background sync failed (${reason}):`, error);
-    } finally {
-      backgroundSyncInProgress = false;
-    }
-}
-
+ 
 async function uploadSync() {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser();
 
