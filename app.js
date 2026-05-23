@@ -2706,7 +2706,7 @@ function cancelServiceRequest() {
   }
 }
 
-function submitServiceRequest() {
+async function submitServiceRequest() {
   const selectedService = document.getElementById('selectedService')?.value.trim();
   const clientName = document.getElementById('serviceClientName')?.value.trim();
   const clientPhone = document.getElementById('serviceClientPhone')?.value.trim();
@@ -2721,42 +2721,71 @@ function submitServiceRequest() {
 
   if (!clientName || (!clientPhone && !clientEmail)) {
     if (status) {
-      status.textContent = 'Enter your name/company and at least a phone number or email.';
+      status.textContent =
+        'Enter your name/company and at least a phone number or email.';
     }
     return;
   }
 
-  const requests = JSON.parse(
-    localStorage.getItem('fireyeServiceRequests') || '[]'
-  );
+  if (status) {
+    status.textContent = 'Saving service request...';
+  }
 
-  requests.push({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    selectedService,
-    clientName,
-    clientPhone,
-    clientEmail,
-    message,
-    createdAt: new Date().toISOString(),
-    status: 'new'
-  });
+  let authUser = null;
 
-  localStorage.setItem(
-    'fireyeServiceRequests',
-    JSON.stringify(requests)
-  );
+  try {
+    const { data } = await supabaseClient.auth.getUser();
+    authUser = data?.user || null;
+  } catch (error) {
+    console.warn('Could not read logged-in user for service request:', error);
+  }
+
+  const requestPayload = {
+    selected_service: selectedService,
+    client_name: clientName,
+    client_phone: clientPhone || null,
+    client_email: clientEmail || null,
+    message: message || null,
+    status: 'new',
+    created_by_user_id: authUser?.id || null,
+    created_by_email: authUser?.email || clientEmail || null
+  };
+
+  const { error } = await supabaseClient
+    .from('service_requests')
+    .insert(requestPayload);
+
+  if (error) {
+    console.error('Service request cloud save failed:', error);
+
+    if (status) {
+      status.textContent =
+        `Service request could not be saved: ${error.message}`;
+    }
+
+    return;
+  }
 
   if (status) {
-    status.textContent = 'Service request saved. FireyeSA can follow up from this request.';
+    status.textContent =
+      'Service request saved. FireyeSA can follow up from this request.';
   }
 
   document.getElementById('serviceClientName').value = '';
   document.getElementById('serviceClientPhone').value = '';
   document.getElementById('serviceClientEmail').value = '';
   document.getElementById('serviceMessage').value = '';
+
+  const serviceRequestsList =
+    document.getElementById('serviceRequestsList');
+
+  if (serviceRequestsList && serviceRequestsList.style.display !== 'none') {
+    serviceRequestsList.style.display = 'none';
+    renderServiceRequestsList();
+  }
 }
 
-function renderServiceRequestsList() {
+async function renderServiceRequestsList() {
   if (!canViewServiceRequests()) {
     alert('Service requests are only available to FireyeSA admin.');
     return;
@@ -2766,20 +2795,42 @@ function renderServiceRequestsList() {
 
   if (!list) return;
 
-  const requests = JSON.parse(
-    localStorage.getItem('fireyeServiceRequests') || '[]'
-  );
-
-  const activeRequests = requests.filter(request =>
-    request.status !== 'followed_up'
-  );
-
-  if (list.style.display === 'none' || list.style.display === '') {
-    list.style.display = 'block';
-  } else {
+  if (list.style.display === 'block') {
     list.style.display = 'none';
     return;
   }
+
+  list.style.display = 'block';
+  list.innerHTML =
+    '<div class="empty-state">Loading service requests...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('service_requests')
+    .select(`
+      id,
+      selected_service,
+      client_name,
+      client_phone,
+      client_email,
+      message,
+      status,
+      created_at,
+      followed_up_at,
+      created_by_email
+    `)
+    .neq('status', 'followed_up')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Service requests load failed:', error);
+
+    list.innerHTML =
+      `<div class="empty-state">Could not load service requests: ${escapeHtml(error.message)}</div>`;
+
+    return;
+  }
+
+  const activeRequests = data || [];
 
   if (activeRequests.length === 0) {
     list.innerHTML =
@@ -2787,15 +2838,24 @@ function renderServiceRequestsList() {
     return;
   }
 
-  const sortedRequests = [...activeRequests].sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const normalizedRequests = activeRequests.map(request => ({
+    id: request.id,
+    selectedService: request.selected_service,
+    clientName: request.client_name,
+    clientPhone: request.client_phone,
+    clientEmail: request.client_email,
+    message: request.message,
+    status: request.status,
+    createdAt: request.created_at,
+    followedUpAt: request.followed_up_at,
+    createdByEmail: request.created_by_email
+  }));
 
-  window.currentServiceRequestsView = sortedRequests;
+  window.currentServiceRequestsView = normalizedRequests;
 
   list.innerHTML = `
     <div id="serviceRequestListView" class="service-request-list">
-      ${sortedRequests.map((request, index) => `
+      ${normalizedRequests.map((request, index) => `
         <button
           type="button"
           class="service-request-list-item"
@@ -2936,33 +2996,26 @@ function backToServiceRequestList() {
   }
 }
 
-function markServiceRequestFollowedUp(requestId) {
+async function markServiceRequestFollowedUp(requestId) {
   const confirmed = confirm(
     'Mark this service request as followed up? It will be removed from the active request list.'
   );
 
   if (!confirmed) return;
 
-  const requests = JSON.parse(
-    localStorage.getItem('fireyeServiceRequests') || '[]'
-  );
-
-  const updatedRequests = requests.map(request => {
-    if (String(request.id) !== String(requestId)) {
-      return request;
-    }
-
-    return {
-      ...request,
+  const { error } = await supabaseClient
+    .from('service_requests')
+    .update({
       status: 'followed_up',
-      followedUpAt: new Date().toISOString()
-    };
-  });
+      followed_up_at: new Date().toISOString()
+    })
+    .eq('id', requestId);
 
-  localStorage.setItem(
-    'fireyeServiceRequests',
-    JSON.stringify(updatedRequests)
-  );
+  if (error) {
+    console.error('Follow-up update failed:', error);
+    alert(`Could not update service request: ${error.message}`);
+    return;
+  }
 
   const list = document.getElementById('serviceRequestsList');
 
