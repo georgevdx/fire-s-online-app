@@ -2784,3 +2784,17 @@ button.readiness-chip:focus {
     grid-column: auto;
   }
 }
+
+.back-home-btn {
+  background: #1565c0;
+  color: #fff;
+  width: auto;
+  max-width: none;
+  padding: 10px 14px;
+}
+
+.back-home-btn:hover,
+.back-home-btn:focus {
+  background: #0d47a1;
+  opacity: 1;
+}
