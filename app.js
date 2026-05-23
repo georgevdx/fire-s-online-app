@@ -1248,9 +1248,9 @@ async function runBackgroundSync(reason = 'background') {
       return;
     }
 
-    await uploadAllLocalInspections();
+    await uploadPendingInspections();
     await safeDownloadNewerCloudInspections();
-    await uploadAllLocalInspections();
+    await uploadPendingInspections();
 
     renderProjectsList();
 
@@ -1274,9 +1274,9 @@ async function refreshSyncData() {
   }
 
   try {
-    await uploadAllLocalInspections();
+    await uploadPendingInspections();
     await safeDownloadNewerCloudInspections();
-    await uploadAllLocalInspections();
+    await uploadPendingInspections();
 
     renderProjectsList();
 
@@ -1293,37 +1293,33 @@ async function refreshSyncData() {
 }
  
 async function uploadSync() {
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+  const { data: userData, error: userError } =
+    await supabaseClient.auth.getUser();
 
-    if (userError || !userData.user) {
-      getEl('syncStatus').textContent = 'Please login before syncing.';
-      return;
+  if (userError || !userData.user) {
+    getEl('syncStatus').textContent =
+      'Please login before syncing.';
+    return;
+  }
+
+  const projects = getProjects();
+
+  getEl('syncStatus').textContent =
+    `Uploading ${projects.length} inspection(s)...`;
+
+  try {
+    for (const project of projects) {
+      await uploadSingleInspection(project);
     }
 
-    const projects = getProjects();
+    getEl('syncStatus').textContent =
+      `Synced ${projects.length} inspection(s) to cloud.`;
+  } catch (error) {
+    console.error('Manual upload sync failed:', error);
 
-    const rows = projects.map(project => {
-    const cloudMetadata =
-      getProjectCloudMetadata(project, userData.user.id);
-
-    return {
-      id: project.id,
-      user_id: userData.user.id,
-
-      ...cloudMetadata,
-
-      inspection_data: project,
-      updated_at: new Date().toISOString()
-    };
-  });
-
-    const { error } = await supabaseClient
-      .from('inspections')
-      .upsert(rows, { onConflict: 'id' });
-
-    getEl('syncStatus').textContent = error
-      ? `Sync failed: ${error.message}`
-      : `Synced ${rows.length} inspection(s) to cloud.`;
+    getEl('syncStatus').textContent =
+      `Sync failed: ${error.message}`;
+  }
 }
 
 async function debugSyncCounts() {
@@ -4900,6 +4896,26 @@ async function uploadSingleInspection(project) {
 const cloudMetadata =
   getProjectCloudMetadata(project, userData.user.id);
 
+let projectToUpload = project;
+
+const hasStrippedPhotos =
+  (project.photos || []).some(photo => !photo.src);
+
+if (hasStrippedPhotos) {
+  const { data: existingRows, error: existingError } = await supabaseClient
+    .from('inspections')
+    .select('inspection_data')
+    .eq('id', project.id)
+    .limit(1);
+
+  if (!existingError && existingRows && existingRows[0]?.inspection_data?.photos) {
+    projectToUpload = {
+      ...project,
+      photos: existingRows[0].inspection_data.photos
+    };
+  }
+}
+
 const { error } = await supabaseClient
   .from('inspections')
   .upsert({
@@ -4908,7 +4924,7 @@ const { error } = await supabaseClient
 
     ...cloudMetadata,
 
-    inspection_data: project,
+    inspection_data: projectToUpload,
     updated_at: new Date().toISOString()
   }, { onConflict: 'id' });
     if (error) {
