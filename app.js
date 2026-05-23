@@ -1758,29 +1758,41 @@ async function safeDownloadNewerCloudInspections() {
       const localProject = mergedMap.get(cloudProject.id);
 
       if (!localProject) {
-        mergedMap.set(cloudProject.id, cloudProject);
-        return;
-      }
+  mergedMap.set(cloudProject.id, cloudProject);
+  return;
+}
 
-      const localTime = localProject.lastSaved
-        ? new Date(localProject.lastSaved).getTime()
-        : 0;
+const localHasStrippedPhotos =
+  (localProject.photos || []).some(photo => !photo.src);
 
-      const cloudTime = cloudProject.lastSaved
-        ? new Date(cloudProject.lastSaved).getTime()
-        : 0;
+const cloudHasRealPhotos =
+  (cloudProject.photos || []).some(photo => photo.src);
 
-      if (cloudTime > localTime) {
-        mergedMap.set(cloudProject.id, cloudProject);
-      }
+if (localHasStrippedPhotos && cloudHasRealPhotos) {
+  mergedMap.set(cloudProject.id, {
+    ...localProject,
+    photos: cloudProject.photos
+  });
+  return;
+}
+
+const localTime = localProject.lastSaved
+  ? new Date(localProject.lastSaved).getTime()
+  : 0;
+
+const cloudTime = cloudProject.lastSaved
+  ? new Date(cloudProject.lastSaved).getTime()
+  : 0;
+
+if (cloudTime > localTime) {
+  mergedMap.set(cloudProject.id, cloudProject);
+}
     });
 
-    const mergedProjects = stripHeavyPhotoDataFromProjects(
-      Array.from(mergedMap.values())
-    );
+   const mergedProjects = Array.from(mergedMap.values());
 
-    setProjects(mergedProjects);
-    renderProjectsList();
+setProjects(mergedProjects);
+renderProjectsList();
 
     if (syncStatus) {
       syncStatus.textContent = 'Cloud download check complete.';
