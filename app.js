@@ -4199,8 +4199,7 @@ function renderProjectsList() {
   // renderReminderBanner(projects);
   renderDashboardMetrics(projects);
 
-  const searchField = document.getElementById('projectSearch');
-  const searchField = document.getElementById('projectSearch');
+ const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
 
   container.innerHTML = '';
