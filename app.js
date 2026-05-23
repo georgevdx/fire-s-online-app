@@ -1487,7 +1487,6 @@ async function updateSyncUI() {
   const syncButtonsSection = document.getElementById('syncButtonsSection');
   const syncButtonsPanel = document.getElementById('syncButtonsPanel');
   const cloudAdminPanel = document.getElementById('cloudAdminPanel');
-  const backupTools = document.getElementById('backupTools');
   const syncStatus = document.getElementById('syncStatus');
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
@@ -1545,10 +1544,6 @@ async function updateSyncUI() {
     cloudAdminPanel.style.display = 'none';
   }
 
-  if (backupTools) {
-    backupTools.style.display = 'none';
-  }
-
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
@@ -1604,8 +1599,7 @@ function showSyncTools() {
   const syncButtonsSection = document.getElementById('syncButtonsSection');
   const syncButtonsPanel = document.getElementById('syncButtonsPanel');
   const cloudAdminPanel = document.getElementById('cloudAdminPanel');
-  const backupTools = document.getElementById('backupTools');
-
+  
   if (syncButtonsSection) {
     syncButtonsSection.style.display = 'block';
   }
@@ -1619,9 +1613,6 @@ function showSyncTools() {
   }
 
   // Old top-page backup tools must stay hidden.
-  if (backupTools) {
-    backupTools.style.display = 'none';
-  }
 }
 
 async function safeDownloadNewerCloudInspections() {
@@ -1963,7 +1954,11 @@ function initApp() {
   if (importPastedBackupBtn) {
     importPastedBackupBtn.addEventListener('click', importPastedBackup);
   }
-  getEl('importBackupInput').addEventListener('change', importBackup);
+  const importBackupInput = document.getElementById('importBackupInput');
+
+  if (importBackupInput) {
+    importBackupInput.addEventListener('change', importBackup);
+  }
   getEl('inspectionType').addEventListener('change', () => {
     updateDisplay();
     scheduleAutoSave();
