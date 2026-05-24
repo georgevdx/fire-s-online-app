@@ -6469,12 +6469,61 @@ async function handlePhotoUpload(event) {
       saveMessage.textContent = 'Photo uploaded and added.';
     }
   } catch (error) {
-    console.error('Photo upload failed:', error);
+    console.error('Photo upload failed, using local fallback:', error);
 
     if (saveMessage) {
       saveMessage.textContent =
-        `Photo upload failed: ${error.message}`;
+        'Cloud photo upload failed. Saving photo locally for now...';
     }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const img = new Image();
+
+      img.onload = function() {
+        const maxWidth = 1200;
+        const maxHeight = 1200;
+
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl =
+          canvas.toDataURL('image/jpeg', 0.85);
+
+        currentPhotos.push({
+          src: compressedDataUrl,
+          timestamp: new Date().toISOString(),
+          note: '',
+          uploadFallback: true
+        });
+
+        renderPhotos();
+        scheduleAutoSave();
+
+        if (saveMessage) {
+          saveMessage.textContent =
+            'Photo saved locally. Cloud photo upload needs setup.';
+        }
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
   } finally {
     event.target.value = '';
   }
