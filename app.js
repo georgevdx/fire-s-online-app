@@ -6491,10 +6491,19 @@ async function handlePhotoUpload(event) {
   }
 
   if (!currentProjectId) {
-    setPhotoStatus('Save the inspection first before adding photos.');
+  setPhotoStatus('Saving inspection first...');
+
+  saveProject();
+
+  if (!currentProjectId) {
+    setPhotoStatus(
+      'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
+    );
+
     event.target.value = '';
     return;
   }
+}
 
   setPhotoStatus('Uploading photo...');
 
