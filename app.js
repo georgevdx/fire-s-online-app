@@ -338,19 +338,7 @@ function autoSaveProject() {
   renderProjectsList();
   
   const saveMessage = document.getElementById('saveMessage');
-  const photoUploadStatus =
-  document.getElementById('photoUploadStatus');
-
-  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
-  const message =
-    `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
-
-  if (saveMessage) saveMessage.textContent = message;
-  if (photoUploadStatus) photoUploadStatus.textContent = message;
-
-  event.target.value = '';
-  return;
-}
+  
 
   if (saveMessage) {
     saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
@@ -6455,7 +6443,7 @@ function getRemainingPhotoSlots() {
   );
 }
 
-function updatePhotoUploadStatus() {
+function updatePhotoUploadStatus(messageOverride) {
   const photoUploadStatus =
     document.getElementById('photoUploadStatus');
 
@@ -6464,8 +6452,13 @@ function updatePhotoUploadStatus() {
   const used = currentPhotos.length;
   const remaining = getRemainingPhotoSlots();
 
-  photoUploadStatus.textContent =
+  const counterText =
     `Photos: ${used} / ${MAX_PHOTOS_PER_INSPECTION} (${remaining} remaining)`;
+
+  photoUploadStatus.textContent =
+    messageOverride
+      ? `${messageOverride} | ${counterText}`
+      : counterText;
 }
 
 async function handlePhotoUpload(event) {
@@ -6475,6 +6468,17 @@ async function handlePhotoUpload(event) {
   const saveMessage = document.getElementById('saveMessage');
   const photoUploadStatus =
     document.getElementById('photoUploadStatus');
+
+  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
+  const message =
+    `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
+
+  if (saveMessage) saveMessage.textContent = message;
+  if (photoUploadStatus) photoUploadStatus.textContent = message;
+
+  event.target.value = '';
+  return;
+}
 
   function setPhotoStatus(message) {
     if (saveMessage) {
@@ -6503,12 +6507,22 @@ async function handlePhotoUpload(event) {
     renderPhotos();
     scheduleAutoSave();
 
-    setPhotoStatus('Photo uploaded and added.');
+    setPhotoStatus(
+      'Photo saved locally. Cloud photo upload needs setup.'
+    );
+
+    updatePhotoUploadStatus(
+      'Photo saved locally. Cloud photo upload needs setup.'
+    );
+    
   } catch (error) {
     console.error('Photo upload failed, using local fallback:', error);
 
     setPhotoStatus(
-      'Cloud photo upload failed. Saving photo locally for now...'
+  'Photo saved locally. Cloud photo upload needs setup.'
+    );
+    updatePhotoUploadStatus(
+      'Photo saved locally. Cloud photo upload needs setup.'
     );
 
     const reader = new FileReader();
