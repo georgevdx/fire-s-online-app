@@ -23,7 +23,7 @@ let currentUserProfile = null;
 let currentCompanyAccess = null;
 
 const APP_VERSION = 'v89-dev';
-
+const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
 
@@ -340,6 +340,17 @@ function autoSaveProject() {
   const saveMessage = document.getElementById('saveMessage');
   const photoUploadStatus =
   document.getElementById('photoUploadStatus');
+
+  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
+  const message =
+    `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
+
+  if (saveMessage) saveMessage.textContent = message;
+  if (photoUploadStatus) photoUploadStatus.textContent = message;
+
+  event.target.value = '';
+  return;
+}
 
   if (saveMessage) {
     saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
@@ -6437,6 +6448,25 @@ function generateReport() {
   getEl('reportSection').style.display = 'block';
 }
 
+function getRemainingPhotoSlots() {
+  return Math.max(
+    0,
+    MAX_PHOTOS_PER_INSPECTION - currentPhotos.length
+  );
+}
+
+function updatePhotoUploadStatus() {
+  const photoUploadStatus =
+    document.getElementById('photoUploadStatus');
+
+  if (!photoUploadStatus) return;
+
+  const used = currentPhotos.length;
+  const remaining = getRemainingPhotoSlots();
+
+  photoUploadStatus.textContent =
+    `Photos: ${used} / ${MAX_PHOTOS_PER_INSPECTION} (${remaining} remaining)`;
+}
 
 async function handlePhotoUpload(event) {
   const file = event.target.files[0];
@@ -6545,6 +6575,8 @@ function renderPhotos() {
   const container = getEl('photoPreview');
   container.innerHTML = '';
 
+  updatePhotoUploadStatus();
+
   if (currentPhotos.length === 0) {
     container.innerHTML = `<div class="note">No photo evidence added yet.</div>`;
     return;
@@ -6583,6 +6615,7 @@ function deletePhoto(index) {
   currentPhotos.splice(index, 1);
   renderPhotos();
   scheduleAutoSave();
+  updatePhotoUploadStatus();
 }
 
 function updatePhotoNote(index, value) {
