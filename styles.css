@@ -2837,3 +2837,58 @@ button.readiness-chip:focus {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+
+.report-page-break {
+  break-before: page;
+  page-break-before: always;
+}
+
+.report-photo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm;
+  align-items: start;
+}
+
+.report-photo-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  border: 1px solid #ddd;
+  padding: 6mm;
+  min-height: 120mm;
+  box-sizing: border-box;
+}
+
+.report-photo-header {
+  font-weight: 700;
+  margin-bottom: 2mm;
+}
+
+.report-photo-time {
+  font-size: 10px;
+  margin-bottom: 4mm;
+}
+
+.report-photo-image-box {
+  height: 75mm;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.report-photo-img {
+  display: block;
+  max-width: 100%;
+  max-height: 75mm;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.report-photo-note {
+  font-size: 10px;
+  margin-top: 4mm;
+  min-height: 12mm;
+}

@@ -5856,7 +5856,7 @@ function generateReport() {
         </h2>
       </div>
 
-      <div class="report-photos">
+      <div class="report-photos report-photo-grid">
     `;
   }
 
@@ -6315,38 +6315,50 @@ function generateReport() {
   }
 
   if (currentPhotos.length > 0) {
-    currentPhotos.forEach((photo, index) => {
+  currentPhotos.forEach((photo, index) => {
+    if (index > 0 && index % 4 === 0) {
       photosHtml += `
-  <div class="report-photo-card">
+        </div>
+        <div class="report-page-break"></div>
+        <div class="report-photos report-photo-grid">
+      `;
+    }
 
-    <div class="report-photo-header">
-      Photo ${index + 1}
-    </div>
+    photosHtml += `
+      <div class="report-photo-card">
 
-    <div class="report-photo-time">
-      Captured:
-      ${photo.timestamp
-        ? new Date(photo.timestamp).toLocaleString()
-        : 'Not recorded'}
-    </div>
+        <div class="report-photo-header">
+          Photo ${index + 1}
+        </div>
 
-    <img
-      src="${photo.src}"
-      class="report-photo-img"
-      alt="Inspection photo ${index + 1}"
-    >
+        <div class="report-photo-time">
+          Captured:
+          ${
+            photo.timestamp
+              ? new Date(photo.timestamp).toLocaleString()
+              : 'Not recorded'
+          }
+        </div>
 
-    <div class="report-photo-note">
-      <strong>Photo Note:</strong>
-      ${escapeHtml(photo.note || 'No note added.')}
-    </div>
+        <div class="report-photo-image-box">
+          <img
+            src="${photo.src}"
+            class="report-photo-img"
+            alt="Inspection photo ${index + 1}"
+          >
+        </div>
 
-  </div>
-  `; 
+        <div class="report-photo-note">
+          <strong>Photo Note:</strong>
+          ${escapeHtml(photo.note || 'No note added.')}
+        </div>
 
-  }); 
-    photosHtml += `</div>`;
-  } else {
+      </div>
+    `;
+  });
+
+  photosHtml += `</div>`;
+} else {
   photosHtml = `
     <div class="report-page-break"></div>
 
