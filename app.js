@@ -6555,6 +6555,18 @@ async function handlePhotoUpload(event) {
   const photoUploadStatus =
     document.getElementById('photoUploadStatus');
 
+    if (window.photoUploadInProgress) {
+  const message = 'Photo upload already in progress. Please wait.';
+
+  if (saveMessage) saveMessage.textContent = message;
+  if (photoUploadStatus) photoUploadStatus.textContent = message;
+
+  event.target.value = '';
+  return;
+}
+
+window.photoUploadInProgress = true;
+
   function setPhotoStatus(message) {
     if (saveMessage) {
       saveMessage.textContent = message;
@@ -6566,14 +6578,15 @@ async function handlePhotoUpload(event) {
   }
 
   if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
-    const message =
-      `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
+  const message =
+    `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
 
-    setPhotoStatus(message);
+  setPhotoStatus(message);
 
-    event.target.value = '';
-    return;
-  }
+  window.photoUploadInProgress = false;
+  event.target.value = '';
+  return;
+}
 
   if (!currentProjectId) {
     setPhotoStatus('Saving inspection first...');
@@ -6581,13 +6594,14 @@ async function handlePhotoUpload(event) {
     saveProject();
 
     if (!currentProjectId) {
-      setPhotoStatus(
-        'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
-      );
+  setPhotoStatus(
+    'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
+  );
 
-      event.target.value = '';
-      return;
-    }
+  window.photoUploadInProgress = false;
+  event.target.value = '';
+  return;
+}
   }
 
   setPhotoStatus('Uploading photo...');
@@ -6690,8 +6704,9 @@ async function handlePhotoUpload(event) {
 
     reader.readAsDataURL(file);
   } finally {
-    event.target.value = '';
-  }
+  window.photoUploadInProgress = false;
+  event.target.value = '';
+}
 }
 
 function renderPhotos() {
