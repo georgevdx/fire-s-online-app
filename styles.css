@@ -2828,9 +2828,12 @@ button.readiness-chip:focus {
 
 .report-photo-img {
   display: block;
-  width: 100%;
-  max-height: 210mm;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: 190mm;
   object-fit: contain;
+  margin: 8px auto 10px auto;
   break-inside: avoid;
   page-break-inside: avoid;
 }
