@@ -6347,8 +6347,20 @@ function generateReport() {
   }); 
     photosHtml += `</div>`;
   } else {
-    photosHtml = `<div class="note">No photo evidence added.</div>`;
-  }
+  photosHtml = `
+    <div class="report-page-break"></div>
+
+    <div class="report-block">
+      <h2 class="appendix-title">
+        APPENDIX A - PHOTO EVIDENCE
+      </h2>
+
+      <div class="note">
+        No photo evidence was added to this inspection.
+      </div>
+    </div>
+  `;
+}
 
  reportContent.innerHTML = `
   <div class="report-header">
