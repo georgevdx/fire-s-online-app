@@ -2799,24 +2799,9 @@ button.readiness-chip:focus {
   opacity: 1;
 }
 
-.report-page-break {
-  break-before: page;
-  page-break-before: always;
-}
-
 .appendix-title {
   break-after: avoid;
   page-break-after: avoid;
-}
-
-.report-photos {
-  display: block;
-}
-
-.report-photo-card {
-  break-inside: avoid;
-  page-break-inside: avoid;
-  margin-bottom: 18px;
 }
 
 .report-photo-header,
@@ -2838,25 +2823,11 @@ button.readiness-chip:focus {
   page-break-inside: avoid;
 }
 
-.report-page-break {
-  break-before: page;
-  page-break-before: always;
-}
-
 .report-photo-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10mm;
   align-items: start;
-}
-
-.report-photo-card {
-  break-inside: avoid;
-  page-break-inside: avoid;
-  border: 1px solid #ddd;
-  padding: 6mm;
-  min-height: 120mm;
-  box-sizing: border-box;
 }
 
 .report-photo-header {
@@ -2878,15 +2849,6 @@ button.readiness-chip:focus {
   overflow: hidden;
 }
 
-.report-photo-img {
-  display: block;
-  max-width: 100%;
-  max-height: 75mm;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
-
 .report-photo-note {
   font-size: 10px;
   margin-top: 4mm;
@@ -2902,8 +2864,20 @@ button.readiness-chip:focus {
   min-height: 260mm;
 }
 
+/* REPORT PHOTO APPENDIX - FINAL CLEAN VERSION */
+
+.report-photo-page {
+  break-before: page;
+  page-break-before: always;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
 .appendix-title {
-  margin: 0 0 8mm 0;
+  margin: 0 0 6mm 0;
+  color: #b71c1c;
+  font-size: 18px;
   break-after: avoid;
   page-break-after: avoid;
 }
@@ -2911,29 +2885,31 @@ button.readiness-chip:focus {
 .report-photo-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 7mm;
+  gap: 5mm;
+  align-items: start;
 }
 
 .report-photo-card {
   border: 1px solid #ddd;
-  padding: 4mm;
+  padding: 3mm;
   box-sizing: border-box;
-  height: 118mm;
+  height: 112mm;
+  overflow: hidden;
   break-inside: avoid;
   page-break-inside: avoid;
-  overflow: hidden;
+  background: #fff;
 }
 
 .report-photo-header {
   font-weight: 700;
-  font-size: 11px;
-  margin-bottom: 1.5mm;
+  font-size: 10px;
+  margin-bottom: 1mm;
 }
 
 .report-photo-time {
-  font-size: 9px;
-  margin-bottom: 2.5mm;
+  font-size: 8.5px;
+  margin-bottom: 2mm;
+  color: #555;
 }
 
 .report-photo-image-box {
@@ -2943,6 +2919,7 @@ button.readiness-chip:focus {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background: #f7f7f7;
 }
 
 .report-photo-img {
@@ -2955,8 +2932,16 @@ button.readiness-chip:focus {
 }
 
 .report-photo-note {
-  font-size: 9px;
-  margin-top: 2.5mm;
-  min-height: 12mm;
+  font-size: 8.5px;
+  line-height: 1.25;
+  margin-top: 2mm;
+  max-height: 22mm;
   overflow: hidden;
+  background: #f7f7f7;
+  border-left: 3px solid #c62828;
+  padding: 2mm;
 }
+
+
+
+
