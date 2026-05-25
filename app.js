@@ -1254,6 +1254,7 @@ async function runBackgroundSync(reason = 'background') {
     await uploadPendingInspections();
 
     renderProjectsList();
+    reloadCurrentOpenInspectionAfterSync();
 
     const syncStatus = document.getElementById('syncStatus');
 
