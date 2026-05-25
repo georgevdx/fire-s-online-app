@@ -6315,54 +6315,71 @@ function generateReport() {
   }
 
   if (currentPhotos.length > 0) {
-  currentPhotos.forEach((photo, index) => {
-    if (index > 0 && index % 4 === 0) {
-      photosHtml += `
-        </div>
-        <div class="report-page-break"></div>
-        <div class="report-photos report-photo-grid">
-      `;
-    }
+  photosHtml = '';
+
+  for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
+    const pagePhotos = currentPhotos.slice(pageStart, pageStart + 4);
+    const isFirstPhotoPage = pageStart === 0;
 
     photosHtml += `
-      <div class="report-photo-card">
+      <div class="report-photo-page">
+        ${
+          isFirstPhotoPage
+            ? `
+              <h2 class="appendix-title">
+                APPENDIX A - PHOTO EVIDENCE
+              </h2>
+            `
+            : ''
+        }
 
-        <div class="report-photo-header">
-          Photo ${index + 1}
+        <div class="report-photo-grid">
+    `;
+
+    pagePhotos.forEach((photo, pageIndex) => {
+      const photoNumber = pageStart + pageIndex + 1;
+
+      photosHtml += `
+        <div class="report-photo-card">
+
+          <div class="report-photo-header">
+            Photo ${photoNumber}
+          </div>
+
+          <div class="report-photo-time">
+            Captured:
+            ${
+              photo.timestamp
+                ? new Date(photo.timestamp).toLocaleString()
+                : 'Not recorded'
+            }
+          </div>
+
+          <div class="report-photo-image-box">
+            <img
+              src="${photo.src}"
+              class="report-photo-img"
+              alt="Inspection photo ${photoNumber}"
+            >
+          </div>
+
+          <div class="report-photo-note">
+            <strong>Photo Note:</strong>
+            ${escapeHtml(photo.note || 'No note added.')}
+          </div>
+
         </div>
+      `;
+    });
 
-        <div class="report-photo-time">
-          Captured:
-          ${
-            photo.timestamp
-              ? new Date(photo.timestamp).toLocaleString()
-              : 'Not recorded'
-          }
+    photosHtml += `
         </div>
-
-        <div class="report-photo-image-box">
-          <img
-            src="${photo.src}"
-            class="report-photo-img"
-            alt="Inspection photo ${index + 1}"
-          >
-        </div>
-
-        <div class="report-photo-note">
-          <strong>Photo Note:</strong>
-          ${escapeHtml(photo.note || 'No note added.')}
-        </div>
-
       </div>
     `;
-  });
-
-  photosHtml += `</div>`;
+  }
 } else {
   photosHtml = `
-    <div class="report-page-break"></div>
-
-    <div class="report-block">
+    <div class="report-photo-page">
       <h2 class="appendix-title">
         APPENDIX A - PHOTO EVIDENCE
       </h2>

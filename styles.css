@@ -2892,3 +2892,71 @@ button.readiness-chip:focus {
   margin-top: 4mm;
   min-height: 12mm;
 }
+
+.report-photo-page {
+  break-before: page;
+  page-break-before: always;
+  break-after: page;
+  page-break-after: always;
+  box-sizing: border-box;
+  min-height: 260mm;
+}
+
+.appendix-title {
+  margin: 0 0 8mm 0;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.report-photo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 7mm;
+}
+
+.report-photo-card {
+  border: 1px solid #ddd;
+  padding: 4mm;
+  box-sizing: border-box;
+  height: 118mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  overflow: hidden;
+}
+
+.report-photo-header {
+  font-weight: 700;
+  font-size: 11px;
+  margin-bottom: 1.5mm;
+}
+
+.report-photo-time {
+  font-size: 9px;
+  margin-bottom: 2.5mm;
+}
+
+.report-photo-image-box {
+  height: 72mm;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.report-photo-img {
+  display: block;
+  max-width: 100%;
+  max-height: 72mm;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.report-photo-note {
+  font-size: 9px;
+  margin-top: 2.5mm;
+  min-height: 12mm;
+  overflow: hidden;
+}
