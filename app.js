@@ -4925,17 +4925,32 @@ async function uploadPhotoToStorage(file, projectId) {
   const filePath =
     `${userData.user.id}/${safeProjectId}/${Date.now()}.${fileExtension}`;
 
-  const { error: uploadError } = await supabaseClient
-    .storage
-    .from('inspection-photos')
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
+  console.log('Starting photo storage upload:', {
+  bucket: 'inspection-photos',
+  filePath,
+  fileName: file.name,
+  fileType: file.type,
+  fileSize: file.size,
+  projectId
+});
 
-  if (uploadError) {
-    throw uploadError;
-  }
+const { data: uploadData, error: uploadError } = await supabaseClient
+  .storage
+  .from('inspection-photos')
+  .upload(filePath, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type || 'image/jpeg'
+  });
+
+console.log('Photo storage upload result:', {
+  uploadData,
+  uploadError
+});
+
+if (uploadError) {
+  throw uploadError;
+}
 
   const { data: publicUrlData } = supabaseClient
     .storage
@@ -6526,7 +6541,15 @@ async function handlePhotoUpload(event) {
     
   } catch (error) {
     console.error('Photo upload failed, using local fallback:', error);
-    console.log('Photo storage upload error message:', error.message);
+
+console.log('Photo storage upload error details:', {
+  message: error?.message,
+  name: error?.name,
+  statusCode: error?.statusCode,
+  status: error?.status,
+  details: error?.details,
+  hint: error?.hint
+});
 
     setPhotoStatus(
   'Photo saved locally only. Storage upload failed.'
