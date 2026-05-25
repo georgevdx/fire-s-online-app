@@ -6602,13 +6602,19 @@ async function handlePhotoUpload(event) {
     renderPhotos();
     scheduleAutoSave();
 
-    setPhotoStatus(
-      'Photo saved locally only. Storage upload failed.'
-    );
+    const storageErrorMessage =
+  error?.message ||
+  error?.statusCode ||
+  error?.status ||
+  'Unknown Storage upload error';
+
+setPhotoStatus(
+  `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+);
 
     updatePhotoUploadStatus(
-      'Photo saved locally only. Storage upload failed.'
-    );
+  `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+);
     
   } catch (error) {
     console.error('Photo upload failed, using local fallback:', error);
@@ -6668,7 +6674,11 @@ console.log('Photo storage upload error details:', {
         scheduleAutoSave();
 
         setPhotoStatus(
-          'Photo saved locally only. Storage upload failed.'
+          `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+        );
+
+        updatePhotoUploadStatus(
+          `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
         );
       };
 
