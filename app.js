@@ -6656,106 +6656,8 @@ function updatePhotoUploadStatus(messageOverride) {
       : counterText;
 }
 
-async function handlePhotoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const saveMessage = document.getElementById('saveMessage');
-  const photoUploadStatus =
-    document.getElementById('photoUploadStatus');
-
-    if (window.photoUploadInProgress) {
-  const message = 'Photo upload already in progress. Please wait.';
-
-  if (saveMessage) saveMessage.textContent = message;
-  if (photoUploadStatus) photoUploadStatus.textContent = message;
-
-  event.target.value = '';
-  return;
-}
-
-window.photoUploadInProgress = true;
-
-  function setPhotoStatus(message) {
-    if (saveMessage) {
-      saveMessage.textContent = message;
-    }
-
-    if (photoUploadStatus) {
-      photoUploadStatus.textContent = message;
-    }
-  }
-
-  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
-  const message =
-    `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
-
-  setPhotoStatus(message);
-
-  window.photoUploadInProgress = false;
-  event.target.value = '';
-  return;
-}
-
-  if (!currentProjectId) {
-    setPhotoStatus('Saving inspection first...');
-
-    saveProject();
-
-    if (!currentProjectId) {
-  setPhotoStatus(
-    'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
-  );
-
-  window.photoUploadInProgress = false;
-  event.target.value = '';
-  return;
-}
-  }
-
-  setPhotoStatus('Uploading photo...');
-
-  try {
-   const uploadedPhoto =
-    await withPhotoTimeout(
-      uploadPhotoToStorage(file, currentProjectId),
-      30000
-    );
-
-    currentPhotos.push(uploadedPhoto);
-
-    renderPhotos();
-    scheduleAutoSave();
-
-    setPhotoStatus('Photo uploaded and added.');
-    updatePhotoUploadStatus('Photo uploaded and added.');
-
-  } catch (error) {
-    console.error('Photo upload failed, using local fallback:', error);
-
-    const storageErrorMessage =
-      error?.message ||
-      error?.statusCode ||
-      error?.status ||
-      'Unknown Storage upload error';
-
-    console.log('Photo storage upload error details:', {
-      message: error?.message,
-      name: error?.name,
-      statusCode: error?.statusCode,
-      status: error?.status,
-      details: error?.details,
-      hint: error?.hint
-    });
-
-    setPhotoStatus(
-      `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
-    );
-
-    updatePhotoUploadStatus(
-      `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
-    );
-
+function createLocalPhotoFallback(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -6784,41 +6686,167 @@ window.photoUploadInProgress = true;
         const compressedDataUrl =
           canvas.toDataURL('image/jpeg', 0.85);
 
-        currentPhotos.push({
+        resolve({
           src: compressedDataUrl,
           timestamp: new Date().toISOString(),
           note: '',
           uploadFallback: true
         });
-
-        renderPhotos();
-        scheduleAutoSave();
-
-        setPhotoStatus(
-          `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
-        );
-
-        updatePhotoUploadStatus(
-          `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
-        );
       };
 
       img.onerror = function() {
-        setPhotoStatus('Photo could not be processed.');
+        reject(new Error('Photo could not be processed.'));
       };
 
       img.src = e.target.result;
     };
 
     reader.onerror = function() {
-      setPhotoStatus('Photo could not be read from device.');
+      reject(new Error('Photo could not be read from device.'));
     };
 
     reader.readAsDataURL(file);
-  } finally {
-  window.photoUploadInProgress = false;
-  event.target.value = '';
+  });
 }
+
+async function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const saveMessage = document.getElementById('saveMessage');
+  const photoUploadStatus =
+    document.getElementById('photoUploadStatus');
+
+  function setPhotoStatus(message) {
+    if (saveMessage) {
+      saveMessage.textContent = message;
+    }
+
+    updatePhotoUploadStatus(message);
+  }
+
+  if (window.photoUploadInProgress) {
+    const message = 'Photo upload already in progress. Please wait.';
+
+    if (saveMessage) saveMessage.textContent = message;
+    if (photoUploadStatus) photoUploadStatus.textContent = message;
+
+    event.target.value = '';
+    return;
+  }
+
+  window.photoUploadInProgress = true;
+
+  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
+    const message =
+      `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
+
+    setPhotoStatus(message);
+
+    window.photoUploadInProgress = false;
+    event.target.value = '';
+    return;
+  }
+
+  if (!currentProjectId) {
+    setPhotoStatus('Saving inspection first...');
+
+    saveProject();
+
+    if (!currentProjectId) {
+      setPhotoStatus(
+        'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
+      );
+
+      window.photoUploadInProgress = false;
+      event.target.value = '';
+      return;
+    }
+  }
+
+  const previewUrl = URL.createObjectURL(file);
+
+  const tempPhoto = {
+    src: previewUrl,
+    timestamp: new Date().toISOString(),
+    note: '',
+    uploadPending: true
+  };
+
+  currentPhotos.push(tempPhoto);
+
+  const photoIndex = currentPhotos.length - 1;
+
+  renderPhotos();
+  setPhotoStatus('Uploading photo...');
+
+  try {
+    const uploadedPhoto =
+      await uploadPhotoToStorage(file, currentProjectId);
+
+    const existingNote =
+      currentPhotos[photoIndex]?.note || '';
+
+    currentPhotos[photoIndex] = {
+      ...uploadedPhoto,
+      note: existingNote
+    };
+
+    URL.revokeObjectURL(previewUrl);
+
+    renderPhotos();
+    scheduleAutoSave();
+
+    setPhotoStatus('Photo uploaded and added.');
+
+  } catch (error) {
+    console.error('Photo upload failed, using local fallback:', error);
+
+    const storageErrorMessage =
+      error?.message ||
+      error?.statusCode ||
+      error?.status ||
+      'Unknown Storage upload error';
+
+    try {
+      const fallbackPhoto =
+        await createLocalPhotoFallback(file);
+
+      const existingNote =
+        currentPhotos[photoIndex]?.note || '';
+
+      currentPhotos[photoIndex] = {
+        ...fallbackPhoto,
+        note: existingNote
+      };
+
+      URL.revokeObjectURL(previewUrl);
+
+      renderPhotos();
+      scheduleAutoSave();
+
+      setPhotoStatus(
+        `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
+      );
+
+    } catch (fallbackError) {
+      console.error('Local photo fallback failed:', fallbackError);
+
+      currentPhotos.splice(photoIndex, 1);
+
+      URL.revokeObjectURL(previewUrl);
+
+      renderPhotos();
+
+      setPhotoStatus(
+        `Photo could not be saved: ${fallbackError.message}`
+      );
+    }
+
+  } finally {
+    window.photoUploadInProgress = false;
+    event.target.value = '';
+  }
 }
 
 function renderPhotos() {
