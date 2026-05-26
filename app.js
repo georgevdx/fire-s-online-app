@@ -6792,6 +6792,17 @@ async function handlePhotoUpload(event) {
     renderPhotos();
     saveCurrentPhotosToOpenProject();
 
+    const localProjectForUpload = getProjects().find(
+      project => project.id === currentProjectId
+    );
+
+    if (localProjectForUpload) {
+      uploadSingleInspection(localProjectForUpload)
+        .catch(error => {
+          console.warn('Photo local save upload failed:', error);
+        });
+    }
+
     setPhotoStatus('Photo added locally. Uploading to cloud...');
 
     try {
@@ -6819,6 +6830,18 @@ async function handlePhotoUpload(event) {
 
         renderPhotos();
         saveCurrentPhotosToOpenProject();
+
+        const uploadedProjectForUpload = getProjects().find(
+          project => project.id === currentProjectId
+        );
+
+        if (uploadedProjectForUpload) {
+          uploadSingleInspection(uploadedProjectForUpload)
+            .catch(error => {
+              console.warn('Photo storage URL upload failed:', error);
+            });
+        }
+
         scheduleAutoSave();
 
         setPhotoStatus('Photo uploaded and added.');
