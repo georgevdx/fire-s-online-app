@@ -3154,3 +3154,33 @@ button.readiness-chip:focus {
   border: 1px solid #f2a3a3;
 }
 
+.service-followup-box {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.service-followup-box label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #607080;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.service-followup-note {
+  width: 100%;
+  min-height: 80px;
+  border: 1px solid #dfe7ef;
+  border-radius: 10px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.service-followup-note:focus {
+  outline: none;
+  border-color: #9fc6ea;
+  box-shadow: 0 0 0 3px rgba(159, 198, 234, 0.25);
+}

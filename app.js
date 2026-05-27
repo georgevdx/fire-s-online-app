@@ -3228,6 +3228,17 @@ function openServiceRequestCard(index) {
         ${request.createdAt ? escapeHtml(new Date(request.createdAt).toLocaleString()) : '-'}
       </div>
 
+      <div class="service-followup-box">
+      <label for="serviceFollowupNote">
+        Follow-up Note
+      </label>
+
+      <textarea
+        id="serviceFollowupNote"
+        class="service-followup-note"
+        placeholder="Example: Client called, quote requested, technician to arrange visit..."
+      ></textarea>
+
       <button
         type="button"
         class="service-request-followed-btn"
@@ -3235,6 +3246,7 @@ function openServiceRequestCard(index) {
       >
         Mark as Followed Up
       </button>
+    </div>
     </div>
   `;
 
@@ -3264,18 +3276,29 @@ function backToServiceRequestList() {
 }
 
 async function markServiceRequestFollowedUp(requestId) {
+  const noteField = document.getElementById('serviceFollowupNote');
+  const followupNote = noteField ? noteField.value.trim() : '';
+
   const confirmed = confirm(
-    'Mark this service request as followed up? It will be removed from the active request list.'
+    followupNote
+      ? 'Mark this service request as followed up?'
+      : 'No follow-up note added. Mark this service request as followed up anyway?'
   );
 
   if (!confirmed) return;
 
+  const updatePayload = {
+    status: 'followed_up',
+    followed_up_at: new Date().toISOString()
+  };
+
+  if (followupNote) {
+    updatePayload.followup_note = followupNote;
+  }
+
   const { error } = await supabaseClient
     .from('service_requests')
-    .update({
-      status: 'followed_up',
-      followed_up_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', requestId);
 
   if (error) {
