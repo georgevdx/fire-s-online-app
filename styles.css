@@ -3091,6 +3091,51 @@ button.readiness-chip:focus {
   }
 }
 
+.inspection-quick-actions {
+  background: #ffffff;
+  border: 1px solid #dfe7ef;
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin: 0 0 12px 0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.quick-actions-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #607080;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.quick-actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quick-actions-grid button {
+  border: 1px solid #cfe0ef;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f7fbff;
+  color: #123047;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quick-actions-grid button:hover {
+  background: #eaf4ff;
+  border-color: #9fc6ea;
+}
+
+.quick-actions-grid button:active {
+  transform: translateY(1px);
+}
 
 
 

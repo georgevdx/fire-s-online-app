@@ -3905,6 +3905,7 @@ function focusInputField(field) {
 
 function focusFirstMissingProjectInfo() {
   const missingChecks = [
+    () => !getEl('organisationName').value.trim() && getEl('organisationName'),
     () => !getEl('siteName').value.trim() && getEl('siteName'),
     () => !getEl('inspectorName').value.trim() && getEl('inspectorName'),
     () => !combineStreetAddress(
@@ -3928,6 +3929,7 @@ function focusFirstMissingProjectInfo() {
 
   for (const check of missingChecks) {
     const field = check();
+
     if (field) {
       focusInputField(field);
       return;
