@@ -6115,46 +6115,55 @@ function generateReport() {
     const expiryDate = expiryField ? expiryField.value : '';
 
     const trackExpiry = isExpiryTrackedChecklistItem(item);
-    const expiryApplies = isExpiryApplicableAnswer(answer);
+const expiryApplies = isExpiryApplicableAnswer(answer);
 
-    reportAnswers.push({
-      itemIndex: index,
-      itemNumber: item["Item Number"] || String(index + 1),
-      answer,
-      note: itemNote,
-      expiryDate: expiryField ? expiryField.value : null
-    });
+const hasRealAnswer =
+  ['yes', 'no', 'n/a'].includes(answer.toLowerCase());
 
-    if (trackExpiry && expiryApplies && expiryDate) {
-      const expiryStatus = getExpiryStatus(expiryDate);
-      const expiryLabel =
-        expiryStatus === 'overdue'
-          ? 'Expired'
-          : expiryStatus === 'soon'
-          ? 'Due Soon'
-          : 'Scheduled';
+const hasNote =
+  itemNote.length > 0;
 
-      expiryDetails.push({
-        itemNumber: item["Item Number"] || '',
-        checklistItem: item["Checklist Item"] || '',
-        expiryDate,
-        status: expiryStatus,
-        label: expiryLabel
-      });
-    }
+const hasExpiryDate =
+  expiryDate.length > 0;
 
-    if (trackExpiry && expiryApplies && !expiryDate) {
-      missingExpiryDetails.push({
-        itemNumber: item["Item Number"] || '',
-        checklistItem: item["Checklist Item"] || '',
-        answer: answer || 'Not answered',
-        note: itemNote
-      });
-    }
+if (!hasRealAnswer && !hasNote && !hasExpiryDate) {
+  return;
+}
 
-    if (rawAnswer === 'Not answered' && !itemNote) {
-      return;
-    }
+reportAnswers.push({
+  itemIndex: index,
+  itemNumber: item["Item Number"] || String(index + 1),
+  answer,
+  note: itemNote,
+  expiryDate: expiryField ? expiryField.value : null
+});
+
+if (trackExpiry && expiryApplies && expiryDate) {
+  const expiryStatus = getExpiryStatus(expiryDate);
+  const expiryLabel =
+    expiryStatus === 'overdue'
+      ? 'Expired'
+      : expiryStatus === 'soon'
+      ? 'Due Soon'
+      : 'Scheduled';
+
+  expiryDetails.push({
+    itemNumber: item["Item Number"] || '',
+    checklistItem: item["Checklist Item"] || '',
+    expiryDate,
+    status: expiryStatus,
+    label: expiryLabel
+  });
+}
+
+if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
+  missingExpiryDetails.push({
+    itemNumber: item["Item Number"] || '',
+    checklistItem: item["Checklist Item"] || '',
+    answer: answer || 'Not answered',
+    note: itemNote
+  });
+}
 
     const sectionName = item.Section || 'General';
 
