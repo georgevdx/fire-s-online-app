@@ -636,15 +636,30 @@ function applyAddressLookupResult(data, fallbackText) {
 function projectNeedsOfflineAddressLookup(project) {
   if (!project || !parseGpsInput(project.gps)) return false;
 
+  const gpsText = String(project.gps || '').trim();
+
   const addressLine =
     String(project.addressLine || project.projectAddress || '').trim();
-  const streetNumber = String(project.streetNumber || '').trim();
 
+  const streetNumber =
+    String(project.streetNumber || '').trim();
+
+  // If there is no address yet, we must still resolve it.
   if (!addressLine) return true;
-  if (addressLine === String(project.gps || '').trim()) return true;
-  if (project.gpsAddressResolvedAt) return false;
 
-  return !streetNumber;
+  // If the address field still contains only the GPS coordinates,
+  // it means GPS was captured offline and address lookup still needs to run.
+  if (addressLine === gpsText) return true;
+
+  // If the address looks like raw coordinates, try again when online.
+  if (parseGpsInput(addressLine)) return true;
+
+  // If there is an address but no street number, keep trying.
+  // Some sites will never return a number, but this gives the app a fair chance
+  // when signal comes back.
+  if (!streetNumber) return true;
+
+  return false;
 }
 
 function applyAddressLookupToProject(project, data) {
@@ -678,6 +693,7 @@ async function resolvePendingGpsAddresses() {
 
   const projects = getProjects();
   let changed = false;
+  let updatedCurrentProject = null;
 
   for (let index = 0; index < projects.length; index++) {
     const project = projects[index];
@@ -685,11 +701,21 @@ async function resolvePendingGpsAddresses() {
     if (!projectNeedsOfflineAddressLookup(project)) continue;
 
     const parsed = parseGpsInput(project.gps);
+    if (!parsed) continue;
 
     try {
       const data = await reverseLookupBestAddress(parsed.lat, parsed.lon);
-      projects[index] = applyAddressLookupToProject(project, data);
+
+      const updatedProject =
+        applyAddressLookupToProject(project, data);
+
+      projects[index] = updatedProject;
       changed = true;
+
+      if (updatedProject.id === currentProjectId) {
+        updatedCurrentProject = updatedProject;
+      }
+
     } catch (error) {
       console.warn('Pending GPS address lookup failed:', project.id, error);
     }
@@ -699,19 +725,23 @@ async function resolvePendingGpsAddresses() {
 
   setProjects(projects);
 
-  const currentProject =
-    currentProjectId &&
-    projects.find(project => project.id === currentProjectId);
+  if (updatedCurrentProject) {
+    getEl('streetNumber').value =
+      updatedCurrentProject.streetNumber || '';
 
-  if (currentProject && projectNeedsOfflineAddressLookup(currentProject) === false) {
-    getEl('streetNumber').value = currentProject.streetNumber || '';
     getEl('projectAddress').value =
-      currentProject.addressLine || currentProject.projectAddress || '';
+      updatedCurrentProject.addressLine ||
+      updatedCurrentProject.projectAddress ||
+      '';
+
     getEl('saveMessage').textContent =
       'Address updated from saved GPS after signal returned.';
+
+    updateGpsMapPreview();
   }
 
   renderProjectsList();
+
   uploadPendingInspections()
     .catch(error => {
       console.warn('Upload after GPS address lookup failed:', error);
@@ -7660,10 +7690,10 @@ window.addEventListener('offline', () => {
   setSyncStatusMessage('Offline mode active. You can continue working.');
 });
 
-window.addEventListener('online', () => {
-  setSyncStatusMessage('Signal restored. Syncing now...');
+window.addEventListener('online', async () => {
+  setSyncStatusMessage('Signal restored. Updating GPS addresses...');
 
-  resolvePendingGpsAddresses();
+  await resolvePendingGpsAddresses();
 
   runBackgroundSync('signal restored');
 });
