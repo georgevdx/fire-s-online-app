@@ -2876,6 +2876,9 @@ function ensureInspectionQuickActions() {
       <button type="button" onclick="focusFirstCurrentExpiry('soon')">
         Due Soon
       </button>
+      <button type="button" onclick="scheduleCurrentInspection()">
+        Schedule Inspection
+      </button>
     </div>
   `;
 }
@@ -4606,31 +4609,16 @@ function renderProjectsList() {
   updateActiveFilterStatus(filteredProjects.length);
 
   filteredProjects.sort((a, b) => {
-    const getProjectPriority = project => {
-      const followStatus = getFollowUpStatus(project);
-      const expiryCounts = getProjectExpiryCounts(project);
-      const hasHighRisk = project.answers?.some(
-        answer => answer.answer === 'No'
-      );
+  const aTime = a.lastSaved
+    ? new Date(a.lastSaved).getTime()
+    : 0;
 
-      if (hasHighRisk) return 1;
-      if (expiryCounts.overdue > 0) return 2;
-      if (followStatus.class === 'status-overdue') return 3;
-      if (expiryCounts.soon > 0) return 4;
-      if (followStatus.class === 'status-soon') return 5;
-      return 6;
-    };
+  const bTime = b.lastSaved
+    ? new Date(b.lastSaved).getTime()
+    : 0;
 
-    const priorityDiff =
-      getProjectPriority(a) - getProjectPriority(b);
-
-    if (priorityDiff !== 0) return priorityDiff;
-
-    const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
-    const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
-
-    return bTime - aTime;
-  });
+  return bTime - aTime;
+});
  
   const totalPages = Math.max(
   1,
@@ -4701,31 +4689,59 @@ container.innerHTML = `
         'No address captured';
 
       return `
-        <button
-          type="button"
-          class="inspection-project-list-item"
-          onclick="openProjectSummaryCard(${index})"
-        >
-          <span class="inspection-project-list-title">
-            ${escapeHtml(projectTitle)}
-          </span>
+        <div class="inspection-project-list-item">
+  <div class="inspection-project-card-main">
+    <span class="inspection-project-list-title">
+      ${escapeHtml(projectTitle)}
+    </span>
 
-          <span class="inspection-project-list-meta">
-            ${escapeHtml(project.inspectionNumber || '-')}
-          </span>
+    <span class="inspection-project-list-meta">
+      ${escapeHtml(project.inspectionNumber || '-')}
+    </span>
 
-          <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
-            ${escapeHtml(inspectionStatus.label)}
-          </span>
+    <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+      ${escapeHtml(inspectionStatus.label)}
+    </span>
 
-          <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
-            ${escapeHtml(followStatus.label)}
-          </span>
+    <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+      ${
+        project.scheduledDate
+          ? `Scheduled: ${escapeHtml(project.scheduledDate)}`
+          : escapeHtml(followStatus.label)
+      }
+    </span>
 
-          <span class="inspection-project-list-address">
-            ${escapeHtml(projectAddress)}
-          </span>
-        </button>
+    <span class="inspection-project-list-address">
+      ${escapeHtml(projectAddress)}
+    </span>
+  </div>
+
+  <div class="inspection-project-card-actions">
+    <button
+      type="button"
+      class="small-btn"
+      onclick="openProjectSummaryCard(${index})"
+    >
+      View
+    </button>
+
+    <button
+      type="button"
+      class="small-btn primary-small-btn"
+      onclick="openProject('${escapeHtml(project.id)}')"
+    >
+      Open
+    </button>
+
+    <button
+      type="button"
+      class="small-btn"
+      onclick="scheduleInspectionForProject('${escapeHtml(project.id)}')"
+    >
+      Schedule
+    </button>
+  </div>
+</div>
       `;
     }).join('')}
   </div>
@@ -5651,6 +5667,120 @@ function saveProject() {
 function finishInspection() {
   saveProject();
   showProjectList();
+}
+
+function scheduleInspectionForProject(projectId) {
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow scheduling inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  const projects = getProjects();
+  const original = projects.find(project => project.id === projectId);
+
+  if (!original) {
+    alert('Original inspection not found.');
+    return;
+  }
+
+  const scheduledDate = prompt(
+    'Enter scheduled inspection date in YYYY-MM-DD format:',
+    new Date().toISOString().slice(0, 10)
+  );
+
+  if (!scheduledDate) return;
+
+  const scheduledProject = {
+    ...original,
+
+    id: crypto.randomUUID
+      ? crypto.randomUUID()
+      : String(Date.now()),
+
+    inspectionNumber: generateInspectionNumber(),
+
+    projectName: original.projectName || 'Scheduled Inspection',
+
+    answers: [],
+    photos: [],
+
+    scheduledDate,
+    scheduledStatus: 'scheduled',
+
+    followUpRequired: 'No',
+    followUpDate: scheduledDate,
+    followUpNotes: 'Scheduled inspection',
+
+    linkedToInspectionId: original.id,
+    linkedToInspectionName: original.projectName || '',
+    linkedToInspectionNumber: original.inspectionNumber || '',
+    linkedToInspectionDate: original.lastSaved || '',
+
+    syncPending: true,
+    syncError: false,
+
+    createdFromSchedule: true,
+    lastSaved: new Date().toISOString()
+  };
+
+  projects.push(scheduledProject);
+  setProjects(projects);
+
+  currentProjectId = scheduledProject.id;
+  currentPhotos = [];
+
+  openProject(scheduledProject.id);
+
+  getEl('saveMessage').textContent =
+    `Inspection scheduled for ${scheduledDate}.`;
+}
+
+function scheduleCurrentInspection() {
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow scheduling inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  const scheduledDate = prompt(
+    'Enter scheduled inspection date in YYYY-MM-DD format:',
+    new Date().toISOString().slice(0, 10)
+  );
+
+  if (!scheduledDate) return;
+
+  saveProject();
+
+  if (!currentProjectId) {
+    alert('Save failed. Complete at least the Premises / Site field first.');
+    return;
+  }
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === currentProjectId);
+
+  if (index === -1) return;
+
+  projects[index] = {
+    ...projects[index],
+    scheduledDate,
+    scheduledStatus: 'scheduled',
+    followUpRequired: 'No',
+    followUpDate: scheduledDate,
+    followUpNotes: 'Scheduled inspection',
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+
+  setProjects(projects);
+  renderProjectsList();
+
+  getEl('saveMessage').textContent =
+    `Inspection scheduled for ${scheduledDate}.`;
 }
 
 function createFollowUpInspection() {
@@ -7719,3 +7849,5 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+window.scheduleInspectionForProject = scheduleInspectionForProject;
+window.scheduleCurrentInspection = scheduleCurrentInspection;
