@@ -3240,17 +3240,6 @@ function openServiceRequestCard(index) {
       ></textarea>
     </div>
 
-      <div class="service-followup-box">
-      <label for="serviceFollowupNote">
-        Follow-up Note
-      </label>
-
-      <textarea
-        id="serviceFollowupNote"
-        class="service-followup-note"
-        placeholder="Example: Client called, quote requested, technician to arrange visit..."
-      ></textarea>
-
       <button
         type="button"
         class="service-request-followed-btn"
