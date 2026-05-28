@@ -347,13 +347,19 @@ function autoSaveProject() {
   const savedProject = projects.find(p => p.id === currentProjectId);
 
   if (savedProject) {
-    uploadSingleInspection(savedProject)
-      .catch(error => {
-        console.error('Auto upload after autosave failed:', error);
-      });
-  } else {
-    console.warn('Auto upload skipped: autosaved project not found.');
+  if (!navigator.onLine) {
+    setSyncStatusMessage('Autosaved offline. Will sync when signal returns.');
+    return;
   }
+
+  uploadSingleInspection(savedProject)
+    .catch(error => {
+      console.error('Auto upload after autosave failed:', error);
+      setSyncStatusMessage('Autosaved locally. Cloud upload failed.');
+    });
+} else {
+  console.warn('Auto upload skipped: autosaved project not found.');
+}
 }
 
   function formatLastSaved(date = new Date()) {
@@ -1235,10 +1241,31 @@ function initAuthStateListener() {
 
 let backgroundSyncInProgress = false;
 
+function setSyncStatusMessage(message) {
+  const syncStatus = document.getElementById('syncStatus');
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (syncStatus) {
+    syncStatus.textContent = message;
+  }
+
+  if (saveMessage) {
+    saveMessage.textContent = message;
+  }
+}
+
 async function runBackgroundSync(reason = 'background') {
   if (backgroundSyncInProgress) return;
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
+
+  if (!navigator.onLine) {
+    setSyncStatusMessage('Offline. Changes will sync when signal returns.');
+    return;
+  }
+
+  if (typeof supabaseClient === 'undefined') {
+    setSyncStatusMessage('Cloud sync unavailable. Saved locally.');
+    return;
+  }
 
   backgroundSyncInProgress = true;
 
@@ -1246,8 +1273,11 @@ async function runBackgroundSync(reason = 'background') {
     const { data, error } = await supabaseClient.auth.getUser();
 
     if (error || !data?.user) {
+      setSyncStatusMessage('Saved locally. Login required for cloud sync.');
       return;
     }
+
+    setSyncStatusMessage(`Syncing changes... (${reason})`);
 
     await uploadPendingInspections();
     await safeDownloadNewerCloudInspections();
@@ -1256,13 +1286,10 @@ async function runBackgroundSync(reason = 'background') {
     renderProjectsList();
     reloadCurrentOpenInspectionAfterSync();
 
-    const syncStatus = document.getElementById('syncStatus');
-
-    if (syncStatus) {
-      syncStatus.textContent = `Auto sync complete (${reason}).`;
-    }
+    setSyncStatusMessage('All changes synced.');
   } catch (error) {
     console.warn(`Background sync failed (${reason}):`, error);
+    setSyncStatusMessage('Saved locally. Cloud sync failed.');
   } finally {
     backgroundSyncInProgress = false;
   }
@@ -5573,13 +5600,19 @@ function saveProject() {
   const savedProject = projects.find(p => p.id === currentProjectId);
 
   if (savedProject) {
-    uploadSingleInspection(savedProject)
-      .catch(error => {
-        console.error('Auto upload after save failed:', error);
-      });
-  } else {
-    console.warn('Auto upload skipped: saved project not found.');
+  if (!navigator.onLine) {
+    setSyncStatusMessage('Saved offline. Will sync when signal returns.');
+    return;
   }
+
+  uploadSingleInspection(savedProject)
+    .catch(error => {
+      console.error('Auto upload after save failed:', error);
+      setSyncStatusMessage('Saved locally. Cloud upload failed.');
+    });
+} else {
+  console.warn('Auto upload skipped: saved project not found.');
+}
 
 
 
@@ -7623,3 +7656,14 @@ window.closeProjectSummaryCard = closeProjectSummaryCard;
 window.runBackgroundSync = runBackgroundSync;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
 window.debugSyncCounts = debugSyncCounts;
+window.addEventListener('offline', () => {
+  setSyncStatusMessage('Offline mode active. You can continue working.');
+});
+
+window.addEventListener('online', () => {
+  setSyncStatusMessage('Signal restored. Syncing now...');
+
+  resolvePendingGpsAddresses();
+
+  runBackgroundSync('signal restored');
+});
