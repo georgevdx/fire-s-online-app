@@ -19,6 +19,7 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
+let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
@@ -2694,7 +2695,7 @@ function migrateLegacyProductTypes() {
 }
 
 function createNewProject() {
-
+  archivedReportContext = null;
   if (!canCreateInspection()) {
     alert(
       'Your company access does not allow new inspections. Please contact your company admin or FireyeSA support.'
@@ -5045,6 +5046,7 @@ function archiveCurrentInspectionCycle(project) {
 }
 
 function openProject(projectId, focusMode) {
+  archivedReportContext = null;
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
   if (!project) return;
@@ -6239,14 +6241,30 @@ function generateReport() {
     return;
   }
 
- const currentProject = getProjects().find(
-    p => p.id === currentProjectId
-  );
+ const currentProject = archivedReportContext
+  ? {
+      ...archivedReportContext.parentProject,
+      ...archivedReportContext.archived,
+      id: archivedReportContext.parentProject.id,
+      inspectionHistory:
+        archivedReportContext.parentProject.inspectionHistory || []
+    }
+  : getProjects().find(
+      p => p.id === currentProjectId
+    );
 
   const repeatFindings =
     currentProject?.repeatFindings || [];
   const projectName =
     currentProject?.projectName || 'Untitled Project';
+
+  const isArchivedReport =
+  !!archivedReportContext;
+
+const reportTitle =
+  isArchivedReport
+    ? 'Archived Fire Safety Inspection Report'
+    : 'Fire Safety Inspection Report';
 
   const reportCompanyName =
   currentProject?.companyName || 'Client Company';
@@ -6872,7 +6890,7 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
         <h1>${escapeHtml(reportCompanyName)}</h1>
 
         <div class="report-subtitle">
-          Fire Safety Inspection Report
+          ${escapeHtml(reportTitle)}
         </div>
 
         <div class="report-platform-note">
@@ -6917,6 +6935,12 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
 
     <div class="report-block">
       <h3>Premises Information</h3>
+
+      ${
+        isArchivedReport
+          ? `<div class="note"><strong>Archived inspection:</strong> This report was generated from a previous inspection cycle stored in this site archive.</div>`
+          : ''
+      }
       <div class="report-line"><strong>Premises / Site:</strong> ${escapeHtml(projectName)}</div>
       <div class="report-line">
         <strong>Inspection Number:</strong>
@@ -7754,13 +7778,23 @@ function renderInspectionArchive(project) {
             ${photoCount}
           </div>
 
-          <button
-            type="button"
-            class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
-          >
-            View Previous Inspection
-          </button>
+          <div class="archive-actions">
+            <button
+              type="button"
+              class="small-btn"
+              onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            >
+              View
+            </button>
+
+            <button
+              type="button"
+              class="small-btn primary-small-btn"
+              onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            >
+              Report
+            </button>
+          </div>
         </div>
       `;
     })
@@ -8291,6 +8325,142 @@ function viewArchivedInspection(projectId, historyIndex) {
   archiveWindow.document.close();
 }
 
+function generateArchivedInspectionReport(projectId, historyIndex) {
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project || !project.inspectionHistory) {
+    alert('Archived inspection not found.');
+    return;
+  }
+
+  const archived = project.inspectionHistory[historyIndex];
+
+  if (!archived) {
+    alert('Archived inspection not found.');
+    return;
+  }
+
+  archivedReportContext = {
+    parentProject: project,
+    archived
+  };
+
+  const previousCurrentProjectId = currentProjectId;
+  const previousCurrentPhotos = currentPhotos;
+
+  currentProjectId = project.id;
+  currentPhotos = archived.photos || [];
+
+  populateProductTypes(archived.productType || project.productType);
+  updateInspectionTypeOptions(archived.inspectionType || project.inspectionType);
+
+  getEl('organisationName').value =
+    archived.organisationName || project.organisationName || '';
+
+  getEl('siteName').value =
+    archived.siteName || project.siteName || '';
+
+  getEl('inspectionType').value =
+    archived.inspectionType || project.inspectionType || '';
+
+  getEl('inspectorName').value =
+    archived.inspectorName || '';
+
+  getEl('occupancySelect').value =
+    archived.occupancy || project.occupancy || occupancies[0]["Occupancy Code"];
+
+  getEl('streetNumber').value =
+    archived.streetNumber || project.streetNumber || '';
+
+  getEl('projectAddress').value =
+    archived.addressLine ||
+    archived.projectAddress ||
+    project.addressLine ||
+    project.projectAddress ||
+    '';
+
+  getEl('gps').value =
+    archived.gps || project.gps || '';
+
+  getEl('inMall').value =
+    archived.inMall || project.inMall || 'No';
+
+  getEl('mallName').value =
+    archived.mallName || project.mallName || '';
+
+  getEl('unitNumber').value =
+    archived.unitNumber || project.unitNumber || '';
+
+  getEl('contactPerson').value =
+    archived.contactPerson || project.contactPerson || '';
+
+  getEl('contactTel').value =
+    archived.contactTel || project.contactTel || '';
+
+  getEl('contactEmail').value =
+    archived.contactEmail || project.contactEmail || '';
+
+  getEl('followUpRequired').value =
+    archived.followUpRequired || 'No';
+
+  getEl('followUpDate').value =
+    archived.followUpDate || '';
+
+  getEl('followUpNotes').value =
+    archived.followUpNotes || '';
+
+  getEl('finalComments').value =
+    archived.finalComments || '';
+
+  toggleMallFields();
+
+  renderPhotos();
+  updateDisplay();
+
+  (archived.answers || []).forEach(item => {
+    const field = document.getElementById(`check_${item.itemIndex}`);
+
+    if (field) {
+      field.value = item.answer || '';
+    }
+
+    const noteField = document.getElementById(`note_${item.itemIndex}`);
+    if (noteField) {
+      noteField.value = item.note || '';
+    }
+
+    const expiryField =
+      document.querySelector(`.expiry-date[data-index="${item.itemIndex}"]`);
+
+    if (expiryField) {
+      expiryField.value = item.expiryDate || '';
+    }
+
+    if (field) {
+      handleAnswerChange(field, { skipAutoSave: true });
+    }
+  });
+
+  generateReport();
+
+  const reportSection = document.getElementById('reportSection');
+  if (reportSection) {
+    reportSection.style.display = 'block';
+    reportSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  getEl('saveMessage').textContent =
+    'Archived inspection report generated. You can export or share it.';
+
+  // Restore app working context, but leave report visible.
+  currentProjectId = previousCurrentProjectId;
+  currentPhotos = previousCurrentPhotos;
+}
+
 function renderSiteHistory(project) {
 
   const existing =
@@ -8556,3 +8726,4 @@ if ('serviceWorker' in navigator) {
 window.scheduleInspectionForProject = scheduleInspectionForProject;
 window.scheduleCurrentInspection = scheduleCurrentInspection;
 window.viewArchivedInspection = viewArchivedInspection;
+window.generateArchivedInspectionReport = generateArchivedInspectionReport;
