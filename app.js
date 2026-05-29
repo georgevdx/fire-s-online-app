@@ -5000,17 +5000,38 @@ function archiveCurrentInspectionCycle(project) {
   const previousInspectionSnapshot = {
     archivedAt: new Date().toISOString(),
 
+    // Main inspection identity
     inspectionNumber: project.inspectionNumber || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
 
+    // Site / premises info
+    projectName: project.projectName || '',
+    organisationName: project.organisationName || '',
+    siteName: project.siteName || '',
+    streetNumber: project.streetNumber || '',
+    addressLine: project.addressLine || '',
+    projectAddress: project.projectAddress || '',
+    gps: project.gps || '',
+    inMall: project.inMall || 'No',
+    mallName: project.mallName || '',
+    unitNumber: project.unitNumber || '',
+
+    // Contact info
+    contactPerson: project.contactPerson || '',
+    contactTel: project.contactTel || '',
+    contactEmail: project.contactEmail || '',
+
+    // Inspection setup
     productType: project.productType || '',
     inspectionType: project.inspectionType || '',
     occupancy: project.occupancy || '',
 
+    // Actual inspection data
     answers: project.answers || [],
     photos: project.photos || [],
 
+    // Comments / follow-up
     finalComments: project.finalComments || '',
     followUpRequired: project.followUpRequired || '',
     followUpDate: project.followUpDate || '',
@@ -7772,28 +7793,99 @@ function viewArchivedInspection(projectId, historyIndex) {
     return;
   }
 
-  const archived =
-    project.inspectionHistory[historyIndex];
+  const archived = project.inspectionHistory[historyIndex];
 
   if (!archived) {
     alert('Archived inspection not found.');
     return;
   }
 
+  const archivedProjectContext = {
+    ...project,
+    ...archived,
+    productType: archived.productType || project.productType,
+    inspectionType: archived.inspectionType || project.inspectionType,
+    occupancy: archived.occupancy || project.occupancy
+  };
+
+  const checklist =
+    getChecklistForProject(archivedProjectContext) || [];
+
   const answeredItems =
     (archived.answers || []).filter(answer =>
       ['yes', 'no', 'n/a'].includes(
         String(answer.answer || '').trim().toLowerCase()
-      ) || answer.note || answer.expiryDate
+      ) ||
+      answer.note ||
+      answer.expiryDate
     );
 
+  const enrichedAnswers =
+    answeredItems.map(answer => {
+      const checklistItem =
+        checklist[answer.itemIndex] ||
+        checklist.find(item =>
+          String(item["Item Number"]) === String(answer.itemNumber)
+        ) ||
+        {};
+
+      return {
+        ...answer,
+        itemNumber:
+          checklistItem["Item Number"] ||
+          answer.itemNumber ||
+          answer.itemIndex + 1,
+
+        checklistItem:
+          checklistItem["Checklist Item"] ||
+          'Checklist item text not found',
+
+        section:
+          checklistItem.Section ||
+          'General',
+
+        reference:
+          checklistItem.Reference ||
+          '',
+
+        nonComplianceText:
+          checklistItem["Non Compliance Text"] ||
+          '',
+
+        correctiveAction:
+          checklistItem["Corrective Action"] ||
+          '',
+
+        severity:
+          checklistItem.Severity ||
+          'Medium'
+      };
+    });
+
   const findings =
-    answeredItems.filter(answer =>
+    enrichedAnswers.filter(answer =>
       String(answer.answer || '').trim().toLowerCase() === 'no'
     );
 
   const photos =
     archived.photos || [];
+
+  const projectTitle =
+    archived.projectName ||
+    project.projectName ||
+    [archived.organisationName || project.organisationName, archived.siteName || project.siteName]
+      .filter(Boolean)
+      .join(' ') ||
+    'Previous Inspection';
+
+  const projectAddress =
+    archived.projectAddress ||
+    project.projectAddress ||
+    combineStreetAddress(
+      archived.streetNumber || project.streetNumber,
+      archived.addressLine || project.addressLine
+    ) ||
+    '-';
 
   const archiveWindow = window.open('', '_blank');
 
@@ -7805,7 +7897,7 @@ function viewArchivedInspection(projectId, historyIndex) {
   archiveWindow.document.write(`
     <html>
       <head>
-        <title>Previous Inspection</title>
+        <title>Previous Inspection - ${escapeHtml(projectTitle)}</title>
 
         <style>
           body {
@@ -7813,6 +7905,10 @@ function viewArchivedInspection(projectId, historyIndex) {
             padding: 18px;
             background: #f6f8fb;
             color: #1f2937;
+          }
+
+          h1, h2, h3 {
+            margin-top: 0;
           }
 
           .block {
@@ -7823,9 +7919,49 @@ function viewArchivedInspection(projectId, historyIndex) {
             border: 1px solid #d9e2ec;
           }
 
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 8px;
+          }
+
+          .line {
+            margin-bottom: 6px;
+          }
+
           .answer {
-            padding: 10px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #ffffff;
+          }
+
+          .answer-yes {
+            border-left: 5px solid #15803d;
+          }
+
+          .answer-no {
+            border-left: 5px solid #b91c1c;
+            background: #fff5f5;
+          }
+
+          .answer-na {
+            border-left: 5px solid #64748b;
+          }
+
+          .section-heading {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: #0f172a;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 4px;
+          }
+
+          .note {
+            color: #475569;
+            font-size: 0.92rem;
           }
 
           .photo-grid {
@@ -7845,107 +7981,270 @@ function viewArchivedInspection(projectId, historyIndex) {
             width: 100%;
             border-radius: 8px;
             display: block;
+            margin-top: 6px;
+            margin-bottom: 6px;
           }
 
-          .finding {
-            border-left: 4px solid #b91c1c;
-            background: #fff5f5;
+          .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+          }
+
+          .summary-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+          }
+
+          .summary-card strong {
+            display: block;
+            font-size: 1.4rem;
+          }
+
+          .print-btn {
+            padding: 8px 12px;
+            border: 0;
+            border-radius: 8px;
+            background: #0f172a;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 12px;
+          }
+
+          @media print {
+            .print-btn {
+              display: none;
+            }
+
+            body {
+              background: white;
+            }
+
+            .block {
+              page-break-inside: avoid;
+            }
           }
         </style>
       </head>
 
       <body>
+        <button class="print-btn" onclick="window.print()">
+          Print / Save Previous Inspection
+        </button>
+
         <div class="block">
-          <h2>Previous Inspection</h2>
+          <h1>Previous Inspection</h1>
 
-          <div>
-            <strong>Inspection No:</strong>
-            ${escapeHtml(archived.inspectionNumber || '-')}
+          <div class="grid">
+            <div class="line">
+              <strong>Premises / Site:</strong><br>
+              ${escapeHtml(projectTitle)}
+            </div>
+
+            <div class="line">
+              <strong>Inspection No:</strong><br>
+              ${escapeHtml(archived.inspectionNumber || '-')}
+            </div>
+
+            <div class="line">
+              <strong>Date:</strong><br>
+              ${
+                archived.lastSaved
+                  ? escapeHtml(new Date(archived.lastSaved).toLocaleString())
+                  : '-'
+              }
+            </div>
+
+            <div class="line">
+              <strong>Inspector:</strong><br>
+              ${escapeHtml(archived.inspectorName || '-')}
+            </div>
+
+            <div class="line">
+              <strong>Inspection Type:</strong><br>
+              ${escapeHtml(archived.inspectionType || project.inspectionType || '-')}
+            </div>
+
+            <div class="line">
+              <strong>Occupancy:</strong><br>
+              ${escapeHtml(archived.occupancy || project.occupancy || '-')}
+            </div>
           </div>
+        </div>
 
-          <div>
-            <strong>Date:</strong>
-            ${
-              archived.lastSaved
-                ? escapeHtml(new Date(archived.lastSaved).toLocaleString())
-                : '-'
-            }
-          </div>
+        <div class="block">
+          <h3>Premises Information</h3>
 
-          <div>
-            <strong>Inspector:</strong>
-            ${escapeHtml(archived.inspectorName || '-')}
-          </div>
+          <div class="grid">
+            <div class="line">
+              <strong>Address:</strong><br>
+              ${escapeHtml(projectAddress)}
+            </div>
 
-          <div>
-            <strong>Inspection Type:</strong>
-            ${escapeHtml(archived.inspectionType || '-')}
-          </div>
+            <div class="line">
+              <strong>GPS:</strong><br>
+              ${escapeHtml(archived.gps || project.gps || '-')}
+            </div>
 
-          <div>
-            <strong>Occupancy:</strong>
-            ${escapeHtml(archived.occupancy || '-')}
+            <div class="line">
+              <strong>Contact Person:</strong><br>
+              ${escapeHtml(archived.contactPerson || project.contactPerson || '-')}
+            </div>
+
+            <div class="line">
+              <strong>Telephone:</strong><br>
+              ${escapeHtml(archived.contactTel || project.contactTel || '-')}
+            </div>
+
+            <div class="line">
+              <strong>Email:</strong><br>
+              ${escapeHtml(archived.contactEmail || project.contactEmail || '-')}
+            </div>
+
+            <div class="line">
+              <strong>Mall/Centre:</strong><br>
+              ${escapeHtml(archived.inMall || project.inMall || 'No')}
+              ${
+                (archived.inMall || project.inMall) === 'Yes'
+                  ? `<br>${escapeHtml(archived.mallName || project.mallName || '-')}
+                     <br>Unit: ${escapeHtml(archived.unitNumber || project.unitNumber || '-')}`
+                  : ''
+              }
+            </div>
           </div>
         </div>
 
         <div class="block">
           <h3>Summary</h3>
 
-          <div>
-            <strong>Answered items:</strong>
-            ${answeredItems.length}
+          <div class="summary-grid">
+            <div class="summary-card">
+              <span>Answered Items</span>
+              <strong>${enrichedAnswers.length}</strong>
+            </div>
+
+            <div class="summary-card">
+              <span>Findings / No</span>
+              <strong>${findings.length}</strong>
+            </div>
+
+            <div class="summary-card">
+              <span>Photos</span>
+              <strong>${photos.length}</strong>
+            </div>
           </div>
 
-          <div>
-            <strong>Findings / No answers:</strong>
-            ${findings.length}
-          </div>
-
-          <div>
-            <strong>Photos:</strong>
-            ${photos.length}
-          </div>
-
-          <div>
-            <strong>Final comments:</strong>
+          <div class="line" style="margin-top:12px;">
+            <strong>Final comments:</strong><br>
             ${escapeHtml(archived.finalComments || '-')}
           </div>
+
+          <div class="line">
+            <strong>Follow-up Required:</strong>
+            ${escapeHtml(archived.followUpRequired || '-')}
+          </div>
+
+          ${
+            archived.followUpRequired === 'Yes'
+              ? `
+                <div class="line">
+                  <strong>Follow-up Date:</strong>
+                  ${escapeHtml(archived.followUpDate || '-')}
+                </div>
+
+                <div class="line">
+                  <strong>Follow-up Notes:</strong><br>
+                  ${escapeHtml(archived.followUpNotes || '-')}
+                </div>
+              `
+              : ''
+          }
         </div>
 
         <div class="block">
           <h3>Checklist Answers</h3>
 
           ${
-            answeredItems.length
-              ? answeredItems.map(answer => `
-                <div class="answer ${
-                  String(answer.answer || '').toLowerCase() === 'no'
-                    ? 'finding'
-                    : ''
-                }">
-                  <div>
-                    <strong>Item:</strong>
-                    ${escapeHtml(answer.itemNumber || answer.itemIndex + 1)}
-                  </div>
+            enrichedAnswers.length
+              ? (() => {
+                  let currentSection = '';
 
-                  <div>
-                    <strong>Answer:</strong>
-                    ${escapeHtml(answer.answer || '-')}
-                  </div>
+                  return enrichedAnswers.map(answer => {
+                    const answerValue =
+                      String(answer.answer || '').trim();
 
-                  ${
-                    answer.note
-                      ? `<div><strong>Note:</strong> ${escapeHtml(answer.note)}</div>`
-                      : ''
-                  }
+                    const answerClass =
+                      answerValue.toLowerCase() === 'no'
+                        ? 'answer-no'
+                        : answerValue.toLowerCase() === 'yes'
+                        ? 'answer-yes'
+                        : 'answer-na';
 
-                  ${
-                    answer.expiryDate
-                      ? `<div><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}</div>`
-                      : ''
-                  }
-                </div>
-              `).join('')
+                    const sectionHeader =
+                      answer.section !== currentSection
+                        ? `<div class="section-heading">${escapeHtml(answer.section)}</div>`
+                        : '';
+
+                    currentSection = answer.section;
+
+                    return `
+                      ${sectionHeader}
+
+                      <div class="answer ${answerClass}">
+                        <div>
+                          <strong>
+                            ${escapeHtml(answer.itemNumber)}.
+                            ${escapeHtml(answer.checklistItem)}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <strong>Answer:</strong>
+                          ${escapeHtml(answerValue || '-')}
+                        </div>
+
+                        ${
+                          answer.note
+                            ? `<div><strong>Note:</strong> ${escapeHtml(answer.note)}</div>`
+                            : ''
+                        }
+
+                        ${
+                          answer.expiryDate
+                            ? `<div><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}</div>`
+                            : ''
+                        }
+
+                        ${
+                          answer.reference
+                            ? `<div class="note"><strong>Reference:</strong> ${escapeHtml(answer.reference)}</div>`
+                            : ''
+                        }
+
+                        ${
+                          answerValue.toLowerCase() === 'no' && answer.nonComplianceText
+                            ? `<div><strong>Finding:</strong> ${escapeHtml(answer.nonComplianceText)}</div>`
+                            : ''
+                        }
+
+                        ${
+                          answerValue.toLowerCase() === 'no' && answer.correctiveAction
+                            ? `<div><strong>Corrective Action:</strong> ${escapeHtml(answer.correctiveAction)}</div>`
+                            : ''
+                        }
+
+                        ${
+                          answerValue.toLowerCase() === 'no'
+                            ? `<div><strong>Severity:</strong> ${escapeHtml(answer.severity || 'Medium')}</div>`
+                            : ''
+                        }
+                      </div>
+                    `;
+                  }).join('');
+                })()
               : '<div>No checklist answers captured.</div>'
           }
         </div>
@@ -7960,7 +8259,7 @@ function viewArchivedInspection(projectId, historyIndex) {
                     <div class="photo-card">
                       <strong>Photo ${index + 1}</strong>
 
-                      <div>
+                      <div class="note">
                         Captured:
                         ${
                           photo.timestamp
