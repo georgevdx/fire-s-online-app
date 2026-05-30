@@ -4178,15 +4178,25 @@ function renderDashboardMetrics(projectsOverride) {
   let expiringSoonItems = 0;
   let scheduledItems = 0;
   let missingExpiryItems = 0;
+  let scheduledInspections = 0;
+  let inProgressScheduledInspections = 0;
 
-  projects.forEach(project => {
-    const counts = getProjectExpiryCounts(project);
+ projects.forEach(project => {
+  const counts = getProjectExpiryCounts(project);
 
-    expiredItems += counts.overdue;
-    expiringSoonItems += counts.soon;
-    scheduledItems += counts.scheduled;
-    missingExpiryItems += counts.missing;
-  });
+  expiredItems += counts.overdue;
+  expiringSoonItems += counts.soon;
+  scheduledItems += counts.scheduled;
+  missingExpiryItems += counts.missing;
+
+  if (project.scheduledStatus === 'scheduled') {
+    scheduledInspections++;
+  }
+
+  if (project.scheduledStatus === 'in_progress') {
+    inProgressScheduledInspections++;
+  }
+});
 
   const total = projects.length;
 
@@ -4247,6 +4257,24 @@ function renderDashboardMetrics(projectsOverride) {
           <div class="metric-number">${followUps.length}</div>
           <div class="metric-label">
             Follow-ups
+          </div>
+        </div>
+
+        <div class="metric-card"
+        data-filter="scheduled-inspections"
+        onclick="setFilter('scheduled-inspections')">
+          <div class="metric-number">${scheduledInspections}</div>
+          <div class="metric-label">
+            Scheduled
+          </div>
+        </div>
+
+        <div class="metric-card"
+        data-filter="scheduled-in-progress"
+        onclick="setFilter('scheduled-in-progress')">
+          <div class="metric-number">${inProgressScheduledInspections}</div>
+          <div class="metric-label">
+            Scheduled In Progress
           </div>
         </div>
 
@@ -4432,6 +4460,8 @@ function getFilterLabel(filter) {
   const labels = {
     all: 'All inspections',
     followups: 'Follow-ups',
+    'scheduled-inspections': 'Scheduled inspections',
+    'scheduled-in-progress': 'Scheduled in progress',
     soon: 'Due soon',
     overdue: 'Overdue',
     risk: 'High risk',
@@ -4576,6 +4606,14 @@ function renderProjectsList() {
     return project.followUpRequired === 'Yes';
   }
 
+  if (currentFilter === 'scheduled-inspections') {
+  return project.scheduledStatus === 'scheduled';
+}
+
+if (currentFilter === 'scheduled-in-progress') {
+  return project.scheduledStatus === 'in_progress';
+}
+
   if (currentFilter === 'risk') {
     return project.answers?.some(
       a => a.answer === 'No'
@@ -4709,8 +4747,12 @@ container.innerHTML = `
     <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
       ${
         project.scheduledDate && project.scheduledStatus === 'scheduled'
-          ? `Scheduled: ${escapeHtml(project.scheduledDate)}`
-          : escapeHtml(followStatus.label)
+        ? `Scheduled: ${escapeHtml(project.scheduledDate)}`
+        : project.scheduledStatus === 'in_progress'
+        ? 'Scheduled: In Progress'
+        : project.scheduledStatus === 'completed'
+        ? 'Scheduled: Completed'
+        : escapeHtml(followStatus.label)
       }
     </span>
 
