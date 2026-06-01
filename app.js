@@ -4995,6 +4995,16 @@ function renderProjectsList() {
   updateActiveFilterStatus(filteredProjects.length);
 
   filteredProjects.sort((a, b) => {
+      if (currentFilter === 'scheduled-new') {
+      const aDate = a.scheduledDate || a.followUpDate || a.lastSaved || '';
+      const bDate = b.scheduledDate || b.followUpDate || b.lastSaved || '';
+
+      const aTime = aDate ? new Date(aDate).getTime() : Number.MAX_SAFE_INTEGER;
+      const bTime = bDate ? new Date(bDate).getTime() : Number.MAX_SAFE_INTEGER;
+
+      return aTime - bTime;
+    }
+
     const getProjectPriority = project => {
       const followStatus = getFollowUpStatus(project);
       const expiryCounts = getProjectExpiryCounts(project);
@@ -5080,10 +5090,10 @@ container.innerHTML = `
       const scheduledLabel =
         project.scheduledStatus === 'scheduled' &&
         project.scheduleType === 'new_site'
-          ? 'Scheduled new inspection'
+          ? `Scheduled new inspection${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
           : project.scheduleFreshInspection === true ||
             project.scheduledStatus === 'scheduled'
-          ? 'Open to start follow-up'
+          ? `Open to start follow-up${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
           : followStatus.label;
       const projectTitle =
         project.projectName ||
@@ -5223,11 +5233,11 @@ function openProjectSummaryCard(index) {
   const scheduledLabel =
     project.scheduledStatus === 'scheduled' &&
     project.scheduleType === 'new_site'
-      ? 'Scheduled new inspection'
+      ? `Scheduled new inspection${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
       : project.scheduleFreshInspection === true ||
         project.scheduledStatus === 'scheduled'
-      ? 'Open to start follow-up'
-      : followStatus.label;
+      ? `Open to start follow-up${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
+      : followStatus.label; 
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
