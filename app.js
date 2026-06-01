@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v92';
+const APP_VERSION = 'v90';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -5660,61 +5660,68 @@ function createFollowUpInspection() {
     );
     return;
   }
-  if (!currentProjectId) {
-    getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
-    return;
-  }
-  
-  const projects = getProjects();
-  const original = projects.find(p => p.id === currentProjectId);
 
-  if (!original) {
-    getEl('saveMessage').textContent = 'Original inspection not found.';
+  if (!currentProjectId) {
+    getEl('saveMessage').textContent =
+      'Open or save an inspection before scheduling a follow-up.';
     return;
   }
+
+  const projects = getProjects();
+  const index = projects.findIndex(p => p.id === currentProjectId);
+
+  if (index === -1) {
+    getEl('saveMessage').textContent =
+      'Original inspection not found.';
+    return;
+  }
+
+  const original = projects[index];
+
+  const followUpDate = prompt(
+    'Enter follow-up inspection date in YYYY-MM-DD format:',
+    original.followUpDate || new Date().toISOString().slice(0, 10)
+  );
+
+  if (!followUpDate) return;
 
   const confirmed = confirm(
-    'Create a new follow-up inspection from this inspection? The original inspection will remain saved, and a new linked follow-up will be created. Continue?'
+    'Schedule a follow-up on this same site card? This will not create a separate follow-up card.'
   );
 
   if (!confirmed) return;
 
-  const followUpProject = {
+  projects[index] = {
     ...original,
 
-    id: crypto.randomUUID
-      ? crypto.randomUUID()
-      : String(Date.now()),
+    followUpRequired: 'Yes',
+    followUpDate,
+    followUpNotes:
+      original.followUpNotes ||
+      'Follow-up inspection scheduled.',
 
-    inspectionNumber: generateInspectionNumber(),
+    scheduledDate: followUpDate,
+    scheduledStatus: 'scheduled',
+    scheduleFreshInspection: true,
+    scheduledReason: 'follow_up',
 
-    projectName: `${original.projectName || 'Inspection'} - Follow-up`,
-
-    answers: [],
-    photos: [],
-
-    followUpRequired: 'No',
-    followUpDate: '',
-    followUpNotes: '',
-
-    linkedToInspectionId: original.id,
-    linkedToInspectionName: original.projectName || '',
-    linkedToInspectionNumber: original.inspectionNumber || '',
-    linkedToInspectionDate: original.lastSaved || '',
-
+    syncPending: true,
+    syncError: false,
     lastSaved: new Date().toISOString()
   };
 
-  projects.push(followUpProject);
   setProjects(projects);
+  renderProjectsList();
 
-  currentProjectId = followUpProject.id;
-  currentPhotos = [];
+  const updatedProject = projects[index];
 
-  openProject(followUpProject.id);
+  uploadSingleInspection(updatedProject)
+    .catch(error => {
+      console.warn('Follow-up schedule upload failed:', error);
+    });
 
   getEl('saveMessage').textContent =
-    'Follow-up inspection created.';
+    `Follow-up scheduled for ${followUpDate}. No duplicate card was created.`;
 }
 
 async function deleteProject() {
@@ -6115,55 +6122,46 @@ function generateReport() {
     const expiryDate = expiryField ? expiryField.value : '';
 
     const trackExpiry = isExpiryTrackedChecklistItem(item);
-const expiryApplies = isExpiryApplicableAnswer(answer);
+    const expiryApplies = isExpiryApplicableAnswer(answer);
 
-const hasRealAnswer =
-  ['yes', 'no', 'n/a'].includes(answer.toLowerCase());
+    reportAnswers.push({
+      itemIndex: index,
+      itemNumber: item["Item Number"] || String(index + 1),
+      answer,
+      note: itemNote,
+      expiryDate: expiryField ? expiryField.value : null
+    });
 
-const hasNote =
-  itemNote.length > 0;
+    if (trackExpiry && expiryApplies && expiryDate) {
+      const expiryStatus = getExpiryStatus(expiryDate);
+      const expiryLabel =
+        expiryStatus === 'overdue'
+          ? 'Expired'
+          : expiryStatus === 'soon'
+          ? 'Due Soon'
+          : 'Scheduled';
 
-const hasExpiryDate =
-  expiryDate.length > 0;
+      expiryDetails.push({
+        itemNumber: item["Item Number"] || '',
+        checklistItem: item["Checklist Item"] || '',
+        expiryDate,
+        status: expiryStatus,
+        label: expiryLabel
+      });
+    }
 
-if (!hasRealAnswer && !hasNote && !hasExpiryDate) {
-  return;
-}
+    if (trackExpiry && expiryApplies && !expiryDate) {
+      missingExpiryDetails.push({
+        itemNumber: item["Item Number"] || '',
+        checklistItem: item["Checklist Item"] || '',
+        answer: answer || 'Not answered',
+        note: itemNote
+      });
+    }
 
-reportAnswers.push({
-  itemIndex: index,
-  itemNumber: item["Item Number"] || String(index + 1),
-  answer,
-  note: itemNote,
-  expiryDate: expiryField ? expiryField.value : null
-});
-
-if (trackExpiry && expiryApplies && expiryDate) {
-  const expiryStatus = getExpiryStatus(expiryDate);
-  const expiryLabel =
-    expiryStatus === 'overdue'
-      ? 'Expired'
-      : expiryStatus === 'soon'
-      ? 'Due Soon'
-      : 'Scheduled';
-
-  expiryDetails.push({
-    itemNumber: item["Item Number"] || '',
-    checklistItem: item["Checklist Item"] || '',
-    expiryDate,
-    status: expiryStatus,
-    label: expiryLabel
-  });
-}
-
-if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
-  missingExpiryDetails.push({
-    itemNumber: item["Item Number"] || '',
-    checklistItem: item["Checklist Item"] || '',
-    answer: answer || 'Not answered',
-    note: itemNote
-  });
-}
+    if (rawAnswer === 'Not answered' && !itemNote) {
+      return;
+    }
 
     const sectionName = item.Section || 'General';
 
@@ -7706,16 +7704,3 @@ window.addEventListener('online', async () => {
 
   runBackgroundSync('signal restored');
 });
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('./service-worker.js')
-      .then(() => {
-        console.log('FireyeSA service worker registered.');
-      })
-      .catch(error => {
-        console.warn('Service worker registration failed:', error);
-      });
-  });
-}
