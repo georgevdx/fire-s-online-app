@@ -7630,16 +7630,16 @@ function viewArchivedInspection(projectId, historyIndex) {
       : `<div class="note">No checklist answers archived.</div>`;
 
   const photosHtml =
-    (inspection.photos || []).length > 0
-      ? `
-        <div class="report-photo-grid">
+  (inspection.photos || []).length > 0
+    ? `
+        <div class="archived-photo-grid">
           ${(inspection.photos || []).map((photo, index) => `
-            <div class="report-photo-card">
-              <div class="report-photo-header">
+            <div class="archived-photo-card">
+              <div class="archived-photo-header">
                 Photo ${index + 1}
               </div>
 
-              <div class="report-photo-time">
+              <div class="archived-photo-time">
                 Captured:
                 ${
                   photo.timestamp
@@ -7648,15 +7648,15 @@ function viewArchivedInspection(projectId, historyIndex) {
                 }
               </div>
 
-              <div class="report-photo-image-box">
+              <div class="archived-photo-image-box">
                 <img
                   src="${photo.src || ''}"
-                  class="report-photo-img"
+                  class="archived-photo-img"
                   alt="Archived inspection photo ${index + 1}"
                 >
               </div>
 
-              <div class="report-photo-note">
+              <div class="archived-photo-note">
                 <strong>Photo Note:</strong>
                 ${escapeHtml(photo.note || 'No note added.')}
               </div>
@@ -7664,7 +7664,7 @@ function viewArchivedInspection(projectId, historyIndex) {
           `).join('')}
         </div>
       `
-      : `<div class="note">No archived photos.</div>`;
+    : `<div class="note">No archived photos.</div>`;
 
   const businessName =
     inspection.projectName ||
