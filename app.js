@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-followup1';
+const APP_VERSION = 'v90-followup2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4970,6 +4970,60 @@ function closeProjectSummaryCard() {
   }
 }
 
+function archiveCurrentInspectionCycle(project) {
+  const hasInspectionData =
+    (project.answers || []).length > 0 ||
+    (project.photos || []).length > 0 ||
+    project.finalComments ||
+    project.followUpNotes;
+
+  if (!hasInspectionData) {
+    return project.inspectionHistory || [];
+  }
+
+  const previousInspectionSnapshot = {
+    archivedAt: new Date().toISOString(),
+
+    inspectionNumber: project.inspectionNumber || '',
+    lastSaved: project.lastSaved || '',
+    inspectorName: project.inspectorName || '',
+
+    projectName: project.projectName || '',
+    organisationName: project.organisationName || '',
+    siteName: project.siteName || '',
+
+    streetNumber: project.streetNumber || '',
+    addressLine: project.addressLine || '',
+    projectAddress: project.projectAddress || '',
+    gps: project.gps || '',
+
+    inMall: project.inMall || 'No',
+    mallName: project.mallName || '',
+    unitNumber: project.unitNumber || '',
+
+    contactPerson: project.contactPerson || '',
+    contactTel: project.contactTel || '',
+    contactEmail: project.contactEmail || '',
+
+    productType: project.productType || '',
+    inspectionType: project.inspectionType || '',
+    occupancy: project.occupancy || '',
+
+    answers: project.answers || [],
+    photos: project.photos || [],
+
+    finalComments: project.finalComments || '',
+    followUpRequired: project.followUpRequired || '',
+    followUpDate: project.followUpDate || '',
+    followUpNotes: project.followUpNotes || ''
+  };
+
+  return [
+    ...(project.inspectionHistory || []),
+    previousInspectionSnapshot
+  ];
+}
+
 function openProject(projectId, focusMode) {
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
@@ -4977,6 +5031,45 @@ function openProject(projectId, focusMode) {
 
   currentProjectId = project.id;
  
+  const shouldStartFreshScheduledInspection =
+  project.scheduleFreshInspection === true;
+
+if (shouldStartFreshScheduledInspection) {
+  const projectIndex = projects.findIndex(p => p.id === project.id);
+
+  if (projectIndex !== -1) {
+    const inspectionHistory =
+      archiveCurrentInspectionCycle(projects[projectIndex]);
+
+    projects[projectIndex] = {
+      ...projects[projectIndex],
+
+      inspectionHistory,
+
+      answers: [],
+      photos: [],
+      finalComments: '',
+
+      followUpRequired: 'No',
+      followUpDate: '',
+      followUpNotes: '',
+
+      scheduledStatus: 'in_progress',
+      scheduleFreshInspection: false,
+
+      inspectionNumber: generateInspectionNumber(),
+
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+
+    setProjects(projects);
+
+    Object.assign(project, projects[projectIndex]);
+  }
+}
+
   populateProductTypes(project.productType);
   updateInspectionTypeOptions(project.inspectionType);
   getEl('organisationName').value = project.organisationName || '';
@@ -5036,7 +5129,7 @@ function openProject(projectId, focusMode) {
       }
     });
   }
-  renderSiteHistory(project);
+
   showProjectForm();
 
   if (focusMode === 'issues') {
