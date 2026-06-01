@@ -19,7 +19,6 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
-let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
@@ -395,9 +394,7 @@ function formatProjectDate(value) {
   );
 
   const projectName =
-  archivedReportContext
-    ? `${archivedReportContext.archived.projectName || archivedReportContext.parentProject.projectName || 'Archived Inspection'} Previous Inspection`
-    : currentProject?.projectName || 'Inspection';
+    currentProject?.projectName || 'Inspection';
   const reportDate =
     new Date().toISOString().slice(0, 10);
   const safeProjectName =
@@ -2697,7 +2694,7 @@ function migrateLegacyProductTypes() {
 }
 
 function createNewProject() {
-  archivedReportContext = null;
+
   if (!canCreateInspection()) {
     alert(
       'Your company access does not allow new inspections. Please contact your company admin or FireyeSA support.'
@@ -2878,9 +2875,6 @@ function ensureInspectionQuickActions() {
 
       <button type="button" onclick="focusFirstCurrentExpiry('soon')">
         Due Soon
-      </button>
-      <button type="button" onclick="scheduleCurrentInspection()">
-        Schedule Inspection
       </button>
     </div>
   `;
@@ -4178,25 +4172,15 @@ function renderDashboardMetrics(projectsOverride) {
   let expiringSoonItems = 0;
   let scheduledItems = 0;
   let missingExpiryItems = 0;
-  let scheduledInspections = 0;
-  let inProgressScheduledInspections = 0;
 
- projects.forEach(project => {
-  const counts = getProjectExpiryCounts(project);
+  projects.forEach(project => {
+    const counts = getProjectExpiryCounts(project);
 
-  expiredItems += counts.overdue;
-  expiringSoonItems += counts.soon;
-  scheduledItems += counts.scheduled;
-  missingExpiryItems += counts.missing;
-
-  if (project.scheduledStatus === 'scheduled') {
-    scheduledInspections++;
-  }
-
-  if (project.scheduledStatus === 'in_progress') {
-    inProgressScheduledInspections++;
-  }
-});
+    expiredItems += counts.overdue;
+    expiringSoonItems += counts.soon;
+    scheduledItems += counts.scheduled;
+    missingExpiryItems += counts.missing;
+  });
 
   const total = projects.length;
 
@@ -4257,24 +4241,6 @@ function renderDashboardMetrics(projectsOverride) {
           <div class="metric-number">${followUps.length}</div>
           <div class="metric-label">
             Follow-ups
-          </div>
-        </div>
-
-        <div class="metric-card"
-        data-filter="scheduled-inspections"
-        onclick="setFilter('scheduled-inspections')">
-          <div class="metric-number">${scheduledInspections}</div>
-          <div class="metric-label">
-            Scheduled
-          </div>
-        </div>
-
-        <div class="metric-card"
-        data-filter="scheduled-in-progress"
-        onclick="setFilter('scheduled-in-progress')">
-          <div class="metric-number">${inProgressScheduledInspections}</div>
-          <div class="metric-label">
-            Scheduled In Progress
           </div>
         </div>
 
@@ -4460,8 +4426,6 @@ function getFilterLabel(filter) {
   const labels = {
     all: 'All inspections',
     followups: 'Follow-ups',
-    'scheduled-inspections': 'Scheduled inspections',
-    'scheduled-in-progress': 'Scheduled in progress',
     soon: 'Due soon',
     overdue: 'Overdue',
     risk: 'High risk',
@@ -4606,14 +4570,6 @@ function renderProjectsList() {
     return project.followUpRequired === 'Yes';
   }
 
-  if (currentFilter === 'scheduled-inspections') {
-  return project.scheduledStatus === 'scheduled';
-}
-
-if (currentFilter === 'scheduled-in-progress') {
-  return project.scheduledStatus === 'in_progress';
-}
-
   if (currentFilter === 'risk') {
     return project.answers?.some(
       a => a.answer === 'No'
@@ -4650,16 +4606,31 @@ if (currentFilter === 'scheduled-in-progress') {
   updateActiveFilterStatus(filteredProjects.length);
 
   filteredProjects.sort((a, b) => {
-  const aTime = a.lastSaved
-    ? new Date(a.lastSaved).getTime()
-    : 0;
+    const getProjectPriority = project => {
+      const followStatus = getFollowUpStatus(project);
+      const expiryCounts = getProjectExpiryCounts(project);
+      const hasHighRisk = project.answers?.some(
+        answer => answer.answer === 'No'
+      );
 
-  const bTime = b.lastSaved
-    ? new Date(b.lastSaved).getTime()
-    : 0;
+      if (hasHighRisk) return 1;
+      if (expiryCounts.overdue > 0) return 2;
+      if (followStatus.class === 'status-overdue') return 3;
+      if (expiryCounts.soon > 0) return 4;
+      if (followStatus.class === 'status-soon') return 5;
+      return 6;
+    };
 
-  return bTime - aTime;
-});
+    const priorityDiff =
+      getProjectPriority(a) - getProjectPriority(b);
+
+    if (priorityDiff !== 0) return priorityDiff;
+
+    const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+    const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+    return bTime - aTime;
+  });
  
   const totalPages = Math.max(
   1,
@@ -4730,63 +4701,31 @@ container.innerHTML = `
         'No address captured';
 
       return `
-        <div class="inspection-project-list-item">
-  <div class="inspection-project-card-main">
-    <span class="inspection-project-list-title">
-      ${escapeHtml(projectTitle)}
-    </span>
+        <button
+          type="button"
+          class="inspection-project-list-item"
+          onclick="openProjectSummaryCard(${index})"
+        >
+          <span class="inspection-project-list-title">
+            ${escapeHtml(projectTitle)}
+          </span>
 
-    <span class="inspection-project-list-meta">
-      ${escapeHtml(project.inspectionNumber || '-')}
-    </span>
+          <span class="inspection-project-list-meta">
+            ${escapeHtml(project.inspectionNumber || '-')}
+          </span>
 
-    <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
-      ${escapeHtml(inspectionStatus.label)}
-    </span>
+          <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+            ${escapeHtml(inspectionStatus.label)}
+          </span>
 
-    <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
-      ${
-        project.scheduledDate && project.scheduledStatus === 'scheduled'
-        ? `Scheduled: ${escapeHtml(project.scheduledDate)}`
-        : project.scheduledStatus === 'in_progress'
-        ? 'Scheduled: In Progress'
-        : project.scheduledStatus === 'completed'
-        ? 'Scheduled: Completed'
-        : escapeHtml(followStatus.label)
-      }
-    </span>
+          <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+            ${escapeHtml(followStatus.label)}
+          </span>
 
-    <span class="inspection-project-list-address">
-      ${escapeHtml(projectAddress)}
-    </span>
-  </div>
-
-  <div class="inspection-project-card-actions">
-    <button
-      type="button"
-      class="small-btn"
-      onclick="openProjectSummaryCard(${index})"
-    >
-      View
-    </button>
-
-    <button
-      type="button"
-      class="small-btn primary-small-btn"
-      onclick="openProject('${escapeHtml(project.id)}')"
-    >
-      Open
-    </button>
-
-    <button
-      type="button"
-      class="small-btn"
-      onclick="scheduleInspectionForProject('${escapeHtml(project.id)}')"
-    >
-      Schedule
-    </button>
-  </div>
-</div>
+          <span class="inspection-project-list-address">
+            ${escapeHtml(projectAddress)}
+          </span>
+        </button>
       `;
     }).join('')}
   </div>
@@ -5031,110 +4970,13 @@ function closeProjectSummaryCard() {
   }
 }
 
-function archiveCurrentInspectionCycle(project) {
-  const hasInspectionData =
-    (project.answers || []).length > 0 ||
-    (project.photos || []).length > 0 ||
-    project.finalComments ||
-    project.followUpNotes;
-
-  if (!hasInspectionData) {
-    return project.inspectionHistory || [];
-  }
-
-  const previousInspectionSnapshot = {
-    archivedAt: new Date().toISOString(),
-
-    // Main inspection identity
-    inspectionNumber: project.inspectionNumber || '',
-    lastSaved: project.lastSaved || '',
-    inspectorName: project.inspectorName || '',
-
-    // Site / premises info
-    projectName: project.projectName || '',
-    organisationName: project.organisationName || '',
-    siteName: project.siteName || '',
-    streetNumber: project.streetNumber || '',
-    addressLine: project.addressLine || '',
-    projectAddress: project.projectAddress || '',
-    gps: project.gps || '',
-    inMall: project.inMall || 'No',
-    mallName: project.mallName || '',
-    unitNumber: project.unitNumber || '',
-
-    // Contact info
-    contactPerson: project.contactPerson || '',
-    contactTel: project.contactTel || '',
-    contactEmail: project.contactEmail || '',
-
-    // Inspection setup
-    productType: project.productType || '',
-    inspectionType: project.inspectionType || '',
-    occupancy: project.occupancy || '',
-
-    // Actual inspection data
-    answers: project.answers || [],
-    photos: project.photos || [],
-
-    // Comments / follow-up
-    finalComments: project.finalComments || '',
-    followUpRequired: project.followUpRequired || '',
-    followUpDate: project.followUpDate || '',
-    followUpNotes: project.followUpNotes || ''
-  };
-
-  return [
-    ...(project.inspectionHistory || []),
-    previousInspectionSnapshot
-  ];
-}
-
 function openProject(projectId, focusMode) {
-  archivedReportContext = null;
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
   if (!project) return;
 
   currentProjectId = project.id;
  
-  const shouldStartFreshScheduledInspection =
-  project.scheduleFreshInspection === true;
-
-if (shouldStartFreshScheduledInspection) {
-  const projectIndex = projects.findIndex(p => p.id === project.id);
-
-  if (projectIndex !== -1) {
-    const inspectionHistory =
-      archiveCurrentInspectionCycle(projects[projectIndex]);
-
-    projects[projectIndex] = {
-      ...projects[projectIndex],
-
-      inspectionHistory,
-
-      answers: [],
-      photos: [],
-      finalComments: '',
-
-      scheduledStatus: 'in_progress',
-      scheduleFreshInspection: false,
-
-      syncPending: true,
-      syncError: false,
-      lastSaved: new Date().toISOString()
-    };
-
-    setProjects(projects);
-
-    project.inspectionHistory = inspectionHistory;
-    project.answers = [];
-    project.photos = [];
-    project.finalComments = '';
-    project.scheduledStatus = 'in_progress';
-    project.scheduleFreshInspection = false;
-  }
-}
-
   populateProductTypes(project.productType);
   updateInspectionTypeOptions(project.inspectionType);
   getEl('organisationName').value = project.organisationName || '';
@@ -5168,11 +5010,10 @@ if (shouldStartFreshScheduledInspection) {
   toggleMallFields();
 
   currentPhotos = project.photos || [];
+  renderPhotos();
+  updateDisplay();
 
-    renderPhotos();
-    updateDisplay();
-
-    if (project.answers) {
+  if (project.answers) {
    project.answers.forEach(item => {
       const field = document.getElementById(`check_${item.itemIndex}`);
      if (field) {
@@ -5195,8 +5036,6 @@ if (shouldStartFreshScheduledInspection) {
       }
     });
   }
-
-  renderInspectionArchive(project);
   renderSiteHistory(project);
   showProjectForm();
 
@@ -5687,14 +5526,6 @@ function saveProject() {
       followUpNotes,
       finalComments,
       photos: currentPhotos,
-
-      scheduledStatus:
-        projects[index].scheduleFreshInspection
-          ? 'completed'
-          : projects[index].scheduledStatus,
-
-      scheduleFreshInspection: false,
-
       lastSaved: new Date().toISOString()
     };
   }
@@ -5822,106 +5653,6 @@ function finishInspection() {
   showProjectList();
 }
 
-function scheduleInspectionForProject(projectId) {
-  if (!canCreateInspection()) {
-    alert(
-      'Your company access does not allow scheduling inspections. Please contact your company admin or FireyeSA support.'
-    );
-    return;
-  }
-
-  const projects = getProjects();
-  const index = projects.findIndex(project => project.id === projectId);
-
-  if (index === -1) {
-    alert('Inspection/site not found.');
-    return;
-  }
-
-  const scheduledDate = prompt(
-    'Enter scheduled inspection date in YYYY-MM-DD format:',
-    new Date().toISOString().slice(0, 10)
-  );
-
-  if (!scheduledDate) return;
-
-  projects[index] = {
-    ...projects[index],
-
-    scheduledDate,
-    scheduledStatus: 'scheduled',
-
-    // This tells the app:
-    // same site/card, but next open should start a fresh inspection cycle.
-    scheduleFreshInspection: true,
-
-    followUpRequired: 'No',
-    followUpDate: scheduledDate,
-    followUpNotes: 'Scheduled fresh inspection',
-
-    syncPending: true,
-    syncError: false,
-    lastSaved: new Date().toISOString()
-  };
-
-  setProjects(projects);
-  renderProjectsList();
-
-  runBackgroundSync('inspection scheduled');
-
-  const syncStatus = document.getElementById('syncStatus');
-  if (syncStatus) {
-    syncStatus.textContent =
-      `Inspection scheduled for ${scheduledDate}.`;
-  }
-}
-
-function scheduleCurrentInspection() {
-  if (!canCreateInspection()) {
-    alert(
-      'Your company access does not allow scheduling inspections. Please contact your company admin or FireyeSA support.'
-    );
-    return;
-  }
-
-  const scheduledDate = prompt(
-    'Enter scheduled inspection date in YYYY-MM-DD format:',
-    new Date().toISOString().slice(0, 10)
-  );
-
-  if (!scheduledDate) return;
-
-  saveProject();
-
-  if (!currentProjectId) {
-    alert('Save failed. Complete at least the Premises / Site field first.');
-    return;
-  }
-
-  const projects = getProjects();
-  const index = projects.findIndex(project => project.id === currentProjectId);
-
-  if (index === -1) return;
-
-  projects[index] = {
-    ...projects[index],
-    scheduledDate,
-    scheduledStatus: 'scheduled',
-    followUpRequired: 'No',
-    followUpDate: scheduledDate,
-    followUpNotes: 'Scheduled inspection',
-    syncPending: true,
-    syncError: false,
-    lastSaved: new Date().toISOString()
-  };
-
-  setProjects(projects);
-  renderProjectsList();
-
-  getEl('saveMessage').textContent =
-    `Inspection scheduled for ${scheduledDate}.`;
-}
-
 function createFollowUpInspection() {
   if (!canCreateInspection()) {
     alert(
@@ -5929,63 +5660,61 @@ function createFollowUpInspection() {
     );
     return;
   }
-
   if (!currentProjectId) {
-    getEl('saveMessage').textContent =
-      'Open or save an inspection before scheduling a follow-up.';
+    getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
     return;
   }
-
+  
   const projects = getProjects();
-  const index = projects.findIndex(p => p.id === currentProjectId);
+  const original = projects.find(p => p.id === currentProjectId);
 
-  if (index === -1) {
-    getEl('saveMessage').textContent =
-      'Original inspection not found.';
+  if (!original) {
+    getEl('saveMessage').textContent = 'Original inspection not found.';
     return;
   }
-
-  const original = projects[index];
-
-  const followUpDate = prompt(
-    'Enter follow-up inspection date in YYYY-MM-DD format:',
-    original.followUpDate || new Date().toISOString().slice(0, 10)
-  );
-
-  if (!followUpDate) return;
 
   const confirmed = confirm(
-    'Schedule a follow-up on this same site card? The current inspection will be kept in Previous Inspection Archive, and the next open will start a fresh follow-up inspection.'
+    'Create a new follow-up inspection from this inspection? The original inspection will remain saved, and a new linked follow-up will be created. Continue?'
   );
 
   if (!confirmed) return;
 
-  projects[index] = {
+  const followUpProject = {
     ...original,
 
-    followUpRequired: 'Yes',
-    followUpDate,
-    followUpNotes:
-      original.followUpNotes ||
-      'Follow-up inspection scheduled.',
+    id: crypto.randomUUID
+      ? crypto.randomUUID()
+      : String(Date.now()),
 
-    scheduledDate: followUpDate,
-    scheduledStatus: 'scheduled',
-    scheduleFreshInspection: true,
-    scheduledReason: 'follow_up',
+    inspectionNumber: generateInspectionNumber(),
 
-    syncPending: true,
-    syncError: false,
+    projectName: `${original.projectName || 'Inspection'} - Follow-up`,
+
+    answers: [],
+    photos: [],
+
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+
+    linkedToInspectionId: original.id,
+    linkedToInspectionName: original.projectName || '',
+    linkedToInspectionNumber: original.inspectionNumber || '',
+    linkedToInspectionDate: original.lastSaved || '',
+
     lastSaved: new Date().toISOString()
   };
 
+  projects.push(followUpProject);
   setProjects(projects);
-  renderProjectsList();
 
-  runBackgroundSync('follow-up scheduled');
+  currentProjectId = followUpProject.id;
+  currentPhotos = [];
+
+  openProject(followUpProject.id);
 
   getEl('saveMessage').textContent =
-    `Follow-up scheduled for ${followUpDate}.`;
+    'Follow-up inspection created.';
 }
 
 async function deleteProject() {
@@ -6287,124 +6016,47 @@ function generateReport() {
     return;
   }
 
- const currentProject = archivedReportContext
-  ? {
-      ...archivedReportContext.parentProject,
-      ...archivedReportContext.archived,
-      id: archivedReportContext.parentProject.id,
-      inspectionHistory:
-        archivedReportContext.parentProject.inspectionHistory || []
-    }
-  : getProjects().find(
-      p => p.id === currentProjectId
-    );
+ const currentProject = getProjects().find(
+    p => p.id === currentProjectId
+  );
 
   const repeatFindings =
     currentProject?.repeatFindings || [];
   const projectName =
     currentProject?.projectName || 'Untitled Project';
 
-  const isArchivedReport =
-  !!archivedReportContext;
-
-const reportTitle =
-  isArchivedReport
-    ? 'Archived Fire Safety Inspection Report'
-    : 'Fire Safety Inspection Report';
-
   const reportCompanyName =
   currentProject?.companyName || 'Client Company';
 
   const reportCompanyLogo =
   currentProject?.companyLogo || 'icon-192.png';
-  const inspectorName = archivedReportContext
-  ? (currentProject?.inspectorName || '-')
-  : (getEl('inspectorName').value.trim() || '-');
+  const inspectorName = getEl('inspectorName').value.trim() || '-';
+  const finalComments = getEl('finalComments').value.trim();
+  const occupancy = getEl('occupancySelect').value || '-';
 
-const finalComments = archivedReportContext
-  ? (currentProject?.finalComments || '')
-  : getEl('finalComments').value.trim();
+  const streetNumber = getEl('streetNumber').value.trim();
+  const addressLine = getEl('projectAddress').value.trim();
+  const projectAddress = combineStreetAddress(streetNumber, addressLine);
+  const gps = getEl('gps').value.trim();
 
-const occupancy = archivedReportContext
-  ? (currentProject?.occupancy || '-')
-  : (getEl('occupancySelect').value || '-');
+  const inMall = getEl('inMall').value || 'No';
+  const mallName = getEl('mallName').value.trim();
+  const unitNumber = getEl('unitNumber').value.trim();
+  const contactPerson = getEl('contactPerson').value.trim();
+  const contactTel = getEl('contactTel').value.trim();
+  const contactEmail = getEl('contactEmail').value.trim();
+  const productType = normalizeProductType(getEl('productType').value);
+  const inspectionType = getEl('inspectionType').value;
 
-const streetNumber = archivedReportContext
-  ? (currentProject?.streetNumber || '')
-  : getEl('streetNumber').value.trim();
-
-const addressLine = archivedReportContext
-  ? (currentProject?.addressLine || currentProject?.projectAddress || '')
-  : getEl('projectAddress').value.trim();
-
-const projectAddress = archivedReportContext
-  ? (
-      currentProject?.projectAddress ||
-      combineStreetAddress(streetNumber, addressLine)
-    )
-  : combineStreetAddress(streetNumber, addressLine);
-
-const gps = archivedReportContext
-  ? (currentProject?.gps || '')
-  : getEl('gps').value.trim();
-
-const inMall = archivedReportContext
-  ? (currentProject?.inMall || 'No')
-  : (getEl('inMall').value || 'No');
-
-const mallName = archivedReportContext
-  ? (currentProject?.mallName || '')
-  : getEl('mallName').value.trim();
-
-const unitNumber = archivedReportContext
-  ? (currentProject?.unitNumber || '')
-  : getEl('unitNumber').value.trim();
-
-const contactPerson = archivedReportContext
-  ? (currentProject?.contactPerson || '')
-  : getEl('contactPerson').value.trim();
-
-const contactTel = archivedReportContext
-  ? (currentProject?.contactTel || '')
-  : getEl('contactTel').value.trim();
-
-const contactEmail = archivedReportContext
-  ? (currentProject?.contactEmail || '')
-  : getEl('contactEmail').value.trim();
-
-const productType = archivedReportContext
-  ? normalizeProductType(currentProject?.productType)
-  : normalizeProductType(getEl('productType').value);
-
-const inspectionType = archivedReportContext
-  ? (currentProject?.inspectionType || '')
-  : getEl('inspectionType').value;
-
-  const selectedChecklist = archivedReportContext
-  ? getChecklistForProject(currentProject)
-  : (getActiveTemplateChecklist() || []);
+  const selectedChecklist = getActiveTemplateChecklist() || [];
   
   const inspectionNumber =
   currentProject?.inspectionNumber || '-';
-  
-  const inspectionDate =
-  archivedReportContext && currentProject?.lastSaved
-    ? new Date(currentProject.lastSaved).toLocaleDateString()
-    : new Date().toLocaleDateString();
-
   const reportContent = getEl('reportContent');
 
-  const followUpRequired = archivedReportContext
-  ? (currentProject?.followUpRequired || 'No')
-  : getEl('followUpRequired').value;
-
-const followUpDate = archivedReportContext
-  ? (currentProject?.followUpDate || '')
-  : getEl('followUpDate').value;
-
-const followUpNotes = archivedReportContext
-  ? (currentProject?.followUpNotes || '')
-  : getEl('followUpNotes').value.trim();
+  const followUpRequired = getEl('followUpRequired').value;
+  const followUpDate = getEl('followUpDate').value;
+  const followUpNotes = getEl('followUpNotes').value.trim();
 
   let answersHtml = '';
   let actionSections = {};
@@ -6414,11 +6066,7 @@ const followUpNotes = archivedReportContext
   let reportAnswers = [];
   let photosHtml = '';
 
-  const reportPhotos = archivedReportContext
-  ? (currentProject?.photos || [])
-  : currentPhotos;
-
-  if (reportPhotos.length > 0) {
+  if (currentPhotos.length > 0) {
 
     photosHtml += `
       <div class="report-page-break"></div>
@@ -6456,31 +6104,15 @@ const followUpNotes = archivedReportContext
   }
 
   selectedChecklist.forEach((item, index) => {
-    const archivedAnswer = archivedReportContext
-  ? (currentProject.answers || []).find(savedAnswer =>
-      savedAnswer.itemIndex === index ||
-      String(savedAnswer.itemNumber) === String(item["Item Number"])
-    )
-  : null;
-
     const field = document.getElementById(`check_${index}`);
-    const rawAnswer = archivedReportContext
-      ? (archivedAnswer?.answer || 'Not answered')
-      : (field ? (field.value || 'Not answered') : 'Not answered');
-
+    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
     const answer = rawAnswer.trim();
 
     const noteField = document.getElementById(`note_${index}`);
-    const itemNote = archivedReportContext
-      ? (archivedAnswer?.note || '')
-      : (noteField ? noteField.value.trim() : '');
-
+    const itemNote = noteField ? noteField.value.trim() : '';
     const expiryField =
       document.querySelector(`.expiry-date[data-index="${index}"]`);
-
-    const expiryDate = archivedReportContext
-      ? (archivedAnswer?.expiryDate || '')
-      : (expiryField ? expiryField.value : '');
+    const expiryDate = expiryField ? expiryField.value : '';
 
     const trackExpiry = isExpiryTrackedChecklistItem(item);
 const expiryApplies = isExpiryApplicableAnswer(answer);
@@ -6503,7 +6135,7 @@ reportAnswers.push({
   itemNumber: item["Item Number"] || String(index + 1),
   answer,
   note: itemNote,
-  expiryDate: expiryDate || null
+  expiryDate: expiryField ? expiryField.value : null
 });
 
 if (trackExpiry && expiryApplies && expiryDate) {
@@ -6912,11 +6544,11 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
     });
   }
 
-  if (reportPhotos.length > 0) {
+  if (currentPhotos.length > 0) {
   photosHtml = '';
 
-  for (let pageStart = 0; pageStart < reportPhotos.length; pageStart += 4) {
-    const pagePhotos = reportPhotos.slice(pageStart, pageStart + 4);
+  for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
+    const pagePhotos = currentPhotos.slice(pageStart, pageStart + 4);
     const isFirstPhotoPage = pageStart === 0;
 
     photosHtml += `
@@ -7017,7 +6649,7 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
         <h1>${escapeHtml(reportCompanyName)}</h1>
 
         <div class="report-subtitle">
-          ${escapeHtml(reportTitle)}
+          Fire Safety Inspection Report
         </div>
 
         <div class="report-platform-note">
@@ -7034,7 +6666,7 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
 
       <div>
         <strong>Date:</strong>
-        ${escapeHtml(inspectionDate)}
+        ${new Date().toLocaleDateString()}
       </div>
 
       <div>
@@ -7062,12 +6694,6 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
 
     <div class="report-block">
       <h3>Premises Information</h3>
-
-      ${
-        isArchivedReport
-          ? `<div class="note"><strong>Archived inspection:</strong> This report was generated from a previous inspection cycle stored in this site archive.</div>`
-          : ''
-      }
       <div class="report-line"><strong>Premises / Site:</strong> ${escapeHtml(projectName)}</div>
       <div class="report-line">
         <strong>Inspection Number:</strong>
@@ -7105,7 +6731,7 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
       ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
       <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
       <div class="report-line"><strong>Occupancy Classification:</strong> ${escapeHtml(occupancy)}</div>
-      <div class="report-line"><strong>Inspection Date:</strong> ${escapeHtml(inspectionDate)}</div>
+      <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
       ${dataQualityHtml}
     </div>
 
@@ -7715,8 +7341,7 @@ GPS: ${gps}
 In Mall/Centre: ${inMall}
 ${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}
 Unit / Shop Number: ${unitNumber}
-` : ''}
-Inspector Name: ${inspectorName}
+` : ''}Inspector Name: ${inspectorName}
 Occupancy: ${occupancy}
 Inspection Date: ${new Date().toLocaleDateString()}
 
@@ -7832,835 +7457,6 @@ function updateAnswerSummary() {
 
   updateProjectReadinessPanel();
 }
-
-function renderInspectionArchive(project) {
-  const existing =
-    document.getElementById('inspectionArchivePanel');
-
-  if (existing) {
-    existing.remove();
-  }
-
-  const history = project.inspectionHistory || [];
-
-  if (history.length === 0) return;
-
-  const panel = document.createElement('div');
-
-  panel.id = 'inspectionArchivePanel';
-  panel.className = 'site-history-panel';
-
-  const latestIndex = history.length - 1;
-  const latestInspection = history[latestIndex];
-
-  const olderInspections = history
-    .slice()
-    .map((inspection, originalIndex) => ({
-      inspection,
-      originalIndex
-    }))
-    .filter(item => item.originalIndex !== latestIndex)
-    .reverse()
-    .slice(0, 4);
-
-  function buildArchiveCard(inspection, historyIndex, label) {
-    const photoCount =
-      (inspection.photos || []).length;
-
-    const answerCount =
-      (inspection.answers || []).filter(answer =>
-        ['yes', 'no', 'n/a'].includes(
-          String(answer.answer || '').trim().toLowerCase()
-        )
-      ).length;
-
-    const noCount =
-      (inspection.answers || []).filter(answer =>
-        String(answer.answer || '').trim().toLowerCase() === 'no'
-      ).length;
-
-    const archiveBusinessName =
-      inspection.projectName ||
-      [inspection.organisationName, inspection.siteName]
-        .filter(Boolean)
-        .join(' ') ||
-      project.projectName ||
-      [project.organisationName, project.siteName]
-        .filter(Boolean)
-        .join(' ') ||
-      'Unnamed business / site';
-
-    return `
-      <div class="archive-inspection-card">
-        <div>
-          <strong>${escapeHtml(label)}</strong>
-        </div>
-
-        <div>
-          <strong>Business / Site:</strong>
-          ${escapeHtml(archiveBusinessName)}
-        </div>
-
-        <div>
-          <strong>Date:</strong>
-          ${
-            inspection.lastSaved
-              ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
-              : '-'
-          }
-        </div>
-
-        <div>
-          <strong>Inspection No:</strong>
-          ${escapeHtml(inspection.inspectionNumber || '-')}
-        </div>
-
-        <div>
-          <strong>Answered:</strong>
-          ${answerCount}
-        </div>
-
-        <div>
-          <strong>Findings:</strong>
-          ${noCount}
-        </div>
-
-        <div>
-          <strong>Photos:</strong>
-          ${photoCount}
-        </div>
-
-        <div class="archive-actions">
-          <button
-            type="button"
-            class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
-          >
-            View
-          </button>
-
-          <button
-            type="button"
-            class="small-btn primary-small-btn"
-            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
-          >
-            Client Report
-          </button>
-
-          <button
-            type="button"
-            class="small-btn primary-small-btn"
-            onclick="exportArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
-          >
-            PDF
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  const latestHtml =
-    buildArchiveCard(
-      latestInspection,
-      latestIndex,
-      'Latest Previous Inspection'
-    );
-
-  const olderHtml =
-    olderInspections.length > 0
-      ? `
-        <details class="archive-more-details">
-          <summary>
-            Show older previous inspections (${olderInspections.length})
-          </summary>
-
-          <div class="archive-older-list">
-            ${
-              olderInspections.map((item, index) =>
-                buildArchiveCard(
-                  item.inspection,
-                  item.originalIndex,
-                  `Older Previous Inspection ${index + 1}`
-                )
-              ).join('')
-            }
-          </div>
-        </details>
-      `
-      : '';
-
-  panel.innerHTML = `
-    <h3>Previous Inspection Archive</h3>
-
-    <div class="note">
-      The latest previous inspection is shown below. Older inspections are available from the dropdown, limited to the last 5 archived inspections.
-    </div>
-
-    ${latestHtml}
-
-    ${olderHtml}
-  `;
-
-  const form =
-    document.getElementById('projectFormSection');
-
-  if (form) {
-    form.prepend(panel);
-  }
-}
-
-function viewArchivedInspection(projectId, historyIndex) {
-  const projects = getProjects();
-  const project = projects.find(p => p.id === projectId);
-
-  if (!project || !project.inspectionHistory) {
-    alert('Archived inspection not found.');
-    return;
-  }
-
-  const archived = project.inspectionHistory[historyIndex];
-
-  if (!archived) {
-    alert('Archived inspection not found.');
-    return;
-  }
-
-  const archivedProjectContext = {
-    ...project,
-    ...archived,
-    productType: archived.productType || project.productType,
-    inspectionType: archived.inspectionType || project.inspectionType,
-    occupancy: archived.occupancy || project.occupancy
-  };
-
-  const checklist =
-    getChecklistForProject(archivedProjectContext) || [];
-
-  const answeredItems =
-    (archived.answers || []).filter(answer =>
-      ['yes', 'no', 'n/a'].includes(
-        String(answer.answer || '').trim().toLowerCase()
-      ) ||
-      answer.note ||
-      answer.expiryDate
-    );
-
-  const enrichedAnswers =
-    answeredItems.map(answer => {
-      const checklistItem =
-        checklist[answer.itemIndex] ||
-        checklist.find(item =>
-          String(item["Item Number"]) === String(answer.itemNumber)
-        ) ||
-        {};
-
-      return {
-        ...answer,
-        itemNumber:
-          checklistItem["Item Number"] ||
-          answer.itemNumber ||
-          answer.itemIndex + 1,
-
-        checklistItem:
-          checklistItem["Checklist Item"] ||
-          'Checklist item text not found',
-
-        section:
-          checklistItem.Section ||
-          'General',
-
-        reference:
-          checklistItem.Reference ||
-          '',
-
-        nonComplianceText:
-          checklistItem["Non Compliance Text"] ||
-          '',
-
-        correctiveAction:
-          checklistItem["Corrective Action"] ||
-          '',
-
-        severity:
-          checklistItem.Severity ||
-          'Medium'
-      };
-    });
-
-  const findings =
-    enrichedAnswers.filter(answer =>
-      String(answer.answer || '').trim().toLowerCase() === 'no'
-    );
-
-  const photos =
-    archived.photos || [];
-
-  const projectTitle =
-    archived.projectName ||
-    project.projectName ||
-    [archived.organisationName || project.organisationName, archived.siteName || project.siteName]
-      .filter(Boolean)
-      .join(' ') ||
-    'Previous Inspection';
-
-  const projectAddress =
-    archived.projectAddress ||
-    project.projectAddress ||
-    combineStreetAddress(
-      archived.streetNumber || project.streetNumber,
-      archived.addressLine || project.addressLine
-    ) ||
-    '-';
-
-  const archiveWindow = window.open('', '_blank');
-
-  if (!archiveWindow) {
-    alert('Popup blocked. Allow popups to view archived inspection.');
-    return;
-  }
-
-  archiveWindow.document.write(`
-    <html>
-      <head>
-        <title>Previous Inspection - ${escapeHtml(projectTitle)}</title>
-
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 18px;
-            background: #f6f8fb;
-            color: #1f2937;
-          }
-
-          h1, h2, h3 {
-            margin-top: 0;
-          }
-
-          .block {
-            background: white;
-            padding: 14px;
-            margin-bottom: 12px;
-            border-radius: 10px;
-            border: 1px solid #d9e2ec;
-          }
-
-          .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 8px;
-          }
-
-          .line {
-            margin-bottom: 6px;
-          }
-
-          .answer {
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            background: #ffffff;
-          }
-
-          .answer-yes {
-            border-left: 5px solid #15803d;
-          }
-
-          .answer-no {
-            border-left: 5px solid #b91c1c;
-            background: #fff5f5;
-          }
-
-          .answer-na {
-            border-left: 5px solid #64748b;
-          }
-
-          .section-heading {
-            margin-top: 16px;
-            margin-bottom: 8px;
-            font-weight: 700;
-            color: #0f172a;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 4px;
-          }
-
-          .note {
-            color: #475569;
-            font-size: 0.92rem;
-          }
-
-          .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-          }
-
-          .photo-card {
-            background: white;
-            border: 1px solid #d9e2ec;
-            border-radius: 10px;
-            padding: 8px;
-          }
-
-          .photo-card img {
-            width: 100%;
-            border-radius: 8px;
-            display: block;
-            margin-top: 6px;
-            margin-bottom: 6px;
-          }
-
-          .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 8px;
-          }
-
-          .summary-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px;
-          }
-
-          .summary-card strong {
-            display: block;
-            font-size: 1.4rem;
-          }
-
-          .print-btn {
-            padding: 8px 12px;
-            border: 0;
-            border-radius: 8px;
-            background: #0f172a;
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
-            margin-bottom: 12px;
-          }
-
-          @media print {
-            .print-btn {
-              display: none;
-            }
-
-            body {
-              background: white;
-            }
-
-            .block {
-              page-break-inside: avoid;
-            }
-          }
-        </style>
-      </head>
-
-      <body>
-        <button class="print-btn" onclick="window.print()">
-          Print / Save Previous Inspection
-        </button>
-
-        <div class="block">
-          <h1>Previous Inspection</h1>
-
-          <div class="grid">
-            <div class="line">
-              <strong>Premises / Site:</strong><br>
-              ${escapeHtml(projectTitle)}
-            </div>
-
-            <div class="line">
-              <strong>Inspection No:</strong><br>
-              ${escapeHtml(archived.inspectionNumber || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Date:</strong><br>
-              ${
-                archived.lastSaved
-                  ? escapeHtml(new Date(archived.lastSaved).toLocaleString())
-                  : '-'
-              }
-            </div>
-
-            <div class="line">
-              <strong>Inspector:</strong><br>
-              ${escapeHtml(archived.inspectorName || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Inspection Type:</strong><br>
-              ${escapeHtml(archived.inspectionType || project.inspectionType || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Occupancy:</strong><br>
-              ${escapeHtml(archived.occupancy || project.occupancy || '-')}
-            </div>
-          </div>
-        </div>
-
-        <div class="block">
-          <h3>Premises Information</h3>
-
-          <div class="grid">
-            <div class="line">
-              <strong>Address:</strong><br>
-              ${escapeHtml(projectAddress)}
-            </div>
-
-            <div class="line">
-              <strong>GPS:</strong><br>
-              ${escapeHtml(archived.gps || project.gps || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Contact Person:</strong><br>
-              ${escapeHtml(archived.contactPerson || project.contactPerson || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Telephone:</strong><br>
-              ${escapeHtml(archived.contactTel || project.contactTel || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Email:</strong><br>
-              ${escapeHtml(archived.contactEmail || project.contactEmail || '-')}
-            </div>
-
-            <div class="line">
-              <strong>Mall/Centre:</strong><br>
-              ${escapeHtml(archived.inMall || project.inMall || 'No')}
-              ${
-                (archived.inMall || project.inMall) === 'Yes'
-                  ? `<br>${escapeHtml(archived.mallName || project.mallName || '-')}
-                     <br>Unit: ${escapeHtml(archived.unitNumber || project.unitNumber || '-')}`
-                  : ''
-              }
-            </div>
-          </div>
-        </div>
-
-        <div class="block">
-          <h3>Summary</h3>
-
-          <div class="summary-grid">
-            <div class="summary-card">
-              <span>Answered Items</span>
-              <strong>${enrichedAnswers.length}</strong>
-            </div>
-
-            <div class="summary-card">
-              <span>Findings / No</span>
-              <strong>${findings.length}</strong>
-            </div>
-
-            <div class="summary-card">
-              <span>Photos</span>
-              <strong>${photos.length}</strong>
-            </div>
-          </div>
-
-          <div class="line" style="margin-top:12px;">
-            <strong>Final comments:</strong><br>
-            ${escapeHtml(archived.finalComments || '-')}
-          </div>
-
-          <div class="line">
-            <strong>Follow-up Required:</strong>
-            ${escapeHtml(archived.followUpRequired || '-')}
-          </div>
-
-          ${
-            archived.followUpRequired === 'Yes'
-              ? `
-                <div class="line">
-                  <strong>Follow-up Date:</strong>
-                  ${escapeHtml(archived.followUpDate || '-')}
-                </div>
-
-                <div class="line">
-                  <strong>Follow-up Notes:</strong><br>
-                  ${escapeHtml(archived.followUpNotes || '-')}
-                </div>
-              `
-              : ''
-          }
-        </div>
-
-        <div class="block">
-          <h3>Checklist Answers</h3>
-
-          ${
-            enrichedAnswers.length
-              ? (() => {
-                  let currentSection = '';
-
-                  return enrichedAnswers.map(answer => {
-                    const answerValue =
-                      String(answer.answer || '').trim();
-
-                    const answerClass =
-                      answerValue.toLowerCase() === 'no'
-                        ? 'answer-no'
-                        : answerValue.toLowerCase() === 'yes'
-                        ? 'answer-yes'
-                        : 'answer-na';
-
-                    const sectionHeader =
-                      answer.section !== currentSection
-                        ? `<div class="section-heading">${escapeHtml(answer.section)}</div>`
-                        : '';
-
-                    currentSection = answer.section;
-
-                    return `
-                      ${sectionHeader}
-
-                      <div class="answer ${answerClass}">
-                        <div>
-                          <strong>
-                            ${escapeHtml(answer.itemNumber)}.
-                            ${escapeHtml(answer.checklistItem)}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <strong>Answer:</strong>
-                          ${escapeHtml(answerValue || '-')}
-                        </div>
-
-                        ${
-                          answer.note
-                            ? `<div><strong>Note:</strong> ${escapeHtml(answer.note)}</div>`
-                            : ''
-                        }
-
-                        ${
-                          answer.expiryDate
-                            ? `<div><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}</div>`
-                            : ''
-                        }
-
-                        ${
-                          answer.reference
-                            ? `<div class="note"><strong>Reference:</strong> ${escapeHtml(answer.reference)}</div>`
-                            : ''
-                        }
-
-                        ${
-                          answerValue.toLowerCase() === 'no' && answer.nonComplianceText
-                            ? `<div><strong>Finding:</strong> ${escapeHtml(answer.nonComplianceText)}</div>`
-                            : ''
-                        }
-
-                        ${
-                          answerValue.toLowerCase() === 'no' && answer.correctiveAction
-                            ? `<div><strong>Corrective Action:</strong> ${escapeHtml(answer.correctiveAction)}</div>`
-                            : ''
-                        }
-
-                        ${
-                          answerValue.toLowerCase() === 'no'
-                            ? `<div><strong>Severity:</strong> ${escapeHtml(answer.severity || 'Medium')}</div>`
-                            : ''
-                        }
-                      </div>
-                    `;
-                  }).join('');
-                })()
-              : '<div>No checklist answers captured.</div>'
-          }
-        </div>
-
-        <div class="block">
-          <h3>Archived Photos</h3>
-
-          ${
-            photos.length
-              ? `<div class="photo-grid">
-                  ${photos.map((photo, index) => `
-                    <div class="photo-card">
-                      <strong>Photo ${index + 1}</strong>
-
-                      <div class="note">
-                        Captured:
-                        ${
-                          photo.timestamp
-                            ? escapeHtml(new Date(photo.timestamp).toLocaleString())
-                            : '-'
-                        }
-                      </div>
-
-                      ${
-                        photo.src
-                          ? `<img src="${escapeHtml(photo.src)}" alt="Archived photo ${index + 1}">`
-                          : '<div>No image source available.</div>'
-                      }
-
-                      <div>
-                        <strong>Note:</strong>
-                        ${escapeHtml(photo.note || 'No note added.')}
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>`
-              : '<div>No archived photos.</div>'
-          }
-        </div>
-      </body>
-    </html>
-  `);
-
-  archiveWindow.document.close();
-}
-
-function generateArchivedInspectionReport(projectId, historyIndex) {
-  const projects = getProjects();
-  const project = projects.find(p => p.id === projectId);
-
-  if (!project || !project.inspectionHistory) {
-    alert('Archived inspection not found.');
-    return;
-  }
-
-  const archived = project.inspectionHistory[historyIndex];
-
-  if (!archived) {
-    alert('Archived inspection not found.');
-    return;
-  }
-
-  archivedReportContext = {
-    parentProject: project,
-    archived
-  };
-
-  const previousCurrentProjectId = currentProjectId;
-  const previousCurrentPhotos = currentPhotos;
-
-  currentProjectId = project.id;
-  currentPhotos = archived.photos || [];
-
-  populateProductTypes(archived.productType || project.productType);
-  updateInspectionTypeOptions(archived.inspectionType || project.inspectionType);
-
-  getEl('organisationName').value =
-    archived.organisationName || project.organisationName || '';
-
-  getEl('siteName').value =
-    archived.siteName || project.siteName || '';
-
-  getEl('inspectionType').value =
-    archived.inspectionType || project.inspectionType || '';
-
-  getEl('inspectorName').value =
-    archived.inspectorName || '';
-
-  getEl('occupancySelect').value =
-    archived.occupancy || project.occupancy || occupancies[0]["Occupancy Code"];
-
-  getEl('streetNumber').value =
-    archived.streetNumber || project.streetNumber || '';
-
-  getEl('projectAddress').value =
-    archived.addressLine ||
-    archived.projectAddress ||
-    project.addressLine ||
-    project.projectAddress ||
-    '';
-
-  getEl('gps').value =
-    archived.gps || project.gps || '';
-
-  getEl('inMall').value =
-    archived.inMall || project.inMall || 'No';
-
-  getEl('mallName').value =
-    archived.mallName || project.mallName || '';
-
-  getEl('unitNumber').value =
-    archived.unitNumber || project.unitNumber || '';
-
-  getEl('contactPerson').value =
-    archived.contactPerson || project.contactPerson || '';
-
-  getEl('contactTel').value =
-    archived.contactTel || project.contactTel || '';
-
-  getEl('contactEmail').value =
-    archived.contactEmail || project.contactEmail || '';
-
-  getEl('followUpRequired').value =
-    archived.followUpRequired || 'No';
-
-  getEl('followUpDate').value =
-    archived.followUpDate || '';
-
-  getEl('followUpNotes').value =
-    archived.followUpNotes || '';
-
-  getEl('finalComments').value =
-    archived.finalComments || '';
-
-  toggleMallFields();
-
-  renderPhotos();
-  updateDisplay();
-
-  (archived.answers || []).forEach(item => {
-    const field = document.getElementById(`check_${item.itemIndex}`);
-
-    if (field) {
-      field.value = item.answer || '';
-    }
-
-    const noteField = document.getElementById(`note_${item.itemIndex}`);
-    if (noteField) {
-      noteField.value = item.note || '';
-    }
-
-    const expiryField =
-      document.querySelector(`.expiry-date[data-index="${item.itemIndex}"]`);
-
-    if (expiryField) {
-      expiryField.value = item.expiryDate || '';
-    }
-
-    if (field) {
-      handleAnswerChange(field, { skipAutoSave: true });
-    }
-  });
-
-  generateReport();
-
-  const reportSection = document.getElementById('reportSection');
-  if (reportSection) {
-    reportSection.style.display = 'block';
-    reportSection.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  }
-
-  getEl('saveMessage').textContent =
-    'Archived inspection report generated. You can export or share it.';
-
-  // Restore app working context, but leave report visible.
-  currentProjectId = previousCurrentProjectId;
-  currentPhotos = previousCurrentPhotos;
-  renderPhotos();
-}
-
-function exportArchivedInspectionReport(projectId, historyIndex) {
-  generateArchivedInspectionReport(projectId, historyIndex);
-
-  setTimeout(() => {
-    exportReport();
-  }, 500);
-}
-
 function renderSiteHistory(project) {
 
   const existing =
@@ -8923,8 +7719,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-window.scheduleInspectionForProject = scheduleInspectionForProject;
-window.scheduleCurrentInspection = scheduleCurrentInspection;
-window.viewArchivedInspection = viewArchivedInspection;
-window.generateArchivedInspectionReport = generateArchivedInspectionReport;
-window.exportArchivedInspectionReport = exportArchivedInspectionReport;
