@@ -7628,18 +7628,34 @@ function viewArchivedInspection(projectId, historyIndex) {
           `;
         }).join('')
       : `<div class="note">No checklist answers archived.</div>`;
-
-  const photosHtml =
+const photosHtml =
   (inspection.photos || []).length > 0
     ? `
-        <div class="archived-photo-grid">
+        <div
+          class="archived-photo-grid"
+          style="
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+            gap:12px;
+            margin-top:12px;
+          "
+        >
           ${(inspection.photos || []).map((photo, index) => `
-            <div class="archived-photo-card">
-              <div class="archived-photo-header">
+            <div
+              class="archived-photo-card"
+              style="
+                border:1px solid #d9e2ec;
+                border-radius:10px;
+                padding:8px;
+                background:#fff;
+                max-width:190px;
+              "
+            >
+              <div style="font-weight:700; font-size:0.85rem;">
                 Photo ${index + 1}
               </div>
 
-              <div class="archived-photo-time">
+              <div style="font-size:0.72rem; color:#607080; margin:4px 0 6px;">
                 Captured:
                 ${
                   photo.timestamp
@@ -7648,15 +7664,34 @@ function viewArchivedInspection(projectId, historyIndex) {
                 }
               </div>
 
-              <div class="archived-photo-image-box">
+              <div
+                style="
+                  width:160px;
+                  height:120px;
+                  border:1px solid #e5eaf0;
+                  border-radius:8px;
+                  background:#f7f9fb;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  overflow:hidden;
+                "
+              >
                 <img
                   src="${photo.src || ''}"
-                  class="archived-photo-img"
                   alt="Archived inspection photo ${index + 1}"
+                  style="
+                    width:160px;
+                    height:120px;
+                    max-width:160px;
+                    max-height:120px;
+                    object-fit:contain;
+                    display:block;
+                  "
                 >
               </div>
 
-              <div class="archived-photo-note">
+              <div style="margin-top:6px; font-size:0.75rem; line-height:1.25;">
                 <strong>Photo Note:</strong>
                 ${escapeHtml(photo.note || 'No note added.')}
               </div>
@@ -7934,8 +7969,7 @@ function renderInspectionArchive(project) {
           </button>
         </div>
 
-        ${buildPhotoPreview(inspection)}
-      </div>
+       </div>
     `;
   }
 
