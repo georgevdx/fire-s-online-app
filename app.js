@@ -6749,16 +6749,6 @@ function generateReport() {
 }
 
  reportContent.innerHTML = `
-  <div class="project-summary-actions">
-    <button
-      type="button"
-      class="secondary-btn"
-      onclick="exportReport()"
-    >
-      Export Archived PDF
-    </button>
-  </div>
-
   <div class="report-header report-client-header">
 
     <div class="report-client-brand">
@@ -7884,7 +7874,17 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   const reportContent = getEl('reportContent');
 
-  reportContent.innerHTML = `
+reportContent.innerHTML = `
+    <div class="project-summary-actions">
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="exportReport()"
+      >
+        Export Archived PDF
+      </button>
+    </div>
+
     <div class="report-header report-client-header">
       <div class="report-client-brand">
         <img
