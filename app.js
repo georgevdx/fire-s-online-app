@@ -4514,6 +4514,180 @@ function clearProjectSearchAndFilter() {
   scrollToFirstVisibleProject();
 }
 
+function normalizeSiteKeyText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[.,]/g, '');
+}
+
+function getSiteMergeKey(project) {
+  if (project.siteId) {
+    return normalizeSiteKeyText(project.siteId);
+  }
+
+  const name =
+    project.projectName ||
+    [project.organisationName, project.siteName]
+      .filter(Boolean)
+      .join(' ');
+
+  const address =
+    project.projectAddress ||
+    combineStreetAddress(project.streetNumber, project.addressLine) ||
+    project.addressLine ||
+    '';
+
+  return [
+    normalizeSiteKeyText(name),
+    normalizeSiteKeyText(address),
+    normalizeSiteKeyText(project.mallName),
+    normalizeSiteKeyText(project.unitNumber)
+  ]
+    .filter(Boolean)
+    .join('|');
+}
+
+function convertProjectToArchivedInspection(project) {
+  return {
+    archivedAt: new Date().toISOString(),
+
+    inspectionNumber: project.inspectionNumber || '',
+    lastSaved: project.lastSaved || '',
+    inspectorName: project.inspectorName || '',
+
+    projectName: project.projectName || '',
+    organisationName: project.organisationName || '',
+    siteName: project.siteName || '',
+
+    streetNumber: project.streetNumber || '',
+    addressLine: project.addressLine || '',
+    projectAddress: project.projectAddress || '',
+    gps: project.gps || '',
+
+    inMall: project.inMall || 'No',
+    mallName: project.mallName || '',
+    unitNumber: project.unitNumber || '',
+
+    contactPerson: project.contactPerson || '',
+    contactTel: project.contactTel || '',
+    contactEmail: project.contactEmail || '',
+
+    productType: project.productType || '',
+    inspectionType: project.inspectionType || '',
+    occupancy: project.occupancy || '',
+
+    answers: project.answers || [],
+    photos: project.photos || [],
+
+    finalComments: project.finalComments || '',
+    followUpRequired: project.followUpRequired || '',
+    followUpDate: project.followUpDate || '',
+    followUpNotes: project.followUpNotes || ''
+  };
+}
+
+function consolidateDuplicateSiteCards() {
+  const confirmed = confirm(
+    'This will merge duplicate cards for the same premises into one card and move older inspections into Previous Inspection Archive. Export a backup first. Continue?'
+  );
+
+  if (!confirmed) return;
+
+  const projects = getProjects();
+  const groups = new Map();
+
+  projects.forEach(project => {
+    const key = getSiteMergeKey(project);
+
+    if (!key) return;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    groups.get(key).push(project);
+  });
+
+  const mergedProjects = [];
+  const removedIds = [];
+  const processedIds = new Set();
+
+  groups.forEach(group => {
+    if (group.length === 1) {
+      mergedProjects.push(group[0]);
+      processedIds.add(group[0].id);
+      return;
+    }
+
+    const sorted = group
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+        const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+        return bTime - aTime;
+      });
+
+    const primary = sorted[0];
+    const olderCards = sorted.slice(1);
+
+    const archiveFromOlderCards =
+      olderCards.map(convertProjectToArchivedInspection);
+
+    const existingHistory =
+      primary.inspectionHistory || [];
+
+    const mergedHistory = [
+      ...existingHistory,
+      ...archiveFromOlderCards
+    ].sort((a, b) => {
+      const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+      const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+      return bTime - aTime;
+    });
+
+    mergedProjects.push({
+      ...primary,
+      inspectionHistory: mergedHistory,
+      hasSiteHistory: mergedHistory.length > 0,
+      previousInspectionCount: mergedHistory.length,
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    });
+
+    olderCards.forEach(project => {
+      removedIds.push(project.id);
+      markProjectDeleted(project.id);
+    });
+
+    sorted.forEach(project => {
+      processedIds.add(project.id);
+    });
+  });
+
+  projects.forEach(project => {
+    if (!processedIds.has(project.id)) {
+      mergedProjects.push(project);
+    }
+  });
+
+  setProjects(mergedProjects);
+  renderProjectsList();
+
+  runBackgroundSync('duplicate site cards consolidated')
+    .catch(error => {
+      console.warn('Consolidation sync failed:', error);
+    });
+
+  alert(
+    `Done. Merged duplicate site cards. Removed ${removedIds.length} duplicate card(s).`
+  );
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -8770,6 +8944,7 @@ window.openProject = openProject;
 window.viewArchivedInspection = viewArchivedInspection;
 window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
 window.generateArchivedInspectionReport = generateArchivedInspectionReport;
+window.consolidateDuplicateSiteCards = consolidateDuplicateSiteCards;
 window.scheduleAutoSave = scheduleAutoSave;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
