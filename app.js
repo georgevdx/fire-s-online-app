@@ -19,10 +19,11 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
+let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-archive-report3';
+const APP_VERSION = 'v90-archive-pdf1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -384,7 +385,9 @@ function formatProjectDate(value) {
     return;
   }
 
-  generateReport(); // maak seker report is nuut
+  if (!archivedReportContext) {
+    generateReport(); // maak seker gewone report is nuut
+  }
   getEl('reportSection').style.display = 'block';
 
   const element = document.getElementById('reportContent');
@@ -394,16 +397,25 @@ function formatProjectDate(value) {
   );
 
   const projectName =
-    currentProject?.projectName || 'Inspection';
+    archivedReportContext?.projectName ||
+    currentProject?.projectName ||
+    'Inspection';
+
   const reportDate =
     new Date().toISOString().slice(0, 10);
+
+  const reportPrefix =
+    archivedReportContext
+      ? 'FireyeSA_Archived_Report'
+      : 'FireyeSA_Report';
+
   const safeProjectName =
     sanitizeFileName(projectName);
 
   const opt = {
   margin: [15, 12, 15, 12],
 
-  filename: `FireyeSA_Report_${safeProjectName}_${reportDate}.pdf`,
+  filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
 
   image: { type: 'jpeg', quality: 0.98 },
   html2canvas: {
@@ -6124,6 +6136,8 @@ function generateReport() {
     return;
   }
 
+  archivedReportContext = null;
+
  const currentProject = getProjects().find(
     p => p.id === currentProjectId
   );
@@ -6735,7 +6749,17 @@ function generateReport() {
 }
 
  reportContent.innerHTML = `
-    <div class="report-header report-client-header">
+  <div class="project-summary-actions">
+    <button
+      type="button"
+      class="secondary-btn"
+      onclick="exportReport()"
+    >
+      Export Archived PDF
+    </button>
+  </div>
+
+  <div class="report-header report-client-header">
 
     <div class="report-client-brand">
       <img
@@ -7575,10 +7599,23 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   const inspection = project.inspectionHistory[historyIndex];
 
-  if (!inspection) {
-    alert('Archived inspection was not found.');
-    return;
-  }
+    if (!inspection) {
+      alert('Archived inspection was not found.');
+      return;
+    }
+
+    archivedReportContext = {
+    projectId,
+    historyIndex,
+    inspectionNumber: inspection.inspectionNumber || '',
+    projectName:
+      inspection.projectName ||
+      [inspection.organisationName, inspection.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      project.projectName ||
+      'Archived Inspection'
+  };
 
   const checklist = getChecklistForProject(inspection);
 
