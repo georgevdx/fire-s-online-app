@@ -7329,10 +7329,6 @@ function generateReport() {
 <div class="report-block">
   <h3>Next Inspection Cycle / Re-inspection</h3>
 
-  <div class="note">
-    This section records the recommended next inspection cycle for this premises, for example a follow-up, annual re-inspection, or planned future review.
-  </div>
-
   <div class="report-line">
     <strong>Follow-up Required:</strong> ${escapeHtml(followUpRequired)}
   </div>
