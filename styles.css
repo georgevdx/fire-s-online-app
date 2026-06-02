@@ -3425,3 +3425,73 @@ button.readiness-chip:focus {
   color: #2e7d32;
   border-color: #81c784;
 }
+
+.offline-readiness-banner {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.offline-readiness-banner strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+
+.offline-readiness-banner span {
+  color: #555;
+  font-weight: 700;
+}
+
+.offline-readiness-banner small {
+  display: block;
+  margin-top: 4px;
+  color: #666;
+}
+
+.offline-ready {
+  background: #e8f5e9;
+  border-color: #81c784;
+  color: #1b5e20;
+}
+
+.offline-not-ready {
+  background: #fff3e0;
+  border-color: #ffb74d;
+  color: #6d3c00;
+}
+
+.floating-back-projects-btn {
+  position: fixed;
+  left: 14px;
+  bottom: 74px;
+  z-index: 3500;
+
+  width: auto;
+  max-width: none;
+  min-width: 104px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  background: #333;
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+}
+
+@media (max-width: 700px) {
+  .floating-back-projects-btn {
+    left: 12px;
+    bottom: 78px;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+}

@@ -23,7 +23,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-offline-ready1';
+const APP_VERSION = 'v90-field-ready1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2129,6 +2129,12 @@ if (cancelScheduledInspectionBtn) {
   }
   
   getEl('backBtn').addEventListener('click', showProjectList);
+  const floatingBackToProjectsBtn =
+    document.getElementById('floatingBackToProjectsBtn');
+
+  if (floatingBackToProjectsBtn) {
+    floatingBackToProjectsBtn.addEventListener('click', showProjectList);
+  }
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
   getEl('organisationName').addEventListener('input', scheduleAutoSave);
   getEl('siteName').addEventListener('input', scheduleAutoSave);
@@ -3020,6 +3026,87 @@ function closeFilterPanel() {
   toggleBtn.textContent = 'Show Filters';
 }
 
+function updateOfflineReadinessBanner() {
+  const banner = document.getElementById('offlineReadinessBanner');
+
+  if (!banner) return;
+
+  const projects =
+    getVisibleProjectsForCurrentUser(getProjects());
+
+  const lastSyncTimes = projects
+    .map(project =>
+      project.syncedAt ||
+      project.lastSaved ||
+      project.updatedAt ||
+      ''
+    )
+    .filter(Boolean)
+    .map(value => new Date(value).getTime())
+    .filter(time => !Number.isNaN(time));
+
+  const lastSyncText =
+    lastSyncTimes.length > 0
+      ? new Date(Math.max(...lastSyncTimes)).toLocaleString()
+      : 'Not available';
+
+  const isOnline = navigator.onLine;
+
+  const hasLocalInspections =
+    projects.length > 0;
+
+  const offlineCapable =
+    'serviceWorker' in navigator;
+
+  const ready =
+    offlineCapable &&
+    hasLocalInspections;
+
+  banner.className =
+    `offline-readiness-banner ${
+      ready ? 'offline-ready' : 'offline-not-ready'
+    }`;
+
+  banner.innerHTML = `
+    <div>
+      <strong>
+        ${ready ? 'Offline Ready' : 'Not Offline Ready'}
+      </strong>
+
+      <span>
+        ${isOnline ? 'Online now' : 'Offline now'} |
+        Local inspections: ${projects.length} |
+        Last local sync/save: ${escapeHtml(lastSyncText)}
+      </span>
+    </div>
+
+    <small>
+      ${
+        ready
+          ? 'This device should be able to open the app and continue saved inspections without signal.'
+          : 'Open the app online and tap Refresh / Sync Data before going to site.'
+      }
+    </small>
+  `;
+}
+
+function updateFloatingBackButton() {
+  const button =
+    document.getElementById('floatingBackToProjectsBtn');
+
+  if (!button) return;
+
+  const projectFormSection =
+    document.getElementById('projectFormSection');
+
+  const isInProjectForm =
+    projectFormSection &&
+    projectFormSection.style.display !== 'none';
+
+  button.style.display =
+    isInProjectForm ? 'block' : 'none';
+}
+
 function showProjectList() {
    if (!currentUserProfile) {
   showHome();
@@ -3060,6 +3147,7 @@ function showProjectList() {
   getEl('projectListSection').style.display = 'block';
   getEl('projectFormSection').style.display = 'none';
   renderProjectsList();
+  updateFloatingBackButton();
 }
 
 function showProjectForm() {
@@ -3076,6 +3164,7 @@ function showProjectForm() {
 
   ensureInspectionQuickActions();
   updateProjectReadinessPanel();
+  updateFloatingBackButton();
 }
 
 function ensureInspectionQuickActions() {
@@ -3171,6 +3260,7 @@ function showHome() {
 
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
+  updateFloatingBackButton();
 }
 
 function showServices() {
@@ -3198,6 +3288,7 @@ function showServices() {
   if (serviceRequestsList && !canViewServiceRequests()) {
     serviceRequestsList.style.display = 'none';
   }
+  updateFloatingBackButton();
 }
 
 function openLoginRoute() {
@@ -5030,6 +5121,7 @@ function renderProjectsList() {
 
   // renderReminderBanner(projects);
   renderDashboardMetrics(projects);
+  updateOfflineReadinessBanner();
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
