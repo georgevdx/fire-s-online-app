@@ -23,7 +23,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-schedule-new7';
+const APP_VERSION = 'v90-schedule-form1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2109,7 +2109,19 @@ function initApp() {
   if (scheduleNewInspectionBtn) {
     scheduleNewInspectionBtn.addEventListener('click', scheduleNewInspection);
   }
+  const saveScheduledInspectionBtn =
+  document.getElementById('saveScheduledInspectionBtn');
 
+if (saveScheduledInspectionBtn) {
+  saveScheduledInspectionBtn.addEventListener('click', saveScheduledNewInspection);
+}
+
+const cancelScheduledInspectionBtn =
+  document.getElementById('cancelScheduledInspectionBtn');
+
+if (cancelScheduledInspectionBtn) {
+  cancelScheduledInspectionBtn.addEventListener('click', cancelScheduleNewInspection);
+}
   const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
 
   if (toggleFiltersBtn) {
@@ -2713,6 +2725,33 @@ function migrateLegacyProductTypes() {
 }
 
 function scheduleNewInspection() {
+  const panel = document.getElementById('scheduleNewPanel');
+
+  if (!panel) {
+    alert('Schedule panel was not found.');
+    return;
+  }
+
+  panel.style.display =
+    panel.style.display === 'none' || panel.style.display === ''
+      ? 'block'
+      : 'none';
+
+  if (panel.style.display === 'block') {
+    const dateField = document.getElementById('scheduleDate');
+
+    if (dateField && !dateField.value) {
+      dateField.value = new Date().toISOString().slice(0, 10);
+    }
+
+    panel.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+}
+
+function saveScheduledNewInspection() {
   if (!canCreateInspection()) {
     alert(
       'Your company access does not allow scheduling new inspections. Please contact your company admin or FireyeSA support.'
@@ -2720,79 +2759,54 @@ function scheduleNewInspection() {
     return;
   }
 
-  const organisationName = prompt(
-    'Client / Organisation name:',
-    ''
-  );
+  const organisationName =
+    document.getElementById('scheduleOrganisationName')?.value.trim() || '';
 
-  if (organisationName === null) return;
+  const siteName =
+    document.getElementById('scheduleSiteName')?.value.trim() || '';
 
-  const siteName = prompt(
-    'Site / Premises name:',
-    ''
-  );
+  const scheduledDate =
+    document.getElementById('scheduleDate')?.value || '';
 
-  if (siteName === null) return;
+  const inspectionType =
+    document.getElementById('scheduleInspectionType')?.value.trim() ||
+    'General Fire Inspection';
 
-  const scheduledDate = prompt(
-    'Scheduled inspection date in YYYY-MM-DD format:',
-    new Date().toISOString().slice(0, 10)
-  );
+  const occupancy =
+    document.getElementById('scheduleOccupancy')?.value.trim() || '';
 
-  if (!scheduledDate) return;
+  const addressLine =
+    document.getElementById('scheduleAddress')?.value.trim() || '';
 
-  const inspectionType = prompt(
-    'Inspection type:',
-    'General Fire Inspection'
-  );
+  const contactPerson =
+    document.getElementById('scheduleContactPerson')?.value.trim() || '';
 
-  if (inspectionType === null) return;
+  const contactTel =
+    document.getElementById('scheduleContactTel')?.value.trim() || '';
 
-  const occupancy = prompt(
-    'Occupancy classification if known, for example H4, G1, A3. Leave blank if unknown:',
-    ''
-  );
+  if (!organisationName && !siteName) {
+    alert('Enter at least a client / organisation or site / premises name.');
+    return;
+  }
 
-  if (occupancy === null) return;
-
-  const addressLine = prompt(
-    'Address / location if known. Leave blank if unknown:',
-    ''
-  );
-
-  if (addressLine === null) return;
-
-  const contactPerson = prompt(
-    'Contact person if known. Leave blank if unknown:',
-    ''
-  );
-
-  if (contactPerson === null) return;
-
-  const contactTel = prompt(
-    'Contact telephone if known. Leave blank if unknown:',
-    ''
-  );
-
-  if (contactTel === null) return;
+  if (!scheduledDate) {
+    alert('Select a scheduled inspection date.');
+    return;
+  }
 
   const accessMetadata = getAccessMetadata();
 
-  const cleanOrganisationName = organisationName.trim();
-  const cleanSiteName = siteName.trim();
-  const cleanAddressLine = addressLine.trim();
-
   const projectName =
-    [cleanOrganisationName, cleanSiteName]
+    [organisationName, siteName]
       .filter(Boolean)
       .join(' ') ||
     'Scheduled New Inspection';
 
   const siteId =
     [
-      cleanAddressLine.toLowerCase(),
-      cleanOrganisationName.toLowerCase(),
-      cleanSiteName.toLowerCase()
+      addressLine.toLowerCase(),
+      organisationName.toLowerCase(),
+      siteName.toLowerCase()
     ]
       .filter(Boolean)
       .join('|') ||
@@ -2814,30 +2828,29 @@ function scheduleNewInspection() {
     companyAccessStatus: accessMetadata.companyAccessStatus,
 
     siteId,
-
     inspectionNumber: generateInspectionNumber(),
 
     projectName,
-    organisationName: cleanOrganisationName,
-    siteName: cleanSiteName,
+    organisationName,
+    siteName,
 
     streetNumber: '',
-    addressLine: cleanAddressLine,
-    projectAddress: cleanAddressLine,
+    addressLine,
+    projectAddress: addressLine,
     gps: '',
 
     inMall: 'No',
     mallName: '',
     unitNumber: '',
 
-    contactPerson: contactPerson.trim(),
-    contactTel: contactTel.trim(),
+    contactPerson,
+    contactTel,
     contactEmail: '',
 
     productType: getDefaultProductType(),
-    inspectionType: inspectionType.trim() || 'General Fire Inspection',
+    inspectionType,
     inspectorName: '',
-    occupancy: occupancy.trim(),
+    occupancy,
 
     answers: [],
     photos: [],
@@ -2865,17 +2878,52 @@ function scheduleNewInspection() {
   projects.push(newProject);
 
   setProjects(projects);
+  clearScheduleNewInspectionForm();
+
+  const panel = document.getElementById('scheduleNewPanel');
+  if (panel) panel.style.display = 'none';
+
+  currentFilter = 'scheduled-new';
+  currentProjectPage = 1;
+
   renderProjectsList();
+  updateDashboardSelection();
 
   uploadSingleInspection(newProject)
     .catch(error => {
       console.warn('Scheduled new inspection upload failed:', error);
     });
 
-  getEl('saveMessage').textContent =
-    `New inspection scheduled for ${scheduledDate}.`;
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent =
+      `New inspection scheduled for ${scheduledDate}.`;
+  }
+}
 
-  showProjectList();
+function clearScheduleNewInspectionForm() {
+  [
+    'scheduleOrganisationName',
+    'scheduleSiteName',
+    'scheduleDate',
+    'scheduleOccupancy',
+    'scheduleAddress',
+    'scheduleContactPerson',
+    'scheduleContactTel'
+  ].forEach(id => {
+    const field = document.getElementById(id);
+    if (field) field.value = '';
+  });
+
+  const typeField = document.getElementById('scheduleInspectionType');
+  if (typeField) typeField.value = 'General Fire Inspection';
+}
+
+function cancelScheduleNewInspection() {
+  clearScheduleNewInspectionForm();
+
+  const panel = document.getElementById('scheduleNewPanel');
+  if (panel) panel.style.display = 'none';
 }
 
 function createNewProject() {

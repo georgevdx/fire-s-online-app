@@ -6,7 +6,7 @@
   <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=90-schedule-new7">
+  <link rel="stylesheet" href="styles.css?v=90-schedule-form1">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -263,9 +263,50 @@
           </button>
 
           <button id="scheduleNewInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
-            Schedule
+            + Schedule
           </button>
         </div>
+        <div id="scheduleNewPanel" class="schedule-new-panel" style="display:none;">
+  <h3>Schedule New Inspection</h3>
+
+  <p class="form-help-text">
+    Use this to schedule a future inspection for a new premises or site that is not already in your list.
+  </p>
+
+  <label for="scheduleOrganisationName">Client / Organisation</label>
+  <input id="scheduleOrganisationName" type="text" placeholder="Example: ABC Stores">
+
+  <label for="scheduleSiteName">Site / Premises</label>
+  <input id="scheduleSiteName" type="text" placeholder="Example: Shop 12">
+
+  <label for="scheduleDate">Scheduled Date</label>
+  <input id="scheduleDate" type="date">
+
+  <label for="scheduleInspectionType">Inspection Type</label>
+  <input id="scheduleInspectionType" type="text" value="General Fire Inspection">
+
+  <label for="scheduleOccupancy">Occupancy, if known</label>
+  <input id="scheduleOccupancy" type="text" placeholder="Example: H4">
+
+  <label for="scheduleAddress">Address / Location, if known</label>
+  <input id="scheduleAddress" type="text">
+
+  <label for="scheduleContactPerson">Contact Person, if known</label>
+  <input id="scheduleContactPerson" type="text">
+
+  <label for="scheduleContactTel">Contact Telephone, if known</label>
+  <input id="scheduleContactTel" type="text">
+
+  <div class="schedule-new-actions">
+    <button id="saveScheduledInspectionBtn" type="button" class="compact-action-btn">
+      Save Scheduled Inspection
+    </button>
+
+    <button id="cancelScheduledInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
+      Cancel
+    </button>
+  </div>
+</div>
       </div>
     </div>
 
@@ -514,7 +555,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=c:\Users\user\OneDrive\Documents\Fireye App\fires-app"></script>
+  <script src="app.js?v=90-schedule-form1"></script>
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
