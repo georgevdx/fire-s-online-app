@@ -23,7 +23,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-field-ready2';
+const APP_VERSION = 'v90-brand-fire-s1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -380,7 +380,7 @@ function formatProjectDate(value) {
 
   if (!canViewReports()) {
     alert(
-      'Your company access does not allow exporting reports. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -406,8 +406,8 @@ function formatProjectDate(value) {
 
   const reportPrefix =
     archivedReportContext
-      ? 'FireyeSA_Archived_Report'
-      : 'FireyeSA_Report';
+      ? 'Fire-S_Archived_Report'
+      : 'Fire-S_Report';
 
   const safeProjectName =
     sanitizeFileName(projectName);
@@ -881,7 +881,7 @@ function getFileTimestamp() {
 function exportBackup() {
   const projects = getProjects();
   const timestamp = getFileTimestamp();
-  const filename = sanitizeFileName(`fireyesa-backup-${timestamp}`, 'fireyesa-backup');
+  const filename = sanitizeFileName(`fire-s-backup-${timestamp}`, 'fire-s-backup');
   const backupJson = createBackupJson(projects);
 
   downloadBackupJson(backupJson, `${filename}.json`);
@@ -904,7 +904,7 @@ function exportBackup() {
 function createBackupTextSnapshot() {
   const projects = getProjects();
   const timestamp = getFileTimestamp();
-  const filename = sanitizeFileName(`fireyesa-backup-text-${timestamp}`, 'fireyesa-backup-text');
+  const filename = sanitizeFileName(`fire-s-backup-text-${timestamp}`, 'fire-s-backup-text');
   const backupJson = createBackupJson(projects);
   saveBackupSnapshot(backupJson, `${filename}.json`, projects.length, 'manual-text');
   showManualBackupBox(
@@ -929,7 +929,7 @@ function saveBackupSnapshot(backupJson, filename, count, source) {
 
 function createBackupJson(projects) {
   const backup = {
-    app: 'FireyeSA',
+    app: 'Fire-S',
     version: 1,
     appVersion: APP_VERSION,
     exportedAt: new Date().toISOString(),
@@ -2768,7 +2768,7 @@ function scheduleNewInspection() {
 function saveScheduledNewInspection() {
   if (!canCreateInspection()) {
     alert(
-      'Your company access does not allow scheduling new inspections. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow scheduling new inspections. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -2944,7 +2944,7 @@ function createNewProject() {
 
   if (!canCreateInspection()) {
     alert(
-      'Your company access does not allow new inspections. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow new inspections. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -3431,7 +3431,7 @@ async function submitServiceRequest() {
 
   if (status) {
     status.textContent =
-      'Service request saved. FireyeSA can follow up from this request.';
+      'Service request saved. Fire-S can follow up from this request.';
   }
 
   document.getElementById('serviceClientName').value = '';
@@ -3450,7 +3450,7 @@ async function submitServiceRequest() {
 
 async function renderServiceRequestsList() {
   if (!canViewServiceRequests()) {
-    alert('Service requests are only available to FireyeSA admin.');
+    alert('Service requests are only available to Fire-S admin.');
     return;
   }
 
@@ -6151,7 +6151,7 @@ function saveProject() {
   
   if (!canEditInspection()) {
     alert(
-      'Your company access does not allow editing inspections. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow editing inspections. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -6415,7 +6415,7 @@ function finishInspection() {
 function createFollowUpInspection() {
   if (!canCreateInspection()) {
     alert(
-      'Your company access does not allow creating follow-up inspections. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow creating follow-up inspections. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -6486,7 +6486,7 @@ function createFollowUpInspection() {
 async function deleteProject() {
   if (!canEditInspection()) {
     alert(
-      'Your company access does not allow deleting inspections. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow deleting inspections. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -6777,7 +6777,7 @@ function generateReport() {
 
   if (!canViewReports()) {
     alert(
-      'Your company access does not allow viewing reports. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow viewing reports. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -7412,7 +7412,7 @@ function generateReport() {
         </div>
 
         <div class="report-platform-note">
-          Generated by FireyeSA Fire Safety App | Version ${escapeHtml(APP_VERSION)}
+          Generated by Fire-S Fire Safety App | Version ${escapeHtml(APP_VERSION)}
         </div>
       </div>
     </div>
@@ -7588,7 +7588,7 @@ function generateReport() {
   </div>
 
   <div class="report-generated">
-    Generated by FireyeSA Fire Safety App | Version ${APP_VERSION}
+    Generated by Fire-S Fire Safety App | Version ${APP_VERSION}
   </div>
 </div>
 
@@ -7932,7 +7932,7 @@ async function shareReport() {
 
   if (!canViewReports()) {
     alert(
-      'Your company access does not allow sharing reports. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow sharing reports. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -8081,7 +8081,7 @@ async function shareReport() {
   }
 
   const shareText =
-`FireyeSA Fire Safety Report
+`Fire-S Fire Safety Report
 
 INSPECTION DETAILS
 Place Name: ${projectName}
@@ -8119,7 +8119,7 @@ ${checklistText || 'No checklist answers or notes captured.'}`;
   if (navigator.share) {
     try {
       await navigator.share({
-        title: `FireyeSA Report - ${projectName}`,
+        title: `Fire-S Report - ${projectName}`,
         text: shareText
       });
 
@@ -8215,7 +8215,7 @@ function updateAnswerSummary() {
 function generateArchivedInspectionReport(projectId, historyIndex) {
   if (!canViewReports()) {
     alert(
-      'Your company access does not allow viewing reports. Please contact your company admin or FireyeSA support.'
+      'Your company access does not allow viewing reports. Please contact your company admin or Fire-S support.'
     );
     return;
   }
@@ -8542,7 +8542,7 @@ reportContent.innerHTML = `
           </div>
 
           <div class="report-platform-note">
-            Generated by FireyeSA Fire Safety App | Version ${escapeHtml(APP_VERSION)}
+            Generated by Fire-S Fire Safety App | Version ${escapeHtml(APP_VERSION)}
           </div>
         </div>
       </div>
@@ -8732,7 +8732,7 @@ reportContent.innerHTML = `
       </div>
 
       <div class="report-generated">
-        Generated by FireyeSA Fire Safety App | Version ${escapeHtml(APP_VERSION)}
+        Generated by Fire-S Fire Safety App | Version ${escapeHtml(APP_VERSION)}
       </div>
     </div>
 

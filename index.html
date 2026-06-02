@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FireyeSA Online Fire Safety App</title>
+  <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=90-field-ready2">
+  <link rel="stylesheet" href="styles.css?v=90-brand-fire-s1">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -16,10 +16,10 @@
     <img
       class="brand-mark"
       src="icon-192.png"
-      alt="FireyeSA logo"
+      alt="Fire-S logo"
     >
     <div>
-      <h1>FireyeSA</h1>
+      <h1>Fire-S</h1>
       <p class="subtitle">Fire Safety App</p>
       <p id="appVersion" class="brand-version">Version loading...</p>
     </div>
@@ -73,7 +73,7 @@
 
       <div id="cloudAdminPanel" class="app-info" style="display:none;">
         <div class="cloud-section-title">App Info</div>
-        <div><strong>App:</strong> FireyeSA</div>
+        <div><strong>App:</strong> Fire-S</div>
         <div><strong>Version:</strong> <span id="cloudAppVersion">Loading...</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
@@ -105,7 +105,7 @@
 <section id="homeSection" class="card home-section">
   <div class="home-hero">
     <div>
-      <div class="home-kicker">FireyeSA</div>
+      <div class="home-kicker">Fire-S</div>
       <h2>Fire Safety Platform</h2>
       <p>
         Choose where you want to work: account access, inspections, or additional fire safety services.
@@ -126,7 +126,7 @@
       style="display:none;"
     >
       <span class="route-title">Logout</span>
-      <span class="route-copy">Sign out of your FireyeSA cloud session.</span>
+      <span class="route-copy">Sign out of your Fire-S cloud session.</span>
     </button>
 
     <button id="homeInspectionRouteBtn" type="button" class="startup-route-card primary-route">
@@ -562,13 +562,13 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=90-field-ready2"></script>
+  <script src="app.js?v=90-brand-fire-s1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
           .then(() => {
-            console.log('FireyeSA service worker registered.');
+            console.log('Fire-S service worker registered.');
           })
           .catch(error => {
             console.warn('Service worker registration failed:', error);
