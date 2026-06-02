@@ -3870,6 +3870,29 @@ function getProjectDataQuality(project) {
 }
 
 function getProjectInspectionStatus(project) {
+  if (
+    project.scheduledStatus === 'scheduled' &&
+    project.scheduleType === 'new_site'
+  ) {
+    return {
+      label: 'Scheduled',
+      class: 'inspection-scheduled',
+      filter: 'scheduled-new',
+      detail: project.scheduledDate || 'Future inspection'
+    };
+  }
+
+  if (isCompletedAllClearInspection(project)) {
+    const completion = getProjectCompletionCounts(project);
+
+    return {
+      label: 'Clear Completed',
+      class: 'inspection-clear-completed',
+      filter: 'clear-completed',
+      detail: `${completion.answered}/${completion.total} answered`
+    };
+  }
+
   const completion = getProjectCompletionCounts(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const dataQuality = getProjectDataQuality(project);
@@ -4433,6 +4456,9 @@ function renderDashboardMetrics(projectsOverride) {
       p.scheduledStatus === 'scheduled' &&
       p.scheduleType === 'new_site'
   );
+  const clearCompletedInspections = projects.filter(
+    p => isCompletedAllClearInspection(p)
+  );
 
   const overdue = followUps.filter(p => {
 
@@ -4496,6 +4522,15 @@ function renderDashboardMetrics(projectsOverride) {
           <div class="metric-number">${scheduledNewInspections.length}</div>
           <div class="metric-label">
             Scheduled New
+          </div>
+        </div>
+
+        <div class="metric-card"
+        data-filter="clear-completed"
+        onclick="setFilter('clear-completed')">
+          <div class="metric-number">${clearCompletedInspections.length}</div>
+          <div class="metric-label">
+            Clear Completed
           </div>
         </div>
 
@@ -4685,6 +4720,7 @@ function getFilterLabel(filter) {
     overdue: 'Overdue',
     risk: 'High risk',
     'scheduled-new': 'Scheduled new inspections',
+    'clear-completed': 'Clear completed inspections',
     'inspection-attention': 'Needs attention',
     'inspection-warning': 'Missing data',
     'inspection-progress': 'In progress',
@@ -4925,6 +4961,47 @@ function consolidateDuplicateSiteCards() {
   );
 }
 
+function isCompletedAllClearInspection(project) {
+  if (!project) return false;
+
+  if (
+    project.scheduledStatus === 'scheduled' ||
+    project.scheduleFreshInspection === true
+  ) {
+    return false;
+  }
+
+  if (project.followUpRequired === 'Yes') {
+    return false;
+  }
+
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  const hasChecklistCompleted =
+    completion.total > 0 &&
+    completion.unanswered === 0;
+
+  const hasNoFindings =
+    completion.noCount === 0;
+
+  const hasNoExpiryIssues =
+    expiryCounts.overdue === 0 &&
+    expiryCounts.soon === 0 &&
+    expiryCounts.missing === 0;
+
+  const hasNoMissingProjectInfo =
+    dataQuality.count === 0;
+
+  return (
+    hasChecklistCompleted &&
+    hasNoFindings &&
+    hasNoExpiryIssues &&
+    hasNoMissingProjectInfo
+  );
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -5005,6 +5082,10 @@ function renderProjectsList() {
       project.scheduledStatus === 'scheduled' &&
       project.scheduleType === 'new_site'
     );
+  }
+
+  if (currentFilter === 'clear-completed') {
+    return isCompletedAllClearInspection(project);
   }
 
   if (currentFilter === 'risk') {

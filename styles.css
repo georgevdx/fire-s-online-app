@@ -3413,3 +3413,15 @@ button.readiness-chip:focus {
   flex-wrap: wrap;
   margin-top: 14px;
 }
+
+.inspection-scheduled {
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #93c5fd;
+}
+
+.inspection-clear-completed {
+  background: #f1f8f4;
+  color: #2e7d32;
+  border-color: #81c784;
+}
