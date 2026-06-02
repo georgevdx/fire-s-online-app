@@ -339,7 +339,7 @@
       <section class="card">
         <div class="toolbar">
           <h2>Project Details</h2>
-          <button id="backBtn" type="button">Back to Projects</button>
+          <button id="topBackBtn" type="button">Back to Projects</button>
         </div>
 
         <div class="form-grid">
@@ -454,20 +454,16 @@
         <div id="projectReadinessPanel" class="project-readiness-panel"></div>
         <div class="sticky-action-bar">
 
+  <button id="backBtn" type="button" class="sticky-projects-btn">
+    Projects
+  </button>
+
   <button id="saveBtn" type="button">
     Save
   </button>
 
   <button id="finishBtn" type="button">
     Finish
-  </button>
-
-  <button id="reportBtn" type="button">
-    Report
-  </button>
-
-  <button id="exportBtn" type="button">
-    PDF
   </button>
 
   <div class="action-menu">
@@ -479,6 +475,14 @@
     <div id="actionDropdown"
          class="action-dropdown"
          style="display:none;">
+
+      <button id="reportBtn" type="button">
+        Report
+      </button>
+
+      <button id="exportBtn" type="button">
+        PDF
+      </button>
 
       <button id="shareBtn" type="button">
         Share Report
@@ -556,15 +560,6 @@
       </section>
     </section>
   </div>
-
-<button
-  id="floatingBackToProjectsBtn"
-  type="button"
-  class="floating-back-projects-btn"
-  style="display:none;"
->
-  ← Projects
-</button>
 
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="app.js?v=90-field-ready1"></script>

@@ -3495,3 +3495,25 @@ button.readiness-chip:focus {
     font-size: 12px;
   }
 }
+
+.sticky-projects-btn {
+  background: #1565c0;
+}
+
+@media (max-width: 700px) {
+  .sticky-action-bar {
+    max-width: calc(100% - 16px);
+    gap: 5px;
+    padding: 7px;
+  }
+
+  .sticky-action-bar button {
+    padding: 8px 9px;
+    font-size: 11px;
+    min-width: 0;
+  }
+
+  .sticky-projects-btn {
+    min-width: 68px;
+  }
+}

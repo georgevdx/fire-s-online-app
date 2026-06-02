@@ -2128,7 +2128,15 @@ if (cancelScheduledInspectionBtn) {
     toggleFiltersBtn.addEventListener('click', toggleFilterPanel);
   }
   
-  getEl('backBtn').addEventListener('click', showProjectList);
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) {
+    backBtn.addEventListener('click', showProjectList);
+  }
+
+  const topBackBtn = document.getElementById('topBackBtn');
+  if (topBackBtn) {
+    topBackBtn.addEventListener('click', showProjectList);
+  }
   const floatingBackToProjectsBtn =
     document.getElementById('floatingBackToProjectsBtn');
 
