@@ -6793,8 +6793,7 @@ function generateReport() {
   const projectName =
     currentProject?.projectName || 'Untitled Project';
 
-  const reportCompanyName =
-  currentProject?.companyName || 'Client Company';
+  const reportCompanyName = 'Fire-S';
 
   const reportCompanyLogo =
   currentProject?.companyLogo || 'icon-192.png';
