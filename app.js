@@ -25,7 +25,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-findings-nav1';
+const APP_VERSION = 'v90-findings-nav2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -927,6 +927,17 @@ function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
 
   if (!section) return;
 
+  document
+    .querySelectorAll('.checklist-section-tab')
+    .forEach(tab => tab.classList.remove('active-section-tab'));
+
+  const activeTab =
+    document.querySelector(`.checklist-section-tab[data-section-index="${sectionIndex}"]`);
+
+  if (activeTab) {
+    activeTab.classList.add('active-section-tab');
+  }
+
   section.classList.remove('hidden');
 
   if (arrow) {
@@ -983,10 +994,19 @@ function showChecklistQuestion(sectionIndex, position, shouldScroll = true) {
   }
 
   if (shouldScroll) {
-    rows[safePosition].scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
+    const nav = document.getElementById(`sectionNav_${sectionIndex}`);
+
+    if (nav) {
+      nav.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    } else {
+      rows[safePosition].scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
   }
 }
 
@@ -6902,6 +6922,7 @@ html += `
       <button
         type="button"
         class="checklist-section-tab"
+        data-section-index="${sectionIndex}"
         onclick="openChecklistSection(${sectionIndex}, true)"
       >
         <span>∨</span>
@@ -6915,11 +6936,6 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
   const sectionItems = groupedSections.get(sectionName) || [];
 
   html += `
-    <div class="section-header" onclick="toggleSection(${sectionIndex})">
-      <span id="arrow_${sectionIndex}">&gt;</span>
-      ${escapeHtml(sectionName.toUpperCase())}
-    </div>
-
     <div
       class="section-group hidden"
       id="section_${sectionIndex}"

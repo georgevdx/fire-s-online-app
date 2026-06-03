@@ -3539,12 +3539,6 @@ button.readiness-chip:focus {
   border: 1px solid #ffcc80;
 }
 
-.checklist-section-tab:first-child {
-  background: #b71c1c;
-  color: #ffffff;
-  border-color: #b71c1c;
-}
-
 .checklist-question-nav {
   position: sticky;
   top: 8px;
@@ -3593,6 +3587,13 @@ button.readiness-chip:focus {
     font-size: 11px;
     padding: 8px 10px;
   }
+
+  .checklist-section-tab.active-section-tab {
+  background: #b71c1c;
+  color: #ffffff;
+  border-color: #b71c1c;
+  font-weight: 700;
+}
 
   .checklist-question-nav {
     top: 6px;
