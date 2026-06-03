@@ -8126,52 +8126,6 @@ async function handlePhotoUpload(event) {
   }
 }
 
-function downloadPhoto(index) {
-  const photo = currentPhotos[index];
-
-  if (!photo || !photo.src) {
-    alert('Photo is not available for download.');
-    return;
-  }
-
-  try {
-    const timestamp =
-      photo.timestamp
-        ? new Date(photo.timestamp)
-            .toISOString()
-            .slice(0, 19)
-            .replace(/[:T]/g, '-')
-        : getFileTimestamp();
-
-    const filename = `Fire-S-photo-${timestamp}-${index + 1}.jpg`;
-
-    const link = document.createElement('a');
-    link.href = photo.src;
-    link.download = filename;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.style.display = 'none';
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    const status = document.getElementById('photoUploadStatus');
-
-    if (status) {
-      status.textContent =
-        `Photo download started: ${filename}`;
-    }
-  } catch (error) {
-    console.error('Photo download failed:', error);
-
-    const opened = window.open(photo.src, '_blank');
-
-    if (!opened) {
-      alert('Photo download failed. Open the photo and save it manually.');
-    }
-  }
-}
 
 function renderPhotos() {
   const container = getEl('photoPreview');
@@ -8204,23 +8158,13 @@ function renderPhotos() {
     oninput="updatePhotoNote(${index}, this.value)"
   >${escapeHtml(photo.note || '')}</textarea>
 
-  <div class="photo-actions">
-    <button
-      class="photo-download"
-      type="button"
-      onclick="downloadPhoto(${index})"
-    >
-      Download
-    </button>
-
-    <button
-      class="photo-delete"
-      type="button"
-      onclick="deletePhoto(${index})"
-    >
-      Delete
-    </button>
-  </div>
+  <button
+  class="photo-delete"
+  type="button"
+  onclick="deletePhoto(${index})"
+>
+  Delete
+</button>
 `;
 
     container.appendChild(div);
@@ -9790,7 +9734,6 @@ window.debugSyncCounts = debugSyncCounts;
 window.addEventListener('offline', () => {
   setSyncStatusMessage('Offline mode active. You can continue working.');
 });
-window.downloadPhoto = downloadPhoto;
 window.addEventListener('online', async () => {
   setSyncStatusMessage('Signal restored. Updating GPS addresses...');
 
