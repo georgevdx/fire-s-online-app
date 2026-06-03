@@ -8126,7 +8126,7 @@ async function handlePhotoUpload(event) {
   }
 }
 
-async function downloadPhoto(index) {
+function downloadPhoto(index) {
   const photo = currentPhotos[index];
 
   if (!photo || !photo.src) {
@@ -8135,38 +8135,41 @@ async function downloadPhoto(index) {
   }
 
   try {
-    const response = await fetch(photo.src);
-    const blob = await response.blob();
-
     const timestamp =
       photo.timestamp
-        ? new Date(photo.timestamp).toISOString().slice(0, 19).replace(/[:T]/g, '-')
+        ? new Date(photo.timestamp)
+            .toISOString()
+            .slice(0, 19)
+            .replace(/[:T]/g, '-')
         : getFileTimestamp();
 
     const filename = `Fire-S-photo-${timestamp}-${index + 1}.jpg`;
 
-    const url = URL.createObjectURL(blob);
-
     const link = document.createElement('a');
-    link.href = url;
+    link.href = photo.src;
     link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
     link.style.display = 'none';
 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
-
     const status = document.getElementById('photoUploadStatus');
+
     if (status) {
-      status.textContent = `Photo downloaded: ${filename}`;
+      status.textContent =
+        `Photo download started: ${filename}`;
     }
   } catch (error) {
     console.error('Photo download failed:', error);
-    alert('Photo download failed. Try opening the photo and saving it manually.');
+
+    const opened = window.open(photo.src, '_blank');
+
+    if (!opened) {
+      alert('Photo download failed. Open the photo and save it manually.');
+    }
   }
 }
 
