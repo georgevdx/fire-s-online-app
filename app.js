@@ -7405,7 +7405,7 @@ function generateReport() {
       >
 
       <div>
-        <h1>${escapeHtml(projectName)}</h1>
+        <h1>Fire-S</h1>
 
         <div class="report-subtitle">
           Fire Safety Inspection Report
@@ -8535,7 +8535,7 @@ reportContent.innerHTML = `
         >
 
         <div>
-          <h1>${escapeHtml(projectName)}</h1>
+          <h1>Fire-S</h1>
 
           <div class="report-subtitle">
             Archived Fire Safety Inspection Report
