@@ -192,13 +192,12 @@
         "items": [
           {
             "Item Number": "17",
-            "Checklist Item": "Do the hazardous substances need to be registered?",
-            "Non Compliance Text": "There was no evidence that hazardous substances stored and/or handled on the premises were registered where required by the applicable authority.",
-            "Reference": "Applicable SANS code related to specific class hazardous substance, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Determine whether hazardous substances stored and/or handled exceed the prescribed threshold quantities and register the installation where required.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Checklist Item": "Where hazardous substances require registration, has registration been confirmed?",
+            "Answer Type": "Yes / No / N/A",
+            "Applicable To": ["All"],
+            "Non Compliance Text": "Hazardous substance registration was not confirmed where registration is required.",
+            "Corrective Action": "Confirm whether registration is legally required for the hazardous substances on site. If required, obtain or update the relevant registration/records.",
+            "Severity": "Medium"
           },
           {
             "Item Number": "18",
