@@ -1,5 +1,6 @@
 ﻿let currentFilter = 'all';
 let currentProjectPage = 1;
+
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
 const PROJECTS_PER_PAGE = 10;
@@ -20,6 +21,7 @@ let requirements = [];
 let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
+let currentProjectSummaryId = null;
 let currentPhotos = [];
 let archivedReportContext = null;
 let currentUserProfile = null;
@@ -5584,6 +5586,17 @@ container.innerHTML = `
     style="display:none;"
   ></div>
 `;
+  if (currentProjectSummaryId) {
+    const restoredIndex = visibleProjects.findIndex(
+      project => project.id === currentProjectSummaryId
+    );
+
+    if (restoredIndex !== -1) {
+      setTimeout(() => {
+        openProjectSummaryCard(restoredIndex, false);
+      }, 0);
+    }
+  }
 }
 
 function getProjectPrimaryAction(project) {
@@ -5660,10 +5673,12 @@ function getProjectPrimaryAction(project) {
   };
 }
 
-function openProjectSummaryCard(index) {
+function openProjectSummaryCard(index, shouldScroll = true) {
   const projects = window.currentProjectsListView || [];
   const project = projects[index];
-
+  if (project) {
+  currentProjectSummaryId = project.id;
+}
   const listView = document.getElementById('projectListView');
   const detailCard = document.getElementById('projectSummaryDetailCard');
 
@@ -5822,13 +5837,16 @@ function openProjectSummaryCard(index) {
     </div>
   `;
 
+  if (shouldScroll) {
   detailCard.scrollIntoView({
     behavior: 'smooth',
     block: 'start'
   });
 }
+}
 
 function closeProjectSummaryCard() {
+  currentProjectSummaryId = null;
   const listView = document.getElementById('projectListView');
   const detailCard = document.getElementById('projectSummaryDetailCard');
 
@@ -5902,6 +5920,7 @@ function archiveCurrentInspectionCycle(project) {
 }
 
 function openProject(projectId, focusMode) {
+  currentProjectSummaryId = null;
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
   if (!project) return;
