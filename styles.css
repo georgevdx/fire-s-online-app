@@ -3601,8 +3601,8 @@ button.readiness-chip:focus {
 }
 
 .checklist-row.active-checklist-question {
-  min-height: 360px;
-  padding: 14px;
+  min-height: 620px;
+  padding: 16px;
 }
 
 .checklist-row.active-checklist-question > div:first-child {
@@ -3622,8 +3622,9 @@ button.readiness-chip:focus {
 
 @media (max-width: 700px) {
   .checklist-row.active-checklist-question {
-    min-height: 390px;
+    min-height: 680px;
   }
+}
 
   .checklist-row.active-checklist-question > div:first-child {
     font-size: 16px;
