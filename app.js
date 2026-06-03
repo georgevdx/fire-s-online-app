@@ -1049,8 +1049,8 @@ function exportEmergencyBackup(reason) {
   const timestamp = getFileTimestamp();
   const safeReason = sanitizeFileName(reason, 'backup').toLowerCase();
   const filename = sanitizeFileName(
-    `fireyesa-before-${safeReason}-${timestamp}`,
-    'fireyesa-before-backup'
+    `fire-s-before-${safeReason}-${timestamp}`,
+    'fire-s-before-backup'
   );
 
   downloadProjectsBackup(projects, `${filename}.json`);
@@ -7405,7 +7405,7 @@ function generateReport() {
       >
 
       <div>
-        <h1>${escapeHtml(reportCompanyName)}</h1>
+        <h1>${escapeHtml(projectName)}</h1>
 
         <div class="report-subtitle">
           Fire Safety Inspection Report
@@ -8535,7 +8535,7 @@ reportContent.innerHTML = `
         >
 
         <div>
-          <h1>${escapeHtml(project.companyName || 'Client Company')}</h1>
+          <h1>${escapeHtml(projectName)}</h1>
 
           <div class="report-subtitle">
             Archived Fire Safety Inspection Report
