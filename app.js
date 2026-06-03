@@ -25,7 +25,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-brand-fire-s3';
+const APP_VERSION = 'v90-findings-nav1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -8387,37 +8387,31 @@ ${checklistText || 'No checklist answers or notes captured.'}`;
   }
 }
 
-function toggleSection(index) {
-  const section = document.getElementById(`section_${index}`);
-  const arrow = document.getElementById(`arrow_${index}`);
-
-  if (!section) return;
-
-  section.classList.toggle('hidden');
-
-  if (arrow) {
-    arrow.textContent = section.classList.contains('hidden') ? '>' : 'v';
-  }
-}
 
 function expandAllSections() {
-  document.querySelectorAll(".section-group").forEach(section => {
-    section.classList.remove("hidden");
+  document.querySelectorAll('.section-group').forEach(section => {
+    section.classList.remove('hidden');
   });
 
-  document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
-    arrow.textContent = "v";
+  document.querySelectorAll('[id^="arrow_"]').forEach(arrow => {
+    arrow.textContent = 'v';
   });
+
+  document.querySelectorAll('.checklist-question-nav').forEach(nav => {
+    nav.style.display = 'none';
+  });
+
+  document.querySelectorAll('.checklist-row').forEach(row => {
+    row.classList.remove('question-hidden');
+    row.classList.remove('active-checklist-question');
+  });
+
+  activeChecklistSectionIndex = null;
+  activeChecklistQuestionPosition = 0;
 }
 
 function collapseAllSections() {
-  document.querySelectorAll(".section-group").forEach(section => {
-    section.classList.add("hidden");
-  });
-
-  document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
-    arrow.textContent = ">";
-  });
+  closeAllChecklistSections();
 }
 
 function handleAnswerChange(selectEl, options = {}) {
@@ -9659,6 +9653,11 @@ window.toggleChecklistSection = toggleChecklistSection;
 window.toggleSection = toggleSection;
 window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
+window.openChecklistSection = openChecklistSection;
+window.closeChecklistSection = closeChecklistSection;
+window.closeAllChecklistSections = closeAllChecklistSections;
+window.nextChecklistQuestion = nextChecklistQuestion;
+window.previousChecklistQuestion = previousChecklistQuestion;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
