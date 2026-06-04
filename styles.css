@@ -3811,3 +3811,177 @@ button.readiness-chip:focus {
 .beta-feedback-admin-actions button {
   justify-self: start;
 }
+
+/* Beta 9.1b — layout alignment patch */
+
+.startup-route-grid,
+.services-grid,
+.metric-row,
+.project-badges,
+.project-expiry-summary,
+.project-summary-actions,
+.button-row,
+.schedule-new-actions,
+.sticky-action-bar,
+.quick-actions-grid {
+  align-items: stretch;
+}
+
+.project-summary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.project-summary-actions button,
+.button-row button,
+.schedule-new-actions button,
+.sticky-action-bar button,
+.quick-actions-grid button {
+  min-height: 44px;
+  text-align: center;
+}
+
+.project-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-badges span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+}
+
+.project-expiry-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-expiry-label {
+  flex-basis: 100%;
+  font-weight: 800;
+}
+
+.project-expiry-chip,
+.project-follow,
+.project-sync,
+.project-inspection-status {
+  max-width: 100%;
+  line-height: 1.25;
+}
+
+.project-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.project-meta-grid > div {
+  min-width: 0;
+}
+
+.project-meta-grid strong,
+.project-meta-grid span {
+  overflow-wrap: anywhere;
+}
+
+.inspection-project-list-item {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.inspection-project-list-title,
+.inspection-project-list-meta,
+.inspection-project-list-address {
+  width: 100%;
+}
+
+.inspection-project-list-status,
+.inspection-project-list-follow {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.checklist-section-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  align-items: stretch;
+  scroll-snap-type: x proximity;
+}
+
+.checklist-section-tab {
+  flex: 0 0 auto;
+  min-height: 42px;
+  white-space: nowrap;
+  scroll-snap-align: start;
+}
+
+.checklist-question-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.checklist-question-nav button {
+  min-height: 42px;
+}
+
+.checklist-question-nav span {
+  flex: 1;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .startup-route-grid,
+  .services-grid,
+  .metric-row,
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-summary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .project-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .button-row,
+  .schedule-new-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .sticky-action-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .sticky-action-bar .action-menu {
+    grid-column: 1 / -1;
+  }
+
+  .sticky-action-bar button {
+    width: 100%;
+  }
+
+  .project-badges,
+  .project-expiry-summary {
+    align-items: stretch;
+  }
+
+  .project-badges span,
+  .project-expiry-chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
