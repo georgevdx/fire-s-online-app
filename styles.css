@@ -4165,7 +4165,7 @@ button.readiness-chip:focus {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 78px;
+    bottom: 62px;
     top: auto;
     z-index: 90;
     margin-bottom: 0;
@@ -4236,4 +4236,65 @@ button.readiness-chip:focus {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+/* Beta 9.4c — compact bottom sticky bar */
+
+@media (max-width: 640px) {
+  #projectFormSection {
+    padding-bottom: 88px;
+  }
+
+  .sticky-action-bar {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 100;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #dddddd;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+  }
+
+  .sticky-action-bar button {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 4px;
+    font-size: 12px;
+    line-height: 1.1;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sticky-action-bar .action-menu {
+    grid-column: auto;
+    min-width: 0;
+  }
+
+  .sticky-projects-btn,
+  #backBtn,
+  #saveBtn,
+  #finishBtn,
+  #actionMenuBtn {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .action-dropdown {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 62px;
+    z-index: 110;
+    max-height: 55vh;
+    overflow-y: auto;
+  }
 }
