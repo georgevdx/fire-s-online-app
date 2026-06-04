@@ -4624,18 +4624,41 @@ function getProjectDataQuality(project) {
   };
 }
 
-function getProjectInspectionStatus(project) {
+function getActiveScheduledDate(project) {
+  if (!project) return '';
+
   if (
     project.scheduledStatus === 'scheduled' &&
-    project.scheduleType === 'new_site'
+    project.scheduledDate &&
+    !project.completedAt
   ) {
-    return {
-      label: 'Scheduled',
-      class: 'inspection-scheduled',
-      filter: 'scheduled-new',
-      detail: project.scheduledDate || 'Future inspection'
-    };
+    return project.scheduledDate;
   }
+
+  if (
+    project.scheduleFreshInspection === true &&
+    project.scheduledDate &&
+    !project.completedAt
+  ) {
+    return project.scheduledDate;
+  }
+
+  return '';
+}
+
+function getProjectInspectionStatus(project) {
+  if (
+  project.scheduledStatus === 'scheduled' &&
+  project.scheduleType === 'new_site' &&
+  !project.completedAt
+) {
+  return {
+    label: 'Scheduled',
+    class: 'inspection-scheduled',
+    filter: 'scheduled-new',
+    detail: project.scheduledDate || 'Future inspection'
+  };
+}
 
   if (isCompletedAllClearInspection(project)) {
     const completion = getProjectCompletionCounts(project);
@@ -5208,10 +5231,12 @@ function renderDashboardMetrics(projectsOverride) {
   );
 
   const scheduledNewInspections = projects.filter(
-    p =>
-      p.scheduledStatus === 'scheduled' &&
-      p.scheduleType === 'new_site'
-  );
+  p =>
+    p.scheduledStatus === 'scheduled' &&
+    p.scheduleType === 'new_site' &&
+    !p.completedAt
+);
+
   const clearCompletedInspections = projects.filter(
     p => isCompletedAllClearInspection(p)
   );
@@ -5835,11 +5860,12 @@ function renderProjectsList() {
   }
 
   if (currentFilter === 'scheduled-new') {
-    return (
-      project.scheduledStatus === 'scheduled' &&
-      project.scheduleType === 'new_site'
-    );
-  }
+  return (
+    project.scheduledStatus === 'scheduled' &&
+    project.scheduleType === 'new_site' &&
+    !project.completedAt
+  );
+}
 
   if (currentFilter === 'clear-completed') {
     return isCompletedAllClearInspection(project);
@@ -5973,13 +5999,25 @@ container.innerHTML = `
     ${visibleProjects.map((project, index) => {
       const followStatus = getFollowUpStatus(project);
       const inspectionStatus = getProjectInspectionStatus(project);
-      const scheduledLabel =
+
+      const isScheduledNew =
         project.scheduledStatus === 'scheduled' &&
-        project.scheduleType === 'new_site'
-          ? `Scheduled new inspection${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
-          : project.scheduleFreshInspection === true ||
-            project.scheduledStatus === 'scheduled'
-          ? `Open to start follow-up${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
+        project.scheduleType === 'new_site' &&
+        !project.completedAt;
+
+      const activeScheduledDate = getActiveScheduledDate(project);
+
+      const scheduledLabel =
+        isScheduledNew
+          ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+          : (
+              project.scheduleFreshInspection === true ||
+              (
+                project.scheduledStatus === 'scheduled' &&
+                !project.completedAt
+              )
+            )
+          ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
           : followStatus.label;
       const projectTitle =
         project.projectName ||
@@ -6128,15 +6166,27 @@ function openProjectSummaryCard(index, shouldScroll = true) {
   if (!project || !detailCard) return;
 
   const syncStatus = getSyncStatus(project);
-  const followStatus = getFollowUpStatus(project);
-  const scheduledLabel =
-    project.scheduledStatus === 'scheduled' &&
-    project.scheduleType === 'new_site'
-      ? `Scheduled new inspection${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
-      : project.scheduleFreshInspection === true ||
-        project.scheduledStatus === 'scheduled'
-      ? `Open to start follow-up${project.scheduledDate ? ` (${project.scheduledDate})` : ''}`
-      : followStatus.label; 
+const followStatus = getFollowUpStatus(project);
+
+const isScheduledNew =
+  project.scheduledStatus === 'scheduled' &&
+  project.scheduleType === 'new_site' &&
+  !project.completedAt;
+
+const activeScheduledDate = getActiveScheduledDate(project);
+
+const scheduledLabel =
+  isScheduledNew
+    ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+    : (
+        project.scheduleFreshInspection === true ||
+        (
+          project.scheduledStatus === 'scheduled' &&
+          !project.completedAt
+        )
+      )
+    ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+    : followStatus.label;
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -6199,7 +6249,6 @@ function openProjectSummaryCard(index, shouldScroll = true) {
 
         <span class="project-follow ${escapeHtml(followStatus.class)}">
           ${escapeHtml(scheduledLabel)}
-          ${project.followUpDate ? `(${escapeHtml(project.followUpDate)})` : ''}
         </span>
 
         <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
