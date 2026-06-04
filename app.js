@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-feedback3';
+const APP_VERSION = 'v90-beta-feedback4';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4155,20 +4155,37 @@ async function updateBetaFeedbackStatus(feedbackId) {
   const status = statusField ? statusField.value : 'new';
   const followupNote = noteField ? noteField.value.trim() : '';
 
+  console.log('Updating beta feedback:', {
+    feedbackId,
+    status,
+    followupNote
+  });
+
   try {
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('beta_feedback')
       .update({
-        status,
+        status: status,
         followup_note: followupNote
       })
-      .eq('id', feedbackId);
+      .eq('id', feedbackId)
+      .select('id, status, followup_note')
+      .maybeSingle();
 
     if (error) {
       console.error('Beta feedback update failed:', error);
       alert(`Could not update feedback: ${error.message}`);
       return;
     }
+
+    if (!data) {
+      alert(
+        'Feedback was not updated. Supabase allowed the request but no row was changed. Check RLS update policy.'
+      );
+      return;
+    }
+
+    console.log('Beta feedback updated:', data);
 
     alert('Beta feedback updated.');
 
