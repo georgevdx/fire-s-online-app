@@ -8699,7 +8699,7 @@ const executiveSummaryHtml = `
   photosHtml = '';
 
   for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
-    const pagePhotos = currentPhotos.slice(pageStart, pageStart + 4);
+   const pagePhotos = currentPhotos.slice(pageStart, pageStart + 2);
     const isFirstPhotoPage = pageStart === 0;
 
     photosHtml += `
