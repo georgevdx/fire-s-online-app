@@ -8111,6 +8111,8 @@ function generateReport() {
     riskComment = 'Inspection incomplete. Some items were not assessed.';
   }
 
+ 
+
   const highRiskCount = Object.values(nonCompliance)
     .flat()
     .filter(item => String(item.severity).toLowerCase() === 'high')
@@ -8137,6 +8139,92 @@ function generateReport() {
   const expiryCounts = getProjectExpiryCounts(reportProjectSnapshot);
   const reportInspectionStatus = getProjectInspectionStatus(reportProjectSnapshot);
   const reportDataQuality = getProjectDataQuality(reportProjectSnapshot);
+  
+   const executiveFindingText =
+  noCount > 0
+    ? `${noCount} non-compliance item${noCount === 1 ? '' : 's'} recorded during the inspection.`
+    : 'No non-compliance items were recorded during the inspection.';
+
+const executiveCompletionText =
+  notAnsweredCount > 0
+    ? `${notAnsweredCount} checklist item${notAnsweredCount === 1 ? '' : 's'} remain not answered.`
+    : 'All applicable answered checklist items have been recorded.';
+
+const executiveEquipmentText =
+  expiryCounts && expiryCounts.total > 0
+    ? [
+        expiryCounts.overdue > 0
+          ? `${expiryCounts.overdue} expired equipment maintenance item${expiryCounts.overdue === 1 ? '' : 's'}`
+          : '',
+        expiryCounts.soon > 0
+          ? `${expiryCounts.soon} equipment maintenance item${expiryCounts.soon === 1 ? '' : 's'} due soon`
+          : '',
+        expiryCounts.missing > 0
+          ? `${expiryCounts.missing} equipment maintenance date${expiryCounts.missing === 1 ? '' : 's'} to be entered`
+          : ''
+      ]
+        .filter(Boolean)
+        .join(', ') || 'No equipment maintenance concerns were highlighted.'
+    : 'No equipment maintenance concerns were highlighted.';
+
+const executiveFollowUpText =
+  followUpRequired === 'Yes'
+    ? `Follow-up / next inspection is recommended${followUpDate ? ` for ${followUpDate}` : ''}.`
+    : 'No follow-up inspection date was recorded at the time of reporting.';
+
+const executiveSummaryHtml = `
+  <div class="executive-summary-grid">
+    <div class="executive-summary-card">
+      <span>Inspection Status</span>
+      <strong>${escapeHtml(overallStatus)}</strong>
+    </div>
+
+    <div class="executive-summary-card">
+      <span>Risk Rating</span>
+      <strong>${escapeHtml(riskRating)}</strong>
+    </div>
+
+    <div class="executive-summary-card">
+      <span>Findings</span>
+      <strong>${noCount}</strong>
+    </div>
+
+    <div class="executive-summary-card">
+      <span>Not Answered</span>
+      <strong>${notAnsweredCount}</strong>
+    </div>
+  </div>
+
+  <div class="executive-summary-text">
+    <p>
+      This fire safety inspection was completed for
+      <strong>${escapeHtml(projectName)}</strong>.
+      The overall inspection status is
+      <strong>${escapeHtml(overallStatus)}</strong>
+      with a risk rating of
+      <strong>${escapeHtml(riskRating)}</strong>.
+    </p>
+
+    <p>
+      ${escapeHtml(executiveFindingText)}
+      ${escapeHtml(executiveCompletionText)}
+    </p>
+
+    <p>
+      Equipment maintenance summary:
+      ${escapeHtml(executiveEquipmentText)}.
+    </p>
+
+    <p>
+      ${escapeHtml(executiveFollowUpText)}
+    </p>
+
+    <p class="executive-risk-comment">
+      ${escapeHtml(riskComment)}
+    </p>
+  </div>
+`;
+  
   const repeatCount = repeatFindings.length;
   const summaryCardsHtml = `
     <div class="report-summary-grid">
@@ -8563,66 +8651,15 @@ function generateReport() {
       ${dataQualityHtml}
     </div>
 
-    <div class="report-block">
-      <h3>Executive Inspection Summary</h3>
-      <div class="report-line">
-        <strong>Inspection Status:</strong>
-        <span class="report-status-pill ${escapeHtml(reportInspectionStatus.class)}">
-          ${escapeHtml(reportInspectionStatus.label)}
-          <small>${escapeHtml(reportInspectionStatus.detail)}</small>
-        </span>
-      </div>
-
-      <div class="report-line"><strong>Overall Status:</strong> <span class="${
-        overallStatus === 'Compliant / Acceptable'
-          ? 'status-good'
-          : overallStatus === 'Attention Required'
-          ? 'status-warning'
-          : 'status-incomplete'
-      }">${overallStatus}</span></div>
-
-      <div class="report-line">
-        <strong>Risk Rating:</strong> 
-        <span class="${
-          riskRating === 'HIGH RISK'
-            ? 'risk-high'
-            : riskRating === 'MEDIUM RISK'
-            ? 'risk-medium'
-            : riskRating === 'INCOMPLETE'
-            ? 'risk-incomplete'
-            : 'risk-low'
-        }">${riskRating}</span>
-      </div>
-
-      <div class="report-line note">${riskComment}</div>
-      ${summaryCardsHtml}
+        <div class="report-block">
+      <h2>Executive Summary</h2>
+      ${executiveSummaryHtml}
     </div>
-
-    <div class="report-block">
-      <h2>Priority Action Summary</h2>
-      ${actionHtml}
-    </div>
-
-    <div class="report-block">
-      <h3>Non-Compliance Details</h3>
-      ${nonComplianceHtml}
-    </div>
-
-    <div class="report-block">
-      <h3>Equipment Expiry Details</h3>
-      ${expiryDetailsHtml}
-      ${missingExpiryHtml}
-    </div>
-    
-    <div class="report-block">
-  <h3>Inspector Comments and Conclusion</h3>
-  <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
-</div>
 
 <div class="report-block">
   <h3>Next Inspection Cycle / Re-inspection</h3>
 
-  <div class="report-line">
+<div class="report-line">
     <strong>Follow-up Required:</strong> ${escapeHtml(followUpRequired)}
   </div>
 
