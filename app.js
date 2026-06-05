@@ -4894,6 +4894,13 @@ function getActiveScheduledDate(project) {
     return project.scheduledDate;
   }
 
+  if (
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate
+  ) {
+    return project.followUpDate;
+  }
+
   return '';
 }
 
