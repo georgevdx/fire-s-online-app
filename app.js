@@ -4851,7 +4851,7 @@ function getProjectDataQuality(project) {
   if (!projectAddress) missing.push('Address');
   if (!project.contactPerson) missing.push('Contact Person');
   if (!project.contactTel && !project.contactEmail) {
-    missing.push('Contact projects[index] = {/Email');
+    missing.push('Contact Tel/Email');
   }
   if (project.inMall === 'Yes' && !project.mallName) {
     missing.push('Mall/Centre Name');
@@ -4880,6 +4880,25 @@ function getActiveScheduledDate(project) {
 
   return '';
 }
+
+function getActiveScheduleLabel(project) {
+  const activeScheduledDate = getActiveScheduledDate(project);
+
+  if (!activeScheduledDate) {
+    return '';
+  }
+
+  if (project.scheduleType === 'new_site') {
+    return `Scheduled new inspection (${activeScheduledDate})`;
+  }
+
+  if (project.scheduleFreshInspection === true) {
+    return `Open to start follow-up (${activeScheduledDate})`;
+  }
+
+  return `Scheduled inspection (${activeScheduledDate})`;
+}
+
 function getProjectInspectionStatus(project) {
   if (
   project.scheduledStatus === 'scheduled' &&
@@ -6168,81 +6187,70 @@ function renderProjectsList() {
   });
  
   const totalPages = Math.max(
-  1,
-  Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
-);
-
-  if (currentProjectPage > totalPages) {
-    currentProjectPage = totalPages;
-  }
-
-  const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
-  const visibleProjects = filteredProjects.slice(
-    startIndex,
-    startIndex + PROJECTS_PER_PAGE
+    1,
+    Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
   );
 
-  const pagingControls = document.getElementById('projectPagingControls');
+    if (currentProjectPage > totalPages) {
+      currentProjectPage = totalPages;
+    }
 
-  if (pagingControls) {
-    pagingControls.innerHTML = `
-      <button
-        type="button"
-        onclick="previousProjectPage()"
-        ${currentProjectPage === 1 ? 'disabled' : ''}
-      >
-        Previous
-      </button>
+    const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
+    const visibleProjects = filteredProjects.slice(
+      startIndex,
+      startIndex + PROJECTS_PER_PAGE
+    );
 
-      <span>
-        Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
-        -
-        ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
-        of ${filteredProjects.length}
-      </span>
+    const pagingControls = document.getElementById('projectPagingControls');
 
-      <button
-        type="button"
-        onclick="nextProjectPage()"
-        ${currentProjectPage >= totalPages ? 'disabled' : ''}
-      >
-        Next
-      </button>
-    `;
-  }
+    if (pagingControls) {
+      pagingControls.innerHTML = `
+        <button
+          type="button"
+          onclick="previousProjectPage()"
+          ${currentProjectPage === 1 ? 'disabled' : ''}
+        >
+          Previous
+        </button>
 
-  if (filteredProjects.length === 0) {
-    container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
-    return;
-  }
+        <span>
+          Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
+          -
+          ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
+          of ${filteredProjects.length}
+        </span>
 
-  window.currentProjectsListView = visibleProjects;
+        <button
+          type="button"
+          onclick="nextProjectPage()"
+          ${currentProjectPage >= totalPages ? 'disabled' : ''}
+        >
+          Next
+        </button>
+      `;
+    }
 
-container.innerHTML = `
-  <div id="projectListView" class="inspection-project-list">
-    ${visibleProjects.map((project, index) => {
-      const followStatus = getFollowUpStatus(project);
-      const inspectionStatus = getProjectInspectionStatus(project);
+    if (filteredProjects.length === 0) {
+      container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
+      return;
+    }
 
-      const isScheduledNew =
-        project.scheduledStatus === 'scheduled' &&
-        project.scheduleType === 'new_site' &&
-        !project.completedAt;
+    window.currentProjectsListView = visibleProjects;
 
-      const activeScheduledDate = getActiveScheduledDate(project);
+  container.innerHTML = `
+    <div id="projectListView" class="inspection-project-list">
+      ${visibleProjects.map((project, index) => {
+        const followStatus = getFollowUpStatus(project);
+        const inspectionStatus = getProjectInspectionStatus(project);
 
-      const scheduledLabel =
-        isScheduledNew
-          ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
-          : (
-              project.scheduleFreshInspection === true ||
-              (
-                project.scheduledStatus === 'scheduled' &&
-                !project.completedAt
-              )
-            )
-          ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
-          : followStatus.label;
+        const activeScheduleLabel = getActiveScheduleLabel(project);
+
+  const isScheduledNew =
+    activeScheduleLabel &&
+    project.scheduleType === 'new_site';
+
+  const scheduledLabel =
+    activeScheduleLabel || followStatus.label;
       const projectTitle =
         project.projectName ||
         [project.organisationName, project.siteName]
@@ -6270,14 +6278,14 @@ container.innerHTML = `
           </span>
 
           ${
-              isScheduledNew || project.scheduleFreshInspection === true
-                ? ''
-                : `
-                  <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
-                    ${escapeHtml(inspectionStatus.label)}
-                  </span>
-                `
-            }
+            activeScheduleLabel
+              ? ''
+              : `
+                <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+                  ${escapeHtml(inspectionStatus.label)}
+                </span>
+              `
+          }
 
             <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
               ${escapeHtml(scheduledLabel)}
@@ -6311,27 +6319,27 @@ container.innerHTML = `
 }
 
 function getProjectPrimaryAction(project) {
-    if (
-      project.scheduledStatus === 'scheduled' &&
-      project.scheduleType === 'new_site'
-    ) {
-      return {
-        label: 'Start Scheduled Inspection',
-        focusMode: '',
-        className: 'action-primary'
-      };
-    }
+  const activeScheduleLabel = getActiveScheduleLabel(project);
 
-    if (
-      project.scheduleFreshInspection === true ||
-      project.scheduledStatus === 'scheduled'
-    ) {
-      return {
-        label: 'Start Scheduled Follow-up',
-        focusMode: '',
-        className: 'action-primary'
-      };
-    }
+  if (
+    activeScheduleLabel &&
+    project.scheduleType === 'new_site'
+  ) {
+    return {
+      label: 'Start Scheduled Inspection',
+      focusMode: '',
+      className: 'action-primary'
+    };
+  }
+
+  if (activeScheduleLabel) {
+    return {
+      label: 'Start Scheduled Follow-up',
+      focusMode: '',
+      className: 'action-primary'
+    };
+  }
+
   const completion = getProjectCompletionCounts(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -6383,7 +6391,6 @@ function getProjectPrimaryAction(project) {
     className: 'action-primary'
   };
 }
-
 function openProjectSummaryCard(index, shouldScroll = true) {
   const projects = window.currentProjectsListView || [];
   const project = projects[index];
@@ -6398,25 +6405,10 @@ function openProjectSummaryCard(index, shouldScroll = true) {
 const syncStatus = getSyncStatus(project);
 const followStatus = getFollowUpStatus(project);
 
-const isScheduledNew =
-  project.scheduledStatus === 'scheduled' &&
-  project.scheduleType === 'new_site' &&
-  !project.completedAt;
-
-const activeScheduledDate = getActiveScheduledDate(project);
+const activeScheduleLabel = getActiveScheduleLabel(project);
 
 const scheduledLabel =
-  isScheduledNew
-    ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
-    : (
-        project.scheduleFreshInspection === true ||
-        (
-          project.scheduledStatus === 'scheduled' &&
-          !project.completedAt
-        )
-      )
-    ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
-    : followStatus.label;
+  activeScheduleLabel || followStatus.label;
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -6493,7 +6485,7 @@ const scheduledLabel =
         </span>
 
         ${
-          isScheduledNew || project.scheduleFreshInspection === true
+          activeScheduleLabel
             ? ''
             : `
               <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
