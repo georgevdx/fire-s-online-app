@@ -4905,14 +4905,14 @@ function getActiveScheduleLabel(project) {
   }
 
   if (project.scheduleType === 'new_site') {
-    return `Scheduled new inspection (${activeScheduledDate})`;
+    return `Scheduled new inspection: ${activeScheduledDate}`;
   }
 
   if (project.scheduleFreshInspection === true) {
-    return `Open to start follow-up (${activeScheduledDate})`;
+    return `Next inspection: ${activeScheduledDate}`;
   }
 
-  return `Scheduled inspection (${activeScheduledDate})`;
+  return `Scheduled inspection: ${activeScheduledDate}`;
 }
 
 function getProjectInspectionStatus(project) {
