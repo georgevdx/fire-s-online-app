@@ -6984,6 +6984,11 @@ function compressPhotoFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.
               { type: 'image/jpeg' }
             );
 
+            compressedFile.photoWidth = width;
+            compressedFile.photoHeight = height;
+            compressedFile.photoOrientation =
+              width > height ? 'landscape' : 'portrait';
+
             resolve(compressedFile);
           },
           'image/jpeg',
@@ -7096,13 +7101,16 @@ async function uploadPhotoToStorage(file, projectId) {
     .getPublicUrl(filePath);
 
   return {
-    src: publicUrlData.publicUrl,
-    storagePath: filePath,
-    timestamp: new Date().toISOString(),
-    note: '',
-    originalSize: file.size,
-    compressedSize: compressedFile.size
-  };
+  src: publicUrlData.publicUrl,
+  storagePath: filePath,
+  timestamp: new Date().toISOString(),
+  note: '',
+  originalSize: file.size,
+  compressedSize: compressedFile.size,
+  width: compressedFile.photoWidth || null,
+  height: compressedFile.photoHeight || null,
+  orientation: compressedFile.photoOrientation || null
+};
 }
 
 async function uploadSingleInspection(project) {
@@ -8099,6 +8107,55 @@ function getReportPhotosForCurrentInspection(currentProject) {
   });
 }
 
+function getReportPhotoOrientation(photo) {
+  if (!photo) return 'portrait';
+
+  if (photo.orientation) {
+    return photo.orientation;
+  }
+
+  if (photo.width && photo.height) {
+    return photo.width > photo.height ? 'landscape' : 'portrait';
+  }
+
+  return 'portrait';
+}
+
+function buildReportPhotoCard(photo, photoNumber) {
+  const orientation = getReportPhotoOrientation(photo);
+
+  return `
+    <div class="report-photo-card report-photo-${escapeHtml(orientation)}">
+      <div class="report-photo-header">
+        Photo ${photoNumber}
+      </div>
+
+      <div class="report-photo-time">
+        Captured:
+        ${
+          photo.timestamp
+            ? new Date(photo.timestamp).toLocaleString()
+            : 'Not recorded'
+        }
+      </div>
+
+      <div class="report-photo-image-box">
+        <img
+          src="${photo.src}"
+          class="report-photo-img"
+          alt="Inspection photo ${photoNumber}"
+          crossorigin="anonymous"
+        >
+      </div>
+
+      <div class="report-photo-note">
+        <strong>Photo Note:</strong>
+        ${escapeHtml(photo.note || 'No note added.')}
+      </div>
+    </div>
+  `;
+}
+
 function generateReport() {
 
   if (!canViewReports()) {
@@ -8719,81 +8776,83 @@ const executiveSummaryHtml = `
   }
 
   if (reportPhotos.length > 0) {
-  photosHtml = '';
+  photosHtml = `
+    <div class="report-photo-page">
+      <h2 class="appendix-title">
+        APPENDIX A - PHOTO EVIDENCE
+      </h2>
 
-  for (let pageStart = 0; pageStart < reportPhotos.length; pageStart += 4) {
-    const pagePhotos = reportPhotos.slice(pageStart, pageStart + 4);
-    const isFirstPhotoPage = pageStart === 0;
+      <div class="report-photo-smart-grid">
+  `;
 
-    photosHtml += `
-      <div class="report-photo-page">
-        ${
-          isFirstPhotoPage
-            ? `
-              <h2 class="appendix-title">
-                APPENDIX A - PHOTO EVIDENCE
-              </h2>
-            `
-            : ''
-        }
+  let portraitPairOpen = false;
 
-        <div class="report-photo-grid">
-    `;
+  reportPhotos.forEach((photo, index) => {
+    const photoNumber = index + 1;
+    const orientation = getReportPhotoOrientation(photo);
 
-    for (let rowStart = 0; rowStart < 4; rowStart += 2) {
-      photosHtml += `<div class="report-photo-row">`;
-
-      for (let cellIndex = 0; cellIndex < 2; cellIndex++) {
-        const photo = pagePhotos[rowStart + cellIndex];
-
-        photosHtml += `<div class="report-photo-cell">`;
-
-        if (photo) {
-          const photoNumber = pageStart + rowStart + cellIndex + 1;
-
-          photosHtml += `
-            <div class="report-photo-card">
-              <div class="report-photo-header">
-                Photo ${photoNumber}
-              </div>
-
-              <div class="report-photo-time">
-                Captured:
-                ${
-                  photo.timestamp
-                    ? new Date(photo.timestamp).toLocaleString()
-                    : 'Not recorded'
-                }
-              </div>
-
-              <div class="report-photo-image-box">
-                <img
-                  src="${photo.src}"
-                  class="report-photo-img"
-                  alt="Inspection photo ${photoNumber}"
-                  crossorigin="anonymous"
-                >
-              </div>
-
-              <div class="report-photo-note">
-                <strong>Photo Note:</strong>
-                ${escapeHtml(photo.note || 'No note added.')}
-              </div>
-            </div>
-          `;
-        }
-
+    if (orientation === 'landscape') {
+      if (portraitPairOpen) {
         photosHtml += `</div>`;
+        portraitPairOpen = false;
       }
 
-      photosHtml += `</div>`;
+      photosHtml += `
+        <div class="report-photo-landscape-row">
+          ${buildReportPhotoCard(photo, photoNumber)}
+        </div>
+      `;
+
+      return;
+    }
+
+    if (!portraitPairOpen) {
+      photosHtml += `<div class="report-photo-portrait-row">`;
+      portraitPairOpen = true;
     }
 
     photosHtml += `
-        </div>
+      <div class="report-photo-portrait-cell">
+        ${buildReportPhotoCard(photo, photoNumber)}
       </div>
     `;
+
+    const nextPhoto = reportPhotos[index + 1];
+    const nextOrientation = getReportPhotoOrientation(nextPhoto);
+
+    if (!nextPhoto || nextOrientation === 'landscape') {
+      photosHtml += `
+        <div class="report-photo-portrait-cell report-photo-empty-cell"></div>
+      `;
+      photosHtml += `</div>`;
+      portraitPairOpen = false;
+    } else if (portraitPairOpen) {
+      const rowPhotoCount =
+        (photosHtml.match(/report-photo-portrait-cell/g) || []).length;
+
+      // Close every second portrait cell by checking the pair position.
+      const previousPortraits = reportPhotos
+        .slice(0, index + 1)
+        .filter(p => getReportPhotoOrientation(p) !== 'landscape')
+        .length;
+
+      if (previousPortraits % 2 === 0) {
+        photosHtml += `</div>`;
+        portraitPairOpen = false;
+      }
+    }
+  });
+
+  if (portraitPairOpen) {
+    photosHtml += `
+      <div class="report-photo-portrait-cell report-photo-empty-cell"></div>
+    </div>`;
   }
+
+  photosHtml += `
+      </div>
+    </div>
+  `;
 } else {
   photosHtml = `
     <div class="report-photo-page">

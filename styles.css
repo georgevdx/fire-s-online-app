@@ -5012,3 +5012,114 @@ button.readiness-chip:focus {
     break-inside: avoid;
   }
 }
+
+/* Beta 10.2e — smart report/PDF photo layout */
+
+.report-photo-page {
+  page-break-before: always;
+  break-before: page;
+  page-break-after: auto;
+  break-after: auto;
+}
+
+.report-photo-page:first-of-type {
+  page-break-before: auto;
+  break-before: auto;
+}
+
+.report-photo-smart-grid {
+  display: grid;
+  gap: 6mm;
+  width: 100%;
+}
+
+.report-photo-portrait-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6mm;
+  width: 100%;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.report-photo-portrait-cell {
+  min-width: 0;
+}
+
+.report-photo-landscape-row {
+  display: block;
+  width: 100%;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.report-photo-empty-cell {
+  visibility: hidden;
+}
+
+.report-photo-card {
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 6px;
+  background: #ffffff;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.report-photo-header {
+  font-weight: 800;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.report-photo-time {
+  font-size: 8px;
+  color: #666666;
+  margin-bottom: 4px;
+  line-height: 1.15;
+}
+
+.report-photo-image-box {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #eeeeee;
+  border-radius: 6px;
+  background: #f7f7f7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-photo-portrait .report-photo-image-box {
+  height: 72mm;
+  max-height: 72mm;
+}
+
+.report-photo-landscape .report-photo-image-box {
+  height: 78mm;
+  max-height: 78mm;
+}
+
+.report-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.report-photo-note {
+  margin-top: 4px;
+  font-size: 8px;
+  line-height: 1.2;
+  color: #333333;
+}
+
+@media print {
+  .report-photo-portrait-row,
+  .report-photo-landscape-row,
+  .report-photo-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
