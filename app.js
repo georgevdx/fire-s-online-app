@@ -2425,8 +2425,24 @@ if (cancelScheduledInspectionBtn) {
   });
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
-  getEl('followUpRequired').addEventListener('change', scheduleAutoSave);
-  getEl('followUpDate').addEventListener('input', scheduleAutoSave);
+  getEl('followUpRequired').addEventListener('change', () => {
+  if (getEl('followUpRequired').value === 'No') {
+      getEl('followUpDate').value = '';
+      getEl('followUpNotes').value = '';
+    }
+
+    scheduleAutoSave();
+  });
+  getEl('followUpDate').addEventListener('input', () => {
+  const followUpDate = getEl('followUpDate').value;
+  const followUpRequired = getEl('followUpRequired');
+
+  if (followUpDate && followUpRequired.value !== 'Yes') {
+    followUpRequired.value = 'Yes';
+  }
+
+  scheduleAutoSave();
+});
   getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', () => {
     currentProjectPage = 1;
@@ -4854,6 +4870,15 @@ function getProjectDataQuality(project) {
 function getActiveScheduledDate(project) {
   if (!project) return '';
 
+  // A completed inspection may still have a newly selected future follow-up.
+  // Do not hide follow-up dates just because completedAt exists.
+  if (
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate
+  ) {
+    return project.followUpDate;
+  }
+
   if (
     project.scheduledStatus === 'scheduled' &&
     project.scheduledDate &&
@@ -4871,6 +4896,31 @@ function getActiveScheduledDate(project) {
   }
 
   return '';
+}
+
+function getActiveScheduleLabel(project) {
+  const activeScheduledDate = getActiveScheduledDate(project);
+
+  if (!activeScheduledDate) {
+    return '';
+  }
+
+  if (project.scheduleType === 'new_site') {
+    return `Scheduled new inspection: ${activeScheduledDate}`;
+  }
+
+  if (
+    project.scheduledReason === 'follow_up' ||
+    project.followUpRequired === 'Yes'
+  ) {
+    return `Scheduled follow-up: ${activeScheduledDate}`;
+  }
+
+  if (project.scheduleFreshInspection === true) {
+    return `Next inspection: ${activeScheduledDate}`;
+  }
+
+  return `Scheduled inspection: ${activeScheduledDate}`;
 }
 
 function getProjectInspectionStatus(project) {
@@ -7388,16 +7438,38 @@ function finishInspection() {
     const index = projects.findIndex(project => project.id === currentProjectId);
 
     if (index !== -1) {
+      const completedProjectBeforeUpdate = projects[index];
+
+      const hasNextScheduledInspection =
+        completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
+        completedProjectBeforeUpdate.followUpDate;
+
       projects[index] = {
-        ...projects[index],
+        ...completedProjectBeforeUpdate,
 
-        scheduledStatus:
-          projects[index].scheduleType === 'new_site'
-            ? 'completed'
-            : projects[index].scheduledStatus,
-
-        scheduleFreshInspection: false,
         completedAt: new Date().toISOString(),
+
+        scheduledDate: hasNextScheduledInspection
+          ? completedProjectBeforeUpdate.followUpDate
+          : '',
+
+        scheduledStatus: hasNextScheduledInspection
+          ? 'scheduled'
+          : 'completed',
+
+        scheduleFreshInspection: hasNextScheduledInspection,
+
+        scheduledReason: hasNextScheduledInspection
+          ? 'follow_up'
+          : '',
+
+        scheduledNote: hasNextScheduledInspection
+          ? completedProjectBeforeUpdate.followUpNotes || ''
+          : '',
+
+        scheduleType: hasNextScheduledInspection
+          ? 'Follow-up'
+          : completedProjectBeforeUpdate.scheduleType || '',
 
         syncPending: true,
         syncError: false,
