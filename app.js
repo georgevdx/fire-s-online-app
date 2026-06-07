@@ -10296,49 +10296,65 @@ function viewArchivedInspection(projectId, historyIndex) {
       : `<div class="note">No checklist answers archived.</div>`;
 const archivedPhotos = inspection.photos || [];
 
+const reportArchivedPhotos = inspection.photos || [];
+
 const photosHtml =
-  archivedPhotos.length
+  reportArchivedPhotos.length > 0
     ? `
-      <div class="archived-report-photo-grid">
-        ${archivedPhotos.map((photo, index) => `
-          <div class="archived-report-photo-card">
-            <div class="archived-report-photo-title">
-              Photo ${index + 1}
-            </div>
+      <div class="archived-report-section">
+        <h2 class="appendix-title">
+          APPENDIX A - PHOTO EVIDENCE
+        </h2>
 
-            <div class="archived-report-photo-time">
-              Captured:
-              ${
-                photo.timestamp
-                  ? escapeHtml(new Date(photo.timestamp).toLocaleString())
-                  : '-'
-              }
-            </div>
+        <div class="archived-report-photo-grid">
+          ${reportArchivedPhotos.map((photo, index) => `
+            <div class="archived-report-photo-card">
+              <strong>Photo ${index + 1}</strong>
 
-            <div class="archived-report-photo-box">
-              ${
-                photo.src
-                  ? `
-                    <img
-                      src="${escapeHtml(photo.src)}"
-                      alt="Archived inspection photo ${index + 1}"
-                      class="archived-report-photo-img"
-                      crossorigin="anonymous"
-                    >
-                  `
-                  : '<div>No image source available.</div>'
-              }
-            </div>
+              <div class="archived-report-photo-time">
+                Captured:
+                ${
+                  photo.timestamp
+                    ? escapeHtml(new Date(photo.timestamp).toLocaleString())
+                    : '-'
+                }
+              </div>
 
-            <div class="archived-report-photo-note">
-              <strong>Photo Note:</strong>
-              ${escapeHtml(photo.note || 'No note added.')}
+              <div class="archived-report-photo-box">
+                ${
+                  photo.src
+                    ? `
+                      <img
+                        src="${escapeHtml(photo.src)}"
+                        alt="Archived inspection photo ${index + 1}"
+                        class="archived-report-photo-img"
+                        crossorigin="anonymous"
+                      >
+                    `
+                    : '<div>No image source available.</div>'
+                }
+              </div>
+
+              <div class="archived-report-photo-note">
+                <strong>Photo Note:</strong>
+                ${escapeHtml(photo.note || 'No note added.')}
+              </div>
             </div>
-          </div>
-        `).join('')}
+          `).join('')}
+        </div>
       </div>
     `
-    : `<div class="note">No archived photos.</div>`;
+    : `
+      <div class="archived-report-section">
+        <h2 class="appendix-title">
+          APPENDIX A - PHOTO EVIDENCE
+        </h2>
+
+        <div class="note">
+          No photo evidence was added to this archived inspection.
+        </div>
+      </div>
+    `;
 
   const businessName =
     inspection.projectName ||

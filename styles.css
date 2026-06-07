@@ -5365,3 +5365,102 @@ Ok vergelyk nou die foto dimensions, boxes ens... en kry die pdf soos die view e
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* Beta 10.2L — archived report/PDF compact photos, separate from archive view */
+
+#reportContent .archived-report-section {
+  page-break-before: auto !important;
+  break-before: auto !important;
+  page-break-after: auto !important;
+  break-after: auto !important;
+  margin-top: 14px !important;
+}
+
+#reportContent .archived-report-photo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 7mm !important;
+  width: 100% !important;
+  align-items: start !important;
+}
+
+#reportContent .archived-report-photo-card {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+
+  border: 1px solid #dddddd !important;
+  border-radius: 8px !important;
+  padding: 6px !important;
+  background: #ffffff !important;
+
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+#reportContent .archived-report-photo-card strong {
+  display: block !important;
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+  margin-bottom: 2px !important;
+}
+
+#reportContent .archived-report-photo-time {
+  font-size: 8px !important;
+  line-height: 1.15 !important;
+  color: #666666 !important;
+  margin-bottom: 3px !important;
+}
+
+#reportContent .archived-report-photo-box {
+  width: 100% !important;
+  height: 43mm !important;
+  max-height: 43mm !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  overflow: hidden !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  background: #f8fafc !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#reportContent .archived-report-photo-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#reportContent .archived-report-photo-note {
+  margin-top: 3px !important;
+  font-size: 8px !important;
+  line-height: 1.15 !important;
+  color: #333333 !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+@media print {
+  #reportContent .archived-report-photo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6mm !important;
+  }
+
+  #reportContent .archived-report-photo-card,
+  #reportContent .archived-report-photo-box,
+  #reportContent .archived-report-photo-note {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
