@@ -5229,3 +5229,36 @@ button.readiness-chip:focus {
     grid-column: 1 / -1;
   }
 }
+
+.report-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6mm;
+  width: 100%;
+  align-items: start;
+}
+
+.report-photo-portrait {
+  grid-column: span 1;
+}
+
+.report-photo-landscape {
+  grid-column: 1 / -1;
+}
+
+.report-photo-portrait .report-photo-image-box {
+  height: 95mm;
+  max-height: 95mm;
+}
+
+.report-photo-landscape .report-photo-image-box {
+  height: 78mm;
+  max-height: 78mm;
+}
+
+.report-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
