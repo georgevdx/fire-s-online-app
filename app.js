@@ -9942,7 +9942,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
           <div class="report-photo-grid">
             ${(inspection.photos || []).map((photo, index) => `
-              <div class="report-photo-card">
+              <div class="report-photo-card report-photo-portrait">
                 <div class="report-photo-header">
                   Photo ${index + 1}
                 </div>
@@ -9961,6 +9961,8 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
                     src="${photo.src || ''}"
                     class="report-photo-img"
                     alt="Archived inspection photo ${index + 1}"
+                    crossorigin="anonymous"
+                    onload="applySingleReportPhotoOrientation(this)"
                   >
                 </div>
 
@@ -10210,7 +10212,9 @@ reportContent.innerHTML = `
 
     ${photosHtml}
   `;
-
+  setTimeout(() => {
+  applyReportPhotoOrientations(reportContent);
+}, 150);
   getEl('reportSection').style.display = 'block';
 
   reportContent.scrollIntoView({
