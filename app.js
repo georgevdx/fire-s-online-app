@@ -389,11 +389,15 @@ function waitForReportImages(container, timeoutMs = 12000) {
 
   const imagePromises = images.map(img => {
     if (img.complete && img.naturalWidth > 0) {
+      applySingleReportPhotoOrientation(img);
       return Promise.resolve();
     }
 
     return new Promise(resolve => {
-      const done = () => resolve();
+      const done = () => {
+        applySingleReportPhotoOrientation(img);
+        resolve();
+      };
 
       img.onload = done;
       img.onerror = done;
@@ -438,6 +442,8 @@ async function exportReport() {
   }
 
   await waitForReportImages(element);
+
+  applyReportPhotoOrientations(element);
 
   // Give browser one final paint cycle before html2pdf captures.
   await new Promise(resolve => setTimeout(resolve, 250));
@@ -5512,6 +5518,7 @@ window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
+window.applySingleReportPhotoOrientation = applySingleReportPhotoOrientation;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
@@ -8184,6 +8191,43 @@ function buildReportPhotoCard(photo, photoNumber) {
   `;
 }
 
+function detectImageOrientationFromElement(img) {
+  if (!img || !img.naturalWidth || !img.naturalHeight) {
+    return 'portrait';
+  }
+
+  return img.naturalWidth > img.naturalHeight
+    ? 'landscape'
+    : 'portrait';
+}
+
+function applySingleReportPhotoOrientation(img) {
+  if (!img) return;
+
+  const card = img.closest('.report-photo-card');
+
+  if (!card) return;
+
+  const orientation = detectImageOrientationFromElement(img);
+
+  card.classList.remove(
+    'report-photo-portrait',
+    'report-photo-landscape'
+  );
+
+  card.classList.add(`report-photo-${orientation}`);
+}
+
+function applyReportPhotoOrientations(container) {
+  if (!container) return;
+
+  container
+    .querySelectorAll('.report-photo-card img')
+    .forEach(img => {
+      applySingleReportPhotoOrientation(img);
+    });
+}
+
 function generateReport() {
 
   if (!canViewReports()) {
@@ -8810,72 +8854,44 @@ const executiveSummaryHtml = `
         APPENDIX A - PHOTO EVIDENCE
       </h2>
 
-      <div class="report-photo-smart-grid">
+      <div class="report-photo-grid">
   `;
-
-  let portraitPairOpen = false;
 
   reportPhotos.forEach((photo, index) => {
     const photoNumber = index + 1;
-    const orientation = getReportPhotoOrientation(photo);
-
-    if (orientation === 'landscape') {
-      if (portraitPairOpen) {
-        photosHtml += `</div>`;
-        portraitPairOpen = false;
-      }
-
-      photosHtml += `
-        <div class="report-photo-landscape-row">
-          ${buildReportPhotoCard(photo, photoNumber)}
-        </div>
-      `;
-
-      return;
-    }
-
-    if (!portraitPairOpen) {
-      photosHtml += `<div class="report-photo-portrait-row">`;
-      portraitPairOpen = true;
-    }
 
     photosHtml += `
-      <div class="report-photo-portrait-cell">
-        ${buildReportPhotoCard(photo, photoNumber)}
+      <div class="report-photo-card report-photo-portrait">
+        <div class="report-photo-header">
+          Photo ${photoNumber}
+        </div>
+
+        <div class="report-photo-time">
+          Captured:
+          ${
+            photo.timestamp
+              ? new Date(photo.timestamp).toLocaleString()
+              : 'Not recorded'
+          }
+        </div>
+
+        <div class="report-photo-image-box">
+          <img
+            src="${photo.src}"
+            class="report-photo-img"
+            alt="Inspection photo ${photoNumber}"
+            crossorigin="anonymous"
+            onload="applySingleReportPhotoOrientation(this)"
+          >
+        </div>
+
+        <div class="report-photo-note">
+          <strong>Photo Note:</strong>
+          ${escapeHtml(photo.note || 'No note added.')}
+        </div>
       </div>
     `;
-
-    const nextPhoto = reportPhotos[index + 1];
-    const nextOrientation = getReportPhotoOrientation(nextPhoto);
-
-    if (!nextPhoto || nextOrientation === 'landscape') {
-      photosHtml += `
-        <div class="report-photo-portrait-cell report-photo-empty-cell"></div>
-      `;
-      photosHtml += `</div>`;
-      portraitPairOpen = false;
-    } else if (portraitPairOpen) {
-      const rowPhotoCount =
-        (photosHtml.match(/report-photo-portrait-cell/g) || []).length;
-
-      // Close every second portrait cell by checking the pair position.
-      const previousPortraits = reportPhotos
-        .slice(0, index + 1)
-        .filter(p => getReportPhotoOrientation(p) !== 'landscape')
-        .length;
-
-      if (previousPortraits % 2 === 0) {
-        photosHtml += `</div>`;
-        portraitPairOpen = false;
-      }
-    }
   });
-
-  if (portraitPairOpen) {
-    photosHtml += `
-      <div class="report-photo-portrait-cell report-photo-empty-cell"></div>
-    </div>`;
-  }
 
   photosHtml += `
       </div>
@@ -9040,7 +9056,10 @@ const executiveSummaryHtml = `
 </div>
 
     ${photosHtml}
-  `;
+    `;
+    setTimeout(() => {
+    applyReportPhotoOrientations(reportContent);
+  }, 100);
 
   getEl('reportSection').style.display = 'block';
 }
