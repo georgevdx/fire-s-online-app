@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-schedule5';
+const APP_VERSION = 'v90-beta-report8';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1395,13 +1395,41 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
 }
 
 function importBackup(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const file = event.target.files && event.target.files[0];
+
+  if (!file) {
+    alert('No backup file selected.');
+    return;
+  }
 
   const reader = new FileReader();
 
   reader.onload = function(e) {
-    importBackupJsonText(e.target.result, 'file');
+    const backupText = e.target.result;
+
+    if (!backupText || !String(backupText).trim()) {
+      alert('The selected backup file is empty.');
+      event.target.value = '';
+      return;
+    }
+
+    const imported =
+      importBackupJsonText(String(backupText), 'file');
+
+    event.target.value = '';
+
+    if (imported) {
+      const syncStatus = document.getElementById('syncStatus');
+
+      if (syncStatus) {
+        syncStatus.textContent =
+          'Backup file imported successfully.';
+      }
+    }
+  };
+
+  reader.onerror = function() {
+    alert('Could not read the selected backup file.');
     event.target.value = '';
   };
 
