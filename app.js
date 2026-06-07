@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-report8';
+const APP_VERSION = 'v90-beta-report2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -380,41 +380,8 @@ function formatProjectDate(value) {
   return date.toLocaleString();
 }
 
-function waitForReportImages(container, timeoutMs = 12000) {
-  const images = Array.from(container.querySelectorAll('img'));
+  function exportReport() {
 
-  if (images.length === 0) {
-    return Promise.resolve();
-  }
-
-  const imagePromises = images.map(img => {
-    if (img.complete && img.naturalWidth > 0) {
-      applySingleReportPhotoOrientation(img);
-      return Promise.resolve();
-    }
-
-    return new Promise(resolve => {
-      const done = () => {
-        applySingleReportPhotoOrientation(img);
-        resolve();
-      };
-
-      img.onload = done;
-      img.onerror = done;
-    });
-  });
-
-  const timeoutPromise = new Promise(resolve => {
-    setTimeout(resolve, timeoutMs);
-  });
-
-  return Promise.race([
-    Promise.all(imagePromises),
-    timeoutPromise
-  ]);
-}
-
-async function exportReport() {
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -423,30 +390,11 @@ async function exportReport() {
   }
 
   if (!archivedReportContext) {
-    generateReport();
+    generateReport(); // maak seker gewone report is nuut
   }
-
   getEl('reportSection').style.display = 'block';
 
   const element = document.getElementById('reportContent');
-
-  if (!element) {
-    alert('Report content was not found.');
-    return;
-  }
-
-  const saveMessage = document.getElementById('saveMessage');
-
-  if (saveMessage) {
-    saveMessage.textContent = 'Preparing PDF photos...';
-  }
-
-  await waitForReportImages(element);
-
-  applyReportPhotoOrientations(element);
-
-  // Give browser one final paint cycle before html2pdf captures.
-  await new Promise(resolve => setTimeout(resolve, 700));
 
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
@@ -469,61 +417,29 @@ async function exportReport() {
     sanitizeFileName(projectName);
 
   const opt = {
-    margin: [10, 10, 10, 10],
+  margin: [15, 12, 15, 12],
 
-    filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
+  filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
 
-    image: {
-      type: 'jpeg',
-      quality: 0.98
-    },
-
-    html2canvas: {
-      scale: 1.5,
-      useCORS: true,
-      allowTaint: true,
-      scrollY: 0,
-      windowWidth: element.scrollWidth
-    },
-
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    },
-
-    pagebreak: {
-      mode: ['css', 'legacy'],
-      avoid: [
-        '.report-photo-card',
-        '.report-photo-image-box',
-        '.report-photo-note'
-      ]
-    }
-  };
-
-  if (saveMessage) {
-    saveMessage.textContent = 'Creating PDF...';
+  image: { type: 'jpeg', quality: 0.98 },
+  html2canvas: {
+  scale: 1,
+  useCORS: true,
+  scrollY: 0,
+  windowWidth: document.getElementById('reportContent').scrollWidth
+  },
+  jsPDF: {
+    unit: 'mm',
+    format: 'a4',
+    orientation: 'portrait'
+  },
+  pagebreak: {
+    mode: ['css', 'legacy']
   }
-
-  html2pdf()
-    .set(opt)
-    .from(element)
-    .save()
-    .then(() => {
-      if (saveMessage) {
-        saveMessage.textContent = 'PDF exported.';
-      }
-    })
-    .catch(error => {
-      console.error('PDF export failed:', error);
-
-      if (saveMessage) {
-        saveMessage.textContent = 'PDF export failed. Check console.';
-      }
-
-      alert('PDF export failed. Please try again.');
-    });
+};
+  setTimeout(() => {
+  html2pdf().set(opt).from(element).save();
+}, 300);
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {
@@ -1401,41 +1317,13 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
 }
 
 function importBackup(event) {
-  const file = event.target.files && event.target.files[0];
-
-  if (!file) {
-    alert('No backup file selected.');
-    return;
-  }
+  const file = event.target.files[0];
+  if (!file) return;
 
   const reader = new FileReader();
 
   reader.onload = function(e) {
-    const backupText = e.target.result;
-
-    if (!backupText || !String(backupText).trim()) {
-      alert('The selected backup file is empty.');
-      event.target.value = '';
-      return;
-    }
-
-    const imported =
-      importBackupJsonText(String(backupText), 'file');
-
-    event.target.value = '';
-
-    if (imported) {
-      const syncStatus = document.getElementById('syncStatus');
-
-      if (syncStatus) {
-        syncStatus.textContent =
-          'Backup file imported successfully.';
-      }
-    }
-  };
-
-  reader.onerror = function() {
-    alert('Could not read the selected backup file.');
+    importBackupJsonText(e.target.result, 'file');
     event.target.value = '';
   };
 
@@ -2524,21 +2412,6 @@ if (cancelScheduledInspectionBtn) {
   }
   getEl('shareBtn').addEventListener('click', shareReport);
   getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
-  
-  const saveScheduleNextBtn =
-  document.getElementById('saveScheduleNextBtn');
-
-if (saveScheduleNextBtn) {
-  saveScheduleNextBtn.addEventListener('click', saveNextInspectionSchedule);
-}
-
-const cancelScheduleNextBtn =
-  document.getElementById('cancelScheduleNextBtn');
-
-if (cancelScheduleNextBtn) {
-  cancelScheduleNextBtn.addEventListener('click', cancelNextInspectionSchedule);
-}
-
   getEl('streetNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', () => {
@@ -2552,24 +2425,8 @@ if (cancelScheduleNextBtn) {
   });
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
-  getEl('followUpRequired').addEventListener('change', () => {
-  if (getEl('followUpRequired').value === 'No') {
-    getEl('followUpDate').value = '';
-    getEl('followUpNotes').value = '';
-  }
-
-  scheduleAutoSave();
-});
-  getEl('followUpDate').addEventListener('input', () => {
-  const followUpDate = getEl('followUpDate').value;
-  const followUpRequired = getEl('followUpRequired');
-
-  if (followUpDate && followUpRequired.value !== 'Yes') {
-    followUpRequired.value = 'Yes';
-  }
-
-  scheduleAutoSave();
-});
+  getEl('followUpRequired').addEventListener('change', scheduleAutoSave);
+  getEl('followUpDate').addEventListener('input', scheduleAutoSave);
   getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', () => {
     currentProjectPage = 1;
@@ -4997,50 +4854,23 @@ function getProjectDataQuality(project) {
 function getActiveScheduledDate(project) {
   if (!project) return '';
 
-  // Important:
-  // Completed inspections may still have a new future follow-up date.
-  if (
-    project.followUpRequired === 'Yes' &&
-    project.followUpDate
-  ) {
-    return project.followUpDate;
-  }
-
-  if (project.completedAt) return '';
-
   if (
     project.scheduledStatus === 'scheduled' &&
-    project.scheduledDate
+    project.scheduledDate &&
+    !project.completedAt
+  ) {
+    return project.scheduledDate;
+  }
+
+  if (
+    project.scheduleFreshInspection === true &&
+    project.scheduledDate &&
+    !project.completedAt
   ) {
     return project.scheduledDate;
   }
 
   return '';
-}
-
-function getActiveScheduleLabel(project) {
-  const activeScheduledDate = getActiveScheduledDate(project);
-
-  if (!activeScheduledDate) {
-    return '';
-  }
-
-  if (project.scheduleType === 'new_site') {
-    return `Scheduled new inspection: ${activeScheduledDate}`;
-  }
-
-  if (
-    project.scheduledReason === 'follow_up' ||
-    project.followUpRequired === 'Yes'
-  ) {
-    return `Scheduled follow-up: ${activeScheduledDate}`;
-  }
-
-  if (project.scheduleFreshInspection === true) {
-    return `Next inspection: ${activeScheduledDate}`;
-  }
-
-  return `Scheduled inspection: ${activeScheduledDate}`;
 }
 
 function getProjectInspectionStatus(project) {
@@ -5518,7 +5348,6 @@ window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
-window.applySingleReportPhotoOrientation = applySingleReportPhotoOrientation;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
@@ -5635,7 +5464,7 @@ function renderDashboardMetrics(projectsOverride) {
   p =>
     p.scheduledStatus === 'scheduled' &&
     p.scheduleType === 'new_site' &&
-    !!getActiveScheduledDate(p)
+    !p.completedAt
 );
 
   const clearCompletedInspections = projects.filter(
@@ -6251,7 +6080,7 @@ function renderProjectsList() {
   return (
     project.scheduledStatus === 'scheduled' &&
     project.scheduleType === 'new_site' &&
-    !!getActiveScheduledDate(project)
+    !project.completedAt
   );
 }
 
@@ -6332,70 +6161,81 @@ function renderProjectsList() {
   });
  
   const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+  1,
+  Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+);
+
+  if (currentProjectPage > totalPages) {
+    currentProjectPage = totalPages;
+  }
+
+  const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
+  const visibleProjects = filteredProjects.slice(
+    startIndex,
+    startIndex + PROJECTS_PER_PAGE
   );
 
-    if (currentProjectPage > totalPages) {
-      currentProjectPage = totalPages;
-    }
+  const pagingControls = document.getElementById('projectPagingControls');
 
-    const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
-    const visibleProjects = filteredProjects.slice(
-      startIndex,
-      startIndex + PROJECTS_PER_PAGE
-    );
+  if (pagingControls) {
+    pagingControls.innerHTML = `
+      <button
+        type="button"
+        onclick="previousProjectPage()"
+        ${currentProjectPage === 1 ? 'disabled' : ''}
+      >
+        Previous
+      </button>
 
-    const pagingControls = document.getElementById('projectPagingControls');
+      <span>
+        Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
+        -
+        ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
+        of ${filteredProjects.length}
+      </span>
 
-    if (pagingControls) {
-      pagingControls.innerHTML = `
-        <button
-          type="button"
-          onclick="previousProjectPage()"
-          ${currentProjectPage === 1 ? 'disabled' : ''}
-        >
-          Previous
-        </button>
+      <button
+        type="button"
+        onclick="nextProjectPage()"
+        ${currentProjectPage >= totalPages ? 'disabled' : ''}
+      >
+        Next
+      </button>
+    `;
+  }
 
-        <span>
-          Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
-          -
-          ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
-          of ${filteredProjects.length}
-        </span>
+  if (filteredProjects.length === 0) {
+    container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
+    return;
+  }
 
-        <button
-          type="button"
-          onclick="nextProjectPage()"
-          ${currentProjectPage >= totalPages ? 'disabled' : ''}
-        >
-          Next
-        </button>
-      `;
-    }
+  window.currentProjectsListView = visibleProjects;
 
-    if (filteredProjects.length === 0) {
-      container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
-      return;
-    }
+container.innerHTML = `
+  <div id="projectListView" class="inspection-project-list">
+    ${visibleProjects.map((project, index) => {
+      const followStatus = getFollowUpStatus(project);
+      const inspectionStatus = getProjectInspectionStatus(project);
 
-    window.currentProjectsListView = visibleProjects;
+      const isScheduledNew =
+        project.scheduledStatus === 'scheduled' &&
+        project.scheduleType === 'new_site' &&
+        !project.completedAt;
 
-  container.innerHTML = `
-    <div id="projectListView" class="inspection-project-list">
-      ${visibleProjects.map((project, index) => {
-        const followStatus = getFollowUpStatus(project);
-        const inspectionStatus = getProjectInspectionStatus(project);
+      const activeScheduledDate = getActiveScheduledDate(project);
 
-        const activeScheduleLabel = getActiveScheduleLabel(project);
-
-  const isScheduledNew =
-    activeScheduleLabel &&
-    project.scheduleType === 'new_site';
-
-  const scheduledLabel =
-    activeScheduleLabel || followStatus.label;
+      const scheduledLabel =
+        isScheduledNew
+          ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+          : (
+              project.scheduleFreshInspection === true ||
+              (
+                project.scheduledStatus === 'scheduled' &&
+                !project.completedAt
+              )
+            )
+          ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+          : followStatus.label;
       const projectTitle =
         project.projectName ||
         [project.organisationName, project.siteName]
@@ -6423,14 +6263,14 @@ function renderProjectsList() {
           </span>
 
           ${
-            activeScheduleLabel
-              ? ''
-              : `
-                <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
-                  ${escapeHtml(inspectionStatus.label)}
-                </span>
-              `
-          }
+              isScheduledNew || project.scheduleFreshInspection === true
+                ? ''
+                : `
+                  <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+                    ${escapeHtml(inspectionStatus.label)}
+                  </span>
+                `
+            }
 
             <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
               ${escapeHtml(scheduledLabel)}
@@ -6464,27 +6304,27 @@ function renderProjectsList() {
 }
 
 function getProjectPrimaryAction(project) {
-  const activeScheduleLabel = getActiveScheduleLabel(project);
+    if (
+      project.scheduledStatus === 'scheduled' &&
+      project.scheduleType === 'new_site'
+    ) {
+      return {
+        label: 'Start Scheduled Inspection',
+        focusMode: '',
+        className: 'action-primary'
+      };
+    }
 
-  if (
-    activeScheduleLabel &&
-    project.scheduleType === 'new_site'
-  ) {
-    return {
-      label: 'Start Scheduled Inspection',
-      focusMode: '',
-      className: 'action-primary'
-    };
-  }
-
-  if (activeScheduleLabel) {
-    return {
-      label: 'Start Scheduled Follow-up',
-      focusMode: '',
-      className: 'action-primary'
-    };
-  }
-
+    if (
+      project.scheduleFreshInspection === true ||
+      project.scheduledStatus === 'scheduled'
+    ) {
+      return {
+        label: 'Start Scheduled Follow-up',
+        focusMode: '',
+        className: 'action-primary'
+      };
+    }
   const completion = getProjectCompletionCounts(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -6536,6 +6376,7 @@ function getProjectPrimaryAction(project) {
     className: 'action-primary'
   };
 }
+
 function openProjectSummaryCard(index, shouldScroll = true) {
   const projects = window.currentProjectsListView || [];
   const project = projects[index];
@@ -6550,10 +6391,25 @@ function openProjectSummaryCard(index, shouldScroll = true) {
 const syncStatus = getSyncStatus(project);
 const followStatus = getFollowUpStatus(project);
 
-const activeScheduleLabel = getActiveScheduleLabel(project);
+const isScheduledNew =
+  project.scheduledStatus === 'scheduled' &&
+  project.scheduleType === 'new_site' &&
+  !project.completedAt;
+
+const activeScheduledDate = getActiveScheduledDate(project);
 
 const scheduledLabel =
-  activeScheduleLabel || followStatus.label;
+  isScheduledNew
+    ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+    : (
+        project.scheduleFreshInspection === true ||
+        (
+          project.scheduledStatus === 'scheduled' &&
+          !project.completedAt
+        )
+      )
+    ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
+    : followStatus.label;
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -6630,7 +6486,7 @@ const scheduledLabel =
         </span>
 
         ${
-          activeScheduleLabel
+          isScheduledNew || project.scheduleFreshInspection === true
             ? ''
             : `
               <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
@@ -7019,11 +6875,6 @@ function compressPhotoFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.
               { type: 'image/jpeg' }
             );
 
-            compressedFile.photoWidth = width;
-            compressedFile.photoHeight = height;
-            compressedFile.photoOrientation =
-              width > height ? 'landscape' : 'portrait';
-
             resolve(compressedFile);
           },
           'image/jpeg',
@@ -7136,16 +6987,13 @@ async function uploadPhotoToStorage(file, projectId) {
     .getPublicUrl(filePath);
 
   return {
-  src: publicUrlData.publicUrl,
-  storagePath: filePath,
-  timestamp: new Date().toISOString(),
-  note: '',
-  originalSize: file.size,
-  compressedSize: compressedFile.size,
-  width: compressedFile.photoWidth || null,
-  height: compressedFile.photoHeight || null,
-  orientation: compressedFile.photoOrientation || null
-};
+    src: publicUrlData.publicUrl,
+    storagePath: filePath,
+    timestamp: new Date().toISOString(),
+    note: '',
+    originalSize: file.size,
+    compressedSize: compressedFile.size
+  };
 }
 
 async function uploadSingleInspection(project) {
@@ -7272,34 +7120,6 @@ function markInspectionSynced(projectId) {
   renderProjectsList();
 }
 
-function syncFollowUpFieldsToScheduleData(project) {
-  if (!project) return project;
-
-  const hasFollowUpDate = !!project.followUpDate;
-
-  if (!hasFollowUpDate) {
-    return {
-      ...project,
-      followUpRequired: 'No',
-      scheduledDate: '',
-      scheduledStatus: project.completedAt ? 'completed' : '',
-      scheduleFreshInspection: false,
-      scheduledReason: '',
-      scheduledNote: ''
-    };
-  }
-
-  return {
-    ...project,
-    followUpRequired: 'Yes',
-    scheduledDate: project.followUpDate,
-    scheduledStatus: 'scheduled',
-    scheduleFreshInspection: true,
-    scheduledReason: 'follow_up',
-    scheduledNote: project.followUpNotes || ''
-  };
-}
-
 function saveProject() {
   
   if (!canEditInspection()) {
@@ -7376,7 +7196,7 @@ function saveProject() {
   const index = projects.findIndex(p => p.id === currentProjectId);
 
   if (index !== -1) {
-    const updatedProject = {
+    projects[index] = {
       ...projects[index],
 
       companyId: accessMetadata.companyId,
@@ -7401,23 +7221,20 @@ function saveProject() {
 
       companyAccessStatus:
         accessMetadata.companyAccessStatus,
-
       siteId:
-        [
-          projectAddress?.toLowerCase().trim(),
-          mallName?.toLowerCase().trim(),
-          unitNumber?.toLowerCase().trim()
-        ]
-        .filter(Boolean)
-        .join('|'),
-
+      [
+        projectAddress?.toLowerCase().trim(),
+        mallName?.toLowerCase().trim(),
+        unitNumber?.toLowerCase().trim()
+      ]
+      .filter(Boolean)
+      .join('|'),
       syncPending: true,
       syncError: false,
 
       inspectionNumber:
         projects[index].inspectionNumber ||
         generateInspectionNumber(),
-
       projectName,
       organisationName,
       siteName,
@@ -7443,9 +7260,6 @@ function saveProject() {
       photos: currentPhotos,
       lastSaved: new Date().toISOString()
     };
-
-    projects[index] =
-      syncFollowUpFieldsToScheduleData(updatedProject);
   }
 } else {
     const newProject = {
@@ -7574,40 +7388,16 @@ function finishInspection() {
     const index = projects.findIndex(project => project.id === currentProjectId);
 
     if (index !== -1) {
-      const completedProjectBeforeUpdate = projects[index];
-
-      const hasNextScheduledInspection =
-        completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
-        completedProjectBeforeUpdate.followUpDate;
-
       projects[index] = {
-        ...completedProjectBeforeUpdate,
+        ...projects[index],
 
+        scheduledStatus:
+          projects[index].scheduleType === 'new_site'
+            ? 'completed'
+            : projects[index].scheduledStatus,
+
+        scheduleFreshInspection: false,
         completedAt: new Date().toISOString(),
-
-        // If a new follow-up / next inspection date was selected,
-        // keep that as the active next schedule.
-        scheduledDate: hasNextScheduledInspection
-          ? completedProjectBeforeUpdate.followUpDate
-          : '',
-
-        scheduledStatus: hasNextScheduledInspection
-          ? 'scheduled'
-          : 'completed',
-
-        scheduleFreshInspection: hasNextScheduledInspection,
-
-        scheduledReason: hasNextScheduledInspection
-          ? 'follow_up'
-          : '',
-
-        scheduledNote: hasNextScheduledInspection
-          ? completedProjectBeforeUpdate.followUpNotes || ''
-          : '',
-
-        scheduleType: hasNextScheduledInspection
-          ? 'Follow-up'
-          : completedProjectBeforeUpdate.scheduleType || '',
 
         syncPending: true,
         syncError: false,
@@ -7640,69 +7430,7 @@ function createFollowUpInspection() {
 
   if (!currentProjectId) {
     getEl('saveMessage').textContent =
-      'Open or save an inspection before scheduling the next inspection.';
-    return;
-  }
-
-  const panel = document.getElementById('scheduleNextPanel');
-  const dateField = document.getElementById('scheduleNextDate');
-  const typeField = document.getElementById('scheduleNextType');
-  const noteField = document.getElementById('scheduleNextNote');
-
-  if (!panel || !dateField || !typeField || !noteField) {
-    alert('Schedule next inspection panel was not found.');
-    return;
-  }
-
-  const projects = getProjects();
-  const project = projects.find(p => p.id === currentProjectId);
-
-  if (!project) {
-    getEl('saveMessage').textContent =
-      'Original inspection not found.';
-    return;
-  }
-
-  dateField.value =
-    project.scheduledDate ||
-    project.followUpDate ||
-    new Date().toISOString().slice(0, 10);
-
-  typeField.value =
-    project.scheduledReason === 'follow_up'
-      ? 'Follow-up'
-      : 'Routine Inspection';
-
-  noteField.value =
-    project.followUpNotes ||
-    project.scheduledNote ||
-    '';
-
-  panel.style.display = 'block';
-
-  panel.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center'
-  });
-}
-
-function saveNextInspectionSchedule() {
-  if (!currentProjectId) {
-    getEl('saveMessage').textContent =
-      'Open or save an inspection before scheduling the next inspection.';
-    return;
-  }
-
-  const dateField = document.getElementById('scheduleNextDate');
-  const typeField = document.getElementById('scheduleNextType');
-  const noteField = document.getElementById('scheduleNextNote');
-
-  const nextDate = dateField ? dateField.value : '';
-  const scheduleType = typeField ? typeField.value : 'Routine Inspection';
-  const scheduleNote = noteField ? noteField.value.trim() : '';
-
-  if (!nextDate) {
-    alert('Select the next inspection date.');
+      'Open or save an inspection before scheduling a follow-up.';
     return;
   }
 
@@ -7715,23 +7443,34 @@ function saveNextInspectionSchedule() {
     return;
   }
 
+  const original = projects[index];
+
+  const followUpDate = prompt(
+    'Enter follow-up inspection date in YYYY-MM-DD format:',
+    original.followUpDate || new Date().toISOString().slice(0, 10)
+  );
+
+  if (!followUpDate) return;
+
+  const confirmed = confirm(
+    'Schedule the next inspection cycle on this same site card? This will not create a duplicate card. The current inspection will remain available in Previous Inspection Archive when the next cycle starts.'
+  );
+
+  if (!confirmed) return;
+
   projects[index] = {
-    ...projects[index],
+    ...original,
 
     followUpRequired: 'Yes',
-    followUpDate: nextDate,
+    followUpDate,
     followUpNotes:
-      scheduleNote ||
-      `${scheduleType} scheduled.`,
+      original.followUpNotes ||
+      'Follow-up inspection scheduled.',
 
-    scheduledDate: nextDate,
+    scheduledDate: followUpDate,
     scheduledStatus: 'scheduled',
     scheduleFreshInspection: true,
-    scheduledReason:
-      scheduleType === 'Follow-up'
-        ? 'follow_up'
-        : scheduleType,
-    scheduledNote: scheduleNote,
+    scheduledReason: 'follow_up',
 
     completedAt: null,
     archiveStatus: '',
@@ -7743,31 +7482,17 @@ function saveNextInspectionSchedule() {
   };
 
   setProjects(projects);
+  renderProjectsList();
 
   const updatedProject = projects[index];
 
-  if (navigator.onLine) {
-    uploadSingleInspection(updatedProject)
-      .catch(error => {
-        console.warn('Next inspection schedule upload failed:', error);
-      });
-  }
-
-  cancelNextInspectionSchedule();
-
-  renderProjectsList();
-  updateProjectReadinessPanel();
+  uploadSingleInspection(updatedProject)
+    .catch(error => {
+      console.warn('Follow-up schedule upload failed:', error);
+    });
 
   getEl('saveMessage').textContent =
-    `Next inspection scheduled for ${nextDate}.`;
-}
-
-function cancelNextInspectionSchedule() {
-  const panel = document.getElementById('scheduleNextPanel');
-
-  if (panel) {
-    panel.style.display = 'none';
-  }
+  `Next inspection cycle scheduled for ${followUpDate}. No duplicate card was created.`;
 }
 
 async function deleteProject() {
@@ -8120,113 +7845,6 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function getReportPhotosForCurrentInspection(currentProject) {
-  const mergedPhotos = [
-    ...(currentProject?.photos || []),
-    ...(currentPhotos || [])
-  ];
-
-  const seen = new Set();
-
-  return mergedPhotos.filter(photo => {
-    if (!photo || !photo.src) return false;
-
-    const key =
-      photo.storagePath ||
-      `${photo.src}|${photo.timestamp || ''}`;
-
-    if (seen.has(key)) return false;
-
-    seen.add(key);
-    return true;
-  });
-}
-
-function getReportPhotoOrientation(photo) {
-  if (!photo) return 'portrait';
-
-  if (photo.orientation) {
-    return photo.orientation;
-  }
-
-  if (photo.width && photo.height) {
-    return photo.width > photo.height ? 'landscape' : 'portrait';
-  }
-
-  return 'portrait';
-}
-
-function buildReportPhotoCard(photo, photoNumber) {
-  const orientation = getReportPhotoOrientation(photo);
-
-  return `
-    <div class="report-photo-card report-photo-${escapeHtml(orientation)}">
-      <div class="report-photo-header">
-        Photo ${photoNumber}
-      </div>
-
-      <div class="report-photo-time">
-        Captured:
-        ${
-          photo.timestamp
-            ? new Date(photo.timestamp).toLocaleString()
-            : 'Not recorded'
-        }
-      </div>
-
-      <div class="report-photo-image-box">
-        <img
-          src="${photo.src}"
-          class="report-photo-img"
-          alt="Inspection photo ${photoNumber}"
-          crossorigin="anonymous"
-        >
-      </div>
-
-      <div class="report-photo-note">
-        <strong>Photo Note:</strong>
-        ${escapeHtml(photo.note || 'No note added.')}
-      </div>
-    </div>
-  `;
-}
-
-function detectImageOrientationFromElement(img) {
-  if (!img || !img.naturalWidth || !img.naturalHeight) {
-    return 'portrait';
-  }
-
-  return img.naturalWidth > img.naturalHeight
-    ? 'landscape'
-    : 'portrait';
-}
-
-function applySingleReportPhotoOrientation(img) {
-  if (!img) return;
-
-  const card = img.closest('.report-photo-card');
-
-  if (!card) return;
-
-  const orientation = detectImageOrientationFromElement(img);
-
-  card.classList.remove(
-    'report-photo-portrait',
-    'report-photo-landscape'
-  );
-
-  card.classList.add(`report-photo-${orientation}`);
-}
-
-function applyReportPhotoOrientations(container) {
-  if (!container) return;
-
-  container
-    .querySelectorAll('.report-photo-card img')
-    .forEach(img => {
-      applySingleReportPhotoOrientation(img);
-    });
-}
 
 function generateReport() {
 
@@ -8242,8 +7860,6 @@ function generateReport() {
  const currentProject = getProjects().find(
     p => p.id === currentProjectId
   );
-const reportPhotos =
-  getReportPhotosForCurrentInspection(currentProject);
 
   const repeatFindings =
     currentProject?.repeatFindings || [];
@@ -8847,56 +8463,83 @@ const executiveSummaryHtml = `
     });
   }
 
-  if (reportPhotos.length > 0) {
-  photosHtml = `
-    <div class="report-photo-page">
-      <h2 class="appendix-title">
-        APPENDIX A - PHOTO EVIDENCE
-      </h2>
+  if (currentPhotos.length > 0) {
+  photosHtml = '';
 
-      <div class="report-photo-grid">
-  `;
-
-  reportPhotos.forEach((photo, index) => {
-    const photoNumber = index + 1;
+  for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
+    const pagePhotos = currentPhotos.slice(pageStart, pageStart + 4);
+    const isFirstPhotoPage = pageStart === 0;
 
     photosHtml += `
-      <div class="report-photo-card report-photo-portrait">
-        <div class="report-photo-header">
-          Photo ${photoNumber}
-        </div>
+      <div class="report-photo-page">
+        ${
+          isFirstPhotoPage
+            ? `
+              <h2 class="appendix-title">
+                APPENDIX A - PHOTO EVIDENCE
+              </h2>
+            `
+            : ''
+        }
 
-        <div class="report-photo-time">
-          Captured:
-          ${
-            photo.timestamp
-              ? new Date(photo.timestamp).toLocaleString()
-              : 'Not recorded'
-          }
-        </div>
+        <div class="report-photo-grid">
+    `;
 
-        <div class="report-photo-image-box">
-          <img
-            src="${photo.src}"
-            class="report-photo-img"
-            alt="Inspection photo ${photoNumber}"
-            crossorigin="anonymous"
-            onload="applySingleReportPhotoOrientation(this)"
-          >
-        </div>
+    for (let rowStart = 0; rowStart < 4; rowStart += 2) {
+      photosHtml += `<div class="report-photo-row">`;
 
-        <div class="report-photo-note">
-          <strong>Photo Note:</strong>
-          ${escapeHtml(photo.note || 'No note added.')}
+      for (let cellIndex = 0; cellIndex < 2; cellIndex++) {
+        const photo = pagePhotos[rowStart + cellIndex];
+
+        photosHtml += `<div class="report-photo-cell">`;
+
+        if (photo) {
+          const photoNumber = pageStart + rowStart + cellIndex + 1;
+
+          photosHtml += `
+            <div class="report-photo-card">
+
+              <div class="report-photo-header">
+                Photo ${photoNumber}
+              </div>
+
+              <div class="report-photo-time">
+                Captured:
+                ${
+                  photo.timestamp
+                    ? new Date(photo.timestamp).toLocaleString()
+                    : 'Not recorded'
+                }
+              </div>
+
+              <div class="report-photo-image-box">
+                <img
+                  src="${photo.src}"
+                  class="report-photo-img"
+                  alt="Inspection photo ${photoNumber}"
+                >
+              </div>
+
+              <div class="report-photo-note">
+                <strong>Photo Note:</strong>
+                ${escapeHtml(photo.note || 'No note added.')}
+              </div>
+
+            </div>
+          `;
+        }
+
+        photosHtml += `</div>`;
+      }
+
+      photosHtml += `</div>`;
+    }
+
+    photosHtml += `
         </div>
       </div>
     `;
-  });
-
-  photosHtml += `
-      </div>
-    </div>
-  `;
+  }
 } else {
   photosHtml = `
     <div class="report-photo-page">
@@ -9056,10 +8699,7 @@ const executiveSummaryHtml = `
 </div>
 
     ${photosHtml}
-    `;
-    setTimeout(() => {
-    applyReportPhotoOrientations(reportContent);
-  }, 100);
+  `;
 
   getEl('reportSection').style.display = 'block';
 }
@@ -9942,7 +9582,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
           <div class="report-photo-grid">
             ${(inspection.photos || []).map((photo, index) => `
-              <div class="report-photo-card report-photo-portrait">
+              <div class="report-photo-card">
                 <div class="report-photo-header">
                   Photo ${index + 1}
                 </div>
@@ -9961,8 +9601,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
                     src="${photo.src || ''}"
                     class="report-photo-img"
                     alt="Archived inspection photo ${index + 1}"
-                    crossorigin="anonymous"
-                    onload="applySingleReportPhotoOrientation(this)"
                   >
                 </div>
 
@@ -10212,9 +9850,7 @@ reportContent.innerHTML = `
 
     ${photosHtml}
   `;
-  setTimeout(() => {
-  applyReportPhotoOrientations(reportContent);
-}, 150);
+
   getEl('reportSection').style.display = 'block';
 
   reportContent.scrollIntoView({
@@ -10294,67 +9930,78 @@ function viewArchivedInspection(projectId, historyIndex) {
           `;
         }).join('')
       : `<div class="note">No checklist answers archived.</div>`;
-const archivedPhotos = inspection.photos || [];
-
-const reportArchivedPhotos = inspection.photos || [];
-
 const photosHtml =
-  reportArchivedPhotos.length > 0
+  (inspection.photos || []).length > 0
     ? `
-      <div class="archived-report-section">
-        <h2 class="appendix-title">
-          APPENDIX A - PHOTO EVIDENCE
-        </h2>
+        <div
+          class="archived-photo-grid"
+          style="
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+            gap:12px;
+            margin-top:12px;
+          "
+        >
+          ${(inspection.photos || []).map((photo, index) => `
+            <div
+              class="archived-photo-card"
+              style="
+                border:1px solid #d9e2ec;
+                border-radius:10px;
+                padding:8px;
+                background:#fff;
+                max-width:190px;
+              "
+            >
+              <div style="font-weight:700; font-size:0.85rem;">
+                Photo ${index + 1}
+              </div>
 
-        <div class="archived-report-photo-grid">
-          ${reportArchivedPhotos.map((photo, index) => `
-            <div class="archived-report-photo-card">
-              <strong>Photo ${index + 1}</strong>
-
-              <div class="archived-report-photo-time">
+              <div style="font-size:0.72rem; color:#607080; margin:4px 0 6px;">
                 Captured:
                 ${
                   photo.timestamp
                     ? escapeHtml(new Date(photo.timestamp).toLocaleString())
-                    : '-'
+                    : 'Not recorded'
                 }
               </div>
 
-              <div class="archived-report-photo-box">
-                ${
-                  photo.src
-                    ? `
-                      <img
-                        src="${escapeHtml(photo.src)}"
-                        alt="Archived inspection photo ${index + 1}"
-                        class="archived-report-photo-img"
-                        crossorigin="anonymous"
-                      >
-                    `
-                    : '<div>No image source available.</div>'
-                }
+              <div
+                style="
+                  width:160px;
+                  height:120px;
+                  border:1px solid #e5eaf0;
+                  border-radius:8px;
+                  background:#f7f9fb;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  overflow:hidden;
+                "
+              >
+                <img
+                  src="${photo.src || ''}"
+                  alt="Archived inspection photo ${index + 1}"
+                  style="
+                    width:160px;
+                    height:120px;
+                    max-width:160px;
+                    max-height:120px;
+                    object-fit:contain;
+                    display:block;
+                  "
+                >
               </div>
 
-              <div class="archived-report-photo-note">
+              <div style="margin-top:6px; font-size:0.75rem; line-height:1.25;">
                 <strong>Photo Note:</strong>
                 ${escapeHtml(photo.note || 'No note added.')}
               </div>
             </div>
           `).join('')}
         </div>
-      </div>
-    `
-    : `
-      <div class="archived-report-section">
-        <h2 class="appendix-title">
-          APPENDIX A - PHOTO EVIDENCE
-        </h2>
-
-        <div class="note">
-          No photo evidence was added to this archived inspection.
-        </div>
-      </div>
-    `;
+      `
+    : `<div class="note">No archived photos.</div>`;
 
   const businessName =
     inspection.projectName ||

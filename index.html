@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
- <link rel="stylesheet" href="styles.css?v=90-beta-report8">
+  <link rel="stylesheet" href="styles.css?v=90-beta-report2">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -92,13 +92,6 @@
         <label class="admin-import-backup-btn" for="importBackupInput">
           Import Backup
         </label>
-
-        <input
-          id="importBackupInput"
-          type="file"
-          accept=".json,application/json"
-          style="display:none;"
-        >
         <div id="manualBackupPanel" class="manual-backup-panel" style="display:none;">
           <div class="note">
             Manual backup text. Select all and copy it, or paste backup JSON here and import.
@@ -390,13 +383,8 @@
   <label for="scheduleSiteName">Site / Premises</label>
   <input id="scheduleSiteName" type="text" placeholder="Example: Shop 12">
 
-  <label>
-  Scheduled inspection date
-  <input
-    type="date"
-    id="scheduleDate"
-  />
-</label>
+  <label for="scheduleDate">Scheduled Date</label>
+  <input id="scheduleDate" type="date">
 
   <label for="scheduleInspectionType">Inspection Type</label>
   <input id="scheduleInspectionType" type="text" value="General Fire Inspection">
@@ -650,7 +638,6 @@
         Schedule Next Inspection for this Site
       </button>
 
-
       <button id="deleteBtn"
               type="button"
               class="secondary-btn">
@@ -725,49 +712,6 @@
 
   <label>Follow-up Notes</label>
   <textarea id="followUpNotes" placeholder="Reason for follow-up..."></textarea>
-
-  <div id="scheduleNextPanel" class="schedule-next-panel" style="display:none;">
-  <h4>Schedule Next Inspection</h4>
-
-  <label>
-    Next inspection date
-    <input
-      type="date"
-      id="scheduleNextDate"
-    />
-  </label>
-
-  <label>
-    Schedule type
-    <select id="scheduleNextType">
-      <option value="Routine Inspection">Routine Inspection</option>
-      <option value="Follow-up">Follow-up</option>
-      <option value="Re-inspection">Re-inspection</option>
-      <option value="Outstanding Items">Outstanding Items</option>
-      <option value="Client Request">Client Request</option>
-      <option value="Other">Other</option>
-    </select>
-  </label>
-
-  <label>
-    Schedule note
-    <textarea
-      id="scheduleNextNote"
-      placeholder="Example: Follow-up required for outstanding fire equipment items..."
-    ></textarea>
-  </label>
-
-  <div class="schedule-next-actions">
-    <button type="button" id="saveScheduleNextBtn">
-      Save Schedule
-    </button>
-
-    <button type="button" id="cancelScheduleNextBtn">
-      Cancel
-    </button>
-  </div>
-</div>
-
 </div>
 
     <section class="card" id="reportSection" style="display:none;">
@@ -778,7 +722,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <<script src="app.js?v=90-beta-report8"></script>
+  <script src="app.js?v=90-beta-report2"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
