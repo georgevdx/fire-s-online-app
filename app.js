@@ -3682,30 +3682,42 @@ function ensureInspectionQuickActions() {
   }
 
   panel.innerHTML = `
-    <div class="quick-actions-title">Quick Actions / Readiness</div>
+    <div class="quick-actions-title">
+      Quick Actions / Inspection Readiness
+    </div>
+
+    <div id="quickReadinessSummary" class="quick-readiness-summary">
+      Loading inspection readiness...
+    </div>
 
     <div class="quick-actions-grid">
       <button type="button" onclick="focusFirstMissingProjectInfo()">
-        Missing Info
+        Complete Missing Info
       </button>
 
       <button type="button" onclick="focusFirstUnansweredChecklistItem()">
-        First Unanswered
+        Continue Checklist
       </button>
 
       <button type="button" onclick="focusFirstCurrentIssue()">
-        First Finding
+        Review Findings
       </button>
 
       <button type="button" onclick="focusFirstCurrentExpiry('overdue')">
-        Expired Equipment
+        Review Expired Equipment
       </button>
 
       <button type="button" onclick="focusFirstCurrentExpiry('soon')">
-        Due Soon
+        Review Due Soon Equipment
+      </button>
+
+      <button type="button" onclick="focusFirstCurrentExpiry('missing')">
+        Enter Missing Expiry Dates
       </button>
     </div>
   `;
+
+  updateProjectReadinessPanel();
 }
 
 function closeCloudDropdown() {
@@ -5059,11 +5071,17 @@ function getCurrentFormProjectSnapshot() {
 }
 
 function updateProjectReadinessPanel() {
-  const panel = document.getElementById('projectReadinessPanel');
-  if (!panel) return;
+  const quickSummary =
+    document.getElementById('quickReadinessSummary');
+
+  const oldPanel =
+    document.getElementById('projectReadinessPanel');
+
+  if (!quickSummary && !oldPanel) return;
 
   if (getEl('projectFormSection').style.display === 'none') {
-    panel.innerHTML = '';
+    if (quickSummary) quickSummary.innerHTML = '';
+    if (oldPanel) oldPanel.innerHTML = '';
     return;
   }
 
@@ -5071,97 +5089,120 @@ function updateProjectReadinessPanel() {
   const completion = getProjectCompletionCounts(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const dataQuality = getProjectDataQuality(project);
-  const status = getProjectInspectionStatus(project);
+
   const percent = completion.total
     ? Math.round((completion.answered / completion.total) * 100)
     : 0;
 
-  const missingText = dataQuality.count > 0
-    ? dataQuality.missing.join(', ')
-    : 'None';
-  const cardAction = (count, action) =>
-    count > 0
-      ? `button type="button" data-readiness-action="${action}"`
-      : 'div';
+  const missingInfoText =
+    dataQuality.count > 0
+      ? dataQuality.missing.join(', ')
+      : 'None';
 
-  const cardEnd = count =>
-    count > 0 ? 'button' : 'div';
-
-  const cardClass = (count, stateClass = '') =>
-    [
-      'readiness-chip',
-      count > 0 ? 'readiness-chip-action' : '',
-      count > 0 ? stateClass : ''
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-  const cardHint = count =>
-    count > 0
-      ? '<span class="readiness-review-hint">Review</span>'
-      : '';
-
-  panel.innerHTML = `
-    <div class="readiness-top">
-      <div>
-        <div class="readiness-title">Inspection Readiness</div>
-        <div class="readiness-subtitle">
-          ${completion.answered}/${completion.total} checklist items answered (${percent}%)
-        </div>
-      </div>
-
-      <span class="project-inspection-status ${escapeHtml(status.class)}">
-        ${escapeHtml(status.label)}
-        <small>${escapeHtml(status.detail)}</small>
-      </span>
+  const summaryHtml = `
+    <div class="quick-readiness-topline">
+      <strong>Inspection progress:</strong>
+      ${completion.answered}/${completion.total} checklist items answered (${percent}%)
     </div>
 
-    <div class="readiness-grid">
-      <${cardAction(completion.noCount, 'finding')} class="${cardClass(completion.noCount, 'readiness-danger')}">
-        <strong>${completion.noCount}</strong>
-        <span>No / Findings</span>
-        ${cardHint(completion.noCount)}
-      </${cardEnd(completion.noCount)}>
+    <div class="quick-readiness-section-title">
+      Inspection Readiness
+    </div>
 
-      <${cardAction(completion.unanswered, 'unanswered')} class="${cardClass(completion.unanswered, 'readiness-progress')}">
-        <strong>${completion.unanswered}</strong>
-        <span>Unanswered</span>
-        ${cardHint(completion.unanswered)}
-      </${cardEnd(completion.unanswered)}>
+    <div class="quick-readiness-list">
 
-      <${cardAction(expiryCounts.overdue, 'expiry-overdue')} class="${cardClass(expiryCounts.overdue, 'readiness-danger')}">
-        <strong>${expiryCounts.overdue}</strong>
-        <span>Expired</span>
-        ${cardHint(expiryCounts.overdue)}
-      </${cardEnd(expiryCounts.overdue)}>
-
-      <${cardAction(expiryCounts.soon, 'expiry-soon')} class="${cardClass(expiryCounts.soon, 'readiness-warning-state')}">
-        <strong>${expiryCounts.soon}</strong>
-        <span>Due Soon</span>
-        ${cardHint(expiryCounts.soon)}
-      </${cardEnd(expiryCounts.soon)}>
-
-      <${cardAction(expiryCounts.missing, 'expiry-missing')} class="${cardClass(expiryCounts.missing, 'readiness-warning-state')}">
-        <strong>${expiryCounts.missing}</strong>
-        <span>Expiry Missing</span>
-        ${cardHint(expiryCounts.missing)}
-      </${cardEnd(expiryCounts.missing)}>
-
-      <${cardAction(dataQuality.count, 'info')} class="${cardClass(dataQuality.count, 'readiness-warning-state')}">
+      <button
+        type="button"
+        class="quick-readiness-item ${dataQuality.count > 0 ? 'needs-review' : 'is-clear'}"
+        onclick="focusFirstMissingProjectInfo()"
+      >
+        <span class="quick-readiness-label">
+          Missing inspection information
+        </span>
         <strong>${dataQuality.count}</strong>
-        <span>Info Missing</span>
-        ${cardHint(dataQuality.count)}
-      </${cardEnd(dataQuality.count)}>
-    </div>
+        <small>${escapeHtml(missingInfoText)}</small>
+      </button>
 
-    ${dataQuality.count > 0 ? `
-      <div class="readiness-warning">
-        Missing project info: ${escapeHtml(missingText)}
       </div>
-    ` : ''}
+
+      <div class="quick-readiness-section-title">
+        Equipment Status
+      </div>
+
+      <div class="quick-readiness-list">
+
+      <button
+        type="button"
+        class="quick-readiness-item ${completion.unanswered > 0 ? 'needs-review' : 'is-clear'}"
+        onclick="focusFirstUnansweredChecklistItem()"
+      >
+        <span class="quick-readiness-label">
+          Checklist items still unanswered
+        </span>
+        <strong>${completion.unanswered}</strong>
+        <small>Tap to continue the Q&A checklist.</small>
+      </button>
+
+      <button
+        type="button"
+        class="quick-readiness-item ${completion.noCount > 0 ? 'needs-danger' : 'is-clear'}"
+        onclick="focusFirstCurrentIssue()"
+      >
+        <span class="quick-readiness-label">
+          Findings / No answers
+        </span>
+        <strong>${completion.noCount}</strong>
+        <small>Items answered “No” may need corrective action.</small>
+      </button>
+
+      <button
+        type="button"
+        class="quick-readiness-item ${expiryCounts.overdue > 0 ? 'needs-danger' : 'is-clear'}"
+        onclick="focusFirstCurrentExpiry('overdue')"
+      >
+        <span class="quick-readiness-label">
+          Expired equipment dates
+        </span>
+        <strong>${expiryCounts.overdue}</strong>
+        <small>Equipment already past expiry date.</small>
+      </button>
+
+      <button
+        type="button"
+        class="quick-readiness-item ${expiryCounts.soon > 0 ? 'needs-review' : 'is-clear'}"
+        onclick="focusFirstCurrentExpiry('soon')"
+      >
+        <span class="quick-readiness-label">
+          Equipment due soon
+        </span>
+        <strong>${expiryCounts.soon}</strong>
+        <small>Equipment expiry dates approaching.</small>
+      </button>
+
+      <button
+        type="button"
+        class="quick-readiness-item ${expiryCounts.missing > 0 ? 'needs-review' : 'is-clear'}"
+        onclick="focusFirstCurrentExpiry('missing')"
+      >
+        <span class="quick-readiness-label">
+          Missing equipment expiry dates
+        </span>
+        <strong>${expiryCounts.missing}</strong>
+        <small>Expiry date must still be entered where applicable.</small>
+      </button>
+
+    </div>
   `;
 
-  bindReadinessActionButtons(panel);
+  if (quickSummary) {
+    quickSummary.innerHTML = summaryHtml;
+  }
+
+  // Keep the old panel from showing duplicate/confusing readiness tiles.
+  if (oldPanel) {
+    oldPanel.innerHTML = '';
+    oldPanel.style.display = 'none';
+  }
 }
 
 function getChecklistForProject(project) {
