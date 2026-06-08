@@ -4724,3 +4724,42 @@ button.readiness-chip:focus {
   width: 100%;
   margin-top: 10px;
 }
+
+/* Beta 11.11 — archive polish */
+
+.inspection-archive-launcher {
+  margin-top: 10px;
+}
+
+.archive-history-note {
+  margin-bottom: 12px;
+}
+
+.archive-inspection-card {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.archive-inspection-card > div {
+  margin-bottom: 6px;
+}
+
+.archive-inspection-card > div:last-child {
+  margin-bottom: 0;
+}
+
+.archive-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.archive-actions .small-btn {
+  min-height: 36px;
+}
+
+.archive-actions .primary-small-btn {
+  font-weight: 700;
+}

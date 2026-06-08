@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-archive-more1';
+const APP_VERSION = 'v90-beta-archive-polish1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -10525,7 +10525,7 @@ function prepareInspectionArchiveButton(project) {
       class="secondary-btn archive-more-btn"
       onclick="openInspectionArchiveFromMore()"
     >
-      More: Previous Inspection Archive (${history.length})
+      More: Inspection History (${history.length})
     </button>
   `;
 
@@ -10723,7 +10723,7 @@ function renderInspectionArchive(project) {
             class="small-btn"
             onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
           >
-            View
+            View Details
           </button>
 
           <button
@@ -10731,7 +10731,7 @@ function renderInspectionArchive(project) {
             class="small-btn primary-small-btn"
             onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
           >
-            Report
+            Generate Report
           </button>
 
           <button
@@ -10759,7 +10759,7 @@ function renderInspectionArchive(project) {
             ${olderInspections.map((inspection, index) =>
               buildArchiveCard(
                 inspection,
-                `Older Previous Inspection ${index + 1}`,
+                `Older Finished Inspection ${index + 1}`,
                 history.indexOf(inspection)
               )
             ).join('')}
@@ -10770,7 +10770,7 @@ function renderInspectionArchive(project) {
 
   panel.innerHTML = `
     <div class="archive-panel-top">
-      <h3>Previous Inspection Archive</h3>
+      <h3>Inspection History</h3>
 
       <div class="archive-panel-actions">
         <button
@@ -10792,12 +10792,14 @@ function renderInspectionArchive(project) {
     </div>
 
     <div class="note">
-      The latest previous inspection is shown below. Older inspections are available from the dropdown.
+      <div class="note archive-history-note">
+        Finished inspections for this site are listed below. Open an inspection to review the full Q&A, photos, comments and follow-up notes.
+      </div>
     </div>
 
     ${buildArchiveCard(
       latestInspection,
-      'Latest Previous Inspection',
+      'Latest Finished Inspection',
       history.indexOf(latestInspection)
     )}
 
