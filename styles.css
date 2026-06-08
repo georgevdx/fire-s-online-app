@@ -4985,3 +4985,53 @@ button.readiness-chip:focus {
 #activeFilterStatus span {
   line-height: 1.35;
 }
+
+/* Beta 11.15c — finish summary visual polish */
+
+.finish-summary-banner {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid #22c55e;
+  color: #14532d;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.finish-summary-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.finish-summary-title {
+  font-size: 15px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.finish-summary-list {
+  display: grid;
+  gap: 4px;
+}
+
+.finish-summary-line {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.finish-summary-close-btn {
+  width: auto !important;
+  min-width: 72px;
+  max-width: 110px;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid #16a34a !important;
+  background: #ffffff !important;
+  color: #166534 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  cursor: pointer;
+}
