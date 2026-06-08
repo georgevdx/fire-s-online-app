@@ -7572,8 +7572,102 @@ function saveProject() {
 
 }
 
+function getFinishInspectionWarnings(project) {
+  const completion =
+    getProjectCompletionCounts(project);
+
+  const expiryCounts =
+    getProjectExpiryCounts(project);
+
+  const dataQuality =
+    getProjectDataQuality(project);
+
+  const warnings = [];
+
+  if (completion.unanswered > 0) {
+    warnings.push(
+      `${completion.unanswered} checklist item${completion.unanswered === 1 ? '' : 's'} still unanswered`
+    );
+  }
+
+  if (completion.noCount > 0) {
+    warnings.push(
+      `${completion.noCount} finding${completion.noCount === 1 ? '' : 's'} / No answer${completion.noCount === 1 ? '' : 's'} recorded`
+    );
+  }
+
+  if (expiryCounts.overdue > 0) {
+    warnings.push(
+      `${expiryCounts.overdue} expired equipment item${expiryCounts.overdue === 1 ? '' : 's'}`
+    );
+  }
+
+  if (expiryCounts.soon > 0) {
+    warnings.push(
+      `${expiryCounts.soon} equipment item${expiryCounts.soon === 1 ? '' : 's'} due soon`
+    );
+  }
+
+  if (expiryCounts.missing > 0) {
+    warnings.push(
+      `${expiryCounts.missing} missing equipment expiry date${expiryCounts.missing === 1 ? '' : 's'}`
+    );
+  }
+
+  if (dataQuality.count > 0) {
+    warnings.push(
+      `${dataQuality.count} missing inspection info item${dataQuality.count === 1 ? '' : 's'}: ${dataQuality.missing.join(', ')}`
+    );
+  }
+
+  return warnings;
+}
+
+function confirmFinishInspectionWithWarnings(project) {
+  const warnings =
+    getFinishInspectionWarnings(project);
+
+  if (warnings.length === 0) {
+    return true;
+  }
+
+  const message = [
+    'This inspection still has items that may need attention:',
+    '',
+    ...warnings.map(item => `- ${item}`),
+    '',
+    'Finish inspection anyway?'
+  ].join('\n');
+
+  return confirm(message);
+}
+
 function finishInspection() {
   saveProject();
+
+  if (!currentProjectId) {
+    return;
+  }
+
+  const savedProjectForGuardrail =
+    getProjects().find(
+      project => project.id === currentProjectId
+    );
+
+  if (
+    savedProjectForGuardrail &&
+    !confirmFinishInspectionWithWarnings(savedProjectForGuardrail)
+  ) {
+    const saveMessage =
+      document.getElementById('saveMessage');
+
+    if (saveMessage) {
+      saveMessage.textContent =
+        'Finish cancelled. Review the Quick Links action items before finishing.';
+    }
+
+    return;
+  }
 
   if (currentProjectId) {
     const projects = getProjects();
@@ -7642,7 +7736,13 @@ function finishInspection() {
       }
     }
   }
+  const finishMessage =
+    document.getElementById('syncStatus');
 
+  if (finishMessage) {
+    finishMessage.textContent =
+      'Inspection finished and archived. Sync will continue in the background.';
+  }
   showProjectList();
 }
 
