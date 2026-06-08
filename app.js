@@ -6850,6 +6850,7 @@ function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
 }
 
 function openProject(projectId, focusMode) {
+  closeFinishSummaryBanner();
   currentProjectSummaryId = null;
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
