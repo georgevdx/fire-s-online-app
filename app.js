@@ -5073,9 +5073,9 @@ function updateProjectReadinessPanel() {
     quickLinks.push({
       group: 'inspection',
       type: 'warning',
-      label: 'Complete missing inspection info',
+      label: 'Complete inspection info',
       count: dataQuality.count,
-      detail: dataQuality.missing.join(', '),
+      detail: `Missing: ${dataQuality.missing.join(', ')}`,
       action: 'missing-info'
     });
   }
@@ -5084,9 +5084,9 @@ function updateProjectReadinessPanel() {
     quickLinks.push({
       group: 'inspection',
       type: 'progress',
-      label: 'Continue checklist',
+      label: 'Continue Q&A checklist',
       count: completion.unanswered,
-      detail: 'Checklist questions still unanswered.',
+      detail: 'Tap to continue with the first unanswered question.',
       action: 'unanswered'
     });
   }
@@ -5095,9 +5095,9 @@ function updateProjectReadinessPanel() {
     quickLinks.push({
       group: 'inspection',
       type: 'danger',
-      label: 'Review findings / No answers',
+      label: 'Review findings',
       count: completion.noCount,
-      detail: 'Items answered “No” may need corrective action.',
+      detail: 'Items marked “No” may need corrective action.',
       action: 'finding'
     });
   }
@@ -5106,9 +5106,9 @@ function updateProjectReadinessPanel() {
     quickLinks.push({
       group: 'equipment',
       type: 'danger',
-      label: 'Review expired equipment',
+      label: 'Expired equipment',
       count: expiryCounts.overdue,
-      detail: 'Equipment already past expiry date.',
+      detail: 'Expiry date has already passed.',
       action: 'expiry-overdue'
     });
   }
@@ -5117,9 +5117,9 @@ function updateProjectReadinessPanel() {
     quickLinks.push({
       group: 'equipment',
       type: 'warning',
-      label: 'Review equipment due soon',
+      label: 'Equipment due soon',
       count: expiryCounts.soon,
-      detail: 'Equipment expiry dates approaching.',
+      detail: 'Expiry date is approaching.',
       action: 'expiry-soon'
     });
   }
@@ -5128,9 +5128,9 @@ function updateProjectReadinessPanel() {
     quickLinks.push({
       group: 'equipment',
       type: 'warning',
-      label: 'Enter missing equipment expiry dates',
+      label: 'Missing equipment expiry dates',
       count: expiryCounts.missing,
-      detail: 'Expiry dates still need to be entered.',
+      detail: 'Enter expiry dates where applicable.',
       action: 'expiry-missing'
     });
   }
@@ -5176,7 +5176,7 @@ function updateProjectReadinessPanel() {
         `
         : `
           <div class="quick-clear-line">
-            Inspection action items clear.
+            No inspection action items.
           </div>
         `
     }
@@ -5194,7 +5194,7 @@ function updateProjectReadinessPanel() {
         `
         : `
           <div class="quick-clear-line">
-            Equipment status clear.
+            No expired or due equipment items.
           </div>
         `
     }
