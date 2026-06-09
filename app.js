@@ -22,12 +22,13 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentProjectSummaryId = null;
+let siteReadyPreflightOpen = false;
 let currentPhotos = [];
 let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-site-ready-preflight1';
+const APP_VERSION = 'v90-beta-site-ready-preflight2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3521,7 +3522,7 @@ function updateSiteReadyPreflightChecklist() {
       allCriticalPassed
         ? 'site-ready-pass'
         : 'site-ready-warning'
-    }`;
+    } ${siteReadyPreflightOpen ? 'site-ready-open' : 'site-ready-collapsed'}`;
 
   panel.innerHTML = `
     <div class="site-ready-header">
@@ -3533,28 +3534,52 @@ function updateSiteReadyPreflightChecklist() {
               ? 'Preflight passed'
               : 'Preflight needs attention'
           }
+          ${
+            pendingUploads > 0
+              ? ` | ${pendingUploads} pending upload${pendingUploads === 1 ? '' : 's'}`
+              : ''
+          }
         </span>
       </div>
 
       <button
         type="button"
-        onclick="runSiteReadyPreflight()"
+        onclick="toggleSiteReadyPreflight()"
       >
-        Recheck
+        ${siteReadyPreflightOpen ? 'Hide' : 'Open'}
       </button>
     </div>
 
-    <div class="site-ready-checks">
-      ${checks.map(check => `
-        <div class="site-ready-check ${check.pass ? 'check-pass' : 'check-warning'}">
-          <strong>
-            ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
-          </strong>
-          <span>${escapeHtml(check.detail)}</span>
-        </div>
-      `).join('')}
-    </div>
+    ${
+      siteReadyPreflightOpen
+        ? `
+          <div class="site-ready-checks">
+            ${checks.map(check => `
+              <div class="site-ready-check ${check.pass ? 'check-pass' : 'check-warning'}">
+                <strong>
+                  ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
+                </strong>
+                <span>${escapeHtml(check.detail)}</span>
+              </div>
+            `).join('')}
+
+            <button
+              type="button"
+              class="site-ready-recheck-btn"
+              onclick="runSiteReadyPreflight()"
+            >
+              Recheck
+            </button>
+          </div>
+        `
+        : ''
+    }
   `;
+}
+
+function toggleSiteReadyPreflight() {
+  siteReadyPreflightOpen = !siteReadyPreflightOpen;
+  updateSiteReadyPreflightChecklist();
 }
 
 function runSiteReadyPreflight() {
@@ -5763,6 +5788,7 @@ window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
+window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
