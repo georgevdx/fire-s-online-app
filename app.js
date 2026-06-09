@@ -23,13 +23,12 @@ let inspectionTemplates = {};
 let currentProjectId = null;
 let currentProjectSummaryId = null;
 let siteReadyPreflightOpen = false;
-window.clientReadyReleaseOpen = false;
 let currentPhotos = [];
 let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-feedback-polish1';
+const APP_VERSION = 'v90-beta-post-site-sync1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3647,176 +3646,6 @@ function dismissPostSiteSyncReminder() {
   reminder.className = '';
 }
 
-function getClientReadyReleaseChecks() {
-  const projects =
-    getVisibleProjectsForCurrentUser(getProjects());
-
-  const pendingUploads =
-    projects.filter(project => project.syncPending).length;
-
-  const completedInspections =
-    projects.filter(project => project.completedAt).length;
-
-  const reportsAvailable =
-    typeof generateReport === 'function' &&
-    typeof exportReport === 'function';
-
-  const backupAvailable =
-    typeof exportBackup === 'function';
-
-  const offlineAvailable =
-    'serviceWorker' in navigator;
-
-  const hasProjects =
-    projects.length > 0;
-
-  const hasSyncedData =
-    hasProjects &&
-    pendingUploads === 0;
-
-  return [
-    {
-      label: 'Beta version visible',
-      pass: !!APP_VERSION,
-      detail: APP_VERSION || 'Version not found.'
-    },
-    {
-      label: 'Cloud sync checked',
-      pass: pendingUploads === 0,
-      detail: pendingUploads === 0
-        ? 'No pending uploads.'
-        : `${pendingUploads} pending upload${pendingUploads === 1 ? '' : 's'} still waiting.`
-    },
-    {
-      label: 'Local inspections available',
-      pass: hasProjects,
-      detail: hasProjects
-        ? `${projects.length} inspection${projects.length === 1 ? '' : 's'} visible for this user.`
-        : 'No inspections visible for this user.'
-    },
-    {
-      label: 'Offline readiness available',
-      pass: offlineAvailable,
-      detail: offlineAvailable
-        ? 'Service worker/offline support is available in this browser.'
-        : 'Offline support is not available in this browser.'
-    },
-    {
-      label: 'Report tools available',
-      pass: reportsAvailable,
-      detail: reportsAvailable
-        ? 'Generate Report and PDF export functions are available.'
-        : 'Report or PDF export function missing.'
-    },
-    {
-      label: 'Backup tool available',
-      pass: backupAvailable,
-      detail: backupAvailable
-        ? 'Export Backup is available.'
-        : 'Export Backup function missing.'
-    },
-    {
-      label: 'Completed inspection test data',
-      pass: completedInspections > 0,
-      detail: completedInspections > 0
-        ? `${completedInspections} completed inspection${completedInspections === 1 ? '' : 's'} found.`
-        : 'No completed inspections found yet.'
-    },
-    {
-      label: 'Ready for small beta release',
-      pass:
-        !!APP_VERSION &&
-        hasSyncedData &&
-        offlineAvailable &&
-        reportsAvailable &&
-        backupAvailable,
-      detail:
-        hasSyncedData && offlineAvailable && reportsAvailable && backupAvailable
-          ? 'Build is suitable for controlled beta testing.'
-          : 'Fix warnings before sharing with beta users.'
-    }
-  ];
-}
-
-function updateClientReadyReleaseChecklist() {
-  const panel =
-    document.getElementById('clientReadyReleaseChecklist');
-
-  if (!panel) return;
-
-  if (!currentUserProfile) {
-    panel.innerHTML = '';
-    panel.className = '';
-    return;
-  }
-
-  const checks =
-    getClientReadyReleaseChecks();
-
-  const failedChecks =
-    checks.filter(check => !check.pass);
-
-  const isReady =
-    failedChecks.length === 0;
-
-  panel.className =
-    `client-ready-release-checklist ${
-      isReady
-        ? 'client-ready-pass'
-        : 'client-ready-warning'
-    }`;
-
-  panel.innerHTML = `
-    <div class="client-ready-header">
-      <div>
-        <strong>Client-ready beta checklist</strong>
-        <span>
-          ${
-            isReady
-              ? 'Ready for controlled beta release'
-              : `${failedChecks.length} item${failedChecks.length === 1 ? '' : 's'} need attention`
-          }
-        </span>
-      </div>
-
-      <button
-        type="button"
-        onclick="toggleClientReadyReleaseChecklist()"
-      >
-        ${window.clientReadyReleaseOpen ? 'Hide' : 'Open'}
-      </button>
-    </div>
-
-    ${
-      window.clientReadyReleaseOpen
-        ? `
-          <div class="client-ready-checks">
-            ${checks.map(check => `
-              <div class="client-ready-check ${check.pass ? 'check-pass' : 'check-warning'}">
-                <strong>
-                  ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
-                </strong>
-                <span>${escapeHtml(check.detail)}</span>
-              </div>
-            `).join('')}
-
-            <div class="client-ready-note">
-              Use this only as a release confidence check. Final beta approval still depends on a real phone test: login, sync, open inspection, save, photo, report, backup.
-            </div>
-          </div>
-        `
-        : ''
-    }
-  `;
-}
-
-function toggleClientReadyReleaseChecklist() {
-  window.clientReadyReleaseOpen =
-    !window.clientReadyReleaseOpen;
-
-  updateClientReadyReleaseChecklist();
-}
-
 function updateFloatingBackButton() {
   const button =
     document.getElementById('floatingBackToProjectsBtn');
@@ -4383,70 +4212,6 @@ async function submitServiceRequest() {
   }
 }
 
-function getCurrentAppScreenName() {
-  const homeSection =
-    document.getElementById('homeSection');
-
-  const servicesSection =
-    document.getElementById('servicesSection');
-
-  const projectListSection =
-    document.getElementById('projectListSection');
-
-  const projectFormSection =
-    document.getElementById('projectFormSection');
-
-  if (projectFormSection && projectFormSection.style.display !== 'none') {
-    return 'Inspection Form';
-  }
-
-  if (projectListSection && projectListSection.style.display !== 'none') {
-    return 'Projects List';
-  }
-
-  if (servicesSection && servicesSection.style.display !== 'none') {
-    return 'Additional Services';
-  }
-
-  if (homeSection && homeSection.style.display !== 'none') {
-    return 'Home';
-  }
-
-  return 'Unknown';
-}
-
-function getBrowserDeviceHint() {
-  const userAgent =
-    navigator.userAgent || '';
-
-  const isMobile =
-    /Android|iPhone|iPad|iPod/i.test(userAgent);
-
-  const browser =
-    userAgent.includes('Chrome')
-      ? 'Chrome'
-      : userAgent.includes('Safari')
-        ? 'Safari'
-        : userAgent.includes('Firefox')
-          ? 'Firefox'
-          : userAgent.includes('Edg')
-            ? 'Edge'
-            : 'Browser';
-
-  return `${isMobile ? 'Mobile' : 'Desktop'} / ${browser}`;
-}
-
-function getCurrentInspectionNumberForFeedback() {
-  if (!currentProjectId) {
-    return '';
-  }
-
-  const project =
-    getProjects().find(p => p.id === currentProjectId);
-
-  return project?.inspectionNumber || '';
-}
-
 function openBetaFeedbackForm() {
   const form = document.getElementById('betaFeedbackForm');
   const status = document.getElementById('betaFeedbackStatus');
@@ -4457,53 +4222,18 @@ function openBetaFeedbackForm() {
     status.textContent = '';
   }
 
- const inspectionField =
-  document.getElementById('betaInspectionNumber');
+  const inspectionField = document.getElementById('betaInspectionNumber');
 
-if (inspectionField) {
-  inspectionField.value =
-    getCurrentInspectionNumberForFeedback();
-}
+  if (inspectionField && currentProjectId) {
+    const project = getProjects().find(p => p.id === currentProjectId);
+    inspectionField.value = project?.inspectionNumber || '';
+  }
 
-const deviceField =
-  document.getElementById('betaDevice');
+  const onlineStatus = document.getElementById('betaOnlineStatus');
 
-if (deviceField && !deviceField.value.trim()) {
-  deviceField.value =
-    getBrowserDeviceHint();
-}
-
-const browserField =
-  document.getElementById('betaBrowser');
-
-if (browserField && !browserField.value.trim()) {
-  browserField.value =
-    navigator.userAgent || 'Not available';
-}
-
-const onlineStatus =
-  document.getElementById('betaOnlineStatus');
-
-if (onlineStatus) {
-  onlineStatus.value =
-    navigator.onLine ? 'Online' : 'Offline';
-}
-
-const currentScreenField =
-  document.getElementById('betaCurrentScreen');
-
-if (currentScreenField) {
-  currentScreenField.value =
-    getCurrentAppScreenName();
-}
-
-const whatHappenedField =
-  document.getElementById('betaWhatHappened');
-
-if (whatHappenedField && !whatHappenedField.value.trim()) {
-  whatHappenedField.placeholder =
-    `Describe what happened on: ${getCurrentAppScreenName()} | Version: ${APP_VERSION}`;
-}
+  if (onlineStatus) {
+    onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
+  }
 
   form.style.display = 'block';
 
@@ -4557,7 +4287,7 @@ function clearBetaFeedbackForm() {
 
   const onlineStatus = document.getElementById('betaOnlineStatus');
 
-if (onlineStatus) {
+  if (onlineStatus) {
     onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
   }
 }
@@ -4580,9 +4310,6 @@ async function submitBetaFeedback() {
   const onlineStatus =
     document.getElementById('betaOnlineStatus')?.value || '';
 
-  const currentScreen =
-    document.getElementById('betaCurrentScreen')?.value || '';  
-  
   const inspectionNumber =
     document.getElementById('betaInspectionNumber')?.value.trim() || '';
 
@@ -4623,7 +4350,6 @@ async function submitBetaFeedback() {
       device,
       browser,
       online_status: onlineStatus,
-      current_screen: currentScreen,
       inspection_number: inspectionNumber,
       what_happened: whatHappened,
       expected_result: expectedResult,
@@ -4648,8 +4374,7 @@ async function submitBetaFeedback() {
     }
 
     if (status) {
-      status.textContent =
-  'Feedback submitted. Thank you — this helps improve the beta build.';
+      status.textContent = 'Feedback submitted. Thank you.';
     }
 
     clearBetaFeedbackForm();
@@ -4802,7 +4527,6 @@ async function renderBetaFeedbackList() {
       device,
       browser,
       online_status,
-      current_screen,
       inspection_number,
       what_happened,
       expected_result,
@@ -4864,11 +4588,6 @@ async function renderBetaFeedbackList() {
             |
             <strong>Status:</strong>
             ${escapeHtml(item.online_status || '-')}
-          </div>
-
-          <div class="beta-feedback-line">
-            <strong>Screen:</strong>
-            ${escapeHtml(item.current_screen || '-')}
           </div>
 
           <div class="beta-feedback-message">
@@ -6129,7 +5848,6 @@ window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
 window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
-window.toggleClientReadyReleaseChecklist = toggleClientReadyReleaseChecklist;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
@@ -6815,7 +6533,6 @@ function renderProjectsList() {
   updateOfflineReadinessBanner();
   updateSiteReadyPreflightChecklist();
   updatePostSiteSyncReminder();
-  updateClientReadyReleaseChecklist();
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
