@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-inspection-date-display1';
+const APP_VERSION = 'v90-beta-site-ready-preflight1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3348,7 +3348,19 @@ function updateOfflineReadinessBanner() {
   const projects =
     getVisibleProjectsForCurrentUser(getProjects());
 
-  const lastSyncTimes = projects
+  const isOnline =
+    navigator.onLine;
+
+  const hasLocalInspections =
+    projects.length > 0;
+
+  const offlineCapable =
+    'serviceWorker' in navigator;
+
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const lastSavedTimes = projects
     .map(project =>
       project.syncedAt ||
       project.lastSaved ||
@@ -3359,12 +3371,73 @@ function updateOfflineReadinessBanner() {
     .map(value => new Date(value).getTime())
     .filter(time => !Number.isNaN(time));
 
-  const lastSyncText =
-    lastSyncTimes.length > 0
-      ? new Date(Math.max(...lastSyncTimes)).toLocaleString()
+  const lastSavedText =
+    lastSavedTimes.length > 0
+      ? new Date(Math.max(...lastSavedTimes)).toLocaleString()
       : 'Not available';
 
-  const isOnline = navigator.onLine;
+  const readyForField =
+    offlineCapable &&
+    hasLocalInspections &&
+    pendingUploads === 0;
+
+  const partiallyReady =
+    offlineCapable &&
+    hasLocalInspections &&
+    pendingUploads > 0;
+
+  banner.className =
+    `offline-readiness-banner ${
+      readyForField
+        ? 'offline-ready'
+        : partiallyReady
+          ? 'offline-warning'
+          : 'offline-not-ready'
+    }`;
+
+  banner.innerHTML = `
+    <div>
+      <strong>
+        ${
+          readyForField
+            ? 'Field Ready'
+            : partiallyReady
+              ? 'Almost Field Ready'
+              : 'Not Field Ready'
+        }
+      </strong>
+
+      <span>
+        ${isOnline ? 'Online now' : 'Offline now'} |
+        Local inspections: ${projects.length} |
+        Pending uploads: ${pendingUploads} |
+        Last save/sync: ${escapeHtml(lastSavedText)}
+      </span>
+    </div>
+
+    <small>
+      ${
+        readyForField
+          ? 'Ready for site use. Inspections are available locally and no pending uploads are waiting.'
+          : partiallyReady
+            ? 'Inspections are available locally, but some changes still need cloud upload. Open online and tap Sync / Refresh before going to site.'
+            : 'Before site work: login online, open inspections list, tap Sync / Refresh, and confirm this banner changes to Field Ready.'
+      }
+    </small>
+  `;
+}
+
+function updateSiteReadyPreflightChecklist() {
+  const panel =
+    document.getElementById('siteReadyPreflightChecklist');
+
+  if (!panel) return;
+
+  const projects =
+    getVisibleProjectsForCurrentUser(getProjects());
+
+  const isOnline =
+    navigator.onLine;
 
   const hasLocalInspections =
     projects.length > 0;
@@ -3372,36 +3445,121 @@ function updateOfflineReadinessBanner() {
   const offlineCapable =
     'serviceWorker' in navigator;
 
-  const ready =
-    offlineCapable &&
-    hasLocalInspections;
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
 
-  banner.className =
-    `offline-readiness-banner ${
-      ready ? 'offline-ready' : 'offline-not-ready'
+  const hasLoggedInProfile =
+    !!currentUserProfile;
+
+  const lastSavedTimes = projects
+    .map(project =>
+      project.syncedAt ||
+      project.lastSaved ||
+      project.updatedAt ||
+      ''
+    )
+    .filter(Boolean)
+    .map(value => new Date(value).getTime())
+    .filter(time => !Number.isNaN(time));
+
+  const lastSavedText =
+    lastSavedTimes.length > 0
+      ? new Date(Math.max(...lastSavedTimes)).toLocaleString()
+      : 'Not available';
+
+  const checks = [
+    {
+      label: 'User access checked',
+      pass: hasLoggedInProfile,
+      detail: hasLoggedInProfile
+        ? `Logged in as ${currentUserProfile.email || currentUserProfile.fullName || 'user'}`
+        : 'Login online before going to site.'
+    },
+    {
+      label: 'Inspections loaded locally',
+      pass: hasLocalInspections,
+      detail: hasLocalInspections
+        ? `${projects.length} inspection${projects.length === 1 ? '' : 's'} available on this device.`
+        : 'Open/sync the inspection list before going offline.'
+    },
+    {
+      label: 'Offline capability available',
+      pass: offlineCapable,
+      detail: offlineCapable
+        ? 'Browser supports offline app cache.'
+        : 'This browser may not support offline use.'
+    },
+    {
+      label: 'Pending uploads checked',
+      pass: pendingUploads === 0,
+      detail: pendingUploads === 0
+        ? 'No pending uploads.'
+        : `${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'} still waiting to upload.`
+    },
+    {
+      label: 'Last save / sync visible',
+      pass: lastSavedTimes.length > 0,
+      detail: `Last save/sync: ${lastSavedText}`
+    },
+    {
+      label: 'Connection status known',
+      pass: true,
+      detail: isOnline
+        ? 'Online now.'
+        : 'Offline now. Confirm required inspections are already loaded.'
+    }
+  ];
+
+  const allCriticalPassed =
+    hasLoggedInProfile &&
+    hasLocalInspections &&
+    offlineCapable &&
+    pendingUploads === 0;
+
+  panel.className =
+    `site-ready-preflight ${
+      allCriticalPassed
+        ? 'site-ready-pass'
+        : 'site-ready-warning'
     }`;
 
-  banner.innerHTML = `
-    <div>
-      <strong>
-        ${ready ? 'Offline Ready' : 'Not Offline Ready'}
-      </strong>
+  panel.innerHTML = `
+    <div class="site-ready-header">
+      <div>
+        <strong>Ready for Site?</strong>
+        <span>
+          ${
+            allCriticalPassed
+              ? 'Preflight passed'
+              : 'Preflight needs attention'
+          }
+        </span>
+      </div>
 
-      <span>
-        ${isOnline ? 'Online now' : 'Offline now'} |
-        Local inspections: ${projects.length} |
-        Last local sync/save: ${escapeHtml(lastSyncText)}
-      </span>
+      <button
+        type="button"
+        onclick="runSiteReadyPreflight()"
+      >
+        Recheck
+      </button>
     </div>
 
-    <small>
-      ${
-        ready
-      ? 'Ready for field use. Open and sync online before going to site; saved inspections should remain available without signal.'
-      : 'Before site work: login online, tap Sync / Refresh, and confirm Offline Ready.'
-      }
-    </small>
+    <div class="site-ready-checks">
+      ${checks.map(check => `
+        <div class="site-ready-check ${check.pass ? 'check-pass' : 'check-warning'}">
+          <strong>
+            ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
+          </strong>
+          <span>${escapeHtml(check.detail)}</span>
+        </div>
+      `).join('')}
+    </div>
   `;
+}
+
+function runSiteReadyPreflight() {
+  updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
 }
 
 function updateFloatingBackButton() {
@@ -5604,6 +5762,7 @@ window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
+window.runSiteReadyPreflight = runSiteReadyPreflight;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
@@ -6287,6 +6446,7 @@ function renderProjectsList() {
   // renderReminderBanner(projects);
   renderDashboardMetrics(projects);
   updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
@@ -7408,7 +7568,7 @@ function markInspectionSynced(projectId) {
   };
 
   setProjects(projects);
-
+  updateOfflineReadinessBanner();
   renderProjectsList();
 }
 
