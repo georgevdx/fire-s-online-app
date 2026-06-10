@@ -4648,52 +4648,69 @@ async function renderBetaFeedbackList() {
     <div class="beta-feedback-list">
       ${feedbackItems.map(item => `
         <div class="beta-feedback-item beta-feedback-${escapeHtml(String(item.priority || 'Medium').toLowerCase())}">
-          <div class="beta-feedback-top">
-            <strong>
-              ${escapeHtml(item.issue_type || 'Feedback')}
-            </strong>
+          <div class="beta-feedback-top beta-feedback-top-polished">
+  <div>
+    <strong>
+      ${escapeHtml(item.issue_type || 'Feedback')}
+    </strong>
 
-            <span class="beta-feedback-priority">
-              ${escapeHtml(item.priority || 'Medium')}
-            </span>
-          </div>
+    <div class="beta-feedback-subtitle">
+      ${item.created_at ? escapeHtml(new Date(item.created_at).toLocaleString()) : '-'}
+    </div>
+  </div>
 
-          <div class="beta-feedback-meta">
-            <span>${escapeHtml(item.status || 'new')}</span>
-            <span>${item.created_at ? escapeHtml(new Date(item.created_at).toLocaleString()) : '-'}</span>
-            <span>${escapeHtml(item.app_version || '-')}</span>
-          </div>
+  <div class="beta-feedback-badges">
+    <span class="beta-feedback-priority">
+      ${escapeHtml(item.priority || 'Medium')}
+    </span>
 
-          <div class="beta-feedback-line">
-            <strong>Inspection:</strong>
-            ${escapeHtml(item.inspection_number || '-')}
-          </div>
+    <span class="beta-feedback-status-pill">
+      ${escapeHtml(item.status || 'new')}
+    </span>
+  </div>
+</div>
 
-          <div class="beta-feedback-line">
-            <strong>Device:</strong>
-            ${escapeHtml(item.device || '-')}
-            |
-            <strong>Browser:</strong>
-            ${escapeHtml(item.browser || '-')}
-            |
-            <strong>Status:</strong>
-            ${escapeHtml(item.online_status || '-')}
-          </div>
+<div class="beta-feedback-version-line">
+  <strong>Version:</strong>
+  ${escapeHtml(item.app_version || '-')}
+</div>
 
-          <div class="beta-feedback-message">
-            <strong>What happened:</strong>
-            <span>${escapeHtml(item.what_happened || '-')}</span>
-          </div>
+          <div class="beta-feedback-context-grid">
+  <div>
+    <span>Inspection</span>
+    <strong>${escapeHtml(item.inspection_number || '-')}</strong>
+  </div>
 
-          <div class="beta-feedback-message">
-            <strong>Expected:</strong>
-            <span>${escapeHtml(item.expected_result || '-')}</span>
-          </div>
+  <div>
+    <span>Online Status</span>
+    <strong>${escapeHtml(item.online_status || '-')}</strong>
+  </div>
 
-          <div class="beta-feedback-line">
-            <strong>Reported by:</strong>
-            ${escapeHtml(item.reported_by_email || '-')}
-          </div>
+  <div>
+    <span>Device</span>
+    <strong>${escapeHtml(item.device || '-')}</strong>
+  </div>
+
+  <div>
+    <span>Browser</span>
+    <strong>${escapeHtml(item.browser || '-')}</strong>
+  </div>
+</div>
+
+          <div class="beta-feedback-message-card">
+  <strong>What happened</strong>
+  <p>${escapeHtml(item.what_happened || '-')}</p>
+</div>
+
+<div class="beta-feedback-message-card beta-feedback-expected">
+  <strong>Expected result</strong>
+  <p>${escapeHtml(item.expected_result || '-')}</p>
+</div>
+
+          <div class="beta-feedback-reporter-line">
+  <strong>Reported by:</strong>
+  ${escapeHtml(item.reported_by_email || '-')}
+</div>
 
           ${
             item.followup_note

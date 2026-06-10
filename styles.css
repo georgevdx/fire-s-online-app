@@ -5234,3 +5234,117 @@ button.readiness-chip:focus {
   font-weight: 800;
   line-height: 1.35;
 }
+
+/* Beta 11.23d — beta feedback admin readability polish */
+
+.beta-feedback-top-polished {
+  align-items: flex-start;
+}
+
+.beta-feedback-subtitle {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.beta-feedback-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.beta-feedback-status-pill {
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.beta-feedback-version-line,
+.beta-feedback-reporter-line {
+  margin: 8px 0;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.beta-feedback-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.beta-feedback-context-grid div {
+  padding: 8px;
+  border-radius: 9px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  min-width: 0;
+}
+
+.beta-feedback-context-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.beta-feedback-context-grid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.beta-feedback-message-card {
+  margin-top: 9px;
+  padding: 9px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border-left: 4px solid #b71c1c;
+}
+
+.beta-feedback-message-card strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #7f1d1d;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.beta-feedback-message-card p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  font-size: 13px;
+}
+
+.beta-feedback-expected {
+  background: #eff6ff;
+  border-left-color: #2563eb;
+}
+
+.beta-feedback-expected strong {
+  color: #1e3a8a;
+}
+
+@media (max-width: 640px) {
+  .beta-feedback-context-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .beta-feedback-badges {
+    justify-content: flex-start;
+  }
+}
