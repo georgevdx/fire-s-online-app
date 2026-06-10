@@ -1,6 +1,7 @@
 ﻿let currentFilter = 'all';
 let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
+window.betaNotesPanelOpen = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
@@ -3983,6 +3984,63 @@ function setCloudMenuVisible(isVisible) {
     closeCloudDropdown();
   }
 }
+function updateBetaNotesPanel() {
+  const panel =
+    document.getElementById('betaNotesPanel');
+
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="beta-notes-header">
+      <div>
+        <strong>Controlled Beta Build</strong>
+        <span>${escapeHtml(APP_VERSION)}</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleBetaNotesPanel()"
+      >
+        ${window.betaNotesPanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.betaNotesPanelOpen
+        ? `
+          <div class="beta-notes-body">
+            <div class="beta-note beta-note-important">
+              <strong>Before field use</strong>
+              <span>Export a backup and confirm sync before going to site.</span>
+            </div>
+
+            <div class="beta-note">
+              <strong>Report issues</strong>
+              <span>Use Additional Services → Report Beta Issue for bugs, missing data or confusing behaviour.</span>
+            </div>
+
+            <div class="beta-note">
+              <strong>Known limitation</strong>
+              <span>PDF layout may vary slightly between mobile browsers, laptop browsers and printer settings.</span>
+            </div>
+
+            <div class="beta-note">
+              <strong>Photos</strong>
+              <span>After taking photos on site, use Sync / Refresh before closing the app.</span>
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleBetaNotesPanel() {
+  window.betaNotesPanelOpen =
+    !window.betaNotesPanelOpen;
+
+  updateBetaNotesPanel();
+}
 
 function updateHomeAccessCards() {
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
@@ -4008,7 +4066,8 @@ function showHome() {
   const servicesSection = document.getElementById('servicesSection');
 
   setCloudMenuVisible(true);
-  updateHomeAccessCards();
+updateHomeAccessCards();
+updateBetaNotesPanel();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
@@ -6021,6 +6080,7 @@ window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
 window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
 window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 window.setBetaFeedbackFilter = setBetaFeedbackFilter;
+window.toggleBetaNotesPanel = toggleBetaNotesPanel;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
