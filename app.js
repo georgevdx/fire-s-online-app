@@ -4212,6 +4212,38 @@ async function submitServiceRequest() {
   }
 }
 
+function getBrowserDeviceHint() {
+  const userAgent =
+    navigator.userAgent || '';
+
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(userAgent);
+
+  const browser =
+    userAgent.includes('Edg')
+      ? 'Edge'
+      : userAgent.includes('Chrome')
+        ? 'Chrome'
+        : userAgent.includes('Safari')
+          ? 'Safari'
+          : userAgent.includes('Firefox')
+            ? 'Firefox'
+            : 'Browser';
+
+  return `${isMobile ? 'Mobile' : 'Desktop'} / ${browser}`;
+}
+
+function getCurrentInspectionNumberForFeedback() {
+  if (!currentProjectId) {
+    return '';
+  }
+
+  const project =
+    getProjects().find(p => p.id === currentProjectId);
+
+  return project?.inspectionNumber || '';
+}
+
 function openBetaFeedbackForm() {
   const form = document.getElementById('betaFeedbackForm');
   const status = document.getElementById('betaFeedbackStatus');
@@ -4222,18 +4254,37 @@ function openBetaFeedbackForm() {
     status.textContent = '';
   }
 
-  const inspectionField = document.getElementById('betaInspectionNumber');
+  const inspectionField =
+  document.getElementById('betaInspectionNumber');
 
-  if (inspectionField && currentProjectId) {
-    const project = getProjects().find(p => p.id === currentProjectId);
-    inspectionField.value = project?.inspectionNumber || '';
-  }
+if (inspectionField) {
+  inspectionField.value =
+    getCurrentInspectionNumberForFeedback();
+}
 
-  const onlineStatus = document.getElementById('betaOnlineStatus');
+const deviceField =
+  document.getElementById('betaDevice');
 
-  if (onlineStatus) {
-    onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
-  }
+if (deviceField && !deviceField.value.trim()) {
+  deviceField.value =
+    getBrowserDeviceHint();
+}
+
+const browserField =
+  document.getElementById('betaBrowser');
+
+if (browserField && !browserField.value.trim()) {
+  browserField.value =
+    navigator.userAgent || 'Not available';
+}
+
+const onlineStatus =
+  document.getElementById('betaOnlineStatus');
+
+if (onlineStatus) {
+  onlineStatus.value =
+    navigator.onLine ? 'Online' : 'Offline';
+}
 
   form.style.display = 'block';
 
