@@ -1,4 +1,5 @@
 ﻿let currentFilter = 'all';
+let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
 
 let activeChecklistSectionIndex = null;
@@ -28,7 +29,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-feedback-hint1';
+const APP_VERSION = 'v90-beta-feedback-admin-readability1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4582,6 +4583,11 @@ async function renderServiceRequestsList() {
   `;
 }
 
+function setBetaFeedbackFilter(filter) {
+  currentBetaFeedbackFilter = filter;
+  renderBetaFeedbackList(true);
+}
+
 async function renderBetaFeedbackList() {
   if (!canViewServiceRequests()) {
     alert('Beta feedback is only available to Fire-S admin.');
@@ -4597,10 +4603,10 @@ async function renderBetaFeedbackList() {
     serviceRequestsList.style.display = 'none';
   }
 
-  if (list.style.display === 'block') {
-    list.style.display = 'none';
-    return;
-  }
+  if (list.style.display === 'block' && !arguments[0]) {
+  list.style.display = 'none';
+  return;
+}
 
   list.style.display = 'block';
   list.innerHTML =
@@ -4636,16 +4642,80 @@ async function renderBetaFeedbackList() {
     return;
   }
 
-  const feedbackItems = data || [];
+  const allFeedbackItems = data || [];
+
+const feedbackItems =
+  allFeedbackItems.filter(item => {
+    if (currentBetaFeedbackFilter === 'all') {
+      return true;
+    }
+
+    if (currentBetaFeedbackFilter === 'high') {
+      return String(item.priority || '').toLowerCase() === 'high';
+    }
+
+    return String(item.status || 'new').toLowerCase() ===
+      currentBetaFeedbackFilter;
+  });
+
+  const betaFeedbackFilterHtml = `
+  <div class="beta-feedback-filter-bar">
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'all' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('all')"
+    >
+      All (${allFeedbackItems.length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'new' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('new')"
+    >
+      New (${allFeedbackItems.filter(item => String(item.status || 'new').toLowerCase() === 'new').length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'reviewed' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('reviewed')"
+    >
+      Reviewed (${allFeedbackItems.filter(item => String(item.status || '').toLowerCase() === 'reviewed').length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'closed' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('closed')"
+    >
+      Closed (${allFeedbackItems.filter(item => String(item.status || '').toLowerCase() === 'closed').length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'high' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('high')"
+    >
+      High (${allFeedbackItems.filter(item => String(item.priority || '').toLowerCase() === 'high').length})
+    </button>
+  </div>
+`;
 
   if (feedbackItems.length === 0) {
-    list.innerHTML =
-      '<div class="empty-state">No beta feedback submitted yet.</div>';
-    return;
-  }
+  list.innerHTML = `
+    ${betaFeedbackFilterHtml}
+    <div class="empty-state">
+      No beta feedback found for this filter.
+    </div>
+  `;
+  return;
+}
 
   list.innerHTML = `
-    <div class="beta-feedback-list">
+  ${betaFeedbackFilterHtml}
+
+  <div class="beta-feedback-list">
       ${feedbackItems.map(item => `
         <div class="beta-feedback-item beta-feedback-${escapeHtml(String(item.priority || 'Medium').toLowerCase())}">
           <div class="beta-feedback-top beta-feedback-top-polished">
@@ -5950,6 +6020,7 @@ window.focusFirstCurrentExpiry = focusFirstCurrentExpiry;
 window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
 window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
 window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
+window.setBetaFeedbackFilter = setBetaFeedbackFilter;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
