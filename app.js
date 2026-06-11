@@ -4641,28 +4641,6 @@ function showHome() {
 
   updateFloatingBackButton();
 }
-function showHome() {
-  const homeSection = document.gefunction refreshRcHomePanels() {
-  updateReleaseCandidatePanel();
-  updateRcBackupReminderPanel();
-  updateRcFinalPreflightPanel();
-  updateRcTesterInstructionPanel();
-}tElementById('homeSection');
-  const servicesSection = document.getElementById('servicesSection');
-
-  setCloudMenuVisible(true);
-updateHomeAccessCards();
-updateBetaNotesPanel();
-updateBetaQuickTestPanel();
-refreshRcHomePanels();
-
-  if (homeSection) homeSection.style.display = 'block';
-  if (servicesSection) servicesSection.style.display = 'none';
-
-  getEl('projectListSection').style.display = 'none';
-  getEl('projectFormSection').style.display = 'none';
-  updateFloatingBackButton();
-}
 
 function showServices() {
   setCloudMenuVisible(false);
