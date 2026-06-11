@@ -5718,3 +5718,56 @@ button.readiness-chip:focus {
 .rc-final-preflight-chip.chip-warning {
   border-left: 4px solid #f59e0b;
 }
+
+/* Beta 11.30 — Home panel button width polish */
+
+.beta-notes-header button,
+.beta-quick-test-header button,
+.release-candidate-header button,
+.release-candidate-recheck-btn,
+.rc-backup-reminder-header button,
+.rc-final-preflight-header button {
+  width: auto;
+  min-width: 96px;
+  max-width: none;
+  flex: 0 0 auto;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.beta-notes-header,
+.beta-quick-test-header,
+.release-candidate-header,
+.rc-backup-reminder-header,
+.rc-final-preflight-header {
+  align-items: center;
+}
+
+.beta-notes-header > div,
+.beta-quick-test-header > div,
+.release-candidate-header > div,
+.rc-backup-reminder-header > div,
+.rc-final-preflight-header > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 520px) {
+  .beta-notes-header,
+  .beta-quick-test-header,
+  .release-candidate-header,
+  .rc-backup-reminder-header,
+  .rc-final-preflight-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .beta-notes-header button,
+  .beta-quick-test-header button,
+  .release-candidate-header button,
+  .rc-backup-reminder-header button,
+  .rc-final-preflight-header button {
+    width: 100%;
+    min-width: 0;
+  }
+}
