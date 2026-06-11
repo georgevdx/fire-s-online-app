@@ -5880,3 +5880,73 @@ button.readiness-chip:focus {
     min-width: 0;
   }
 }
+
+/* Beta 11.33 — Follow-up findings-only checklist */
+
+.follow-up-finding-mode-banner {
+  margin: 0 0 12px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+}
+
+.follow-up-finding-mode-banner strong {
+  display: block;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.follow-up-finding-mode-banner span {
+  display: block;
+  margin-top: 3px;
+  color: #7c2d12;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.follow-up-hidden-question {
+  display: none !important;
+}
+
+.follow-up-visible-finding {
+  border-left: 4px solid #b71c1c;
+  background: #fff7ed;
+}
+
+/* Beta 11.33 — Follow-up findings-only checklist */
+
+.follow-up-finding-mode-banner {
+  margin: 0 0 12px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+}
+
+.follow-up-finding-mode-banner strong {
+  display: block;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.follow-up-finding-mode-banner span {
+  display: block;
+  margin-top: 3px;
+  color: #7c2d12;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.follow-up-hidden-question {
+  display: none !important;
+}
+
+.follow-up-visible-finding {
+  border-left: 4px solid #b71c1c;
+  background: #fff7ed;
+}
