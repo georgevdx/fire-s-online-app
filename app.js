@@ -32,7 +32,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-rc-final-preflight2';
+const APP_VERSION = 'v90-beta-rc-final-preflight3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1501,6 +1501,7 @@ async function logoutUser() {
     updateHomeAccessCards();
     updateAccessUI();
     updateSyncUI();
+    refreshRcHomePanels();
 
     const projectsList = document.getElementById('projectsList');
     const dashboardMetrics = document.getElementById('dashboardMetrics');
@@ -2024,6 +2025,7 @@ async function updateSyncUI() {
       ? 'Connected. Auto sync enabled.'
       : 'Not connected. Login required.';
   }
+  refreshRcHomePanels();
 }
 
 async function restoreCloudSession() {
@@ -2744,6 +2746,7 @@ async function loadUserAccessProfile() {
       updateAccessUI();
       updateSyncUI();
       updateHomeAccessCards();
+      refreshRcHomePanels();
       return;
     }
 
@@ -2781,6 +2784,7 @@ async function loadUserAccessProfile() {
       updateSyncUI();
       updateHomeAccessCards();
       renderProjectsList();
+      refreshRcHomePanels();
       return;
     }
 
@@ -2832,6 +2836,7 @@ async function loadUserAccessProfile() {
     updateAccessUI();
     updateSyncUI();
     updateHomeAccessCards();
+    refreshRcHomePanels();
 
   } catch (error) {
     console.error('Access profile load failed:', error);
@@ -2842,6 +2847,7 @@ async function loadUserAccessProfile() {
     updateAccessUI();
     updateSyncUI();
     updateHomeAccessCards();
+    refreshRcHomePanels();
   }
 }
 
@@ -4521,6 +4527,12 @@ function toggleReleaseCandidatePanel() {
   updateReleaseCandidatePanel();
 }
 
+function refreshRcHomePanels() {
+  updateReleaseCandidatePanel();
+  updateRcBackupReminderPanel();
+  updateRcFinalPreflightPanel();
+}
+
 function updateHomeAccessCards() {
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
   const homeLogoutBtn = document.getElementById('homeLogoutBtn');
@@ -4548,9 +4560,7 @@ function showHome() {
 updateHomeAccessCards();
 updateBetaNotesPanel();
 updateBetaQuickTestPanel();
-updateReleaseCandidatePanel();
-updateRcBackupReminderPanel();
-updateRcFinalPreflightPanel();
+refreshRcHomePanels();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
