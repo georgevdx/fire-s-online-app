@@ -4,6 +4,7 @@ let currentProjectPage = 1;
 window.betaNotesPanelOpen = false;
 window.betaQuickTestPanelOpen = false;
 window.releaseCandidatePanelOpen = false;
+window.rcTesterInstructionPanelOpen = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
@@ -32,7 +33,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-rc-labels1';
+const APP_VERSION = 'v90-beta-rc-tester-note1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4527,10 +4528,79 @@ function toggleReleaseCandidatePanel() {
   updateReleaseCandidatePanel();
 }
 
+function updateRcTesterInstructionPanel() {
+  const panel =
+    document.getElementById('rcTesterInstructionPanel');
+
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="rc-tester-instruction-header">
+      <div>
+        <strong>RC Tester Instructions</strong>
+        <span>Quick guide before testing this build.</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleRcTesterInstructionPanel()"
+      >
+        ${window.rcTesterInstructionPanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.rcTesterInstructionPanelOpen
+        ? `
+          <div class="rc-tester-instruction-body">
+            <div class="rc-tester-step">
+              <strong>1</strong>
+              <span>Login and confirm the top button says Cloud connected.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>2</strong>
+              <span>Tap Sync / Refresh before opening inspections.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>3</strong>
+              <span>Export a backup before testing or changing data.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>4</strong>
+              <span>Open an existing inspection and confirm data, photos, report and archive still work.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>5</strong>
+              <span>Create one safe test inspection if needed, then check autosave and sync.</span>
+            </div>
+
+            <div class="rc-tester-step rc-tester-step-final">
+              <strong>6</strong>
+              <span>Report issues under Additional Services → Beta Feedback.</span>
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleRcTesterInstructionPanel() {
+  window.rcTesterInstructionPanelOpen =
+    !window.rcTesterInstructionPanelOpen;
+
+  updateRcTesterInstructionPanel();
+}
+
 function refreshRcHomePanels() {
   updateReleaseCandidatePanel();
   updateRcBackupReminderPanel();
   updateRcFinalPreflightPanel();
+  updateRcTesterInstructionPanel();
 }
 
 function updateHomeAccessCards() {
@@ -4552,8 +4622,32 @@ function updateHomeAccessCards() {
     cloudMenuBtn.style.display = 'inline-block';
   }
 }
+
 function showHome() {
   const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  setCloudMenuVisible(true);
+  updateHomeAccessCards();
+  updateBetaNotesPanel();
+  updateBetaQuickTestPanel();
+  refreshRcHomePanels();
+
+  if (homeSection) homeSection.style.display = 'block';
+  if (servicesSection) servicesSection.style.display = 'none';
+
+  getEl('projectListSection').style.display = 'none';
+  getEl('projectFormSection').style.display = 'none';
+
+  updateFloatingBackButton();
+}
+function showHome() {
+  const homeSection = document.gefunction refreshRcHomePanels() {
+  updateReleaseCandidatePanel();
+  updateRcBackupReminderPanel();
+  updateRcFinalPreflightPanel();
+  updateRcTesterInstructionPanel();
+}tElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
   setCloudMenuVisible(true);
@@ -6579,6 +6673,9 @@ window.toggleReleaseCandidatePanel = toggleReleaseCandidatePanel;
 window.updateReleaseCandidatePanel = updateReleaseCandidatePanel;
 window.updateRcBackupReminderPanel = updateRcBackupReminderPanel;
 window.updateRcFinalPreflightPanel = updateRcFinalPreflightPanel;
+window.toggleRcTesterInstructionPanel = toggleRcTesterInstructionPanel;
+window.updateRcTesterInstructionPanel = updateRcTesterInstructionPanel;
+
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;

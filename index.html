@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=90-beta-rc-labels1">
+  <link rel="stylesheet" href="styles.css?v=90-beta-rc-tester-note1">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -129,7 +129,8 @@
   <div id="releaseCandidatePanel" class="release-candidate-panel"></div>
   <div id="rcBackupReminderPanel" class="rc-backup-reminder-panel"></div>
   <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
-<div class="startup-route-grid">
+  <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
+  <div class="startup-route-grid">
     <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
       <span class="route-title">Login / Register</span>
       <span class="route-copy">Access cloud sync, account tools and backups.</span>
@@ -754,7 +755,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=90-beta-rc-labels1"></script>
+  <script src="app.js?v=90-beta-rc-tester-note1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
