@@ -5461,3 +5461,96 @@ button.readiness-chip:focus {
 .beta-quick-test-final {
   border-left: 4px solid #b71c1c;
 }
+
+/* Beta 11.26 — release candidate readiness checklist */
+
+.release-candidate-panel {
+  margin: 12px 0 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.release-candidate-pass {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.release-candidate-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.release-candidate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.release-candidate-header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.release-candidate-header span {
+  display: block;
+  margin-top: 2px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.release-candidate-header button,
+.release-candidate-recheck-btn {
+  border: 0;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.release-candidate-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.release-candidate-check {
+  padding: 9px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.release-candidate-check strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+
+.release-candidate-check span {
+  display: block;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.release-candidate-check.check-pass {
+  border-left: 4px solid #16a34a;
+}
+
+.release-candidate-check.check-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.release-candidate-recheck-btn {
+  justify-self: start;
+  margin-top: 4px;
+}

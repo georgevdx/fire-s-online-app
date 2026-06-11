@@ -32,7 +32,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-quick-test1';
+const APP_VERSION = 'v90-beta-rc-checklist1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4117,6 +4117,144 @@ function toggleBetaQuickTestPanel() {
   updateBetaQuickTestPanel();
 }
 
+function getReleaseCandidateChecks() {
+  const projects =
+    currentUserProfile
+      ? getVisibleProjectsForCurrentUser(getProjects())
+      : [];
+
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const lastBackupRaw =
+    localStorage.getItem('fireyesaLastBackup');
+
+  let lastBackupText = 'No backup exported yet';
+  let hasBackup = false;
+
+  if (lastBackupRaw) {
+    try {
+      const lastBackup =
+        JSON.parse(lastBackupRaw);
+
+      hasBackup = true;
+
+      lastBackupText =
+        lastBackup.exportedAt
+          ? new Date(lastBackup.exportedAt).toLocaleString()
+          : 'Backup found';
+    } catch (error) {
+      lastBackupText = 'Backup record found, but could not read date';
+      hasBackup = true;
+    }
+  }
+
+  return [
+    {
+      label: 'Cloud access confirmed',
+      pass: !!currentUserProfile,
+      detail: currentUserProfile
+        ? `Logged in as ${currentUserProfile.email || currentUserProfile.fullName || 'user'}`
+        : 'Login before release testing.'
+    },
+    {
+      label: 'Backup exported',
+      pass: hasBackup,
+      detail: lastBackupText
+    },
+    {
+      label: 'No pending uploads',
+      pass: pendingUploads === 0,
+      detail: pendingUploads === 0
+        ? 'All visible inspections appear synced.'
+        : `${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'} still waiting to upload.`
+    },
+    {
+      label: 'Beta notes available',
+      pass: !!document.getElementById('betaNotesPanel'),
+      detail: 'Known issues / beta notes panel is present.'
+    },
+    {
+      label: 'Quick test checklist available',
+      pass: !!document.getElementById('betaQuickTestPanel'),
+      detail: 'Beta user quick test checklist is present.'
+    }
+  ];
+}
+
+function updateReleaseCandidatePanel() {
+  const panel =
+    document.getElementById('releaseCandidatePanel');
+
+  if (!panel) return;
+
+  const checks =
+    getReleaseCandidateChecks();
+
+  const passedCount =
+    checks.filter(check => check.pass).length;
+
+  const allPassed =
+    passedCount === checks.length;
+
+  panel.className =
+    `release-candidate-panel ${
+      allPassed
+        ? 'release-candidate-pass'
+        : 'release-candidate-warning'
+    }`;
+
+  panel.innerHTML = `
+    <div class="release-candidate-header">
+      <div>
+        <strong>Release Candidate Readiness</strong>
+        <span>
+          ${passedCount}/${checks.length} checks passed
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleReleaseCandidatePanel()"
+      >
+        ${window.releaseCandidatePanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.releaseCandidatePanelOpen
+        ? `
+          <div class="release-candidate-body">
+            ${checks.map(check => `
+              <div class="release-candidate-check ${check.pass ? 'check-pass' : 'check-warning'}">
+                <strong>
+                  ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
+                </strong>
+                <span>${escapeHtml(check.detail)}</span>
+              </div>
+            `).join('')}
+
+            <button
+              type="button"
+              class="release-candidate-recheck-btn"
+              onclick="updateReleaseCandidatePanel()"
+            >
+              Recheck
+            </button>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleReleaseCandidatePanel() {
+  window.releaseCandidatePanelOpen =
+    !window.releaseCandidatePanelOpen;
+
+  updateReleaseCandidatePanel();
+}
+
 function updateHomeAccessCards() {
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
   const homeLogoutBtn = document.getElementById('homeLogoutBtn');
@@ -4144,6 +4282,7 @@ function showHome() {
 updateHomeAccessCards();
 updateBetaNotesPanel();
 updateBetaQuickTestPanel();
+updateReleaseCandidatePanel();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
@@ -6158,6 +6297,8 @@ window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 window.setBetaFeedbackFilter = setBetaFeedbackFilter;
 window.toggleBetaNotesPanel = toggleBetaNotesPanel;
 window.toggleBetaQuickTestPanel = toggleBetaQuickTestPanel;
+window.toggleReleaseCandidatePanel = toggleReleaseCandidatePanel;
+window.updateReleaseCandidatePanel = updateReleaseCandidatePanel;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
