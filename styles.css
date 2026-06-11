@@ -5771,3 +5771,13 @@ button.readiness-chip:focus {
     min-width: 0;
   }
 }
+
+/* Beta 11.31 — RC final label polish */
+
+.rc-badge {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #334155;
+  letter-spacing: 0.06em;
+}
+

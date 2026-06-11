@@ -32,7 +32,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-home-buttons1';
+const APP_VERSION = 'v90-beta-rc-labels1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4024,7 +4024,7 @@ function updateBetaNotesPanel() {
   panel.innerHTML = `
     <div class="beta-notes-header">
       <div>
-        <strong>Controlled Beta Build</strong>
+        <strong>Release Candidate Beta Build</strong>
         <span>${escapeHtml(APP_VERSION)}</span>
       </div>
 
@@ -4082,8 +4082,8 @@ function updateBetaQuickTestPanel() {
   panel.innerHTML = `
     <div class="beta-quick-test-header">
       <div>
-        <strong>Beta Quick Test Checklist</strong>
-        <span>Use this when testing a new beta build.</span>
+        <strong>RC Quick Test Checklist</strong>
+        <span>Use this when testing the release candidate build.</span>
       </div>
 
       <button
