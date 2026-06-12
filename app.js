@@ -4931,16 +4931,37 @@ function previousFollowUpFinding() {
 }
 
 function getFollowUpFindingIndexes(project) {
-  return (project?.followUpFindingIndexes || [])
-    .map(value => Number(value))
+  const savedIndexes =
+    (project?.followUpFindingIndexes || [])
+      .map(value => Number(value))
+      .filter(value => Number.isFinite(value));
+
+  if (savedIndexes.length > 0) {
+    return savedIndexes;
+  }
+
+  // Fallback:
+  // If this is already an in-progress follow-up cycle, the original NO
+  // findings are the checklist answers that were left blank for review.
+  return (project?.answers || [])
+    .filter(answer =>
+      String(answer.answer || '').trim() === ''
+    )
+    .map(answer => Number(answer.itemIndex))
     .filter(value => Number.isFinite(value));
 }
 
 function applyFollowUpFindingMode(project) {
-  if (!project?.followUpFindingMode) return;
-
   const findingIndexes =
     getFollowUpFindingIndexes(project);
+
+  const isFollowUpInspection =
+    project?.followUpFindingMode === true ||
+    project?.scheduledReason === 'follow_up' ||
+    project?.scheduleType === 'Follow-up' ||
+    project?.followUpSourceInspectionNumber;
+
+  if (!isFollowUpInspection) return;
 
   if (findingIndexes.length === 0) return;
 
