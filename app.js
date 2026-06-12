@@ -4835,72 +4835,91 @@ function showFollowUpFindingAt(position) {
   if (!followUpFindingModeActive) return;
   if (followUpFindingNavIndexes.length === 0) return;
 
-  followUpFindingNavPosition =
-    Math.max(
-      0,
-      Math.min(position, followUpFindingNavIndexes.length - 1)
-    );
-
-  const activeItemIndex =
-    followUpFindingNavIndexes[followUpFindingNavPosition];
-
-  let activeRow = null;
-  let activeSectionIndex = null;
-
-    const checklistContainer =
+  const checklistContainer =
     document.getElementById('checklist');
 
   if (checklistContainer) {
     checklistContainer.classList.add('follow-up-mode-active');
   }
 
-  document
-    .querySelectorAll('.checklist-row')
-    .forEach(row => {
-      const itemIndex = getChecklistRowItemIndex(row);
-      const answerField = row.querySelector('.answer-select');
+  const allRows =
+    Array.from(document.querySelectorAll('.checklist-row'));
 
-      const isFollowUpFinding =
-        followUpFindingNavIndexes.includes(itemIndex);
+  if (allRows.length === 0) return;
 
-      const isActiveFinding =
-        itemIndex === activeItemIndex;
+  const findingRows =
+    allRows.filter(row => {
+      const rowItemIndex =
+        getChecklistRowItemIndex(row);
 
-      // Anything that was not a previous NO finding must stay N/A.
-      if (answerField && !isFollowUpFinding) {
-        answerField.value = 'N/A';
-      }
-
-      // Hard hide everything except the current active finding.
-      row.style.display = isActiveFinding ? '' : 'none';
-
-      row.classList.toggle(
-        'follow-up-hidden-question',
-        !isActiveFinding
+      return (
+        followUpFindingNavIndexes.includes(rowItemIndex) ||
+        followUpFindingNavIndexes.includes(rowItemIndex - 1) ||
+        followUpFindingNavIndexes.includes(rowItemIndex + 1)
       );
-
-      row.classList.toggle(
-        'follow-up-visible-finding',
-        isActiveFinding
-      );
-
-      row.classList.toggle(
-        'active-checklist-question',
-        isActiveFinding
-      );
-
-      row.classList.remove('question-hidden');
-
-      if (isActiveFinding) {
-        activeRow = row;
-        activeSectionIndex = getChecklistRowSectionIndex(row);
-      }
     });
+
+  const navigableRows =
+    findingRows.length > 0
+      ? findingRows
+      : allRows;
+
+  followUpFindingNavPosition =
+    Math.max(
+      0,
+      Math.min(position, navigableRows.length - 1)
+    );
+
+  const activeRow =
+    navigableRows[followUpFindingNavPosition];
+
+  let activeSectionIndex = null;
+
+  allRows.forEach(row => {
+    const answerField =
+      row.querySelector('.answer-select');
+
+    const isFollowUpFinding =
+      navigableRows.includes(row);
+
+    const isActiveFinding =
+      row === activeRow;
+
+    if (answerField && !isFollowUpFinding) {
+      answerField.value = 'N/A';
+    }
+
+    row.style.display =
+      isActiveFinding ? '' : 'none';
+
+    row.classList.toggle(
+      'follow-up-hidden-question',
+      !isActiveFinding
+    );
+
+    row.classList.toggle(
+      'follow-up-visible-finding',
+      isActiveFinding
+    );
+
+    row.classList.toggle(
+      'active-checklist-question',
+      isActiveFinding
+    );
+
+    row.classList.remove('question-hidden');
+
+    if (isActiveFinding) {
+      activeSectionIndex =
+        getChecklistRowSectionIndex(row);
+    }
+  });
 
   applyFollowUpSectionVisibility(activeSectionIndex);
 
   if (activeRow) {
-    const section = activeRow.closest('.section-group');
+    const section =
+      activeRow.closest('.section-group');
 
     if (section) {
       section.classList.remove('hidden');
