@@ -3895,16 +3895,27 @@ function getInspectionSectionIndex(sectionId) {
 }
 
 function getAvailableInspectionSections() {
+  const alwaysAvailableSectionIds = [
+    'inspectionQuickActions',
+    'projectDetailsCard',
+    'checklistCard',
+    'photoEvidenceCard',
+    'inspectorCommentsCard',
+    'nextInspectionCard'
+  ];
+
   return INSPECTION_SECTION_FLOW.filter(sectionMeta => {
     const section = document.getElementById(sectionMeta.id);
 
     if (!section) return false;
 
-    // Skip sections that the app itself has hidden.
-    // This does not count our temporary inspection-section-hidden class.
-    if (section.style.display === 'none') return false;
+    // These sections must always stay in the guided workflow,
+    // even if their content looks empty at first.
+    if (alwaysAvailableSectionIds.includes(sectionMeta.id)) {
+      return true;
+    }
 
-    // Skip Occupancy Requirements when there are no actual requirements.
+    // Only skip Occupancy Requirements if it has no real content.
     if (sectionMeta.id === 'requirementsSection') {
       const requirementsContent = document.getElementById('requirements');
 
@@ -3914,18 +3925,9 @@ function getAvailableInspectionSections() {
       ) {
         return false;
       }
+
+      return true;
     }
-
-    // Skip sections that are basically empty.
-    const clonedSection = section.cloneNode(true);
-
-    clonedSection
-      .querySelectorAll('.inspection-section-focus-toolbar')
-      .forEach(toolbar => toolbar.remove());
-
-    const sectionText = clonedSection.textContent.trim();
-
-    if (!sectionText) return false;
 
     return true;
   });
