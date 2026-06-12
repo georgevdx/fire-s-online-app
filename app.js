@@ -3396,7 +3396,7 @@ if (existingArchivePanel) {
   }
 
   updateDisplay();
-
+resetFollowUpFindingModeUI();
   showProjectForm();
 }
 
@@ -4977,6 +4977,50 @@ function getFollowUpFindingIndexes(project) {
     .filter(value => Number.isFinite(value));
 }
 
+function resetFollowUpFindingModeUI() {
+  followUpFindingModeActive = false;
+  followUpFindingNavIndexes = [];
+  followUpFindingNavPosition = 0;
+
+  const checklistContainer =
+    document.getElementById('checklist');
+
+  if (checklistContainer) {
+    checklistContainer.classList.remove('follow-up-mode-active');
+  }
+
+  const banner =
+    document.getElementById('followUpFindingModeBanner');
+
+  if (banner) {
+    banner.remove();
+  }
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      row.style.display = '';
+
+      row.classList.remove('follow-up-hidden-question');
+      row.classList.remove('follow-up-visible-finding');
+      row.classList.remove('active-checklist-question');
+      row.classList.remove('question-hidden');
+    });
+
+  document
+    .querySelectorAll('.checklist-section-tab')
+    .forEach(tab => {
+      tab.style.display = '';
+      tab.classList.remove('active-section-tab');
+    });
+
+  document
+    .querySelectorAll('.checklist-question-nav')
+    .forEach(nav => {
+      nav.style.display = '';
+    });
+}
+
 function applyFollowUpFindingMode(project) {
   const findingIndexes =
     getFollowUpFindingIndexes(project);
@@ -4987,9 +5031,10 @@ function applyFollowUpFindingMode(project) {
     project?.scheduleType === 'Follow-up' ||
     project?.followUpSourceInspectionNumber;
 
-  if (!isFollowUpInspection) return;
-
-  if (findingIndexes.length === 0) return;
+  if (!isFollowUpInspection || findingIndexes.length === 0) {
+    resetFollowUpFindingModeUI();
+    return;
+  }
 
   followUpFindingModeActive = true;
 followUpFindingNavIndexes = findingIndexes;
