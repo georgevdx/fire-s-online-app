@@ -8588,7 +8588,13 @@ followUpSourceInspectionNumber:
     });
   }
 
-showProjectForm();
+if (ENABLE_GUIDED_INSPECTION_WORKFLOW) {
+  currentProject = project;
+  showProjectForm();
+  focusInspectionSection('inspectionQuickActions');
+} else {
+  showProjectForm();
+}
 
 setTimeout(() => {
   applyFollowUpFindingMode(project);
