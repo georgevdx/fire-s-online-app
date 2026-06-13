@@ -438,8 +438,37 @@ function getProjectInspectionDate(project) {
 function preparePdfCloneForExport(pdfClone) {
   if (!pdfClone) return;
 
-  // 1. Neutralise old/manual page breaks in the cloned PDF only.
-  // These are likely causing the report to start low and creating big blank gaps.
+  // Force the cloned PDF content to a stable A4-friendly layout.
+  // This prevents left clipping caused by inherited screen layout.
+  pdfClone.style.display = 'block';
+  pdfClone.style.width = '760px';
+  pdfClone.style.maxWidth = '760px';
+  pdfClone.style.minWidth = '760px';
+  pdfClone.style.margin = '0';
+  pdfClone.style.padding = '18px 22px';
+  pdfClone.style.boxSizing = 'border-box';
+  pdfClone.style.background = '#ffffff';
+  pdfClone.style.color = '#222222';
+  pdfClone.style.overflow = 'visible';
+  pdfClone.style.transform = 'none';
+  pdfClone.style.position = 'relative';
+  pdfClone.style.left = '0';
+
+  pdfClone
+    .querySelectorAll('*')
+    .forEach(element => {
+      element.style.boxSizing = 'border-box';
+      element.style.maxWidth = '100%';
+    });
+
+  // Remove export/action buttons from the PDF clone.
+  pdfClone
+    .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
+    .forEach(element => {
+      element.remove();
+    });
+
+  // Remove old artificial blank-break elements, but do NOT remove report-photo-page.
   pdfClone
     .querySelectorAll('.report-page-break, .page-break, .pdf-page-break')
     .forEach(element => {
@@ -455,57 +484,75 @@ function preparePdfCloneForExport(pdfClone) {
       element.style.pageBreakAfter = 'auto';
     });
 
-  // 2. Find the Annexure / Photo Evidence heading.
-  const allElements =
-    Array.from(pdfClone.querySelectorAll('*'));
-
-  const annexureHeading =
-    allElements.find(element => {
-      const text =
-        String(element.textContent || '')
-          .trim()
-          .toLowerCase();
-
-      return (
-        text.includes('annexure') ||
-        text.includes('photo evidence') ||
-        text.includes('photographic evidence') ||
-        text.includes('figure 1')
-      );
+  // Let normal report content flow. Do not force every report block to stay together.
+  pdfClone
+    .querySelectorAll('.report-block')
+    .forEach(block => {
+      block.style.breakInside = 'auto';
+      block.style.pageBreakInside = 'auto';
     });
 
-  // 3. Insert a clean forced page break immediately before the annexure block.
-  if (annexureHeading) {
-    const annexureBlock =
-      annexureHeading.closest('.report-photo-section') ||
-      annexureHeading.closest('.photo-evidence-section') ||
-      annexureHeading.closest('.report-block') ||
-      annexureHeading.parentElement;
+  // Find the photo annexure area and force it to start on a new page.
+  const existingPhotoPage =
+    pdfClone.querySelector('.report-photo-page');
 
-    if (annexureBlock && annexureBlock.parentElement) {
-      const pageBreak =
-        document.createElement('div');
+  if (existingPhotoPage) {
+    existingPhotoPage.classList.add('pdf-annexure-start');
+  } else {
+    const allElements =
+      Array.from(pdfClone.querySelectorAll('*'));
 
-      pageBreak.className =
-        'pdf-page-break-before';
+    const annexureHeading =
+      allElements.find(element => {
+        const text =
+          String(element.textContent || '')
+            .trim()
+            .toLowerCase();
 
-      annexureBlock.parentElement.insertBefore(
-        pageBreak,
-        annexureBlock
-      );
+        return (
+          text.includes('annexure') ||
+          text.includes('photo evidence') ||
+          text.includes('photographic evidence') ||
+          text.includes('figure 1')
+        );
+      });
 
-      annexureBlock.classList.add('pdf-annexure-start');
+    if (annexureHeading) {
+      const annexureBlock =
+        annexureHeading.closest('.report-photo-section') ||
+        annexureHeading.closest('.photo-evidence-section') ||
+        annexureHeading.closest('.report-block') ||
+        annexureHeading.parentElement;
+
+      if (annexureBlock) {
+        annexureBlock.classList.add('pdf-annexure-start');
+      }
     }
   }
 
-  // 4. Mark photo cards so they do not split across pages.
+  // Photo pages must start on new pages, but must not force blank pages after.
+  pdfClone
+    .querySelectorAll('.report-photo-page')
+    .forEach(page => {
+      page.style.breakBefore = 'page';
+      page.style.pageBreakBefore = 'always';
+      page.style.breakAfter = 'auto';
+      page.style.pageBreakAfter = 'auto';
+      page.style.minHeight = 'auto';
+      page.style.margin = '0';
+      page.style.padding = '0';
+    });
+
+  // Photo cards should stay whole.
   pdfClone
     .querySelectorAll('.report-photo-card, .report-photo-item')
     .forEach(card => {
       card.classList.add('pdf-photo-card');
+      card.style.breakInside = 'avoid';
+      card.style.pageBreakInside = 'avoid';
     });
 
-  // 5. Remove empty trailing elements that can cause clean blank pages at the end.
+  // Remove empty trailing elements that can create blank pages.
   let lastChild =
     pdfClone.lastElementChild;
 
@@ -649,11 +696,15 @@ pdfClone
 
     pagebreak: {
   mode: ['css', 'legacy'],
-  before: ['.pdf-page-break-before'],
+  before: [
+    '.pdf-annexure-start',
+    '.report-photo-page'
+  ],
   avoid: [
     '.pdf-photo-card',
-    '.executive-summary-card',
-    '.summary-stat-card'
+    '.report-photo-card',
+    '.summary-stat-card',
+    '.executive-summary-card'
   ]
 }
   };
