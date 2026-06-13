@@ -676,12 +676,8 @@ function exportReport() {
     pagebreak: {
   mode: ['css', 'legacy'],
   before: [
-    '.report-page-break'
-  ],
-  avoid: [
-    '.report-photo-card',
-    '.report-photo-item',
-    '.pdf-photo-card'
+    '.report-page-break',
+    '.report-photo-page'
   ]
 }
   };
@@ -11017,16 +11013,13 @@ const executiveSummaryHtml = `
   }
 
   if (currentPhotos.length > 0) {
-  photosHtml = '';
+  photosHtml = currentPhotos.map((photo, index) => {
+    const photoNumber = index + 1;
 
-  for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
-    const pagePhotos = currentPhotos.slice(pageStart, pageStart + 4);
-    const isFirstPhotoPage = pageStart === 0;
-
-    photosHtml += `
-      <div class="report-photo-page">
+    return `
+      <div class="report-photo-page ${index === 0 ? 'report-photo-page-first' : ''}">
         ${
-          isFirstPhotoPage
+          index === 0
             ? `
               <h2 class="appendix-title">
                 APPENDIX A - PHOTO EVIDENCE
@@ -11035,67 +11028,41 @@ const executiveSummaryHtml = `
             : ''
         }
 
-        <div class="report-photo-grid">
-    `;
+        <div class="report-photo-card single-photo-card">
 
-    for (let rowStart = 0; rowStart < 4; rowStart += 2) {
-      photosHtml += `<div class="report-photo-row">`;
+          <div class="report-photo-header">
+            Photo ${photoNumber}
+          </div>
 
-      for (let cellIndex = 0; cellIndex < 2; cellIndex++) {
-        const photo = pagePhotos[rowStart + cellIndex];
+          <div class="report-photo-time">
+            Captured:
+            ${
+              photo.timestamp
+                ? new Date(photo.timestamp).toLocaleString()
+                : 'Not recorded'
+            }
+          </div>
 
-        photosHtml += `<div class="report-photo-cell">`;
+          <div class="report-photo-image-box">
+            <img
+              src="${photo.src}"
+              class="report-photo-img"
+              alt="Inspection photo ${photoNumber}"
+            >
+          </div>
 
-        if (photo) {
-          const photoNumber = pageStart + rowStart + cellIndex + 1;
+          <div class="report-photo-note">
+            <strong>Photo Note:</strong>
+            ${escapeHtml(photo.note || 'No note added.')}
+          </div>
 
-          photosHtml += `
-            <div class="report-photo-card">
-
-              <div class="report-photo-header">
-                Photo ${photoNumber}
-              </div>
-
-              <div class="report-photo-time">
-                Captured:
-                ${
-                  photo.timestamp
-                    ? new Date(photo.timestamp).toLocaleString()
-                    : 'Not recorded'
-                }
-              </div>
-
-              <div class="report-photo-image-box">
-                <img
-                  src="${photo.src}"
-                  class="report-photo-img"
-                  alt="Inspection photo ${photoNumber}"
-                >
-              </div>
-
-              <div class="report-photo-note">
-                <strong>Photo Note:</strong>
-                ${escapeHtml(photo.note || 'No note added.')}
-              </div>
-
-            </div>
-          `;
-        }
-
-        photosHtml += `</div>`;
-      }
-
-      photosHtml += `</div>`;
-    }
-
-    photosHtml += `
         </div>
       </div>
     `;
-  }
+  }).join('');
 } else {
   photosHtml = `
-    <div class="report-photo-page">
+    <div class="report-photo-page report-photo-page-first">
       <h2 class="appendix-title">
         APPENDIX A - PHOTO EVIDENCE
       </h2>
