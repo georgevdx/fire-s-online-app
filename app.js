@@ -450,41 +450,15 @@ function exportReport() {
   const reportSection =
     getEl('reportSection');
 
-  const element =
+  const originalReport =
     document.getElementById('reportContent');
 
-  if (!element) {
+  if (!originalReport) {
     alert('Report content was not found.');
     return;
   }
 
   reportSection.style.display = 'block';
-
-  const previousSectionDisplay =
-    reportSection.style.display;
-
-  const previousElementWidth =
-    element.style.width;
-
-  const previousElementMaxWidth =
-    element.style.maxWidth;
-
-  const previousElementMargin =
-    element.style.margin;
-
-  const previousElementTransform =
-    element.style.transform;
-
-  const previousElementOverflow =
-    element.style.overflow;
-
-  element.classList.add('pdf-export-mode');
-
-  element.style.width = '794px';
-  element.style.maxWidth = '794px';
-  element.style.margin = '0 auto';
-  element.style.transform = 'none';
-  element.style.overflow = 'visible';
 
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
@@ -505,6 +479,29 @@ function exportReport() {
 
   const safeProjectName =
     sanitizeFileName(projectName);
+
+  const pdfSandbox =
+    document.createElement('div');
+
+  pdfSandbox.className =
+    'pdf-export-sandbox';
+
+  const pdfClone =
+    originalReport.cloneNode(true);
+
+  pdfClone.id =
+    'reportContentPdfClone';
+
+  pdfClone.classList.add('pdf-export-mode');
+
+  pdfClone
+    .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
+    .forEach(element => {
+      element.remove();
+    });
+
+  pdfSandbox.appendChild(pdfClone);
+  document.body.appendChild(pdfSandbox);
 
   const opt = {
     margin: [10, 10, 10, 10],
@@ -537,7 +534,8 @@ function exportReport() {
         '.report-block',
         '.report-answer-row',
         '.report-photo-item',
-        '.executive-summary-card'
+        '.executive-summary-card',
+        '.summary-stat-card'
       ]
     }
   };
@@ -545,28 +543,10 @@ function exportReport() {
   setTimeout(() => {
     html2pdf()
       .set(opt)
-      .from(element)
+      .from(pdfClone)
       .save()
       .finally(() => {
-        element.classList.remove('pdf-export-mode');
-
-        element.style.width =
-          previousElementWidth;
-
-        element.style.maxWidth =
-          previousElementMaxWidth;
-
-        element.style.margin =
-          previousElementMargin;
-
-        element.style.transform =
-          previousElementTransform;
-
-        element.style.overflow =
-          previousElementOverflow;
-
-        reportSection.style.display =
-          previousSectionDisplay;
+        pdfSandbox.remove();
       });
   }, 300);
 }
