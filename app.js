@@ -1,5 +1,34 @@
 ﻿let currentFilter = 'all';
+let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
+// =====================================================
+// GUIDED INSPECTION WORKFLOW - SAFE FEATURE FLAG
+// =====================================================
+
+// Rollback switch:
+// true  = use new guided workflow wrapper
+// false = use old existing app flow
+const ENABLE_GUIDED_INSPECTION_WORKFLOW = true;
+
+// Make sure currentProject exists globally
+if (typeof currentProject === "undefined") {
+  var currentProject = null;
+}
+
+// Tracks where the user is inside the inspection workflow
+let inspectionWorkflowState = {
+  section: "quickLinks", // quickLinks | projectDetails | qa | photos | nextInspection | summary
+  mode: "normal",        // normal | followup
+  categoryIndex: 0,
+  questionIndex: 0
+};
+window.betaNotesPanelOpen = false;
+window.betaQuickTestPanelOpen = false;
+window.releaseCandidatePanelOpen = false;
+window.rcTesterInstructionPanelOpen = false;
+let followUpFindingNavIndexes = [];
+let followUpFindingNavPosition = 0;
+let followUpFindingModeActive = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
@@ -22,12 +51,13 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentProjectSummaryId = null;
+let siteReadyPreflightOpen = false;
 let currentPhotos = [];
 let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-photo-download2';
+const APP_VERSION = 'v91-flow2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -215,6 +245,9 @@ function autoSaveProject() {
       .join(' ');
 
   const inspectorName = inspectorNameField.value.trim();
+  const inspectionDate =
+  getEl('inspectionDate').value ||
+  new Date().toISOString().slice(0, 10);
   const occupancy = occupancyField.value;
   const streetNumber = getEl('streetNumber').value.trim();
   const addressLine = projectAddressField.value.trim();
@@ -327,6 +360,7 @@ function autoSaveProject() {
         productType,
         inspectionType,
         inspectorName,
+        inspectionDate,
         occupancy,
         answers,        
         followUpRequired: getEl('followUpRequired').value,
@@ -380,8 +414,116 @@ function formatProjectDate(value) {
   return date.toLocaleString();
 }
 
-  function exportReport() {
+function formatInspectionDate(value) {
+  if (!value) return '-';
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
+}
+
+function getProjectInspectionDate(project) {
+  return (
+    project?.inspectionDate ||
+    project?.completedAt?.slice(0, 10) ||
+    project?.lastSaved?.slice(0, 10) ||
+    ''
+  );
+}
+
+function preparePdfCloneForExport(pdfClone) {
+  if (!pdfClone) return;
+
+  // 1. Neutralise old/manual page breaks in the cloned PDF only.
+  // These are likely causing the report to start low and creating big blank gaps.
+  pdfClone
+    .querySelectorAll('.report-page-break, .page-break, .pdf-page-break')
+    .forEach(element => {
+      element.classList.remove(
+        'report-page-break',
+        'page-break',
+        'pdf-page-break'
+      );
+
+      element.style.breakBefore = 'auto';
+      element.style.pageBreakBefore = 'auto';
+      element.style.breakAfter = 'auto';
+      element.style.pageBreakAfter = 'auto';
+    });
+
+  // 2. Find the Annexure / Photo Evidence heading.
+  const allElements =
+    Array.from(pdfClone.querySelectorAll('*'));
+
+  const annexureHeading =
+    allElements.find(element => {
+      const text =
+        String(element.textContent || '')
+          .trim()
+          .toLowerCase();
+
+      return (
+        text.includes('annexure') ||
+        text.includes('photo evidence') ||
+        text.includes('photographic evidence') ||
+        text.includes('figure 1')
+      );
+    });
+
+  // 3. Insert a clean forced page break immediately before the annexure block.
+  if (annexureHeading) {
+    const annexureBlock =
+      annexureHeading.closest('.report-photo-section') ||
+      annexureHeading.closest('.photo-evidence-section') ||
+      annexureHeading.closest('.report-block') ||
+      annexureHeading.parentElement;
+
+    if (annexureBlock && annexureBlock.parentElement) {
+      const pageBreak =
+        document.createElement('div');
+
+      pageBreak.className =
+        'pdf-page-break-before';
+
+      annexureBlock.parentElement.insertBefore(
+        pageBreak,
+        annexureBlock
+      );
+
+      annexureBlock.classList.add('pdf-annexure-start');
+    }
+  }
+
+  // 4. Mark photo cards so they do not split across pages.
+  pdfClone
+    .querySelectorAll('.report-photo-card, .report-photo-item')
+    .forEach(card => {
+      card.classList.add('pdf-photo-card');
+    });
+
+  // 5. Remove empty trailing elements that can cause clean blank pages at the end.
+  let lastChild =
+    pdfClone.lastElementChild;
+
+  while (
+    lastChild &&
+    !lastChild.textContent.trim() &&
+    lastChild.querySelectorAll('img, table, canvas').length === 0
+  ) {
+    const previous =
+      lastChild.previousElementSibling;
+
+    lastChild.remove();
+    lastChild = previous;
+  }
+}
+
+function exportReport() {
+  
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -390,11 +532,21 @@ function formatProjectDate(value) {
   }
 
   if (!archivedReportContext) {
-    generateReport(); // maak seker gewone report is nuut
+    generateReport();
   }
-  getEl('reportSection').style.display = 'block';
 
-  const element = document.getElementById('reportContent');
+  const reportSection =
+    getEl('reportSection');
+
+  const originalReport =
+    document.getElementById('reportContent');
+
+  if (!originalReport) {
+    alert('Report content was not found.');
+    return;
+  }
+
+  reportSection.style.display = 'block';
 
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
@@ -416,30 +568,106 @@ function formatProjectDate(value) {
   const safeProjectName =
     sanitizeFileName(projectName);
 
+  const pdfSandbox =
+    document.createElement('div');
+
+  pdfSandbox.className =
+    'pdf-export-sandbox';
+
+    pdfSandbox.style.position = 'absolute';
+pdfSandbox.style.left = '0';
+pdfSandbox.style.top = '0';
+pdfSandbox.style.width = '794px';
+pdfSandbox.style.background = '#ffffff';
+pdfSandbox.style.overflow = 'visible';
+
+  const pdfClone =
+    originalReport.cloneNode(true);
+
+  pdfClone.id =
+    'reportContentPdfClone';
+
+  pdfClone.classList.add('pdf-export-mode');
+
+  pdfClone.style.display = 'block';
+pdfClone.style.width = '794px';
+pdfClone.style.maxWidth = '794px';
+pdfClone.style.minWidth = '794px';
+pdfClone.style.margin = '0';
+pdfClone.style.padding = '24px 36px';
+pdfClone.style.boxSizing = 'border-box';
+pdfClone.style.background = '#ffffff';
+pdfClone.style.color = '#222222';
+pdfClone.style.overflow = 'visible';
+pdfClone.style.transform = 'none';
+pdfClone.style.position = 'relative';
+pdfClone.style.left = '0';
+pdfClone.style.right = 'auto';
+
+pdfClone
+  .querySelectorAll('*')
+  .forEach(child => {
+    child.style.boxSizing = 'border-box';
+    child.style.maxWidth = '100%';
+  });
+
+  pdfClone
+    .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
+    .forEach(element => {
+      element.remove();
+    });
+
+    preparePdfCloneForExport(pdfClone);
+
+  pdfSandbox.appendChild(pdfClone);
+  document.body.appendChild(pdfSandbox);
+
   const opt = {
-  margin: [15, 12, 15, 12],
+    margin: [10, 10, 10, 10],
 
-  filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
+    filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
 
-  image: { type: 'jpeg', quality: 0.98 },
-  html2canvas: {
-  scale: 1,
-  useCORS: true,
-  scrollY: 0,
-  windowWidth: document.getElementById('reportContent').scrollWidth
-  },
-  jsPDF: {
-    unit: 'mm',
-    format: 'a4',
-    orientation: 'portrait'
-  },
-  pagebreak: {
-    mode: ['css', 'legacy']
-  }
-};
+    image: {
+      type: 'jpeg',
+      quality: 0.98
+    },
+
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 794,
+      width: 794
+    },
+
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+
+    pagebreak: {
+  mode: ['css', 'legacy'],
+  before: ['.pdf-page-break-before'],
+  avoid: [
+    '.pdf-photo-card',
+    '.executive-summary-card',
+    '.summary-stat-card'
+  ]
+}
+  };
+
+
   setTimeout(() => {
-  html2pdf().set(opt).from(element).save();
-}, 300);
+    html2pdf()
+      .set(opt)
+      .from(pdfClone)
+      .save()
+      .finally(() => {
+        pdfSandbox.remove();
+      });
+  }, 300);
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {
@@ -532,11 +760,36 @@ async function lookupNearestNumberedAddress(lat, lon) {
 }
 
 async function reverseLookupBestAddress(lat, lon) {
+  let nearestNumberedAddress = null;
+
+  // First priority: try to find a nearby address with a street number.
+  // This gives the app the best chance to fill the street number field.
+  try {
+    nearestNumberedAddress =
+      await lookupNearestNumberedAddress(lat, lon);
+
+    const nearestStreetNumber =
+      getStreetNumberFromAddress(nearestNumberedAddress?.address || {}) ||
+      getStreetNumberFromDisplayName(nearestNumberedAddress?.display_name);
+
+    if (nearestStreetNumber) {
+      return {
+        ...nearestNumberedAddress,
+        streetNumberConfidence: 'nearest_numbered_address'
+      };
+    }
+  } catch (error) {
+    console.warn('Nearest numbered address lookup failed:', error);
+  }
+
+  // Second priority: use normal reverse lookup for the rest of the address.
   const zoomLevels = [19, 18, 17];
   let bestResult = null;
 
   for (const zoom of zoomLevels) {
-    const result = await reverseLookupAddress(lat, lon, zoom);
+    const result =
+      await reverseLookupAddress(lat, lon, zoom);
+
     const streetNumber =
       getStreetNumberFromAddress(result.address || {}) ||
       getStreetNumberFromDisplayName(result.display_name);
@@ -546,22 +799,27 @@ async function reverseLookupBestAddress(lat, lon) {
     }
 
     if (streetNumber) {
-      return result;
+      return {
+        ...result,
+        streetNumberConfidence: 'reverse_lookup'
+      };
     }
   }
 
-  try {
-    const nearestNumberedAddress =
-      await lookupNearestNumberedAddress(lat, lon);
-
-    if (nearestNumberedAddress) {
-      return nearestNumberedAddress;
-    }
-  } catch (error) {
-    console.warn('Nearest numbered address lookup failed:', error);
+  // Last fallback: return the best address we found,
+  // even if no street number was available.
+  if (bestResult) {
+    return {
+      ...bestResult,
+      streetNumberConfidence: 'street_number_not_found'
+    };
   }
 
-  return bestResult;
+  return {
+    address: {},
+    display_name: `${lat}, ${lon}`,
+    streetNumberConfidence: 'street_number_not_found'
+  };
 }
 
 function parseGpsInput(value) {
@@ -636,15 +894,44 @@ function applyAddressLookupResult(data, fallbackText) {
   const streetNumber =
     getStreetNumberFromAddress(data.address || {}) ||
     getStreetNumberFromDisplayName(data.display_name);
-  const addressLine = buildAddressLineWithoutStreetNumber(data.address || {});
 
-  getEl('streetNumber').value = streetNumber || '';
+  const addressLine =
+    buildAddressLineWithoutStreetNumber(data.address || {});
+
+  getEl('streetNumber').value =
+    streetNumber || '';
+
   getEl('projectAddress').value =
-    addressLine || data.display_name || fallbackText;
+    addressLine ||
+    data.display_name ||
+    fallbackText;
 
-  getEl('saveMessage').textContent = streetNumber
-    ? 'Precise address found with street number from GPS.'
-    : 'Street number was not found. Please add the street number manually before saving this inspection.';
+  const streetNumberStatus =
+    data.streetNumberConfidence || '';
+
+  if (streetNumber) {
+    getEl('saveMessage').textContent =
+      streetNumberStatus === 'nearest_numbered_address'
+        ? 'Street number found from nearest numbered address. Please confirm it is correct.'
+        : 'Street number found from GPS address lookup. Please confirm it is correct.';
+  } else {
+    getEl('saveMessage').textContent =
+      'Street number not found from GPS. Please enter the street number manually before saving this inspection.';
+  }
+
+  const streetNumberField =
+    document.getElementById('streetNumber');
+
+  if (streetNumberField && !streetNumber) {
+    streetNumberField.placeholder =
+      'Street number not found - enter manually';
+
+    streetNumberField.classList.add('field-focus');
+
+    setTimeout(() => {
+      streetNumberField.classList.remove('field-focus');
+    }, 5000);
+  }
 
   scheduleAutoSave();
 }
@@ -785,8 +1072,94 @@ async function lookupAddressFromGpsInput() {
   }
 }
 
+function getBestCurrentPosition(options = {}) {
+  const desiredAccuracy =
+    options.desiredAccuracy || 15;
+
+  const maxWaitMs =
+    options.maxWaitMs || 12000;
+
+  const geolocation =
+    window.navigator && window.navigator.geolocation;
+
+  if (!geolocation) {
+    return Promise.reject(
+      new Error('GPS is not available in this browser.')
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    let bestPosition = null;
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+
+      settled = true;
+
+      if (watchId !== null) {
+        geolocation.clearWatch(watchId);
+      }
+
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+
+      if (bestPosition) {
+        resolve(bestPosition);
+      } else {
+        reject(new Error('Could not get a GPS position.'));
+      }
+    };
+
+    const watchId =
+      geolocation.watchPosition(
+        position => {
+          const accuracy =
+            position.coords.accuracy || Infinity;
+
+          const currentBestAccuracy =
+            bestPosition?.coords?.accuracy || Infinity;
+
+          if (!bestPosition || accuracy < currentBestAccuracy) {
+            bestPosition = position;
+
+            const saveMessage =
+              document.getElementById('saveMessage');
+
+            if (saveMessage) {
+              saveMessage.textContent =
+                `Improving GPS accuracy... best so far: ${Math.round(accuracy)} m`;
+            }
+          }
+
+          if (accuracy <= desiredAccuracy) {
+            finish();
+          }
+        },
+        error => {
+          if (bestPosition) {
+            finish();
+            return;
+          }
+
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: maxWaitMs,
+          maximumAge: 0
+        }
+      );
+
+    const timeoutId =
+      setTimeout(finish, maxWaitMs);
+  });
+}
+
 async function useCurrentLocation() {
-  const geolocation = window.navigator && window.navigator.geolocation;
+  const geolocation =
+    window.navigator && window.navigator.geolocation;
 
   if (!geolocation) {
     getEl('saveMessage').textContent =
@@ -794,33 +1167,64 @@ async function useCurrentLocation() {
     return;
   }
 
-  getEl('saveMessage').textContent = 'Getting location...';
+  getEl('saveMessage').textContent =
+    'Getting best GPS location... keep the phone still for a few seconds.';
 
-  geolocation.getCurrentPosition(
-  async position => {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
+  try {
+    const position =
+      await getBestCurrentPosition({
+        desiredAccuracy: 12,
+        maxWaitMs: 15000
+      });
 
-    const gpsText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    const lat =
+      position.coords.latitude;
+
+    const lon =
+      position.coords.longitude;
+
+    const accuracy =
+      Math.round(position.coords.accuracy || 0);
+
+    const gpsText =
+      `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
     getEl('gps').value = gpsText;
     updateGpsMapPreview();
 
-    try {
-      const data = await reverseLookupBestAddress(lat, lon);
-      applyAddressLookupResult(data, `${lat}, ${lon}`);
-    } catch (err) {
-      console.error("Address fetch failed:", err);
+    getEl('saveMessage').textContent =
+      `GPS captured with approx. ${accuracy} m accuracy. Finding address...`;
 
-      document.getElementById("projectAddress").value = `${lat}, ${lon}`;
+    try {
+      const data =
+        await reverseLookupBestAddress(lat, lon);
+
+      applyAddressLookupResult(data, `${lat}, ${lon}`);
+
+      const streetNumber =
+        getEl('streetNumber').value.trim();
+
+      if (streetNumber) {
+        getEl('saveMessage').textContent =
+          `Address found from GPS. GPS accuracy approx. ${accuracy} m.`;
+      } else {
+        getEl('saveMessage').textContent =
+          `GPS captured with approx. ${accuracy} m accuracy, but street number was not found. Add the street number manually.`;
+      }
+    } catch (error) {
+      console.error('Address fetch failed:', error);
+
+      document.getElementById('projectAddress').value =
+        `${lat}, ${lon}`;
 
       getEl('saveMessage').textContent =
-        'GPS captured, but address lookup failed. Address can be entered manually.';
+        `GPS captured with approx. ${accuracy} m accuracy, but address lookup failed. Enter the address manually.`;
     }
 
     scheduleAutoSave();
-  },
-  error => {
-    console.error("GPS failed:", error);
+
+  } catch (error) {
+    console.error('GPS failed:', error);
 
     const messages = {
       1: 'GPS permission was denied. Allow location access, or enter the GPS/address manually.',
@@ -829,14 +1233,9 @@ async function useCurrentLocation() {
     };
 
     getEl('saveMessage').textContent =
-      messages[error.code] || 'GPS failed. Enter the GPS/address manually.';
-  },
-  {
-    enableHighAccuracy: true,
-    timeout: 25000,
-    maximumAge: 0
+      messages[error.code] ||
+      'GPS failed. Try again outside, wait a few seconds, or enter the GPS/address manually.';
   }
-);
 }
 
 function toggleMallFields() {
@@ -921,6 +1320,28 @@ function closeAllChecklistSections() {
 }
 
 function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
+  
+    if (followUpFindingModeActive && followUpFindingNavIndexes.length > 0) {
+    const firstFindingRowInSection =
+      Array.from(document.querySelectorAll('.checklist-row'))
+        .find(row =>
+          Number(row.dataset.sectionIndex) === Number(sectionIndex) &&
+          followUpFindingNavIndexes.includes(getChecklistRowItemIndex(row))
+        );
+
+    if (firstFindingRowInSection) {
+      const findingIndex =
+        getChecklistRowItemIndex(firstFindingRowInSection);
+
+      const navPosition =
+        followUpFindingNavIndexes.indexOf(findingIndex);
+
+      showFollowUpFindingAt(navPosition);
+    }
+
+    return;
+  }
+  
   closeAllChecklistSections();
 
   const section = document.getElementById(`section_${sectionIndex}`);
@@ -1139,6 +1560,9 @@ function saveBackupSnapshot(backupJson, filename, count, source) {
   );
   localStorage.setItem('fireyesaLastBackupJson', backupJson);
   updateAppInfo();
+  updateRcBackupReminderPanel();
+updateReleaseCandidatePanel();
+updateRcFinalPreflightPanel();
 }
 
 function createBackupJson(projects) {
@@ -1256,6 +1680,17 @@ function formatBytes(bytes) {
   return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+function confirmRcSafetyLock(actionName, riskText) {
+  const message =
+    `RC Safety Lock\n\n` +
+    `${actionName}\n\n` +
+    `${riskText}\n\n` +
+    `Before continuing, make sure you have exported a backup.\n\n` +
+    `Continue?`;
+
+  return confirm(message);
+}
+
 function exportEmergencyBackup(reason) {
   const projects = getProjects();
   if (projects.length === 0) return;
@@ -1279,11 +1714,12 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
       return false;
     }
 
-    const confirmed = confirm(
-      'Import Backup will replace all inspections currently saved on this device. Export a backup first if you are unsure. Continue?'
-    );
+    const confirmed = confirmRcSafetyLock(
+  'Import Backup',
+  'This will replace all inspections currently saved on this device with the imported backup file.'
+);
 
-    if (!confirmed) return false;
+if (!confirmed) return false;
 
     exportEmergencyBackup(`import-${sourceLabel}`);
 
@@ -1456,6 +1892,7 @@ async function logoutUser() {
     updateHomeAccessCards();
     updateAccessUI();
     updateSyncUI();
+    refreshRcHomePanels();
 
     const projectsList = document.getElementById('projectsList');
     const dashboardMetrics = document.getElementById('dashboardMetrics');
@@ -1705,11 +2142,12 @@ async function downloadSync() {
     return;
   }
 
-  const confirmed = confirm(
-    'Download Sync will replace all inspections currently saved on this device with the cloud version. An emergency backup will be exported first. Continue?'
-  );
+  const confirmed = confirmRcSafetyLock(
+  'Download Sync',
+  'This will replace all inspections currently saved on this device with the cloud version. An emergency backup will be exported first.'
+);
 
-  if (!confirmed) return;
+if (!confirmed) return;
 
   exportEmergencyBackup('cloud-download');
 
@@ -1751,6 +2189,13 @@ async function mergeSync() {
     getEl('syncStatus').textContent = 'Please login before merge sync.';
     return;
   }
+
+  const confirmed = confirmRcSafetyLock(
+  'Merge Sync',
+  'This will merge local and cloud inspections. If old or duplicate data exists, review carefully after the merge.'
+);
+
+if (!confirmed) return;
 
   const localProjects = getProjects();
 
@@ -1971,6 +2416,7 @@ async function updateSyncUI() {
       ? 'Connected. Auto sync enabled.'
       : 'Not connected. Login required.';
   }
+  refreshRcHomePanels();
 }
 
 async function restoreCloudSession() {
@@ -2408,6 +2854,7 @@ if (cancelScheduledInspectionBtn) {
   getEl('contactTel').addEventListener('input', scheduleAutoSave);
   getEl('contactEmail').addEventListener('input', scheduleAutoSave);
   getEl('inspectorName').addEventListener('input', scheduleAutoSave);
+  getEl('inspectionDate').addEventListener('input', scheduleAutoSave);
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
   const exportBtn = document.getElementById('exportBtn');
 
@@ -2690,6 +3137,7 @@ async function loadUserAccessProfile() {
       updateAccessUI();
       updateSyncUI();
       updateHomeAccessCards();
+      refreshRcHomePanels();
       return;
     }
 
@@ -2727,6 +3175,7 @@ async function loadUserAccessProfile() {
       updateSyncUI();
       updateHomeAccessCards();
       renderProjectsList();
+      refreshRcHomePanels();
       return;
     }
 
@@ -2778,6 +3227,7 @@ async function loadUserAccessProfile() {
     updateAccessUI();
     updateSyncUI();
     updateHomeAccessCards();
+    refreshRcHomePanels();
 
   } catch (error) {
     console.error('Access profile load failed:', error);
@@ -2788,6 +3238,7 @@ async function loadUserAccessProfile() {
     updateAccessUI();
     updateSyncUI();
     updateHomeAccessCards();
+    refreshRcHomePanels();
   }
 }
 
@@ -3229,6 +3680,9 @@ function createNewProject() {
 
   clearTimeout(autoSaveTimer);
   currentProjectId = null;
+  followUpFindingModeActive = false;
+followUpFindingNavIndexes = [];
+followUpFindingNavPosition = 0;
 
   const existingHistoryPanel =
     document.getElementById('siteHistoryPanel');
@@ -3250,6 +3704,8 @@ if (existingArchivePanel) {
   clearInputValue('siteName');
   getEl('inspectionType').value = 'General Fire Inspection';
   clearInputValue('inspectorName');
+  getEl('inspectionDate').value =
+  new Date().toISOString().slice(0, 10);
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
   clearInputValue('streetNumber');
@@ -3320,7 +3776,19 @@ function updateOfflineReadinessBanner() {
   const projects =
     getVisibleProjectsForCurrentUser(getProjects());
 
-  const lastSyncTimes = projects
+  const isOnline =
+    navigator.onLine;
+
+  const hasLocalInspections =
+    projects.length > 0;
+
+  const offlineCapable =
+    'serviceWorker' in navigator;
+
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const lastSavedTimes = projects
     .map(project =>
       project.syncedAt ||
       project.lastSaved ||
@@ -3331,12 +3799,73 @@ function updateOfflineReadinessBanner() {
     .map(value => new Date(value).getTime())
     .filter(time => !Number.isNaN(time));
 
-  const lastSyncText =
-    lastSyncTimes.length > 0
-      ? new Date(Math.max(...lastSyncTimes)).toLocaleString()
+  const lastSavedText =
+    lastSavedTimes.length > 0
+      ? new Date(Math.max(...lastSavedTimes)).toLocaleString()
       : 'Not available';
 
-  const isOnline = navigator.onLine;
+  const readyForField =
+    offlineCapable &&
+    hasLocalInspections &&
+    pendingUploads === 0;
+
+  const partiallyReady =
+    offlineCapable &&
+    hasLocalInspections &&
+    pendingUploads > 0;
+
+  banner.className =
+    `offline-readiness-banner ${
+      readyForField
+        ? 'offline-ready'
+        : partiallyReady
+          ? 'offline-warning'
+          : 'offline-not-ready'
+    }`;
+
+  banner.innerHTML = `
+    <div>
+      <strong>
+        ${
+          readyForField
+            ? 'Field Ready'
+            : partiallyReady
+              ? 'Almost Field Ready'
+              : 'Not Field Ready'
+        }
+      </strong>
+
+      <span>
+        ${isOnline ? 'Online now' : 'Offline now'} |
+        Local inspections: ${projects.length} |
+        Pending uploads: ${pendingUploads} |
+        Last save/sync: ${escapeHtml(lastSavedText)}
+      </span>
+    </div>
+
+    <small>
+      ${
+        readyForField
+          ? 'Ready for site use. Inspections are available locally and no pending uploads are waiting.'
+          : partiallyReady
+            ? 'Inspections are available locally, but some changes still need cloud upload. Open online and tap Sync / Refresh before going to site.'
+            : 'Before site work: login online, open inspections list, tap Sync / Refresh, and confirm this banner changes to Field Ready.'
+      }
+    </small>
+  `;
+}
+
+function updateSiteReadyPreflightChecklist() {
+  const panel =
+    document.getElementById('siteReadyPreflightChecklist');
+
+  if (!panel) return;
+
+  const projects =
+    getVisibleProjectsForCurrentUser(getProjects());
+
+  const isOnline =
+    navigator.onLine;
 
   const hasLocalInspections =
     projects.length > 0;
@@ -3344,36 +3873,204 @@ function updateOfflineReadinessBanner() {
   const offlineCapable =
     'serviceWorker' in navigator;
 
-  const ready =
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const hasLoggedInProfile =
+    !!currentUserProfile;
+
+  const lastSavedTimes = projects
+    .map(project =>
+      project.syncedAt ||
+      project.lastSaved ||
+      project.updatedAt ||
+      ''
+    )
+    .filter(Boolean)
+    .map(value => new Date(value).getTime())
+    .filter(time => !Number.isNaN(time));
+
+  const lastSavedText =
+    lastSavedTimes.length > 0
+      ? new Date(Math.max(...lastSavedTimes)).toLocaleString()
+      : 'Not available';
+
+  const checks = [
+    {
+      label: 'User access checked',
+      pass: hasLoggedInProfile,
+      detail: hasLoggedInProfile
+        ? `Logged in as ${currentUserProfile.email || currentUserProfile.fullName || 'user'}`
+        : 'Login online before going to site.'
+    },
+    {
+      label: 'Inspections loaded locally',
+      pass: hasLocalInspections,
+      detail: hasLocalInspections
+        ? `${projects.length} inspection${projects.length === 1 ? '' : 's'} available on this device.`
+        : 'Open/sync the inspection list before going offline.'
+    },
+    {
+      label: 'Offline capability available',
+      pass: offlineCapable,
+      detail: offlineCapable
+        ? 'Browser supports offline app cache.'
+        : 'This browser may not support offline use.'
+    },
+    {
+      label: 'Pending uploads checked',
+      pass: pendingUploads === 0,
+      detail: pendingUploads === 0
+        ? 'No pending uploads.'
+        : `${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'} still waiting to upload.`
+    },
+    {
+      label: 'Last save / sync visible',
+      pass: lastSavedTimes.length > 0,
+      detail: `Last save/sync: ${lastSavedText}`
+    },
+    {
+      label: 'Connection status known',
+      pass: true,
+      detail: isOnline
+        ? 'Online now.'
+        : 'Offline now. Confirm required inspections are already loaded.'
+    }
+  ];
+
+  const allCriticalPassed =
+    hasLoggedInProfile &&
+    hasLocalInspections &&
     offlineCapable &&
-    hasLocalInspections;
+    pendingUploads === 0;
 
-  banner.className =
-    `offline-readiness-banner ${
-      ready ? 'offline-ready' : 'offline-not-ready'
-    }`;
+  panel.className =
+    `site-ready-preflight ${
+      allCriticalPassed
+        ? 'site-ready-pass'
+        : 'site-ready-warning'
+    } ${siteReadyPreflightOpen ? 'site-ready-open' : 'site-ready-collapsed'}`;
 
-  banner.innerHTML = `
+  panel.innerHTML = `
+    <div class="site-ready-header">
+      <div>
+        <strong>Ready for Site?</strong>
+        <span>
+          ${
+            allCriticalPassed
+              ? 'Preflight passed'
+              : 'Preflight needs attention'
+          }
+          ${
+            pendingUploads > 0
+              ? ` | ${pendingUploads} pending upload${pendingUploads === 1 ? '' : 's'}`
+              : ''
+          }
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleSiteReadyPreflight()"
+      >
+        ${siteReadyPreflightOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      siteReadyPreflightOpen
+        ? `
+          <div class="site-ready-checks">
+            ${checks.map(check => `
+              <div class="site-ready-check ${check.pass ? 'check-pass' : 'check-warning'}">
+                <strong>
+                  ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
+                </strong>
+                <span>${escapeHtml(check.detail)}</span>
+              </div>
+            `).join('')}
+
+            <button
+              type="button"
+              class="site-ready-recheck-btn"
+              onclick="runSiteReadyPreflight()"
+            >
+              Recheck
+            </button>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleSiteReadyPreflight() {
+  siteReadyPreflightOpen = !siteReadyPreflightOpen;
+  updateSiteReadyPreflightChecklist();
+}
+
+function runSiteReadyPreflight() {
+  updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
+}
+
+function getPendingUploadCount() {
+  return getVisibleProjectsForCurrentUser(getProjects())
+    .filter(project => project.syncPending).length;
+}
+
+function updatePostSiteSyncReminder() {
+  const reminder =
+    document.getElementById('postSiteSyncReminder');
+
+  if (!reminder) return;
+
+  const pendingUploads =
+    getPendingUploadCount();
+
+  if (pendingUploads === 0) {
+    reminder.innerHTML = '';
+    reminder.className = '';
+    return;
+  }
+
+  reminder.className = 'post-site-sync-reminder';
+
+  reminder.innerHTML = `
     <div>
-      <strong>
-        ${ready ? 'Offline Ready' : 'Not Offline Ready'}
-      </strong>
-
+      <strong>Post-site sync reminder</strong>
       <span>
-        ${isOnline ? 'Online now' : 'Offline now'} |
-        Local inspections: ${projects.length} |
-        Last local sync/save: ${escapeHtml(lastSyncText)}
+        ${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'}
+        still waiting to upload. Sync before closing the app.
       </span>
     </div>
 
-    <small>
-      ${
-        ready
-      ? 'Ready for field use. Open and sync online before going to site; saved inspections should remain available without signal.'
-      : 'Before site work: login online, tap Sync / Refresh, and confirm Offline Ready.'
-      }
-    </small>
+    <div class="post-site-sync-actions">
+      <button
+        type="button"
+        onclick="refreshSyncData()"
+      >
+        Sync / Refresh
+      </button>
+
+      <button
+        type="button"
+        onclick="dismissPostSiteSyncReminder()"
+      >
+        Dismiss
+      </button>
+    </div>
   `;
+}
+
+function dismissPostSiteSyncReminder() {
+  const reminder =
+    document.getElementById('postSiteSyncReminder');
+
+  if (!reminder) return;
+
+  reminder.innerHTML = '';
+  reminder.className = '';
 }
 
 function updateFloatingBackButton() {
@@ -3439,11 +4136,11 @@ function showProjectList() {
 const INSPECTION_SECTION_FLOW = [
   {
     id: 'inspectionQuickActions',
-    label: 'Quick Actions'
+    label: 'Quick Links'
   },
   {
     id: 'projectDetailsCard',
-    label: 'Inspection Information'
+    label: 'Project Details'
   },
   {
     id: 'requirementsSection',
@@ -3451,19 +4148,15 @@ const INSPECTION_SECTION_FLOW = [
   },
   {
     id: 'checklistCard',
-    label: 'Q&A Checklist'
+    label: 'Q&A'
   },
-  {
+    {
     id: 'photoEvidenceCard',
     label: 'Photo Evidence'
   },
   {
-    id: 'inspectorCommentsCard',
-    label: 'Inspector Comments'
-  },
-  {
     id: 'nextInspectionCard',
-    label: 'Schedule Next Inspection'
+    label: 'Next Inspection'
   }
 ];
 
@@ -3541,12 +4234,59 @@ function getInspectionSectionIndex(sectionId) {
   return INSPECTION_SECTION_FLOW.findIndex(section => section.id === sectionId);
 }
 
+function getAvailableInspectionSections() {
+  const alwaysAvailableSectionIds = [
+  'inspectionQuickActions',
+  'projectDetailsCard',
+  'checklistCard',
+  'photoEvidenceCard',
+  'nextInspectionCard'
+];
+
+  return INSPECTION_SECTION_FLOW.filter(sectionMeta => {
+    const section = document.getElementById(sectionMeta.id);
+
+    if (!section) return false;
+
+    // These sections must always stay in the guided workflow,
+    // even if their content looks empty at first.
+    if (alwaysAvailableSectionIds.includes(sectionMeta.id)) {
+      return true;
+    }
+
+    // Only skip Occupancy Requirements if it has no real content.
+    if (sectionMeta.id === 'requirementsSection') {
+      const requirementsContent = document.getElementById('requirements');
+
+      if (
+        !requirementsContent ||
+        !requirementsContent.textContent.trim()
+      ) {
+        return false;
+      }
+
+      return true;
+    }
+
+    return true;
+  });
+}
+
 function removeInspectionSectionFocus() {
-  document
-    .querySelectorAll('.inspection-section-focused')
-    .forEach(section => {
-      section.classList.remove('inspection-section-focused');
-    });
+  const formSection = document.getElementById('projectFormSection');
+
+  if (formSection) {
+    formSection.classList.remove('inspection-section-mode');
+  }
+
+  INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
+    const section = document.getElementById(sectionMeta.id);
+
+    if (!section) return;
+
+    section.classList.remove('inspection-section-focused');
+    section.classList.remove('inspection-section-hidden');
+  });
 
   document
     .querySelectorAll('.inspection-section-focus-toolbar')
@@ -3566,9 +4306,26 @@ function focusInspectionSection(sectionId) {
 
   activeInspectionSectionId = sectionId;
   target.classList.add('inspection-section-focused');
+  const formSection = document.getElementById('projectFormSection');
 
-  const sectionIndex = getInspectionSectionIndex(sectionId);
-  const sectionMeta = INSPECTION_SECTION_FLOW[sectionIndex];
+if (formSection) {
+  formSection.classList.add('inspection-section-mode');
+}
+
+INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
+  const section = document.getElementById(sectionMeta.id);
+
+  if (!section) return;
+
+  const isActiveSection = sectionMeta.id === sectionId;
+
+  section.classList.toggle('inspection-section-hidden', !isActiveSection);
+  section.classList.toggle('inspection-section-focused', isActiveSection);
+});
+
+ const availableSections = getAvailableInspectionSections();
+const sectionIndex = availableSections.findIndex(section => section.id === sectionId);
+const sectionMeta = availableSections[sectionIndex];
 
   const toolbar = document.createElement('div');
   toolbar.className = 'inspection-section-focus-toolbar';
@@ -3590,7 +4347,7 @@ function focusInspectionSection(sectionId) {
       <button
         type="button"
         onclick="goToNextInspectionSection()"
-        ${sectionIndex >= INSPECTION_SECTION_FLOW.length - 1 ? 'disabled' : ''}
+        ${sectionIndex >= availableSections.length - 1 ? 'disabled' : ''}
       >
         Next
       </button>
@@ -3617,29 +4374,35 @@ function focusInspectionSection(sectionId) {
 function goToPreviousInspectionSection() {
   if (!activeInspectionSectionId) return;
 
-  const currentIndex = getInspectionSectionIndex(activeInspectionSectionId);
+  const availableSections = getAvailableInspectionSections();
+  const currentIndex = availableSections.findIndex(
+    section => section.id === activeInspectionSectionId
+  );
 
   if (currentIndex <= 0) return;
 
   focusInspectionSection(
-    INSPECTION_SECTION_FLOW[currentIndex - 1].id
+    availableSections[currentIndex - 1].id
   );
 }
 
 function goToNextInspectionSection() {
   if (!activeInspectionSectionId) return;
 
-  const currentIndex = getInspectionSectionIndex(activeInspectionSectionId);
+  const availableSections = getAvailableInspectionSections();
+  const currentIndex = availableSections.findIndex(
+    section => section.id === activeInspectionSectionId
+  );
 
   if (
     currentIndex === -1 ||
-    currentIndex >= INSPECTION_SECTION_FLOW.length - 1
+    currentIndex >= availableSections.length - 1
   ) {
     return;
   }
 
   focusInspectionSection(
-    INSPECTION_SECTION_FLOW[currentIndex + 1].id
+    availableSections[currentIndex + 1].id
   );
 }
 
@@ -3662,8 +4425,32 @@ function showProjectForm() {
   getEl('projectFormSection').style.display = 'block';
 
   ensureInspectionQuickActions();
-  updateProjectReadinessPanel();
-  updateFloatingBackButton();
+ensureNextInspectionCardId();
+updateProjectReadinessPanel();
+updateFloatingBackButton();
+}
+
+function ensureNextInspectionCardId() {
+  const existingNextInspectionCard =
+    document.getElementById('nextInspectionCard');
+
+  if (existingNextInspectionCard) return;
+
+  const followUpField =
+    document.getElementById('followUpRequired') ||
+    document.getElementById('followUpDate') ||
+    document.getElementById('followUpNotes');
+
+  if (!followUpField) return;
+
+  const card =
+    followUpField.closest('.card') ||
+    followUpField.closest('section') ||
+    followUpField.parentElement;
+
+  if (!card) return;
+
+  card.id = 'nextInspectionCard';
 }
 
 function ensureInspectionQuickActions() {
@@ -3682,32 +4469,17 @@ function ensureInspectionQuickActions() {
   }
 
   panel.innerHTML = `
-    <div class="quick-actions-title">Quick Actions / Readiness</div>
+    <div class="quick-actions-title">
+      Quick Links / Action Items
+    </div>
 
-    <div class="quick-actions-grid">
-      <button type="button" onclick="focusFirstMissingProjectInfo()">
-        Missing Info
-      </button>
-
-      <button type="button" onclick="focusFirstUnansweredChecklistItem()">
-        First Unanswered
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentIssue()">
-        First Finding
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentExpiry('overdue')">
-        Expired Equipment
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentExpiry('soon')">
-        Due Soon
-      </button>
+    <div id="quickReadinessSummary" class="quick-readiness-summary">
+      Loading quick links...
     </div>
   `;
-}
 
+  updateProjectReadinessPanel();
+}
 function closeCloudDropdown() {
   const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -3726,6 +4498,926 @@ function setCloudMenuVisible(isVisible) {
   if (!isVisible) {
     closeCloudDropdown();
   }
+}
+function updateBetaNotesPanel() {
+  const panel =
+    document.getElementById('betaNotesPanel');
+
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="beta-notes-header">
+      <div>
+        <strong>RC Build Notes</strong>
+        <span>Current build: ${escapeHtml(APP_VERSION)}</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleBetaNotesPanel()"
+      >
+        ${window.betaNotesPanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.betaNotesPanelOpen
+        ? `
+          <div class="beta-notes-body">
+            <div class="beta-note beta-note-important">
+              <strong>Before field use</strong>
+              <span>Export a backup and confirm sync before going to site.</span>
+            </div>
+
+            <div class="beta-note">
+              <strong>Report issues</strong>
+              <span>Use Additional Services → Report Beta Issue for bugs, missing data or confusing behaviour.</span>
+            </div>
+
+            <div class="beta-note">
+              <strong>Known limitation</strong>
+              <span>PDF layout may vary slightly between mobile browsers, laptop browsers and printer settings.</span>
+            </div>
+
+            <div class="beta-note">
+              <strong>Photos</strong>
+              <span>After taking photos on site, use Sync / Refresh before closing the app.</span>
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleBetaNotesPanel() {
+  window.betaNotesPanelOpen =
+    !window.betaNotesPanelOpen;
+
+  updateBetaNotesPanel();
+}
+
+function updateBetaQuickTestPanel() {
+  const panel =
+    document.getElementById('betaQuickTestPanel');
+
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="beta-quick-test-header">
+      <div>
+        <strong>RC Quick Test Checklist</strong>
+        <span>Use this when testing the release candidate build.</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleBetaQuickTestPanel()"
+      >
+        ${window.betaQuickTestPanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.betaQuickTestPanelOpen
+        ? `
+          <div class="beta-quick-test-body">
+            <div class="beta-quick-test-item">
+              <strong>1</strong>
+              <span>Login and confirm Cloud connected.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>2</strong>
+              <span>Tap Sync / Refresh before opening inspections.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>3</strong>
+              <span>Open an inspection and confirm existing data still loads.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>4</strong>
+              <span>Edit one safe field and confirm autosave works.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>5</strong>
+              <span>Add or view a photo and confirm it stays visible after refresh.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>6</strong>
+              <span>Generate a report and confirm inspection date, answers and comments look correct.</span>
+            </div>
+
+            <div class="beta-quick-test-item beta-quick-test-final">
+              <strong>7</strong>
+              <span>Submit Beta Feedback if anything looks wrong, confusing or incomplete.</span>
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleBetaQuickTestPanel() {
+  window.betaQuickTestPanelOpen =
+    !window.betaQuickTestPanelOpen;
+
+  updateBetaQuickTestPanel();
+}
+
+function isCloudSessionConnectedForRc() {
+  const cloudMenuBtn =
+    document.getElementById('cloudMenuBtn');
+
+  const cloudButtonLooksConnected =
+    cloudMenuBtn &&
+    (
+      cloudMenuBtn.classList.contains('connected') ||
+      String(cloudMenuBtn.textContent || '')
+        .toLowerCase()
+        .includes('cloud connected')
+    );
+
+  return !!currentUserProfile || !!cloudButtonLooksConnected;
+}
+
+function getCloudSessionDetailForRc() {
+  if (currentUserProfile) {
+    return `Logged in as ${
+      currentUserProfile.email ||
+      currentUserProfile.fullName ||
+      'user'
+    }`;
+  }
+
+  if (isCloudSessionConnectedForRc()) {
+    return 'Cloud connected';
+  }
+
+  return 'Not logged in';
+}
+
+function getLastBackupInfo() {
+  const lastBackupRaw =
+    localStorage.getItem('fireyesaLastBackup');
+
+  if (!lastBackupRaw) {
+    return {
+      hasBackup: false,
+      filename: '',
+      exportedAt: '',
+      ageText: 'No backup exported yet',
+      statusText: 'Backup needed before RC testing'
+    };
+  }
+
+  try {
+    const lastBackup =
+      JSON.parse(lastBackupRaw);
+
+    const exportedAt =
+      lastBackup.exportedAt || '';
+
+    const exportedTime =
+      exportedAt
+        ? new Date(exportedAt).getTime()
+        : 0;
+
+    const now =
+      new Date().getTime();
+
+    const ageHours =
+      exportedTime
+        ? Math.floor((now - exportedTime) / (1000 * 60 * 60))
+        : null;
+
+    let ageText = 'Backup found';
+
+    if (ageHours !== null) {
+      if (ageHours < 1) {
+        ageText = 'Backup exported less than 1 hour ago';
+      } else if (ageHours === 1) {
+        ageText = 'Backup exported 1 hour ago';
+      } else if (ageHours < 24) {
+        ageText = `Backup exported ${ageHours} hours ago`;
+      } else {
+        const ageDays =
+          Math.floor(ageHours / 24);
+
+        ageText =
+          ageDays === 1
+            ? 'Backup exported 1 day ago'
+            : `Backup exported ${ageDays} days ago`;
+      }
+    }
+
+    return {
+      hasBackup: true,
+      filename: lastBackup.filename || 'Backup file',
+      exportedAt,
+      ageText,
+      statusText: 'Backup record found'
+    };
+  } catch (error) {
+    return {
+      hasBackup: true,
+      filename: 'Backup record',
+      exportedAt: '',
+      ageText: 'Backup record found, but date could not be read',
+      statusText: 'Backup record found'
+    };
+  }
+}
+
+function updateRcBackupReminderPanel() {
+  const panel =
+    document.getElementById('rcBackupReminderPanel');
+
+  if (!panel) return;
+
+  const backup =
+    getLastBackupInfo();
+
+  panel.className =
+    `rc-backup-reminder-panel ${
+      backup.hasBackup
+        ? 'rc-backup-reminder-pass'
+        : 'rc-backup-reminder-warning'
+    }`;
+
+  panel.innerHTML = `
+    <div class="rc-backup-reminder-header">
+      <div>
+        <strong>
+          ${backup.hasBackup ? 'Backup Ready' : 'Backup Reminder'}
+        </strong>
+        <span>${escapeHtml(backup.ageText)}</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="exportBackup()"
+      >
+        Export Backup
+      </button>
+    </div>
+
+    <div class="rc-backup-reminder-body">
+      ${
+        backup.hasBackup
+          ? `
+            <div>
+              <strong>Last backup:</strong>
+              ${escapeHtml(backup.filename)}
+            </div>
+          `
+          : `
+            <div>
+              <strong>Important:</strong>
+              Export a backup before release candidate testing.
+            </div>
+          `
+      }
+    </div>
+  `;
+}
+
+function updateRcFinalPreflightPanel() {
+  const panel =
+    document.getElementById('rcFinalPreflightPanel');
+
+  if (!panel) return;
+
+  const projects =
+    currentUserProfile
+      ? getVisibleProjectsForCurrentUser(getProjects())
+      : [];
+
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const backup =
+    getLastBackupInfo();
+
+  const checks = [
+    {
+  label: 'Cloud login',
+  pass: isCloudSessionConnectedForRc(),
+  detail: getCloudSessionDetailForRc()
+},
+    {
+      label: 'Backup',
+      pass: backup.hasBackup,
+      detail: backup.ageText
+    },
+    {
+      label: 'Pending uploads',
+      pass: pendingUploads === 0,
+      detail: pendingUploads === 0
+        ? 'None'
+        : `${pendingUploads} pending`
+    },
+    {
+      label: 'RC checklist',
+      pass: !!document.getElementById('releaseCandidatePanel'),
+      detail: 'Panel present'
+    },
+    {
+      label: 'Beta test checklist',
+      pass: !!document.getElementById('betaQuickTestPanel'),
+      detail: 'Panel present'
+    }
+  ];
+
+  const passedCount =
+    checks.filter(check => check.pass).length;
+
+  const allPassed =
+    passedCount === checks.length;
+
+  panel.className =
+    `rc-final-preflight-panel ${
+      allPassed
+        ? 'rc-final-preflight-pass'
+        : 'rc-final-preflight-warning'
+    }`;
+
+  panel.innerHTML = `
+    <div class="rc-final-preflight-header">
+      <div>
+        <strong>
+          ${allPassed ? 'RC Final Preflight: Ready' : 'RC Final Preflight: Attention Needed'}
+        </strong>
+        <span>${passedCount}/${checks.length} checks passed</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="updateRcFinalPreflightPanel()"
+      >
+        Recheck
+      </button>
+    </div>
+
+    <div class="rc-final-preflight-body">
+      ${checks.map(check => `
+        <div class="rc-final-preflight-chip ${check.pass ? 'chip-pass' : 'chip-warning'}">
+          <strong>${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}</strong>
+          <span>${escapeHtml(check.detail)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function getReleaseCandidateChecks() {
+  const projects =
+    currentUserProfile
+      ? getVisibleProjectsForCurrentUser(getProjects())
+      : [];
+
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const lastBackupRaw =
+    localStorage.getItem('fireyesaLastBackup');
+
+  let lastBackupText = 'No backup exported yet';
+  let hasBackup = false;
+
+  if (lastBackupRaw) {
+    try {
+      const lastBackup =
+        JSON.parse(lastBackupRaw);
+
+      hasBackup = true;
+
+      lastBackupText =
+        lastBackup.exportedAt
+          ? new Date(lastBackup.exportedAt).toLocaleString()
+          : 'Backup found';
+    } catch (error) {
+      lastBackupText = 'Backup record found, but could not read date';
+      hasBackup = true;
+    }
+  }
+
+  return [
+    {
+  label: 'Cloud access confirmed',
+  pass: isCloudSessionConnectedForRc(),
+  detail: getCloudSessionDetailForRc()
+},
+    {
+      label: 'Backup exported',
+      pass: hasBackup,
+      detail: lastBackupText
+    },
+    {
+      label: 'No pending uploads',
+      pass: pendingUploads === 0,
+      detail: pendingUploads === 0
+        ? 'All visible inspections appear synced.'
+        : `${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'} still waiting to upload.`
+    },
+    {
+      label: 'Beta notes available',
+      pass: !!document.getElementById('betaNotesPanel'),
+      detail: 'Known issues / beta notes panel is present.'
+    },
+    {
+      label: 'Quick test checklist available',
+      pass: !!document.getElementById('betaQuickTestPanel'),
+      detail: 'Beta user quick test checklist is present.'
+    }
+  ];
+}
+
+function updateReleaseCandidatePanel() {
+  const panel =
+    document.getElementById('releaseCandidatePanel');
+
+  if (!panel) return;
+
+  const checks =
+    getReleaseCandidateChecks();
+
+  const passedCount =
+    checks.filter(check => check.pass).length;
+
+  const allPassed =
+    passedCount === checks.length;
+
+  panel.className =
+    `release-candidate-panel ${
+      allPassed
+        ? 'release-candidate-pass'
+        : 'release-candidate-warning'
+    }`;
+
+  panel.innerHTML = `
+    <div class="release-candidate-header">
+      <div>
+        <strong>Release Candidate Readiness</strong>
+        <span>
+          ${passedCount}/${checks.length} checks passed
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleReleaseCandidatePanel()"
+      >
+        ${window.releaseCandidatePanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.releaseCandidatePanelOpen
+        ? `
+          <div class="release-candidate-body">
+            ${checks.map(check => `
+              <div class="release-candidate-check ${check.pass ? 'check-pass' : 'check-warning'}">
+                <strong>
+                  ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
+                </strong>
+                <span>${escapeHtml(check.detail)}</span>
+              </div>
+            `).join('')}
+
+            <button
+              type="button"
+              class="release-candidate-recheck-btn"
+              onclick="updateReleaseCandidatePanel()"
+            >
+              Recheck
+            </button>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleReleaseCandidatePanel() {
+  window.releaseCandidatePanelOpen =
+    !window.releaseCandidatePanelOpen;
+
+  updateReleaseCandidatePanel();
+}
+
+function updateRcTesterInstructionPanel() {
+  const panel =
+    document.getElementById('rcTesterInstructionPanel');
+
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="rc-tester-instruction-header">
+      <div>
+        <strong>RC Tester Instructions</strong>
+        <span>Checklist for testers before and after inspection testing.</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleRcTesterInstructionPanel()"
+      >
+        ${window.rcTesterInstructionPanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.rcTesterInstructionPanelOpen
+        ? `
+          <div class="rc-tester-instruction-body">
+            <div class="rc-tester-step">
+              <strong>1</strong>
+              <span>Login and confirm the top button says Cloud connected.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>2</strong>
+              <span>Tap Sync / Refresh before opening inspections.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>3</strong>
+              <span>Export a backup before testing or changing data.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>4</strong>
+              <span>Open an existing inspection and confirm data, photos, report and archive still work.</span>
+            </div>
+
+            <div class="rc-tester-step">
+              <strong>5</strong>
+              <span>Create one safe test inspection if needed, then check autosave and sync.</span>
+            </div>
+
+            <div class="rc-tester-step rc-tester-step-final">
+              <strong>6</strong>
+              <span>Report issues under Additional Services → Beta Feedback.</span>
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleRcTesterInstructionPanel() {
+  window.rcTesterInstructionPanelOpen =
+    !window.rcTesterInstructionPanelOpen;
+
+  updateRcTesterInstructionPanel();
+}
+
+function refreshRcHomePanels() {
+  updateReleaseCandidatePanel();
+  updateRcBackupReminderPanel();
+  updateRcFinalPreflightPanel();
+  updateRcTesterInstructionPanel();
+}
+
+function getChecklistRowSectionIndex(row) {
+  return Number(row.dataset.sectionIndex);
+}
+
+function getFollowUpFindingSectionIndexes() {
+  const sectionIndexes = [];
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      if (!followUpFindingNavIndexes.includes(itemIndex)) {
+        return;
+      }
+
+      const sectionIndex =
+        getChecklistRowSectionIndex(row);
+
+      if (
+        Number.isFinite(sectionIndex) &&
+        !sectionIndexes.includes(sectionIndex)
+      ) {
+        sectionIndexes.push(sectionIndex);
+      }
+    });
+
+  return sectionIndexes;
+}
+
+function applyFollowUpSectionVisibility(activeSectionIndex) {
+  const findingSectionIndexes =
+    getFollowUpFindingSectionIndexes();
+
+  document
+    .querySelectorAll('.checklist-section-tab')
+    .forEach(tab => {
+      const sectionIndex =
+        Number(tab.dataset.sectionIndex);
+
+      const shouldShow =
+        findingSectionIndexes.includes(sectionIndex);
+
+      tab.style.display =
+        shouldShow ? '' : 'none';
+
+      tab.classList.toggle(
+        'active-section-tab',
+        sectionIndex === activeSectionIndex
+      );
+    });
+
+  const tabHint =
+    document.querySelector('.checklist-tab-hint');
+
+  if (tabHint) {
+    tabHint.style.display = 'none';
+  }
+
+  document
+    .querySelectorAll('.section-group')
+    .forEach(section => {
+      const sectionIndex =
+        Number(String(section.id || '').replace('section_', ''));
+
+      section.classList.toggle(
+        'hidden',
+        sectionIndex !== activeSectionIndex
+      );
+    });
+
+  document
+    .querySelectorAll('.checklist-question-nav')
+    .forEach(nav => {
+      nav.style.display = 'none';
+    });
+}
+
+function showFollowUpFindingAt(position) {
+  if (followUpFindingNavIndexes.length === 0) return;
+
+  followUpFindingNavPosition =
+    Math.max(
+      0,
+      Math.min(position, followUpFindingNavIndexes.length - 1)
+    );
+
+  const activeIndex =
+    followUpFindingNavIndexes[followUpFindingNavPosition];
+
+  let activeSectionIndex = null;
+  let activeRow = null;
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      const answerField =
+        row.querySelector('.answer-select');
+
+      const isFinding =
+        followUpFindingNavIndexes.includes(itemIndex);
+
+      const isCurrentFinding =
+        itemIndex === activeIndex;
+
+      if (answerField && !isFinding) {
+        answerField.value = 'N/A';
+      }
+
+      row.style.display =
+        isCurrentFinding ? '' : 'none';
+
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        !isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'active-checklist-question',
+        isCurrentFinding
+      );
+
+      row.classList.remove('question-hidden');
+
+      if (isCurrentFinding) {
+        activeRow = row;
+        activeSectionIndex =
+          getChecklistRowSectionIndex(row);
+      }
+    });
+
+  applyFollowUpSectionVisibility(activeSectionIndex);
+
+  if (activeRow) {
+    const section =
+      activeRow.closest('.section-group');
+
+    if (section) {
+      section.classList.remove('hidden');
+
+      const sectionIndex =
+        section.id.replace('section_', '');
+
+      const arrow =
+        document.getElementById(`arrow_${sectionIndex}`);
+
+      if (arrow) {
+        arrow.textContent = 'v';
+      }
+    }
+
+    activeRow.style.display = '';
+    activeRow.classList.remove('follow-up-hidden-question');
+    activeRow.classList.add('follow-up-visible-finding');
+
+    activeRow.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+
+  updateFollowUpFindingNavStatus();
+}
+
+function updateFollowUpFindingNavStatus() {
+  const status =
+    document.getElementById('followUpFindingNavStatus');
+
+  if (!status) return;
+
+  status.textContent =
+    `Finding ${followUpFindingNavPosition + 1} of ${followUpFindingNavIndexes.length}`;
+}
+
+function showFollowUpFindingAt(position) {
+  if (followUpFindingNavIndexes.length === 0) return;
+
+  followUpFindingNavPosition =
+    Math.max(
+      0,
+      Math.min(position, followUpFindingNavIndexes.length - 1)
+    );
+
+  const activeIndex =
+    followUpFindingNavIndexes[followUpFindingNavPosition];
+
+  let activeSectionIndex = null;
+  let activeRow = null;
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      const answerField =
+        row.querySelector('.answer-select');
+
+      const isFinding =
+        followUpFindingNavIndexes.includes(itemIndex);
+
+      const isCurrentFinding =
+        itemIndex === activeIndex;
+
+      if (answerField && !isFinding) {
+        answerField.value = 'N/A';
+      }
+
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        !isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'active-checklist-question',
+        isCurrentFinding
+      );
+
+      row.classList.remove('question-hidden');
+
+      if (isCurrentFinding) {
+        activeRow = row;
+        activeSectionIndex =
+          getChecklistRowSectionIndex(row);
+      }
+    });
+
+  applyFollowUpSectionVisibility(activeSectionIndex);
+
+  if (activeRow) {
+    const section =
+      activeRow.closest('.section-group');
+
+    if (section) {
+      section.classList.remove('hidden');
+
+      const sectionIndex =
+        section.id.replace('section_', '');
+
+      const arrow =
+        document.getElementById(`arrow_${sectionIndex}`);
+
+      if (arrow) {
+        arrow.textContent = 'v';
+      }
+    }
+
+    activeRow.classList.remove('follow-up-hidden-question');
+    activeRow.classList.add('follow-up-visible-finding');
+
+    activeRow.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+
+  updateFollowUpFindingNavStatus();
+}
+
+function nextFollowUpFinding() {
+  showFollowUpFindingAt(followUpFindingNavPosition + 1);
+}
+
+function previousFollowUpFinding() {
+  showFollowUpFindingAt(followUpFindingNavPosition - 1);
+}
+
+function getFollowUpFindingIndexes(project) {
+  return (project?.followUpFindingIndexes || [])
+    .map(value => Number(value))
+    .filter(value => Number.isFinite(value));
+}
+
+function applyFollowUpFindingMode(project) {
+  // TEMPORARY STABILITY MODE:
+  // Follow-up finding mode is disabled until the workflow is rebuilt cleanly.
+  // This prevents scheduled follow-ups from hiding checklist rows,
+  // breaking Quick Links, or locking the Q&A screen.
+
+  followUpFindingModeActive = false;
+  followUpFindingNavIndexes = [];
+  followUpFindingNavPosition = 0;
+
+  const checklistContainer =
+    document.getElementById('checklist');
+
+  if (checklistContainer) {
+    checklistContainer.classList.remove('follow-up-mode-active');
+  }
+
+  const banner =
+    document.getElementById('followUpFindingModeBanner');
+
+  if (banner) {
+    banner.remove();
+  }
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      row.style.display = '';
+
+      row.classList.remove('follow-up-hidden-question');
+      row.classList.remove('follow-up-visible-finding');
+      row.classList.remove('active-checklist-question');
+    });
+
+  document
+    .querySelectorAll('.checklist-section-tab')
+    .forEach(tab => {
+      tab.style.display = '';
+    });
+
+  document
+    .querySelectorAll('.section-group')
+    .forEach(section => {
+      section.classList.add('hidden');
+    });
 }
 
 function updateHomeAccessCards() {
@@ -3747,18 +5439,23 @@ function updateHomeAccessCards() {
     cloudMenuBtn.style.display = 'inline-block';
   }
 }
+
 function showHome() {
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
   setCloudMenuVisible(true);
   updateHomeAccessCards();
+  updateBetaNotesPanel();
+  updateBetaQuickTestPanel();
+  refreshRcHomePanels();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
 
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
+
   updateFloatingBackButton();
 }
 
@@ -3957,6 +5654,38 @@ async function submitServiceRequest() {
   }
 }
 
+function getBrowserDeviceHint() {
+  const userAgent =
+    navigator.userAgent || '';
+
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(userAgent);
+
+  const browser =
+    userAgent.includes('Edg')
+      ? 'Edge'
+      : userAgent.includes('Chrome')
+        ? 'Chrome'
+        : userAgent.includes('Safari')
+          ? 'Safari'
+          : userAgent.includes('Firefox')
+            ? 'Firefox'
+            : 'Browser';
+
+  return `${isMobile ? 'Mobile' : 'Desktop'} / ${browser}`;
+}
+
+function getCurrentInspectionNumberForFeedback() {
+  if (!currentProjectId) {
+    return '';
+  }
+
+  const project =
+    getProjects().find(p => p.id === currentProjectId);
+
+  return project?.inspectionNumber || '';
+}
+
 function openBetaFeedbackForm() {
   const form = document.getElementById('betaFeedbackForm');
   const status = document.getElementById('betaFeedbackStatus');
@@ -3967,18 +5696,51 @@ function openBetaFeedbackForm() {
     status.textContent = '';
   }
 
-  const inspectionField = document.getElementById('betaInspectionNumber');
+  const inspectionField =
+  document.getElementById('betaInspectionNumber');
 
-  if (inspectionField && currentProjectId) {
-    const project = getProjects().find(p => p.id === currentProjectId);
-    inspectionField.value = project?.inspectionNumber || '';
-  }
+if (inspectionField) {
+  inspectionField.value =
+    getCurrentInspectionNumberForFeedback();
+}
 
-  const onlineStatus = document.getElementById('betaOnlineStatus');
+const deviceField =
+  document.getElementById('betaDevice');
 
-  if (onlineStatus) {
-    onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
-  }
+if (deviceField && !deviceField.value.trim()) {
+  deviceField.value =
+    getBrowserDeviceHint();
+}
+
+const browserField =
+  document.getElementById('betaBrowser');
+
+if (browserField && !browserField.value.trim()) {
+  browserField.value =
+    navigator.userAgent || 'Not available';
+}
+
+const onlineStatus =
+  document.getElementById('betaOnlineStatus');
+
+if (onlineStatus) {
+  onlineStatus.value =
+    navigator.onLine ? 'Online' : 'Offline';
+}
+
+const autoFillHint =
+  document.getElementById('betaAutoFillHint');
+
+if (autoFillHint) {
+  const inspectionNumber =
+    getCurrentInspectionNumberForFeedback();
+
+  autoFillHint.style.display = 'block';
+  autoFillHint.textContent =
+    inspectionNumber
+      ? 'Auto-filled: device, browser, online status and inspection number.'
+      : 'Auto-filled: device, browser and online status.';
+}
 
   form.style.display = 'block';
 
@@ -3999,16 +5761,24 @@ function cancelBetaFeedback() {
   if (status) {
     status.textContent = '';
   }
+
+  const autoFillHint =
+  document.getElementById('betaAutoFillHint');
+
+if (autoFillHint) {
+  autoFillHint.style.display = 'none';
+  autoFillHint.textContent = '';
+}
 }
 
 function clearBetaFeedbackForm() {
   const ids = [
-    'betaDevice',
-    'betaBrowser',
-    'betaInspectionNumber',
-    'betaWhatHappened',
-    'betaExpectedResult'
-  ];
+  'betaDevice',
+  'betaBrowser',
+  'betaInspectionNumber',
+  'betaWhatHappened',
+  'betaExpectedResult'
+];
 
   ids.forEach(id => {
     const field = document.getElementById(id);
@@ -4030,11 +5800,20 @@ function clearBetaFeedbackForm() {
     priority.value = 'Medium';
   }
 
-  const onlineStatus = document.getElementById('betaOnlineStatus');
+  const onlineStatus =
+  document.getElementById('betaOnlineStatus');
 
-  if (onlineStatus) {
-    onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
-  }
+if (onlineStatus) {
+  onlineStatus.value =
+    navigator.onLine ? 'Online' : 'Offline';
+}
+const whatHappenedField =
+  document.getElementById('betaWhatHappened');
+
+if (whatHappenedField) {
+  whatHappenedField.placeholder =
+    'Describe the issue...';
+}
 }
 
 async function submitBetaFeedback() {
@@ -4123,6 +5902,14 @@ async function submitBetaFeedback() {
     }
 
     clearBetaFeedbackForm();
+
+    const autoFillHint =
+  document.getElementById('betaAutoFillHint');
+
+if (autoFillHint) {
+  autoFillHint.style.display = 'none';
+  autoFillHint.textContent = '';
+}
 
   } catch (error) {
     console.error('Beta feedback crashed:', error);
@@ -4237,6 +6024,11 @@ async function renderServiceRequestsList() {
   `;
 }
 
+function setBetaFeedbackFilter(filter) {
+  currentBetaFeedbackFilter = filter;
+  renderBetaFeedbackList(true);
+}
+
 async function renderBetaFeedbackList() {
   if (!canViewServiceRequests()) {
     alert('Beta feedback is only available to Fire-S admin.');
@@ -4252,10 +6044,10 @@ async function renderBetaFeedbackList() {
     serviceRequestsList.style.display = 'none';
   }
 
-  if (list.style.display === 'block') {
-    list.style.display = 'none';
-    return;
-  }
+  if (list.style.display === 'block' && !arguments[0]) {
+  list.style.display = 'none';
+  return;
+}
 
   list.style.display = 'block';
   list.innerHTML =
@@ -4291,64 +6083,145 @@ async function renderBetaFeedbackList() {
     return;
   }
 
-  const feedbackItems = data || [];
+  const allFeedbackItems = data || [];
+
+const feedbackItems =
+  allFeedbackItems.filter(item => {
+    if (currentBetaFeedbackFilter === 'all') {
+      return true;
+    }
+
+    if (currentBetaFeedbackFilter === 'high') {
+      return String(item.priority || '').toLowerCase() === 'high';
+    }
+
+    return String(item.status || 'new').toLowerCase() ===
+      currentBetaFeedbackFilter;
+  });
+
+  const betaFeedbackFilterHtml = `
+  <div class="beta-feedback-filter-bar">
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'all' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('all')"
+    >
+      All (${allFeedbackItems.length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'new' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('new')"
+    >
+      New (${allFeedbackItems.filter(item => String(item.status || 'new').toLowerCase() === 'new').length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'reviewed' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('reviewed')"
+    >
+      Reviewed (${allFeedbackItems.filter(item => String(item.status || '').toLowerCase() === 'reviewed').length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'closed' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('closed')"
+    >
+      Closed (${allFeedbackItems.filter(item => String(item.status || '').toLowerCase() === 'closed').length})
+    </button>
+
+    <button
+      type="button"
+      class="${currentBetaFeedbackFilter === 'high' ? 'active' : ''}"
+      onclick="setBetaFeedbackFilter('high')"
+    >
+      High (${allFeedbackItems.filter(item => String(item.priority || '').toLowerCase() === 'high').length})
+    </button>
+  </div>
+`;
 
   if (feedbackItems.length === 0) {
-    list.innerHTML =
-      '<div class="empty-state">No beta feedback submitted yet.</div>';
-    return;
-  }
+  list.innerHTML = `
+    ${betaFeedbackFilterHtml}
+    <div class="empty-state">
+      No beta feedback found for this filter.
+    </div>
+  `;
+  return;
+}
 
   list.innerHTML = `
-    <div class="beta-feedback-list">
+  ${betaFeedbackFilterHtml}
+
+  <div class="beta-feedback-list">
       ${feedbackItems.map(item => `
         <div class="beta-feedback-item beta-feedback-${escapeHtml(String(item.priority || 'Medium').toLowerCase())}">
-          <div class="beta-feedback-top">
-            <strong>
-              ${escapeHtml(item.issue_type || 'Feedback')}
-            </strong>
+          <div class="beta-feedback-top beta-feedback-top-polished">
+  <div>
+    <strong>
+      ${escapeHtml(item.issue_type || 'Feedback')}
+    </strong>
 
-            <span class="beta-feedback-priority">
-              ${escapeHtml(item.priority || 'Medium')}
-            </span>
-          </div>
+    <div class="beta-feedback-subtitle">
+      ${item.created_at ? escapeHtml(new Date(item.created_at).toLocaleString()) : '-'}
+    </div>
+  </div>
 
-          <div class="beta-feedback-meta">
-            <span>${escapeHtml(item.status || 'new')}</span>
-            <span>${item.created_at ? escapeHtml(new Date(item.created_at).toLocaleString()) : '-'}</span>
-            <span>${escapeHtml(item.app_version || '-')}</span>
-          </div>
+  <div class="beta-feedback-badges">
+    <span class="beta-feedback-priority">
+      ${escapeHtml(item.priority || 'Medium')}
+    </span>
 
-          <div class="beta-feedback-line">
-            <strong>Inspection:</strong>
-            ${escapeHtml(item.inspection_number || '-')}
-          </div>
+    <span class="beta-feedback-status-pill">
+      ${escapeHtml(item.status || 'new')}
+    </span>
+  </div>
+</div>
 
-          <div class="beta-feedback-line">
-            <strong>Device:</strong>
-            ${escapeHtml(item.device || '-')}
-            |
-            <strong>Browser:</strong>
-            ${escapeHtml(item.browser || '-')}
-            |
-            <strong>Status:</strong>
-            ${escapeHtml(item.online_status || '-')}
-          </div>
+<div class="beta-feedback-version-line">
+  <strong>Version:</strong>
+  ${escapeHtml(item.app_version || '-')}
+</div>
 
-          <div class="beta-feedback-message">
-            <strong>What happened:</strong>
-            <span>${escapeHtml(item.what_happened || '-')}</span>
-          </div>
+          <div class="beta-feedback-context-grid">
+  <div>
+    <span>Inspection</span>
+    <strong>${escapeHtml(item.inspection_number || '-')}</strong>
+  </div>
 
-          <div class="beta-feedback-message">
-            <strong>Expected:</strong>
-            <span>${escapeHtml(item.expected_result || '-')}</span>
-          </div>
+  <div>
+    <span>Online Status</span>
+    <strong>${escapeHtml(item.online_status || '-')}</strong>
+  </div>
 
-          <div class="beta-feedback-line">
-            <strong>Reported by:</strong>
-            ${escapeHtml(item.reported_by_email || '-')}
-          </div>
+  <div>
+    <span>Device</span>
+    <strong>${escapeHtml(item.device || '-')}</strong>
+  </div>
+
+  <div>
+    <span>Browser</span>
+    <strong>${escapeHtml(item.browser || '-')}</strong>
+  </div>
+</div>
+
+          <div class="beta-feedback-message-card">
+  <strong>What happened</strong>
+  <p>${escapeHtml(item.what_happened || '-')}</p>
+</div>
+
+<div class="beta-feedback-message-card beta-feedback-expected">
+  <strong>Expected result</strong>
+  <p>${escapeHtml(item.expected_result || '-')}</p>
+</div>
+
+          <div class="beta-feedback-reporter-line">
+  <strong>Reported by:</strong>
+  ${escapeHtml(item.reported_by_email || '-')}
+</div>
 
           ${
             item.followup_note
@@ -4963,7 +6836,7 @@ function getProjectInspectionStatus(project) {
       label: 'Needs Attention',
       class: 'inspection-attention',
       filter: 'inspection-attention',
-      detail: `${completion.noCount} issue${completion.noCount === 1 ? '' : 's'}`
+      detail: `${completion.noCount} NO item${completion.noCount === 1 ? '' : 's'}`
     };
   }
 
@@ -5051,6 +6924,9 @@ function getCurrentFormProjectSnapshot() {
     contactTel: getEl('contactTel').value.trim(),
     contactEmail: getEl('contactEmail').value.trim(),
     inspectorName: getEl('inspectorName').value.trim(),
+    inspectionDate:
+      getEl('inspectionDate').value ||
+      new Date().toISOString().slice(0, 10),
     productType,
     inspectionType,
     occupancy,
@@ -5059,11 +6935,17 @@ function getCurrentFormProjectSnapshot() {
 }
 
 function updateProjectReadinessPanel() {
-  const panel = document.getElementById('projectReadinessPanel');
-  if (!panel) return;
+  const quickSummary =
+    document.getElementById('quickReadinessSummary');
+
+  const oldPanel =
+    document.getElementById('projectReadinessPanel');
+
+  if (!quickSummary && !oldPanel) return;
 
   if (getEl('projectFormSection').style.display === 'none') {
-    panel.innerHTML = '';
+    if (quickSummary) quickSummary.innerHTML = '';
+    if (oldPanel) oldPanel.innerHTML = '';
     return;
   }
 
@@ -5071,99 +6953,255 @@ function updateProjectReadinessPanel() {
   const completion = getProjectCompletionCounts(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const dataQuality = getProjectDataQuality(project);
-  const status = getProjectInspectionStatus(project);
+
   const percent = completion.total
     ? Math.round((completion.answered / completion.total) * 100)
     : 0;
 
-  const missingText = dataQuality.count > 0
-    ? dataQuality.missing.join(', ')
-    : 'None';
-  const cardAction = (count, action) =>
-    count > 0
-      ? `button type="button" data-readiness-action="${action}"`
-      : 'div';
+  const quickLinks = [];
 
-  const cardEnd = count =>
-    count > 0 ? 'button' : 'div';
+  if (dataQuality.count > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'warning',
+      label: 'Complete inspection info',
+      count: dataQuality.count,
+      detail: `Missing: ${dataQuality.missing.join(', ')}`,
+      action: 'missing-info'
+    });
+  }
 
-  const cardClass = (count, stateClass = '') =>
-    [
-      'readiness-chip',
-      count > 0 ? 'readiness-chip-action' : '',
-      count > 0 ? stateClass : ''
-    ]
-      .filter(Boolean)
-      .join(' ');
+  if (completion.unanswered > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'progress',
+      label: 'Continue Q&A checklist',
+      count: completion.unanswered,
+      detail: 'Tap to continue with the first unanswered question.',
+      action: 'unanswered'
+    });
+  }
 
-  const cardHint = count =>
-    count > 0
-      ? '<span class="readiness-review-hint">Review</span>'
-      : '';
-
-  panel.innerHTML = `
-    <div class="readiness-top">
-      <div>
-        <div class="readiness-title">Inspection Readiness</div>
-        <div class="readiness-subtitle">
-          ${completion.answered}/${completion.total} checklist items answered (${percent}%)
-        </div>
-      </div>
-
-      <span class="project-inspection-status ${escapeHtml(status.class)}">
-        ${escapeHtml(status.label)}
-        <small>${escapeHtml(status.detail)}</small>
-      </span>
-    </div>
-
-    <div class="readiness-grid">
-      <${cardAction(completion.noCount, 'finding')} class="${cardClass(completion.noCount, 'readiness-danger')}">
-        <strong>${completion.noCount}</strong>
-        <span>No / Findings</span>
-        ${cardHint(completion.noCount)}
-      </${cardEnd(completion.noCount)}>
-
-      <${cardAction(completion.unanswered, 'unanswered')} class="${cardClass(completion.unanswered, 'readiness-progress')}">
-        <strong>${completion.unanswered}</strong>
-        <span>Unanswered</span>
-        ${cardHint(completion.unanswered)}
-      </${cardEnd(completion.unanswered)}>
-
-      <${cardAction(expiryCounts.overdue, 'expiry-overdue')} class="${cardClass(expiryCounts.overdue, 'readiness-danger')}">
-        <strong>${expiryCounts.overdue}</strong>
-        <span>Expired</span>
-        ${cardHint(expiryCounts.overdue)}
-      </${cardEnd(expiryCounts.overdue)}>
-
-      <${cardAction(expiryCounts.soon, 'expiry-soon')} class="${cardClass(expiryCounts.soon, 'readiness-warning-state')}">
-        <strong>${expiryCounts.soon}</strong>
-        <span>Due Soon</span>
-        ${cardHint(expiryCounts.soon)}
-      </${cardEnd(expiryCounts.soon)}>
-
-      <${cardAction(expiryCounts.missing, 'expiry-missing')} class="${cardClass(expiryCounts.missing, 'readiness-warning-state')}">
-        <strong>${expiryCounts.missing}</strong>
-        <span>Expiry Missing</span>
-        ${cardHint(expiryCounts.missing)}
-      </${cardEnd(expiryCounts.missing)}>
-
-      <${cardAction(dataQuality.count, 'info')} class="${cardClass(dataQuality.count, 'readiness-warning-state')}">
-        <strong>${dataQuality.count}</strong>
-        <span>Info Missing</span>
-        ${cardHint(dataQuality.count)}
-      </${cardEnd(dataQuality.count)}>
-    </div>
-
-    ${dataQuality.count > 0 ? `
-      <div class="readiness-warning">
-        Missing project info: ${escapeHtml(missingText)}
-      </div>
-    ` : ''}
-  `;
-
-  bindReadinessActionButtons(panel);
+  if (completion.noCount > 0) {
+  quickLinks.push({
+    group: 'inspection',
+    type: 'danger',
+    label: 'Review Action Items',
+    count: completion.noCount,
+    detail: 'Inspection requirements answered NO may need corrective action.',
+    action: 'finding'
+  });
 }
 
+  if (expiryCounts.overdue > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'danger',
+      label: 'Expired equipment',
+      count: expiryCounts.overdue,
+      detail: 'Expiry date has already passed.',
+      action: 'expiry-overdue'
+    });
+  }
+
+  if (expiryCounts.soon > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Equipment due soon',
+      count: expiryCounts.soon,
+      detail: 'Expiry date is approaching.',
+      action: 'expiry-soon'
+    });
+  }
+
+  if (expiryCounts.missing > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Missing equipment expiry dates',
+      count: expiryCounts.missing,
+      detail: 'Enter expiry dates where applicable.',
+      action: 'expiry-missing'
+    });
+  }
+
+  const renderQuickLink = link => `
+    <button
+      type="button"
+      class="quick-link-chip quick-link-${escapeHtml(link.type)}"
+      onclick="handleSmartQuickLink('${escapeHtml(link.action)}')"
+    >
+      <span class="quick-link-main">
+        ${escapeHtml(link.label)}
+      </span>
+
+      <strong>${link.count}</strong>
+
+      <small>${escapeHtml(link.detail)}</small>
+    </button>
+  `;
+
+  const inspectionLinks =
+    quickLinks.filter(link => link.group === 'inspection');
+
+  const equipmentLinks =
+    quickLinks.filter(link => link.group === 'equipment');
+
+  const summaryHtml = `
+    <div class="quick-progress-line">
+      <strong>Progress:</strong>
+      ${completion.answered}/${completion.total} checklist items answered (${percent}%)
+    </div>
+
+    ${
+      inspectionLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Inspection action items
+          </div>
+
+          <div class="quick-link-list">
+            ${inspectionLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : `
+          <div class="quick-clear-line">
+            No inspection action items.
+          </div>
+        `
+    }
+
+    ${
+      equipmentLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Equipment status
+          </div>
+
+          <div class="quick-link-list">
+            ${equipmentLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : `
+          <div class="quick-clear-line">
+            No expired or due equipment items.
+          </div>
+        `
+    }
+  `;
+
+  if (quickSummary) {
+    quickSummary.innerHTML = summaryHtml;
+  }
+
+  if (oldPanel) {
+    oldPanel.innerHTML = '';
+    oldPanel.style.display = 'none';
+  }
+}
+
+function handleSmartQuickLink(action) {
+  if (action === 'missing-info') {
+    focusInspectionSection('projectDetailsCard');
+
+    setTimeout(() => {
+      focusFirstMissingProjectInfo();
+      setReadinessMessage('Jumped to missing inspection information.');
+    }, 120);
+
+    return;
+  }
+
+  if (action === 'unanswered') {
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstUnansweredChecklistItem();
+      setReadinessMessage('Jumped to first unanswered checklist item.');
+    }, 120);
+
+    return;
+  }
+
+  if (action === 'finding') {
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentIssue();
+      setReadinessMessage('Jumped to first Action Item answered NO.');
+    }, 120);
+
+    return;
+  }
+
+  if (action === 'expiry-overdue') {
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentExpiry('overdue');
+      setReadinessMessage('Jumped to expired equipment item.');
+    }, 120);
+
+    return;
+  }
+
+  if (action === 'expiry-soon') {
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentExpiry('soon');
+      setReadinessMessage('Jumped to equipment item due soon.');
+    }, 120);
+
+    return;
+  }
+
+  if (action === 'expiry-missing') {
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentExpiry('missing');
+      setReadinessMessage('Jumped to missing equipment expiry date.');
+    }, 120);
+  }
+}
+
+function showBackToQuickLinksButton(targetElement) {
+  if (!targetElement) return;
+
+  removeBackToQuickLinksButtons();
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'back-to-quick-links-btn';
+  button.textContent = 'Back to Quick Links';
+  button.onclick = scrollBackToQuickLinks;
+
+  targetElement.insertAdjacentElement('afterbegin', button);
+}
+
+function removeBackToQuickLinksButtons() {
+  document
+    .querySelectorAll('.back-to-quick-links-btn')
+    .forEach(button => button.remove());
+}
+
+function scrollBackToQuickLinks() {
+  const quickLinks =
+    document.getElementById('inspectionQuickActions');
+
+  if (!quickLinks) return;
+
+  focusInspectionSection('inspectionQuickActions');
+
+  setTimeout(() => {
+    quickLinks.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }, 120);
+}
 function getChecklistForProject(project) {
   const productType = normalizeProductType(project.productType);
   const inspectionType = project.inspectionType || '';
@@ -5199,6 +7237,55 @@ function getChecklistForProject(project) {
     item["Applicable To"] === "All occupancies" ||
     item["Applicable To"] === occupancy
   );
+}
+
+function getReportChecklistRows(project) {
+  const checklist =
+    getChecklistForProject(project);
+
+  const answers =
+    project?.answers || [];
+
+  return answers
+    .map(answer => {
+      const checklistItem =
+        checklist.find((item, index) =>
+          index === answer.itemIndex ||
+          String(item["Item Number"]) === String(answer.itemNumber)
+        );
+
+      if (!checklistItem) {
+        return null;
+      }
+
+      return {
+        answer,
+        checklistItem,
+        itemNumber:
+          answer.itemNumber ||
+          checklistItem["Item Number"] ||
+          String(answer.itemIndex + 1),
+        question:
+          checklistItem["Checklist Item"] ||
+          checklistItem.Requirement ||
+          checklistItem.Question ||
+          'Checklist item',
+        section:
+          checklistItem.Section || '',
+        answerValue:
+          answer.answer || '',
+        note:
+          answer.note || '',
+        expiryDate:
+          answer.expiryDate || ''
+      };
+    })
+    .filter(Boolean)
+    .filter(row =>
+      row.answerValue ||
+      row.note ||
+      row.expiryDate
+    );
 }
 
 function getHighRiskSummary(project) {
@@ -5261,6 +7348,8 @@ function openChecklistRow(row, focusTarget) {
 
   row.classList.add('issue-focus');
 
+  showBackToQuickLinksButton(row);
+
   row.scrollIntoView({
     behavior: 'smooth',
     block: 'center'
@@ -5297,6 +7386,9 @@ function focusInputField(field) {
   if (!field) return;
 
   field.classList.add('field-focus');
+
+  showBackToQuickLinksButton(field.closest('.card') || field.parentElement);
+
   field.scrollIntoView({
     behavior: 'smooth',
     block: 'center'
@@ -5362,7 +7454,7 @@ function bindReadinessActionButtons(panel) {
 function handleReadinessAction(action) {
   if (action === 'finding') {
     focusFirstCurrentIssue();
-    setReadinessMessage('Jumped to first finding.');
+    setReadinessMessage('Jumped to first Action Item answered NO.');
     return;
   }
 
@@ -5401,9 +7493,22 @@ window.focusFirstCurrentExpiry = focusFirstCurrentExpiry;
 window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
 window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
 window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
+window.setBetaFeedbackFilter = setBetaFeedbackFilter;
+window.toggleBetaNotesPanel = toggleBetaNotesPanel;
+window.toggleBetaQuickTestPanel = toggleBetaQuickTestPanel;
+window.toggleReleaseCandidatePanel = toggleReleaseCandidatePanel;
+window.updateReleaseCandidatePanel = updateReleaseCandidatePanel;
+window.updateRcBackupReminderPanel = updateRcBackupReminderPanel;
+window.updateRcFinalPreflightPanel = updateRcFinalPreflightPanel;
+window.toggleRcTesterInstructionPanel = toggleRcTesterInstructionPanel;
+window.updateRcTesterInstructionPanel = updateRcTesterInstructionPanel;
+window.nextFollowUpFinding = nextFollowUpFinding;
+window.previousFollowUpFinding = previousFollowUpFinding;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
+window.runSiteReadyPreflight = runSiteReadyPreflight;
+window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
@@ -5431,6 +7536,7 @@ function focusFirstProjectExpiry(project, expiryStatus) {
   }
 
   row.classList.add('expiry-focus');
+  showBackToQuickLinksButton(row);
 
   row.scrollIntoView({
     behavior: 'smooth',
@@ -5883,6 +7989,7 @@ function convertProjectToArchivedInspection(project) {
     inspectionNumber: project.inspectionNumber || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
+    inspectionDate: project.inspectionDate || '',
 
     projectName: project.projectName || '',
     organisationName: project.organisationName || '',
@@ -5916,11 +8023,12 @@ function convertProjectToArchivedInspection(project) {
 }
 
 function consolidateDuplicateSiteCards() {
-  const confirmed = confirm(
-    'This will merge duplicate cards for the same premises into one card and move older inspections into Previous Inspection Archive. Export a backup first. Continue?'
-  );
+  const confirmed = confirmRcSafetyLock(
+  'Consolidate Duplicate Site Cards',
+  'This will merge duplicate cards for the same premises into one card and move older inspections into Previous Inspection Archive.'
+);
 
-  if (!confirmed) return;
+if (!confirmed) return;
 
   const projects = getProjects();
   const groups = new Map();
@@ -6085,6 +8193,8 @@ function renderProjectsList() {
   // renderReminderBanner(projects);
   renderDashboardMetrics(projects);
   updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
+  updatePostSiteSyncReminder();
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
@@ -6290,6 +8400,9 @@ const scheduledLabel =
         combineStreetAddress(project.streetNumber, project.addressLine) ||
         'No address captured';
 
+      const inspectionDate =
+        getProjectInspectionDate(project);
+
       return `
         <button
           type="button"
@@ -6302,6 +8415,7 @@ const scheduledLabel =
 
           <span class="inspection-project-list-meta">
             ${escapeHtml(project.inspectionNumber || '-')}
+            ${inspectionDate ? ` | Inspection date: ${escapeHtml(formatInspectionDate(inspectionDate))}` : ''}
           </span>
 
           ${
@@ -6472,6 +8586,9 @@ const scheduledLabel =
 
   const lastSaved = formatProjectDate(project.lastSaved);
 
+  const inspectionDate =
+    getProjectInspectionDate(project);
+
   if (listView) {
     listView.style.display = 'none';
   }
@@ -6605,6 +8722,11 @@ const scheduledLabel =
         </div>
 
         <div>
+          <span>Inspection Date</span>
+          <strong>${escapeHtml(formatInspectionDate(inspectionDate))}</strong>
+        </div>
+
+        <div>
           <span>Occupancy</span>
           <strong>${escapeHtml(project.occupancy || '-')}</strong>
         </div>
@@ -6645,7 +8767,9 @@ function closeProjectSummaryCard() {
   }
 }
 
-function archiveCurrentInspectionCycle(project) {
+function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
+  const existingHistory = project.inspectionHistory || [];
+
   const hasInspectionData =
     (project.answers || []).length > 0 ||
     (project.photos || []).length > 0 ||
@@ -6653,15 +8777,43 @@ function archiveCurrentInspectionCycle(project) {
     project.followUpNotes;
 
   if (!hasInspectionData) {
-    return project.inspectionHistory || [];
+    return existingHistory;
+  }
+
+  const inspectionKey =
+    project.inspectionNumber ||
+    project.id ||
+    '';
+
+  const alreadyArchived =
+    existingHistory.some(item => {
+      const itemKey =
+        item.inspectionNumber ||
+        item.sourceInspectionNumber ||
+        '';
+
+      return (
+        inspectionKey &&
+        itemKey === inspectionKey
+      );
+    });
+
+  if (alreadyArchived) {
+    return existingHistory;
   }
 
   const previousInspectionSnapshot = {
+    archiveReason,
     archivedAt: new Date().toISOString(),
 
+    sourceProjectId: project.id || '',
+    sourceInspectionNumber: project.inspectionNumber || '',
+
     inspectionNumber: project.inspectionNumber || '',
+    completedAt: project.completedAt || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
+    inspectionDate: project.inspectionDate || '',
 
     projectName: project.projectName || '',
     organisationName: project.organisationName || '',
@@ -6694,21 +8846,29 @@ function archiveCurrentInspectionCycle(project) {
   };
 
   return [
-    ...(project.inspectionHistory || []),
+    ...existingHistory,
     previousInspectionSnapshot
   ];
 }
 
 function openProject(projectId, focusMode) {
+  closeFinishSummaryBanner();
   currentProjectSummaryId = null;
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
   if (!project) return;
 
   currentProjectId = project.id;
+  followUpFindingModeActive = false;
+followUpFindingNavIndexes = [];
+followUpFindingNavPosition = 0;
  
   const shouldStartFreshScheduledInspection =
   project.scheduleFreshInspection === true;
+
+const isFollowUpScheduledCycle =
+  project.scheduledReason === 'follow_up' ||
+  project.scheduleType === 'Follow-up';
 
 if (shouldStartFreshScheduledInspection) {
   const projectIndex = projects.findIndex(p => p.id === project.id);
@@ -6717,12 +8877,47 @@ if (shouldStartFreshScheduledInspection) {
     const inspectionHistory =
       archiveCurrentInspectionCycle(projects[projectIndex]);
 
+const previousAnswers =
+  projects[projectIndex].answers || [];
+
+const followUpFindingAnswers =
+  previousAnswers.filter(answer =>
+    String(answer.answer || '').trim().toLowerCase() === 'no'
+  );
+
+const followUpFindingIndexes =
+  followUpFindingAnswers
+    .map(answer => Number(answer.itemIndex))
+    .filter(value => Number.isFinite(value));
+
+const hasFollowUpFindings =
+  isFollowUpScheduledCycle &&
+  followUpFindingIndexes.length > 0;
+
+const starterAnswers =
+  hasFollowUpFindings
+    ? previousAnswers.map(answer => {
+        const itemIndex =
+          Number(answer.itemIndex);
+
+        const isFinding =
+          followUpFindingIndexes.includes(itemIndex);
+
+        return {
+          ...answer,
+          answer: isFinding ? '' : 'N/A',
+          note: isFinding ? answer.note || '' : '',
+          expiryDate: isFinding ? answer.expiryDate || null : null
+        };
+      })
+    : [];
+
     projects[projectIndex] = {
       ...projects[projectIndex],
 
       inspectionHistory,
 
-      answers: [],
+      answers: starterAnswers,
       photos: [],
       finalComments: '',
 
@@ -6732,6 +8927,11 @@ if (shouldStartFreshScheduledInspection) {
 
       scheduledStatus: 'in_progress',
       scheduleFreshInspection: false,
+
+      followUpFindingMode: hasFollowUpFindings,
+followUpFindingIndexes,
+followUpSourceInspectionNumber:
+  projects[projectIndex].inspectionNumber || '',
 
       inspectionNumber: generateInspectionNumber(),
 
@@ -6760,6 +8960,11 @@ if (shouldStartFreshScheduledInspection) {
     inspectionTypeSelect.value = project.inspectionType;
   }
   getEl('inspectorName').value = project.inspectorName || '';
+  getEl('inspectionDate').value =
+    project.inspectionDate ||
+    project.completedAt?.slice(0, 10) ||
+    project.lastSaved?.slice(0, 10) ||
+    new Date().toISOString().slice(0, 10);
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
   getEl('streetNumber').value = project.streetNumber || '';
@@ -6806,8 +9011,19 @@ if (shouldStartFreshScheduledInspection) {
     });
   }
 
+if (ENABLE_GUIDED_INSPECTION_WORKFLOW) {
+  currentProject = project;
   showProjectForm();
-  renderInspectionArchive(project);
+  focusInspectionSection('inspectionQuickActions');
+} else {
+  showProjectForm();
+}
+
+setTimeout(() => {
+  applyFollowUpFindingMode(project);
+}, 120);
+
+prepareInspectionArchiveButton(project);
 
   if (focusMode === 'issues') {
     setTimeout(() => {
@@ -7158,8 +9374,10 @@ function markInspectionSynced(projectId) {
   };
 
   setProjects(projects);
-
   renderProjectsList();
+  updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
+  updatePostSiteSyncReminder();
 }
 
 function saveProject() {
@@ -7180,6 +9398,9 @@ function saveProject() {
       .join(' ');
 
   const inspectorName = getEl('inspectorName').value.trim();
+  const inspectionDate =
+    getEl('inspectionDate').value ||
+    new Date().toISOString().slice(0, 10);
   const occupancy = getEl('occupancySelect').value;
   
   const streetNumber = getEl('streetNumber').value.trim();
@@ -7293,6 +9514,7 @@ function saveProject() {
       productType,
       inspectionType,
       inspectorName,
+      inspectionDate,
       occupancy,
       answers,
       followUpRequired,
@@ -7357,6 +9579,7 @@ function saveProject() {
       productType,
       inspectionType,
       inspectorName,
+      inspectionDate,
       occupancy,
       answers,
       photos: currentPhotos,
@@ -7422,24 +9645,239 @@ function saveProject() {
 
 }
 
+function buildFinishSummaryMessage(project) {
+  if (!project) {
+    return 'Inspection finished.';
+  }
+
+  const historyCount =
+    (project.inspectionHistory || []).length;
+
+  const photoCount =
+    (project.photos || []).length;
+
+  const hasFollowUp =
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate;
+
+  const inspectionNumber =
+    project.inspectionNumber || '-';
+
+  const inspectionDate =
+    project.inspectionDate ||
+    project.completedAt?.slice(0, 10) ||
+    project.lastSaved?.slice(0, 10) ||
+    '-';
+
+  const summaryLines = [
+    `Inspection finished successfully: ${inspectionNumber}`,
+    `Inspection date: ${inspectionDate}`,
+    `Archived previous inspection record: ${historyCount > 0 ? 'Yes' : 'No'}`,
+    hasFollowUp
+      ? `Follow-up scheduled: ${project.followUpDate}`
+      : 'Follow-up scheduled: No',
+    `Photos saved: ${photoCount}`,
+    'Report available from the inspection or archive.'
+  ];
+
+  return summaryLines.join(' | ');
+}
+
+function showFinishSummaryBanner(message) {
+  const listSection =
+    document.getElementById('projectListSection');
+
+  if (!listSection || !message) return;
+
+  const existingBanner =
+    document.getElementById('finishSummaryBanner');
+
+  if (existingBanner) {
+    existingBanner.remove();
+  }
+
+  const banner = document.createElement('div');
+  banner.id = 'finishSummaryBanner';
+  banner.className = 'finish-summary-banner';
+
+  const summaryItems =
+    String(message)
+      .split('|')
+      .map(item => item.trim())
+      .filter(Boolean);
+
+  banner.innerHTML = `
+    <div class="finish-summary-content">
+      <div class="finish-summary-title">
+        Inspection completed
+      </div>
+
+      <div class="finish-summary-list">
+        ${summaryItems.map(item => `
+          <div class="finish-summary-line">
+            ${escapeHtml(item)}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="finish-summary-close-btn"
+      onclick="closeFinishSummaryBanner()"
+    >
+      Close
+    </button>
+  `;
+
+  const projectsList =
+    document.getElementById('projectsList');
+
+  if (projectsList) {
+    listSection.insertBefore(banner, projectsList);
+  } else {
+    listSection.prepend(banner);
+  }
+
+  banner.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function closeFinishSummaryBanner() {
+  const banner =
+    document.getElementById('finishSummaryBanner');
+
+  if (banner) {
+    banner.remove();
+  }
+}
+
+function getFinishInspectionWarnings(project) {
+  const completion =
+    getProjectCompletionCounts(project);
+
+  const expiryCounts =
+    getProjectExpiryCounts(project);
+
+  const dataQuality =
+    getProjectDataQuality(project);
+
+  const warnings = [];
+
+  if (completion.unanswered > 0) {
+    warnings.push(
+      `${completion.unanswered} checklist item${completion.unanswered === 1 ? '' : 's'} still unanswered`
+    );
+  }
+
+  if (completion.noCount > 0) {
+    warnings.push(
+      `${completion.noCount} finding${completion.noCount === 1 ? '' : 's'} / No answer${completion.noCount === 1 ? '' : 's'} recorded`
+    );
+  }
+
+  if (expiryCounts.overdue > 0) {
+    warnings.push(
+      `${expiryCounts.overdue} expired equipment item${expiryCounts.overdue === 1 ? '' : 's'}`
+    );
+  }
+
+  if (expiryCounts.soon > 0) {
+    warnings.push(
+      `${expiryCounts.soon} equipment item${expiryCounts.soon === 1 ? '' : 's'} due soon`
+    );
+  }
+
+  if (expiryCounts.missing > 0) {
+    warnings.push(
+      `${expiryCounts.missing} missing equipment expiry date${expiryCounts.missing === 1 ? '' : 's'}`
+    );
+  }
+
+  if (dataQuality.count > 0) {
+    warnings.push(
+      `${dataQuality.count} missing inspection info item${dataQuality.count === 1 ? '' : 's'}: ${dataQuality.missing.join(', ')}`
+    );
+  }
+
+  return warnings;
+}
+
+function confirmFinishInspectionWithWarnings(project) {
+  const warnings =
+    getFinishInspectionWarnings(project);
+
+  if (warnings.length === 0) {
+    return true;
+  }
+
+  const message = [
+    'This inspection still has items that may need attention:',
+    '',
+    ...warnings.map(item => `- ${item}`),
+    '',
+    'Finish inspection anyway?'
+  ].join('\n');
+
+  return confirm(message);
+}
+
 function finishInspection() {
   saveProject();
 
+  if (!currentProjectId) {
+    return;
+  }
+
+  const savedProjectForGuardrail =
+    getProjects().find(
+      project => project.id === currentProjectId
+    );
+
+  if (
+    savedProjectForGuardrail &&
+    !confirmFinishInspectionWithWarnings(savedProjectForGuardrail)
+  ) {
+    const saveMessage =
+      document.getElementById('saveMessage');
+
+    if (saveMessage) {
+      saveMessage.textContent =
+        'Finish cancelled. Review the Quick Links action items before finishing.';
+    }
+
+    return;
+  }
+
   if (currentProjectId) {
     const projects = getProjects();
-    const index = projects.findIndex(project => project.id === currentProjectId);
+    const index = projects.findIndex(
+      project => project.id === currentProjectId
+    );
 
     if (index !== -1) {
       const completedProjectBeforeUpdate = projects[index];
+
+      const completedAt = new Date().toISOString();
 
       const hasNextScheduledInspection =
         completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
         completedProjectBeforeUpdate.followUpDate;
 
-      projects[index] = {
+      const completedProjectForArchive = {
         ...completedProjectBeforeUpdate,
+        completedAt
+      };
 
-        completedAt: new Date().toISOString(),
+      const inspectionHistory =
+        archiveCurrentInspectionCycle(completedProjectForArchive);
+
+      projects[index] = {
+        ...completedProjectForArchive,
+
+        inspectionHistory,
 
         scheduledDate: hasNextScheduledInspection
           ? completedProjectBeforeUpdate.followUpDate
@@ -7480,8 +9918,25 @@ function finishInspection() {
       }
     }
   }
+  const finishedProject =
+  getProjects().find(
+    project => project.id === currentProjectId
+  );
 
-  showProjectList();
+const finishSummaryText =
+  buildFinishSummaryMessage(finishedProject);
+
+showProjectList();
+
+showFinishSummaryBanner(finishSummaryText);
+
+const finishMessage =
+  document.getElementById('syncStatus');
+
+if (finishMessage) {
+  finishMessage.textContent =
+    `${finishSummaryText} Sync will continue in the background.`;
+}
 }
 
 function createFollowUpInspection() {
@@ -7956,6 +10411,10 @@ function generateReport() {
   
   const inspectionNumber =
   currentProject?.inspectionNumber || '-';
+  const inspectionDate =
+  formatInspectionDate(
+    getProjectInspectionDate(currentProject)
+  );
   const reportContent = getEl('reportContent');
 
   const followUpRequired = getEl('followUpRequired').value;
@@ -8645,13 +11104,18 @@ const executiveSummaryHtml = `
       </div>
 
       <div>
-        <strong>Date:</strong>
-        ${new Date().toLocaleDateString()}
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(inspectionDate)}
       </div>
 
       <div>
         <strong>Inspector:</strong>
         ${escapeHtml(inspectorName || '-')}
+      </div>
+
+      <div>
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(inspectionDate)}
       </div>
 
       <div>
@@ -8711,7 +11175,7 @@ const executiveSummaryHtml = `
       ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
       <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
       <div class="report-line"><strong>Occupancy Classification:</strong> ${escapeHtml(occupancy)}</div>
-      <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
+      <div class="report-line"><strong>Inspection Date:</strong> ${escapeHtml(inspectionDate)}</div>
       ${dataQualityHtml}
     </div>
 
@@ -9413,6 +11877,11 @@ async function shareReport() {
   const productType = normalizeProductType(getEl('productType').value) || '-';
   const inspectionType = getEl('inspectionType').value || '-';
 
+  const inspectionDate =
+  formatInspectionDate(
+    getProjectInspectionDate(currentProject)
+  );
+
   const selectedChecklist = getActiveTemplateChecklist() || [];
 
   let yesCount = 0;
@@ -9550,7 +12019,7 @@ ${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}
 Unit / Shop Number: ${unitNumber}
 ` : ''}Inspector Name: ${inspectorName}
 Occupancy: ${occupancy}
-Inspection Date: ${new Date().toLocaleDateString()}
+Inspection Date: ${inspectionDate}
 
 INSPECTION SUMMARY
 Total Items: ${totalItems}
@@ -10004,11 +12473,7 @@ reportContent.innerHTML = `
 
         <div>
           <strong>Inspection Date:</strong>
-          ${
-            inspection.lastSaved
-              ? escapeHtml(new Date(inspection.lastSaved).toLocaleDateString())
-              : '-'
-          }
+          ${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}
         </div>
 
         <div>
@@ -10449,6 +12914,89 @@ function closeArchivedInspectionDetail() {
   }
 }
 
+function prepareInspectionArchiveButton(project) {
+  const existingLauncher =
+    document.getElementById('inspectionArchiveLauncher');
+
+  if (existingLauncher) {
+    existingLauncher.remove();
+  }
+
+  const existingPanel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (existingPanel) {
+    existingPanel.remove();
+  }
+
+  const history =
+    project?.inspectionHistory || [];
+
+  if (history.length === 0) {
+    return;
+  }
+
+  const quickActions =
+    document.getElementById('inspectionQuickActions');
+
+  const launcher = document.createElement('div');
+  launcher.id = 'inspectionArchiveLauncher';
+  launcher.className = 'inspection-archive-launcher';
+
+  launcher.innerHTML = `
+    <button
+      type="button"
+      class="secondary-btn archive-more-btn"
+      onclick="openInspectionArchiveFromMore()"
+    >
+      More: Inspection History (${history.length})
+    </button>
+  `;
+
+  if (quickActions) {
+    quickActions.appendChild(launcher);
+  } else {
+    const form = document.getElementById('projectFormSection');
+
+    if (form) {
+      form.prepend(launcher);
+    }
+  }
+}
+
+function openInspectionArchiveFromMore() {
+  const projects = getProjects();
+  const project = projects.find(
+    p => p.id === currentProjectId
+  );
+
+  if (!project) {
+    alert('Open an inspection first.');
+    return;
+  }
+
+  renderInspectionArchive(project);
+
+  const panel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (panel) {
+    panel.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+}
+
+function closeInspectionArchivePanel() {
+  const panel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (panel) {
+    panel.remove();
+  }
+}
+
 function renderInspectionArchive(project) {
   const existingArchive =
     document.getElementById('inspectionArchivePanel');
@@ -10520,7 +13068,7 @@ function renderInspectionArchive(project) {
     `;
   }
 
-  function buildArchiveCard(inspection, label) {
+  function buildArchiveCard(inspection, label, historyIndex) {
     const businessName =
       inspection.projectName ||
       [inspection.organisationName, inspection.siteName]
@@ -10536,6 +13084,11 @@ function renderInspectionArchive(project) {
       inspection.lastSaved
         ? new Date(inspection.lastSaved).toLocaleString()
         : '-';
+
+    const inspectionDate =
+      formatInspectionDate(
+        getProjectInspectionDate(inspection)
+      );
 
     const answeredCount = countAnswered(inspection);
     const findingCount = countFindings(inspection);
@@ -10558,7 +13111,12 @@ function renderInspectionArchive(project) {
         </div>
 
         <div>
-          <strong>Date:</strong>
+          <strong>Inspection Date:</strong>
+          ${escapeHtml(inspectionDate)}
+        </div>
+
+        <div>
+          <strong>Archived / Last Saved:</strong>
           ${escapeHtml(archivedDate)}
         </div>
 
@@ -10597,23 +13155,23 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
           >
-            View
+            View Details
           </button>
 
           <button
             type="button"
             class="small-btn primary-small-btn"
-            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
           >
-            Report
+            Generate Report
           </button>
 
           <button
             type="button"
             class="small-btn secondary-btn"
-            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${historyIndex})"
           >
             Download Photos
           </button>
@@ -10635,7 +13193,8 @@ function renderInspectionArchive(project) {
             ${olderInspections.map((inspection, index) =>
               buildArchiveCard(
                 inspection,
-                `Older Previous Inspection ${index + 1}`
+                `Older Finished Inspection ${index + 1}`,
+                history.indexOf(inspection)
               )
             ).join('')}
           </div>
@@ -10644,13 +13203,39 @@ function renderInspectionArchive(project) {
       : '';
 
   panel.innerHTML = `
-    <h3>Previous Inspection Archive</h3>
+    <div class="archive-panel-top">
+      <h3>Inspection History</h3>
 
-    <div class="note">
-      The latest previous inspection is shown below. Older inspections are available from the dropdown.
+      <div class="archive-panel-actions">
+        <button
+          type="button"
+          class="primary-small-btn archive-back-projects-btn"
+          onclick="showProjectList()"
+        >
+          Back to Projects
+        </button>
+
+        <button
+          type="button"
+          class="small-btn"
+          onclick="closeInspectionArchivePanel()"
+        >
+          Close Archive
+        </button>
+      </div>
     </div>
 
-    ${buildArchiveCard(latestInspection, 'Latest Previous Inspection')}
+    <div class="note">
+      <div class="note archive-history-note">
+        Finished inspections for this site are listed below. Open an inspection to review the full Q&A, photos, comments and follow-up notes.
+      </div>
+    </div>
+
+    ${buildArchiveCard(
+      latestInspection,
+      'Latest Finished Inspection',
+      history.indexOf(latestInspection)
+    )}
 
     ${olderHtml}
   `;
@@ -10872,9 +13457,16 @@ window.closeChecklistSection = closeChecklistSection;
 window.closeAllChecklistSections = closeAllChecklistSections;
 window.nextChecklistQuestion = nextChecklistQuestion;
 window.previousChecklistQuestion = previousChecklistQuestion;
+window.handleSmartQuickLink = handleSmartQuickLink;
+window.scrollBackToQuickLinks = scrollBackToQuickLinks;
+window.dismissPostSiteSyncReminder = dismissPostSiteSyncReminder;
+window.refreshSyncData = refreshSyncData;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
+
+window.openInspectionArchiveFromMore = openInspectionArchiveFromMore;
+window.closeInspectionArchivePanel = closeInspectionArchivePanel;
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
@@ -10908,6 +13500,7 @@ window.backToServiceRequestList = backToServiceRequestList;
 window.markServiceRequestFollowedUp = markServiceRequestFollowedUp;
 window.openProjectSummaryCard = openProjectSummaryCard;
 window.closeProjectSummaryCard = closeProjectSummaryCard;
+window.closeFinishSummaryBanner = closeFinishSummaryBanner;
 window.downloadArchivedInspectionPhotos = downloadArchivedInspectionPhotos;
 window.runBackgroundSync = runBackgroundSync;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
@@ -10922,3 +13515,4 @@ window.addEventListener('online', async () => {
 
   runBackgroundSync('signal restored');
 });
+
