@@ -6663,7 +6663,7 @@ function getProjectInspectionStatus(project) {
       label: 'Needs Attention',
       class: 'inspection-attention',
       filter: 'inspection-attention',
-      detail: `${completion.noCount} issue${completion.noCount === 1 ? '' : 's'}`
+      detail: `${completion.noCount} NO item${completion.noCount === 1 ? '' : 's'}`
     };
   }
 
@@ -6810,15 +6810,15 @@ function updateProjectReadinessPanel() {
   }
 
   if (completion.noCount > 0) {
-    quickLinks.push({
-      group: 'inspection',
-      type: 'danger',
-      label: 'Review findings',
-      count: completion.noCount,
-      detail: 'Items marked “No” may need corrective action.',
-      action: 'finding'
-    });
-  }
+  quickLinks.push({
+    group: 'inspection',
+    type: 'danger',
+    label: 'Review Action Items',
+    count: completion.noCount,
+    detail: 'Inspection requirements answered NO may need corrective action.',
+    action: 'finding'
+  });
+}
 
   if (expiryCounts.overdue > 0) {
     quickLinks.push({
@@ -6956,7 +6956,7 @@ function handleSmartQuickLink(action) {
 
     setTimeout(() => {
       focusFirstCurrentIssue();
-      setReadinessMessage('Jumped to first finding / No answer.');
+      setReadinessMessage('Jumped to first Action Item answered NO.');
     }, 120);
 
     return;
@@ -7281,7 +7281,7 @@ function bindReadinessActionButtons(panel) {
 function handleReadinessAction(action) {
   if (action === 'finding') {
     focusFirstCurrentIssue();
-    setReadinessMessage('Jumped to first finding.');
+    setReadinessMessage('Jumped to first Action Item answered NO.');
     return;
   }
 

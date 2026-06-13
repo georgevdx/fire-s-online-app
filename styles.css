@@ -6000,3 +6000,9 @@ button.readiness-chip:focus {
   top: 0;
   z-index: 20;
 }
+
+.answer-no-label {
+  color: #b71c1c;
+  font-weight: 900;
+  text-transform: uppercase;
+}
