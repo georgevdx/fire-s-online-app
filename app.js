@@ -6849,12 +6849,15 @@ function scrollBackToQuickLinks() {
 
   if (!quickLinks) return;
 
-  quickLinks.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start'
-  });
-}
+  focusInspectionSection('inspectionQuickActions');
 
+  setTimeout(() => {
+    quickLinks.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }, 120);
+}
 function getChecklistForProject(project) {
   const productType = normalizeProductType(project.productType);
   const inspectionType = project.inspectionType || '';
