@@ -6737,3 +6737,77 @@ button.readiness-chip:focus {
   border-left: 3px solid #c62828 !important;
   padding: 2mm !important;
 }
+/* FINAL PDF PHOTO FIX - KEEP EACH PHOTO CARD ON ONE PAGE */
+
+.pdf-export-mode .report-photo-grid,
+.pdf-export-mode .report-photo-row,
+.pdf-export-mode .report-photo-cell {
+  display: block !important;
+  width: 100% !important;
+}
+
+.pdf-export-mode .report-photo-card,
+.pdf-export-mode .report-photo-item,
+.pdf-export-mode .pdf-photo-card {
+  display: block !important;
+  width: 100% !important;
+  height: 128mm !important;
+  max-height: 128mm !important;
+  min-height: 128mm !important;
+  margin: 0 0 8mm 0 !important;
+  padding: 3mm !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  background: #ffffff !important;
+  border: 1px solid #dddddd !important;
+}
+
+.pdf-export-mode .report-photo-header {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  margin: 0 0 1mm 0 !important;
+}
+
+.pdf-export-mode .report-photo-time {
+  font-size: 8.5px !important;
+  margin: 0 0 2mm 0 !important;
+  color: #555555 !important;
+}
+
+.pdf-export-mode .report-photo-image-box {
+  height: 86mm !important;
+  max-height: 86mm !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: #f7f7f7 !important;
+}
+
+.pdf-export-mode .report-photo-img,
+.pdf-export-mode .report-photo-card img,
+.pdf-export-mode .report-photo-item img {
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 84mm !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+}
+
+.pdf-export-mode .report-photo-note {
+  font-size: 8.5px !important;
+  line-height: 1.2 !important;
+  margin-top: 2mm !important;
+  height: 22mm !important;
+  max-height: 22mm !important;
+  overflow: hidden !important;
+  background: #f7f7f7 !important;
+  border-left: 3px solid #c62828 !important;
+  padding: 2mm !important;
+  box-sizing: border-box !important;
+}
