@@ -4694,33 +4694,3 @@ button.readiness-chip:focus {
   width: 100%;
   max-width: 420px;
 }
-
-/* Beta 11.10 — blue navigation buttons */
-
-.archive-panel-top {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.archive-panel-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.archive-back-projects-btn,
-#backBtn,
-#topBackBtn,
-#floatingBackToProjectsBtn,
-.project-summary-close-btn,
-.service-request-back-btn {
-  background: #2563eb !important;
-  color: #ffffff !important;
-  border: 1px solid #1d4ed8 !important;
-}
-
-.archive-more-btn {
-  width: 100%;
-  margin-top: 10px;
-}

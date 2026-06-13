@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-archive-more1';
+const APP_VERSION = 'v90-beta-photo-download2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -6645,9 +6645,7 @@ function closeProjectSummaryCard() {
   }
 }
 
-function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
-  const existingHistory = project.inspectionHistory || [];
-
+function archiveCurrentInspectionCycle(project) {
   const hasInspectionData =
     (project.answers || []).length > 0 ||
     (project.photos || []).length > 0 ||
@@ -6655,40 +6653,13 @@ function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
     project.followUpNotes;
 
   if (!hasInspectionData) {
-    return existingHistory;
-  }
-
-  const inspectionKey =
-    project.inspectionNumber ||
-    project.id ||
-    '';
-
-  const alreadyArchived =
-    existingHistory.some(item => {
-      const itemKey =
-        item.inspectionNumber ||
-        item.sourceInspectionNumber ||
-        '';
-
-      return (
-        inspectionKey &&
-        itemKey === inspectionKey
-      );
-    });
-
-  if (alreadyArchived) {
-    return existingHistory;
+    return project.inspectionHistory || [];
   }
 
   const previousInspectionSnapshot = {
-    archiveReason,
     archivedAt: new Date().toISOString(),
 
-    sourceProjectId: project.id || '',
-    sourceInspectionNumber: project.inspectionNumber || '',
-
     inspectionNumber: project.inspectionNumber || '',
-    completedAt: project.completedAt || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
 
@@ -6723,7 +6694,7 @@ function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
   };
 
   return [
-    ...existingHistory,
+    ...(project.inspectionHistory || []),
     previousInspectionSnapshot
   ];
 }
@@ -6836,7 +6807,7 @@ if (shouldStartFreshScheduledInspection) {
   }
 
   showProjectForm();
-  prepareInspectionArchiveButton(project);
+  renderInspectionArchive(project);
 
   if (focusMode === 'issues') {
     setTimeout(() => {
@@ -7456,31 +7427,19 @@ function finishInspection() {
 
   if (currentProjectId) {
     const projects = getProjects();
-    const index = projects.findIndex(
-      project => project.id === currentProjectId
-    );
+    const index = projects.findIndex(project => project.id === currentProjectId);
 
     if (index !== -1) {
       const completedProjectBeforeUpdate = projects[index];
-
-      const completedAt = new Date().toISOString();
 
       const hasNextScheduledInspection =
         completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
         completedProjectBeforeUpdate.followUpDate;
 
-      const completedProjectForArchive = {
-        ...completedProjectBeforeUpdate,
-        completedAt
-      };
-
-      const inspectionHistory =
-        archiveCurrentInspectionCycle(completedProjectForArchive);
-
       projects[index] = {
-        ...completedProjectForArchive,
+        ...completedProjectBeforeUpdate,
 
-        inspectionHistory,
+        completedAt: new Date().toISOString(),
 
         scheduledDate: hasNextScheduledInspection
           ? completedProjectBeforeUpdate.followUpDate
@@ -10490,89 +10449,6 @@ function closeArchivedInspectionDetail() {
   }
 }
 
-function prepareInspectionArchiveButton(project) {
-  const existingLauncher =
-    document.getElementById('inspectionArchiveLauncher');
-
-  if (existingLauncher) {
-    existingLauncher.remove();
-  }
-
-  const existingPanel =
-    document.getElementById('inspectionArchivePanel');
-
-  if (existingPanel) {
-    existingPanel.remove();
-  }
-
-  const history =
-    project?.inspectionHistory || [];
-
-  if (history.length === 0) {
-    return;
-  }
-
-  const quickActions =
-    document.getElementById('inspectionQuickActions');
-
-  const launcher = document.createElement('div');
-  launcher.id = 'inspectionArchiveLauncher';
-  launcher.className = 'inspection-archive-launcher';
-
-  launcher.innerHTML = `
-    <button
-      type="button"
-      class="secondary-btn archive-more-btn"
-      onclick="openInspectionArchiveFromMore()"
-    >
-      More: Previous Inspection Archive (${history.length})
-    </button>
-  `;
-
-  if (quickActions) {
-    quickActions.appendChild(launcher);
-  } else {
-    const form = document.getElementById('projectFormSection');
-
-    if (form) {
-      form.prepend(launcher);
-    }
-  }
-}
-
-function openInspectionArchiveFromMore() {
-  const projects = getProjects();
-  const project = projects.find(
-    p => p.id === currentProjectId
-  );
-
-  if (!project) {
-    alert('Open an inspection first.');
-    return;
-  }
-
-  renderInspectionArchive(project);
-
-  const panel =
-    document.getElementById('inspectionArchivePanel');
-
-  if (panel) {
-    panel.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  }
-}
-
-function closeInspectionArchivePanel() {
-  const panel =
-    document.getElementById('inspectionArchivePanel');
-
-  if (panel) {
-    panel.remove();
-  }
-}
-
 function renderInspectionArchive(project) {
   const existingArchive =
     document.getElementById('inspectionArchivePanel');
@@ -10644,7 +10520,7 @@ function renderInspectionArchive(project) {
     `;
   }
 
-  function buildArchiveCard(inspection, label, historyIndex) {
+  function buildArchiveCard(inspection, label) {
     const businessName =
       inspection.projectName ||
       [inspection.organisationName, inspection.siteName]
@@ -10721,7 +10597,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
           >
             View
           </button>
@@ -10729,7 +10605,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn primary-small-btn"
-            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
           >
             Report
           </button>
@@ -10737,7 +10613,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn secondary-btn"
-            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${historyIndex})"
+            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${history.length - 1 - index})"
           >
             Download Photos
           </button>
@@ -10759,8 +10635,7 @@ function renderInspectionArchive(project) {
             ${olderInspections.map((inspection, index) =>
               buildArchiveCard(
                 inspection,
-                `Older Previous Inspection ${index + 1}`,
-                history.indexOf(inspection)
+                `Older Previous Inspection ${index + 1}`
               )
             ).join('')}
           </div>
@@ -10769,37 +10644,13 @@ function renderInspectionArchive(project) {
       : '';
 
   panel.innerHTML = `
-    <div class="archive-panel-top">
-      <h3>Previous Inspection Archive</h3>
-
-      <div class="archive-panel-actions">
-        <button
-          type="button"
-          class="primary-small-btn archive-back-projects-btn"
-          onclick="showProjectList()"
-        >
-          Back to Projects
-        </button>
-
-        <button
-          type="button"
-          class="small-btn"
-          onclick="closeInspectionArchivePanel()"
-        >
-          Close Archive
-        </button>
-      </div>
-    </div>
+    <h3>Previous Inspection Archive</h3>
 
     <div class="note">
       The latest previous inspection is shown below. Older inspections are available from the dropdown.
     </div>
 
-    ${buildArchiveCard(
-      latestInspection,
-      'Latest Previous Inspection',
-      history.indexOf(latestInspection)
-    )}
+    ${buildArchiveCard(latestInspection, 'Latest Previous Inspection')}
 
     ${olderHtml}
   `;
@@ -11024,9 +10875,6 @@ window.previousChecklistQuestion = previousChecklistQuestion;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
-
-window.openInspectionArchiveFromMore = openInspectionArchiveFromMore;
-window.closeInspectionArchivePanel = closeInspectionArchivePanel;
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
