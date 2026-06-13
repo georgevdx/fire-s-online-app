@@ -840,8 +840,94 @@ async function lookupAddressFromGpsInput() {
   }
 }
 
+function getBestCurrentPosition(options = {}) {
+  const desiredAccuracy =
+    options.desiredAccuracy || 15;
+
+  const maxWaitMs =
+    options.maxWaitMs || 12000;
+
+  const geolocation =
+    window.navigator && window.navigator.geolocation;
+
+  if (!geolocation) {
+    return Promise.reject(
+      new Error('GPS is not available in this browser.')
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    let bestPosition = null;
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+
+      settled = true;
+
+      if (watchId !== null) {
+        geolocation.clearWatch(watchId);
+      }
+
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+
+      if (bestPosition) {
+        resolve(bestPosition);
+      } else {
+        reject(new Error('Could not get a GPS position.'));
+      }
+    };
+
+    const watchId =
+      geolocation.watchPosition(
+        position => {
+          const accuracy =
+            position.coords.accuracy || Infinity;
+
+          const currentBestAccuracy =
+            bestPosition?.coords?.accuracy || Infinity;
+
+          if (!bestPosition || accuracy < currentBestAccuracy) {
+            bestPosition = position;
+
+            const saveMessage =
+              document.getElementById('saveMessage');
+
+            if (saveMessage) {
+              saveMessage.textContent =
+                `Improving GPS accuracy... best so far: ${Math.round(accuracy)} m`;
+            }
+          }
+
+          if (accuracy <= desiredAccuracy) {
+            finish();
+          }
+        },
+        error => {
+          if (bestPosition) {
+            finish();
+            return;
+          }
+
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: maxWaitMs,
+          maximumAge: 0
+        }
+      );
+
+    const timeoutId =
+      setTimeout(finish, maxWaitMs);
+  });
+}
+
 async function useCurrentLocation() {
-  const geolocation = window.navigator && window.navigator.geolocation;
+  const geolocation =
+    window.navigator && window.navigator.geolocation;
 
   if (!geolocation) {
     getEl('saveMessage').textContent =
@@ -849,33 +935,64 @@ async function useCurrentLocation() {
     return;
   }
 
-  getEl('saveMessage').textContent = 'Getting location...';
+  getEl('saveMessage').textContent =
+    'Getting best GPS location... keep the phone still for a few seconds.';
 
-  geolocation.getCurrentPosition(
-  async position => {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
+  try {
+    const position =
+      await getBestCurrentPosition({
+        desiredAccuracy: 12,
+        maxWaitMs: 15000
+      });
 
-    const gpsText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    const lat =
+      position.coords.latitude;
+
+    const lon =
+      position.coords.longitude;
+
+    const accuracy =
+      Math.round(position.coords.accuracy || 0);
+
+    const gpsText =
+      `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
     getEl('gps').value = gpsText;
     updateGpsMapPreview();
 
-    try {
-      const data = await reverseLookupBestAddress(lat, lon);
-      applyAddressLookupResult(data, `${lat}, ${lon}`);
-    } catch (err) {
-      console.error("Address fetch failed:", err);
+    getEl('saveMessage').textContent =
+      `GPS captured with approx. ${accuracy} m accuracy. Finding address...`;
 
-      document.getElementById("projectAddress").value = `${lat}, ${lon}`;
+    try {
+      const data =
+        await reverseLookupBestAddress(lat, lon);
+
+      applyAddressLookupResult(data, `${lat}, ${lon}`);
+
+      const streetNumber =
+        getEl('streetNumber').value.trim();
+
+      if (streetNumber) {
+        getEl('saveMessage').textContent =
+          `Address found from GPS. GPS accuracy approx. ${accuracy} m.`;
+      } else {
+        getEl('saveMessage').textContent =
+          `GPS captured with approx. ${accuracy} m accuracy, but street number was not found. Add the street number manually.`;
+      }
+    } catch (error) {
+      console.error('Address fetch failed:', error);
+
+      document.getElementById('projectAddress').value =
+        `${lat}, ${lon}`;
 
       getEl('saveMessage').textContent =
-        'GPS captured, but address lookup failed. Address can be entered manually.';
+        `GPS captured with approx. ${accuracy} m accuracy, but address lookup failed. Enter the address manually.`;
     }
 
     scheduleAutoSave();
-  },
-  error => {
-    console.error("GPS failed:", error);
+
+  } catch (error) {
+    console.error('GPS failed:', error);
 
     const messages = {
       1: 'GPS permission was denied. Allow location access, or enter the GPS/address manually.',
@@ -884,14 +1001,9 @@ async function useCurrentLocation() {
     };
 
     getEl('saveMessage').textContent =
-      messages[error.code] || 'GPS failed. Enter the GPS/address manually.';
-  },
-  {
-    enableHighAccuracy: true,
-    timeout: 25000,
-    maximumAge: 0
+      messages[error.code] ||
+      'GPS failed. Try again outside, wait a few seconds, or enter the GPS/address manually.';
   }
-);
 }
 
 function toggleMallFields() {
