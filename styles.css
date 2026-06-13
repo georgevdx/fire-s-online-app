@@ -6141,17 +6141,11 @@ button.readiness-chip:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
-.pdf-export-mode .pdf-annexure-start {
-  break-before: page !important;
-  page-break-before: always !important;
-  break-after: auto !important;
-  page-break-after: auto !important;
-}
 
-.pdf-export-mode .pdf-annexure-start:last-child {
+/*.pdf-export-mode .pdf-annexure-start:last-child {
   break-after: auto !important;
   page-break-after: auto !important;
-}
+}*/
 
 .pdf-export-mode .report-photo-card,
 .pdf-export-mode .report-photo-item {
@@ -6164,13 +6158,13 @@ button.readiness-chip:focus {
   display: none !important;
 }
 
-.pdf-export-mode .pdf-annexure-start {
+/*.pdf-export-mode .pdf-annexure-start {
   display: block !important;
   break-before: page !important;
   page-break-before: always !important;
   margin-top: 0 !important;
   padding-top: 0 !important;
-}
+}*/
 
 .pdf-export-mode .report-photo-grid {
   display: grid !important;
@@ -6221,12 +6215,12 @@ button.readiness-chip:focus {
   page-break-before: always !important;
 }
 
-.pdf-export-mode .pdf-annexure-start {
+/*.pdf-export-mode .pdf-annexure-start {
   margin-top: 0 !important;
   padding-top: 0 !important;
   break-before: auto !important;
   page-break-before: auto !important;
-}
+}*/
 
 .pdf-export-mode .report-photo-grid {
   display: block !important;
@@ -6300,12 +6294,12 @@ button.readiness-chip:focus {
   page-break-inside: auto !important;
 }
 
-.pdf-export-mode .pdf-annexure-start {
+/*.pdf-export-mode .pdf-annexure-start {
   break-before: page !important;
   page-break-before: always !important;
   margin-top: 0 !important;
   padding-top: 0 !important;
-}
+}*/
 
 .pdf-export-mode .report-photo-page {
   break-before: page !important;
@@ -6452,7 +6446,7 @@ button.readiness-chip:focus {
 .pdf-export-mode .report-page-break,
 .pdf-export-mode .page-break,
 .pdf-export-mode .pdf-page-break,
-.pdf-export-mode .pdf-annexure-start,
+/*.pdf-export-mode .pdf-annexure-start,*/
 .pdf-export-mode .report-photo-page {
   break-before: auto !important;
   page-break-before: auto !important;
@@ -6460,14 +6454,7 @@ button.readiness-chip:focus {
   page-break-after: auto !important;
 }
 
-.pdf-export-mode .pdf-appendix-break {
-  display: block !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  break-before: page !important;
-  page-break-before: always !important;
-}
+
 
 .pdf-export-mode .report-photo-card,
 .pdf-export-mode .report-photo-item,
@@ -6500,20 +6487,11 @@ button.readiness-chip:focus {
   object-fit: contain !important;
 }
 
-.pdf-export-mode .pdf-appendix-break {
-  display: block !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  break-before: page !important;
-  page-break-before: always !important;
-}
+
 
 /* PDF PHOTO CARD STABILITY - NO FORCED APPENDIX PAGE BREAK */
 
-.pdf-export-mode .pdf-appendix-break {
-  display: none !important;
-}
+
 
 .pdf-export-mode .report-photo-page {
   break-before: auto !important;
@@ -6660,6 +6638,100 @@ button.readiness-chip:focus {
   line-height: 1.25 !important;
   margin-top: 2mm !important;
   max-height: 22mm !important;
+  overflow: hidden !important;
+  background: #f7f7f7 !important;
+  border-left: 3px solid #c62828 !important;
+  padding: 2mm !important;
+}
+
+/* PDF REPORT PAGE BREAK AND PHOTO CARD STABILITY */
+
+.pdf-export-mode .report-page-break {
+  display: block !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  break-before: page !important;
+  page-break-before: always !important;
+}
+
+/* Do not force every photo page to create another blank page after itself */
+.pdf-export-mode .report-photo-page {
+  break-before: auto !important;
+  page-break-before: auto !important;
+  break-after: auto !important;
+  page-break-after: auto !important;
+  min-height: auto !important;
+}
+
+/* Make photo appendix flow as separate full-width cards in PDF mode */
+.pdf-export-mode .report-photo-grid,
+.pdf-export-mode .report-photo-row,
+.pdf-export-mode .report-photo-cell {
+  display: block !important;
+  width: 100% !important;
+}
+
+/* Each photo card must stay together */
+.pdf-export-mode .report-photo-card,
+.pdf-export-mode .report-photo-item,
+.pdf-export-mode .pdf-photo-card {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 245mm !important;
+  margin: 0 0 12mm 0 !important;
+  padding: 3mm !important;
+  border: 1px solid #dddddd !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+/* Keep timestamp, image and note with the same card */
+.pdf-export-mode .report-photo-header,
+.pdf-export-mode .report-photo-time,
+.pdf-export-mode .report-photo-image-box,
+.pdf-export-mode .report-photo-note {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+/* Keep image small enough so the whole card fits on one page */
+.pdf-export-mode .report-photo-image-box {
+  height: 92mm !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: #f7f7f7 !important;
+}
+
+.pdf-export-mode .report-photo-img,
+.pdf-export-mode .report-photo-card img,
+.pdf-export-mode .report-photo-item img {
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 90mm !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+}
+
+.pdf-export-mode .report-photo-time {
+  font-size: 9px !important;
+  margin: 1mm 0 2mm 0 !important;
+  color: #555555 !important;
+}
+
+.pdf-export-mode .report-photo-note {
+  font-size: 9px !important;
+  line-height: 1.25 !important;
+  margin-top: 2mm !important;
+  max-height: 30mm !important;
   overflow: hidden !important;
   background: #f7f7f7 !important;
   border-left: 3px solid #c62828 !important;
