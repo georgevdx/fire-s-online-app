@@ -587,11 +587,36 @@ async function lookupNearestNumberedAddress(lat, lon) {
 }
 
 async function reverseLookupBestAddress(lat, lon) {
+  let nearestNumberedAddress = null;
+
+  // First priority: try to find a nearby address with a street number.
+  // This gives the app the best chance to fill the street number field.
+  try {
+    nearestNumberedAddress =
+      await lookupNearestNumberedAddress(lat, lon);
+
+    const nearestStreetNumber =
+      getStreetNumberFromAddress(nearestNumberedAddress?.address || {}) ||
+      getStreetNumberFromDisplayName(nearestNumberedAddress?.display_name);
+
+    if (nearestStreetNumber) {
+      return {
+        ...nearestNumberedAddress,
+        streetNumberConfidence: 'nearest_numbered_address'
+      };
+    }
+  } catch (error) {
+    console.warn('Nearest numbered address lookup failed:', error);
+  }
+
+  // Second priority: use normal reverse lookup for the rest of the address.
   const zoomLevels = [19, 18, 17];
   let bestResult = null;
 
   for (const zoom of zoomLevels) {
-    const result = await reverseLookupAddress(lat, lon, zoom);
+    const result =
+      await reverseLookupAddress(lat, lon, zoom);
+
     const streetNumber =
       getStreetNumberFromAddress(result.address || {}) ||
       getStreetNumberFromDisplayName(result.display_name);
@@ -601,22 +626,27 @@ async function reverseLookupBestAddress(lat, lon) {
     }
 
     if (streetNumber) {
-      return result;
+      return {
+        ...result,
+        streetNumberConfidence: 'reverse_lookup'
+      };
     }
   }
 
-  try {
-    const nearestNumberedAddress =
-      await lookupNearestNumberedAddress(lat, lon);
-
-    if (nearestNumberedAddress) {
-      return nearestNumberedAddress;
-    }
-  } catch (error) {
-    console.warn('Nearest numbered address lookup failed:', error);
+  // Last fallback: return the best address we found,
+  // even if no street number was available.
+  if (bestResult) {
+    return {
+      ...bestResult,
+      streetNumberConfidence: 'street_number_not_found'
+    };
   }
 
-  return bestResult;
+  return {
+    address: {},
+    display_name: `${lat}, ${lon}`,
+    streetNumberConfidence: 'street_number_not_found'
+  };
 }
 
 function parseGpsInput(value) {
@@ -691,15 +721,44 @@ function applyAddressLookupResult(data, fallbackText) {
   const streetNumber =
     getStreetNumberFromAddress(data.address || {}) ||
     getStreetNumberFromDisplayName(data.display_name);
-  const addressLine = buildAddressLineWithoutStreetNumber(data.address || {});
 
-  getEl('streetNumber').value = streetNumber || '';
+  const addressLine =
+    buildAddressLineWithoutStreetNumber(data.address || {});
+
+  getEl('streetNumber').value =
+    streetNumber || '';
+
   getEl('projectAddress').value =
-    addressLine || data.display_name || fallbackText;
+    addressLine ||
+    data.display_name ||
+    fallbackText;
 
-  getEl('saveMessage').textContent = streetNumber
-    ? 'Precise address found with street number from GPS.'
-    : 'Street number was not found. Please add the street number manually before saving this inspection.';
+  const streetNumberStatus =
+    data.streetNumberConfidence || '';
+
+  if (streetNumber) {
+    getEl('saveMessage').textContent =
+      streetNumberStatus === 'nearest_numbered_address'
+        ? 'Street number found from nearest numbered address. Please confirm it is correct.'
+        : 'Street number found from GPS address lookup. Please confirm it is correct.';
+  } else {
+    getEl('saveMessage').textContent =
+      'Street number not found from GPS. Please enter the street number manually before saving this inspection.';
+  }
+
+  const streetNumberField =
+    document.getElementById('streetNumber');
+
+  if (streetNumberField && !streetNumber) {
+    streetNumberField.placeholder =
+      'Street number not found - enter manually';
+
+    streetNumberField.classList.add('field-focus');
+
+    setTimeout(() => {
+      streetNumberField.classList.remove('field-focus');
+    }, 5000);
+  }
 
   scheduleAutoSave();
 }
