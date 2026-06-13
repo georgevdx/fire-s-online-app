@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=90-beta-smart-quicklinks1">
+  <link rel="stylesheet" href="styles.css?v=91-flow3">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -21,7 +21,7 @@
     <div>
      <h1>
   Fire-S
-  <span class="beta-badge">BETA</span>
+  <span class="beta-badge rc-badge">RC BETA</span>
     </h1>
 
     <p class="subtitle">Fire Safety App</p>
@@ -92,6 +92,13 @@
         <label class="admin-import-backup-btn" for="importBackupInput">
           Import Backup
         </label>
+
+        <input
+          id="importBackupInput"
+          type="file"
+          accept=".json,application/json"
+          style="display:none;"
+        >
         <div id="manualBackupPanel" class="manual-backup-panel" style="display:none;">
           <div class="note">
             Manual backup text. Select all and copy it, or paste backup JSON here and import.
@@ -117,6 +124,12 @@
     </div>
   </div>
 
+  <div id="betaNotesPanel" class="beta-notes-panel"></div>
+  <div id="betaQuickTestPanel" class="beta-quick-test-panel"></div>
+  <div id="releaseCandidatePanel" class="release-candidate-panel"></div>
+  <div id="rcBackupReminderPanel" class="rc-backup-reminder-panel"></div>
+  <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
+  <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
   <div class="startup-route-grid">
     <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
       <span class="route-title">Login / Register</span>
@@ -271,6 +284,7 @@
 
 <div id="betaFeedbackForm" class="service-request-form" style="display:none;">
   <h3>Beta Feedback</h3>
+  <div id="betaAutoFillHint" class="beta-autofill-hint" style="display:none;"></div>
 
   <div class="form-row">
     <label for="betaIssueType">Issue Type</label>
@@ -435,6 +449,10 @@
 
 <div id="offlineReadinessBanner" class="offline-readiness-banner"></div>
 
+<div id="siteReadyPreflightChecklist"></div>
+
+<div id="postSiteSyncReminder"></div>
+
 <div id="reminderBanner" class="reminder-banner" style="display:none;"></div>
   <div id="projectsList"></div>
     </section>
@@ -589,6 +607,13 @@
   <div class="form-row">
     <label for="inspectorName">Inspector Name</label>
     <input id="inspectorName" type="text">
+    <label>
+      Inspection Date
+      <input
+        id="inspectionDate"
+        type="date"
+      >
+    </label>
   </div>
 
   <div class="form-row">
@@ -730,7 +755,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=90-beta-smart-quicklinks1"></script>
+  <script src="app.js?v=91-flow3"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
