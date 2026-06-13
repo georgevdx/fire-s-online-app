@@ -436,6 +436,7 @@ function getProjectInspectionDate(project) {
 }
 
 function exportReport() {
+  alert('NEW PDF EXPORT CODE IS RUNNING');
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
