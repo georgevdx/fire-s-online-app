@@ -435,6 +435,52 @@ function getProjectInspectionDate(project) {
   );
 }
 
+function preparePdfCloneForExport(pdfClone) {
+  if (!pdfClone) return;
+
+  const possibleAnnexureHeadings =
+    Array.from(pdfClone.querySelectorAll('h1, h2, h3, strong, .report-section-title'));
+
+  const annexureHeading =
+    possibleAnnexureHeadings.find(element => {
+      const text =
+        String(element.textContent || '').toLowerCase();
+
+      return (
+        text.includes('annexure') ||
+        text.includes('photo evidence') ||
+        text.includes('photographic evidence')
+      );
+    });
+
+  if (annexureHeading) {
+    const annexureBlock =
+      annexureHeading.closest('.report-block') ||
+      annexureHeading.closest('section') ||
+      annexureHeading.parentElement;
+
+    if (annexureBlock) {
+      annexureBlock.classList.add('pdf-annexure-start');
+    }
+  }
+
+  // Remove empty trailing elements that can create blank PDF pages.
+  let lastChild =
+    pdfClone.lastElementChild;
+
+  while (
+    lastChild &&
+    !lastChild.textContent.trim() &&
+    lastChild.querySelectorAll('img, table, canvas').length === 0
+  ) {
+    const previous =
+      lastChild.previousElementSibling;
+
+    lastChild.remove();
+    lastChild = previous;
+  }
+}
+
 function exportReport() {
   
   if (!canViewReports()) {
@@ -530,6 +576,8 @@ pdfClone
       element.remove();
     });
 
+    preparePdfCloneForExport(pdfClone);
+
   pdfSandbox.appendChild(pdfClone);
   document.body.appendChild(pdfSandbox);
 
@@ -559,15 +607,13 @@ pdfClone
     },
 
     pagebreak: {
-      mode: ['css', 'legacy'],
-      avoid: [
-        '.report-block',
-        '.report-answer-row',
-        '.report-photo-item',
-        '.executive-summary-card',
-        '.summary-stat-card'
-      ]
-    }
+  mode: ['css', 'legacy'],
+  avoid: [
+    '.report-answer-row',
+    '.executive-summary-card',
+    '.summary-stat-card'
+  ]
+}
   };
 
 
