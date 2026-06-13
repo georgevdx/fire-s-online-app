@@ -439,11 +439,11 @@ function preparePdfCloneForExport(pdfClone) {
   if (!pdfClone) return;
 
   pdfClone.style.display = 'block';
-  pdfClone.style.width = '760px';
-  pdfClone.style.maxWidth = '760px';
-  pdfClone.style.minWidth = '760px';
-  pdfClone.style.margin = '0';
-  pdfClone.style.padding = '18px 22px';
+  pdfClone.style.width = '794px';
+pdfClone.style.maxWidth = '794px';
+pdfClone.style.minWidth = '794px';
+pdfClone.style.margin = '0';
+pdfClone.style.padding = '0';
   pdfClone.style.boxSizing = 'border-box';
   pdfClone.style.background = '#ffffff';
   pdfClone.style.color = '#222222';
@@ -464,6 +464,8 @@ function preparePdfCloneForExport(pdfClone) {
     .forEach(element => {
       element.remove();
     });
+
+centerPdfCloneContent(pdfClone);
 
   pdfClone
     .querySelectorAll('.report-page-break, .page-break, .pdf-page-break')
@@ -569,6 +571,26 @@ function preparePdfCloneForExport(pdfClone) {
     lastChild.remove();
     lastChild = previous;
   }
+}
+
+function centerPdfCloneContent(pdfClone) {
+  if (!pdfClone) return;
+
+  if (pdfClone.querySelector('.pdf-page-inner')) {
+    return;
+  }
+
+  const inner =
+    document.createElement('div');
+
+  inner.className =
+    'pdf-page-inner';
+
+  while (pdfClone.firstChild) {
+    inner.appendChild(pdfClone.firstChild);
+  }
+
+  pdfClone.appendChild(inner);
 }
 
 function exportReport() {
