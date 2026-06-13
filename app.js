@@ -438,33 +438,40 @@ function getProjectInspectionDate(project) {
 function preparePdfCloneForExport(pdfClone) {
   if (!pdfClone) return;
 
-  const possibleAnnexureHeadings =
-    Array.from(pdfClone.querySelectorAll('h1, h2, h3, strong, .report-section-title'));
+  const allElements =
+    Array.from(pdfClone.querySelectorAll('*'));
 
   const annexureHeading =
-    possibleAnnexureHeadings.find(element => {
+    allElements.find(element => {
       const text =
-        String(element.textContent || '').toLowerCase();
+        String(element.textContent || '').trim().toLowerCase();
 
       return (
         text.includes('annexure') ||
         text.includes('photo evidence') ||
-        text.includes('photographic evidence')
+        text.includes('photographic evidence') ||
+        text.includes('figure 1')
       );
     });
 
   if (annexureHeading) {
-    const annexureBlock =
+    const annexureStart =
+      annexureHeading.closest('.report-photo-section') ||
+      annexureHeading.closest('.photo-evidence-section') ||
       annexureHeading.closest('.report-block') ||
-      annexureHeading.closest('section') ||
       annexureHeading.parentElement;
 
-    if (annexureBlock) {
-      annexureBlock.classList.add('pdf-annexure-start');
+    if (annexureStart) {
+      annexureStart.classList.add('pdf-annexure-start');
     }
   }
 
-  // Remove empty trailing elements that can create blank PDF pages.
+  pdfClone
+    .querySelectorAll('.report-photo-card, .report-photo-item')
+    .forEach(card => {
+      card.classList.add('pdf-photo-card');
+    });
+
   let lastChild =
     pdfClone.lastElementChild;
 
@@ -608,8 +615,8 @@ pdfClone
 
     pagebreak: {
   mode: ['css', 'legacy'],
+  before: ['.pdf-annexure-start'],
   avoid: [
-    '.report-answer-row',
     '.executive-summary-card',
     '.summary-stat-card'
   ]

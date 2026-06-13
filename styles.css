@@ -6163,3 +6163,33 @@ button.readiness-chip:focus {
   content: none !important;
   display: none !important;
 }
+
+.pdf-export-mode .pdf-annexure-start {
+  display: block !important;
+  break-before: page !important;
+  page-break-before: always !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.pdf-export-mode .report-photo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.pdf-export-mode .report-photo-card,
+.pdf-export-mode .report-photo-item,
+.pdf-export-mode .pdf-photo-card {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  margin-bottom: 8px !important;
+}
+
+.pdf-export-mode .report-photo-card img,
+.pdf-export-mode .report-photo-item img,
+.pdf-export-mode .pdf-photo-card img {
+  max-height: 170px !important;
+  object-fit: contain !important;
+}
