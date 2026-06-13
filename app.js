@@ -489,17 +489,22 @@ centerPdfCloneContent(pdfClone);
       block.style.pageBreakInside = 'auto';
     });
 
-  const allElements =
-    Array.from(pdfClone.querySelectorAll('*'));
+    const possibleAnnexureHeadings =
+    Array.from(
+      pdfClone.querySelectorAll(
+        'h1, h2, h3, h4, .appendix-title, .report-section-heading'
+      )
+    );
 
   const annexureHeading =
-    allElements.find(element => {
+    possibleAnnexureHeadings.find(element => {
       const text =
         String(element.textContent || '')
           .trim()
           .toLowerCase();
 
       return (
+        text.includes('appendix a') ||
         text.includes('appendix') ||
         text.includes('annexure') ||
         text.includes('photo evidence') ||
@@ -508,31 +513,26 @@ centerPdfCloneContent(pdfClone);
     });
 
   if (annexureHeading) {
-    const annexureWrapper =
-      document.createElement('div');
-
-    annexureWrapper.className =
-      'report-photo-page pdf-annexure-start';
-
-    const startNode =
+    const appendixStart =
       annexureHeading.closest('.report-block') ||
+      annexureHeading.closest('.report-photo-page') ||
       annexureHeading;
 
-    const parent =
-      startNode.parentElement;
+    if (appendixStart && appendixStart.parentElement) {
+      const existingBreak =
+        pdfClone.querySelector('.pdf-appendix-break');
 
-    if (parent) {
-      parent.insertBefore(annexureWrapper, startNode);
+      if (!existingBreak) {
+        const pageBreak =
+          document.createElement('div');
 
-      let node = startNode;
+        pageBreak.className =
+          'pdf-appendix-break';
 
-      while (node) {
-        const next =
-          node.nextSibling;
-
-        annexureWrapper.appendChild(node);
-
-        node = next;
+        appendixStart.parentElement.insertBefore(
+          pageBreak,
+          appendixStart
+        );
       }
     }
   }
@@ -719,7 +719,15 @@ pdfClone
     },
 
     pagebreak: {
-  mode: ['legacy']
+  mode: ['css', 'legacy'],
+  before: [
+    '.pdf-appendix-break'
+  ],
+  avoid: [
+    '.pdf-photo-card',
+    '.report-photo-card',
+    '.report-photo-item'
+  ]
 }
   };
 

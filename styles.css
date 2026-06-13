@@ -6447,16 +6447,64 @@ button.readiness-chip:focus {
   display: none !important;
 }
 
-/* TEMP PDF TEST - DISABLE ALL FORCED PAGE BREAKS */
+/* PDF PAGE BREAK CONTROL - ONLY APPENDIX START */
 
 .pdf-export-mode .report-page-break,
 .pdf-export-mode .page-break,
 .pdf-export-mode .pdf-page-break,
-.pdf-export-mode .pdf-page-break-before,
 .pdf-export-mode .pdf-annexure-start,
 .pdf-export-mode .report-photo-page {
   break-before: auto !important;
   page-break-before: auto !important;
   break-after: auto !important;
   page-break-after: auto !important;
+}
+
+.pdf-export-mode .pdf-appendix-break {
+  display: block !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  break-before: page !important;
+  page-break-before: always !important;
+}
+
+.pdf-export-mode .report-photo-card,
+.pdf-export-mode .report-photo-item,
+.pdf-export-mode .pdf-photo-card {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  display: block !important;
+  margin-bottom: 12px !important;
+}
+
+.pdf-export-mode .report-photo-header,
+.pdf-export-mode .report-photo-time,
+.pdf-export-mode .report-photo-note,
+.pdf-export-mode .report-photo-image-box {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-export-mode .report-photo-image-box {
+  min-height: 120px !important;
+  background: #f7f7f7 !important;
+}
+
+.pdf-export-mode .report-photo-img {
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 65mm !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+.pdf-export-mode .pdf-appendix-break {
+  display: block !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  break-before: page !important;
+  page-break-before: always !important;
 }
