@@ -6759,38 +6759,67 @@ function updateProjectReadinessPanel() {
 
 function handleSmartQuickLink(action) {
   if (action === 'missing-info') {
-    focusFirstMissingProjectInfo();
-    setReadinessMessage('Jumped to missing inspection information.');
+    focusInspectionSection('projectDetailsCard');
+
+    setTimeout(() => {
+      focusFirstMissingProjectInfo();
+      setReadinessMessage('Jumped to missing inspection information.');
+    }, 120);
+
     return;
   }
 
   if (action === 'unanswered') {
-    focusFirstUnansweredChecklistItem();
-    setReadinessMessage('Jumped to first unanswered checklist item.');
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstUnansweredChecklistItem();
+      setReadinessMessage('Jumped to first unanswered checklist item.');
+    }, 120);
+
     return;
   }
 
   if (action === 'finding') {
-    focusFirstCurrentIssue();
-    setReadinessMessage('Jumped to first finding / No answer.');
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentIssue();
+      setReadinessMessage('Jumped to first finding / No answer.');
+    }, 120);
+
     return;
   }
 
   if (action === 'expiry-overdue') {
-    focusFirstCurrentExpiry('overdue');
-    setReadinessMessage('Jumped to expired equipment item.');
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentExpiry('overdue');
+      setReadinessMessage('Jumped to expired equipment item.');
+    }, 120);
+
     return;
   }
 
   if (action === 'expiry-soon') {
-    focusFirstCurrentExpiry('soon');
-    setReadinessMessage('Jumped to equipment item due soon.');
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentExpiry('soon');
+      setReadinessMessage('Jumped to equipment item due soon.');
+    }, 120);
+
     return;
   }
 
   if (action === 'expiry-missing') {
-    focusFirstCurrentExpiry('missing');
-    setReadinessMessage('Jumped to missing equipment expiry date.');
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentExpiry('missing');
+      setReadinessMessage('Jumped to missing equipment expiry date.');
+    }, 120);
   }
 }
 
