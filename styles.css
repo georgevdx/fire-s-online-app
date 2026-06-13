@@ -6562,3 +6562,106 @@ button.readiness-chip:focus {
   max-height: none !important;
   overflow: visible !important;
 }
+
+/* PDF EXPORT - RESTORE OLD REPORT LAYOUT, FIX LAPTOP LEFT CROP */
+
+.pdf-export-sandbox {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 760px !important;
+  background: #ffffff !important;
+  overflow: visible !important;
+  z-index: -1 !important;
+}
+
+.pdf-export-mode {
+  width: 760px !important;
+  max-width: 760px !important;
+  min-width: 760px !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+  color: #222222 !important;
+  overflow: visible !important;
+  transform: none !important;
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
+}
+
+.pdf-export-mode * {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.pdf-export-mode button,
+.pdf-export-mode .no-pdf,
+.pdf-export-mode .report-export-actions,
+.pdf-export-mode .archive-export-actions {
+  display: none !important;
+}
+
+/* Keep old appendix/page flow, but stop forced blank pages after photo pages */
+.pdf-export-mode .report-photo-page {
+  break-before: page !important;
+  page-break-before: always !important;
+  break-after: auto !important;
+  page-break-after: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: auto !important;
+}
+
+/* Keep photo + timestamp + note together */
+.pdf-export-mode .report-photo-card,
+.pdf-export-mode .report-photo-item,
+.pdf-export-mode .pdf-photo-card {
+  display: block !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  margin-bottom: 18px !important;
+  overflow: hidden !important;
+}
+
+.pdf-export-mode .report-photo-header,
+.pdf-export-mode .report-photo-time,
+.pdf-export-mode .report-photo-image-box,
+.pdf-export-mode .report-photo-note {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-export-mode .report-photo-image-box {
+  height: 65mm !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: #f7f7f7 !important;
+}
+
+.pdf-export-mode .report-photo-img,
+.pdf-export-mode .report-photo-card img,
+.pdf-export-mode .report-photo-item img {
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 65mm !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+}
+
+.pdf-export-mode .report-photo-note {
+  font-size: 8.5px !important;
+  line-height: 1.25 !important;
+  margin-top: 2mm !important;
+  max-height: 22mm !important;
+  overflow: hidden !important;
+  background: #f7f7f7 !important;
+  border-left: 3px solid #c62828 !important;
+  padding: 2mm !important;
+}

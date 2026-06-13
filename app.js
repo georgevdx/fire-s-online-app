@@ -579,8 +579,9 @@ function waitForPdfImages(container) {
   );
 }
 
+
+
 function exportReport() {
-  
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -592,22 +593,18 @@ function exportReport() {
     generateReport();
   }
 
-  const reportSection =
-    getEl('reportSection');
+  getEl('reportSection').style.display = 'block';
 
-  const originalReport =
+  const element =
     document.getElementById('reportContent');
 
-  if (!originalReport) {
+  if (!element) {
     alert('Report content was not found.');
     return;
   }
 
-  reportSection.style.display = 'block';
-
-  const currentProject = getProjects().find(
-    p => p.id === currentProjectId
-  );
+  const currentProject =
+    getProjects().find(p => p.id === currentProjectId);
 
   const projectName =
     archivedReportContext?.projectName ||
@@ -631,42 +628,15 @@ function exportReport() {
   pdfSandbox.className =
     'pdf-export-sandbox';
 
-    pdfSandbox.style.position = 'absolute';
-pdfSandbox.style.left = '0';
-pdfSandbox.style.top = '0';
-pdfSandbox.style.width = '794px';
-pdfSandbox.style.background = '#ffffff';
-pdfSandbox.style.overflow = 'visible';
-
   const pdfClone =
-    originalReport.cloneNode(true);
+    element.cloneNode(true);
 
   pdfClone.id =
     'reportContentPdfClone';
 
-  pdfClone.classList.add('pdf-export-mode');
-
-  pdfClone.style.display = 'block';
-pdfClone.style.width = '794px';
-pdfClone.style.maxWidth = '794px';
-pdfClone.style.minWidth = '794px';
-pdfClone.style.margin = '0';
-pdfClone.style.padding = '24px 36px';
-pdfClone.style.boxSizing = 'border-box';
-pdfClone.style.background = '#ffffff';
-pdfClone.style.color = '#222222';
-pdfClone.style.overflow = 'visible';
-pdfClone.style.transform = 'none';
-pdfClone.style.position = 'relative';
-pdfClone.style.left = '0';
-pdfClone.style.right = 'auto';
-
-pdfClone
-  .querySelectorAll('*')
-  .forEach(child => {
-    child.style.boxSizing = 'border-box';
-    child.style.maxWidth = '100%';
-  });
+  pdfClone.classList.add(
+    'pdf-export-mode'
+  );
 
   pdfClone
     .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
@@ -674,13 +644,11 @@ pdfClone
       element.remove();
     });
 
-    preparePdfCloneForExport(pdfClone);
-
   pdfSandbox.appendChild(pdfClone);
   document.body.appendChild(pdfSandbox);
 
   const opt = {
-    margin: [10, 10, 10, 10],
+    margin: [15, 12, 15, 12],
 
     filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
 
@@ -690,12 +658,13 @@ pdfClone
     },
 
     html2canvas: {
-      scale: 2,
+      scale: 1,
       useCORS: true,
       scrollX: 0,
       scrollY: 0,
-      windowWidth: 794,
-      width: 794
+      windowWidth: 760,
+      width: 760,
+      backgroundColor: '#ffffff'
     },
 
     jsPDF: {
@@ -705,28 +674,27 @@ pdfClone
     },
 
     pagebreak: {
-  mode: ['legacy'],
-  avoid: [
-    '.pdf-photo-card',
-    '.report-photo-card',
-    '.report-photo-item'
-  ]
-}
+      mode: ['css', 'legacy'],
+      avoid: [
+        '.report-photo-card',
+        '.report-photo-item',
+        '.pdf-photo-card'
+      ]
+    }
   };
 
-
   setTimeout(() => {
-  waitForPdfImages(pdfClone)
-    .then(() => {
-      return html2pdf()
-        .set(opt)
-        .from(pdfClone)
-        .save();
-    })
-    .finally(() => {
-      pdfSandbox.remove();
-    });
-}, 800);
+    waitForPdfImages(pdfClone)
+      .then(() => {
+        return html2pdf()
+          .set(opt)
+          .from(pdfClone)
+          .save();
+      })
+      .finally(() => {
+        pdfSandbox.remove();
+      });
+  }, 700);
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {
