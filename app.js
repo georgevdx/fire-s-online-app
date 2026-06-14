@@ -787,10 +787,20 @@ async function exportReport() {
     document.createElement('div');
 
   pdfSandbox.className =
-    'pdf-export-sandbox';
+  'pdf-export-sandbox';
 
-  const pdfClone =
-    element.cloneNode(true);
+pdfSandbox.style.position = 'fixed';
+pdfSandbox.style.left = '0';
+pdfSandbox.style.top = '0';
+pdfSandbox.style.width = '760px';
+pdfSandbox.style.margin = '0';
+pdfSandbox.style.padding = '0';
+pdfSandbox.style.background = '#ffffff';
+pdfSandbox.style.overflow = 'visible';
+pdfSandbox.style.zIndex = '-1';
+
+const pdfClone =
+  element.cloneNode(true);
 
   pdfClone.id =
     'reportContentPdfClone';
@@ -798,6 +808,28 @@ async function exportReport() {
   pdfClone.classList.add(
     'pdf-export-mode'
   );
+  pdfClone.style.display = 'block';
+pdfClone.style.width = '760px';
+pdfClone.style.maxWidth = '760px';
+pdfClone.style.minWidth = '760px';
+pdfClone.style.marginLeft = '0';
+pdfClone.style.marginRight = '0';
+pdfClone.style.marginTop = '0';
+pdfClone.style.padding = '20px';
+pdfClone.style.boxSizing = 'border-box';
+pdfClone.style.background = '#ffffff';
+pdfClone.style.position = 'relative';
+pdfClone.style.left = '0';
+pdfClone.style.right = 'auto';
+pdfClone.style.transform = 'none';
+pdfClone.style.overflow = 'visible';
+
+pdfClone
+  .querySelectorAll('*')
+  .forEach(child => {
+    child.style.boxSizing = 'border-box';
+    child.style.maxWidth = '100%';
+  });
 
   pdfClone
     .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
@@ -830,14 +862,16 @@ async function exportReport() {
     },
 
     html2canvas: {
-      scale: 1,
-      useCORS: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 760,
-      width: 760,
-      backgroundColor: '#ffffff'
-    },
+  scale: 1,
+  useCORS: true,
+  scrollX: 0,
+  scrollY: 0,
+  x: 0,
+  y: 0,
+  windowWidth: 760,
+  width: 760,
+  backgroundColor: '#ffffff'
+},
 
     jsPDF: {
       unit: 'mm',
