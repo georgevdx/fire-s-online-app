@@ -3300,7 +3300,24 @@ if (adminExportBackupBtn) {
   });
     updateInspectionTypeOptions();
     toggleMallFields();
-    showHome();
+    if (!currentUserProfile) {
+  currentUserProfile = {
+    id: 'local-user',
+    email: 'local@fire-s.app',
+    fullName: 'Local User',
+    role: 'super_admin',
+    companyId: null,
+    companyName: 'Local / Personal Workspace'
+  };
+
+  currentCompanyAccess = {
+    status: 'active',
+    plan: 'local',
+    source: 'local-fallback'
+  };
+}
+
+showHome();
   }
 
 function populateOccupancies() {
