@@ -579,9 +579,167 @@ function waitForPdfImages(container) {
   );
 }
 
+function getPhotosForPdfExport() {
+  if (archivedReportContext) {
+    const projects = getProjects();
+    const project = projects.find(
+      p => p.id === archivedReportContext.projectId
+    );
 
+    const inspection =
+      project?.inspectionHistory?.[archivedReportContext.historyIndex];
 
-function exportReport() {
+    return inspection?.photos || [];
+  }
+
+  return currentPhotos || [];
+}
+
+function getPdfImageFormat(src = '') {
+  const lowerSrc = String(src).toLowerCase();
+
+  if (lowerSrc.startsWith('data:image/png')) {
+    return 'PNG';
+  }
+
+  if (lowerSrc.startsWith('data:image/webp')) {
+    return 'WEBP';
+  }
+
+  return 'JPEG';
+}
+
+function loadPdfImage(src) {
+  return new Promise(resolve => {
+    if (!src) {
+      resolve(null);
+      return;
+    }
+
+    const img = new Image();
+
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+
+    img.src = src;
+  });
+}
+
+async function addPhotoAppendixToPdf(pdf, photos = []) {
+  const safePhotos =
+    Array.isArray(photos)
+      ? photos
+      : [];
+
+  const pageWidth = 210;
+  const pageHeight = 297;
+
+  const marginX = 12;
+  const marginTop = 15;
+
+  for (let index = 0; index < safePhotos.length; index++) {
+    const photo = safePhotos[index];
+    const photoNumber = index + 1;
+
+    pdf.addPage();
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor(183, 28, 28);
+
+    if (index === 0) {
+      pdf.text('APPENDIX A - PHOTO EVIDENCE', marginX, marginTop);
+    } else {
+      pdf.text(`PHOTO EVIDENCE - PHOTO ${photoNumber}`, marginX, marginTop);
+    }
+
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Photo ${photoNumber}`, marginX, 30);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+
+    const capturedText =
+      photo.timestamp
+        ? new Date(photo.timestamp).toLocaleString()
+        : 'Not recorded';
+
+    pdf.text(`Captured: ${capturedText}`, marginX, 36);
+
+    const imageTop = 43;
+    const imageBoxWidth = pageWidth - marginX * 2;
+    const imageBoxHeight = 170;
+
+    pdf.setDrawColor(220, 220, 220);
+    pdf.rect(marginX, imageTop, imageBoxWidth, imageBoxHeight);
+
+    const img =
+      await loadPdfImage(photo.src);
+
+    if (img) {
+      const imgRatio =
+        img.naturalWidth / img.naturalHeight;
+
+      const boxRatio =
+        imageBoxWidth / imageBoxHeight;
+
+      let drawWidth = imageBoxWidth;
+      let drawHeight = imageBoxHeight;
+
+      if (imgRatio > boxRatio) {
+        drawHeight = imageBoxWidth / imgRatio;
+      } else {
+        drawWidth = imageBoxHeight * imgRatio;
+      }
+
+      const drawX =
+        marginX + (imageBoxWidth - drawWidth) / 2;
+
+      const drawY =
+        imageTop + (imageBoxHeight - drawHeight) / 2;
+
+      try {
+        pdf.addImage(
+          photo.src,
+          getPdfImageFormat(photo.src),
+          drawX,
+          drawY,
+          drawWidth,
+          drawHeight
+        );
+      } catch (error) {
+        pdf.setTextColor(183, 28, 28);
+        pdf.text('Photo could not be added to PDF.', marginX + 5, imageTop + 20);
+        pdf.setTextColor(0, 0, 0);
+      }
+    } else {
+      pdf.setTextColor(183, 28, 28);
+      pdf.text('Photo source missing. Sync / refresh may be required.', marginX + 5, imageTop + 20);
+      pdf.setTextColor(0, 0, 0);
+    }
+
+    const noteTop = imageTop + imageBoxHeight + 12;
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.text('Photo Note:', marginX, noteTop);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+
+    const noteText =
+      photo.note || 'No note added.';
+
+    const wrappedNote =
+      pdf.splitTextToSize(noteText, pageWidth - marginX * 2);
+
+    pdf.text(wrappedNote.slice(0, 8), marginX, noteTop + 7);
+  }
+}
+
+async function exportReport() {
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -622,6 +780,9 @@ function exportReport() {
   const safeProjectName =
     sanitizeFileName(projectName);
 
+  const photosForPdf =
+    getPhotosForPdfExport();
+
   const pdfSandbox =
     document.createElement('div');
 
@@ -640,6 +801,17 @@ function exportReport() {
 
   pdfClone
     .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
+    .forEach(element => {
+      element.remove();
+    });
+
+  /*
+    Important:
+    Remove all photo appendix HTML from the html2pdf render.
+    Photos are added manually with jsPDF after the report body is rendered.
+  */
+  pdfClone
+    .querySelectorAll('.report-page-break, .report-photo-page')
     .forEach(element => {
       element.remove();
     });
@@ -674,26 +846,36 @@ function exportReport() {
     },
 
     pagebreak: {
-  mode: ['css', 'legacy'],
-  before: [
-    '.report-page-break',
-    '.report-photo-page'
-  ]
-}
+      mode: ['css', 'legacy']
+    }
   };
 
-  setTimeout(() => {
-    waitForPdfImages(pdfClone)
-      .then(() => {
-        return html2pdf()
-          .set(opt)
-          .from(pdfClone)
-          .save();
-      })
-      .finally(() => {
-        pdfSandbox.remove();
-      });
-  }, 700);
+  try {
+    await waitForPdfImages(pdfClone);
+
+    const worker =
+      html2pdf()
+        .set(opt)
+        .from(pdfClone)
+        .toPdf();
+
+    const pdf =
+      await worker.get('pdf');
+
+    await addPhotoAppendixToPdf(
+      pdf,
+      photosForPdf
+    );
+
+    pdf.save(
+      `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`
+    );
+  } catch (error) {
+    console.error('PDF export failed:', error);
+    alert('PDF export failed. Please try again.');
+  } finally {
+    pdfSandbox.remove();
+  }
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {
