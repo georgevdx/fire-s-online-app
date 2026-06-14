@@ -426,6 +426,109 @@ function formatInspectionDate(value) {
   return date.toLocaleDateString();
 }
 
+function getTodayDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normaliseDateString(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function getProjectScheduleDate(project) {
+  return (
+    project?.scheduledDate ||
+    project?.followUpDate ||
+    ''
+  );
+}
+
+function getProjectScheduleType(project) {
+  if (!project) return '';
+
+  if (project.scheduleType) {
+    return project.scheduleType;
+  }
+
+  if (project.scheduleFreshInspection === true) {
+    return 'follow_up';
+  }
+
+  if (project.scheduledDate && project.scheduledStatus === 'scheduled') {
+    return 'new_inspection';
+  }
+
+  return '';
+}
+
+function getProjectScheduleLabel(project) {
+  const scheduleType =
+    getProjectScheduleType(project);
+
+  if (scheduleType === 'follow_up') {
+    return 'Follow-up';
+  }
+
+  if (scheduleType === 'recurring_cycle') {
+    return 'Cycle';
+  }
+
+  if (scheduleType === 'new_inspection') {
+    return 'New inspection';
+  }
+
+  return 'Scheduled';
+}
+
+function getProjectScheduleStatus(project) {
+  const scheduleDate =
+    normaliseDateString(getProjectScheduleDate(project));
+
+  if (!scheduleDate) {
+    return {
+      hasSchedule: false,
+      label: 'Not scheduled',
+      className: 'schedule-none',
+      date: ''
+    };
+  }
+
+  const today =
+    getTodayDateString();
+
+  if (scheduleDate < today) {
+    return {
+      hasSchedule: true,
+      label: `${getProjectScheduleLabel(project)} overdue`,
+      className: 'schedule-overdue',
+      date: scheduleDate
+    };
+  }
+
+  if (scheduleDate === today) {
+    return {
+      hasSchedule: true,
+      label: `${getProjectScheduleLabel(project)} due today`,
+      className: 'schedule-today',
+      date: scheduleDate
+    };
+  }
+
+  return {
+    hasSchedule: true,
+    label: `${getProjectScheduleLabel(project)} scheduled`,
+    className: 'schedule-upcoming',
+    date: scheduleDate
+  };
+}
+
 function getProjectInspectionDate(project) {
   return (
     project?.inspectionDate ||
@@ -8640,6 +8743,25 @@ container.innerHTML = `
 
 const scheduledLabel =
   activeScheduleLabel || followStatus.label;
+
+  const scheduleStatus =
+  getProjectScheduleStatus(project);
+
+const scheduleDateText =
+  scheduleStatus.date
+    ? formatInspectionDate(scheduleStatus.date)
+    : '';
+
+const scheduleHtml =
+  scheduleStatus.hasSchedule
+    ? `
+      <span class="inspection-project-list-schedule ${escapeHtml(scheduleStatus.className)}">
+        Schedule:
+        ${escapeHtml(scheduleStatus.label)}
+        ${scheduleDateText ? ` | ${escapeHtml(scheduleDateText)}` : ''}
+      </span>
+    `
+    : '';
       const projectTitle =
         project.projectName ||
         [project.organisationName, project.siteName]
@@ -8684,9 +8806,12 @@ const scheduledLabel =
               ${escapeHtml(scheduledLabel)}
             </span>
 
-          <span class="inspection-project-list-address">
-            ${escapeHtml(projectAddress)}
-          </span>
+         <span class="inspection-project-list-address">
+  ${escapeHtml(projectAddress)}
+</span>
+
+${scheduleHtml}
+
         </button>
       `;
     }).join('')}
@@ -8799,6 +8924,25 @@ function openProjectSummaryCard(index, shouldScroll = true) {
 const syncStatus = getSyncStatus(project);
 const followStatus = getFollowUpStatus(project);
 
+const scheduleStatus =
+  getProjectScheduleStatus(project);
+
+const scheduleDateText =
+  scheduleStatus.date
+    ? formatInspectionDate(scheduleStatus.date)
+    : '';
+
+const scheduleHtml =
+  scheduleStatus.hasSchedule
+    ? `
+      <div class="project-schedule ${scheduleStatus.className}">
+        <strong>Schedule:</strong>
+        ${escapeHtml(scheduleStatus.label)}
+        ${scheduleDateText ? ` | ${escapeHtml(scheduleDateText)}` : ''}
+      </div>
+    `
+    : '';
+
 const isScheduledNew =
   project.scheduledStatus === 'scheduled' &&
   project.scheduleType === 'new_site' &&
@@ -8818,6 +8962,26 @@ const scheduledLabel =
       )
     ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
     : followStatus.label;
+
+    const scheduleStatus =
+  getProjectScheduleStatus(project);
+
+const scheduleDateText =
+  scheduleStatus.date
+    ? formatInspectionDate(scheduleStatus.date)
+    : '';
+
+const scheduleHtml =
+  scheduleStatus.hasSchedule
+    ? `
+      <div class="project-schedule ${escapeHtml(scheduleStatus.className)}">
+        <strong>Schedule:</strong>
+        ${escapeHtml(scheduleStatus.label)}
+        ${scheduleDateText ? ` | ${escapeHtml(scheduleDateText)}` : ''}
+      </div>
+    `
+    : '';
+
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -8876,8 +9040,10 @@ const scheduledLabel =
         </div>
 
         <div class="project-address project-address-compact">
-          ${escapeHtml(projectAddress)}
-        </div>
+  ${escapeHtml(projectAddress)}
+</div>
+
+${scheduleHtml}
         </div>
       </div>
 
