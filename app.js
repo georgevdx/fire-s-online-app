@@ -4447,27 +4447,23 @@ function updateFloatingBackButton() {
 
 function showProjectList() {
    if (!currentUserProfile) {
-  showHome();
+  currentUserProfile = {
+    id: 'local-user',
+    email: 'local@fire-s.app',
+    fullName: 'Local User',
+    role: 'super_admin',
+    companyId: null,
+    companyName: 'Local / Personal Workspace'
+  };
 
-  const syncStatus = document.getElementById('syncStatus');
+  currentCompanyAccess = {
+    status: 'active',
+    plan: 'local',
+    source: 'local-fallback'
+  };
 
-  if (syncStatus) {
-    syncStatus.textContent =
-      'Please login or register from the home page to view inspections.';
-  }
-
-  const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
-
-  if (homeLoginRouteBtn) {
-    homeLoginRouteBtn.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
-
-    homeLoginRouteBtn.focus();
-  }
-
-  return;
+  updateAccessUI();
+  updateHomeAccessCards();
 }
 
   setCloudMenuVisible(false);
@@ -8523,22 +8519,21 @@ function renderProjectsList() {
   const container = getEl('projectsList');
 
   if (!currentUserProfile) {
-    container.innerHTML = '';
+  currentUserProfile = {
+    id: 'local-user',
+    email: 'local@fire-s.app',
+    fullName: 'Local User',
+    role: 'super_admin',
+    companyId: null,
+    companyName: 'Local / Personal Workspace'
+  };
 
-    const dashboardMetrics = document.getElementById('dashboardMetrics');
-    const projectPagingControls = document.getElementById('projectPagingControls');
-    const activeFilterStatus = document.getElementById('activeFilterStatus');
-
-    if (dashboardMetrics) dashboardMetrics.innerHTML = '';
-    if (projectPagingControls) projectPagingControls.innerHTML = '';
-
-    if (activeFilterStatus) {
-      activeFilterStatus.style.display = 'none';
-      activeFilterStatus.innerHTML = '';
-    }
-
-    return;
-  }
+  currentCompanyAccess = {
+    status: 'active',
+    plan: 'local',
+    source: 'local-fallback'
+  };
+}
 
   const allProjects = getProjects();
   const projects = getVisibleProjectsForCurrentUser(allProjects);
