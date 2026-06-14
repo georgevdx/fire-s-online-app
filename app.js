@@ -8975,25 +8975,7 @@ const scheduledLabel =
     ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
     : followStatus.label;
 
-    const scheduleStatus =
-  getProjectScheduleStatus(project);
-
-const scheduleDateText =
-  scheduleStatus.date
-    ? formatInspectionDate(scheduleStatus.date)
-    : '';
-
-const scheduleHtml =
-  scheduleStatus.hasSchedule
-    ? `
-      <div class="project-schedule ${escapeHtml(scheduleStatus.className)}">
-        <strong>Schedule:</strong>
-        ${escapeHtml(scheduleStatus.label)}
-        ${scheduleDateText ? ` | ${escapeHtml(scheduleDateText)}` : ''}
-      </div>
-    `
-    : '';
-
+    
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
