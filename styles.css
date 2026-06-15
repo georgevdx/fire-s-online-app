@@ -7252,3 +7252,168 @@ button.readiness-chip:focus {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* =====================================================
+   EXISTING-SITE SCHEDULING CENTRE MAKEOVER
+   ===================================================== */
+
+.scheduling-card {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #dbe3ea;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.scheduling-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.scheduling-card-header h3 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 20px;
+}
+
+.scheduling-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.scheduling-card-badge {
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.scheduling-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.schedule-option-card {
+  padding: 14px;
+  border: 1px solid #dbe3ea;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.schedule-option-card h4 {
+  margin: 6px 0 6px;
+  color: #111827;
+  font-size: 16px;
+}
+
+.schedule-option-card p {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.schedule-option-label {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.schedule-option-followup {
+  border-left: 5px solid #b71c1c;
+}
+
+.schedule-option-followup .schedule-option-label {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.schedule-option-recurring {
+  border-left: 5px solid #2e7d32;
+}
+
+.schedule-option-recurring .schedule-option-label {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.schedule-option-card label {
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.schedule-option-card input,
+.schedule-option-card select,
+.schedule-option-card textarea {
+  width: 100%;
+  max-width: none;
+}
+
+.schedule-option-card textarea {
+  min-height: 90px;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.schedule-option-card input:focus,
+.schedule-option-card select:focus,
+.schedule-option-card textarea:focus {
+  outline: none;
+  border-color: #b71c1c;
+  box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.12);
+}
+
+.recurring-coming-soon {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f1f8f4;
+  color: #2e7d32;
+  border: 1px dashed #81c784;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+@media (min-width: 760px) {
+  .scheduling-card-grid-two {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .scheduling-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .scheduling-card-header {
+    display: block;
+  }
+
+  .scheduling-card-badge {
+    display: inline-block;
+    margin-top: 10px;
+  }
+}
