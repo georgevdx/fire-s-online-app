@@ -556,6 +556,91 @@ function getProjectScheduleStatus(project) {
   };
 }
 
+function addRecurringCycleToDate(startDateValue, cycleNumber, cycleUnit) {
+  const startDate =
+    startDateValue
+      ? new Date(startDateValue)
+      : new Date();
+
+  if (Number.isNaN(startDate.getTime())) {
+    return '';
+  }
+
+  const amount =
+    Number(cycleNumber || 0);
+
+  if (!amount || amount < 1) {
+    return '';
+  }
+
+  const unit =
+    String(cycleUnit || '').trim().toLowerCase();
+
+  const nextDate =
+    new Date(startDate);
+
+  if (
+    unit === 'day' ||
+    unit === 'days'
+  ) {
+    nextDate.setDate(nextDate.getDate() + amount);
+  }
+
+  else if (
+    unit === 'week' ||
+    unit === 'weeks'
+  ) {
+    nextDate.setDate(nextDate.getDate() + amount * 7);
+  }
+
+  else if (
+    unit === 'month' ||
+    unit === 'months'
+  ) {
+    nextDate.setMonth(nextDate.getMonth() + amount);
+  }
+
+  else if (
+    unit === 'year' ||
+    unit === 'years'
+  ) {
+    nextDate.setFullYear(nextDate.getFullYear() + amount);
+  }
+
+  else {
+    return '';
+  }
+
+  return nextDate.toISOString().slice(0, 10);
+}
+
+function getNextRecurringCycleDate(project, completedAt) {
+  if (!project) return '';
+
+  if (project.recurringCycleEnabled !== true) {
+    return '';
+  }
+
+  const cycleNumber =
+    project.recurringCycleNumber;
+
+  const cycleUnit =
+    project.recurringCycleUnit;
+
+  const baseDate =
+    completedAt ||
+    project.completedAt ||
+    project.inspectionDate ||
+    project.scheduledDate ||
+    new Date().toISOString();
+
+  return addRecurringCycleToDate(
+    baseDate,
+    cycleNumber,
+    cycleUnit
+  );
+}
+
 function getProjectInspectionDate(project) {
   return (
     project?.inspectionDate ||
@@ -10312,6 +10397,17 @@ const hasNextScheduledInspection =
   completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
   completedProjectBeforeUpdate.followUpDate;
 
+const nextRecurringCycleDate =
+  hasNextScheduledInspection
+    ? ''
+    : getNextRecurringCycleDate(
+        completedProjectBeforeUpdate,
+        completedAt
+      );
+
+const hasNextRecurringCycle =
+  !!nextRecurringCycleDate;
+
       const completedProjectForArchive = {
         ...completedProjectBeforeUpdate,
         completedAt
@@ -10326,40 +10422,50 @@ const hasNextScheduledInspection =
         inspectionHistory,
 
         scheduledDate: hasNextScheduledInspection
-          ? completedProjectBeforeUpdate.followUpDate
-          : '',
+  ? completedProjectBeforeUpdate.followUpDate
+  : hasNextRecurringCycle
+    ? nextRecurringCycleDate
+    : '',
 
-        scheduledStatus: hasNextScheduledInspection
-          ? 'scheduled'
-          : 'completed',
+scheduledStatus:
+  hasNextScheduledInspection || hasNextRecurringCycle
+    ? 'scheduled'
+    : 'completed',
 
-        scheduleFreshInspection: hasNextScheduledInspection,
+scheduleFreshInspection:
+  hasNextScheduledInspection || hasNextRecurringCycle,
 
-        scheduledReason: hasNextScheduledInspection
-          ? 'follow_up'
-          : '',
+scheduledReason: hasNextScheduledInspection
+  ? 'follow_up'
+  : hasNextRecurringCycle
+    ? 'recurring_cycle'
+    : '',
 
-        scheduledNote: hasNextScheduledInspection
-          ? completedProjectBeforeUpdate.followUpNotes || ''
-          : '',
+scheduledNote: hasNextScheduledInspection
+  ? completedProjectBeforeUpdate.followUpNotes || ''
+  : hasNextRecurringCycle
+    ? `Recurring cycle scheduled for ${nextRecurringCycleDate}`
+    : '',
 
-        scheduleType: hasNextScheduledInspection
-          ? 'follow_up'
-          : '',
+scheduleType: hasNextScheduledInspection
+  ? 'follow_up'
+  : hasNextRecurringCycle
+    ? 'recurring_cycle'
+    : '',
 
-        scheduleCompletedAt: completedAt,
+scheduleCompletedAt: completedAt,
 
-        followUpRequired: hasNextScheduledInspection
-          ? 'Yes'
-          : 'No',
+followUpRequired: hasNextScheduledInspection
+  ? 'Yes'
+  : 'No',
 
-        followUpDate: hasNextScheduledInspection
-          ? completedProjectBeforeUpdate.followUpDate
-          : '',
+followUpDate: hasNextScheduledInspection
+  ? completedProjectBeforeUpdate.followUpDate
+  : '',
 
-        followUpNotes: hasNextScheduledInspection
-          ? completedProjectBeforeUpdate.followUpNotes || ''
-          : '',
+followUpNotes: hasNextScheduledInspection
+  ? completedProjectBeforeUpdate.followUpNotes || ''
+  : '',
 
         syncPending: true,
         syncError: false,
