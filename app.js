@@ -9154,127 +9154,200 @@ const scheduledLabel =
 
   detailCard.style.display = 'block';
 
-  detailCard.innerHTML = `
-    <div class="project-summary-actions">
-      <button
-        type="button"
-        class="secondary-btn project-summary-close-btn"
-        onclick="closeProjectSummaryCard()"
-      >
-        Close
-      </button>
+  const hasAttentionSummary =
+  dataQuality.count > 0 ||
+  highRiskSummary.count > 0 ||
+  expiryCounts.overdue > 0 ||
+  expiryCounts.soon > 0 ||
+  expiryCounts.missing > 0;
 
+const reviewActionHtml =
+  primaryAction.focusMode
+    ? `
       <button
         type="button"
-        class="project-summary-open-btn ${escapeHtml(primaryAction.className)}"
+        class="inspection-card-action secondary-action"
         onclick="openProject('${escapeHtml(project.id)}', '${escapeHtml(primaryAction.focusMode)}')"
       >
         ${escapeHtml(primaryAction.label)}
       </button>
-    </div>
+    `
+    : '';
 
-    <div class="project-card">
-      <div class="project-card-top">
-        <div>
-          <h3>${escapeHtml(projectTitle)}</h3>
+detailCard.innerHTML = `
+  <div class="inspection-summary-card">
+    <div class="inspection-summary-header">
+      <div class="inspection-summary-title-block">
+        <h3>${escapeHtml(projectTitle)}</h3>
 
-        <div class="project-number">
+        <div class="inspection-summary-number">
           ${escapeHtml(project.inspectionNumber || '-')}
         </div>
 
-        <div class="project-address project-address-compact">
-  ${escapeHtml(projectAddress)}
-</div>
-
-${scheduleHtml}
+        <div class="inspection-summary-address">
+          ${escapeHtml(projectAddress)}
         </div>
       </div>
 
-      <div class="project-badges">
-        ${
-          syncStatus.class !== 'sync-synced'
-            ? `
-              <span class="project-sync ${escapeHtml(syncStatus.class)}">
-                ${escapeHtml(syncStatus.label)}
-              </span>
-            `
-            : ''
-        }
+      ${
+        isScheduledNew || project.scheduleFreshInspection === true
+          ? `
+            <span class="inspection-summary-status status-scheduled">
+              Scheduled
+            </span>
+          `
+          : `
+            <span class="inspection-summary-status ${escapeHtml(inspectionStatus.class)}">
+              ${escapeHtml(inspectionStatus.label)}
+            </span>
+          `
+      }
+    </div>
 
-        <span class="project-follow ${escapeHtml(followStatus.class)}">
-          ${escapeHtml(scheduledLabel)}
-        </span>
+    <div class="inspection-summary-chip-row">
+      ${
+        syncStatus.class !== 'sync-synced'
+          ? `
+            <span class="inspection-summary-chip ${escapeHtml(syncStatus.class)}">
+              ${escapeHtml(syncStatus.label)}
+            </span>
+          `
+          : ''
+      }
 
-        ${
-          isScheduledNew || project.scheduleFreshInspection === true
-            ? ''
-            : `
-              <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
-                ${escapeHtml(inspectionStatus.label)}
-                <small>${escapeHtml(inspectionStatus.detail)}</small>
-              </span>
-            `
-        }
+      <span class="inspection-summary-chip ${escapeHtml(followStatus.class)}">
+        ${escapeHtml(scheduledLabel)}
+      </span>
+
+      ${
+        dataQuality.count > 0
+          ? `
+            <span class="inspection-summary-chip chip-warning">
+              Missing Info: ${dataQuality.count}
+            </span>
+          `
+          : ''
+      }
+
+      ${
+        highRiskSummary.count > 0
+          ? `
+            <span class="inspection-summary-chip chip-danger">
+              High Risk: ${highRiskSummary.count}
+            </span>
+          `
+          : ''
+      }
+
+      ${
+        expiryCounts.total > 0
+          ? `
+            <span class="inspection-summary-chip chip-equipment">
+              Equipment: ${expiryCounts.total}
+            </span>
+          `
+          : ''
+      }
+    </div>
+
+    <div class="inspection-summary-action-row">
+      <button
+        type="button"
+        class="inspection-card-action primary-action"
+        onclick="openProject('${escapeHtml(project.id)}', '')"
+      >
+        Open Inspection
+      </button>
+
+      ${reviewActionHtml}
+
+      <button
+        type="button"
+        class="inspection-card-action quiet-action"
+        onclick="closeProjectSummaryCard()"
+      >
+        Back to List
+      </button>
+    </div>
+
+    ${
+      hasAttentionSummary
+        ? `
+          <div class="inspection-attention-panel">
+            <div class="inspection-attention-title">
+              Attention Summary
+            </div>
+
+            ${
+              dataQuality.count > 0
+                ? `
+                  <div class="inspection-attention-item attention-warning">
+                    <strong>Missing project information</strong>
+                    <span>
+                      ${escapeHtml(dataQuality.missing.slice(0, 4).join(', '))}
+                      ${dataQuality.count > 4 ? `+ ${dataQuality.count - 4} more` : ''}
+                    </span>
+                  </div>
+                `
+                : ''
+            }
+
+            ${
+              highRiskSummary.count > 0
+                ? `
+                  <div class="inspection-attention-item attention-danger">
+                    <strong>
+                      High risk non-compliance
+                    </strong>
+                    <span>
+                      ${highRiskSummary.count}
+                      item${highRiskSummary.count === 1 ? '' : 's'}:
+                      ${escapeHtml(highRiskSummary.text)}
+                    </span>
+                  </div>
+                `
+                : ''
+            }
+
+            ${
+              expiryCounts.total > 0
+                ? `
+                  <div class="inspection-attention-item attention-equipment">
+                    <strong>Equipment maintenance</strong>
+                    <span>
+                      ${
+                        [
+                          expiryCounts.overdue > 0 ? `${expiryCounts.overdue} expired` : '',
+                          expiryCounts.soon > 0 ? `${expiryCounts.soon} due soon` : '',
+                          expiryCounts.missing > 0 ? `${expiryCounts.missing} date missing` : '',
+                          expiryCounts.scheduled > 0 ? `${expiryCounts.scheduled} valid` : ''
+                        ]
+                          .filter(Boolean)
+                          .join(' | ')
+                      }
+                    </span>
+                  </div>
+                `
+                : ''
+            }
+          </div>
+        `
+        : `
+          <div class="inspection-clear-panel">
+            No urgent action items shown for this inspection card.
+          </div>
+        `
+    }
+
+    <div class="inspection-details-panel">
+      <div class="inspection-details-title">
+        Inspection Details
       </div>
 
-      ${dataQuality.count > 0 ? `
-        <div class="project-data-quality">
-          Missing project info:
-          ${escapeHtml(dataQuality.missing.slice(0, 4).join(', '))}
-          ${dataQuality.count > 4 ? `+ ${dataQuality.count - 4} more` : ''}
-        </div>
-      ` : ''}
-
-      
-
-      ${highRiskSummary.count > 0 ? `
-        <div class="project-risk-summary">
-          <div class="project-risk-count">
-            High Risk:
-            ${highRiskSummary.count}
-            non-compliance item${highRiskSummary.count === 1 ? '' : 's'}
-          </div>
-
-          <div class="project-risk-text">
-            ${escapeHtml(highRiskSummary.text)}
-          </div>
-        </div>
-      ` : ''}
-
-     ${expiryCounts.total > 0 ? `
-  <div class="project-expiry-summary">
-    <span class="project-expiry-label">Equipment Maintenance</span>
-
-    ${expiryCounts.overdue > 0 ? `
-      <span class="project-expiry-chip expiry-chip-overdue">
-        Expired
-      </span>
-    ` : ''}
-
-    ${expiryCounts.soon > 0 ? `
-      <span class="project-expiry-chip expiry-chip-soon">
-        Due soon
-      </span>
-    ` : ''}
-
-    ${expiryCounts.scheduled > 0 ? `
-      <span class="project-expiry-chip expiry-chip-scheduled">
-        Valid
-      </span>
-    ` : ''}
-
-    ${expiryCounts.missing > 0 ? `
-      <span class="project-expiry-chip expiry-chip-missing">
-        Date to be entered
-      </span>
-    ` : ''}
-  </div>
-` : ''}
-
-      <div class="project-meta-grid">
+      <div class="inspection-details-grid">
         <div>
-          <span>Platform</span>
-          <strong>Fire-S</strong>
+          <span>Inspection Date</span>
+          <strong>${escapeHtml(formatInspectionDate(inspectionDate))}</strong>
         </div>
 
         <div>
@@ -9283,22 +9356,23 @@ ${scheduleHtml}
         </div>
 
         <div>
-          <span>Inspection Date</span>
-          <strong>${escapeHtml(formatInspectionDate(inspectionDate))}</strong>
-        </div>
-
-        <div>
           <span>Occupancy</span>
           <strong>${escapeHtml(project.occupancy || '-')}</strong>
         </div>
 
         <div>
-          <span>Last saved</span>
+          <span>Last Saved</span>
           <strong>${escapeHtml(lastSaved)}</strong>
+        </div>
+
+        <div>
+          <span>Platform</span>
+          <strong>Fire-S</strong>
         </div>
       </div>
     </div>
-  `;
+  </div>
+`;
 
   if (shouldScroll) {
   detailCard.scrollIntoView({
