@@ -10274,9 +10274,16 @@ function finishInspection() {
 
       const completedAt = new Date().toISOString();
 
-      const hasNextScheduledInspection =
-        completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
-        completedProjectBeforeUpdate.followUpDate;
+      const isCurrentScheduledFollowUp =
+  completedProjectBeforeUpdate.scheduleFreshInspection === true ||
+  completedProjectBeforeUpdate.scheduledReason === 'follow_up' ||
+  String(completedProjectBeforeUpdate.scheduleType || '').toLowerCase() === 'follow_up' ||
+  String(completedProjectBeforeUpdate.scheduleType || '').toLowerCase() === 'follow-up';
+
+const hasNextScheduledInspection =
+  !isCurrentScheduledFollowUp &&
+  completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
+  completedProjectBeforeUpdate.followUpDate;
 
       const completedProjectForArchive = {
         ...completedProjectBeforeUpdate,
@@ -10310,10 +10317,22 @@ function finishInspection() {
           : '',
 
         scheduleType: hasNextScheduledInspection
-  ? 'follow_up'
-  : completedProjectBeforeUpdate.scheduleType || '',
+          ? 'follow_up'
+          : '',
 
-scheduleCompletedAt: completedAt,
+        scheduleCompletedAt: completedAt,
+
+        followUpRequired: hasNextScheduledInspection
+          ? 'Yes'
+          : 'No',
+
+        followUpDate: hasNextScheduledInspection
+          ? completedProjectBeforeUpdate.followUpDate
+          : '',
+
+        followUpNotes: hasNextScheduledInspection
+          ? completedProjectBeforeUpdate.followUpNotes || ''
+          : '',
 
         syncPending: true,
         syncError: false,
