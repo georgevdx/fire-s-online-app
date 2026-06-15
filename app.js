@@ -4961,33 +4961,7 @@ function ensureInspectionQuickActions() {
     Inspection Command Centre
   </div>
 
-  <div class="scheduling-centre">
-    <div class="scheduling-centre-title">
-      Scheduling Centre
-    </div>
-
-    <div class="scheduling-centre-grid">
-      
-
-      <button
-        type="button"
-        class="scheduling-action-btn"
-        onclick="focusInspectionSection('nextInspectionCard')"
-      >
-        <strong>Schedule Corrective Follow-up</strong>
-        <span>Use for NO findings or corrective actions that must be checked again.</span>
-      </button>
-
-      <button
-        type="button"
-        class="scheduling-action-btn scheduling-action-disabled"
-        disabled
-      >
-        <strong>Set Recurring Inspection Cycle</strong>
-        <span>Routine repeat inspections, e.g. every 6 months or yearly. Coming next.</span>
-      </button>
-    </div>
-  </div>
+  
 
   <div id="quickReadinessSummary" class="quick-readiness-summary">
     Loading quick links...
