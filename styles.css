@@ -7833,11 +7833,14 @@ button.readiness-chip:focus {
 }
 
 .sticky-action-bar .action-dropdown {
-  position: absolute;
-  right: 10px;
-  bottom: 68px;
-  width: min(280px, calc(100vw - 32px));
+  position: fixed;
+  right: 12px;
+  bottom: 82px;
   z-index: 10000;
+
+  width: min(300px, calc(100vw - 24px));
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
 
   border-radius: 16px;
   padding: 10px;
@@ -7857,29 +7860,13 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 560px) {
-  .sticky-action-bar {
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    transform: none;
+  .sticky-action-bar .action-dropdown {
+    left: 12px;
+    right: 12px;
+    bottom: 78px;
 
     width: auto;
-    max-width: none;
-
-    grid-template-columns: 0.85fr 1fr 1fr 0.85fr;
-    gap: 6px;
-
-    padding: 8px;
-    border-radius: 16px;
-  }
-
-  .sticky-action-bar button {
-    min-height: 46px;
-    font-size: 13px;
-    padding: 8px 6px;
-  }
-
-  #projectFormSection {
-    padding-bottom: 120px;
+    max-height: 65vh;
+    overflow-y: auto;
   }
 }
