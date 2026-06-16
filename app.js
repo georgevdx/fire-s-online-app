@@ -9671,41 +9671,22 @@ followUpSourceInspectionNumber:
 getEl('followUpDate').value = project.followUpDate || '';
 getEl('followUpNotes').value = project.followUpNotes || '';
 
-const recurringCycleEnabledField =
-  document.getElementById('recurringCycleEnabled');
+getEl('recurringCycleEnabled').value =
+  project.recurringCycleEnabled === true ? 'Yes' : 'No';
 
-const recurringCycleNumberField =
-  document.getElementById('recurringCycleNumber');
+getEl('recurringCycleNumber').value =
+  project.recurringCycleNumber || '';
 
-const recurringCycleUnitField =
-  document.getElementById('recurringCycleUnit');
+getEl('recurringCycleUnit').value =
+  project.recurringCycleUnit || '';
 
-const recurringCycleNotesField =
-  document.getElementById('recurringCycleNotes');
-
-if (recurringCycleEnabledField) {
-  recurringCycleEnabledField.value =
-    project.recurringCycleEnabled === true ? 'Yes' : 'No';
-}
-
-if (recurringCycleNumberField) {
-  recurringCycleNumberField.value =
-    project.recurringCycleNumber || '';
-}
-
-if (recurringCycleUnitField) {
-  recurringCycleUnitField.value =
-    project.recurringCycleUnit || '';
-}
-
-if (recurringCycleNotesField) {
-  recurringCycleNotesField.value =
-    project.recurringCycleNotes || '';
-}
+getEl('recurringCycleNotes').value =
+  project.recurringCycleNotes || '';
 
 updateRecurringCyclePreview();
 
 getEl('finalComments').value = project.finalComments || '';
+
   toggleMallFields();
 
   currentPhotos = project.photos || [];
@@ -10144,11 +10125,23 @@ function saveProject() {
   const productType = normalizeProductType(getEl('productType').value);
   const inspectionType = getEl('inspectionType').value;
   
-  const followUpRequired = getEl('followUpRequired').value;
-  const followUpDate = getEl('followUpDate').value;
-  const followUpNotes = getEl('followUpNotes').value.trim();
-  
-  const finalComments = getEl('finalComments').value.trim();
+ const followUpRequired = getEl('followUpRequired').value;
+const followUpDate = getEl('followUpDate').value;
+const followUpNotes = getEl('followUpNotes').value.trim();
+
+const recurringCycleEnabled =
+  getEl('recurringCycleEnabled').value === 'Yes';
+
+const recurringCycleNumber =
+  getEl('recurringCycleNumber').value;
+
+const recurringCycleUnit =
+  getEl('recurringCycleUnit').value;
+
+const recurringCycleNotes =
+  getEl('recurringCycleNotes').value.trim();
+
+const finalComments = getEl('finalComments').value.trim();
   
   const accessMetadata = getAccessMetadata();
   
@@ -10243,11 +10236,17 @@ function saveProject() {
       occupancy,
       answers,
       followUpRequired,
-      followUpDate,
-      followUpNotes,
-      finalComments,
-      photos: currentPhotos,
-      lastSaved: new Date().toISOString()
+followUpDate,
+followUpNotes,
+
+recurringCycleEnabled,
+recurringCycleNumber,
+recurringCycleUnit,
+recurringCycleNotes,
+
+finalComments,
+photos: currentPhotos,
+lastSaved: new Date().toISOString()
     };
   }
 } else {
@@ -10308,11 +10307,17 @@ function saveProject() {
       occupancy,
       answers,
       photos: currentPhotos,
-      followUpRequired: getEl('followUpRequired').value,
-      followUpDate: getEl('followUpDate').value,
-      followUpNotes: getEl('followUpNotes').value.trim(),
-      finalComments,
-      lastSaved: new Date().toISOString()
+      followUpRequired,
+followUpDate,
+followUpNotes,
+
+recurringCycleEnabled,
+recurringCycleNumber,
+recurringCycleUnit,
+recurringCycleNotes,
+
+finalComments,
+lastSaved: new Date().toISOString()
     };
       currentProjectId = newProject.id;
       projects.push(newProject);
