@@ -7776,3 +7776,110 @@ button.readiness-chip:focus {
   color: #ef6c00;
   border-color: #ffb74d;
 }
+
+/* =====================================================
+   ACCESSIBLE INSPECTION ACTION BAR
+   Keeps Save / Finish / More reachable during inspection
+   ===================================================== */
+
+#projectFormSection {
+  padding-bottom: 110px;
+}
+
+.sticky-action-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 9999;
+
+  width: calc(100% - 24px);
+  max-width: 760px;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+
+  padding: 10px;
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.sticky-action-bar button {
+  min-height: 48px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.sticky-action-bar #saveBtn {
+  background: #1565c0;
+}
+
+.sticky-action-bar #finishBtn {
+  background: #2e7d32;
+}
+
+.sticky-action-bar .action-menu {
+  width: 100%;
+}
+
+.sticky-action-bar #actionMenuBtn {
+  width: 100%;
+}
+
+.sticky-action-bar .action-dropdown {
+  position: absolute;
+  right: 10px;
+  bottom: 68px;
+  width: min(280px, calc(100vw - 32px));
+  z-index: 10000;
+
+  border-radius: 16px;
+  padding: 10px;
+
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22);
+}
+
+.sticky-action-bar .action-dropdown button {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.sticky-action-bar .action-dropdown button:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+  .sticky-action-bar {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    transform: none;
+
+    width: auto;
+    max-width: none;
+
+    grid-template-columns: 0.85fr 1fr 1fr 0.85fr;
+    gap: 6px;
+
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .sticky-action-bar button {
+    min-height: 46px;
+    font-size: 13px;
+    padding: 8px 6px;
+  }
+
+  #projectFormSection {
+    padding-bottom: 120px;
+  }
+}
