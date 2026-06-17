@@ -8084,3 +8084,111 @@ body > #actionDropdown.action-dropdown button:last-child {
 .schedule-today strong {
   color: #e65100;
 }
+
+.inspection-summary-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.inspection-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.inspection-chip-danger {
+  background: #ffebee;
+  border-color: #ef5350;
+  color: #b71c1c;
+}
+
+.inspection-chip-warning {
+  background: #fff8ed;
+  border-color: #ffb74d;
+  color: #ef6c00;
+}
+
+.inspection-chip-progress {
+  background: #eef6ff;
+  border-color: #64b5f6;
+  color: #1565c0;
+}
+
+.inspection-chip-followup {
+  background: #fff8ed;
+  border-color: #fb8c00;
+  color: #e65100;
+}
+
+.inspection-chip-cycle {
+  background: #eef6ff;
+  border-color: #42a5f5;
+  color: #0d47a1;
+}
+
+.inspection-chip-new-site {
+  background: #f0fdf4;
+  border-color: #81c784;
+  color: #2e7d32;
+}
+
+.inspection-chip-clear {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #475569;
+}
+
+.inspection-attention-mini {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.inspection-card-primary-action {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.03em;
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #64b5f6;
+}
+
+.inspection-card-primary-action.action-danger {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #ef5350;
+}
+
+.inspection-card-primary-action.action-warning {
+  background: #fff8ed;
+  color: #ef6c00;
+  border-color: #ffb74d;
+}
+
+.inspection-card-primary-action.action-primary {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-color: #64b5f6;
+}

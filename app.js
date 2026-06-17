@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v93-beta7';
+const APP_VERSION = 'v93-beta8';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -9132,6 +9132,23 @@ container.innerHTML = `
   <div id="projectListView" class="inspection-project-list">
     ${visibleProjects.map((project, index) => {
       const followStatus = getFollowUpStatus(project);
+      const inspectionChips =
+        getInspectionCardChips(project);
+
+      const inspectionChipHtml =
+        inspectionChips
+          .map(chip => `
+            <span class="inspection-summary-chip ${escapeHtml(chip.className)}">
+              ${escapeHtml(chip.text)}
+            </span>
+          `)
+          .join('');
+
+      const attentionSummary =
+        getInspectionCardAttentionSummary(project);
+
+      const primaryAction =
+        getProjectPrimaryAction(project);
       const inspectionStatus = getProjectInspectionStatus(project);
 
       const activeScheduleLabel =
@@ -9193,20 +9210,32 @@ const scheduleHtml =
           }
 
             ${
-  scheduleDisplay.hasDisplay
-    ? ''
-    : `
-      <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
-        ${escapeHtml(followStatus.label)}
-      </span>
-    `
-}
+              scheduleDisplay.hasDisplay
+                ? ''
+                : `
+                  <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+                    ${escapeHtml(followStatus.label)}
+                  </span>
+                `
+            }
+
+        <span class="inspection-card-primary-action ${escapeHtml(primaryAction.className)}">
+          ${escapeHtml(primaryAction.label)}
+        </span>
 
          <span class="inspection-project-list-address">
-  ${escapeHtml(projectAddress)}
-</span>
+          ${escapeHtml(projectAddress)}
+        </span>
 
-${scheduleHtml}
+        <div class="inspection-summary-chip-row">
+          ${inspectionChipHtml}
+        </div>
+
+        <div class="inspection-attention-mini">
+          ${escapeHtml(attentionSummary)}
+        </div>
+
+        ${scheduleHtml}
 
         </button>
       `;
@@ -9230,6 +9259,126 @@ ${scheduleHtml}
       }, 0);
     }
   }
+}
+
+function getInspectionCardChips(project) {
+  const completion =
+    getProjectCompletionCounts(project);
+
+  const expiryCounts =
+    getProjectExpiryCounts(project);
+
+  const dataQuality =
+    getProjectDataQuality(project);
+
+  const scheduleType =
+    getProjectScheduleType(project);
+
+  const chips = [];
+
+  if (completion.noCount > 0) {
+    chips.push({
+      className: 'inspection-chip-danger',
+      text: `${completion.noCount} Action Item${completion.noCount === 1 ? '' : 's'}`
+    });
+  }
+
+  if (completion.unanswered > 0) {
+    chips.push({
+      className: 'inspection-chip-progress',
+      text: `${completion.unanswered} Unanswered`
+    });
+  }
+
+  if (dataQuality.count > 0) {
+    chips.push({
+      className: 'inspection-chip-warning',
+      text: `${dataQuality.count} Missing Info`
+    });
+  }
+
+  if (expiryCounts.overdue > 0) {
+    chips.push({
+      className: 'inspection-chip-danger',
+      text: `${expiryCounts.overdue} Expired`
+    });
+  }
+
+  if (expiryCounts.soon > 0) {
+    chips.push({
+      className: 'inspection-chip-warning',
+      text: `${expiryCounts.soon} Due Soon`
+    });
+  }
+
+  if (scheduleType === 'follow_up') {
+    chips.push({
+      className: 'inspection-chip-followup',
+      text: 'Follow-up'
+    });
+  }
+
+  if (scheduleType === 'recurring_cycle') {
+    chips.push({
+      className: 'inspection-chip-cycle',
+      text: 'Cycle'
+    });
+  }
+
+  if (scheduleType === 'new_inspection') {
+    chips.push({
+      className: 'inspection-chip-new-site',
+      text: 'New Site'
+    });
+  }
+
+  if (chips.length === 0) {
+    chips.push({
+      className: 'inspection-chip-clear',
+      text: 'No urgent flags'
+    });
+  }
+
+  return chips;
+}
+
+function getInspectionCardAttentionSummary(project) {
+  const completion =
+    getProjectCompletionCounts(project);
+
+  const expiryCounts =
+    getProjectExpiryCounts(project);
+
+  const dataQuality =
+    getProjectDataQuality(project);
+
+  const parts = [];
+
+  if (completion.noCount > 0) {
+    parts.push(`${completion.noCount} NO finding${completion.noCount === 1 ? '' : 's'}`);
+  }
+
+  if (completion.unanswered > 0) {
+    parts.push(`${completion.unanswered} unanswered checklist item${completion.unanswered === 1 ? '' : 's'}`);
+  }
+
+  if (dataQuality.count > 0) {
+    parts.push(`${dataQuality.count} missing information field${dataQuality.count === 1 ? '' : 's'}`);
+  }
+
+  if (expiryCounts.overdue > 0) {
+    parts.push(`${expiryCounts.overdue} expired equipment item${expiryCounts.overdue === 1 ? '' : 's'}`);
+  }
+
+  if (expiryCounts.soon > 0) {
+    parts.push(`${expiryCounts.soon} equipment item${expiryCounts.soon === 1 ? '' : 's'} due soon`);
+  }
+
+  if (parts.length === 0) {
+    return 'No urgent inspection flags on this card.';
+  }
+
+  return parts.join(' · ');
 }
 
 function getProjectPrimaryAction(project) {
