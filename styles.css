@@ -8010,3 +8010,77 @@ body > #actionDropdown.action-dropdown button:last-child {
     height: 56px;
   }
 }
+
+.schedule-display {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.schedule-display strong {
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
+.schedule-display small {
+  font-size: 12px;
+  font-weight: 750;
+  color: #475569;
+}
+
+.schedule-display-follow-up {
+  background: #fff8ed;
+  border-color: #ffb74d;
+}
+
+.schedule-display-follow-up strong {
+  color: #ef6c00;
+}
+
+.schedule-display-cycle {
+  background: #eef6ff;
+  border-color: #64b5f6;
+}
+
+.schedule-display-cycle strong {
+  color: #1565c0;
+}
+
+.schedule-display-new-site {
+  background: #f0fdf4;
+  border-color: #81c784;
+}
+
+.schedule-display-new-site strong {
+  color: #2e7d32;
+}
+
+.schedule-display-completed {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.schedule-display-completed strong {
+  color: #334155;
+}
+
+.schedule-overdue {
+  border-color: #ef5350;
+}
+
+.schedule-overdue strong {
+  color: #b71c1c;
+}
+
+.schedule-today {
+  border-color: #ff9800;
+}
+
+.schedule-today strong {
+  color: #e65100;
+}

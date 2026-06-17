@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v93-beta6';
+const APP_VERSION = 'v93-beta7';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -566,6 +566,81 @@ function getProjectScheduleStatus(project) {
     label: `${getProjectScheduleLabel(project)} scheduled`,
     className: 'schedule-upcoming',
     date: scheduleDate
+  };
+}
+
+function getProjectScheduleDisplay(project) {
+  const scheduleStatus =
+    getProjectScheduleStatus(project);
+
+  const scheduleType =
+    getProjectScheduleType(project);
+
+  const scheduleDate =
+    scheduleStatus.date ||
+    getProjectScheduleDate(project);
+
+  const dateText =
+    scheduleDate
+      ? formatInspectionDate(scheduleDate)
+      : '';
+
+  if (scheduleStatus.hasSchedule) {
+    if (scheduleType === 'follow_up') {
+      return {
+        hasDisplay: true,
+        className: `schedule-display schedule-display-follow-up ${scheduleStatus.className}`,
+        chip: dateText ? `FOLLOW-UP · ${dateText}` : 'FOLLOW-UP',
+        title: scheduleStatus.label,
+        detail: 'Corrective follow-up after findings.'
+      };
+    }
+
+    if (scheduleType === 'recurring_cycle') {
+      return {
+        hasDisplay: true,
+        className: `schedule-display schedule-display-cycle ${scheduleStatus.className}`,
+        chip: dateText ? `CYCLE · ${dateText}` : 'CYCLE',
+        title: scheduleStatus.label,
+        detail: 'Routine recurring inspection cycle.'
+      };
+    }
+
+    if (scheduleType === 'new_inspection') {
+      return {
+        hasDisplay: true,
+        className: `schedule-display schedule-display-new-site ${scheduleStatus.className}`,
+        chip: dateText ? `NEW SITE · ${dateText}` : 'NEW SITE',
+        title: scheduleStatus.label,
+        detail: 'New site inspection scheduled.'
+      };
+    }
+
+    return {
+      hasDisplay: true,
+      className: `schedule-display schedule-display-general ${scheduleStatus.className}`,
+      chip: dateText ? `SCHEDULED · ${dateText}` : 'SCHEDULED',
+      title: scheduleStatus.label,
+      detail: 'Inspection scheduled.'
+    };
+  }
+
+  if (project?.completedAt) {
+    return {
+      hasDisplay: true,
+      className: 'schedule-display schedule-display-completed',
+      chip: 'COMPLETED',
+      title: 'Inspection completed',
+      detail: 'Inspection completed and archived.'
+    };
+  }
+
+  return {
+    hasDisplay: false,
+    className: '',
+    chip: '',
+    title: '',
+    detail: ''
   };
 }
 
@@ -9065,21 +9140,15 @@ container.innerHTML = `
 const scheduledLabel =
   activeScheduleLabel || followStatus.label;
 
-  const scheduleStatus =
-  getProjectScheduleStatus(project);
-
-const scheduleDateText =
-  scheduleStatus.date
-    ? formatInspectionDate(scheduleStatus.date)
-    : '';
+  const scheduleDisplay =
+  getProjectScheduleDisplay(project);
 
 const scheduleHtml =
-  scheduleStatus.hasSchedule
+  scheduleDisplay.hasDisplay
     ? `
-      <span class="inspection-project-list-schedule ${escapeHtml(scheduleStatus.className)}">
-        Schedule:
-        ${escapeHtml(scheduleStatus.label)}
-        ${scheduleDateText ? ` | ${escapeHtml(scheduleDateText)}` : ''}
+      <span class="${escapeHtml(scheduleDisplay.className)}">
+        <strong>${escapeHtml(scheduleDisplay.chip)}</strong>
+        <small>${escapeHtml(scheduleDisplay.detail)}</small>
       </span>
     `
     : '';
@@ -9123,9 +9192,15 @@ const scheduleHtml =
               `
           }
 
-            <span class="inspection-project-list-follow ${escapeHtml(activeScheduleLabel ? 'status-scheduled' : followStatus.class)}">
-              ${escapeHtml(scheduledLabel)}
-            </span>
+            ${
+  scheduleDisplay.hasDisplay
+    ? ''
+    : `
+      <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+        ${escapeHtml(followStatus.label)}
+      </span>
+    `
+}
 
          <span class="inspection-project-list-address">
   ${escapeHtml(projectAddress)}
