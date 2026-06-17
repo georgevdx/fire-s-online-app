@@ -10697,11 +10697,16 @@ function finishInspection() {
 
       const completedAt = new Date().toISOString();
 
-      const isCurrentScheduledFollowUp =
-  completedProjectBeforeUpdate.scheduleFreshInspection === true ||
+     const currentScheduleType =
+  String(completedProjectBeforeUpdate.scheduleType || '')
+    .trim()
+    .toLowerCase();
+
+const isCurrentScheduledFollowUp =
   completedProjectBeforeUpdate.scheduledReason === 'follow_up' ||
-  String(completedProjectBeforeUpdate.scheduleType || '').toLowerCase() === 'follow_up' ||
-  String(completedProjectBeforeUpdate.scheduleType || '').toLowerCase() === 'follow-up';
+  currentScheduleType === 'follow_up' ||
+  currentScheduleType === 'follow-up' ||
+  currentScheduleType === 'follow up';
 
 const hasNextScheduledInspection =
   !isCurrentScheduledFollowUp &&
