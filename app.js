@@ -8186,7 +8186,7 @@ window.closeInspectionSectionFocus = closeInspectionSectionFocus;
 window.openScheduleNewSiteFromInspection = openScheduleNewSiteFromInspection;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
 window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
-
+window.closeMobilePhotoExportTray = closeMobilePhotoExportTray;
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
 
@@ -12439,152 +12439,26 @@ function triggerPhotoDownload(url, filename) {
   document.body.removeChild(link);
 }
 
-function isMobilePhotoDownloadDevice() {
+function isMobileBrowser() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 }
 
-function getPhotoFileExtension(src = '') {
-  const value = String(src || '').toLowerCase();
-
-  if (value.startsWith('data:image/png')) return 'png';
-  if (value.startsWith('data:image/webp')) return 'webp';
-  if (value.startsWith('data:image/gif')) return 'gif';
-
-  if (value.includes('.png')) return 'png';
-  if (value.includes('.webp')) return 'webp';
-  if (value.includes('.gif')) return 'gif';
-
-  return 'jpg';
+function getPhotoSource(photo) {
+  return typeof photo === 'string'
+    ? photo
+    : photo?.src || '';
 }
 
-function dataUrlToBlob(dataUrl) {
-  const parts = String(dataUrl).split(',');
-  const header = parts[0] || '';
-  const base64 = parts[1] || '';
+function openMobilePhotoExportTray(project, photos) {
+  let tray =
+    document.getElementById('mobilePhotoExportTray');
 
-  const mimeMatch = header.match(/data:(.*?);base64/);
-  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-
-  const binary = atob(base64);
-  const length = binary.length;
-  const bytes = new Uint8Array(length);
-
-  for (let index = 0; index < length; index++) {
-    bytes[index] = binary.charCodeAt(index);
+  if (!tray) {
+    tray = document.createElement('div');
+    tray.id = 'mobilePhotoExportTray';
+    tray.className = 'mobile-photo-export-tray';
+    document.body.appendChild(tray);
   }
-
-  return new Blob([bytes], { type: mimeType });
-}
-
-async function getPhotoBlob(photo) {
-  const src =
-    typeof photo === 'string'
-      ? photo
-      : photo?.src || '';
-
-  if (!src) {
-    throw new Error('Photo source missing.');
-  }
-
-  if (String(src).startsWith('data:image/')) {
-    return dataUrlToBlob(src);
-  }
-
-  if (
-    photo?.storagePath &&
-    typeof supabaseClient !== 'undefined'
-  ) {
-    const { data, error } =
-      await supabaseClient
-        .storage
-        .from('inspection-photos')
-        .download(photo.storagePath);
-
-    if (!error && data) {
-      return data;
-    }
-
-    console.warn(
-      'Supabase storage download failed, trying URL fetch:',
-      error
-    );
-  }
-
-  const response =
-    await fetch(src, {
-      method: 'GET',
-      mode: 'cors',
-      cache: 'no-store'
-    });
-
-  if (!response.ok) {
-    throw new Error(`Photo request failed: ${response.status}`);
-  }
-
-  return response.blob();
-}
-async function downloadPhotosAsZip(project, photos, archiveLabel = '') {
-  if (typeof JSZip === 'undefined') {
-    alert('ZIP download library is not loaded. Check your internet connection and refresh.');
-    return false;
-  }
-
-  const saveMessage =
-    document.getElementById('saveMessage') ||
-    document.getElementById('syncStatus');
-
-  const zip = new JSZip();
-
-  let added = 0;
-  let failed = 0;
-
-  for (let index = 0; index < photos.length; index++) {
-    const photo = photos[index];
-
-    try {
-      const blob =
-        await getPhotoBlob(photo);
-
-      const baseName =
-        getCurrentInspectionPhotoDownloadName(project, photo, index)
-          .replace(/\.[^.]+$/, '');
-
-     const extension =
-  getPhotoFileExtension(photo);
-
-      const fileName =
-        archiveLabel
-          ? `${baseName}_${archiveLabel}.${extension}`
-          : `${baseName}.${extension}`;
-
-      zip.file(fileName, blob);
-      added++;
-
-      if (saveMessage) {
-        saveMessage.textContent =
-          `Preparing ZIP: ${added}/${photos.length} photo${photos.length === 1 ? '' : 's'} added...`;
-      }
-
-    } catch (error) {
-      console.warn('Could not add photo to ZIP:', error);
-      failed++;
-    }
-  }
-
-  if (added === 0) {
-    alert('No photos could be added to the ZIP file.');
-    return false;
-  }
-
-  if (saveMessage) {
-    saveMessage.textContent =
-      'Creating photo ZIP file...';
-  }
-
-  const zipBlob =
-    await zip.generateAsync({
-      type: 'blob'
-    });
 
   const projectName =
     sanitizeFileName(
@@ -12594,28 +12468,149 @@ async function downloadPhotosAsZip(project, photos, archiveLabel = '') {
       'inspection'
     );
 
-  const zipUrl =
-    URL.createObjectURL(zipBlob);
+  tray.innerHTML = `
+    <div class="mobile-photo-export-card">
+      <div class="mobile-photo-export-header">
+        <div>
+          <strong>Photo Download Tray</strong>
+          <span>${photos.length} photo${photos.length === 1 ? '' : 's'} ready</span>
+        </div>
 
-  triggerPhotoDownload(
-    zipUrl,
-    `${projectName}_photos.zip`
-  );
+        <button
+          type="button"
+          onclick="closeMobilePhotoExportTray()"
+        >
+          Close
+        </button>
+      </div>
 
-  setTimeout(() => {
-    URL.revokeObjectURL(zipUrl);
-  }, 8000);
+      <div class="mobile-photo-export-note">
+        Mobile browsers often block automatic multi-downloads. Tap each photo button below to download/open it.
+      </div>
 
-  if (saveMessage) {
-    saveMessage.textContent =
-      `Photo ZIP ready. Added ${added}. Failed ${failed}.`;
+      <div class="mobile-photo-export-list">
+        ${photos.map((photo, index) => {
+          const src = getPhotoSource(photo);
+          const fileName =
+            getCurrentInspectionPhotoDownloadName(project, photo, index);
+
+          return `
+            <div class="mobile-photo-export-item">
+              <img src="${src}" alt="Photo ${index + 1}">
+
+              <div>
+                <strong>Photo ${index + 1}</strong>
+                <span>${escapeHtml(fileName)}</span>
+              </div>
+
+              <a
+                href="${src}"
+                download="${escapeHtml(fileName)}"
+                target="_blank"
+                rel="noopener"
+              >
+                Download
+              </a>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  tray.style.display = 'block';
+}
+
+function closeMobilePhotoExportTray() {
+  const tray =
+    document.getElementById('mobilePhotoExportTray');
+
+  if (tray) {
+    tray.style.display = 'none';
+  }
+}
+
+function isMobileBrowser() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
+function getPhotoSource(photo) {
+  return typeof photo === 'string'
+    ? photo
+    : photo?.src || '';
+}
+
+function closeMobilePhotoExportTray() {
+  const tray =
+    document.getElementById('mobilePhotoExportTray');
+
+  if (tray) {
+    tray.style.display = 'none';
+  }
+}
+
+function openMobilePhotoExportTray(project, photos) {
+  let tray =
+    document.getElementById('mobilePhotoExportTray');
+
+  if (!tray) {
+    tray = document.createElement('div');
+    tray.id = 'mobilePhotoExportTray';
+    tray.className = 'mobile-photo-export-tray';
+    document.body.appendChild(tray);
   }
 
-  if (failed > 0) {
-    alert(`${added} photos added to ZIP. ${failed} photos could not be added.`);
-  }
+  tray.innerHTML = `
+    <div class="mobile-photo-export-card">
+      <div class="mobile-photo-export-header">
+        <div>
+          <strong>Photo Download Tray</strong>
+          <span>${photos.length} photo${photos.length === 1 ? '' : 's'} ready</span>
+        </div>
 
-  return true;
+        <button
+          type="button"
+          onclick="closeMobilePhotoExportTray()"
+        >
+          Close
+        </button>
+      </div>
+
+      <div class="mobile-photo-export-note">
+        Mobile browsers often block automatic multi-downloads. Tap each photo below to open/download it.
+      </div>
+
+      <div class="mobile-photo-export-list">
+        ${photos.map((photo, index) => {
+          const src = getPhotoSource(photo);
+          const fileName =
+            getCurrentInspectionPhotoDownloadName(project, photo, index);
+
+          return `
+            <div class="mobile-photo-export-item">
+              <img src="${src}" alt="Photo ${index + 1}">
+
+              <div>
+                <strong>Photo ${index + 1}</strong>
+                <span>${escapeHtml(fileName)}</span>
+              </div>
+
+              <a
+                href="${src}"
+                download="${escapeHtml(fileName)}"
+                target="_blank"
+                rel="noopener"
+              >
+                Open / Download
+              </a>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  tray.style.display = 'block';
 }
 
 async function downloadAllInspectionPhotos() {
@@ -12645,13 +12640,13 @@ async function downloadAllInspectionPhotos() {
 
   if (!confirmed) return;
 
-  if (isMobilePhotoDownloadDevice()) {
-  await downloadPhotosAsZip(project, photos);
+if (isMobileBrowser()) {
+  openMobilePhotoExportTray(project, photos);
   return;
 }
 
-  const saveMessage =
-    document.getElementById('saveMessage');
+const saveMessage =
+  document.getElementById('saveMessage');
 
   if (saveMessage) {
     saveMessage.textContent =
