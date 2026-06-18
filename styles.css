@@ -8262,3 +8262,80 @@ body > #actionDropdown.action-dropdown button:last-child {
     width: 100%;
   }
 }
+
+.inspection-movement-dock {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 24000;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.inspection-movement-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: #334155;
+  font-size: 12px;
+}
+
+.inspection-movement-label strong {
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.inspection-movement-label span {
+  font-weight: 850;
+  color: #64748b;
+}
+
+.inspection-movement-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr 1fr;
+  gap: 7px;
+}
+
+.inspection-movement-buttons button {
+  min-height: 42px;
+  border-radius: 13px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.inspection-movement-buttons button:disabled {
+  opacity: 0.45;
+}
+
+.inspection-movement-buttons .movement-next-btn {
+  background: #1565c0;
+  border-color: #1565c0;
+  color: #ffffff;
+}
+
+@media (max-width: 560px) {
+  .inspection-movement-dock {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .inspection-movement-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+#projectFormSection.inspection-section-mode {
+  padding-bottom: 120px;
+}

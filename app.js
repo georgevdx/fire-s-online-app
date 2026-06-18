@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v93-beta9';
+const APP_VERSION = 'v93-beta10';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4998,6 +4998,73 @@ function getAvailableInspectionSections() {
   });
 }
 
+function removeInspectionMovementDock() {
+  const dock =
+    document.getElementById('inspectionMovementDock');
+
+  if (dock) {
+    dock.remove();
+  }
+}
+
+function showInspectionMovementDock(sectionIndex, availableSections, sectionMeta) {
+  removeInspectionMovementDock();
+
+  const dock =
+    document.createElement('div');
+
+  dock.id = 'inspectionMovementDock';
+  dock.className = 'inspection-movement-dock';
+
+  const isFirst =
+    sectionIndex <= 0;
+
+  const isLast =
+    sectionIndex >= availableSections.length - 1;
+
+  dock.innerHTML = `
+    <div class="inspection-movement-label">
+      <strong>${escapeHtml(sectionMeta?.label || 'Inspection')}</strong>
+      <span>${sectionIndex + 1} of ${availableSections.length}</span>
+    </div>
+
+    <div class="inspection-movement-buttons">
+      <button
+        type="button"
+        onclick="goToPreviousInspectionSection()"
+        ${isFirst ? 'disabled' : ''}
+      >
+        Back
+      </button>
+
+      <button
+        type="button"
+        class="movement-next-btn"
+        onclick="goToNextInspectionSection()"
+        ${isLast ? 'disabled' : ''}
+      >
+        Next
+      </button>
+
+      <button
+        type="button"
+        onclick="toggleInspectionCommandMenu()"
+      >
+        Menu
+      </button>
+
+      <button
+        type="button"
+        onclick="closeInspectionSectionFocus()"
+      >
+        Full View
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(dock);
+}
+
 function removeInspectionSectionFocus() {
   const formSection = document.getElementById('projectFormSection');
 
@@ -5015,12 +5082,14 @@ function removeInspectionSectionFocus() {
   });
 
   document
-    .querySelectorAll('.inspection-section-focus-toolbar')
-    .forEach(toolbar => {
-      toolbar.remove();
-    });
+  .querySelectorAll('.inspection-section-focus-toolbar')
+  .forEach(toolbar => {
+    toolbar.remove();
+  });
 
-  activeInspectionSectionId = null;
+removeInspectionMovementDock();
+
+activeInspectionSectionId = null;
 }
 
 function focusInspectionSection(sectionId) {
@@ -5089,12 +5158,26 @@ const sectionMeta = availableSections[sectionIndex];
 
   target.prepend(toolbar);
 
-  setTimeout(() => {
-    target.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  }, 40);
+showInspectionMovementDock(
+  sectionIndex,
+  availableSections,
+  sectionMeta
+);
+
+setTimeout(() => {
+  const formSection =
+    document.getElementById('projectFormSection');
+
+  const targetTop =
+    (formSection || target).getBoundingClientRect().top +
+    window.pageYOffset -
+    80;
+
+  window.scrollTo({
+    top: Math.max(targetTop, 0),
+    behavior: 'smooth'
+  });
+}, 40);
 }
 
 function goToPreviousInspectionSection() {
@@ -5169,6 +5252,12 @@ ensureNextInspectionCardId();
 ensureGlobalInspectionActionBar();
 updateProjectReadinessPanel();
 updateFloatingBackButton();
+
+setTimeout(() => {
+  if (!activeInspectionSectionId) {
+    focusInspectionSection('inspectionQuickActions');
+  }
+}, 80);
 }
 
 function ensureNextInspectionCardId() {
@@ -8261,6 +8350,8 @@ window.closeInspectionSectionFocus = closeInspectionSectionFocus;
 window.openScheduleNewSiteFromInspection = openScheduleNewSiteFromInspection;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
 window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
+window.removeInspectionMovementDock = removeInspectionMovementDock;
+window.showInspectionMovementDock = showInspectionMovementDock;
 window.closeMobilePhotoExportTray = closeMobilePhotoExportTray;
 window.openProjectAndReviewFindings = openProjectAndReviewFindings;
 window.openProjectAndViewPhotos = openProjectAndViewPhotos;
