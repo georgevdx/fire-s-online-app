@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v94-home-command-centre';
+const APP_VERSION = 'v95-combined-command-centres';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -15168,4 +15168,465 @@ window.addEventListener('online', async () => {
 
   runBackgroundSync('signal restored');
 });
+
+
+
+/* =====================================================
+   FIRE-S COMMAND CENTRE V1
+   Safe UI overlay: reduces scrolling by turning the
+   existing inspection flow into actionable cards.
+   ===================================================== */
+
+function getCommandCentreStatus(type, value) {
+  if (type === 'danger') return { label: 'Needs attention', className: 'cc-danger' };
+  if (type === 'warning') return { label: 'In progress', className: 'cc-warning' };
+  if (type === 'ready') return { label: 'Ready', className: 'cc-ready' };
+  if (type === 'complete') return { label: 'Complete', className: 'cc-complete' };
+  return { label: value || 'Not started', className: 'cc-neutral' };
+}
+
+function getCurrentCommandCentreProject() {
+  const snapshot =
+    typeof getCurrentFormProjectSnapshot === 'function'
+      ? getCurrentFormProjectSnapshot()
+      : {};
+
+  const projects =
+    typeof getProjects === 'function'
+      ? getProjects()
+      : [];
+
+  const storedProject =
+    projects.find(project => project.id === currentProjectId) || {};
+
+  return {
+    ...storedProject,
+    ...snapshot,
+    photos:
+      Array.isArray(currentPhotos) && currentPhotos.length > 0
+        ? currentPhotos
+        : (storedProject.photos || snapshot.photos || [])
+  };
+}
+
+function getCommandCentreCardHtml(card) {
+  return `
+    <button
+      type="button"
+      class="command-centre-card ${escapeHtml(card.className)}"
+      onclick="${escapeHtml(card.action)}"
+    >
+      <div class="command-centre-card-top">
+        <span class="command-centre-icon">${card.icon}</span>
+        <span class="command-centre-status">${escapeHtml(card.status)}</span>
+      </div>
+
+      <strong>${escapeHtml(card.title)}</strong>
+      <span>${escapeHtml(card.detail)}</span>
+    </button>
+  `;
+}
+
+function buildCommandCentreCards(project, completion, expiryCounts, dataQuality, percent) {
+  const photoCount =
+    Array.isArray(project.photos)
+      ? project.photos.length
+      : 0;
+
+  const noCount =
+    Number(completion.noCount || 0);
+
+  const commentReady =
+    String(project.finalComments || '').trim().length > 0;
+
+  const hasFollowUp =
+    String(project.followUpRequired || '').trim() === 'Yes' ||
+    !!String(project.followUpDate || '').trim() ||
+    project.recurringCycleEnabled === true;
+
+  const reportReady =
+    dataQuality.count === 0 && completion.total > 0 && completion.unanswered === 0;
+
+  const siteStatus =
+    dataQuality.count > 0
+      ? getCommandCentreStatus('danger')
+      : getCommandCentreStatus('complete');
+
+  const checklistStatus =
+    completion.total === 0
+      ? getCommandCentreStatus('neutral', 'Not loaded')
+      : completion.unanswered > 0
+        ? getCommandCentreStatus('warning')
+        : getCommandCentreStatus('complete');
+
+  const findingsStatus =
+    noCount > 0
+      ? getCommandCentreStatus('danger')
+      : getCommandCentreStatus('complete');
+
+  const photoStatus =
+    photoCount > 0
+      ? getCommandCentreStatus('complete')
+      : getCommandCentreStatus('warning');
+
+  const commentStatus =
+    commentReady
+      ? getCommandCentreStatus('complete')
+      : getCommandCentreStatus('warning');
+
+  const scheduleStatus =
+    hasFollowUp
+      ? getCommandCentreStatus('ready')
+      : getCommandCentreStatus('neutral', 'Optional');
+
+  const expiryTotal =
+    Number(expiryCounts.overdue || 0) +
+    Number(expiryCounts.soon || 0) +
+    Number(expiryCounts.missing || 0);
+
+  const expiryStatus =
+    expiryCounts.overdue > 0
+      ? getCommandCentreStatus('danger')
+      : expiryTotal > 0
+        ? getCommandCentreStatus('warning')
+        : getCommandCentreStatus('complete');
+
+  const reportStatus =
+    reportReady
+      ? getCommandCentreStatus('ready')
+      : getCommandCentreStatus('warning');
+
+  return [
+    {
+      title: 'Site Information',
+      icon: '🏢',
+      status: siteStatus.label,
+      className: siteStatus.className,
+      detail:
+        dataQuality.count > 0
+          ? `${dataQuality.count} missing field${dataQuality.count === 1 ? '' : 's'}`
+          : 'Client, site and inspection info ready',
+      action: "handleCommandCentreCard('projectDetailsCard')"
+    },
+    {
+      title: 'Checklist',
+      icon: '✅',
+      status: checklistStatus.label,
+      className: checklistStatus.className,
+      detail:
+        completion.total > 0
+          ? `${completion.answered}/${completion.total} answered · ${percent}%`
+          : 'Checklist not loaded yet',
+      action: "handleCommandCentreCard('checklistCard')"
+    },
+    {
+      title: 'Findings',
+      icon: '🚩',
+      status: findingsStatus.label,
+      className: findingsStatus.className,
+      detail:
+        noCount > 0
+          ? `${noCount} NO answer${noCount === 1 ? '' : 's'} to review`
+          : 'No open NO findings detected',
+      action: noCount > 0
+        ? "handleSmartQuickLink('finding')"
+        : "handleCommandCentreCard('checklistCard')"
+    },
+    {
+      title: 'Photo Evidence',
+      icon: '📷',
+      status: photoStatus.label,
+      className: photoStatus.className,
+      detail:
+        photoCount > 0
+          ? `${photoCount} photo${photoCount === 1 ? '' : 's'} added`
+          : 'Add site evidence photos',
+      action: "handleCommandCentreCard('photoEvidenceCard')"
+    },
+    {
+      title: 'Comments',
+      icon: '📝',
+      status: commentStatus.label,
+      className: commentStatus.className,
+      detail:
+        commentReady
+          ? 'Final comment captured'
+          : 'Add conclusion or recommendation',
+      action: "handleCommandCentreCard('inspectorCommentsCard')"
+    },
+    {
+      title: 'Scheduling',
+      icon: '📅',
+      status: scheduleStatus.label,
+      className: scheduleStatus.className,
+      detail:
+        hasFollowUp
+          ? 'Follow-up or recurring cycle set'
+          : 'Optional next inspection planning',
+      action: "handleCommandCentreCard('nextInspectionCard')"
+    },
+    {
+      title: 'Expiry / Equipment',
+      icon: '⏱️',
+      status: expiryStatus.label,
+      className: expiryStatus.className,
+      detail:
+        expiryTotal > 0
+          ? `${expiryTotal} expiry item${expiryTotal === 1 ? '' : 's'} need review`
+          : 'No expiry alerts',
+      action:
+        expiryCounts.overdue > 0
+          ? "handleSmartQuickLink('expiry-overdue')"
+          : expiryCounts.soon > 0
+            ? "handleSmartQuickLink('expiry-soon')"
+            : expiryCounts.missing > 0
+              ? "handleSmartQuickLink('expiry-missing')"
+              : "handleCommandCentreCard('checklistCard')"
+    },
+    {
+      title: 'Report',
+      icon: '📄',
+      status: reportStatus.label,
+      className: reportStatus.className,
+      detail:
+        reportReady
+          ? 'Ready to generate report'
+          : 'Complete inspection before final report',
+      action: "handleCommandCentreReport()"
+    }
+  ];
+}
+
+function handleCommandCentreCard(sectionId) {
+  const target = document.getElementById(sectionId);
+
+  if (!target) {
+    alert('This section is not available yet.');
+    return;
+  }
+
+  if (typeof focusInspectionSection === 'function') {
+    focusInspectionSection(sectionId);
+  } else {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function handleCommandCentreReport() {
+  if (typeof generateReport === 'function') {
+    generateReport();
+  }
+
+  const reportSection = document.getElementById('reportSection');
+
+  if (reportSection) {
+    reportSection.style.display = 'block';
+    handleCommandCentreCard('reportSection');
+  }
+}
+
+function updateProjectReadinessPanel() {
+  const quickSummary =
+    document.getElementById('quickReadinessSummary');
+
+  const oldPanel =
+    document.getElementById('projectReadinessPanel');
+
+  if (!quickSummary && !oldPanel) return;
+
+  const formSection = document.getElementById('projectFormSection');
+
+  if (!formSection || formSection.style.display === 'none') {
+    if (quickSummary) quickSummary.innerHTML = '';
+    if (oldPanel) oldPanel.innerHTML = '';
+    return;
+  }
+
+  const project = getCurrentCommandCentreProject();
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  const percent = completion.total
+    ? Math.round((completion.answered / completion.total) * 100)
+    : 0;
+
+  const commandCards =
+    buildCommandCentreCards(
+      project,
+      completion,
+      expiryCounts,
+      dataQuality,
+      percent
+    );
+
+  const quickLinks = [];
+
+  if (dataQuality.count > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'warning',
+      label: 'Complete inspection info',
+      count: dataQuality.count,
+      detail: `Missing: ${dataQuality.missing.join(', ')}`,
+      action: 'missing-info'
+    });
+  }
+
+  if (completion.unanswered > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'progress',
+      label: 'Continue Q&A checklist',
+      count: completion.unanswered,
+      detail: 'Tap to continue with the first unanswered question.',
+      action: 'unanswered'
+    });
+  }
+
+  if (completion.noCount > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'danger',
+      label: 'Review Action Items',
+      count: completion.noCount,
+      detail: 'Inspection requirements answered NO may need corrective action.',
+      action: 'finding'
+    });
+  }
+
+  if (expiryCounts.overdue > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'danger',
+      label: 'Expired equipment',
+      count: expiryCounts.overdue,
+      detail: 'Expiry date has already passed.',
+      action: 'expiry-overdue'
+    });
+  }
+
+  if (expiryCounts.soon > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Equipment due soon',
+      count: expiryCounts.soon,
+      detail: 'Expiry date is approaching.',
+      action: 'expiry-soon'
+    });
+  }
+
+  if (expiryCounts.missing > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Missing equipment expiry dates',
+      count: expiryCounts.missing,
+      detail: 'Enter expiry dates where applicable.',
+      action: 'expiry-missing'
+    });
+  }
+
+  const renderQuickLink = link => `
+    <button
+      type="button"
+      class="quick-link-chip quick-link-${escapeHtml(link.type)}"
+      onclick="handleSmartQuickLink('${escapeHtml(link.action)}')"
+    >
+      <span class="quick-link-main">
+        ${escapeHtml(link.label)}
+      </span>
+
+      <strong>${link.count}</strong>
+
+      <small>${escapeHtml(link.detail)}</small>
+    </button>
+  `;
+
+  const inspectionLinks =
+    quickLinks.filter(link => link.group === 'inspection');
+
+  const equipmentLinks =
+    quickLinks.filter(link => link.group === 'equipment');
+
+  const projectTitle =
+    project.projectName ||
+    [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
+    'Current inspection';
+
+  const inspectionNumber =
+    project.inspectionNumber ||
+    'Draft inspection';
+
+  const summaryHtml = `
+    <div class="command-centre-hero">
+      <div>
+        <div class="command-centre-kicker">Inspection Command Centre</div>
+        <h3>${escapeHtml(projectTitle)}</h3>
+        <p>${escapeHtml(inspectionNumber)} · ${escapeHtml(project.inspectorName || 'Inspector not set')}</p>
+      </div>
+
+      <div class="command-centre-progress">
+        <strong>${percent}%</strong>
+        <span>Checklist progress</span>
+      </div>
+    </div>
+
+    <div class="command-centre-grid">
+      ${commandCards.map(getCommandCentreCardHtml).join('')}
+    </div>
+
+    ${
+      quickLinks.length > 0
+        ? `
+          <div class="command-centre-actions-heading">
+            Smart Actions
+          </div>
+        `
+        : `
+          <div class="command-centre-clear-line">
+            No urgent smart actions. Continue from any card above.
+          </div>
+        `
+    }
+
+    ${
+      inspectionLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Inspection action items
+          </div>
+
+          <div class="quick-link-list">
+            ${inspectionLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : ''
+    }
+
+    ${
+      equipmentLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Equipment status
+          </div>
+
+          <div class="quick-link-list">
+            ${equipmentLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : ''
+    }
+  `;
+
+  if (quickSummary) {
+    quickSummary.innerHTML = summaryHtml;
+  }
+
+  if (oldPanel) {
+    oldPanel.innerHTML = '';
+    oldPanel.style.display = 'none';
+  }
+}
 

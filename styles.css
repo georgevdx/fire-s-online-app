@@ -8547,3 +8547,313 @@ body > #actionDropdown.action-dropdown button:last-child {
     min-height: 92px;
   }
 }
+
+
+/* =====================================================
+   FIRE-S COMMAND CENTRE V1
+   Card-based inspection hub to reduce scrolling.
+   ===================================================== */
+
+.inspection-quick-actions {
+  border: 1px solid #dfe7ef;
+  border-radius: 18px;
+  padding: 14px;
+  margin: 0 0 16px 0;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.quick-actions-title {
+  display: none;
+}
+
+.command-centre-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #111827;
+  color: #ffffff;
+}
+
+.command-centre-kicker {
+  color: #fecaca;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.command-centre-hero h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.command-centre-hero p {
+  margin: 5px 0 0;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.command-centre-progress {
+  min-width: 86px;
+  text-align: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.command-centre-progress strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.command-centre-progress span {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #e5e7eb;
+  text-transform: uppercase;
+}
+
+.command-centre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+.command-centre-card {
+  max-width: none;
+  width: 100%;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-left-width: 5px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111827;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.command-centre-card:hover,
+.command-centre-card:focus {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+  outline: none;
+}
+
+.command-centre-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.command-centre-icon {
+  font-size: 20px;
+}
+
+.command-centre-status {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.command-centre-card strong {
+  display: block;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.command-centre-card span:last-child {
+  display: block;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.command-centre-card.cc-complete {
+  border-left-color: #2e7d32;
+}
+
+.command-centre-card.cc-complete .command-centre-status {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.command-centre-card.cc-ready {
+  border-left-color: #1565c0;
+}
+
+.command-centre-card.cc-ready .command-centre-status {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.command-centre-card.cc-warning {
+  border-left-color: #f57c00;
+}
+
+.command-centre-card.cc-warning .command-centre-status {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.command-centre-card.cc-danger {
+  border-left-color: #b71c1c;
+}
+
+.command-centre-card.cc-danger .command-centre-status {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.command-centre-card.cc-neutral {
+  border-left-color: #9ca3af;
+}
+
+.command-centre-actions-heading {
+  margin: 14px 0 8px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.command-centre-clear-line {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f8f4;
+  color: #1b5e20;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.quick-link-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.quick-link-chip {
+  max-width: none;
+  width: 100%;
+  min-height: 82px;
+  padding: 10px;
+  border-radius: 12px;
+  text-align: left;
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-left: 5px solid #9ca3af;
+}
+
+.quick-link-chip strong {
+  display: block;
+  color: #b71c1c;
+  font-size: 20px;
+  margin-top: 4px;
+}
+
+.quick-link-chip small {
+  display: block;
+  color: #4b5563;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.quick-link-main {
+  display: block;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.quick-link-danger {
+  border-left-color: #b71c1c;
+  background: #fff5f5;
+}
+
+.quick-link-warning {
+  border-left-color: #f57c00;
+  background: #fffaf0;
+}
+
+.quick-link-progress {
+  border-left-color: #1565c0;
+  background: #f0f7ff;
+}
+
+.quick-link-section-title {
+  margin: 12px 0 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 700px) {
+  .inspection-quick-actions {
+    margin: 0 -2px 14px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .command-centre-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .command-centre-progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .command-centre-progress strong {
+    font-size: 24px;
+  }
+
+  .command-centre-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .command-centre-card {
+    min-height: 118px;
+    padding: 10px;
+  }
+
+  .command-centre-card strong {
+    font-size: 13px;
+  }
+
+  .command-centre-card span:last-child {
+    font-size: 11px;
+  }
+}
+
