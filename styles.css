@@ -9492,3 +9492,90 @@ body > #actionDropdown.action-dropdown button:last-child {
   scroll-margin-top: 90px;
   margin-bottom: 18px !important;
 }
+
+
+/* INSPECTION GATEWAY ADVANCED DATE FILTERS */
+.inspection-date-filter-panel {
+  margin: 0 0 12px 0;
+  padding: 12px;
+  border: 1px solid #dfe7ef;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.inspection-date-filter-title {
+  margin-bottom: 8px;
+  color: #607080;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inspection-date-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.inspection-date-filter-grid label {
+  margin-bottom: 0;
+  color: #333;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inspection-date-filter-grid input {
+  width: 100%;
+  max-width: none;
+  margin-top: 5px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.inspection-quick-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.inspection-quick-date-row button {
+  width: auto;
+  max-width: none;
+  padding: 7px 10px;
+  border: 1px solid #cfe0ef;
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #123047;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.inspection-quick-date-row button.active-date-filter {
+  background: #b71c1c;
+  border-color: #b71c1c;
+  color: #ffffff;
+}
+
+.inspection-date-filter-status {
+  margin-top: 8px;
+  color: #666;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .inspection-date-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .inspection-quick-date-row button {
+    flex: 1 1 calc(33.333% - 6px);
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+}

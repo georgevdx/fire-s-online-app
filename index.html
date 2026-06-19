@@ -535,9 +535,36 @@
   <input
     id="projectSearch"
     type="text"
-    placeholder="Search by place name, address, mall/centre, or unit"
+    placeholder="Search by site, organisation, address, inspector, inspection number or date"
     class="project-search-top"
   >
+
+  <div id="inspectionDateFilterPanel" class="inspection-date-filter-panel">
+    <div class="inspection-date-filter-title">Inspection Date Filter</div>
+
+    <div class="inspection-date-filter-grid">
+      <label>
+        From
+        <input id="inspectionDateFrom" type="date">
+      </label>
+
+      <label>
+        To
+        <input id="inspectionDateTo" type="date">
+      </label>
+    </div>
+
+    <div class="inspection-quick-date-row">
+      <button type="button" data-date-filter="today">Today</button>
+      <button type="button" data-date-filter="week">This Week</button>
+      <button type="button" data-date-filter="month">This Month</button>
+      <button type="button" data-date-filter="quarter">This Quarter</button>
+      <button type="button" data-date-filter="year">This Year</button>
+      <button type="button" data-date-filter="all">All</button>
+    </div>
+
+    <div id="inspectionDateFilterStatus" class="inspection-date-filter-status"></div>
+  </div>
 
   <div id="projectPagingControls" class="project-paging-controls"></div>
 
