@@ -9676,10 +9676,8 @@ const scheduleHtml =
         getProjectInspectionDate(project);
 
       return `
-        <button
-          type="button"
+        <div
           class="inspection-project-list-item"
-          onclick="openProjectSummaryCard(${index})"
         >
           <span class="inspection-project-list-title">
             ${escapeHtml(projectTitle)}
@@ -9730,7 +9728,7 @@ const scheduleHtml =
 
         ${getInspectionCardActionHtml(project, index)}
 
-        </button>
+        </div>
       `;
     }).join('')}
   </div>
@@ -9889,12 +9887,14 @@ function getInspectionCardActionHtml(project, index) {
   const hasPhotos =
     photoCount > 0;
 
+  const projectIdJs = JSON.stringify(project?.id || '');
+
   return `
     <div class="inspection-card-action-row">
       <button
         type="button"
         class="inspection-card-action primary"
-        onclick="openProject(${index})"
+        onclick="event.stopPropagation(); openProject(${projectIdJs})"
       >
         Open Inspection
       </button>
@@ -9905,7 +9905,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action danger"
-              onclick="openProjectAndReviewFindings(${index})"
+              onclick="event.stopPropagation(); openProjectAndReviewFindings(${projectIdJs})"
             >
               Review Findings
             </button>
@@ -9919,7 +9919,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action secondary"
-              onclick="openProjectAndViewPhotos(${index})"
+              onclick="event.stopPropagation(); openProjectAndViewPhotos(${projectIdJs})"
             >
               Photos (${photoCount})
             </button>
@@ -9930,7 +9930,7 @@ function getInspectionCardActionHtml(project, index) {
       <button
         type="button"
         class="inspection-card-action muted"
-        onclick="toggleInspectionCardMore(${index})"
+        onclick="event.stopPropagation(); toggleInspectionCardMore(${index})"
       >
         More
       </button>
@@ -9943,21 +9943,21 @@ function getInspectionCardActionHtml(project, index) {
     >
       <button
         type="button"
-        onclick="openProject(${index})"
+        onclick="event.stopPropagation(); openProject(${projectIdJs})"
       >
         Edit / Continue
       </button>
 
       <button
         type="button"
-        onclick="openProjectAndGoToSchedule(${index})"
+        onclick="event.stopPropagation(); openProjectAndGoToSchedule(${projectIdJs})"
       >
         Schedule / Cycle
       </button>
 
       <button
         type="button"
-        onclick="openProjectAndGenerateReport(${index})"
+        onclick="event.stopPropagation(); openProjectAndGenerateReport(${projectIdJs})"
       >
         Report
       </button>
@@ -9965,8 +9965,8 @@ function getInspectionCardActionHtml(project, index) {
   `;
 }
 
-function openProjectAndReviewFindings(index) {
-  openProject(index);
+function openProjectAndReviewFindings(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     focusInspectionSection('checklistCard');
@@ -9977,24 +9977,24 @@ function openProjectAndReviewFindings(index) {
   }, 250);
 }
 
-function openProjectAndViewPhotos(index) {
-  openProject(index);
+function openProjectAndViewPhotos(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     focusInspectionSection('photoEvidenceCard');
   }, 250);
 }
 
-function openProjectAndGoToSchedule(index) {
-  openProject(index);
+function openProjectAndGoToSchedule(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     focusInspectionSection('nextInspectionCard');
   }, 250);
 }
 
-function openProjectAndGenerateReport(index) {
-  openProject(index);
+function openProjectAndGenerateReport(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     generateReport();
