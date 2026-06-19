@@ -3588,7 +3588,7 @@ function renderFindingsCentre() {
   if (subtitleEl) {
     subtitleEl.textContent = allFindings.length
       ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
-      : 'No NO findings found in the visible inspections.';
+      : 'No open findings found in the visible inspections.';
   }
 
   document.querySelectorAll('[data-findings-filter]').forEach(button => {
@@ -9846,7 +9846,7 @@ function getInspectionCardAttentionSummary(project) {
   const parts = [];
 
   if (completion.noCount > 0) {
-    parts.push(`${completion.noCount} NO finding${completion.noCount === 1 ? '' : 's'}`);
+    parts.push(`${completion.noCount} open finding${completion.noCount === 1 ? '' : 's'}`);
   }
 
   if (completion.unanswered > 0) {
@@ -9894,7 +9894,7 @@ function getInspectionCardActionHtml(project, index) {
       <button
         type="button"
         class="inspection-card-action primary"
-        onclick="event.stopPropagation(); openProject(${projectIdJs})"
+        onclick="openProject(${projectIdJs})"
       >
         Open Inspection
       </button>
@@ -9905,7 +9905,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action danger"
-              onclick="event.stopPropagation(); openProjectAndReviewFindings(${projectIdJs})"
+              onclick="openProjectAndReviewFindings(${projectIdJs})"
             >
               Review Findings
             </button>
@@ -9919,7 +9919,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action secondary"
-              onclick="event.stopPropagation(); openProjectAndViewPhotos(${projectIdJs})"
+              onclick="openProjectAndViewPhotos(${projectIdJs})"
             >
               Photos (${photoCount})
             </button>
@@ -9930,7 +9930,7 @@ function getInspectionCardActionHtml(project, index) {
       <button
         type="button"
         class="inspection-card-action muted"
-        onclick="event.stopPropagation(); toggleInspectionCardMore(${index})"
+        onclick="toggleInspectionCardMore(${index})"
       >
         More
       </button>
@@ -9943,21 +9943,21 @@ function getInspectionCardActionHtml(project, index) {
     >
       <button
         type="button"
-        onclick="event.stopPropagation(); openProject(${projectIdJs})"
+        onclick="openProject(${projectIdJs})"
       >
         Edit / Continue
       </button>
 
       <button
         type="button"
-        onclick="event.stopPropagation(); openProjectAndGoToSchedule(${projectIdJs})"
+        onclick="openProjectAndGoToSchedule(${projectIdJs})"
       >
         Schedule / Cycle
       </button>
 
       <button
         type="button"
-        onclick="event.stopPropagation(); openProjectAndGenerateReport(${projectIdJs})"
+        onclick="openProjectAndGenerateReport(${projectIdJs})"
       >
         Report
       </button>
@@ -10502,12 +10502,44 @@ function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
   ];
 }
 
+
+function resolveProjectOpenIdentifier(projectIdentifier) {
+  const projects = getProjects();
+
+  // Primary path: project id from dashboard/cards/findings centre.
+  if (typeof projectIdentifier === 'string') {
+    const byId = projects.find(project => project.id === projectIdentifier);
+    if (byId) return byId;
+
+    // Fallback: numeric string from older buttons.
+    const numericIndex = Number(projectIdentifier);
+    if (Number.isInteger(numericIndex)) {
+      const visible = window.currentProjectsListView || [];
+      if (visible[numericIndex]) return visible[numericIndex];
+      if (projects[numericIndex]) return projects[numericIndex];
+    }
+  }
+
+  // Backward compatibility: old project cards passed page index.
+  if (typeof projectIdentifier === 'number' && Number.isInteger(projectIdentifier)) {
+    const visible = window.currentProjectsListView || [];
+    if (visible[projectIdentifier]) return visible[projectIdentifier];
+    if (projects[projectIdentifier]) return projects[projectIdentifier];
+  }
+
+  return null;
+}
+
 function openProject(projectId, focusMode) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
   const projects = getProjects();
-  const project = projects.find(p => p.id === projectId);
-  if (!project) return;
+  const project = resolveProjectOpenIdentifier(projectId);
+  if (!project) {
+    console.warn('Open inspection failed: project not found for identifier', projectId);
+    alert('Could not open this inspection. Please refresh the list and try again.');
+    return;
+  }
 
   currentProjectId = project.id;
   followUpFindingModeActive = false;
@@ -11710,7 +11742,7 @@ function createFollowUpInspection() {
   if (!followUpDate) return;
 
   const confirmed = confirm(
-  'Schedule a corrective follow-up for this same site? Use this only when NO findings or corrective actions must be checked again. This will not create a duplicate card.'
+  'Schedule a corrective follow-up for this same site? Use this only when open findings or corrective actions must be checked again. This will not create a duplicate card.'
 );
   if (!confirmed) return;
 
@@ -11728,7 +11760,7 @@ scheduledStatus: 'scheduled',
 scheduleFreshInspection: true,
 scheduledReason: 'follow_up',
 scheduleType: 'follow_up',
-scheduledNote: 'Corrective follow-up for NO findings / action items.',
+scheduledNote: 'Corrective follow-up for open findings / action items.',
 
     completedAt: null,
     archiveStatus: '',
@@ -15558,7 +15590,7 @@ function buildCommandCentreCards(project, completion, expiryCounts, dataQuality,
       detail:
         noCount > 0
           ? `${noCount} NO answer${noCount === 1 ? '' : 's'} to review`
-          : 'No open NO findings detected',
+          : 'No open open findings detected',
       action: noCount > 0
         ? "handleSmartQuickLink('finding')"
         : "handleCommandCentreCard('checklistCard')"
@@ -16391,7 +16423,7 @@ function renderFindingsCentre() {
   if (subtitleEl) {
     subtitleEl.textContent = allFindings.length
       ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
-      : 'No NO findings found in the visible inspections.';
+      : 'No open findings found in the visible inspections.';
   }
 
   document.querySelectorAll('[data-findings-filter]').forEach(button => {
@@ -16693,7 +16725,7 @@ function renderFindingsCentre() {
   if (subtitleEl) {
     subtitleEl.textContent = allFindings.length
       ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
-      : 'No NO findings found in the visible inspections.';
+      : 'No open findings found in the visible inspections.';
   }
 
   document.querySelectorAll('[data-findings-filter]').forEach(button => {
