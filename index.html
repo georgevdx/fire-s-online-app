@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=94-command-centre-home">
+  <link rel="stylesheet" href="styles.css?v=96-findings-centre">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -192,6 +192,49 @@
     </div>
 
     <div id="mainCommandMessage" class="main-command-message" style="display:none;"></div>
+  </section>
+
+
+  <section id="findingsCentreSection" class="findings-centre" style="display:none;">
+    <div class="findings-centre-header">
+      <div>
+        <div class="findings-kicker">Findings Centre</div>
+        <h3>Open Fire Safety Findings</h3>
+        <p id="findingsCentreSubtitle">NO answers are automatically grouped here as findings.</p>
+      </div>
+      <button id="closeFindingsCentreBtn" type="button" class="findings-close-btn">Close</button>
+    </div>
+
+    <div class="findings-centre-stats">
+      <button type="button" class="finding-stat-card" data-findings-filter="all">
+        <span id="findingTotalCount">0</span>
+        <small>Total Findings</small>
+      </button>
+      <button type="button" class="finding-stat-card attention" data-findings-filter="open">
+        <span id="findingOpenCount">0</span>
+        <small>Open</small>
+      </button>
+      <button type="button" class="finding-stat-card warning" data-findings-filter="overdue">
+        <span id="findingOverdueCount">0</span>
+        <small>Overdue</small>
+      </button>
+      <button type="button" class="finding-stat-card" data-findings-filter="with-photo">
+        <span id="findingPhotoCount">0</span>
+        <small>Sites With Photos</small>
+      </button>
+    </div>
+
+    <div class="findings-toolbar">
+      <input id="findingsSearch" type="text" placeholder="Search findings by site, inspection, inspector or note">
+      <select id="findingsSort">
+        <option value="latest">Latest first</option>
+        <option value="site">Site name</option>
+        <option value="inspection">Inspection number</option>
+        <option value="overdue">Overdue first</option>
+      </select>
+    </div>
+
+    <div id="findingsList" class="findings-list"></div>
   </section>
 
   <div class="startup-route-grid">
