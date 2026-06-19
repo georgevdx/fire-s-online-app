@@ -9894,7 +9894,7 @@ function getInspectionCardActionHtml(project, index) {
       <button
         type="button"
         class="inspection-card-action primary"
-        onclick="openProject(${projectIdJs})"
+        onclick='openProject(${projectIdJs})'
       >
         Open Inspection
       </button>
@@ -9905,7 +9905,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action danger"
-              onclick="openProjectAndReviewFindings(${projectIdJs})"
+              onclick='openProjectAndReviewFindings(${projectIdJs})'
             >
               Review Findings
             </button>
@@ -9919,7 +9919,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action secondary"
-              onclick="openProjectAndViewPhotos(${projectIdJs})"
+              onclick='openProjectAndViewPhotos(${projectIdJs})'
             >
               Photos (${photoCount})
             </button>
@@ -9943,21 +9943,21 @@ function getInspectionCardActionHtml(project, index) {
     >
       <button
         type="button"
-        onclick="openProject(${projectIdJs})"
+        onclick='openProject(${projectIdJs})'
       >
         Edit / Continue
       </button>
 
       <button
         type="button"
-        onclick="openProjectAndGoToSchedule(${projectIdJs})"
+        onclick='openProjectAndGoToSchedule(${projectIdJs})'
       >
         Schedule / Cycle
       </button>
 
       <button
         type="button"
-        onclick="openProjectAndGenerateReport(${projectIdJs})"
+        onclick='openProjectAndGenerateReport(${projectIdJs})'
       >
         Report
       </button>
