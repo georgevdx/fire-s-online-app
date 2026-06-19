@@ -218,6 +218,10 @@
         <span id="findingOverdueCount">0</span>
         <small>Overdue</small>
       </button>
+      <button type="button" class="finding-stat-card danger" data-findings-filter="high">
+        <span id="findingHighCount">0</span>
+        <small>High Risk</small>
+      </button>
       <button type="button" class="finding-stat-card" data-findings-filter="with-photo">
         <span id="findingPhotoCount">0</span>
         <small>Sites With Photos</small>
@@ -231,8 +235,11 @@
         <option value="site">Site name</option>
         <option value="inspection">Inspection number</option>
         <option value="overdue">Overdue first</option>
+        <option value="risk">Risk first</option>
       </select>
     </div>
+
+    <div id="findingsBySiteSummary" class="findings-by-site-summary"></div>
 
     <div id="findingsList" class="findings-list"></div>
   </section>

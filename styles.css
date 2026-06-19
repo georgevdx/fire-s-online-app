@@ -9390,3 +9390,87 @@ body > #actionDropdown.action-dropdown button:last-child {
     width: 100%;
   }
 }
+
+
+/* FINDINGS CENTRE v1.2 */
+.finding-stat-card.danger {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.findings-by-site-summary {
+  margin: 12px 0;
+}
+
+.findings-site-summary-title {
+  margin: 0 0 8px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.findings-site-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.findings-site-summary-card {
+  width: 100%;
+  max-width: none;
+  padding: 11px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  text-align: left;
+}
+
+.findings-site-summary-card span,
+.findings-site-summary-card strong,
+.findings-site-summary-card small {
+  display: block;
+}
+
+.findings-site-summary-card span {
+  font-size: 12px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.findings-site-summary-card strong {
+  margin-top: 4px;
+  color: #b71c1c;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.findings-site-summary-card small {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.findings-site-summary-card:hover,
+.findings-site-summary-card:focus {
+  border-color: #b71c1c;
+  background: #fff5f5;
+  outline: none;
+}
+
+@media (max-width: 700px) {
+  .findings-centre-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .findings-site-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finding-detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
