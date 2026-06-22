@@ -17569,3 +17569,79 @@ window.addEventListener('load', () => {
     console.warn('Home Dashboard Final Cleanup v2 failed:', error);
   }
 });
+
+
+// =====================================================
+// FIRE-S HOME REPORTS CARD NAVIGATION FIX
+// Purpose: Reports card must NOT open Schedule New.
+// Keeps Schedule card mapped to Schedule, and Reports mapped to report-ready inspections.
+// =====================================================
+function hideScheduleNewPanelForReports() {
+  const schedulePanel = document.getElementById('scheduleNewPanel');
+  if (schedulePanel) {
+    schedulePanel.style.display = 'none';
+  }
+}
+
+function openReportsCommand() {
+  hideScheduleNewPanelForReports();
+  showProjectList();
+
+  setTimeout(() => {
+    hideScheduleNewPanelForReports();
+
+    const search = document.getElementById('projectSearch');
+    if (search) {
+      search.placeholder = 'Search report-ready inspections, sites or clients';
+      search.focus();
+    }
+
+    if (typeof showMainCommandMessage === 'function') {
+      showMainCommandMessage('Reports: select an inspection to generate or view its report. Reports Centre comes next.');
+    }
+  }, 120);
+}
+
+function bindFinalHomeNavigationTargets() {
+  const navigationBindings = [
+    ['cmdComplianceBtn', openMainDashboardCommand],
+    ['cmdComplianceFindingsBtn', typeof openFindingsCommand === 'function' ? openFindingsCommand : openInspectionsCommand],
+    ['cmdComplianceOverdueBtn', typeof openOverdueCommand === 'function' ? openOverdueCommand : openInspectionsCommand],
+    ['cmdComplianceSitesBtn', typeof openSitesCommand === 'function' ? openSitesCommand : openInspectionsCommand],
+    ['cmdComplianceInspectionsBtn', openInspectionsCommand],
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', typeof openFindingsCommand === 'function' ? openFindingsCommand : openInspectionsCommand],
+    ['cmdOverdueBtn', typeof openOverdueCommand === 'function' ? openOverdueCommand : openInspectionsCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  navigationBindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button || typeof handler !== 'function') return;
+
+    const replacement = button.cloneNode(true);
+    replacement.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') {
+        event.stopImmediatePropagation();
+      }
+
+      if (id === 'cmdReportsBtn') {
+        hideScheduleNewPanelForReports();
+      }
+
+      handler();
+    });
+
+    replacement.dataset.finalNavBound = 'true';
+    button.replaceWith(replacement);
+  });
+}
+
+window.openReportsCommand = openReportsCommand;
+window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
