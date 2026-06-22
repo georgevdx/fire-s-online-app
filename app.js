@@ -17645,3 +17645,116 @@ function bindFinalHomeNavigationTargets() {
 
 window.openReportsCommand = openReportsCommand;
 window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
+
+// =====================================================
+// FIRE-S STABILITY PATCH - REMOVE REPORTS CARD TEMPORARILY
+// Build: reports-card-removed-v1
+// Purpose: Keep Reports out of Home Command Centre until Reports module is rebuilt.
+// =====================================================
+function hideReportsCommandCard() {
+  const reportsButton = document.getElementById('cmdReportsBtn');
+
+  if (!reportsButton) return;
+
+  const reportsCard =
+    reportsButton.closest('.command-card') ||
+    reportsButton.closest('.home-command-card') ||
+    reportsButton.closest('.dashboard-card') ||
+    reportsButton.closest('.card') ||
+    reportsButton.parentElement;
+
+  if (reportsCard) {
+    reportsCard.style.display = 'none';
+    reportsCard.setAttribute('aria-hidden', 'true');
+  } else {
+    reportsButton.style.display = 'none';
+    reportsButton.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function openReportsCommand() {
+  hideReportsCommandCard();
+
+  if (typeof showMainCommandMessage === 'function') {
+    showMainCommandMessage('Reports is temporarily removed while the module is rebuilt.');
+  }
+}
+
+function bindFinalHomeNavigationTargets() {
+  const navigationBindings = [
+    ['cmdComplianceBtn', openMainDashboardCommand],
+    ['cmdComplianceFindingsBtn', typeof openFindingsCommand === 'function' ? openFindingsCommand : openInspectionsCommand],
+    ['cmdComplianceOverdueBtn', typeof openOverdueCommand === 'function' ? openOverdueCommand : openInspectionsCommand],
+    ['cmdComplianceSitesBtn', typeof openSitesCommand === 'function' ? openSitesCommand : openInspectionsCommand],
+    ['cmdComplianceInspectionsBtn', openInspectionsCommand],
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', typeof openFindingsCommand === 'function' ? openFindingsCommand : openInspectionsCommand],
+    ['cmdOverdueBtn', typeof openOverdueCommand === 'function' ? openOverdueCommand : openInspectionsCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  hideReportsCommandCard();
+
+  navigationBindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button || typeof handler !== 'function') return;
+
+    const replacement = button.cloneNode(true);
+    replacement.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (typeof event.stopImmediatePropagation === 'function') {
+        event.stopImmediatePropagation();
+      }
+
+      handler();
+    });
+
+    replacement.dataset.finalNavBound = 'true';
+    button.replaceWith(replacement);
+  });
+}
+
+const originalShowHomeBeforeReportsRemoval =
+  typeof showHome === 'function'
+    ? showHome
+    : null;
+
+if (originalShowHomeBeforeReportsRemoval) {
+  showHome = function showHomeReportsRemoved() {
+    originalShowHomeBeforeReportsRemoval();
+    hideReportsCommandCard();
+
+    if (typeof bindFinalHomeNavigationTargets === 'function') {
+      bindFinalHomeNavigationTargets();
+    }
+  };
+}
+
+const originalRenderHomeCommandCentreBeforeReportsRemoval =
+  typeof renderHomeCommandCentre === 'function'
+    ? renderHomeCommandCentre
+    : null;
+
+if (originalRenderHomeCommandCentreBeforeReportsRemoval) {
+  renderHomeCommandCentre = function renderHomeCommandCentreReportsRemoved() {
+    originalRenderHomeCommandCentreBeforeReportsRemoval();
+    hideReportsCommandCard();
+  };
+}
+
+window.hideReportsCommandCard = hideReportsCommandCard;
+window.openReportsCommand = openReportsCommand;
+window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
+
+document.addEventListener('DOMContentLoaded', () => {
+  hideReportsCommandCard();
+
+  if (typeof bindFinalHomeNavigationTargets === 'function') {
+    bindFinalHomeNavigationTargets();
+  }
+});
