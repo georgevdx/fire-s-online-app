@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v97-home-clean-v1';
+const APP_VERSION = 'v98-home-final-cleanup-v2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -17098,3 +17098,455 @@ function updateRcFinalPreflightPanel() { hideBetaHomePanels(); }
 function updateReleaseCandidatePanel() { hideBetaHomePanels(); }
 function updateRcTesterInstructionPanel() { hideBetaHomePanels(); }
 function refreshRcHomePanels() { hideBetaHomePanels(); }
+
+
+// =====================================================
+// HOME DASHBOARD FINAL CLEANUP v2
+// Duplicate KPI cleanup + Recent Activity + navigation targets
+// Safe append-only override. Does not change inspection workflow.
+// =====================================================
+
+function fireSHomeSafeText(value) {
+  if (typeof escapeHtml === 'function') {
+    return escapeHtml(value);
+  }
+
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function fireSGetInspectionDisplayDate(project) {
+  return (
+    project?.inspectionDate ||
+    project?.inspection_date ||
+    project?.updated_at ||
+    project?.created_at ||
+    project?.lastSaved ||
+    project?.completedAt ||
+    ''
+  );
+}
+
+function fireSFormatShortDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toLocaleDateString();
+}
+
+function fireSGetProjectDisplayName(project) {
+  return (
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') ||
+    project?.projectName ||
+    project?.siteName ||
+    'Unnamed inspection'
+  );
+}
+
+function fireSGetNoCount(project) {
+  return (project?.answers || []).filter(answer =>
+    String(answer?.answer || '').trim().toLowerCase() === 'no'
+  ).length;
+}
+
+function fireSGetCompliancePercent(project) {
+  if (typeof getProjectComplianceStats === 'function') {
+    return getProjectComplianceStats(project).percentage;
+  }
+
+  const answers = project?.answers || [];
+  let yes = 0;
+  let no = 0;
+
+  answers.forEach(answer => {
+    const value = String(answer?.answer || '').trim().toLowerCase();
+    if (value === 'yes') yes += 1;
+    if (value === 'no') no += 1;
+  });
+
+  return yes + no ? Math.round((yes / (yes + no)) * 100) : null;
+}
+
+function ensureHomeRecentActivityMarkup() {
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return null;
+
+  let panel = document.getElementById('homeRecentActivityPanel');
+  if (panel) return panel;
+
+  panel = document.createElement('section');
+  panel.id = 'homeRecentActivityPanel';
+  panel.className = 'home-recent-activity-panel';
+  panel.innerHTML = `
+    <div class="home-recent-activity-header">
+      <div>
+        <div class="home-recent-kicker">Workspace</div>
+        <h3>Recent Activity</h3>
+      </div>
+      <button type="button" id="homeRecentActivityViewAllBtn">View inspections</button>
+    </div>
+    <div id="homeRecentActivityList" class="home-recent-activity-list">
+      <div class="home-recent-empty">No recent inspection activity yet.</div>
+    </div>
+  `;
+
+  const commandGrid = centre.querySelector('.main-command-grid, .command-centre-grid');
+  if (commandGrid) {
+    centre.insertBefore(panel, commandGrid);
+  } else {
+    centre.appendChild(panel);
+  }
+
+  const viewAllBtn = panel.querySelector('#homeRecentActivityViewAllBtn');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('click', openInspectionsCommand);
+  }
+
+  return panel;
+}
+
+function renderHomeRecentActivity(projects) {
+  const panel = ensureHomeRecentActivityMarkup();
+  const list = document.getElementById('homeRecentActivityList');
+  if (!panel || !list) return;
+
+  const sortedProjects = (Array.isArray(projects) ? projects : [])
+    .slice()
+    .sort((a, b) => {
+      const aTime = new Date(fireSGetInspectionDisplayDate(a) || 0).getTime() || 0;
+      const bTime = new Date(fireSGetInspectionDisplayDate(b) || 0).getTime() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 5);
+
+  if (!sortedProjects.length) {
+    list.innerHTML = '<div class="home-recent-empty">No recent inspection activity yet.</div>';
+    return;
+  }
+
+  list.innerHTML = sortedProjects.map(project => {
+    const noCount = fireSGetNoCount(project);
+    const photos = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const compliance = fireSGetCompliancePercent(project);
+    const dateText = fireSFormatShortDate(fireSGetInspectionDisplayDate(project));
+    const title = fireSGetProjectDisplayName(project);
+    const projectId = fireSHomeSafeText(project?.id || '');
+
+    const activityLabel = noCount > 0
+      ? `${noCount} finding${noCount === 1 ? '' : 's'} raised`
+      : 'Inspection activity';
+
+    const complianceText = compliance === null || compliance === undefined
+      ? 'No score yet'
+      : `${compliance}% compliance`;
+
+    return `
+      <button type="button" class="home-recent-activity-item" onclick="openProject('${projectId}')">
+        <span class="home-recent-icon">${noCount > 0 ? '⚠' : '✓'}</span>
+        <span class="home-recent-main">
+          <strong>${fireSHomeSafeText(activityLabel)}</strong>
+          <small>${fireSHomeSafeText(title)}</small>
+        </span>
+        <span class="home-recent-meta">
+          <strong>${fireSHomeSafeText(complianceText)}</strong>
+          <small>${fireSHomeSafeText(dateText)} · ${photos} photo${photos === 1 ? '' : 's'}</small>
+        </span>
+      </button>
+    `;
+  }).join('');
+}
+
+function cleanupDuplicateHomeKpiCards() {
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  // Hide the old duplicate row: Inspections / Open Findings / Overdue / Photos.
+  const duplicateStats = centre.querySelector('.main-command-stats');
+  if (duplicateStats) {
+    duplicateStats.style.display = 'none';
+    duplicateStats.setAttribute('aria-hidden', 'true');
+  }
+
+  // Remove visual beta/test clutter if any slipped back into Home.
+  if (typeof hideBetaHomePanels === 'function') {
+    hideBetaHomePanels();
+  }
+}
+
+function setHomeActionCardLabels() {
+  const labelMap = {
+    cmdInspectionsBtn: 'Inspection Gateway',
+    cmdScheduleBtn: 'Schedule',
+    cmdReportsBtn: 'Reports',
+    cmdCompanyBtn: 'Company',
+    cmdServicesBtn: 'Services / Support'
+  };
+
+  Object.entries(labelMap).forEach(([id, label]) => {
+    const button = document.getElementById(id);
+    if (!button) return;
+
+    button.classList.add('home-action-card');
+    button.setAttribute('aria-label', label);
+  });
+}
+
+function openFindingsCommand() {
+  if (typeof openFindingsCentreCommand === 'function') {
+    findingsCentreFilter = 'all';
+    openFindingsCentreCommand();
+    return;
+  }
+
+  showProjectList();
+  if (typeof setFilter === 'function') setFilter('inspection-attention');
+}
+
+function openOverdueCommand() {
+  if (typeof openFindingsCentreCommand === 'function') {
+    findingsCentreFilter = 'overdue';
+    openFindingsCentreCommand();
+    return;
+  }
+
+  showProjectList();
+  if (typeof setFilter === 'function') setFilter('overdue');
+}
+
+function openSitesCommand() {
+  showProjectList();
+  const search = document.getElementById('projectSearch');
+  if (search) {
+    search.placeholder = 'Search sites, companies, malls or addresses';
+    search.focus();
+  }
+}
+
+function bindFinalHomeNavigationTargets() {
+  const navigationBindings = [
+    ['cmdComplianceBtn', openMainDashboardCommand],
+    ['cmdComplianceFindingsBtn', openFindingsCommand],
+    ['cmdComplianceOverdueBtn', openOverdueCommand],
+    ['cmdComplianceSitesBtn', openSitesCommand],
+    ['cmdComplianceInspectionsBtn', openInspectionsCommand],
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', openFindingsCommand],
+    ['cmdOverdueBtn', openOverdueCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  navigationBindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button || typeof handler !== 'function') return;
+
+    const replacement = button.cloneNode(true);
+    replacement.addEventListener('click', event => {
+      event.preventDefault();
+      handler();
+    });
+
+    replacement.dataset.finalNavBound = 'true';
+    button.replaceWith(replacement);
+  });
+}
+
+function ensureFinalHomeDashboardStyles() {
+  if (document.getElementById('fireSFinalHomeStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'fireSFinalHomeStyles';
+  style.textContent = `
+    .home-recent-activity-panel {
+      margin: 18px 0;
+      padding: 16px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .home-recent-activity-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .home-recent-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      opacity: .65;
+      font-weight: 700;
+    }
+
+    .home-recent-activity-header h3 {
+      margin: 2px 0 0;
+      font-size: 18px;
+    }
+
+    .home-recent-activity-header button,
+    .home-recent-activity-item {
+      cursor: pointer;
+    }
+
+    .home-recent-activity-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .home-recent-activity-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      align-items: center;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 14px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+
+    .home-recent-icon {
+      font-size: 20px;
+    }
+
+    .home-recent-main,
+    .home-recent-meta {
+      display: grid;
+      gap: 3px;
+    }
+
+    .home-recent-main small,
+    .home-recent-meta small {
+      opacity: .72;
+    }
+
+    .home-recent-meta {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .home-recent-empty {
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      opacity: .75;
+    }
+
+    @media (max-width: 640px) {
+      .home-recent-activity-item {
+        grid-template-columns: auto 1fr;
+      }
+
+      .home-recent-meta {
+        grid-column: 2;
+        text-align: left;
+        white-space: normal;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+// Final override: renders only the Executive Dashboard, Recent Activity and Workspace actions.
+function renderHomeCommandCentre() {
+  ensureFinalHomeDashboardStyles();
+  ensureExecutiveComplianceDashboardMarkup();
+  cleanupDuplicateHomeKpiCards();
+
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  const projects = getHomeCommandProjects();
+  const stats = getCompanyComplianceStats(projects);
+  const complianceScore = stats.compliancePercentage;
+  const complianceClass = getComplianceScoreClass(complianceScore);
+  const complianceLabel = getComplianceScoreLabel(complianceScore);
+
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+  const heroCard = document.getElementById('complianceHeroCard');
+  const scoreEl = document.getElementById('cmdComplianceScore');
+  const scoreLabelEl = document.getElementById('cmdComplianceScoreLabel');
+  const modePill = document.getElementById('complianceModePill');
+  const heroTitle = document.getElementById('complianceHeroTitle');
+  const heroSubtitle = document.getElementById('complianceHeroSubtitle');
+
+  if (heroCard) {
+    heroCard.classList.remove(
+      'compliance-unknown',
+      'compliance-strong',
+      'compliance-watch',
+      'compliance-risk',
+      'compliance-critical'
+    );
+    heroCard.classList.add(complianceClass);
+  }
+
+  if (scoreEl) scoreEl.textContent = complianceScore === null ? '--%' : `${complianceScore}%`;
+  if (scoreLabelEl) scoreLabelEl.textContent = complianceScore === null ? 'No scored data yet' : `${complianceLabel} Compliance`;
+  if (modePill) modePill.textContent = getRoleLandingLabel();
+
+  if (heroTitle) {
+    heroTitle.textContent = isManagementLandingRole()
+      ? 'Executive Compliance Dashboard'
+      : 'Inspector Workspace';
+  }
+
+  if (heroSubtitle) {
+    heroSubtitle.textContent = isManagementLandingRole()
+      ? 'Compliance, findings and overdue actions from visible inspections.'
+      : 'Open inspections, continue drafts and capture findings quickly.';
+  }
+
+  const openFindingsEl = document.getElementById('cmdComplianceOpenFindings');
+  const overdueActionsEl = document.getElementById('cmdComplianceOverdueActions');
+  const sitesEl = document.getElementById('cmdComplianceSites');
+  const inspectionsEl = document.getElementById('cmdComplianceInspections');
+
+  if (openFindingsEl) openFindingsEl.textContent = stats.openFindings;
+  if (overdueActionsEl) overdueActionsEl.textContent = stats.overdueActions;
+  if (sitesEl) sitesEl.textContent = stats.sites;
+  if (inspectionsEl) inspectionsEl.textContent = stats.inspections;
+
+  if (accessEl) {
+    const companyName = currentUserProfile?.companyName || 'Local Workspace';
+    const role = currentUserProfile?.role || 'guest';
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent = 'Select a workspace action below to inspect, report or manage company data.';
+  }
+
+  renderAttentionSites(stats);
+  renderHomeRecentActivity(projects);
+  cleanupDuplicateHomeKpiCards();
+  setHomeActionCardLabels();
+  bindFinalHomeNavigationTargets();
+}
+
+function initHomeCommandCentre() {
+  ensureExecutiveComplianceDashboardMarkup();
+  renderHomeCommandCentre();
+}
+
+window.addEventListener('load', () => {
+  try {
+    renderHomeCommandCentre();
+  } catch (error) {
+    console.warn('Home Dashboard Final Cleanup v2 failed:', error);
+  }
+});
