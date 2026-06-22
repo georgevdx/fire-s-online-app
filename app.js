@@ -17646,35 +17646,36 @@ function bindFinalHomeNavigationTargets() {
 window.openReportsCommand = openReportsCommand;
 window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
 
-// =====================================================
-// FIRE-S STABILITY PATCH - REMOVE REPORTS CARD TEMPORARILY
-// Build: reports-card-removed-v1
-// Purpose: Keep Reports out of Home Command Centre until Reports module is rebuilt.
-// =====================================================
-function hideReportsCommandCard() {
-  const reportsButton = document.getElementById('cmdReportsBtn');
 
+// =====================================================
+// FIRE-S SAFE PATCH - REPORTS CARD REMOVED v2
+// Purpose: hide Reports without hiding the full Home dashboard.
+// =====================================================
+function hideReportsCommandCardSafe() {
+  const reportsButton = document.getElementById('cmdReportsBtn');
   if (!reportsButton) return;
 
-  const reportsCard =
-    reportsButton.closest('.command-card') ||
+  // Never climb to generic .card because that can hide the whole Home panel.
+  const safeCard =
     reportsButton.closest('.home-command-card') ||
-    reportsButton.closest('.dashboard-card') ||
-    reportsButton.closest('.card') ||
-    reportsButton.parentElement;
+    reportsButton.closest('.command-card') ||
+    reportsButton.closest('.command-centre-card') ||
+    reportsButton.closest('[data-command="reports"]') ||
+    reportsButton.closest('[data-command-card="reports"]');
 
-  if (reportsCard) {
-    reportsCard.style.display = 'none';
-    reportsCard.setAttribute('aria-hidden', 'true');
-  } else {
-    reportsButton.style.display = 'none';
-    reportsButton.setAttribute('aria-hidden', 'true');
+  if (safeCard && safeCard.id !== 'mainCommandCentre' && safeCard.id !== 'homeSection') {
+    safeCard.style.display = 'none';
+    safeCard.setAttribute('aria-hidden', 'true');
+    return;
   }
+
+  // Fallback: hide only the Reports button itself, never its generic parent.
+  reportsButton.style.display = 'none';
+  reportsButton.setAttribute('aria-hidden', 'true');
 }
 
 function openReportsCommand() {
-  hideReportsCommandCard();
-
+  hideReportsCommandCardSafe();
   if (typeof showMainCommandMessage === 'function') {
     showMainCommandMessage('Reports is temporarily removed while the module is rebuilt.');
   }
@@ -17696,65 +17697,57 @@ function bindFinalHomeNavigationTargets() {
     ['cmdServicesBtn', showServices]
   ];
 
-  hideReportsCommandCard();
-
   navigationBindings.forEach(([id, handler]) => {
     const button = document.getElementById(id);
     if (!button || typeof handler !== 'function') return;
+    if (button.dataset.safeReportsRemovedBound === 'true') return;
 
-    const replacement = button.cloneNode(true);
-    replacement.addEventListener('click', event => {
+    button.addEventListener('click', event => {
       event.preventDefault();
-      event.stopPropagation();
-
-      if (typeof event.stopImmediatePropagation === 'function') {
-        event.stopImmediatePropagation();
-      }
-
       handler();
     });
 
-    replacement.dataset.finalNavBound = 'true';
-    button.replaceWith(replacement);
+    button.dataset.safeReportsRemovedBound = 'true';
   });
+
+  hideReportsCommandCardSafe();
 }
 
-const originalShowHomeBeforeReportsRemoval =
-  typeof showHome === 'function'
-    ? showHome
-    : null;
+const fireSOriginalShowHomeReportsRemovedSafe =
+  typeof showHome === 'function' ? showHome : null;
 
-if (originalShowHomeBeforeReportsRemoval) {
-  showHome = function showHomeReportsRemoved() {
-    originalShowHomeBeforeReportsRemoval();
-    hideReportsCommandCard();
+if (fireSOriginalShowHomeReportsRemovedSafe) {
+  showHome = function showHomeReportsRemovedSafe() {
+    fireSOriginalShowHomeReportsRemovedSafe();
 
-    if (typeof bindFinalHomeNavigationTargets === 'function') {
-      bindFinalHomeNavigationTargets();
-    }
+    const homeSection = document.getElementById('homeSection');
+    if (homeSection) homeSection.style.display = 'block';
+
+    const mainCommandCentre = document.getElementById('mainCommandCentre');
+    if (mainCommandCentre) mainCommandCentre.style.display = '';
+
+    hideReportsCommandCardSafe();
+    bindFinalHomeNavigationTargets();
   };
 }
 
-const originalRenderHomeCommandCentreBeforeReportsRemoval =
-  typeof renderHomeCommandCentre === 'function'
-    ? renderHomeCommandCentre
-    : null;
+const fireSOriginalRenderHomeCommandCentreReportsRemovedSafe =
+  typeof renderHomeCommandCentre === 'function' ? renderHomeCommandCentre : null;
 
-if (originalRenderHomeCommandCentreBeforeReportsRemoval) {
-  renderHomeCommandCentre = function renderHomeCommandCentreReportsRemoved() {
-    originalRenderHomeCommandCentreBeforeReportsRemoval();
-    hideReportsCommandCard();
+if (fireSOriginalRenderHomeCommandCentreReportsRemovedSafe) {
+  renderHomeCommandCentre = function renderHomeCommandCentreReportsRemovedSafe() {
+    fireSOriginalRenderHomeCommandCentreReportsRemovedSafe();
+    hideReportsCommandCardSafe();
   };
 }
 
-window.hideReportsCommandCard = hideReportsCommandCard;
+window.hideReportsCommandCardSafe = hideReportsCommandCardSafe;
 window.openReportsCommand = openReportsCommand;
 window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
 
 document.addEventListener('DOMContentLoaded', () => {
-  hideReportsCommandCard();
-
-  if (typeof bindFinalHomeNavigationTargets === 'function') {
+  setTimeout(() => {
+    hideReportsCommandCardSafe();
     bindFinalHomeNavigationTargets();
-  }
+  }, 250);
 });
