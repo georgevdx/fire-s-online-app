@@ -17645,3 +17645,515 @@ function bindFinalHomeNavigationTargets() {
 
 window.openReportsCommand = openReportsCommand;
 window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
+
+
+// =====================================================
+// FIRE-S REPORTS CENTRE v1
+// Purpose: Make Home → Reports a separate Reports Centre,
+// not the same destination as Inspection Gateway.
+// Safe patch: creates the section dynamically and leaves the
+// existing inspection workflow untouched.
+// =====================================================
+function fireSReportsSafeText(value) {
+  if (typeof escapeHtml === 'function') {
+    return escapeHtml(value);
+  }
+
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function fireSReportsGetVisibleProjects() {
+  const projects = typeof getProjects === 'function' ? getProjects() : [];
+
+  if (
+    typeof getVisibleProjectsForCurrentUser === 'function' &&
+    typeof currentUserProfile !== 'undefined' &&
+    currentUserProfile
+  ) {
+    return getVisibleProjectsForCurrentUser(projects);
+  }
+
+  return projects;
+}
+
+function fireSReportsGetNoCount(project) {
+  return (project?.answers || []).filter(answer =>
+    String(answer?.answer || '').trim().toLowerCase() === 'no'
+  ).length;
+}
+
+function fireSReportsIsCompleted(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.archivedAt ||
+    project?.archiveStatus === 'completed' ||
+    project?.scheduledStatus === 'completed'
+  );
+}
+
+function fireSReportsIsOverdue(project) {
+  const dateValue = project?.followUpDate || project?.scheduledDate || '';
+  if (!dateValue || fireSReportsIsCompleted(project)) return false;
+
+  return String(dateValue).slice(0, 10) < new Date().toISOString().slice(0, 10);
+}
+
+function fireSReportsGetCompliancePercent(projects) {
+  let yes = 0;
+  let no = 0;
+
+  (projects || []).forEach(project => {
+    (project?.answers || []).forEach(answer => {
+      const value = String(answer?.answer || '').trim().toLowerCase();
+      if (value === 'yes') yes += 1;
+      if (value === 'no') no += 1;
+    });
+  });
+
+  return yes + no ? Math.round((yes / (yes + no)) * 100) : null;
+}
+
+function fireSReportsGetStats() {
+  const projects = fireSReportsGetVisibleProjects();
+  const openFindings = projects.reduce(
+    (sum, project) => sum + fireSReportsGetNoCount(project),
+    0
+  );
+
+  return {
+    projects,
+    inspections: projects.length,
+    completed: projects.filter(fireSReportsIsCompleted).length,
+    openFindings,
+    overdue: projects.filter(fireSReportsIsOverdue).length,
+    compliance: fireSReportsGetCompliancePercent(projects),
+    sites: new Set(
+      projects.map(project =>
+        project?.siteId ||
+        project?.siteName ||
+        project?.projectName ||
+        project?.projectAddress ||
+        project?.id
+      ).filter(Boolean)
+    ).size
+  };
+}
+
+function ensureReportsCentreStyles() {
+  if (document.getElementById('fireSReportsCentreStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'fireSReportsCentreStyles';
+  style.textContent = `
+    #reportsCentreSection {
+      display: none;
+      padding: 18px;
+      max-width: 980px;
+      margin: 0 auto 80px;
+    }
+
+    .reports-centre-hero {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: #ffffff;
+      border-radius: 22px;
+      padding: 22px;
+      margin-bottom: 16px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+    }
+
+    .reports-centre-kicker {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      opacity: .75;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .reports-centre-hero h2 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    .reports-centre-hero p {
+      margin: 0;
+      opacity: .82;
+      line-height: 1.45;
+    }
+
+    .reports-centre-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: 14px 0;
+    }
+
+    .reports-centre-back-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .reports-centre-summary {
+      opacity: .75;
+      font-size: 13px;
+    }
+
+    .reports-centre-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .reports-centre-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 16px;
+      cursor: pointer;
+      box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
+      display: grid;
+      gap: 10px;
+    }
+
+    .reports-centre-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    .reports-centre-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .reports-centre-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f9;
+      font-size: 22px;
+    }
+
+    .reports-centre-card h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #0f172a;
+    }
+
+    .reports-centre-card p {
+      margin: 0;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    .reports-centre-metric {
+      font-size: 28px;
+      font-weight: 800;
+      color: #b91c1c;
+    }
+
+    .reports-centre-link {
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    @media (max-width: 700px) {
+      #reportsCentreSection {
+        padding: 14px;
+      }
+
+      .reports-centre-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .reports-centre-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function ensureReportsCentreSection() {
+  ensureReportsCentreStyles();
+
+  let section = document.getElementById('reportsCentreSection');
+  if (section) return section;
+
+  section = document.createElement('section');
+  section.id = 'reportsCentreSection';
+  section.className = 'reports-centre-section';
+
+  const anchor =
+    document.getElementById('projectListSection') ||
+    document.getElementById('servicesSection') ||
+    document.getElementById('homeSection');
+
+  if (anchor && anchor.parentElement) {
+    anchor.parentElement.insertBefore(section, anchor.nextSibling);
+  } else {
+    document.body.appendChild(section);
+  }
+
+  return section;
+}
+
+function renderReportsCentre() {
+  const section = ensureReportsCentreSection();
+  const stats = fireSReportsGetStats();
+  const complianceText = stats.compliance === null ? '--%' : `${stats.compliance}%`;
+
+  section.innerHTML = `
+    <div class="reports-centre-hero">
+      <div class="reports-centre-kicker">Fire-S Reports</div>
+      <h2>Reports Centre</h2>
+      <p>View inspection, findings, compliance and executive reporting from one place.</p>
+    </div>
+
+    <div class="reports-centre-actions">
+      <button type="button" class="reports-centre-back-btn" onclick="showHome()">
+        ← Back to Dashboard
+      </button>
+      <div class="reports-centre-summary">
+        ${fireSReportsSafeText(stats.inspections)} inspection${stats.inspections === 1 ? '' : 's'} · ${fireSReportsSafeText(stats.sites)} site${stats.sites === 1 ? '' : 's'}
+      </div>
+    </div>
+
+    <div class="reports-centre-grid">
+      <button type="button" class="reports-centre-card" onclick="openInspectionReportsFromCentre()">
+        <div class="reports-centre-card-top">
+          <span class="reports-centre-icon">📋</span>
+          <span class="reports-centre-link">Open →</span>
+        </div>
+        <h3>Inspection Reports</h3>
+        <div class="reports-centre-metric">${fireSReportsSafeText(stats.completed || stats.inspections)}</div>
+        <p>Open completed or report-ready inspections and generate PDF reports.</p>
+      </button>
+
+      <button type="button" class="reports-centre-card" onclick="openFindingReportsFromCentre()">
+        <div class="reports-centre-card-top">
+          <span class="reports-centre-icon">⚠️</span>
+          <span class="reports-centre-link">Open →</span>
+        </div>
+        <h3>Findings Reports</h3>
+        <div class="reports-centre-metric">${fireSReportsSafeText(stats.openFindings)}</div>
+        <p>Review open findings, overdue items and action-driven reporting.</p>
+      </button>
+
+      <button type="button" class="reports-centre-card" onclick="openComplianceReportsFromCentre()">
+        <div class="reports-centre-card-top">
+          <span class="reports-centre-icon">📊</span>
+          <span class="reports-centre-link">Open →</span>
+        </div>
+        <h3>Compliance Reports</h3>
+        <div class="reports-centre-metric">${fireSReportsSafeText(complianceText)}</div>
+        <p>View compliance summary and site compliance performance.</p>
+      </button>
+
+      <button type="button" class="reports-centre-card" onclick="openExecutiveReportsFromCentre()">
+        <div class="reports-centre-card-top">
+          <span class="reports-centre-icon">🏢</span>
+          <span class="reports-centre-link">Open →</span>
+        </div>
+        <h3>Executive Reports</h3>
+        <div class="reports-centre-metric">${fireSReportsSafeText(stats.sites)}</div>
+        <p>Company-level summary for sites, inspections, findings and compliance.</p>
+      </button>
+    </div>
+  `;
+}
+
+function hideReportsCentre() {
+  const section = document.getElementById('reportsCentreSection');
+  if (section) section.style.display = 'none';
+}
+
+function showReportsCentre() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+  const projectListSection = document.getElementById('projectListSection');
+  const projectFormSection = document.getElementById('projectFormSection');
+  const reportSection = document.getElementById('reportSection');
+
+  if (typeof setCloudMenuVisible === 'function') {
+    setCloudMenuVisible(false);
+  }
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'none';
+  if (projectListSection) projectListSection.style.display = 'none';
+  if (projectFormSection) projectFormSection.style.display = 'none';
+  if (reportSection) reportSection.style.display = 'none';
+
+  renderReportsCentre();
+
+  const section = ensureReportsCentreSection();
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  if (typeof updateFloatingBackButton === 'function') {
+    updateFloatingBackButton();
+  }
+}
+
+function openInspectionReportsFromCentre() {
+  hideReportsCentre();
+  showProjectList();
+
+  setTimeout(() => {
+    const search = document.getElementById('projectSearch');
+    if (search) {
+      search.placeholder = 'Search inspection reports, sites or clients';
+      search.focus();
+    }
+  }, 120);
+}
+
+function openFindingReportsFromCentre() {
+  hideReportsCentre();
+
+  if (typeof openFindingsCentreCommand === 'function') {
+    if (typeof findingsCentreFilter !== 'undefined') {
+      findingsCentreFilter = 'all';
+    }
+    openFindingsCentreCommand();
+    return;
+  }
+
+  showProjectList();
+  if (typeof setFilter === 'function') {
+    setFilter('inspection-attention');
+  }
+}
+
+function openComplianceReportsFromCentre() {
+  hideReportsCentre();
+  showHome();
+
+  setTimeout(() => {
+    const dashboard =
+      document.getElementById('complianceHeroCard') ||
+      document.getElementById('mainCommandCentre');
+
+    if (dashboard) {
+      dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 120);
+}
+
+function openExecutiveReportsFromCentre() {
+  hideReportsCentre();
+  showHome();
+
+  setTimeout(() => {
+    const dashboard = document.getElementById('mainCommandCentre');
+    if (dashboard) {
+      dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 120);
+}
+
+// Final Reports navigation override.
+function openReportsCommand() {
+  const schedulePanel = document.getElementById('scheduleNewPanel');
+  if (schedulePanel) schedulePanel.style.display = 'none';
+
+  showReportsCentre();
+}
+
+// Hide Reports Centre automatically when other major screens open.
+(function installReportsCentreScreenGuards() {
+  const wrap = (name) => {
+    const original = window[name] || (typeof globalThis !== 'undefined' ? globalThis[name] : null);
+    if (typeof original !== 'function' || original.__reportsCentreWrapped) return;
+
+    const wrapped = function(...args) {
+      hideReportsCentre();
+      return original.apply(this, args);
+    };
+
+    wrapped.__reportsCentreWrapped = true;
+    window[name] = wrapped;
+  };
+
+  // Do not wrap showHome before Reports back button is available unless showHome is global.
+  ['showProjectList', 'showServices', 'showProjectForm'].forEach(wrap);
+})();
+
+// Rebind Home cards so Reports opens Reports Centre, not Inspection Gateway.
+function bindFinalHomeNavigationTargets() {
+  const navigationBindings = [
+    ['cmdComplianceBtn', openMainDashboardCommand],
+    ['cmdComplianceFindingsBtn', typeof openFindingsCommand === 'function' ? openFindingsCommand : openInspectionsCommand],
+    ['cmdComplianceOverdueBtn', typeof openOverdueCommand === 'function' ? openOverdueCommand : openInspectionsCommand],
+    ['cmdComplianceSitesBtn', typeof openSitesCommand === 'function' ? openSitesCommand : openInspectionsCommand],
+    ['cmdComplianceInspectionsBtn', openInspectionsCommand],
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', typeof openFindingsCommand === 'function' ? openFindingsCommand : openInspectionsCommand],
+    ['cmdOverdueBtn', typeof openOverdueCommand === 'function' ? openOverdueCommand : openInspectionsCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  navigationBindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button || typeof handler !== 'function') return;
+
+    const replacement = button.cloneNode(true);
+    replacement.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') {
+        event.stopImmediatePropagation();
+      }
+
+      handler();
+    });
+
+    replacement.dataset.finalNavBound = 'true';
+    button.replaceWith(replacement);
+  });
+}
+
+window.openReportsCommand = openReportsCommand;
+window.showReportsCentre = showReportsCentre;
+window.hideReportsCentre = hideReportsCentre;
+window.openInspectionReportsFromCentre = openInspectionReportsFromCentre;
+window.openFindingReportsFromCentre = openFindingReportsFromCentre;
+window.openComplianceReportsFromCentre = openComplianceReportsFromCentre;
+window.openExecutiveReportsFromCentre = openExecutiveReportsFromCentre;
+window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
+
+window.addEventListener('load', () => {
+  try {
+    ensureReportsCentreSection();
+    if (typeof bindFinalHomeNavigationTargets === 'function') {
+      bindFinalHomeNavigationTargets();
+    }
+  } catch (error) {
+    console.warn('Reports Centre v1 init failed:', error);
+  }
+});
