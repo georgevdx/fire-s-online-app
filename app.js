@@ -19030,3 +19030,364 @@ window.addEventListener('load', () => {
     console.warn('Findings Centre Dashboard v2.0 init failed:', error);
   }
 });
+
+/* =====================================================
+   FIRE-S FINDINGS CENTRE v2.0.1 VISIBLE HOTFIX
+   Purpose: make Findings Centre render as a visible standalone page.
+   Does not change inspection workflow.
+===================================================== */
+(function () {
+  let fsFindingsFilterV201 = 'open';
+
+  function fsEsc(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function fsDate(value) {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10) || '-';
+    return d.toLocaleDateString();
+  }
+
+  function fsIsoDate(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function fsGetProjectsSafe() {
+    try {
+      const projects = typeof getProjects === 'function' ? getProjects() : [];
+      if (typeof getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
+        return getVisibleProjectsForCurrentUser(projects) || [];
+      }
+      return projects || [];
+    } catch (error) {
+      console.warn('Findings v2.0.1 could not read inspections:', error);
+      return [];
+    }
+  }
+
+  function fsChecklist(project) {
+    try {
+      return typeof getChecklistForProject === 'function'
+        ? (getChecklistForProject(project) || [])
+        : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function fsQuestion(project, answer, index) {
+    const checklist = fsChecklist(project);
+    const row = checklist.find((item, itemIndex) =>
+      itemIndex === answer.itemIndex ||
+      String(item['Item Number'] || '') === String(answer.itemNumber || '')
+    );
+
+    return (
+      row?.['Non Compliance Text'] ||
+      row?.['Checklist Item'] ||
+      row?.Requirement ||
+      row?.Question ||
+      answer.question_text ||
+      answer.questionText ||
+      `Finding ${index + 1}`
+    );
+  }
+
+  function fsRisk(project, answer) {
+    const explicit = answer.risk_level || answer.riskLevel || answer.risk || '';
+    if (explicit) return explicit;
+
+    const noCount = (project.answers || []).filter(a =>
+      String(a.answer || '').trim().toLowerCase() === 'no'
+    ).length;
+
+    if (noCount >= 6) return 'High';
+    if (noCount >= 2) return 'Medium';
+    return 'Low';
+  }
+
+  function fsItems() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const items = [];
+
+    fsGetProjectsSafe().forEach(project => {
+      const answers = Array.isArray(project.answers) ? project.answers : [];
+
+      answers.forEach((answer, index) => {
+        const answerText = String(answer.answer || answer.answer_value || '').trim().toLowerCase();
+        if (answerText !== 'no') return;
+
+        const dueDate = answer.due_date || answer.dueDate || project.followUpDate || '';
+        const due = dueDate ? new Date(dueDate) : null;
+        if (due) due.setHours(0, 0, 0, 0);
+
+        const status = String(answer.status || project.findingStatus || 'open').trim().toLowerCase();
+        const isClosed = ['closed', 'resolved', 'complete', 'completed'].includes(status);
+        const isOverdue = !!due && due < today && !isClosed;
+
+        items.push({
+          projectId: project.id,
+          itemIndex: Number(answer.itemIndex ?? index),
+          siteName: project.siteName || project.projectName || project.organisationName || 'Unnamed site',
+          organisationName: project.organisationName || project.companyName || '',
+          inspectionNumber: project.inspectionNumber || '',
+          inspectionDate: project.inspectionDate || project.inspection_date || project.completedAt || project.lastSaved || project.created_at || '',
+          inspectorName: project.inspectorName || project.createdByEmail || '',
+          question: fsQuestion(project, answer, index),
+          correctiveAction: answer.corrective_action || answer.correctiveAction || answer.note || 'Review required',
+          dueDate,
+          risk: fsRisk(project, answer),
+          status: isClosed ? 'closed' : 'open',
+          isOverdue
+        });
+      });
+    });
+
+    items.sort((a, b) => {
+      if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+      const rank = { high: 1, medium: 2, low: 3 };
+      const ar = rank[String(a.risk).toLowerCase()] || 2;
+      const br = rank[String(b.risk).toLowerCase()] || 2;
+      if (ar !== br) return ar - br;
+      return (new Date(b.inspectionDate).getTime() || 0) - (new Date(a.inspectionDate).getTime() || 0);
+    });
+
+    return items;
+  }
+
+  function fsFilteredItems() {
+    const search = String(document.getElementById('findingsSearch')?.value || '').trim().toLowerCase();
+    let items = fsItems();
+
+    if (fsFindingsFilterV201 === 'open') {
+      items = items.filter(item => item.status !== 'closed');
+    }
+    if (fsFindingsFilterV201 === 'overdue') {
+      items = items.filter(item => item.isOverdue && item.status !== 'closed');
+    }
+    if (fsFindingsFilterV201 === 'closed') {
+      items = items.filter(item => item.status === 'closed');
+    }
+
+    if (search) {
+      items = items.filter(item => [
+        item.siteName,
+        item.organisationName,
+        item.inspectionNumber,
+        item.inspectorName,
+        item.question,
+        item.correctiveAction,
+        item.risk,
+        item.status
+      ].join(' ').toLowerCase().includes(search));
+    }
+
+    return items;
+  }
+
+  function fsEnsureSection() {
+    let section = document.getElementById('findingsCentreSection');
+    if (!section) {
+      section = document.createElement('section');
+      section.id = 'findingsCentreSection';
+      document.body.appendChild(section);
+    }
+
+    section.style.display = 'none';
+    section.style.maxWidth = '920px';
+    section.style.margin = '18px auto 40px';
+    section.style.padding = '16px';
+    section.style.fontFamily = 'Arial, sans-serif';
+    section.style.minHeight = '70vh';
+    section.style.position = 'relative';
+    section.style.zIndex = '50';
+    section.style.background = '#f8fafc';
+
+    section.innerHTML = `
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:18px;box-shadow:0 16px 36px rgba(15,23,42,.08);">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px;">
+          <div>
+            <div style="font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#991b1b;">Fire-S Risk Management</div>
+            <h2 style="margin:5px 0 4px;font-size:28px;color:#111827;">⚠ Findings Centre</h2>
+            <p id="findingsCentreSubtitle" style="margin:0;color:#6b7280;font-size:14px;">Open findings, overdue actions and affected sites.</p>
+          </div>
+          <button id="closeFindingsCentreBtn" type="button" style="border:0;border-radius:12px;background:#111827;color:white;padding:10px 13px;font-weight:800;cursor:pointer;">Back to Dashboard</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px;" id="findingsKpiGrid">
+          <button data-findings-filter="open" type="button" class="fs-v201-kpi" style="text-align:left;border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:12px;cursor:pointer;"><span>Open</span><strong id="findingOpenCount">0</strong></button>
+          <button data-findings-filter="overdue" type="button" class="fs-v201-kpi" style="text-align:left;border:1px solid #fecaca;border-radius:14px;background:#fff5f5;padding:12px;cursor:pointer;"><span>Overdue</span><strong id="findingOverdueCount">0</strong></button>
+          <button data-findings-filter="closed" type="button" class="fs-v201-kpi" style="text-align:left;border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:12px;cursor:pointer;"><span>Closed</span><strong id="findingClosedCount">0</strong></button>
+          <button data-findings-filter="open" type="button" class="fs-v201-kpi" style="text-align:left;border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:12px;cursor:pointer;"><span>Sites</span><strong id="findingSiteCount">0</strong></button>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <div id="findingsFilterBtns" style="display:flex;gap:7px;flex-wrap:wrap;">
+            <button data-findings-filter="all" type="button">All</button>
+            <button data-findings-filter="open" type="button">Open</button>
+            <button data-findings-filter="overdue" type="button">Overdue</button>
+            <button data-findings-filter="closed" type="button">Closed</button>
+          </div>
+          <input id="findingsSearch" type="search" placeholder="Search site or finding..." style="border:1px solid #d1d5db;border-radius:12px;padding:10px 12px;min-width:min(320px,100%);font-size:14px;" />
+        </div>
+
+        <div id="findingsResultCount" style="font-weight:800;color:#6b7280;font-size:13px;margin:8px 0 12px;"></div>
+        <div id="findingsList" style="display:grid;gap:10px;"></div>
+      </div>
+    `;
+
+    const style = document.getElementById('findingsVisibleHotfixStyles') || document.createElement('style');
+    style.id = 'findingsVisibleHotfixStyles';
+    style.textContent = `
+      #findingsCentreSection .fs-v201-kpi span {display:block;color:#6b7280;font-size:11px;text-transform:uppercase;font-weight:900;letter-spacing:.06em;}
+      #findingsCentreSection .fs-v201-kpi strong {display:block;margin-top:6px;font-size:28px;color:#111827;}
+      #findingsCentreSection [data-findings-filter].active-finding-filter {background:#991b1b !important;color:#fff !important;border-color:#991b1b !important;}
+      #findingsCentreSection [data-findings-filter].active-finding-filter span,
+      #findingsCentreSection [data-findings-filter].active-finding-filter strong {color:#fff !important;}
+      #findingsFilterBtns button {border:0;border-radius:999px;background:#e5e7eb;color:#374151;padding:9px 12px;font-weight:900;cursor:pointer;}
+      @media(max-width:760px){#findingsKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}#findingsCentreSection{padding:10px !important;}}
+    `;
+    if (!style.parentElement) document.head.appendChild(style);
+
+    document.getElementById('closeFindingsCentreBtn').onclick = () => {
+      section.style.display = 'none';
+      if (typeof showHome === 'function') showHome();
+    };
+
+    document.getElementById('findingsSearch').oninput = fsRender;
+    section.querySelectorAll('[data-findings-filter]').forEach(button => {
+      button.onclick = () => {
+        fsFindingsFilterV201 = button.dataset.findingsFilter || 'all';
+        fsRender();
+      };
+    });
+  }
+
+  function fsRender() {
+    const all = fsItems();
+    const filtered = fsFilteredItems();
+    const open = all.filter(i => i.status !== 'closed');
+    const closed = all.filter(i => i.status === 'closed');
+    const overdue = open.filter(i => i.isOverdue);
+    const sites = new Set(open.map(i => i.siteName).filter(Boolean));
+
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('findingOpenCount', open.length);
+    setText('findingOverdueCount', overdue.length);
+    setText('findingClosedCount', closed.length);
+    setText('findingSiteCount', sites.size);
+    setText('findingsResultCount', `Showing ${filtered.length} of ${all.length} findings`);
+    setText('findingsCentreSubtitle', all.length ? `${open.length} open, ${overdue.length} overdue, ${closed.length} closed across ${sites.size} affected site${sites.size === 1 ? '' : 's'}.` : 'No findings found in visible inspections.');
+
+    document.querySelectorAll('#findingsCentreSection [data-findings-filter]').forEach(button => {
+      button.classList.toggle('active-finding-filter', button.dataset.findingsFilter === fsFindingsFilterV201);
+    });
+
+    const list = document.getElementById('findingsList');
+    if (!list) return;
+
+    if (!filtered.length) {
+      list.innerHTML = `<div style="border:1px dashed #d1d5db;border-radius:16px;background:#fff;padding:24px;text-align:center;color:#6b7280;"><strong style="display:block;color:#111827;font-size:18px;margin-bottom:5px;">No findings found</strong>No findings match the current filters.</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(item => {
+      const riskLower = String(item.risk || '').toLowerCase();
+      const borderColor = item.isOverdue || riskLower === 'high' ? '#b91c1c' : riskLower === 'low' ? '#16a34a' : '#f59e0b';
+      const badgeBg = item.isOverdue || riskLower === 'high' ? '#fee2e2' : riskLower === 'low' ? '#dcfce7' : '#fef3c7';
+      const badgeColor = item.isOverdue || riskLower === 'high' ? '#991b1b' : riskLower === 'low' ? '#166534' : '#92400e';
+
+      return `
+        <article style="background:#fff;border:1px solid #e5e7eb;border-left:6px solid ${borderColor};border-radius:16px;padding:13px;box-shadow:0 8px 18px rgba(15,23,42,.05);">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+            <div>
+              <div style="font-weight:900;font-size:16px;color:#111827;">${fsEsc(item.siteName)}</div>
+              <div style="font-weight:800;color:#374151;margin-top:5px;">${fsEsc(item.question)}</div>
+              <div style="color:#6b7280;font-size:13px;margin-top:5px;">${fsEsc(item.organisationName || 'Organisation not recorded')} · ${fsEsc(item.inspectionNumber || 'No inspection number')}</div>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
+              <span style="border-radius:999px;background:${badgeBg};color:${badgeColor};padding:5px 8px;font-size:11px;font-weight:900;text-transform:uppercase;">${fsEsc(item.risk)}</span>
+              <span style="border-radius:999px;background:#e5e7eb;color:#374151;padding:5px 8px;font-size:11px;font-weight:900;text-transform:uppercase;">${fsEsc(item.status)}</span>
+              ${item.isOverdue ? '<span style="border-radius:999px;background:#fee2e2;color:#991b1b;padding:5px 8px;font-size:11px;font-weight:900;text-transform:uppercase;">Overdue</span>' : ''}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:11px;">
+            <div style="background:#f9fafb;border-radius:10px;padding:8px;"><span style="display:block;color:#6b7280;font-size:11px;text-transform:uppercase;">Due</span><strong>${fsEsc(fsDate(item.dueDate))}</strong></div>
+            <div style="background:#f9fafb;border-radius:10px;padding:8px;"><span style="display:block;color:#6b7280;font-size:11px;text-transform:uppercase;">Inspection</span><strong>${fsEsc(fsDate(item.inspectionDate))}</strong></div>
+            <div style="background:#f9fafb;border-radius:10px;padding:8px;"><span style="display:block;color:#6b7280;font-size:11px;text-transform:uppercase;">Inspector</span><strong>${fsEsc(item.inspectorName || '-')}</strong></div>
+            <div style="background:#f9fafb;border-radius:10px;padding:8px;"><span style="display:block;color:#6b7280;font-size:11px;text-transform:uppercase;">Action</span><strong>${fsEsc(item.correctiveAction || 'Review required')}</strong></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+            <button type="button" style="border:0;border-radius:12px;background:#111827;color:#fff;padding:9px 12px;font-weight:900;cursor:pointer;" onclick="openFindingInspection('${fsEsc(item.projectId)}', ${Number(item.itemIndex) || 0})">Open Inspection</button>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function fsOpenFindings(filter) {
+    fsEnsureSection();
+    fsFindingsFilterV201 = filter || fsFindingsFilterV201 || 'open';
+
+    ['homeSection', 'servicesSection', 'projectListSection', 'projectFormSection', 'reportsCentreSection'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    const section = document.getElementById('findingsCentreSection');
+    if (section) {
+      section.style.display = 'block';
+      fsRender();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  window.openFindingsCentreCommand = () => fsOpenFindings('open');
+  window.openFindingsCommand = () => fsOpenFindings('open');
+  window.openOverdueCommand = () => fsOpenFindings('overdue');
+  window.renderFindingsCentre = fsRender;
+
+  window.bindFindingsCentreDashboardV2Navigation = function () {
+    [
+      ['cmdFindingsBtn', 'open'],
+      ['cmdComplianceFindingsBtn', 'open'],
+      ['cmdOverdueBtn', 'overdue'],
+      ['cmdComplianceOverdueBtn', 'overdue']
+    ].forEach(([id, filter]) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        fsOpenFindings(filter);
+      };
+    });
+  };
+
+  window.addEventListener('load', () => {
+    try {
+      fsEnsureSection();
+      window.bindFindingsCentreDashboardV2Navigation();
+      setTimeout(window.bindFindingsCentreDashboardV2Navigation, 300);
+      setTimeout(window.bindFindingsCentreDashboardV2Navigation, 1000);
+    } catch (error) {
+      console.warn('Findings Centre v2.0.1 visible hotfix failed:', error);
+    }
+  });
+})();
