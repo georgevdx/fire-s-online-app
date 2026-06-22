@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v98-home-final-cleanup-v2';
+const APP_VERSION = 'v80-home-recent-inspections';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -16406,9 +16406,9 @@ function ensureExecutiveComplianceDashboardMarkup() {
     </div>
 
     <div class="attention-sites-panel" id="attentionSitesPanel">
-      <div class="attention-sites-title">Sites Requiring Attention</div>
+      <div class="attention-sites-title">Recent Inspections</div>
       <div id="attentionSitesList" class="attention-sites-list">
-        <div class="attention-empty">No scored site data yet.</div>
+        <div class="attention-empty">No recent inspections yet.</div>
       </div>
     </div>
   `;
@@ -16433,38 +16433,49 @@ function ensureExecutiveComplianceDashboardMarkup() {
   if (inspectionsButton) inspectionsButton.addEventListener('click', openInspectionsCommand);
 }
 
-function renderAttentionSites(stats) {
+function renderAttentionSites(projectsOrStats) {
   const list = document.getElementById('attentionSitesList');
   if (!list) return;
 
-  const sites = stats?.topAttentionSites || [];
+  const sourceProjects = Array.isArray(projectsOrStats)
+    ? projectsOrStats
+    : (typeof getHomeCommandProjects === 'function' ? getHomeCommandProjects() : []);
 
-  if (sites.length === 0) {
-    list.innerHTML = '<div class="attention-empty">No scored site data yet. Complete inspections to build the compliance ranking.</div>';
+  const recentInspections = sourceProjects
+    .slice()
+    .sort((a, b) => {
+      const aTime = new Date(fireSGetInspectionDisplayDate(a) || 0).getTime() || 0;
+      const bTime = new Date(fireSGetInspectionDisplayDate(b) || 0).getTime() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 5);
+
+  if (recentInspections.length === 0) {
+    list.innerHTML = '<div class="attention-empty">No recent inspections yet.</div>';
     return;
   }
 
-  list.innerHTML = sites.map(site => `
-    <button type="button" class="attention-site-row" data-site-key="${escapeHtml(site.key)}">
-      <span class="attention-site-name">${escapeHtml(site.label)}</span>
-      <span class="attention-site-meta">${site.findings} finding${site.findings === 1 ? '' : 's'} · ${site.inspections} inspection${site.inspections === 1 ? '' : 's'}</span>
-      <strong>${site.percentage}%</strong>
-    </button>
-  `).join('');
+  list.innerHTML = recentInspections.map(project => {
+    const noCount = fireSGetNoCount(project);
+    const compliance = fireSGetCompliancePercent(project);
+    const complianceText =
+      compliance === null || compliance === undefined
+        ? 'No score'
+        : `${compliance}%`;
 
-  list.querySelectorAll('.attention-site-row').forEach(button => {
-    button.addEventListener('click', () => {
-      showProjectList();
-      setTimeout(() => {
-        const search = document.getElementById('projectSearch');
-        if (search) {
-          search.value = button.querySelector('.attention-site-name')?.textContent || '';
-          search.dispatchEvent(new Event('input'));
-          search.focus();
-        }
-      }, 150);
-    });
-  });
+    const title = fireSGetProjectDisplayName(project);
+    const dateText = fireSFormatShortDate(fireSGetInspectionDisplayDate(project));
+    const meta = `${dateText} · ${noCount} finding${noCount === 1 ? '' : 's'}`;
+    const projectId = fireSHomeSafeText(project?.id || '');
+
+    return `
+      <button type="button" class="attention-site-row" onclick="openProject('${projectId}')">
+        <span class="attention-site-name">${fireSHomeSafeText(title)}</span>
+        <span class="attention-site-meta">${fireSHomeSafeText(meta)}</span>
+        <strong>${fireSHomeSafeText(complianceText)}</strong>
+      </button>
+    `;
+  }).join('');
 }
 
 function openFindingsCommand() {
@@ -17260,6 +17271,14 @@ function renderHomeRecentActivity(projects) {
   }).join('');
 }
 
+
+function removeHomeRecentActivityPanel() {
+  const panel = document.getElementById('homeRecentActivityPanel');
+  if (panel) {
+    panel.remove();
+  }
+}
+
 function cleanupDuplicateHomeKpiCards() {
   const centre = document.getElementById('mainCommandCentre');
   if (!centre) return;
@@ -17531,8 +17550,8 @@ function renderHomeCommandCentre() {
     subtitleEl.textContent = 'Select a workspace action below to inspect, report or manage company data.';
   }
 
-  renderAttentionSites(stats);
-  renderHomeRecentActivity(projects);
+  renderAttentionSites(projects);
+  removeHomeRecentActivityPanel();
   cleanupDuplicateHomeKpiCards();
   setHomeActionCardLabels();
   bindFinalHomeNavigationTargets();
