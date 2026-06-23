@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v84-exec-dashboard-count-sync-v1-1';
+const APP_VERSION = 'v85-activity-date-fix-v1-0';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -9500,17 +9500,32 @@ function getInspectionGatewayDateFilters() {
 }
 
 function getProjectDateForFiltering(project) {
-  // Gateway date filtering must use the actual inspection record date,
-  // not follow-up / scheduled dates. Otherwise old inspections with future
-  // follow-up dates incorrectly appear inside the selected date range.
+  /*
+    Fire-S Activity Date Fix v1.0
+
+    Date filters must reflect real work activity.
+    If an old inspection is opened today, photos/comments are added,
+    and the inspection is finalized today, it must count under Today / This Week.
+
+    Priority:
+    1. completedAt  - finalized today
+    2. lastSaved    - edited today
+    3. inspectionDate
+    4. updatedAt / updated_at
+    5. createdAt / created_at
+    6. scheduledDate / followUpDate
+  */
   return normaliseDateString(
+    project?.completedAt ||
+    project?.lastSaved ||
     project?.inspectionDate ||
     project?.inspection_date ||
     project?.updatedAt ||
     project?.updated_at ||
     project?.createdAt ||
     project?.created_at ||
-    project?.lastSaved ||
+    project?.scheduledDate ||
+    project?.followUpDate ||
     ''
   );
 }
@@ -19183,3 +19198,99 @@ setTimeout(() => {
     console.warn('Executive Dashboard Count Sync v1.1 failed:', error);
   }
 }, 700);
+
+
+
+
+/* =====================================================
+   FIRE-S Activity Date Fix v1.0
+   Ensures Today / This Week / This Month use real activity dates.
+   ===================================================== */
+
+function fireSGetActivityDateForFiltering(project) {
+  return normaliseDateString(
+    project?.completedAt ||
+    project?.lastSaved ||
+    project?.inspectionDate ||
+    project?.inspection_date ||
+    project?.updatedAt ||
+    project?.updated_at ||
+    project?.createdAt ||
+    project?.created_at ||
+    project?.scheduledDate ||
+    project?.followUpDate ||
+    ''
+  );
+}
+
+function getProjectDateForFiltering(project) {
+  return fireSGetActivityDateForFiltering(project);
+}
+
+function fireSDateIsToday(dateValue) {
+  const dateText = normaliseDateString(dateValue);
+  if (!dateText) return false;
+
+  return dateText === new Date().toISOString().slice(0, 10);
+}
+
+function fireSDateIsThisWeek(dateValue) {
+  const dateText = normaliseDateString(dateValue);
+  if (!dateText) return false;
+
+  const date = new Date(dateText + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const day = today.getDay(); // Sunday = 0
+  const daysFromMonday = (day + 6) % 7;
+
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - daysFromMonday);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return date >= weekStart && date <= weekEnd;
+}
+
+function fireSDateIsThisMonth(dateValue) {
+  const dateText = normaliseDateString(dateValue);
+  if (!dateText) return false;
+
+  const date = new Date(dateText + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return false;
+
+  const today = new Date();
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth()
+  );
+}
+
+function projectMatchesToday(project) {
+  return fireSDateIsToday(fireSGetActivityDateForFiltering(project));
+}
+
+function projectMatchesThisWeek(project) {
+  return fireSDateIsThisWeek(fireSGetActivityDateForFiltering(project));
+}
+
+function projectMatchesThisMonth(project) {
+  return fireSDateIsThisMonth(fireSGetActivityDateForFiltering(project));
+}
+
+function refreshActivityDateFiltersAfterPatch() {
+  try {
+    if (typeof renderProjectsList === 'function') renderProjectsList();
+    if (typeof renderHomeCommandCentre === 'function') renderHomeCommandCentre();
+  } catch (error) {
+    console.warn('Activity Date Fix refresh failed:', error);
+  }
+}
+
+setTimeout(refreshActivityDateFiltersAfterPatch, 500);
