@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v85-activity-date-fix-v1-0';
+const APP_VERSION = 'v86-compact-cards-premises-search-v1-0';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19294,3 +19294,545 @@ function refreshActivityDateFiltersAfterPatch() {
 }
 
 setTimeout(refreshActivityDateFiltersAfterPatch, 500);
+
+
+
+
+/* =====================================================
+   FIRE-S Compact Inspection Cards + Premises Search v1.0
+   - Compact Gateway inspection cards
+   - Premises dropdown search
+   - Removes duplicated info from cards
+   ===================================================== */
+
+let fireSPremisesDropdownFilter = '';
+
+function fireSEscapeSelectValue(value) {
+  return String(value || '')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function fireSGetProjectTitle(project) {
+  return (
+    project?.projectName ||
+    [project?.organisationName, project?.siteName]
+      .filter(Boolean)
+      .join(' - ') ||
+    'Untitled Premises'
+  );
+}
+
+function fireSGetProjectAddress(project) {
+  return (
+    project?.projectAddress ||
+    combineStreetAddress(project?.streetNumber, project?.addressLine) ||
+    project?.addressLine ||
+    'No address captured'
+  );
+}
+
+function fireSGetPremisesKey(project) {
+  return [
+    fireSGetProjectTitle(project),
+    fireSGetProjectAddress(project)
+  ]
+    .map(value => String(value || '').trim().toLowerCase())
+    .join('|');
+}
+
+function fireSGetPremisesLabel(project) {
+  const title = fireSGetProjectTitle(project);
+  const address = fireSGetProjectAddress(project);
+
+  if (!address || address === 'No address captured') {
+    return title;
+  }
+
+  return `${title} — ${address}`;
+}
+
+function fireSBuildPremisesOptions(projects) {
+  const map = new Map();
+
+  (projects || []).forEach(project => {
+    const key = fireSGetPremisesKey(project);
+    if (!key || map.has(key)) return;
+
+    map.set(key, fireSGetPremisesLabel(project));
+  });
+
+  return Array.from(map.entries())
+    .sort((a, b) => a[1].localeCompare(b[1]));
+}
+
+function fireSEnsurePremisesDropdown(projects) {
+  const searchField = document.getElementById('projectSearch');
+  if (!searchField) return;
+
+  let wrapper = document.getElementById('premisesSearchWrapper');
+
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.id = 'premisesSearchWrapper';
+    wrapper.className = 'premises-search-wrapper';
+
+    wrapper.innerHTML = `
+      <label for="premisesQuickSelect">Quick premises lookup</label>
+      <select id="premisesQuickSelect">
+        <option value="">All premises</option>
+      </select>
+    `;
+
+    searchField.insertAdjacentElement('afterend', wrapper);
+  }
+
+  const select = document.getElementById('premisesQuickSelect');
+  if (!select) return;
+
+  const currentValue = fireSPremisesDropdownFilter || select.value || '';
+  const options = fireSBuildPremisesOptions(projects);
+
+  select.innerHTML = `
+    <option value="">All premises</option>
+    ${options.map(([key, label]) => `
+      <option value="${fireSEscapeSelectValue(key)}">
+        ${escapeHtml(label)}
+      </option>
+    `).join('')}
+  `;
+
+  if (currentValue && options.some(([key]) => key === currentValue)) {
+    select.value = currentValue;
+  } else {
+    select.value = '';
+    fireSPremisesDropdownFilter = '';
+  }
+
+  if (select.dataset.fireSBound !== 'true') {
+    select.dataset.fireSBound = 'true';
+
+    select.addEventListener('change', () => {
+      fireSPremisesDropdownFilter = select.value || '';
+      currentProjectPage = 1;
+      renderProjectsList();
+      updateDashboardSelection();
+    });
+  }
+}
+
+function projectMatchesGatewayBaseFilters(project, searchText) {
+  const normalizedSearch = String(searchText || '').trim().toLowerCase();
+
+  if (fireSPremisesDropdownFilter) {
+    if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) {
+      return false;
+    }
+  }
+
+  if (normalizedSearch) {
+    const placeName = (project.projectName || '').toLowerCase();
+    const organisationName = (project.organisationName || '').toLowerCase();
+    const siteName = (project.siteName || '').toLowerCase();
+    const address = (project.projectAddress || project.addressLine || '').toLowerCase();
+    const mallName = (project.mallName || '').toLowerCase();
+    const unitNumber = (project.unitNumber || '').toLowerCase();
+    const moduleName = normalizeProductType(project.productType).toLowerCase();
+    const inspectionType = (project.inspectionType || '').toLowerCase();
+    const inspectorName = (project.inspectorName || '').toLowerCase();
+    const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
+    const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
+
+    const matchesSearch =
+      placeName.includes(normalizedSearch) ||
+      organisationName.includes(normalizedSearch) ||
+      siteName.includes(normalizedSearch) ||
+      address.includes(normalizedSearch) ||
+      mallName.includes(normalizedSearch) ||
+      unitNumber.includes(normalizedSearch) ||
+      moduleName.includes(normalizedSearch) ||
+      inspectionType.includes(normalizedSearch) ||
+      inspectorName.includes(normalizedSearch) ||
+      inspectionNumber.includes(normalizedSearch) ||
+      inspectionDate.includes(normalizedSearch);
+
+    if (!matchesSearch) return false;
+  }
+
+  return projectMatchesInspectionDateFilter(project);
+}
+
+function fireSGetCompactCardStatus(project) {
+  const completion = getProjectCompletionCounts(project);
+  const scheduleStatus =
+    typeof getProjectScheduleStatus === 'function'
+      ? getProjectScheduleStatus(project)
+      : { className: '' };
+
+  if (scheduleStatus.className === 'schedule-overdue' || hasProjectOverdueActions(project)) {
+    return {
+      label: 'Overdue',
+      className: 'compact-status-overdue'
+    };
+  }
+
+  if (completion.noCount > 0) {
+    return {
+      label: 'Action Required',
+      className: 'compact-status-action'
+    };
+  }
+
+  if (isProjectCompliantForGateway(project)) {
+    return {
+      label: 'Compliant',
+      className: 'compact-status-compliant'
+    };
+  }
+
+  return {
+    label: 'In Progress',
+    className: 'compact-status-progress'
+  };
+}
+
+function fireSGetCompactCardFacts(project) {
+  const completion = getProjectCompletionCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const facts = [];
+
+  if (completion.noCount > 0) {
+    facts.push(`${completion.noCount} action${completion.noCount === 1 ? '' : 's'}`);
+  }
+
+  if (completion.unanswered > 0) {
+    facts.push(`${completion.unanswered} unanswered`);
+  }
+
+  if (dataQuality.count > 0) {
+    facts.push(`${dataQuality.count} missing info`);
+  }
+
+  if (expiryCounts.overdue > 0) {
+    facts.push(`${expiryCounts.overdue} expired`);
+  }
+
+  if (expiryCounts.soon > 0) {
+    facts.push(`${expiryCounts.soon} due soon`);
+  }
+
+  return facts.length ? facts.join(' · ') : 'No urgent flags';
+}
+
+function fireSGetCompactScheduleText(project) {
+  const scheduleDisplay =
+    typeof getProjectScheduleDisplay === 'function'
+      ? getProjectScheduleDisplay(project)
+      : { hasDisplay: false };
+
+  if (scheduleDisplay?.hasDisplay) {
+    return scheduleDisplay.chip || scheduleDisplay.title || '';
+  }
+
+  return '';
+}
+
+function getInspectionCardActionHtml(project, index) {
+  const completion = getProjectCompletionCounts(project);
+  const hasFindings = completion.noCount > 0;
+  const projectIdJs = JSON.stringify(project?.id || '');
+
+  return `
+    <div class="compact-card-actions">
+      <button
+        type="button"
+        class="compact-card-btn primary"
+        onclick='event.stopPropagation(); openProject(${projectIdJs})'
+      >
+        Open
+      </button>
+
+      ${
+        hasFindings
+          ? `
+            <button
+              type="button"
+              class="compact-card-btn danger"
+              onclick='event.stopPropagation(); openProjectAndReviewFindings(${projectIdJs})'
+            >
+              Actions
+            </button>
+          `
+          : ''
+      }
+
+      <button
+        type="button"
+        class="compact-card-btn muted"
+        onclick="event.stopPropagation(); toggleInspectionCardMore(${index})"
+      >
+        More
+      </button>
+    </div>
+
+    <div
+      id="inspectionCardMore_${index}"
+      class="inspection-card-more-panel compact-more-panel"
+      style="display:none;"
+    >
+      <button
+        type="button"
+        onclick='event.stopPropagation(); openProject(${projectIdJs})'
+      >
+        Edit / Continue
+      </button>
+
+      <button
+        type="button"
+        onclick='event.stopPropagation(); openProjectAndGoToSchedule(${projectIdJs})'
+      >
+        Schedule / Cycle
+      </button>
+
+      <button
+        type="button"
+        onclick='event.stopPropagation(); openProjectAndGenerateReport(${projectIdJs})'
+      >
+        Report
+      </button>
+    </div>
+  `;
+}
+
+function renderProjectsList() {
+  const container = getEl('projectsList');
+
+  if (!currentUserProfile) {
+    currentUserProfile = {
+      id: 'local-user',
+      email: 'local@fire-s.app',
+      fullName: 'Local User',
+      role: 'super_admin',
+      companyId: null,
+      companyName: 'Local / Personal Workspace'
+    };
+
+    currentCompanyAccess = {
+      status: 'active',
+      plan: 'local',
+      source: 'local-fallback'
+    };
+  }
+
+  const allProjects = getProjects();
+  const projects = getVisibleProjectsForCurrentUser(allProjects);
+
+  fireSEnsurePremisesDropdown(projects);
+
+  updateAppInfo();
+  renderDashboardMetrics(projects);
+  updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
+  updatePostSiteSyncReminder();
+
+  const searchField = document.getElementById('projectSearch');
+  const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
+
+  container.innerHTML = '';
+
+  const baseFilteredProjects = projects.filter(project =>
+    projectMatchesGatewayBaseFilters(project, searchText)
+  );
+
+  const filteredProjects = baseFilteredProjects.filter(project =>
+    projectMatchesInspectionGatewayQuickFilter(project, currentFilter)
+  );
+
+  updateActiveFilterStatus(filteredProjects.length);
+
+  const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(baseFilteredProjects);
+
+  filteredProjects.sort((a, b) => {
+    if (currentFilter === 'scheduled-new') {
+      const aDate = a.scheduledDate || a.followUpDate || a.lastSaved || '';
+      const bDate = b.scheduledDate || b.followUpDate || b.lastSaved || '';
+
+      const aTime = aDate ? new Date(aDate).getTime() : Number.MAX_SAFE_INTEGER;
+      const bTime = bDate ? new Date(bDate).getTime() : Number.MAX_SAFE_INTEGER;
+
+      return aTime - bTime;
+    }
+
+    const getProjectPriority = project => {
+      const followStatus = getFollowUpStatus(project);
+      const expiryCounts = getProjectExpiryCounts(project);
+      const hasHighRisk = project.answers?.some(
+        answer => String(answer.answer || '').trim().toLowerCase() === 'no'
+      );
+
+      if (hasHighRisk) return 1;
+      if (expiryCounts.overdue > 0) return 2;
+      if (followStatus.class === 'status-overdue') return 3;
+      if (expiryCounts.soon > 0) return 4;
+      if (followStatus.class === 'status-soon') return 5;
+      return 6;
+    };
+
+    const priorityDiff = getProjectPriority(a) - getProjectPriority(b);
+    if (priorityDiff !== 0) return priorityDiff;
+
+    const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+    const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+    return bTime - aTime;
+  });
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+  );
+
+  if (currentProjectPage > totalPages) {
+    currentProjectPage = totalPages;
+  }
+
+  const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
+  const visibleProjects = filteredProjects.slice(
+    startIndex,
+    startIndex + PROJECTS_PER_PAGE
+  );
+
+  const pagingControls = document.getElementById('projectPagingControls');
+
+  if (pagingControls) {
+    pagingControls.innerHTML = `
+      <button
+        type="button"
+        onclick="previousProjectPage()"
+        ${currentProjectPage === 1 ? 'disabled' : ''}
+      >
+        Previous
+      </button>
+
+      <span>
+        Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
+        -
+        ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
+        of ${filteredProjects.length}
+      </span>
+
+      <button
+        type="button"
+        onclick="nextProjectPage()"
+        ${currentProjectPage >= totalPages ? 'disabled' : ''}
+      >
+        Next
+      </button>
+    `;
+  }
+
+  if (filteredProjects.length === 0) {
+    container.innerHTML = `
+      ${gatewayQuickFilterHtml}
+      <div class="empty-state">No matching inspections found.</div>
+    `;
+    return;
+  }
+
+  window.currentProjectsListView = visibleProjects;
+
+  container.innerHTML = `
+    ${gatewayQuickFilterHtml}
+    <div id="projectListView" class="inspection-project-list compact-inspection-list">
+      ${visibleProjects.map((project, index) => {
+        const projectTitle = fireSGetProjectTitle(project);
+        const projectAddress = fireSGetProjectAddress(project);
+        const inspectionDate = getProjectInspectionDate(project);
+        const status = fireSGetCompactCardStatus(project);
+        const facts = fireSGetCompactCardFacts(project);
+        const scheduleText = fireSGetCompactScheduleText(project);
+        const primaryAction = getProjectPrimaryAction(project);
+        const visualClass = getInspectionCardVisualClass(project);
+        const projectIdJs = JSON.stringify(project.id || '');
+
+        return `
+          <article
+            class="compact-inspection-card ${escapeHtml(visualClass)}"
+            role="button"
+            tabindex="0"
+            onclick='event.stopPropagation(); openProject(${projectIdJs})'
+            onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
+          >
+            <div class="compact-card-main">
+              <div class="compact-card-title-row">
+                <strong class="compact-card-title">${escapeHtml(projectTitle)}</strong>
+                <span class="compact-status-badge ${escapeHtml(status.className)}">
+                  ${escapeHtml(status.label)}
+                </span>
+              </div>
+
+              <div class="compact-card-address">
+                ${escapeHtml(projectAddress)}
+              </div>
+
+              <div class="compact-card-meta">
+                <span>${escapeHtml(project.inspectionNumber || 'No inspection number')}</span>
+                ${
+                  inspectionDate
+                    ? `<span>${escapeHtml(formatInspectionDate(inspectionDate))}</span>`
+                    : ''
+                }
+                ${
+                  scheduleText
+                    ? `<span>${escapeHtml(scheduleText)}</span>`
+                    : ''
+                }
+              </div>
+
+              <div class="compact-card-facts">
+                ${escapeHtml(facts)}
+              </div>
+            </div>
+
+            <div class="compact-card-side">
+              <span class="compact-primary-action ${escapeHtml(primaryAction.className)}">
+                ${escapeHtml(primaryAction.label)}
+              </span>
+
+              ${getInspectionCardActionHtml(project, index)}
+            </div>
+          </article>
+        `;
+      }).join('')}
+    </div>
+
+    <div
+      id="projectSummaryDetailCard"
+      class="project-summary-detail-card"
+      style="display:none;"
+    ></div>
+  `;
+
+  if (currentProjectSummaryId) {
+    const restoredIndex = visibleProjects.findIndex(
+      project => project.id === currentProjectSummaryId
+    );
+
+    if (restoredIndex !== -1) {
+      setTimeout(() => {
+        openProjectSummaryCard(restoredIndex, false);
+      }, 0);
+    }
+  }
+}
+
+setTimeout(() => {
+  try {
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    fireSEnsurePremisesDropdown(projects);
+  } catch (error) {
+    console.warn('Premises dropdown init failed:', error);
+  }
+}, 500);

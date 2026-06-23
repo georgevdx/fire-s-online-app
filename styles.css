@@ -9686,3 +9686,243 @@ body > #actionDropdown.action-dropdown button:last-child {
   white-space: normal;
   line-height: 1.15;
 }
+
+
+
+
+/* =====================================================
+   FIRE-S Compact Inspection Cards + Premises Search v1.0
+   ===================================================== */
+
+.premises-search-wrapper {
+  margin: 0 0 12px 0;
+  padding: 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.premises-search-wrapper label {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  font-weight: 900;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#premisesQuickSelect {
+  width: 100%;
+  max-width: none;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+}
+
+.compact-inspection-list {
+  display: grid;
+  gap: 10px;
+}
+
+.compact-inspection-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #d8dee9;
+  background: #fff;
+  border-left-width: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.compact-inspection-card:hover,
+.compact-inspection-card:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+}
+
+.compact-card-main {
+  min-width: 0;
+}
+
+.compact-card-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.compact-card-title {
+  font-size: 16px;
+  line-height: 1.2;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.compact-card-address {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.compact-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.compact-card-meta span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.compact-card-facts {
+  margin-top: 7px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.compact-card-side {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  align-items: center;
+  min-width: 145px;
+}
+
+.compact-status-badge,
+.compact-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 190px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.compact-status-action {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #e57373;
+}
+
+.compact-status-overdue {
+  background: #fff3e0;
+  color: #ef6c00;
+  border-color: #ffb74d;
+}
+
+.compact-status-progress {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-color: #64b5f6;
+}
+
+.compact-status-compliant {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #81c784;
+}
+
+.compact-primary-action {
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #bfdbfe;
+}
+
+.compact-primary-action.action-danger {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #e57373;
+}
+
+.compact-primary-action.action-warning {
+  background: #fff3e0;
+  color: #ef6c00;
+  border-color: #ffb74d;
+}
+
+.compact-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.compact-card-btn {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.compact-card-btn.primary {
+  background: #1565c0;
+}
+
+.compact-card-btn.danger {
+  background: #b71c1c;
+}
+
+.compact-card-btn.muted {
+  background: #64748b;
+}
+
+.compact-more-panel {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.compact-more-panel button {
+  width: auto;
+  max-width: none;
+  margin: 3px;
+  padding: 8px 10px;
+  background: #334155;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .compact-inspection-card {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-card-title-row {
+    display: grid;
+    gap: 8px;
+  }
+
+  .compact-card-side {
+    justify-items: start;
+    min-width: 0;
+  }
+
+  .compact-card-actions {
+    justify-content: flex-start;
+  }
+}
