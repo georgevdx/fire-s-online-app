@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v82-executive-dashboard-v1-1';
+const APP_VERSION = 'v83-executive-activity-feed-v1-0';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -18679,3 +18679,258 @@ setTimeout(() => {
     console.warn('Executive Dashboard v1.1 refresh failed:', error);
   }
 }, 500);
+
+
+
+/* =====================================================
+   FIRE-S Executive Activity Feed v1.0
+   Status badges for Recent Inspections + Executive KPI sync
+   ===================================================== */
+
+function fsActivityAnswerValue(answer) {
+  return String(answer?.answer || '').trim().toLowerCase();
+}
+
+function fsActivityHasActionRequired(project) {
+  const answers = Array.isArray(project?.answers) ? project.answers : [];
+  return answers.some(answer => fsActivityAnswerValue(answer) === 'no');
+}
+
+function fsActivityIsClosed(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.archivedAt ||
+    project?.scheduledStatus === 'completed' ||
+    project?.archiveStatus === 'completed'
+  );
+}
+
+function fsActivityIsOverdue(project) {
+  if (!project || fsActivityIsClosed(project)) return false;
+
+  const dateValue =
+    project?.scheduledDate ||
+    project?.followUpDate ||
+    '';
+
+  if (!dateValue) return false;
+
+  return String(dateValue).slice(0, 10) < new Date().toISOString().slice(0, 10);
+}
+
+function fsActivityHasStarted(project) {
+  const answers = Array.isArray(project?.answers) ? project.answers : [];
+  return Boolean(
+    project?.lastSaved ||
+    project?.inspectionDate ||
+    answers.some(answer => fsActivityAnswerValue(answer))
+  );
+}
+
+function getExecutiveInspectionStatus(project) {
+  if (fsActivityIsOverdue(project)) {
+    return {
+      label: 'Overdue',
+      icon: '🟠',
+      className: 'executive-status-badge executive-status-overdue'
+    };
+  }
+
+  if (fsActivityHasActionRequired(project)) {
+    return {
+      label: 'Action Required',
+      icon: '🔴',
+      className: 'executive-status-badge executive-status-action'
+    };
+  }
+
+  if (!fsActivityIsClosed(project) && fsActivityHasStarted(project)) {
+    return {
+      label: 'In Progress',
+      icon: '🔵',
+      className: 'executive-status-badge executive-status-progress'
+    };
+  }
+
+  if (fsActivityIsClosed(project)) {
+    return {
+      label: 'Compliant',
+      icon: '🟢',
+      className: 'executive-status-badge executive-status-compliant'
+    };
+  }
+
+  return {
+    label: 'In Progress',
+    icon: '🔵',
+    className: 'executive-status-badge executive-status-progress'
+  };
+}
+
+function renderAttentionSites(projectsOrStats) {
+  const list = document.getElementById('attentionSitesList');
+  if (!list) return;
+
+  const sourceProjects = Array.isArray(projectsOrStats)
+    ? projectsOrStats
+    : (typeof fsExecutiveGetProjects === 'function'
+      ? fsExecutiveGetProjects()
+      : (typeof getHomeCommandProjects === 'function' ? getHomeCommandProjects() : []));
+
+  const recentInspections = sourceProjects
+    .slice()
+    .sort((a, b) => {
+      const aTime = new Date(fireSGetInspectionDisplayDate(a) || a?.lastSaved || 0).getTime() || 0;
+      const bTime = new Date(fireSGetInspectionDisplayDate(b) || b?.lastSaved || 0).getTime() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 5);
+
+  if (recentInspections.length === 0) {
+    list.innerHTML = '<div class="attention-empty">No recent inspections yet.</div>';
+    return;
+  }
+
+  list.innerHTML = recentInspections.map(project => {
+    const status = getExecutiveInspectionStatus(project);
+    const title = typeof fireSGetProjectDisplayName === 'function'
+      ? fireSGetProjectDisplayName(project)
+      : (project?.projectName || project?.siteName || 'Unnamed inspection');
+    const dateText = typeof fireSFormatShortDate === 'function'
+      ? fireSFormatShortDate((typeof fireSGetInspectionDisplayDate === 'function' ? fireSGetInspectionDisplayDate(project) : project?.lastSaved))
+      : '-';
+    const projectId = typeof fireSHomeSafeText === 'function'
+      ? fireSHomeSafeText(project?.id || '')
+      : String(project?.id || '');
+    const safeTitle = typeof fireSHomeSafeText === 'function'
+      ? fireSHomeSafeText(title)
+      : String(title || '');
+    const safeDate = typeof fireSHomeSafeText === 'function'
+      ? fireSHomeSafeText(dateText)
+      : String(dateText || '');
+
+    return `
+      <button type="button" class="attention-site-row executive-activity-row" onclick="openProject('${projectId}')">
+        <span class="attention-site-name">${safeTitle}</span>
+        <span class="attention-site-meta">${safeDate}</span>
+        <strong class="${status.className}">${status.icon} ${status.label}</strong>
+      </button>
+    `;
+  }).join('');
+}
+
+function fsActivitySetExecutiveLabels() {
+  const labelPairs = [
+    ['cmdComplianceFindingsBtn', 'Premises Requiring Action'],
+    ['cmdComplianceOverdueBtn', 'Overdue Inspections'],
+    ['cmdComplianceSitesBtn', 'Compliant Sites'],
+    ['cmdComplianceInspectionsBtn', 'Inspections This Month'],
+    ['cmdDashboardBtn', 'Compliant Sites'],
+    ['cmdFindingsBtn', 'Premises Requiring Action'],
+    ['cmdOverdueBtn', 'Overdue Inspections']
+  ];
+
+  labelPairs.forEach(([id, label]) => {
+    const button = document.getElementById(id);
+    if (!button) return;
+
+    const statLabel = button.querySelector('.stat-label');
+    if (statLabel) statLabel.textContent = label;
+
+    const strong = button.querySelector('strong');
+    if (strong) strong.textContent = label;
+  });
+
+  const photoNumber = document.getElementById('cmdPhotoCount');
+  const photoCard = photoNumber?.closest('.main-stat-card');
+  const photoLabel = photoCard?.querySelector('.stat-label');
+  if (photoLabel) photoLabel.textContent = 'Inspections This Month';
+}
+
+function renderHomeCommandCentre() {
+  if (typeof ensureFinalHomeDashboardStyles === 'function') ensureFinalHomeDashboardStyles();
+  if (typeof ensureExecutiveComplianceDashboardMarkup === 'function') ensureExecutiveComplianceDashboardMarkup();
+  if (typeof cleanupDuplicateHomeKpiCards === 'function') cleanupDuplicateHomeKpiCards();
+
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  const projects = typeof fsExecutiveGetProjects === 'function'
+    ? fsExecutiveGetProjects()
+    : (typeof getHomeCommandProjects === 'function' ? getHomeCommandProjects() : []);
+
+  const kpis = typeof fsExecutiveGetKpis === 'function'
+    ? fsExecutiveGetKpis()
+    : {
+      projects,
+      premisesRequiringAction: projects.filter(fsActivityHasActionRequired).length,
+      overdueInspections: projects.filter(fsActivityIsOverdue).length,
+      compliantSites: projects.filter(project => fsActivityIsClosed(project) && !fsActivityHasActionRequired(project)).length,
+      inspectionsThisMonth: projects.filter(project => {
+        const value = project?.completedAt || project?.archivedAt || '';
+        if (!value) return false;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return false;
+        const now = new Date();
+        return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+      }).length
+    };
+
+  const scoreEl = document.getElementById('cmdComplianceScore');
+  const scoreLabelEl = document.getElementById('cmdComplianceScoreLabel');
+  const heroTitle = document.getElementById('complianceHeroTitle');
+  const heroSubtitle = document.getElementById('complianceHeroSubtitle');
+  const modePill = document.getElementById('complianceModePill');
+
+  if (scoreEl) scoreEl.textContent = `${kpis.compliantSites}`;
+  if (scoreLabelEl) scoreLabelEl.textContent = 'Compliant Sites';
+  if (heroTitle) heroTitle.textContent = 'Executive Compliance Dashboard';
+  if (heroSubtitle) heroSubtitle.textContent = 'Premises requiring action, overdue inspections and recent status activity.';
+  if (modePill && typeof getRoleLandingLabel === 'function') modePill.textContent = getRoleLandingLabel();
+
+  const openPremisesEl = document.getElementById('cmdComplianceOpenFindings');
+  const overdueEl = document.getElementById('cmdComplianceOverdueActions');
+  const sitesEl = document.getElementById('cmdComplianceSites');
+  const inspectionsEl = document.getElementById('cmdComplianceInspections');
+
+  if (openPremisesEl) openPremisesEl.textContent = kpis.premisesRequiringAction;
+  if (overdueEl) overdueEl.textContent = kpis.overdueInspections;
+  if (sitesEl) sitesEl.textContent = kpis.compliantSites;
+  if (inspectionsEl) inspectionsEl.textContent = kpis.inspectionsThisMonth;
+
+  if (typeof fsExecutiveSetText === 'function') {
+    fsExecutiveSetText('cmdOpenFindings', kpis.premisesRequiringAction);
+    fsExecutiveSetText('cmdOverdueItems', kpis.overdueInspections);
+    fsExecutiveSetText('cmdTotalInspections', kpis.compliantSites);
+    fsExecutiveSetText('cmdPhotoCount', kpis.inspectionsThisMonth);
+  }
+
+  fsActivitySetExecutiveLabels();
+
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  if (accessEl) {
+    const companyName = currentUserProfile?.companyName || currentCompanyAccess?.companyName || 'Local Workspace';
+    const role = currentUserProfile?.role || 'local';
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent = `${kpis.premisesRequiringAction} premise${kpis.premisesRequiringAction === 1 ? '' : 's'} require action, ${kpis.overdueInspections} inspection${kpis.overdueInspections === 1 ? '' : 's'} overdue.`;
+  }
+
+  renderAttentionSites(projects);
+
+  if (typeof removeHomeRecentActivityPanel === 'function') removeHomeRecentActivityPanel();
+  if (typeof setHomeActionCardLabels === 'function') setHomeActionCardLabels();
+  if (typeof bindFinalHomeNavigationTargets === 'function') bindFinalHomeNavigationTargets();
+}
+
+setTimeout(() => {
+  try {
+    renderHomeCommandCentre();
+  } catch (error) {
+    console.warn('Executive Activity Feed v1.0 failed:', error);
+  }
+}, 600);
