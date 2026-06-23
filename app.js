@@ -18677,3 +18677,138 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 300);
 })();
+
+
+
+
+/* =====================================================
+   FIRE-S Executive Dashboard Open Premises Fix v1.3
+   Purpose:
+   - Rename Open Action Items to Open Premises with Actions Required
+   - Count inspections/premises with at least one NO answer, not total NO answers
+   - Clicking the KPI opens Inspection Gateway with the Needs Attention filter
+   ===================================================== */
+(function () {
+
+  function fsProjectsForDashboard() {
+    try {
+      const projects = typeof getProjects === 'function' ? getProjects() : [];
+
+      if (
+        typeof getVisibleProjectsForCurrentUser === 'function' &&
+        typeof currentUserProfile !== 'undefined' &&
+        currentUserProfile
+      ) {
+        return getVisibleProjectsForCurrentUser(projects);
+      }
+
+      return projects;
+    } catch (error) {
+      console.warn('Fire-S dashboard project lookup failed', error);
+      return [];
+    }
+  }
+
+  function fsHasActionsRequired(project) {
+    return Array.isArray(project?.answers) &&
+      project.answers.some(answer =>
+        String(answer?.answer || '').trim().toLowerCase() === 'no'
+      );
+  }
+
+  function fsRenameOpenActionKpi() {
+    const valueEl = document.getElementById('cmdOpenFindings');
+    if (!valueEl) return;
+
+    const card =
+      valueEl.closest('button, article, .command-card, .command-kpi-card, .dashboard-card, .kpi-card, div');
+
+    if (!card) return;
+
+    const walker = document.createTreeWalker(
+      card,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    let node;
+
+    while ((node = walker.nextNode())) {
+      const text = String(node.nodeValue || '');
+
+      if (
+        /Open\s+Action\s+Items/i.test(text) ||
+        /Open\s+Findings/i.test(text) ||
+        /Open\s+Actions/i.test(text)
+      ) {
+        node.nodeValue = text
+          .replace(/Open\s+Action\s+Items/gi, 'Open Premises with Actions Required')
+          .replace(/Open\s+Findings/gi, 'Open Premises with Actions Required')
+          .replace(/Open\s+Actions/gi, 'Open Premises with Actions Required');
+      }
+    }
+
+    card.setAttribute(
+      'title',
+      'Premises / inspections where one or more action items are required.'
+    );
+  }
+
+  function fsUpdateOpenPremisesCount() {
+    const projects = fsProjectsForDashboard();
+    const count = projects.filter(fsHasActionsRequired).length;
+
+    const valueEl = document.getElementById('cmdOpenFindings');
+    if (valueEl) {
+      valueEl.textContent = count;
+    }
+
+    fsRenameOpenActionKpi();
+  }
+
+  function fsOpenPremisesWithActions() {
+    try {
+      showProjectList();
+
+      // This is the existing Gateway filter for inspections requiring attention.
+      currentFilter = 'inspection-attention';
+      currentProjectPage = 1;
+
+      if (typeof renderProjectsList === 'function') {
+        renderProjectsList();
+      }
+
+      if (typeof updateDashboardSelection === 'function') {
+        updateDashboardSelection();
+      }
+
+      const section = document.getElementById('projectListSection');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch (error) {
+      console.warn('Open Premises with Actions navigation failed', error);
+    }
+  }
+
+  // Override only this KPI action. Do not touch the other dashboard cards.
+  window.openFindingsCommand = fsOpenPremisesWithActions;
+  window.openFindingsCentreCommand = fsOpenPremisesWithActions;
+
+  const originalRenderHomeCommandCentre =
+    typeof window.renderHomeCommandCentre === 'function'
+      ? window.renderHomeCommandCentre
+      : null;
+
+  window.renderHomeCommandCentre = function () {
+    if (originalRenderHomeCommandCentre) {
+      originalRenderHomeCommandCentre();
+    }
+
+    fsUpdateOpenPremisesCount();
+  };
+
+  setTimeout(fsUpdateOpenPremisesCount, 300);
+  setTimeout(fsUpdateOpenPremisesCount, 1000);
+
+})();
