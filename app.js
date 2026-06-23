@@ -18479,3 +18479,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 300);
 });
+
+
+
+
+/* =====================================================
+   FIRE-S Executive Dashboard Smart Navigation v1.0
+   ===================================================== */
+(function () {
+
+  function fireSOpenGatewayFilter(filterKey, message) {
+    try {
+      showProjectList();
+      currentFilter = filterKey;
+      currentProjectPage = 1;
+
+      if (typeof renderProjectsList === 'function') {
+        renderProjectsList();
+      }
+
+      if (typeof updateDashboardSelection === 'function') {
+        updateDashboardSelection();
+      }
+
+      const section = document.getElementById('projectListSection');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      if (typeof showMainCommandMessage === 'function' && message) {
+        showMainCommandMessage(message);
+      }
+    } catch (e) {
+      console.warn('Gateway navigation failed', e);
+    }
+  }
+
+  window.openFindingsCommand = function () {
+    fireSOpenGatewayFilter(
+      'risk',
+      'Open Action Items: filtered Inspection Gateway view.'
+    );
+  };
+
+  window.openOverdueCommand = function () {
+    fireSOpenGatewayFilter(
+      'overdue',
+      'Overdue Inspections: filtered Inspection Gateway view.'
+    );
+  };
+
+  window.openInspectionsCommand = function () {
+    fireSOpenGatewayFilter(
+      'month',
+      'Inspections This Month: filtered Inspection Gateway view.'
+    );
+  };
+
+  window.openMainDashboardCommand = function () {
+    fireSOpenGatewayFilter(
+      'compliant',
+      'Compliant Sites: filtered Inspection Gateway view.'
+    );
+  };
+
+})();
