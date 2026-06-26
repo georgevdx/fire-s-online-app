@@ -9689,68 +9689,15 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 
 
-/* FIRE-S Duplicate Premises Decision v1.2 */
-.duplicate-premises-warning {
+/* FIRE-S New Inspection Cycle Draft v1.0 */
+.new-cycle-draft-banner {
   margin: 0 0 14px 0;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid #f59e0b;
-  border-left: 6px solid #f59e0b;
-  background: #fffbeb;
-  color: #78350f;
-  font-size: 13px;
-  line-height: 1.35;
-}
-.duplicate-premises-warning strong {
-  display: block;
-  margin-bottom: 4px;
-  color: #92400e;
-  font-size: 14px;
-}
-.duplicate-premises-warning span {
-  display: block;
-  font-weight: 700;
-}
-.soft-premises-warning {
-  border-color: #60a5fa;
-  border-left-color: #2563eb;
+  border: 1px solid #60a5fa;
+  border-left: 6px solid #2563eb;
   background: #eff6ff;
   color: #1e3a8a;
-}
-.soft-premises-warning strong {
-  color: #1d4ed8;
-}
-
-
-
-/* FIRE-S Duplicate Name Enforcement v1.3 */
-.duplicate-premises-warning {
-  margin: 0 0 14px 0;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #f59e0b;
-  border-left: 6px solid #f59e0b;
-  background: #fffbeb;
-  color: #78350f;
   font-size: 13px;
-  line-height: 1.35;
-}
-.duplicate-premises-warning strong {
-  display: block;
-  margin-bottom: 4px;
-  color: #92400e;
-  font-size: 14px;
-}
-.duplicate-premises-warning span {
-  display: block;
-  font-weight: 700;
-}
-.soft-premises-warning {
-  border-color: #60a5fa;
-  border-left-color: #2563eb;
-  background: #eff6ff;
-  color: #1e3a8a;
-}
-.soft-premises-warning strong {
-  color: #1d4ed8;
+  font-weight: 800;
 }

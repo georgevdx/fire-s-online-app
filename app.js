@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v91-duplicate-name-enforcement-v1-3';
+const APP_VERSION = 'v92-new-inspection-cycle-draft-v1-0';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19298,415 +19298,279 @@ setTimeout(refreshActivityDateFiltersAfterPatch, 500);
 
 
 /* =====================================================
-   FIRE-S Duplicate Name Enforcement v1.3
-
-   Rule:
-   - Same name + same address = existing premises. User may open existing, but may not save duplicate.
-   - Same name + different address = allowed only after site/name is made unique.
-   - Autosave silently skips duplicates. Save/Finish forces a naming change.
+   FIRE-S New Inspection Cycle Draft v1.0
+   Opening a premises card starts a new inspection cycle.
+   Previous inspection is archived, but the new cycle only becomes
+   permanent after Save or Finish.
    ===================================================== */
 
-function fireSNorm(value) {
-  return String(value || '').toLowerCase().trim()
-    .replace(/&/g, ' and ')
-    .replace(/[.,;:()_\-\/\\]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+let fireSActiveInspectionDraft = null;
 
-function fireSNormAddress(value) {
-  return fireSNorm(value)
-    .replace(/\bstreet\b/g, 'st')
-    .replace(/\broad\b/g, 'rd')
-    .replace(/\bavenue\b/g, 'ave')
-    .replace(/\bdrive\b/g, 'dr')
-    .replace(/\bboulevard\b/g, 'blvd')
-    .replace(/\bcorner\b/g, 'cnr')
-    .replace(/\bshop\b/g, 'unit')
-    .trim();
-}
-
-function fireSProjectDisplayName(project) {
-  return (
-    project?.projectName ||
-    [project?.organisationName, project?.siteName].filter(Boolean).join(' ') ||
-    project?.siteName ||
-    project?.organisationName ||
-    'Existing premises'
+function fireSProjectHasInspectionData(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.scheduledStatus === 'completed' ||
+    project?.archiveStatus === 'completed' ||
+    (Array.isArray(project?.answers) && project.answers.length > 0) ||
+    (Array.isArray(project?.photos) && project.photos.length > 0) ||
+    project?.finalComments ||
+    project?.followUpNotes ||
+    project?.inspectionNumber
   );
 }
 
-function fireSProjectDisplayAddress(project) {
-  return project?.projectAddress || project?.addressLine || 'No address captured';
+function fireSShouldStartNewInspectionCycle(project, focusMode) {
+  if (!project) return false;
+  if (focusMode) return false;
+  if (project.fireSNewCycleDraft === true) return false;
+  return fireSProjectHasInspectionData(project);
 }
 
-function fireSPremisesName(project) {
-  const org = String(project?.organisationName || '').trim();
-  const site = String(project?.siteName || '').trim();
-  const pname = String(project?.projectName || '').trim();
-
-  if (org && site) return fireSNorm(`${org} ${site}`);
-  if (site) return fireSNorm(site);
-  if (pname) return fireSNorm(pname);
-  if (org) return fireSNorm(org);
-
-  return '';
-}
-
-function fireSPremisesNameCompact(project) {
-  return fireSPremisesName(project).replace(/\s+/g, '');
-}
-
-function fireSPremisesAddress(project) {
-  return fireSNormAddress(
-    project?.projectAddress ||
-    combineStreetAddress(project?.streetNumber, project?.addressLine) ||
-    project?.addressLine ||
-    ''
-  );
-}
-
-function fireSPremisesUnit(project) {
-  return fireSNorm([project?.mallName, project?.unitNumber].filter(Boolean).join(' '));
-}
-
-function fireSInspectionDuplicateCandidate() {
-  const organisationName = document.getElementById('organisationName')?.value || '';
-  const siteName = document.getElementById('siteName')?.value || '';
-  const streetNumber = document.getElementById('streetNumber')?.value || '';
-  const addressLine = document.getElementById('projectAddress')?.value || '';
+function fireSCreateBlankCycleFromProject(project) {
+  const history = typeof archiveCurrentInspectionCycle === 'function'
+    ? archiveCurrentInspectionCycle(project, 'new_cycle_started')
+    : (project.inspectionHistory || []);
 
   return {
-    id: currentProjectId || '',
-    organisationName,
-    siteName,
-    projectName: [organisationName, siteName].filter(Boolean).join(' '),
-    streetNumber,
-    addressLine,
-    projectAddress: combineStreetAddress(streetNumber, addressLine),
-    mallName: document.getElementById('mallName')?.value || '',
-    unitNumber: document.getElementById('unitNumber')?.value || ''
+    ...project,
+    inspectionHistory: history,
+    hasSiteHistory: history.length > 0,
+    previousInspectionCount: history.length,
+    inspectionNumber: typeof generateInspectionNumber === 'function'
+      ? generateInspectionNumber()
+      : `FIR-${Date.now()}`,
+    inspectionDate: new Date().toISOString().slice(0, 10),
+    completedAt: '',
+    archivedAt: '',
+    answers: [],
+    photos: [],
+    finalComments: '',
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+    scheduledStatus: 'in_progress',
+    scheduleFreshInspection: false,
+    scheduledReason: '',
+    scheduleType: '',
+    scheduledNote: '',
+    fireSNewCycleDraft: true,
+    fireSNewCycleStartedAt: new Date().toISOString(),
+    fireSNewCycleCommittedAt: '',
+    syncPending: false,
+    syncError: false
   };
 }
 
-function fireSScheduleDuplicateCandidate() {
-  const organisationName = document.getElementById('scheduleOrganisationName')?.value || '';
-  const siteName = document.getElementById('scheduleSiteName')?.value || '';
-  const addressLine = document.getElementById('scheduleAddress')?.value || '';
+function fireSStartNewInspectionCycleDraft(projectId) {
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+  if (index === -1) return false;
 
-  return {
-    id: '',
-    organisationName,
-    siteName,
-    projectName: [organisationName, siteName].filter(Boolean).join(' '),
-    streetNumber: '',
-    addressLine,
-    projectAddress: addressLine,
-    mallName: '',
-    unitNumber: ''
+  const originalProject = projects[index];
+
+  fireSActiveInspectionDraft = {
+    projectId,
+    originalProject: JSON.parse(JSON.stringify(originalProject)),
+    dirty: false,
+    committed: false,
+    startedAt: new Date().toISOString()
   };
-}
 
-function fireSDuplicateProjectPool() {
-  const projects = typeof getProjects === 'function' ? getProjects() : [];
+  projects[index] = fireSCreateBlankCycleFromProject(originalProject);
+  setProjects(projects);
 
-  if (typeof getVisibleProjectsForCurrentUser === 'function' && currentUserProfile) {
-    return getVisibleProjectsForCurrentUser(projects);
-  }
+  currentProjectId = projectId;
+  currentPhotos = [];
 
-  return projects;
-}
-
-function fireSClassifyDuplicateName(existing, candidate) {
-  if (!existing || !candidate) return 'none';
-  if (candidate.id && existing.id === candidate.id) return 'none';
-
-  const sameName =
-    fireSPremisesName(existing) &&
-    fireSPremisesName(candidate) &&
-    fireSPremisesName(existing) === fireSPremisesName(candidate);
-
-  const sameCompactName =
-    fireSPremisesNameCompact(existing) &&
-    fireSPremisesNameCompact(candidate) &&
-    fireSPremisesNameCompact(existing) === fireSPremisesNameCompact(candidate);
-
-  if (!sameName && !sameCompactName) return 'none';
-
-  const existingAddress = fireSPremisesAddress(existing);
-  const candidateAddress = fireSPremisesAddress(candidate);
-  const sameAddress = existingAddress && candidateAddress && existingAddress === candidateAddress;
-  const bothNoAddress = !existingAddress && !candidateAddress;
-  const sameUnit = fireSPremisesUnit(existing) === fireSPremisesUnit(candidate);
-
-  if ((sameAddress || bothNoAddress) && sameUnit) return 'same_address';
-
-  return 'different_address';
-}
-
-function fireSFindDuplicateNameMatches(candidate) {
-  const sameAddress = [];
-  const differentAddress = [];
-
-  fireSDuplicateProjectPool().forEach(project => {
-    const type = fireSClassifyDuplicateName(project, candidate);
-    if (type === 'same_address') sameAddress.push(project);
-    if (type === 'different_address') differentAddress.push(project);
-  });
-
-  return { sameAddress, differentAddress };
-}
-
-function fireSOpenExistingPremisesCard(project) {
-  if (!project?.id) return;
-
-  showProjectList();
-
-  setTimeout(() => {
-    const search = document.getElementById('projectSearch');
-    if (search) {
-      search.value = project.projectName || project.siteName || project.organisationName || '';
-    }
-
-    currentFilter = 'all';
-    currentProjectPage = 1;
-
-    if (typeof renderProjectsList === 'function') renderProjectsList();
-
-    const visible = window.currentProjectsListView || [];
-    const index = visible.findIndex(item => item.id === project.id);
-
-    if (index !== -1 && typeof openProjectSummaryCard === 'function') {
-      openProjectSummaryCard(index, true);
-    }
-  }, 150);
-}
-
-function fireSFocusNameFields(isSchedule) {
-  const siteField = document.getElementById(isSchedule ? 'scheduleSiteName' : 'siteName');
-  const orgField = document.getElementById(isSchedule ? 'scheduleOrganisationName' : 'organisationName');
-
-  const target = siteField || orgField;
-
-  if (!target) return;
-
-  target.classList.add('field-focus');
-
-  setTimeout(() => {
-    target.classList.remove('field-focus');
-  }, 4500);
-
-  target.focus();
-}
-
-function fireSShowDuplicatePanel(html, soft) {
-  let panel = document.getElementById('duplicatePremisesWarning');
-  const parent =
-    document.getElementById('projectDetailsCard') ||
-    document.getElementById('scheduleNewPanel');
-
-  if (!parent) return;
-
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.id = 'duplicatePremisesWarning';
-    parent.insertAdjacentElement('afterbegin', panel);
-  }
-
-  panel.className = soft
-    ? 'duplicate-premises-warning soft-premises-warning'
-    : 'duplicate-premises-warning';
-
-  panel.style.display = 'block';
-  panel.innerHTML = html;
-}
-
-function fireSHideDuplicatePanel() {
-  const panel = document.getElementById('duplicatePremisesWarning');
-  if (!panel) return;
-
-  panel.style.display = 'none';
-  panel.innerHTML = '';
-}
-
-function fireSBlockDuplicateAndExplain(match, type, isSchedule) {
-  const title = fireSProjectDisplayName(match);
-  const address = fireSProjectDisplayAddress(match);
-
-  const reason =
-    type === 'same_address'
-      ? 'This premises already exists at the same address.'
-      : 'This premises name already exists at another address. To prevent confusion, this site needs a more specific name.';
-
-  const actionText =
-    type === 'same_address'
-      ? 'You can open the existing card, or cancel and change the site name/details.'
-      : 'Change the site / premises name before saving. Example: add branch, suburb, unit number, or centre name.';
-
-  const openExisting =
-    type === 'same_address'
-      ? confirm([
-          reason,
-          '',
-          `Existing premises: ${title}`,
-          `Address: ${address}`,
-          `Inspection: ${match?.inspectionNumber || 'No inspection number'}`,
-          '',
-          'OK = Open existing card',
-          'Cancel = stay here and change the site name/details'
-        ].join('\n'))
-      : false;
-
-  if (openExisting) {
-    fireSOpenExistingPremisesCard(match);
-    return false;
-  }
-
-  alert([
-    reason,
-    '',
-    `Existing premises: ${title}`,
-    `Address: ${address}`,
-    '',
-    actionText
-  ].join('\n'));
-
-  fireSShowDuplicatePanel(`
-    <strong>${escapeHtml(reason)}</strong>
-    <span>${escapeHtml(actionText)}</span>
-  `, type === 'different_address');
-
-  fireSFocusNameFields(isSchedule);
-
-  const msg = document.getElementById('saveMessage');
-  if (msg) {
-    msg.textContent = 'Not saved. Change the premises / site name to make it unique.';
-  }
-
-  return false;
-}
-
-function fireSGuardDuplicateNameBeforeSave(candidate, isSchedule) {
-  const matches = fireSFindDuplicateNameMatches(candidate);
-
-  if (matches.sameAddress.length > 0) {
-    return fireSBlockDuplicateAndExplain(matches.sameAddress[0], 'same_address', isSchedule);
-  }
-
-  if (matches.differentAddress.length > 0) {
-    return fireSBlockDuplicateAndExplain(matches.differentAddress[0], 'different_address', isSchedule);
-  }
-
-  fireSHideDuplicatePanel();
   return true;
 }
 
-function fireSLiveDuplicateNameCheck(isSchedule) {
-  const candidate = isSchedule
-    ? fireSScheduleDuplicateCandidate()
-    : fireSInspectionDuplicateCandidate();
+function fireSMarkNewInspectionDraftDirty() {
+  if (!fireSActiveInspectionDraft || fireSActiveInspectionDraft.committed) return;
 
-  const matches = fireSFindDuplicateNameMatches(candidate);
+  fireSActiveInspectionDraft.dirty = true;
 
-  if (matches.sameAddress.length > 0) {
-    const match = matches.sameAddress[0];
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'New inspection draft active. Click Save or Finish to keep this inspection.';
+  }
+}
 
-    fireSShowDuplicatePanel(`
-      <strong>Existing premises found at the same address.</strong>
-      <span>
-        ${escapeHtml(fireSProjectDisplayName(match))} already exists.
-        Save/Finish will not create a duplicate. Open the existing card or change the site name/details.
-      </span>
-    `, false);
+function fireSBindNewInspectionDraftDirtyTracking() {
+  if (!fireSActiveInspectionDraft || fireSActiveInspectionDraft.committed) return;
 
-    return;
+  const formSection = document.getElementById('projectFormSection');
+  if (!formSection) return;
+
+  if (formSection.dataset.fireSNewCycleDirtyBound === fireSActiveInspectionDraft.startedAt) return;
+
+  formSection.dataset.fireSNewCycleDirtyBound = fireSActiveInspectionDraft.startedAt;
+  formSection.addEventListener('input', fireSMarkNewInspectionDraftDirty, true);
+  formSection.addEventListener('change', fireSMarkNewInspectionDraftDirty, true);
+}
+
+function fireSRestoreOriginalInspectionAfterCancelledDraft() {
+  if (!fireSActiveInspectionDraft || fireSActiveInspectionDraft.committed) return;
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === fireSActiveInspectionDraft.projectId);
+
+  if (index !== -1) {
+    projects[index] = JSON.parse(JSON.stringify(fireSActiveInspectionDraft.originalProject));
+    setProjects(projects);
   }
 
-  if (matches.differentAddress.length > 0) {
-    const match = matches.differentAddress[0];
+  currentPhotos = fireSActiveInspectionDraft.originalProject.photos || [];
+  fireSActiveInspectionDraft = null;
 
-    fireSShowDuplicatePanel(`
-      <strong>Same premises name found at another address.</strong>
-      <span>
-        ${escapeHtml(fireSProjectDisplayName(match))} exists elsewhere.
-        Before Save/Finish, change the site name to make this premises unique.
-      </span>
-    `, true);
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'New inspection draft cancelled. Previous inspection restored.';
+  }
+}
 
-    return;
+function fireSConfirmCancelNewInspectionDraft() {
+  if (!fireSActiveInspectionDraft || fireSActiveInspectionDraft.committed) return true;
+
+  if (!fireSActiveInspectionDraft.dirty) {
+    fireSRestoreOriginalInspectionAfterCancelledDraft();
+    return true;
   }
 
-  fireSHideDuplicatePanel();
+  const leave = confirm([
+    'You have started a new inspection but it has not been saved.',
+    '',
+    'If you leave now, the new inspection information will be deleted and the previous inspection will be restored.',
+    '',
+    'OK = Delete this new inspection draft and leave',
+    'Cancel = Stay here and click Save or Finish'
+  ].join('\n'));
+
+  if (!leave) return false;
+
+  fireSRestoreOriginalInspectionAfterCancelledDraft();
+  return true;
 }
 
-if (typeof saveProject === 'function' && !window.fireSDuplicateNameSaveV13) {
-  window.fireSDuplicateNameSaveV13 = true;
-  const originalSaveProjectV13 = saveProject;
+function fireSCommitNewInspectionDraft() {
+  if (!fireSActiveInspectionDraft) return;
 
-  saveProject = function fireSSaveProjectWithDuplicateNameEnforcement() {
-    if (!fireSGuardDuplicateNameBeforeSave(fireSInspectionDuplicateCandidate(), false)) return;
-    return originalSaveProjectV13.apply(this, arguments);
-  };
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === fireSActiveInspectionDraft.projectId);
+
+  if (index !== -1) {
+    projects[index] = {
+      ...projects[index],
+      fireSNewCycleDraft: false,
+      fireSNewCycleCommittedAt: new Date().toISOString(),
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+    setProjects(projects);
+  }
+
+  fireSActiveInspectionDraft.committed = true;
+  fireSActiveInspectionDraft = null;
 }
 
-if (typeof finishInspection === 'function' && !window.fireSDuplicateNameFinishV13) {
-  window.fireSDuplicateNameFinishV13 = true;
-  const originalFinishInspectionV13 = finishInspection;
+if (typeof openProject === 'function' && !window.fireSNewCycleOpenProjectApplied) {
+  window.fireSNewCycleOpenProjectApplied = true;
+  const originalOpenProjectForNewCycle = openProject;
 
-  finishInspection = function fireSFinishWithDuplicateNameEnforcement() {
-    if (!fireSGuardDuplicateNameBeforeSave(fireSInspectionDuplicateCandidate(), false)) return;
-    return originalFinishInspectionV13.apply(this, arguments);
-  };
-}
-
-if (typeof autoSaveProject === 'function' && !window.fireSDuplicateNameAutoV13) {
-  window.fireSDuplicateNameAutoV13 = true;
-  const originalAutoSaveProjectV13 = autoSaveProject;
-
-  autoSaveProject = function fireSAutoSaveWithDuplicateNameEnforcement() {
-    const matches = fireSFindDuplicateNameMatches(fireSInspectionDuplicateCandidate());
-
-    // Autosave must not pop alerts, but it must not save duplicates.
-    if (matches.sameAddress.length || matches.differentAddress.length) {
-      fireSLiveDuplicateNameCheck(false);
-      return;
+  openProject = function fireSOpenProjectAsNewInspectionCycle(projectId, focusMode) {
+    if (
+      fireSActiveInspectionDraft &&
+      !fireSActiveInspectionDraft.committed &&
+      fireSActiveInspectionDraft.projectId !== projectId
+    ) {
+      if (!fireSConfirmCancelNewInspectionDraft()) return;
     }
 
-    return originalAutoSaveProjectV13.apply(this, arguments);
+    const project = getProjects().find(item => item.id === projectId);
+
+    if (fireSShouldStartNewInspectionCycle(project, focusMode)) {
+      fireSStartNewInspectionCycleDraft(projectId);
+    }
+
+    const result = originalOpenProjectForNewCycle.apply(this, arguments);
+
+    setTimeout(() => {
+      fireSBindNewInspectionDraftDirtyTracking();
+      const saveMessage = document.getElementById('saveMessage');
+      if (saveMessage && fireSActiveInspectionDraft) {
+        saveMessage.textContent = 'New inspection activated. Click Save or Finish to keep it, or Back to cancel.';
+      }
+    }, 250);
+
+    return result;
   };
 }
 
-if (typeof saveScheduledNewInspection === 'function' && !window.fireSDuplicateNameScheduleV13) {
-  window.fireSDuplicateNameScheduleV13 = true;
-  const originalScheduleV13 = saveScheduledNewInspection;
+if (typeof autoSaveProject === 'function' && !window.fireSNewCycleAutoSaveApplied) {
+  window.fireSNewCycleAutoSaveApplied = true;
+  const originalAutoSaveForNewCycle = autoSaveProject;
 
-  saveScheduledNewInspection = function fireSScheduleWithDuplicateNameEnforcement() {
-    if (!fireSGuardDuplicateNameBeforeSave(fireSScheduleDuplicateCandidate(), true)) return;
-    return originalScheduleV13.apply(this, arguments);
+  autoSaveProject = function fireSAutoSaveNewCycleDraftGuard() {
+    if (fireSActiveInspectionDraft && !fireSActiveInspectionDraft.committed) {
+      fireSMarkNewInspectionDraftDirty();
+      return;
+    }
+    return originalAutoSaveForNewCycle.apply(this, arguments);
   };
 }
 
-function fireSBindDuplicateNameEnforcementV13() {
-  if (window.fireSDuplicateNameBoundV13) return;
-  window.fireSDuplicateNameBoundV13 = true;
+if (typeof saveProject === 'function' && !window.fireSNewCycleSaveApplied) {
+  window.fireSNewCycleSaveApplied = true;
+  const originalSaveProjectForNewCycle = saveProject;
 
-  ['organisationName', 'siteName', 'streetNumber', 'projectAddress', 'mallName', 'unitNumber'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
+  saveProject = function fireSSaveNewInspectionCycle() {
+    const result = originalSaveProjectForNewCycle.apply(this, arguments);
 
-    el.addEventListener('input', () => fireSLiveDuplicateNameCheck(false));
-    el.addEventListener('change', () => fireSLiveDuplicateNameCheck(false));
-    el.addEventListener('blur', () => fireSLiveDuplicateNameCheck(false));
-  });
+    if (fireSActiveInspectionDraft && fireSActiveInspectionDraft.dirty) {
+      fireSCommitNewInspectionDraft();
+      const saveMessage = document.getElementById('saveMessage');
+      if (saveMessage) {
+        saveMessage.textContent = 'New inspection saved. Previous inspection is stored in history.';
+      }
+    }
 
-  ['scheduleOrganisationName', 'scheduleSiteName', 'scheduleAddress'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    el.addEventListener('input', () => fireSLiveDuplicateNameCheck(true));
-    el.addEventListener('change', () => fireSLiveDuplicateNameCheck(true));
-    el.addEventListener('blur', () => fireSLiveDuplicateNameCheck(true));
-  });
+    return result;
+  };
 }
 
-setTimeout(fireSBindDuplicateNameEnforcementV13, 700);
+if (typeof finishInspection === 'function' && !window.fireSNewCycleFinishApplied) {
+  window.fireSNewCycleFinishApplied = true;
+  const originalFinishInspectionForNewCycle = finishInspection;
+
+  finishInspection = function fireSFinishNewInspectionCycle() {
+    const result = originalFinishInspectionForNewCycle.apply(this, arguments);
+
+    if (fireSActiveInspectionDraft && fireSActiveInspectionDraft.dirty) {
+      fireSCommitNewInspectionDraft();
+      const saveMessage = document.getElementById('saveMessage');
+      if (saveMessage) {
+        saveMessage.textContent = 'New inspection finished. Previous inspection is stored in history.';
+      }
+    }
+
+    return result;
+  };
+}
+
+if (typeof showProjectList === 'function' && !window.fireSNewCycleShowProjectListApplied) {
+  window.fireSNewCycleShowProjectListApplied = true;
+  const originalShowProjectListForNewCycle = showProjectList;
+
+  showProjectList = function fireSShowProjectListWithNewCycleGuard() {
+    if (!fireSConfirmCancelNewInspectionDraft()) return;
+    return originalShowProjectListForNewCycle.apply(this, arguments);
+  };
+}
+
+window.addEventListener('beforeunload', event => {
+  if (fireSActiveInspectionDraft && !fireSActiveInspectionDraft.committed && fireSActiveInspectionDraft.dirty) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
+});
