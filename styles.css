@@ -10331,3 +10331,16 @@ body > #actionDropdown.action-dropdown button:last-child {
     font-size: 12px;
   }
 }
+
+
+/* FIRE-S Sprint 103.2 Auto Action Creation */
+.action-engine-created {
+  border-left: 5px solid #b71c1c;
+}
+
+.action-engine-note {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}

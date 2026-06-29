@@ -1,6 +1,9 @@
-# Fire-S v102 Premises Quick Actions
+# Fire-S v103.2 Auto Action Creation
 
-- Built from v101 Premises Workspace Lite.
-- Adds quick action buttons to the Premises Workspace header.
-- Actions: Open Actions, Photos, Report, Top.
-- Does not change dashboard, filters or compact inspection cards.
+- Added complete `action-engine.js`.
+- Added automatic Action creation when a checklist answer is `No`.
+- Added duplicate protection: one open Action per checklist question.
+- Added automatic Action closure when the answer is changed away from `No`.
+- Actions are saved on the Premises/Project object as `project.actions`.
+- Added `rules.json` smart defaults for priority, responsible person and due date.
+- Dashboard, filters and compact inspection cards are unchanged.

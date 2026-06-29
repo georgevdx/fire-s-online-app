@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v102-premises-quick-actions';
+const APP_VERSION = 'v103.2-auto-action-creation';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -20393,3 +20393,175 @@ function fireSInjectQuickActionsV102() {
 
 setTimeout(fireSInjectQuickActionsV102, 500);
 setInterval(fireSInjectQuickActionsV102, 1500);
+
+
+/* FIRE-S Sprint 103.2 Auto Action Creation
+   Complete function:
+   - NO creates/reopens a Premises Action.
+   - YES / N/A / blank closes the matching open Action.
+   - No duplicate open Actions for the same checklist question.
+   - Actions are stored on the premises/project object as project.actions.
+*/
+
+function fireSGetActiveChecklistWithSections1032() {
+  const checklist =
+    typeof getActiveTemplateChecklist === 'function'
+      ? (getActiveTemplateChecklist() || [])
+      : [];
+
+  const rows =
+    Array.from(document.querySelectorAll('.checklist-row'));
+
+  return checklist.map((item, index) => {
+    const row =
+      rows.find(candidate => Number(candidate.dataset.itemIndex) === index) ||
+      rows[index];
+
+    let sectionName =
+      item.sectionName ||
+      item._sectionName ||
+      row?.dataset.sectionName ||
+      '';
+
+    if (!sectionName && row) {
+      const sectionIndex = row.dataset.sectionIndex;
+      const heading =
+        document.querySelector(`[data-section-index="${sectionIndex}"].section-header`) ||
+        document.getElementById(`sectionHeader_${sectionIndex}`) ||
+        document.getElementById(`sectionHeading_${sectionIndex}`);
+
+      sectionName =
+        heading?.textContent?.replace(/[>v]/g, '').trim() || '';
+    }
+
+    return {
+      ...item,
+      sectionName
+    };
+  });
+}
+
+function fireSSyncCurrentProjectActions1032() {
+  if (!window.FireSActionEngine) return;
+
+  const projects =
+    typeof getProjects === 'function'
+      ? getProjects()
+      : [];
+
+  if (!currentProjectId) return;
+
+  const index =
+    projects.findIndex(project => project.id === currentProjectId);
+
+  if (index === -1) return;
+
+  const checklist =
+    fireSGetActiveChecklistWithSections1032();
+
+  const syncedProject =
+    window.FireSActionEngine.syncProjectActions(
+      projects[index],
+      checklist
+    );
+
+  projects[index] = syncedProject;
+
+  if (typeof setProjects === 'function') {
+    setProjects(projects);
+  }
+
+  if (typeof currentProject !== 'undefined' && currentProject?.id === currentProjectId) {
+    currentProject = syncedProject;
+  }
+
+  fireSUpdateActionEngineMessage1032(syncedProject);
+}
+
+function fireSUpdateActionEngineMessage1032(project) {
+  const saveMessage =
+    document.getElementById('saveMessage');
+
+  if (!saveMessage || !window.FireSActionEngine || !project) return;
+
+  const stats =
+    window.FireSActionEngine.getStats(project);
+
+  if (stats.open > 0) {
+    saveMessage.textContent =
+      `Saved. Smart Actions: ${stats.open} open (${stats.critical} critical, ${stats.high} high).`;
+  }
+}
+
+function fireSBindAutoActionCreation1032() {
+  document.querySelectorAll('.answer-select').forEach(field => {
+    if (field.dataset.fireSActionEngineBound === 'true') return;
+
+    field.dataset.fireSActionEngineBound = 'true';
+
+    field.addEventListener('change', () => {
+      setTimeout(() => {
+        fireSSyncCurrentProjectActions1032();
+
+        if (typeof scheduleAutoSave === 'function') {
+          scheduleAutoSave();
+        }
+      }, 50);
+    });
+  });
+}
+
+if (typeof autoSaveProject === 'function' && !window.fireSOriginalAutoSaveProject1032) {
+  window.fireSOriginalAutoSaveProject1032 = autoSaveProject;
+
+  autoSaveProject = function fireSAutoSaveProjectWithActions1032() {
+    const result =
+      window.fireSOriginalAutoSaveProject1032.apply(this, arguments);
+
+    setTimeout(fireSSyncCurrentProjectActions1032, 80);
+
+    return result;
+  };
+}
+
+if (typeof saveProject === 'function' && !window.fireSOriginalSaveProject1032) {
+  window.fireSOriginalSaveProject1032 = saveProject;
+
+  saveProject = function fireSSaveProjectWithActions1032() {
+    fireSSyncCurrentProjectActions1032();
+
+    const result =
+      window.fireSOriginalSaveProject1032.apply(this, arguments);
+
+    setTimeout(fireSSyncCurrentProjectActions1032, 120);
+
+    return result;
+  };
+}
+
+if (typeof finishProject === 'function' && !window.fireSOriginalFinishProject1032) {
+  window.fireSOriginalFinishProject1032 = finishProject;
+
+  finishProject = function fireSFinishProjectWithActions1032() {
+    fireSSyncCurrentProjectActions1032();
+
+    const result =
+      window.fireSOriginalFinishProject1032.apply(this, arguments);
+
+    setTimeout(fireSSyncCurrentProjectActions1032, 120);
+
+    return result;
+  };
+}
+
+function fireSInitAutoActionCreation1032() {
+  if (window.FireSActionEngine?.loadRules) {
+    window.FireSActionEngine.loadRules();
+  }
+
+  fireSBindAutoActionCreation1032();
+  fireSSyncCurrentProjectActions1032();
+}
+
+setTimeout(fireSInitAutoActionCreation1032, 500);
+setInterval(fireSBindAutoActionCreation1032, 1500);
