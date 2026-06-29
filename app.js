@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v97-premises-workspace-timeline-actions-v1-1';
+const APP_VERSION = 'v98-premises-workspace-stronger-v1-2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19648,3 +19648,104 @@ setTimeout(() => {
     console.warn('Workspace v1.1 panel init failed:', error);
   }
 }, 800);
+
+
+
+/* FIRE-S Premises Workspace Stronger v1.2
+   Makes the Workspace visually obvious:
+   - Start Inspection remains primary
+   - Tabs become the main workspace navigation
+   - Old button-grid is reduced to a clear primary start area
+*/
+
+function fireSWorkspaceEnsureStrongLayout() {
+  const shell = document.querySelector('.premises-workspace-shell');
+  if (!shell || shell.dataset.workspaceStrong === 'true') return;
+
+  shell.dataset.workspaceStrong = 'true';
+
+  const actionGrid = shell.querySelector('.premises-action-grid');
+  if (!actionGrid) return;
+
+  const projectId = fireSWorkspacePremisesId;
+  const projectIdJs = JSON.stringify(projectId || '');
+
+  actionGrid.innerHTML = `
+    <button type="button" class="premises-action-primary workspace-start-only" onclick='fireSStartInspectionFromWorkspace(${projectIdJs})'>
+      ▶ Start New Inspection
+    </button>
+  `;
+
+  if (!document.getElementById('premisesWorkspaceTabs')) {
+    actionGrid.insertAdjacentHTML('afterend', `
+      <div id="premisesWorkspaceTabs" class="premises-workspace-tabs workspace-tabs-strong">
+        <button type="button" class="premises-tab-btn active" data-workspace-tab="overview" onclick="fireSWorkspaceSetActiveTab('overview')">Overview</button>
+        <button type="button" class="premises-tab-btn" data-workspace-tab="history" onclick="fireSWorkspaceSetActiveTab('history')">History</button>
+        <button type="button" class="premises-tab-btn" data-workspace-tab="actions" onclick="fireSWorkspaceSetActiveTab('actions')">Actions</button>
+        <button type="button" class="premises-tab-btn" data-workspace-tab="documents" onclick="fireSWorkspaceSetActiveTab('documents')">Documents</button>
+        <button type="button" class="premises-tab-btn" data-workspace-tab="equipment" onclick="fireSWorkspaceSetActiveTab('equipment')">Equipment</button>
+      </div>
+      <div id="premisesWorkspacePanel" class="premises-workspace-panel workspace-panel-strong"></div>
+    `);
+  }
+
+  if (typeof fireSWorkspaceSetActiveTab === 'function') {
+    fireSWorkspaceSetActiveTab('overview');
+  }
+}
+
+function fireSWorkspaceRenderOverviewV12(project) {
+  return `
+    <div class="workspace-panel-header">
+      <h3>Premises Overview</h3>
+      <p>Permanent building file information for this premises.</p>
+    </div>
+
+    <div class="workspace-overview-grid workspace-overview-strong">
+      <div><span>Premises</span><strong>${escapeHtml(fireSWorkspaceTitle(project))}</strong></div>
+      <div><span>Address</span><strong>${escapeHtml(fireSWorkspaceAddress(project))}</strong></div>
+      <div><span>Last Inspection</span><strong>${escapeHtml(fireSWorkspaceDateText(fireSWorkspaceLastDate(project)))}</strong></div>
+      <div><span>Next Inspection</span><strong>${escapeHtml(fireSWorkspaceDateText(fireSWorkspaceNextDate(project)))}</strong></div>
+      <div><span>Open Actions</span><strong>${fireSWorkspaceOpenActionCount(project)}</strong></div>
+      <div><span>Inspection History</span><strong>${Array.isArray(project.inspectionHistory) ? project.inspectionHistory.length : 0}</strong></div>
+      <div><span>Contact</span><strong>${escapeHtml(project.contactPerson || 'Not set')}</strong></div>
+      <div><span>Telephone</span><strong>${escapeHtml(project.contactTel || 'Not set')}</strong></div>
+    </div>
+  `;
+}
+
+if (typeof fireSWorkspaceShowPanel === 'function' && !window.fireSWorkspaceStrongPanelApplied) {
+  window.fireSWorkspaceStrongPanelApplied = true;
+  const originalShowPanel = fireSWorkspaceShowPanel;
+
+  fireSWorkspaceShowPanel = function fireSWorkspaceShowPanelStrong(panelName) {
+    const project = fireSWorkspaceProject(fireSWorkspacePremisesId);
+    const panel = document.getElementById('premisesWorkspacePanel');
+
+    if (!project || !panel) {
+      return originalShowPanel.apply(this, arguments);
+    }
+
+    if (panelName === 'overview') {
+      panel.innerHTML = fireSWorkspaceRenderOverviewV12(project);
+      return;
+    }
+
+    return originalShowPanel.apply(this, arguments);
+  };
+}
+
+if (typeof fireSRenderPremisesWorkspace === 'function' && !window.fireSWorkspaceStrongRenderApplied) {
+  window.fireSWorkspaceStrongRenderApplied = true;
+  const originalRenderWorkspaceStrong = fireSRenderPremisesWorkspace;
+
+  fireSRenderPremisesWorkspace = function fireSRenderPremisesWorkspaceStrong(id) {
+    const result = originalRenderWorkspaceStrong.apply(this, arguments);
+
+    setTimeout(() => {
+      fireSWorkspaceEnsureStrongLayout();
+    }, 180);
+
+    return result;
+  };
+}

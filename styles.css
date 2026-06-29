@@ -9936,3 +9936,52 @@ body > #actionDropdown.action-dropdown button:last-child {
     grid-template-columns: 1fr;
   }
 }
+
+
+
+/* FIRE-S Premises Workspace Stronger v1.2 */
+.workspace-start-only {
+  min-height: 54px;
+  font-size: 16px !important;
+  text-align: center !important;
+  border-radius: 16px !important;
+}
+
+.premises-action-grid {
+  grid-template-columns: 1fr !important;
+}
+
+.workspace-tabs-strong {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+.workspace-panel-strong {
+  min-height: 180px;
+}
+
+.workspace-overview-strong div {
+  border-left: 4px solid #cbd5e1;
+}
+
+.workspace-overview-strong div:nth-child(3),
+.workspace-overview-strong div:nth-child(4),
+.workspace-overview-strong div:nth-child(5),
+.workspace-overview-strong div:nth-child(6) {
+  background: #fff7ed;
+  border-left-color: #f97316;
+}
+
+@media (max-width: 640px) {
+  .workspace-tabs-strong {
+    top: 0;
+  }
+
+  .workspace-start-only {
+    min-height: 50px;
+    font-size: 14px !important;
+  }
+}
