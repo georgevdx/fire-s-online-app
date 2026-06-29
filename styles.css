@@ -9857,3 +9857,90 @@ body > #actionDropdown.action-dropdown button:last-child {
     align-items: flex-start;
   }
 }
+
+
+/* FIRE-S Filter Drawer Master v96 */
+.filter-panel-section-title {
+  margin: 10px 0 8px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-panel-section-title:first-child {
+  margin-top: 0;
+}
+
+#filterPanel .inspection-date-filter-panel {
+  margin: 0 0 12px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+#filterPanel .inspection-date-filter-title {
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+#filterPanel .inspection-date-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#filterPanel .inspection-date-filter-grid label {
+  margin-bottom: 0;
+  color: #475569;
+  font-size: 12px;
+}
+
+#filterPanel .inspection-date-filter-grid input {
+  margin-top: 4px;
+  max-width: none;
+  font-size: 13px;
+  padding: 9px;
+}
+
+#filterPanel .inspection-quick-date-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+#filterPanel .inspection-quick-date-row button {
+  max-width: none;
+  padding: 8px 7px;
+  border-radius: 10px;
+  background: #334155;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+#filterPanel .inspection-quick-date-row button.active-date-filter {
+  background: #b71c1c;
+}
+
+#filterPanel .inspection-date-filter-status {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  #filterPanel .inspection-date-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #filterPanel .inspection-quick-date-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

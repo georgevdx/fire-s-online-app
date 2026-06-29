@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v95-card-keyword-mobile-status-fix-v1-1';
+const APP_VERSION = 'v96-filter-drawer-master';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19648,3 +19648,51 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
     `;
   };
 }
+
+
+/* FIRE-S Filter Drawer Master v96
+   Keeps the v95 compact cards/layout and moves the date filter into the existing Filters drawer.
+*/
+
+function fireSEnsureDateFilterInsideDrawerV96() {
+  const filterPanel = document.getElementById('filterPanel');
+  const datePanel = document.getElementById('inspectionDateFilterPanel');
+  const dashboardMetrics = document.getElementById('dashboardMetrics');
+
+  if (!filterPanel || !datePanel || !dashboardMetrics) return;
+
+  if (datePanel.parentElement !== filterPanel) {
+    let dateTitle = filterPanel.querySelector('.filter-panel-section-title-date');
+
+    if (!dateTitle) {
+      dateTitle = document.createElement('div');
+      dateTitle.className = 'filter-panel-section-title filter-panel-section-title-date';
+      dateTitle.textContent = 'Date Filters';
+    }
+
+    filterPanel.insertBefore(dateTitle, dashboardMetrics);
+    filterPanel.insertBefore(datePanel, dashboardMetrics);
+  }
+
+  let statusTitle = filterPanel.querySelector('.filter-panel-section-title-status');
+
+  if (!statusTitle) {
+    statusTitle = document.createElement('div');
+    statusTitle.className = 'filter-panel-section-title filter-panel-section-title-status';
+    statusTitle.textContent = 'Status Filters';
+    filterPanel.insertBefore(statusTitle, dashboardMetrics);
+  }
+
+  const toggleBtn = document.getElementById('toggleFiltersBtn');
+  if (toggleBtn && !toggleBtn.dataset.fireSDateFilterLabelApplied) {
+    toggleBtn.dataset.fireSDateFilterLabelApplied = 'true';
+
+    const originalText = toggleBtn.textContent || 'Show Filters';
+    if (originalText.trim().toLowerCase() === 'show filters') {
+      toggleBtn.textContent = 'Show Filters / Date';
+    }
+  }
+}
+
+setTimeout(fireSEnsureDateFilterInsideDrawerV96, 250);
+setTimeout(fireSEnsureDateFilterInsideDrawerV96, 1000);

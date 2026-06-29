@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=95-card-keyword-mobile-status-fix-v1-1">
+  <link rel="stylesheet" href="styles.css?v=96-filter-drawer-master">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -539,6 +539,14 @@
     class="project-search-top"
   >
 
+  <div id="projectPagingControls" class="project-paging-controls"></div>
+
+<button id="toggleFiltersBtn" type="button" class="filter-toggle-btn">
+  Show Filters
+</button>
+
+<div id="filterPanel" class="filter-panel" style="display:none;">
+  <div class="filter-panel-section-title">Date Filters</div>
   <div id="inspectionDateFilterPanel" class="inspection-date-filter-panel">
     <div class="inspection-date-filter-title">Inspection Date Filter</div>
 
@@ -565,14 +573,7 @@
 
     <div id="inspectionDateFilterStatus" class="inspection-date-filter-status"></div>
   </div>
-
-  <div id="projectPagingControls" class="project-paging-controls"></div>
-
-<button id="toggleFiltersBtn" type="button" class="filter-toggle-btn">
-  Show Filters
-</button>
-
-<div id="filterPanel" class="filter-panel" style="display:none;">
+  <div class="filter-panel-section-title">Status Filters</div>
   <div id="dashboardMetrics" class="dashboard-metrics"></div>
 </div>
 

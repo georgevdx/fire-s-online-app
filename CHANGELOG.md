@@ -1,7 +1,6 @@
-# Fire-S Premises Intelligence v1.0
+# Fire-S v96 Filter Drawer Master
 
-- Adds Premises Score.
-- Adds Compliance Trend.
-- Adds Action Summary.
-- Adds Photo Timeline.
-- Keeps GitHub-ready folder structure.
+- Built directly from the uploaded v95 master layout.
+- Moves Inspection Date Filter into the existing Filters drawer.
+- Keeps compact inspection cards unchanged.
+- Keeps dashboard layout unchanged.
