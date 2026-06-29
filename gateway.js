@@ -1,0 +1,2 @@
+/* Fire-S v2 Gateway Module */
+(function(){ window.FireS && window.FireS.registerModule('gateway',{init(core){ window.FireS.gateway={refresh(){return core.renderGateway();},show(){return core.showPremisesGateway();}}; window.FireS.ready(function(){ const h=document.querySelector('#projectListSection h2'); if(h&&h.textContent.trim().toLowerCase()==='projects') h.textContent='Premises'; }); }}); })();

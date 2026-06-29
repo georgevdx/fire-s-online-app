@@ -1,0 +1,2 @@
+/* Fire-S v2 Gateway Styles */
+#projectListSection h2::after{content:' Workspace';color:#64748b;font-size:12px;font-weight:900;margin-left:6px;}
