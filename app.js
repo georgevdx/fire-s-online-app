@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v100-github-clean-master';
+const APP_VERSION = 'v101-premises-workspace-lite';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -20150,3 +20150,163 @@ function fireSCleanMasterV100() {
 setTimeout(fireSCleanMasterV100, 250);
 setTimeout(fireSCleanMasterV100, 1000);
 setInterval(fireSCleanMasterV100, 3000);
+
+
+/* FIRE-S Premises Workspace Lite v101
+   Safe enhancement built on v100:
+   - Does NOT change dashboard, filters or compact inspection cards.
+   - Adds a lightweight premises summary card at the top of the existing inspection form.
+   - Existing inspection workflow remains unchanged.
+*/
+
+function fireSDateKeyV101(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toISOString().slice(0, 10);
+}
+
+function fireSDateTextV101(value) {
+  const key = fireSDateKeyV101(value);
+  if (!key) return 'Not set';
+  const date = new Date(key + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return key;
+  return date.toLocaleDateString();
+}
+
+function fireSPremisesTitleV101(project) {
+  return (
+    project?.projectName ||
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') ||
+    project?.siteName ||
+    'Untitled Premises'
+  );
+}
+
+function fireSPremisesAddressV101(project) {
+  return (
+    project?.projectAddress ||
+    (
+      typeof combineStreetAddress === 'function'
+        ? combineStreetAddress(project?.streetNumber, project?.addressLine)
+        : [project?.streetNumber, project?.addressLine].filter(Boolean).join(' ')
+    ) ||
+    project?.addressLine ||
+    'No address captured'
+  );
+}
+
+function fireSOpenActionCountV101(project) {
+  return Array.isArray(project?.answers)
+    ? project.answers.filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no').length
+    : 0;
+}
+
+function fireSLastInspectionV101(project) {
+  const historyDates = Array.isArray(project?.inspectionHistory)
+    ? project.inspectionHistory.map(item => item?.completedAt || item?.inspectionDate || item?.archivedAt || '').filter(Boolean)
+    : [];
+
+  const dates = [
+    project?.completedAt,
+    project?.inspectionDate,
+    project?.lastSaved,
+    ...historyDates
+  ].map(fireSDateKeyV101).filter(Boolean).sort();
+
+  return dates.length ? dates[dates.length - 1] : '';
+}
+
+function fireSNextInspectionV101(project) {
+  if (!project) return '';
+  if (project.scheduledDate) return project.scheduledDate;
+  if (project.followUpDate) return project.followUpDate;
+  if (project.recurringCycleEnabled === true && typeof getNextRecurringCycleDate === 'function') {
+    return getNextRecurringCycleDate(project);
+  }
+  return '';
+}
+
+function fireSPremisesScoreV101(project) {
+  let score = 100;
+  const actions = fireSOpenActionCountV101(project);
+  score -= Math.min(actions * 6, 42);
+
+  const next = fireSDateKeyV101(fireSNextInspectionV101(project));
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (next && next < today) score -= 25;
+
+  return Math.max(0, Math.min(100, score));
+}
+
+function fireSPremisesScoreLabelV101(score) {
+  if (score >= 90) return 'Excellent';
+  if (score >= 75) return 'Good';
+  if (score >= 55) return 'Attention';
+  return 'Critical';
+}
+
+function fireSRenderPremisesHeaderV101(project) {
+  if (!project) return '';
+
+  const score = fireSPremisesScoreV101(project);
+  const label = fireSPremisesScoreLabelV101(score);
+  const actions = fireSOpenActionCountV101(project);
+  const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory.length : 0;
+
+  return `
+    <div id="fireSPremisesWorkspaceLiteV101" class="fire-s-premises-workspace-lite-v101">
+      <div class="fire-s-premises-hero-v101">
+        <div>
+          <div class="fire-s-premises-kicker-v101">Premises Workspace</div>
+          <h2>${escapeHtml(fireSPremisesTitleV101(project))}</h2>
+          <p>${escapeHtml(fireSPremisesAddressV101(project))}</p>
+        </div>
+
+        <div class="fire-s-premises-score-v101">
+          <span>${escapeHtml(label)}</span>
+          <strong>${score}%</strong>
+        </div>
+      </div>
+
+      <div class="fire-s-premises-stats-v101">
+        <div><span>Last Inspection</span><strong>${escapeHtml(fireSDateTextV101(fireSLastInspectionV101(project)))}</strong></div>
+        <div><span>Next Inspection</span><strong>${escapeHtml(fireSDateTextV101(fireSNextInspectionV101(project)))}</strong></div>
+        <div><span>Open Actions</span><strong>${actions}</strong></div>
+        <div><span>History</span><strong>${history}</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+function fireSInjectPremisesHeaderV101() {
+  const formSection = document.getElementById('projectFormSection');
+  if (!formSection || formSection.style.display === 'none') return;
+
+  const project =
+    currentProject ||
+    (typeof getProjects === 'function' && currentProjectId
+      ? getProjects().find(item => item.id === currentProjectId)
+      : null);
+
+  if (!project) return;
+
+  const existing = document.getElementById('fireSPremisesWorkspaceLiteV101');
+  const html = fireSRenderPremisesHeaderV101(project);
+
+  if (existing) {
+    existing.outerHTML = html;
+    return;
+  }
+
+  const toolbar = formSection.querySelector('.toolbar');
+  if (toolbar) {
+    toolbar.insertAdjacentHTML('afterend', html);
+  } else {
+    formSection.insertAdjacentHTML('afterbegin', html);
+  }
+}
+
+setTimeout(fireSInjectPremisesHeaderV101, 400);
+setInterval(fireSInjectPremisesHeaderV101, 1500);
