@@ -9689,14 +9689,76 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 
 
-/* FIRE-S Premises Identity Lock v1.4 */
-.identity-lock-note {
-  margin: 10px 0;
+/* =====================================================
+   FIRE-S Ultra Compact Premises Cards v1.0
+   ===================================================== */
+.ultra-premises-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ultra-premises-card {
+  display: grid;
+  grid-template-columns: 8px 1fr;
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 72px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.06);
+}
+.ultra-premises-card:hover,
+.ultra-premises-card:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.ultra-status-strip {
+  width: 8px;
+  min-height: 100%;
+  background: #94a3b8;
+}
+.ultra-premises-body {
   padding: 10px 12px;
-  border-radius: 10px;
-  background: #ecfdf5;
-  color: #065f46;
-  border-left: 5px solid #10b981;
+  min-width: 0;
+}
+.ultra-premises-title {
+  display: block;
+  margin-bottom: 8px;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.ultra-premises-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ultra-premises-dates small {
+  display: block;
+  margin-bottom: 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ultra-premises-dates b {
+  display: block;
+  color: #1f2937;
   font-size: 13px;
-  font-weight: 800;
+  line-height: 1.15;
+}
+.ultra-status-compliant .ultra-status-strip { background: #2e7d32; }
+.ultra-status-due .ultra-status-strip { background: #facc15; }
+.ultra-status-action .ultra-status-strip { background: #f97316; }
+.ultra-status-overdue .ultra-status-strip { background: #b71c1c; }
+@media (max-width: 640px) {
+  .ultra-premises-card { min-height: 68px; }
+  .ultra-premises-body { padding: 9px 10px; }
+  .ultra-premises-title { font-size: 14px; }
+  .ultra-premises-dates b { font-size: 12px; }
 }
