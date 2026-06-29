@@ -6,7 +6,10 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=98-premises-workspace-stronger-v1-2">
+  <link rel="stylesheet" href="styles.css?v=99-fire-s-v2-architecture">
+  <link rel="stylesheet" href="styles/gateway.css?v=99-fire-s-v2">
+  <link rel="stylesheet" href="styles/workspace.css?v=99-fire-s-v2">
+  <link rel="stylesheet" href="styles/dashboard.css?v=99-fire-s-v2">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -951,7 +954,12 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=98-premises-workspace-stronger-v1-2"></script>
+  <script src="app.js?v=99-fire-s-v2-architecture"></script>
+  <script src="modules/dashboard.js?v=99-fire-s-v2"></script>
+  <script src="modules/gateway.js?v=99-fire-s-v2"></script>
+  <script src="modules/workspace.js?v=99-fire-s-v2"></script>
+  <script src="modules/inspections.js?v=99-fire-s-v2"></script>
+  <script src="modules/actions.js?v=99-fire-s-v2"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
