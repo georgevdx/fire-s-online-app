@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v99-date-filter-inside-filters';
+const APP_VERSION = 'v100-github-clean-master';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -20118,3 +20118,35 @@ setTimeout(fireSMoveDateFilterInsideFiltersV99, 150);
 setTimeout(fireSMoveDateFilterInsideFiltersV99, 700);
 setTimeout(fireSMoveDateFilterInsideFiltersV99, 1500);
 setInterval(fireSMoveDateFilterInsideFiltersV99, 2500);
+
+
+/* FIRE-S GitHub Clean Master v100
+   Purpose:
+   - v99 layout remains the master.
+   - No old v2 module files are required.
+   - Keeps compact inspection cards and professional filters unchanged.
+   - Adds a safe small polish layer only.
+*/
+
+function fireSCleanMasterV100() {
+  // Keep Fire-S terminology aligned without changing code data structures.
+  const projectHeading = document.querySelector('#projectListSection h2');
+  if (projectHeading && projectHeading.textContent.trim().toLowerCase() === 'projects') {
+    projectHeading.textContent = 'Premises';
+  }
+
+  const search = document.getElementById('projectSearch');
+  if (search && !search.dataset.fireSV100Placeholder) {
+    search.dataset.fireSV100Placeholder = 'true';
+    search.placeholder = 'Search premises, client, address, inspector or inspection number';
+  }
+
+  // Make sure the date filter stays inside the filter panel as per v99.
+  if (typeof fireSMoveDateFilterInsideFiltersV99 === 'function') {
+    fireSMoveDateFilterInsideFiltersV99();
+  }
+}
+
+setTimeout(fireSCleanMasterV100, 250);
+setTimeout(fireSCleanMasterV100, 1000);
+setInterval(fireSCleanMasterV100, 3000);
