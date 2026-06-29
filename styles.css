@@ -10126,3 +10126,25 @@ body > #actionDropdown.action-dropdown button:last-child {
     margin-top: 10px;
   }
 }
+
+
+/* FIRE-S Date Filter Inside Filters v99 */
+.fire-s-filter-panel-v99 #inspectionDateFilterPanel {
+  margin-bottom: 14px !important;
+}
+
+.fire-s-filter-panel-v99 .filter-panel-section-title-date-v99,
+.fire-s-filter-panel-v99 .filter-panel-section-title-status-v99 {
+  margin-top: 12px !important;
+}
+
+.fire-s-filter-panel-v99 .filter-panel-section-title-date-v99:first-child {
+  margin-top: 0 !important;
+}
+
+/* Hide the old below-filter wrapper spacing if browser cache still has it */
+#fireSDateFilterBelowFiltersV98:empty {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

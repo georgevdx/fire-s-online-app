@@ -1,7 +1,6 @@
-# Fire-S v98 Date Filter Below Filters
+# Fire-S v99 Date Filter Inside Filters
 
-- Built from v97 Professional Filter Experience.
-- Moves the Date Filter back below the Filters drawer.
-- Keeps the improved professional Date Filter styling.
-- Status filters remain inside the Filters drawer.
-- Compact inspection cards remain unchanged.
+- Date Filters are now inside the same Filters drawer/card as the status filters.
+- Removes the separate Date Filter block created by v98.
+- Keeps professional v97 filter styling.
+- Keeps compact inspection cards unchanged.

@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v98-date-filter-below-filters';
+const APP_VERSION = 'v99-date-filter-inside-filters';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19998,3 +19998,123 @@ function fireSEnsureDateFilterInsideDrawerV96() {
 setTimeout(fireSMoveDateFilterBelowFiltersV98, 200);
 setTimeout(fireSMoveDateFilterBelowFiltersV98, 900);
 setInterval(fireSMoveDateFilterBelowFiltersV98, 2500);
+
+
+/* FIRE-S Date Filter Inside Filters v99
+   Correction:
+   - Date Filters must be inside the same Filters drawer/card as the other filters.
+   - Not a separate block below or above.
+   - Keeps v97 professional styling.
+*/
+
+function fireSMoveDateFilterInsideFiltersV99() {
+  const filterPanel =
+    document.getElementById('filterPanel');
+
+  const datePanel =
+    document.getElementById('inspectionDateFilterPanel');
+
+  const dashboardMetrics =
+    document.getElementById('dashboardMetrics');
+
+  if (!filterPanel || !datePanel || !dashboardMetrics) return;
+
+  // Remove separate wrapper if v98 created one.
+  const oldWrapper =
+    document.getElementById('fireSDateFilterBelowFiltersV98');
+
+  // Add the date title once.
+  let dateTitle =
+    filterPanel.querySelector('.filter-panel-section-title-date-v99');
+
+  if (!dateTitle) {
+    dateTitle = document.createElement('div');
+    dateTitle.className =
+      'filter-panel-section-title filter-panel-section-title-date-v99';
+    dateTitle.innerHTML =
+      '<span class="fire-s-filter-icon-v97">📅</span> Date Filters';
+  }
+
+  // Put date filters directly before the status metrics.
+  if (dateTitle.parentElement !== filterPanel) {
+    filterPanel.insertBefore(dateTitle, dashboardMetrics);
+  }
+
+  if (datePanel.parentElement !== filterPanel) {
+    filterPanel.insertBefore(datePanel, dashboardMetrics);
+  } else if (datePanel.nextElementSibling !== dashboardMetrics) {
+    filterPanel.insertBefore(datePanel, dashboardMetrics);
+  }
+
+  // If the old wrapper is now empty, remove it.
+  if (oldWrapper && oldWrapper.children.length === 0) {
+    oldWrapper.remove();
+  }
+
+  // Remove duplicate Date headings from previous releases.
+  Array.from(filterPanel.querySelectorAll('.filter-panel-section-title')).forEach(title => {
+    const text = title.textContent.trim().toLowerCase();
+    const isCurrent = title.classList.contains('filter-panel-section-title-date-v99');
+
+    if (!isCurrent && text.includes('date filter')) {
+      title.remove();
+    }
+  });
+
+  // Keep Status title directly before dashboard metrics, after Date filter.
+  let statusTitle =
+    filterPanel.querySelector('.filter-panel-section-title-status-v99');
+
+  if (!statusTitle) {
+    statusTitle = document.createElement('div');
+    statusTitle.className =
+      'filter-panel-section-title filter-panel-section-title-status-v99';
+    statusTitle.innerHTML =
+      '<span class="fire-s-filter-icon-v97">⚡</span> Status Filters';
+  }
+
+  if (statusTitle.parentElement !== filterPanel) {
+    filterPanel.insertBefore(statusTitle, dashboardMetrics);
+  } else if (statusTitle.nextElementSibling !== dashboardMetrics) {
+    filterPanel.insertBefore(statusTitle, dashboardMetrics);
+  }
+
+  // Remove older duplicate Status Filter headings.
+  Array.from(filterPanel.querySelectorAll('.filter-panel-section-title')).forEach(title => {
+    const text = title.textContent.trim().toLowerCase();
+    const isCurrent = title.classList.contains('filter-panel-section-title-status-v99');
+
+    if (!isCurrent && text.includes('status filter')) {
+      title.remove();
+    }
+  });
+
+  datePanel.style.display = '';
+  filterPanel.classList.add('fire-s-filter-panel-v99');
+
+  if (typeof fireSImproveDatePanelV97 === 'function') {
+    fireSImproveDatePanelV97();
+  }
+
+  if (typeof fireSImproveStatusFiltersV97 === 'function') {
+    fireSImproveStatusFiltersV97();
+  }
+
+  if (typeof fireSRenderActiveFilterChipsV97 === 'function') {
+    fireSRenderActiveFilterChipsV97();
+  }
+}
+
+// Override older v96/v98 movers so nothing pulls it out again.
+function fireSEnsureDateFilterInsideDrawerV96() {
+  fireSMoveDateFilterInsideFiltersV99();
+}
+
+function fireSMoveDateFilterBelowFiltersV98() {
+  fireSMoveDateFilterInsideFiltersV99();
+}
+
+setTimeout(fireSMoveDateFilterInsideFiltersV99, 150);
+setTimeout(fireSMoveDateFilterInsideFiltersV99, 700);
+setTimeout(fireSMoveDateFilterInsideFiltersV99, 1500);
+setInterval(fireSMoveDateFilterInsideFiltersV99, 2500);
