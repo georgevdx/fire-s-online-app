@@ -11349,3 +11349,65 @@ body > #actionDropdown.action-dropdown button:last-child {
   background: #dcfce7;
   color: #166534;
 }
+
+/* Sprint 109.1 - Inspection History & Versioning */
+.s109-history-panel {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid rgba(31, 41, 55, 0.14);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+.s109-history-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.s109-history-header h3 { margin: 0 0 4px; }
+.s109-history-header p { margin: 0; color: #64748b; font-size: 0.92rem; }
+.s109-current-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  margin-bottom: 14px;
+}
+.s109-current-card.is-readonly { background: #fff7ed; border: 1px solid #fed7aa; }
+.s109-current-card span { display:block; color:#64748b; font-size:0.78rem; }
+.s109-current-card strong { display:block; margin-top:3px; color:#0f172a; }
+.s109-history-list { display:flex; flex-direction:column; gap:10px; }
+.s109-history-row {
+  display:grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  gap: 12px;
+  align-items:center;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background:#fdfdfd;
+}
+.s109-history-row span { display:block; color:#64748b; font-size:0.84rem; }
+.s109-history-metrics { display:flex; flex-wrap:wrap; gap:6px; }
+.s109-history-metrics span { padding:4px 8px; border-radius:999px; background:#eef2ff; color:#334155; }
+.s109-history-actions { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.s109-readonly-banner {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+.s109-readonly-banner strong { display:block; margin-bottom:3px; }
+.s109-readonly-banner span { display:block; font-size:0.92rem; }
+.s109-disabled { opacity:0.75; cursor:not-allowed; }
+@media (max-width: 720px) {
+  .s109-history-header { flex-direction:column; }
+  .s109-history-row { grid-template-columns: 1fr; }
+  .s109-history-actions { justify-content:flex-start; }
+}
