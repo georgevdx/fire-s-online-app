@@ -11138,3 +11138,36 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-size: 12px;
   font-weight: 800;
 }
+
+/* FIRE-S Sprint 108.1 - Intelligent Risk Engine */
+.fire-s-risk-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.fire-s-risk-strip span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 0.86rem;
+}
+
+.fire-s-risk-strip strong {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.68;
+}
+
+@media (max-width: 720px) {
+  .fire-s-risk-strip {
+    grid-template-columns: 1fr;
+  }
+}
