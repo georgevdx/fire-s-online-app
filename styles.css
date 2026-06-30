@@ -11124,3 +11124,17 @@ body > #actionDropdown.action-dropdown button:last-child {
     text-align: left;
   }
 }
+
+
+
+/* Fire-S v105.2 Action Register Live Fix */
+.fire-s-live-action-note-v1052 {
+  margin-top: 9px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #7c2d12;
+  font-size: 12px;
+  font-weight: 800;
+}
