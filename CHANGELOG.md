@@ -1,8 +1,7 @@
-# Fire-S v105.0 Premises Workspace Redesign
+# Fire-S v105.1 Action Sync Fix
 
-- Adds `premises-workspace.js`.
-- Creates one unified Premises Workspace.
-- Hides duplicate old Premises Workspace and Building Passport blocks.
-- Adds tabs: Overview, Actions, Equipment, Photos, Reports, History.
-- Moves Action Register into the Actions tab.
-- Keeps existing action creation and resolve functionality.
+- Fixes Action Register counters staying on 0.
+- Backfills `project.actions` from existing NO checklist answers.
+- Keeps one open action per NO answer and closes actions when answers change away from NO.
+- Refreshes Action Register and Premises Workspace counters after answer/save/finish events.
+- Keeps existing layout unchanged.
