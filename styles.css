@@ -11289,3 +11289,63 @@ body > #actionDropdown.action-dropdown button:last-child {
     white-space: normal;
   }
 }
+
+/* =====================================================
+   FIRE-S Sprint 108.3 - Action Intelligence
+   ===================================================== */
+.fire-s-action-intel-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-action-intel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.fire-s-action-intel-head strong {
+  color: #0f172a;
+}
+
+.fire-s-action-intel-question {
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.fire-s-action-intel-copy {
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.finding-risk.fire-s-ai-critical {
+  background: #111827;
+  color: #fff;
+}
+
+.finding-risk.fire-s-ai-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.finding-risk.fire-s-ai-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.finding-risk.fire-s-ai-low {
+  background: #dcfce7;
+  color: #166534;
+}
