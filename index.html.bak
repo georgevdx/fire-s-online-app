@@ -964,7 +964,6 @@
   <script src="risk-engine.js?v=108-2-category-intelligence"></script>
   <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
   <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>
-  <script src="sprint-109-2-comparison.js?v=109-2-inspection-comparison"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
