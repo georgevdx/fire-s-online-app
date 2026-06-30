@@ -10724,3 +10724,71 @@ body > #actionDropdown.action-dropdown button:last-child {
     text-align: left;
   }
 }
+
+
+
+/* Fire-S Building Passport Complete v104.1 */
+.fire-s-passport-insight-v1041,
+.fire-s-passport-timeline-v1041 {
+  padding: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.fire-s-passport-insight-v1041 h3,
+.fire-s-passport-timeline-v1041 h3 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 15px;
+}
+
+.fire-s-passport-insight-v1041 ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.fire-s-passport-insight-v1041 li {
+  margin-bottom: 5px;
+}
+
+.fire-s-passport-timeline-v1041 {
+  background: #f8fafc;
+}
+
+.fire-s-timeline-item-v1041 {
+  position: relative;
+  padding: 10px 10px 10px 18px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #b71c1c;
+}
+
+.fire-s-timeline-item-v1041 span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fire-s-timeline-item-v1041 strong {
+  display: block;
+  margin-top: 3px;
+  color: #111827;
+  font-size: 13px;
+}
+
+.fire-s-timeline-item-v1041 p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fire-s-building-passport-complete-v1041 .fire-s-passport-grid-v104 div:nth-child(5) strong {
+  color: #b71c1c;
+}

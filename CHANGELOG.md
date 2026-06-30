@@ -1,8 +1,8 @@
-# Fire-S v104.0 Building Passport Foundation
+# Fire-S v104.1 Building Passport Complete
 
-- Added `building-passport.js`.
-- Adds Building Passport Overview inside each open Premises.
-- Shows Compliance, Last Inspection, Next Inspection, Open Actions, Critical/High, Findings, Photos and History.
-- Adds Overview tabs that scroll to Actions, Inspection, Photos and Reports.
-- Adds Premises Summary and Building Health sections.
-- Built directly from uploaded GitHub Master ZIP.
+- Upgrades Building Passport summary logic.
+- Adds overdue action count.
+- Adds stronger Premises Summary.
+- Adds Timeline section.
+- Improves Building Health grouping from current checklist answers.
+- Built directly from latest uploaded GitHub Master.
