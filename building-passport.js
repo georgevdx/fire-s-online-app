@@ -1,7 +1,10 @@
 
-/* Fire-S Building Passport Complete v104.1 */
+/* Fire-S Building Passport Stable v104.4 */
 
 (function () {
+  let lastSignature = '';
+  let lastProjectId = '';
+
   function esc(value) {
     if (typeof escapeHtml === 'function') return escapeHtml(value);
     return String(value ?? '')
@@ -133,29 +136,11 @@
     return Array.isArray(project?.inspectionHistory) ? project.inspectionHistory.length : 0;
   }
 
-  function sectionFromAnswer(answer, index) {
-    if (answer.sectionName || answer.category) return answer.sectionName || answer.category;
-
-    const row = document.querySelector(`.answer-select[data-index="${index}"]`)?.closest('.checklist-row') ||
-      document.querySelector(`.checklist-row[data-item-index="${index}"]`);
-
-    if (row) {
-      const sectionIndex = row.dataset.sectionIndex;
-      const heading = document.getElementById(`sectionHeader_${sectionIndex}`) ||
-        document.getElementById(`sectionHeading_${sectionIndex}`) ||
-        document.querySelector(`.section-header[data-section-index="${sectionIndex}"]`);
-      const text = heading?.textContent?.replace(/[>v]/g, '').trim();
-      if (text) return text;
-    }
-
-    return 'Inspection';
-  }
-
   function health(project) {
     const groups = new Map();
 
-    answers(project).forEach((answer, index) => {
-      const section = sectionFromAnswer(answer, index);
+    answers(project).forEach((answer) => {
+      const section = answer.sectionName || answer.category || 'Inspection';
       if (!groups.has(section)) groups.set(section, { total: 0, no: 0 });
       const group = groups.get(section);
       if (String(answer.answer || '').trim()) group.total += 1;
@@ -168,28 +153,6 @@
       no: data.no,
       score: data.total ? Math.max(0, Math.round(((data.total - data.no) / data.total) * 100)) : 0
     })).sort((a, b) => a.score - b.score).slice(0, 8);
-  }
-
-  function timeline(project) {
-    const items = [];
-
-    if (project?.createdAt) items.push({ date: project.createdAt, title: 'Premises created', note: name(project) });
-    if (project?.inspectionDate) items.push({ date: project.inspectionDate, title: 'Inspection started', note: `${answered(project)} answered items` });
-    if (project?.completedAt) items.push({ date: project.completedAt, title: 'Inspection completed', note: `${noCount(project)} findings recorded` });
-    if (project?.lastSaved) items.push({ date: project.lastSaved, title: 'Last saved', note: 'Latest local record update' });
-
-    openActions(project).slice(0, 4).forEach(action => {
-      items.push({ date: action.createdDate || action.created, title: `${action.priority || 'Open'} action`, note: `${action.actionId || ''} · ${action.question || action.finding || ''}` });
-    });
-
-    (project?.inspectionHistory || []).slice(-4).forEach(item => {
-      items.push({ date: item.completedAt || item.archivedAt || item.inspectionDate, title: 'Archived inspection', note: item.inspectionNumber || 'Inspection history item' });
-    });
-
-    return items
-      .filter(item => item.date)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 6);
   }
 
   function summary(project) {
@@ -221,14 +184,32 @@
     return lines;
   }
 
+  function dataSignature(project) {
+    const a = actionStats(project);
+    return JSON.stringify({
+      id: project?.id,
+      name: name(project),
+      address: address(project),
+      last: lastInspection(project),
+      next: nextInspection(project),
+      score: score(project),
+      answered: answered(project),
+      no: noCount(project),
+      photos: photos(project),
+      history: history(project),
+      actions: a,
+      actionUpdated: project?.actionEngineUpdatedAt || '',
+      saved: project?.lastSaved || ''
+    });
+  }
+
   function render(project) {
     const s = score(project);
     const a = actionStats(project);
     const h = health(project);
-    const t = timeline(project);
 
     return `
-      <section class="fire-s-building-passport-v104 fire-s-building-passport-complete-v1041">
+      <section class="fire-s-building-passport-v104 fire-s-building-passport-stable-v1044">
         <div class="fire-s-passport-hero-v104">
           <div>
             <span>Building Passport</span>
@@ -278,22 +259,43 @@
             </div>
           `).join('') : '<p class="fire-s-passport-muted-v104">Health will populate as checklist answers are captured.</p>'}
         </div>
-
-        <div class="fire-s-passport-timeline-v1041">
-          <h3>Timeline</h3>
-          ${t.length ? t.map(item => `
-            <div class="fire-s-timeline-item-v1041">
-              <span>${esc(displayDate(item.date))}</span>
-              <strong>${esc(item.title)}</strong>
-              <p>${esc(item.note || '')}</p>
-            </div>
-          `).join('') : '<p class="fire-s-passport-muted-v104">Timeline will populate as the premises is used.</p>'}
-        </div>
       </section>
     `;
   }
 
-  function inject() {
+  function bindTabs(wrapper) {
+    if (!wrapper) return;
+
+    wrapper.querySelectorAll('[data-scroll-target]').forEach(button => {
+      if (button.dataset.fireSStableBound === 'true') return;
+      button.dataset.fireSStableBound = 'true';
+
+      button.addEventListener('click', () => {
+        wrapper.querySelectorAll('.fire-s-passport-tabs-v104 button')
+          .forEach(tab => tab.classList.remove('active'));
+
+        button.classList.add('active');
+
+        const target = document.getElementById(button.dataset.scrollTarget);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    wrapper.querySelectorAll('[data-passport-tab="overview"]').forEach(button => {
+      if (button.dataset.fireSStableBound === 'true') return;
+      button.dataset.fireSStableBound = 'true';
+
+      button.addEventListener('click', () => {
+        wrapper.querySelectorAll('.fire-s-passport-tabs-v104 button')
+          .forEach(tab => tab.classList.remove('active'));
+
+        button.classList.add('active');
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  function inject(force = false) {
     const form = document.getElementById('projectFormSection');
     if (!form || form.style.display === 'none') return;
 
@@ -309,27 +311,52 @@
       const oldWorkspace = document.getElementById('fireSPremisesWorkspaceLiteV101');
       const toolbar = form.querySelector('.toolbar');
 
-      if (oldWorkspace) {
-        oldWorkspace.insertAdjacentElement('afterend', wrapper);
-      } else if (toolbar) {
-        toolbar.insertAdjacentElement('afterend', wrapper);
-      } else {
-        form.insertAdjacentElement('afterbegin', wrapper);
+      if (oldWorkspace) oldWorkspace.insertAdjacentElement('afterend', wrapper);
+      else if (toolbar) toolbar.insertAdjacentElement('afterend', wrapper);
+      else form.insertAdjacentElement('afterbegin', wrapper);
+    }
+
+    const signature = dataSignature(project);
+    const projectChanged = lastProjectId !== project.id;
+
+    if (force || projectChanged || wrapper.dataset.signature !== signature) {
+      const previousScrollY = window.scrollY;
+      wrapper.innerHTML = render(project);
+      wrapper.dataset.signature = signature;
+      lastSignature = signature;
+      lastProjectId = project.id;
+
+      // Stop visual jump caused by periodic re-rendering.
+      if (!force && !projectChanged) {
+        requestAnimationFrame(() => window.scrollTo({ top: previousScrollY, behavior: 'auto' }));
       }
     }
 
-    wrapper.innerHTML = render(project);
-
-    wrapper.querySelectorAll('[data-scroll-target]').forEach(button => {
-      button.addEventListener('click', () => {
-        const target = document.getElementById(button.dataset.scrollTarget);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
+    bindTabs(wrapper);
   }
 
   window.FireSBuildingPassport = { inject, render };
 
-  setTimeout(inject, 700);
-  setInterval(inject, 2200);
+  setTimeout(() => inject(true), 700);
+
+  // No constant interval re-render. Only lightweight checks when likely needed.
+  document.addEventListener('change', event => {
+    if (event.target && (
+      event.target.classList?.contains('answer-select') ||
+      event.target.closest?.('#projectFormSection')
+    )) {
+      setTimeout(() => inject(false), 250);
+    }
+  });
+
+  document.addEventListener('click', event => {
+    if (event.target && (
+      event.target.closest?.('.fire-s-action-modal-v1034') ||
+      event.target.closest?.('.fire-s-action-register-v1033')
+    )) {
+      setTimeout(() => inject(false), 350);
+    }
+  });
+
+  window.addEventListener('fireSProjectOpened', () => setTimeout(() => inject(true), 250));
 })();

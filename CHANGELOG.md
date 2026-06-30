@@ -1,7 +1,7 @@
-# Fire-S v104.3 Passport Consolidation
+# Fire-S v104.4 Passport Stability Fix
 
-- Removes visible duplicate Premises Workspace header.
-- Keeps Building Passport as the single premises overview panel.
-- Moves Action Register into the Building Passport area.
-- Keeps existing Action Register functionality.
-- Reduces vertical duplication on the premises page.
+- Fixes Building Passport jumping/resetting on the page.
+- Removes constant interval re-rendering from Building Passport.
+- Stops repeated DOM moving of the Action Register.
+- Building Passport now updates only when the underlying premises data changes.
+- Keeps duplicate Premises Workspace hidden.

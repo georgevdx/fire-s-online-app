@@ -10844,3 +10844,23 @@ body > #actionDropdown.action-dropdown button:last-child {
     max-width: none !important;
   }
 }
+
+
+
+/* Fire-S v104.4 Passport Stability Fix */
+#fireSBuildingPassportV104Wrapper {
+  scroll-margin-top: 14px;
+}
+
+.fire-s-building-passport-stable-v1044 {
+  transform: translateZ(0);
+}
+
+.fire-s-passport-actions-slot-v1043 {
+  position: relative;
+}
+
+/* prevent old duplicate workspace from taking layout space */
+.fire-s-hidden-duplicate-workspace-v1043 {
+  display: none !important;
+}
