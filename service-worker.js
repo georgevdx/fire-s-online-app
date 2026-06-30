@@ -1,10 +1,11 @@
-const CACHE_NAME = 'fireyesa-offline-v105-2';
+const CACHE_NAME = 'fireyesa-offline-v105-3';
 
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './action-register-hard-fix.js',
   './action-register-live-fix.js',
   './action-sync-fix.js',
   './premises-workspace.js',
