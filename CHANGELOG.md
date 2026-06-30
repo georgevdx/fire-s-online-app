@@ -1,6 +1,7 @@
-# Fire-S v103.3 Action Register
+# Fire-S v103.4 Resolve Actions
 
-- Adds action-register.js.
-- Shows Premises Actions below the Premises Workspace header.
-- Filters by Open, Critical, High, Medium, Low and Closed.
-- Dashboard, filters and compact inspection cards unchanged.
+- Adds Update / Resolve button on each Action.
+- Allows status changes: Open, In Progress, Waiting, Closed.
+- Allows responsible person, due date, completed by, completed date and comment updates.
+- Saves updates back to project.actions.
+- Closed actions move to Closed filter.

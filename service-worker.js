@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fireyesa-offline-v103-3';
+const CACHE_NAME = 'fireyesa-offline-v103-4';
 
 const APP_SHELL = [
   './',

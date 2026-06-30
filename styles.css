@@ -10377,3 +10377,23 @@ body > #actionDropdown.action-dropdown button:last-child {
 .fire-s-action-corrective-v1033 p{margin:5px 0 0;color:#7c2d12;font-size:12px;line-height:1.35}
 .fire-s-action-empty-v1033{padding:14px;border-radius:12px;background:#fff;color:#64748b;border:1px dashed #cbd5e1;font-size:13px;font-weight:800;text-align:center}
 @media(max-width:640px){.fire-s-action-summary-v1033{grid-template-columns:repeat(3,1fr)}.fire-s-action-meta-v1033{grid-template-columns:repeat(2,1fr)}}
+
+
+
+/* Fire-S Resolve Actions v103.4 */
+.fire-s-action-buttons-v1034{margin-top:10px;display:flex;justify-content:flex-end}
+.fire-s-action-buttons-v1034 button{width:auto;max-width:none;padding:8px 12px;border-radius:999px;background:#334155;font-size:12px;font-weight:900}
+.fire-s-action-modal-v1034{position:fixed;inset:0;z-index:50000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55)}
+.fire-s-action-modal-card-v1034{width:100%;max-width:460px;max-height:90vh;overflow:auto;border-radius:18px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.fire-s-action-modal-head-v1034{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+.fire-s-action-modal-head-v1034 strong{font-size:15px;color:#111827}
+.fire-s-action-modal-head-v1034 button{width:36px;height:36px;padding:0;border-radius:999px;background:#334155;font-size:20px}
+#fireSActionModalBodyV1034{padding:14px}
+#fireSActionModalBodyV1034 label{margin-bottom:10px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+#fireSActionModalBodyV1034 input,#fireSActionModalBodyV1034 select,#fireSActionModalBodyV1034 textarea{width:100%;max-width:none;margin-top:5px}
+#fireSActionModalBodyV1034 textarea{min-height:80px;resize:vertical}
+.fire-s-action-editor-summary-v1034{padding:10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;margin-bottom:12px}
+.fire-s-action-editor-summary-v1034 b{display:block;color:#111827;font-size:14px}
+.fire-s-action-editor-summary-v1034 p{margin:6px 0 0;color:#475569;font-size:13px}
+.fire-s-action-modal-actions-v1034{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.fire-s-action-modal-actions-v1034 button{max-width:none}
