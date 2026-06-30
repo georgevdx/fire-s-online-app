@@ -1,3 +1,11 @@
+
+## Sprint 110.1 - Dashboard Data Consolidation
+- Added data-driven Executive Intelligence layer.
+- Removed duplicate/generic AI recommendation cards from the dashboard.
+- Priority Action Items now read from the Action Register first.
+- Weakest Categories now group actual open actions and current answer data.
+- Added deduplication to prevent repeated identical executive cards.
+
 # Fire-S v105.3 Action Register Hard Fix
 
 - Forces the Action Register to derive and save actions from checklist NO answers.
