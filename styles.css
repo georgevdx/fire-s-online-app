@@ -10794,3 +10794,53 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-assets-v1042{margin:14px 0;padding:14px;border:1px solid #dbe3ef;border-radius:16px;background:#fff}.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.asset-grid div{padding:10px;border:1px solid #e2e8f0;border-radius:10px;text-align:center}.asset-grid strong{display:block;font-size:20px}
+
+
+/* Fire-S v104.3 Passport Consolidation */
+.fire-s-hidden-duplicate-workspace-v1043 {
+  display: none !important;
+}
+
+.fire-s-back-button-v1043 {
+  margin-bottom: 10px !important;
+}
+
+.fire-s-passport-actions-slot-v1043 {
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.fire-s-action-register-integrated-v1043 {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.fire-s-action-register-integrated-v1043 .fire-s-action-register-header-v1033 {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.fire-s-action-register-integrated-v1043 .fire-s-action-list-v1033 {
+  background: #f8fafc;
+}
+
+.fire-s-building-passport-v104 {
+  margin-top: 0 !important;
+}
+
+#fireSBuildingPassportV104Wrapper {
+  margin-bottom: 14px;
+}
+
+/* Avoid two different passport/workspace score styles appearing together */
+#fireSBuildingPassportV104Wrapper + .fire-s-action-register-v1033 {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .fire-s-back-button-v1043 {
+    max-width: none !important;
+  }
+}
