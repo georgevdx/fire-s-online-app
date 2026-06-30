@@ -628,6 +628,10 @@
       Photo Evidence
     </button>
 
+    <button type="button" id="analyticsMenuBtn">
+      Analytics
+    </button>
+
     <button type="button" data-section-target="inspectorCommentsCard">
       Inspector Comments
     </button>
@@ -768,6 +772,10 @@
     Finish
   </button>
 
+  <button id="analyticsBtn" type="button" class="secondary-btn">
+    Analytics
+  </button>
+
   <div class="action-menu">
 
     <button id="actionMenuBtn" type="button">
@@ -807,6 +815,23 @@
 </div>
 
         <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
+      </section>
+
+      <section class="card analytics-section" id="analyticsSection" style="display:none;">
+        <div class="analytics-header">
+          <div>
+            <div class="analytics-kicker">Management View</div>
+            <h2>Analytics</h2>
+            <p>Statistical, trend and executive data is kept here so the inspection pages stay clean.</p>
+          </div>
+          <div class="analytics-header-actions">
+            <button id="refreshAnalyticsBtn" type="button">Refresh</button>
+            <button id="closeAnalyticsBtn" type="button" class="secondary-btn">Close</button>
+          </div>
+        </div>
+        <div id="analyticsContent" class="analytics-content">
+          Open an inspection and press Refresh to view Analytics.
+        </div>
       </section>
 
       <div class="card" id="requirementsSection">
@@ -968,6 +993,7 @@
   <script src="sprint-109-3-trends.js?v=109-3-trend-analytics"></script>
   <script src="sprint-110-0-ai-assist.js?v=110-0-ai-assist-foundation"></script>
   <script src="sprint-110-1-dashboard-data-consolidation.js?v=110-1-dashboard-data-consolidation"></script>
+  <script src="sprint-111-0-analytics-tab.js?v=111-0-analytics-tab"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
