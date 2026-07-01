@@ -1,4 +1,4 @@
-const FIRE_S_CACHE = 'fire-s-v119-rc-core-stability';
+const FIRE_S_CACHE = 'fire-s-v120-recovery-import-integrity';
 self.addEventListener('install', event => {
   self.skipWaiting();
 });

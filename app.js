@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v119-rc-core-stability';
+const APP_VERSION = 'v120-recovery-import-integrity';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2323,17 +2323,39 @@ if (!confirmed) return false;
 
     exportEmergencyBackup(`import-${sourceLabel}`);
 
-    const importedProjects = filterDeletedProjects(backup.projects);
+    /*
+      RC v120 Recovery Integrity
+      A backup restore must restore the backup exactly as selected by the user.
+      Do NOT apply the deleted-inspection register during import, because a previous
+      faulty delete may have marked a valid inspection as deleted. Clear that register
+      first, then write every project from the backup.
+    */
+    localStorage.removeItem('fireyeDeletedProjectIds');
+
+    const importedProjects = Array.isArray(backup.projects)
+      ? backup.projects.filter(project => project && project.id)
+      : [];
+
+    const expectedImportCount = backup.projects.length;
 
     setProjects(importedProjects);
     currentProjectId = null;
+    currentProjectSummaryId = null;
+    archivedReportContext = null;
     currentPhotos = [];
+    followUpFindingModeActive = false;
+    followUpFindingNavIndexes = [];
+    followUpFindingNavPosition = 0;
 
     renderProjectsList();
     showProjectList();
+    updateAppInfo();
+    if (typeof renderHomeCommandCentre === 'function') {
+      renderHomeCommandCentre();
+    }
 
     const message =
-      `Backup imported successfully (${importedProjects.length} inspection${importedProjects.length === 1 ? '' : 's'}).`;
+      `Backup imported successfully (${importedProjects.length} of ${expectedImportCount} inspection${expectedImportCount === 1 ? '' : 's'} restored). Deleted-inspection register cleared.`;
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent = message;
@@ -2343,6 +2365,8 @@ if (!confirmed) return false;
     if (syncStatus) {
       syncStatus.textContent = message;
     }
+
+    alert(message);
 
     return true;
   } catch (error) {
