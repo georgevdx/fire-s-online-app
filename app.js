@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.0.1 - Inspection Open Gate';
+const APP_VERSION = 'RC 1.0.2 - Open Gate Polish';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -11229,8 +11229,28 @@ function ensureInspectionOpenGateStyles() {
       border: 1px solid #e6e6e6;
       border-radius: 12px;
       padding: 10px 12px;
-      margin: 12px 0 16px;
+      margin: 12px 0 10px;
       font-size: 0.92rem;
+    }
+
+    .inspection-open-gate-safe-note {
+      background: #fff7e6;
+      border: 1px solid #ffd591;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: 0 0 16px;
+      color: #5c3b00;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .inspection-open-gate-mode-label {
+      display: inline-block;
+      margin-bottom: 4px;
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.78;
     }
 
     .inspection-open-gate-actions {
@@ -11370,8 +11390,8 @@ function showInspectionOpenGate(projectId, focusMode) {
       <div class="inspection-open-gate-kicker">Inspection Open Choice</div>
       <h3 id="inspectionOpenGateTitle">Previous inspection found</h3>
       <p>
-        Choose how Fire-S must handle this inspection before it opens.
-        This prevents old inspection data from being mixed with a new cycle.
+        Fire-S found an existing inspection cycle for this premises. Choose exactly how to open it.
+        This gate prevents old inspection data from being accidentally mixed with a new inspection.
       </p>
 
       <div class="inspection-open-gate-summary">
@@ -11380,20 +11400,27 @@ function showInspectionOpenGate(projectId, focusMode) {
         Answers: ${answersCount} · Photos: ${photosCount} · History: ${historyCount}
       </div>
 
+      <div class="inspection-open-gate-safe-note">
+        <strong>Safety note:</strong> No data will be deleted from this screen. Delete remains locked until it is rebuilt as a separate tested function.
+      </div>
+
       <div class="inspection-open-gate-actions">
         <button type="button" class="primary-choice" id="openGateArchiveBtn">
-          1. Archive as History + Start New Inspection
-          <small>Moves the current inspection cycle into history and opens a clean new inspection for this same premises.</small>
+          <span class="inspection-open-gate-mode-label">New cycle</span><br>
+          1. Archive as History + Start Clean Inspection
+          <small>The current inspection is saved into this premises history, then Fire-S opens a blank inspection for the same premises.</small>
         </button>
 
         <button type="button" id="openGateContinueBtn">
+          <span class="inspection-open-gate-mode-label">Continue work</span><br>
           2. Continue / Edit Current Inspection
-          <small>Opens this inspection exactly as it is now, with Q&amp;A, photos, comments and actions still editable.</small>
+          <small>Use this when the inspection is not finished yet. Existing Q&amp;A, photos, comments and actions remain editable.</small>
         </button>
 
-        <button type="button" class="danger-choice" id="openGateDeleteBtn" disabled>
-          3. Delete Inspection — Temporarily Disabled
-          <small>Disabled for data safety until Delete is rebuilt as a separate, tested module.</small>
+        <button type="button" class="danger-choice" id="openGateDeleteBtn" disabled aria-disabled="true" title="Delete is disabled for data safety.">
+          <span class="inspection-open-gate-mode-label">Locked</span><br>
+          3. Delete Inspection — Disabled
+          <small>This option is intentionally unavailable. It cannot delete premises, history or inspections from this gate.</small>
         </button>
       </div>
 
@@ -11417,7 +11444,7 @@ function showInspectionOpenGate(projectId, focusMode) {
   if (archiveBtn) {
     archiveBtn.addEventListener('click', () => {
       const confirmed = confirm(
-        'Archive the current inspection as history and start a clean new inspection for this same premises?'
+        'Archive the current inspection into history and start a clean blank inspection for this same premises? No data will be deleted.'
       );
 
       if (!confirmed) return;

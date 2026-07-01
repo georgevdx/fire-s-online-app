@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-0-1-open-gate';
+const CACHE_NAME = 'fire-s-rc-1-0-2-open-gate-polish';
 
 const APP_SHELL = [
   './',
