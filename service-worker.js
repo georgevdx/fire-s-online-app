@@ -1,17 +1,14 @@
-const CACHE_NAME = 'fireyesa-offline-v103-4';
+const CACHE_NAME = 'fireyesa-offline-v1';
 
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
-  './action-engine.js',
-  './action-register.js',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
   './templates.json',
-  './rules.json',
   './manifest.json',
   './icon-192.png',
   './supabase-js-v2.js'
