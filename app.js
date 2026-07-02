@@ -57,8 +57,26 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.2 - Mobile Stable Cache Fix';
+const APP_VERSION = 'RC 1.1.3 - Photo Categories';
 const MAX_PHOTOS_PER_INSPECTION = 10;
+const PHOTO_CATEGORIES = [
+  'General Evidence',
+  'Fire Equipment',
+  'Sprinklers / Fixed Suppression',
+  'Hose Reels / Hydrants',
+  'Emergency Lighting',
+  'Exit Signage',
+  'Means of Escape',
+  'Fire Doors',
+  'Fire Detection and Alarm',
+  'Hazardous Substances',
+  'Electrical Risk',
+  'Housekeeping',
+  'Documentation',
+  'Pumps / Tanks',
+  'Smoke Ventilation',
+  'Other / Uncategorized'
+];
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
 
@@ -1030,7 +1048,12 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
 
     pdf.text(`Captured: ${capturedText}`, marginX, 36);
 
-    const imageTop = 43;
+    const categoryText =
+      photo.category || 'General Evidence';
+
+    pdf.text(`Category: ${categoryText}`, marginX, 41);
+
+    const imageTop = 48;
     const imageBoxWidth = pageWidth - marginX * 2;
     const imageBoxHeight = 170;
 
@@ -13569,6 +13592,11 @@ function buildPdfPhotoAppendix(photos = [], emptyMessage = 'No photo evidence wa
             }
           </div>
 
+          <div class="report-photo-category">
+            <strong>Category:</strong>
+            ${escapeHtml(photo.category || 'General Evidence')}
+          </div>
+
           <div class="report-photo-image-box">
             ${
               photo.src
@@ -14451,6 +14479,7 @@ function createLocalPhotoFallback(file) {
           src: compressedDataUrl,
           timestamp: new Date().toISOString(),
           note: '',
+          category: 'General Evidence',
           uploadFallback: true,
           uploadPending: true
         });
@@ -14576,10 +14605,14 @@ async function handlePhotoUpload(event) {
           const existingNote =
             currentPhotos[photoIndex].note || '';
 
+          const existingCategory =
+            currentPhotos[photoIndex].category || 'General Evidence';
+
           currentPhotos[photoIndex] = {
             ...uploadedPhoto,
             id: localPhotoId,
             note: existingNote,
+            category: existingCategory,
             uploadFallback: false,
             uploadPending: false
           };
@@ -15102,6 +15135,15 @@ async function downloadArchivedInspectionPhotos(projectId, historyIndex) {
   }
 }
 
+function getPhotoCategoryOptions(selectedCategory) {
+  const selected = selectedCategory || 'General Evidence';
+  return PHOTO_CATEGORIES.map(category => `
+    <option value="${escapeHtml(category)}" ${category === selected ? 'selected' : ''}>
+      ${escapeHtml(category)}
+    </option>
+  `).join('');
+}
+
 function renderPhotos() {
   const container = getEl('photoPreview');
   container.innerHTML = '';
@@ -15114,18 +15156,39 @@ function renderPhotos() {
   }
 
   currentPhotos.forEach((photo, index) => {
+    if (!photo.category) {
+      photo.category = 'General Evidence';
+    }
+
     const div = document.createElement('div');
-    div.className = 'photo-item';
+    div.className = 'photo-item photo-item-categorised';
 
     const photoSrc = photo.src;
-    const photoTime = new Date(photo.timestamp).toLocaleString();
+    const photoTime = photo.timestamp
+      ? new Date(photo.timestamp).toLocaleString()
+      : 'Not recorded';
 
     div.innerHTML = `
-  <img src="${photoSrc}">
+  <img src="${photoSrc}" alt="Inspection photo ${index + 1}">
 
-  <small class="photo-timestamp">
-    Captured: ${photoTime}
-  </small>
+  <div class="photo-card-topline">
+    <small class="photo-timestamp">
+      Captured: ${photoTime}
+    </small>
+    <span class="photo-category-chip">
+      ${escapeHtml(photo.category || 'General Evidence')}
+    </span>
+  </div>
+
+  <label class="photo-category-label">
+    Category
+    <select
+      class="photo-category-select"
+      onchange="updatePhotoCategory(${index}, this.value)"
+    >
+      ${getPhotoCategoryOptions(photo.category)}
+    </select>
+  </label>
 
   <textarea
     class="photo-note"
@@ -15182,6 +15245,15 @@ function updatePhotoNote(index, value) {
   if (!currentPhotos[index]) return;
 
   currentPhotos[index].note = value;
+  scheduleAutoSave();
+}
+
+function updatePhotoCategory(index, value) {
+  if (!currentPhotos[index]) return;
+
+  currentPhotos[index].category = value || 'General Evidence';
+  renderPhotos();
+  saveCurrentPhotosToOpenProject();
   scheduleAutoSave();
 }
 
@@ -16091,6 +16163,7 @@ const photosHtml =
               </div>
 
               <div style="margin-top:6px; font-size:0.75rem; line-height:1.25;">
+                <strong>Category:</strong> ${escapeHtml(photo.category || 'General Evidence')}<br>
                 <strong>Photo Note:</strong>
                 ${escapeHtml(photo.note || 'No note added.')}
               </div>

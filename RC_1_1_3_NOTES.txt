@@ -1,0 +1,8 @@
+Fire-S RC 1.1.3 - Photo Categories
+
+- Adds category selection to each inspection photo.
+- Saves photo category with photo metadata.
+- Preserves category after cloud photo upload replaces the local image source.
+- Shows category in photo evidence and PDF appendix.
+- Mobile photo layout kept simple: one photo card per row on phones.
+- Version/cache-busters updated from RC 1.1.2 to RC 1.1.3.

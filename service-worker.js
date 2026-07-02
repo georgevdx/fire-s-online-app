@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-2-mobile-stable-cache-fix';
+const CACHE_NAME = 'fire-s-rc-1-1-3-photo-categories';
 
 const APP_SHELL = [
   './',
