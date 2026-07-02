@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-16C-photo-category-gallery';
+const CACHE_NAME = 'fire-s-rc-1-1-16D-photo-question-linking';
 
 const APP_SHELL = [
   './',

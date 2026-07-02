@@ -1,17 +1,11 @@
-# Fire-S RC 1.1.16C - Photo Category Gallery
+# Fire-S RC 1.1.16D - Photo Question Linking Module
 
-Small patch based on RC 1.1.16B.
+Small patch based on RC 1.1.16C.
 
-## Changed
-- Added category chips inside Smart Photo Centre.
-- Category chips filter the visible photo gallery.
-- Photo counts still read from the same project.photos[] source of truth.
-- Larger responsive photo cards for desktop and mobile.
-- Version/cache bump to RC 1.1.16C.
-
-## Modified files
-- index.html
-- app.js
-- styles.css
-- service-worker.js
-- CHANGELOG.md
+## Included
+- Replaces the Linked Question free-text field with a checklist-item dropdown.
+- Stores linkedQuestion, linkedQuestionText and linkedSection on each item in project.photos[].
+- Keeps project.photos[] as the single photo source of truth.
+- Adds a linked-question summary on each photo card.
+- Adds lightweight photo-count badges to checklist rows where possible.
+- Cache/version bump to RC 1.1.16D.

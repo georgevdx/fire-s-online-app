@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.16C - Photo Category Gallery';
+const APP_VERSION = 'RC 1.1.16D - Photo Question Linking';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -23758,14 +23758,14 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   Fire-S RC 1.1.16C - Photo Category Gallery
+   Fire-S RC 1.1.16D - Photo Question Linking
    Purpose: category chips filter the visible photo gallery while all counts
    remain based on the same project.photos[] source of truth.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.16C-photo-category-gallery';
+  const VERSION = '1.1.16D-photo-question-linking';
   window.fireSActivePhotoCategoryFilter = window.fireSActivePhotoCategoryFilter || 'All';
 
   function esc(value) {
@@ -23952,4 +23952,315 @@ if (!window.fireSMobileSmartCardsApplied) {
   }, 1200);
 
   window.FireSPhotoGallery1116C = { version: VERSION, categoriesFor, setFilter: window.setPhotoCategoryFilter };
+})();
+
+
+/* =====================================================
+   Fire-S RC 1.1.16D - Photo Question Linking Module
+   Purpose: replace free-text linked question with a checklist dropdown.
+   Source of truth remains project.photos[].
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.16D-photo-question-linking';
+
+  function esc(value) {
+    if (typeof escapeHtml === 'function') return escapeHtml(value || '');
+    return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  }
+
+  function readPhotos() {
+    if (typeof currentPhotos !== 'undefined' && Array.isArray(currentPhotos)) return currentPhotos;
+    if (window.currentProject && Array.isArray(window.currentProject.photos)) return window.currentProject.photos;
+    if (typeof currentProjectId !== 'undefined' && currentProjectId && typeof getProjects === 'function') {
+      const project = getProjects().find(p => String(p.id) === String(currentProjectId));
+      if (project && Array.isArray(project.photos)) return project.photos;
+    }
+    return [];
+  }
+
+  function savePhotos(photos) {
+    if (typeof currentPhotos !== 'undefined') currentPhotos = photos;
+    window.currentPhotos = photos;
+
+    if (typeof currentProjectId !== 'undefined' && currentProjectId && typeof getProjects === 'function' && typeof setProjects === 'function') {
+      try {
+        const projects = getProjects();
+        const index = projects.findIndex(p => String(p.id) === String(currentProjectId));
+        if (index !== -1) {
+          projects[index] = {
+            ...projects[index],
+            photos,
+            syncPending: true,
+            syncError: false,
+            lastSaved: new Date().toISOString()
+          };
+          setProjects(projects);
+        }
+      } catch (error) {
+        console.warn('Photo question linking save failed:', error);
+      }
+    }
+
+    if (typeof scheduleAutoSave === 'function') {
+      try { scheduleAutoSave(); } catch (_) {}
+    }
+  }
+
+  function sourceOf(photo) {
+    if (window.FireSPhotoCentre1116?.getPhotoSource) {
+      try { return window.FireSPhotoCentre1116.getPhotoSource(photo); } catch (_) {}
+    }
+    return photo?.src || photo?.photoSrc || photo?.imageSrc || photo?.image || photo?.dataUrl || photo?.dataURL || photo?.url || photo?.previewSrc || photo?.thumbnailSrc || '';
+  }
+
+  function normalise(photo) {
+    if (window.FireSPhotoCentre1116?.normalisePhoto) {
+      try { photo = window.FireSPhotoCentre1116.normalisePhoto(photo); } catch (_) {}
+    }
+    if (!photo.id) photo.id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+    if (!photo.category) photo.category = 'General';
+    if (typeof photo.area === 'undefined') photo.area = '';
+    if (typeof photo.linkedQuestion === 'undefined') photo.linkedQuestion = '';
+    if (typeof photo.linkedQuestionText === 'undefined') photo.linkedQuestionText = '';
+    if (typeof photo.linkedSection === 'undefined') photo.linkedSection = '';
+    return photo;
+  }
+
+  function getChecklistItemsForLinking() {
+    const output = [];
+
+    function pushItem(item, index, sectionName) {
+      if (!item) return;
+      const itemNumber = String(item['Item Number'] || item.itemNumber || item.number || index + 1 || '').trim();
+      const question = String(item['Checklist Item'] || item.question || item.text || item.label || '').trim();
+      if (!itemNumber && !question) return;
+      output.push({
+        value: itemNumber || String(index + 1),
+        itemNumber: itemNumber || String(index + 1),
+        sectionName: sectionName || item.sectionName || item.Category || item.category || item.Section || item.section || 'Inspection',
+        question: question || `Checklist item ${itemNumber || index + 1}`
+      });
+    }
+
+    try {
+      if (typeof getActiveTemplateChecklist === 'function') {
+        const checklist = getActiveTemplateChecklist();
+        if (Array.isArray(checklist) && checklist.length) {
+          checklist.forEach((item, index) => pushItem(item, index, item.sectionName || item.Category || item.Section));
+        }
+      }
+    } catch (_) {}
+
+    if (!output.length && Array.isArray(window.checklists)) {
+      window.checklists.forEach((item, index) => pushItem(item, index, item.sectionName || item.Category || item.Section));
+    }
+
+    if (!output.length && typeof inspectionTemplates !== 'undefined') {
+      try {
+        const productType = document.getElementById('productType')?.value || 'Fire Safety Compliance';
+        const inspectionType = document.getElementById('inspectionType')?.value || 'General Fire Inspection';
+        const template = inspectionTemplates?.[productType]?.[inspectionType] || [];
+        let index = 0;
+        template.forEach(section => {
+          if (Array.isArray(section.items)) {
+            section.items.forEach(item => pushItem(item, index++, section.sectionName || section.name || section.title));
+          } else {
+            pushItem(section, index++, section.sectionName || section.name || section.title);
+          }
+        });
+      } catch (_) {}
+    }
+
+    const seen = new Set();
+    return output.filter(item => {
+      const key = `${item.itemNumber}|${item.question}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function questionOptions(selected) {
+    const items = getChecklistItemsForLinking();
+    const current = String(selected || '');
+    const options = ['<option value="">Not linked</option>'];
+    items.forEach(item => {
+      const label = `${item.itemNumber}. ${item.sectionName} — ${item.question}`;
+      options.push(`<option value="${esc(item.itemNumber)}" ${String(item.itemNumber) === current ? 'selected' : ''} data-question="${esc(item.question)}" data-section="${esc(item.sectionName)}">${esc(label)}</option>`);
+    });
+    return options.join('');
+  }
+
+  function categoriesFor(photos) {
+    const map = new Map();
+    photos.forEach(photo => {
+      const category = photo.category || 'General';
+      map.set(category, (map.get(category) || 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }
+
+  function categoryOptions(selected) {
+    const list = window.FireSPhotoCentre1116?.categories || [
+      'General','Fire Equipment','Means of Escape','Fire Doors','Electrical','Housekeeping','Hazardous Substances','Fire Detection and Alarm','Fixed Fire Suppression Systems','Emergency Lighting','Documentation','Other'
+    ];
+    const current = selected || 'General';
+    return list.map(category => `<option value="${esc(category)}" ${category === current ? 'selected' : ''}>${esc(category)}</option>`).join('');
+  }
+
+  function visiblePhotos(photos) {
+    const active = window.fireSActivePhotoCategoryFilter || 'All';
+    if (active === 'All') return photos.map((photo, index) => ({ photo, index }));
+    return photos.map((photo, index) => ({ photo, index })).filter(item => (item.photo.category || 'General') === active);
+  }
+
+  window.updatePhotoLinkedQuestionSelect = function updatePhotoLinkedQuestionSelect(index, selectEl) {
+    const photos = readPhotos().map(normalise);
+    const photo = photos[index];
+    if (!photo) return;
+
+    const option = selectEl?.selectedOptions?.[0];
+    photo.linkedQuestion = selectEl?.value || '';
+    photo.linkedQuestionText = option?.dataset?.question || '';
+    photo.linkedSection = option?.dataset?.section || '';
+
+    savePhotos(photos);
+    if (typeof window.renderPhotos === 'function') window.renderPhotos();
+  };
+
+  window.setPhotoCategoryFilter = window.setPhotoCategoryFilter || function setPhotoCategoryFilter(category) {
+    window.fireSActivePhotoCategoryFilter = category || 'All';
+    if (typeof window.renderPhotos === 'function') window.renderPhotos();
+  };
+
+  function renderHeader(container, photos) {
+    const categories = categoriesFor(photos);
+    const active = window.fireSActivePhotoCategoryFilter || 'All';
+    const linkedCount = photos.filter(photo => String(photo.linkedQuestion || '').trim()).length;
+    const visibleCount = active === 'All' ? photos.length : photos.filter(p => (p.category || 'General') === active).length;
+
+    const header = document.createElement('div');
+    header.className = 'fire-s-photo-centre-v1116 fire-s-photo-centre-v1116d';
+    header.innerHTML = `
+      <div class="fire-s-photo-centre-head-v1116">
+        <div>
+          <span>Smart Photo Centre</span>
+          <strong>${photos.length} photo${photos.length === 1 ? '' : 's'}</strong>
+        </div>
+        <small>${linkedCount} linked to checklist items · ${active === 'All' ? 'All photo evidence' : `${esc(active)} · ${visibleCount} shown`}</small>
+      </div>
+      <div class="fire-s-photo-category-strip-v1116 fire-s-photo-category-filter-v1116c">
+        <button type="button" class="${active === 'All' ? 'active' : ''}" onclick="setPhotoCategoryFilter('All')">All <b>${photos.length}</b></button>
+        ${categories.length ? categories.map(([category, count]) => `
+          <button type="button" class="${active === category ? 'active' : ''}" onclick="setPhotoCategoryFilter('${esc(category).replace(/'/g, '&#039;')}')">${esc(category)} <b>${count}</b></button>
+        `).join('') : '<span>No categories yet</span>'}
+      </div>
+    `;
+    container.appendChild(header);
+  }
+
+  window.renderPhotos = function renderPhotosQuestionLinking() {
+    const container = document.getElementById('photoPreview');
+    if (!container) return;
+
+    const photos = readPhotos().map(normalise);
+    container.innerHTML = '';
+
+    if (typeof updatePhotoUploadStatus === 'function') {
+      try { updatePhotoUploadStatus(); } catch (_) {}
+    }
+
+    renderHeader(container, photos);
+
+    if (!photos.length) {
+      const empty = document.createElement('div');
+      empty.className = 'note fire-s-photo-empty-v1116';
+      empty.textContent = 'No photo evidence added yet. Add photos and classify them by category for cleaner reports.';
+      container.appendChild(empty);
+      return;
+    }
+
+    const items = visiblePhotos(photos);
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'note fire-s-photo-empty-v1116';
+      empty.textContent = 'No photos found in this category.';
+      container.appendChild(empty);
+      return;
+    }
+
+    items.forEach(({ photo, index }) => {
+      const div = document.createElement('div');
+      div.className = 'photo-item fire-s-photo-item-v1116 fire-s-photo-item-v1116c fire-s-photo-item-v1116d';
+      const src = sourceOf(photo);
+      const photoTime = photo.timestamp ? new Date(photo.timestamp).toLocaleString() : 'Not recorded';
+      const category = photo.category || 'General';
+      const area = photo.area || '';
+      const linkedQuestion = photo.linkedQuestion || '';
+      const linkedText = photo.linkedQuestionText || '';
+      const linkedSection = photo.linkedSection || '';
+
+      div.innerHTML = `
+        <div class="fire-s-photo-preview-v1116c">
+          ${src ? `<img src="${esc(src)}" alt="Inspection photo ${index + 1}">` : '<div class="fire-s-photo-missing-v1116">Photo preview unavailable<br><small>Retake only if it was captured before the photo source fix.</small></div>'}
+        </div>
+        <div class="fire-s-photo-fields-v1116c">
+          <div class="fire-s-photo-meta-line-v1116"><span>Photo ${index + 1}</span><small>${esc(photoTime)}</small></div>
+          <label class="fire-s-photo-field-v1116"><span>Category</span><select onchange="updatePhotoCategory(${index}, this.value)">${categoryOptions(category)}</select></label>
+          <label class="fire-s-photo-field-v1116"><span>Area / Location</span><input type="text" value="${esc(area)}" placeholder="e.g. Ground floor, kitchen" oninput="updatePhotoArea(${index}, this.value)"></label>
+          <label class="fire-s-photo-field-v1116"><span>Linked checklist item</span><select onchange="updatePhotoLinkedQuestionSelect(${index}, this)">${questionOptions(linkedQuestion)}</select></label>
+          ${linkedQuestion ? `<div class="fire-s-linked-question-summary-v1116d"><strong>Linked:</strong> ${esc(linkedQuestion)}${linkedSection ? ` · ${esc(linkedSection)}` : ''}${linkedText ? `<br><span>${esc(linkedText)}</span>` : ''}</div>` : ''}
+          <textarea class="photo-note" placeholder="Photo note..." oninput="updatePhotoNote(${index}, this.value)">${esc(photo.note || '')}</textarea>
+          <button class="photo-delete" type="button" onclick="deletePhoto(${index})">Delete</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    savePhotos(photos);
+  };
+
+  function markQuestionsWithPhotoCounts() {
+    const photos = readPhotos().map(normalise);
+    const counts = photos.reduce((map, photo) => {
+      const key = String(photo.linkedQuestion || '').trim();
+      if (key) map[key] = (map[key] || 0) + 1;
+      return map;
+    }, {});
+
+    document.querySelectorAll('.fire-s-question-photo-count-v1116d').forEach(el => el.remove());
+
+    document.querySelectorAll('.checklist-row').forEach(row => {
+      const itemIndex = row.dataset?.itemIndex;
+      const itemNumber = row.dataset?.itemNumber || row.querySelector('[data-item-number]')?.dataset?.itemNumber || '';
+      const possibleKeys = [itemNumber, itemIndex ? String(Number(itemIndex) + 1) : ''].filter(Boolean);
+      const count = possibleKeys.reduce((sum, key) => sum + (counts[key] || 0), 0);
+      if (!count) return;
+      const badge = document.createElement('div');
+      badge.className = 'fire-s-question-photo-count-v1116d';
+      badge.textContent = `📷 ${count} photo${count === 1 ? '' : 's'} attached`;
+      row.appendChild(badge);
+    });
+  }
+
+  const originalRenderPhotosRef = window.renderPhotos;
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('photoPreview')) setTimeout(markQuestionsWithPhotoCounts, 150);
+  });
+
+  setTimeout(() => {
+    try { observer.observe(document.body, { childList: true, subtree: true }); } catch (_) {}
+    if (document.getElementById('photoPreview') && typeof window.renderPhotos === 'function') {
+      try { window.renderPhotos(); } catch (_) {}
+      setTimeout(markQuestionsWithPhotoCounts, 250);
+    }
+  }, 900);
+
+  window.FireSPhotoQuestionLinking1116D = {
+    version: VERSION,
+    getChecklistItemsForLinking,
+    markQuestionsWithPhotoCounts
+  };
 })();
