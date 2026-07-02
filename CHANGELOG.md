@@ -1,3 +1,12 @@
+
+## RC 1.1.7 - Building Health Index
+
+- Adds compact Building Health score to premises cards.
+- Health score considers compliance, open actions, critical/high actions, overdue follow-ups and missing core data.
+- Mobile-first display: small pill/ring, not a crowded dashboard.
+- Safe UI add-on only: no inspection data structure changed.
+- Cache/version bump to RC 1.1.7.
+
 # RC 1.1.6 - Conditional Sections Foundation
 
 - Added safe conditional question skipping for applicable sections.

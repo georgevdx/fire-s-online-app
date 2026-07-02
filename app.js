@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.6 - Conditional Sections Foundation';
+const APP_VERSION = 'RC 1.1.7 - Building Health Index';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const PHOTO_CATEGORIES = [
   'General Evidence',

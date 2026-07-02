@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-6-conditional-sections';
+const CACHE_NAME = 'fire-s-rc-1-1-7-building-health-index';
 
 const APP_SHELL = [
   './',
@@ -8,6 +8,7 @@ const APP_SHELL = [
   './workspace.css',
   './app.js',
   './sprint-111-6-conditional-sections.js',
+  './sprint-111-7-building-health-index.js',
   './occupancies.json',
   './requirements.json',
   './checklists.json',

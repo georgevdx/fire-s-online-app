@@ -1,0 +1,3 @@
+RC 1.1.7 Building Health Index
+
+Upload/replace all files. Adds compact Building Health badges to premises cards without changing saved data.
