@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-8B-premises-cards';
+const CACHE_NAME = 'fire-s-rc-1-1-8D-building-health-centre';
 
 const APP_SHELL = [
   './',

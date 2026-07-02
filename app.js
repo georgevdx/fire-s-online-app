@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.8C - Premises Cards';
+const APP_VERSION = 'RC 1.1.8D - Building Health Centre';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -20958,4 +20958,250 @@ if (!window.fireSMobileSmartCardsApplied) {
   window.addEventListener('DOMContentLoaded', () => {
     if (typeof window.updateAppInfo === 'function') window.updateAppInfo();
   });
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.8D - Building Health Centre
+   Safe add-on: calculates a compact Fire-S Building Health score,
+   decorates Premises cards, and shows a mobile-first Health Centre
+   inside the open Premises workspace.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.8D-building-health-centre';
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function readProjects() {
+    try {
+      if (typeof window.getProjects === 'function') return window.getProjects();
+      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function currentProject() {
+    const id = window.currentProjectId || window.currentProject?.id || '';
+    return readProjects().find(project => String(project.id) === String(id)) || window.currentProject || null;
+  }
+
+  function answerValue(answer) {
+    return String(answer?.answer || '').trim().toLowerCase();
+  }
+
+  function answers(project) {
+    return Array.isArray(project?.answers) ? project.answers : [];
+  }
+
+  function actions(project) {
+    return Array.isArray(project?.actions) ? project.actions : [];
+  }
+
+  function openActions(project) {
+    return actions(project).filter(action => String(action?.status || 'Open').trim().toLowerCase() !== 'closed');
+  }
+
+  function priority(action) {
+    const value = String(action?.priority || action?.severity || 'Medium').trim().toLowerCase();
+    if (value === 'critical') return 'Critical';
+    if (value === 'high') return 'High';
+    if (value === 'low') return 'Low';
+    return 'Medium';
+  }
+
+  function answerCategory(answer) {
+    const direct = answer?.sectionName || answer?.category || answer?.section || answer?.group;
+    if (direct) return String(direct).trim();
+    const text = String(answer?.question || answer?.checklistItem || answer?.item || answer?.note || '').toLowerCase();
+    if (/escape|exit|egress|stair|corridor|route/.test(text)) return 'Means of Escape';
+    if (/alarm|detect|detector|manual call|mcp|sounder|panel/.test(text)) return 'Fire Detection';
+    if (/sprinkler|suppression|pump|hydrant|hose reel|water|valve/.test(text)) return 'Fire Protection';
+    if (/extinguisher|fire equipment/.test(text)) return 'Fire Equipment';
+    if (/emergency light|lighting|exit sign|signage/.test(text)) return 'Emergency Lighting';
+    if (/door|self closing|closer/.test(text)) return 'Fire Doors';
+    if (/electrical|db|distribution board|cable|plug/.test(text)) return 'Electrical';
+    if (/housekeeping|storage|waste|combustible/.test(text)) return 'Housekeeping';
+    if (/document|certificate|coc|record|logbook/.test(text)) return 'Documentation';
+    return 'General Fire Safety';
+  }
+
+  function categoryRows(project) {
+    const map = new Map();
+    answers(project).forEach(answer => {
+      const value = answerValue(answer);
+      if (!['yes', 'no'].includes(value)) return;
+      const category = answerCategory(answer);
+      if (!map.has(category)) map.set(category, { category, yes: 0, no: 0, total: 0 });
+      const row = map.get(category);
+      row.total += 1;
+      if (value === 'yes') row.yes += 1;
+      if (value === 'no') row.no += 1;
+    });
+    return Array.from(map.values())
+      .map(row => ({ ...row, score: row.total ? Math.round((row.yes / row.total) * 100) : 0 }))
+      .sort((a, b) => a.score - b.score || b.no - a.no)
+      .slice(0, 6);
+  }
+
+  function compliance(project) {
+    const applicable = answers(project).filter(answer => ['yes', 'no'].includes(answerValue(answer)));
+    if (!applicable.length) return null;
+    const yes = applicable.filter(answer => answerValue(answer) === 'yes').length;
+    return Math.round((yes / applicable.length) * 100);
+  }
+
+  function calculate(project) {
+    const comp = compliance(project);
+    const open = openActions(project);
+    const critical = open.filter(action => priority(action) === 'Critical').length;
+    const high = open.filter(action => priority(action) === 'High').length;
+    const today = new Date().toISOString().slice(0, 10);
+    const overdue = open.filter(action => action?.dueDate && String(action.dueDate).slice(0,10) < today).length;
+    const noCount = answers(project).filter(answer => answerValue(answer) === 'no').length;
+    const photoCount = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+
+    let score = comp === null ? 0 : comp;
+    score -= Math.min(critical * 12, 36);
+    score -= Math.min(high * 5, 20);
+    score -= Math.min(overdue * 4, 16);
+    score -= Math.min(Math.max(noCount - open.length, 0) * 2, 10);
+    if (comp !== null && photoCount > 0) score += 2;
+    score = Math.max(0, Math.min(100, Math.round(score)));
+
+    const label = score >= 90 ? 'Excellent' : score >= 75 ? 'Good' : score >= 55 ? 'Attention' : score > 0 ? 'Critical' : 'Incomplete';
+    const risk = critical ? 'Critical' : high || score < 75 ? 'High' : score < 90 ? 'Medium' : 'Low';
+
+    let trend = 'Stable';
+    if (history.length) {
+      const last = history[history.length - 1];
+      const lastComp = compliance(last);
+      if (lastComp !== null && comp !== null) {
+        if (comp - lastComp >= 3) trend = 'Improving';
+        else if (lastComp - comp >= 3) trend = 'Declining';
+      }
+    }
+
+    return { score, label, risk, compliance: comp, open: open.length, critical, high, overdue, photos: photoCount, trend, categories: categoryRows(project) };
+  }
+
+  function healthClass(score) {
+    if (score >= 90) return 'health-excellent';
+    if (score >= 75) return 'health-good';
+    if (score >= 55) return 'health-attention';
+    if (score > 0) return 'health-critical';
+    return 'health-incomplete';
+  }
+
+  function renderCentre(project) {
+    if (!project) return '';
+    const h = calculate(project);
+    const categories = h.categories.length ? h.categories : [{ category: 'No scored categories yet', score: 0, no: 0, total: 0 }];
+
+    return `
+      <section id="fireSBuildingHealthCentre" class="fire-s-health-centre ${healthClass(h.score)}">
+        <div class="fire-s-health-hero">
+          <div>
+            <span class="fire-s-health-kicker">Fire-S Building Health™</span>
+            <h2>${esc(h.score)}%</h2>
+            <p>${esc(h.label)} · Risk ${esc(h.risk)}</p>
+          </div>
+          <button type="button" class="fire-s-health-small-btn" onclick="document.getElementById('fireSHealthBreakdown')?.classList.toggle('open')">Breakdown</button>
+        </div>
+
+        <div class="fire-s-health-metrics">
+          <div><span>Compliance</span><strong>${h.compliance === null ? '-' : esc(h.compliance + '%')}</strong></div>
+          <div><span>Open Actions</span><strong>${esc(h.open)}</strong></div>
+          <div><span>Critical</span><strong>${esc(h.critical)}</strong></div>
+          <div><span>Trend</span><strong>${esc(h.trend)}</strong></div>
+        </div>
+
+        <div id="fireSHealthBreakdown" class="fire-s-health-breakdown">
+          <h3>Category Health</h3>
+          ${categories.map(row => `
+            <div class="fire-s-health-row">
+              <span>${esc(row.category)}</span>
+              <div class="fire-s-health-bar"><i style="width:${Math.max(0, Math.min(100, Number(row.score) || 0))}%"></i></div>
+              <strong>${esc(row.score)}%</strong>
+            </div>
+          `).join('')}
+          <p class="fire-s-health-note">Health combines compliance, open actions, critical/high findings, overdue items and inspection evidence. It excludes N/A/skipped items.</p>
+        </div>
+      </section>
+    `;
+  }
+
+  function ensureCentre() {
+    const project = currentProject();
+    const form = document.getElementById('projectFormSection');
+    if (!project || !form || form.style.display === 'none') return;
+
+    const existing = document.getElementById('fireSBuildingHealthCentre');
+    if (existing) existing.remove();
+
+    const anchor = document.getElementById('projectReadinessPanel') || form.querySelector('.card') || form.firstElementChild;
+    if (anchor) anchor.insertAdjacentHTML('beforebegin', renderCentre(project));
+    else form.insertAdjacentHTML('afterbegin', renderCentre(project));
+  }
+
+  function decoratePremisesCards() {
+    const projects = Array.isArray(window.currentProjectsListView) ? window.currentProjectsListView : [];
+    const cards = document.querySelectorAll('.ultra-premises-card[data-project-id]');
+    cards.forEach(card => {
+      if (card.querySelector('.fire-s-card-health')) return;
+      const project = projects.find(p => String(p.id) === String(card.dataset.projectId));
+      if (!project) return;
+      const h = calculate(project);
+      const body = card.querySelector('.ultra-premises-body') || card;
+      const row = document.createElement('div');
+      row.className = `fire-s-card-health ${healthClass(h.score)}`;
+      row.innerHTML = `<span>Health</span><strong>${esc(h.score)}%</strong><em>${esc(h.label)}</em>`;
+      body.appendChild(row);
+    });
+  }
+
+  function install() {
+    if (window.__fireSHealthCentre118D) return;
+    window.__fireSHealthCentre118D = true;
+    window.FireSHealthCentre = { calculate, render: ensureCentre, decorate: decoratePremisesCards, version: VERSION };
+
+    if (typeof window.renderProjectsList === 'function') {
+      const originalRenderProjectsList = window.renderProjectsList;
+      window.renderProjectsList = function fireSRenderProjectsListWithHealth() {
+        const result = originalRenderProjectsList.apply(this, arguments);
+        setTimeout(decoratePremisesCards, 0);
+        return result;
+      };
+    }
+
+    if (typeof window.openProject === 'function') {
+      const originalOpenProject = window.openProject;
+      window.openProject = function fireSOpenProjectWithHealthCentre() {
+        const result = originalOpenProject.apply(this, arguments);
+        setTimeout(ensureCentre, 350);
+        setTimeout(ensureCentre, 900);
+        return result;
+      };
+    }
+
+    document.addEventListener('change', event => {
+      if (event.target?.matches?.('.answer-select')) setTimeout(ensureCentre, 250);
+    });
+
+    setTimeout(decoratePremisesCards, 500);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
 })();

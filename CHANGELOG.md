@@ -1,21 +1,18 @@
-# Fire-S RC 1.1.8B - Premises Cards Patch
+# Fire-S RC 1.1.8D - Building Health Centre Patch
 
-Stability: Green / safe patch.
+Stability: Beta / small UI module patch.
 
-## Changed
-- Adds mobile-friendly Premises Cards 2.0.
-- Adds compact Premises stats bar.
-- Adds Building Health badge on each premises card.
-- Adds Action, Photo, Risk and Last Inspection metrics.
-- Keeps whole card clickable.
-- Updates version/cache labels to RC 1.1.8B.
+## Included
+- Adds Fire-S Building Health™ calculation layer.
+- Adds compact Health badge to Premises cards.
+- Adds mobile-first Building Health Centre inside an opened Premises.
+- Shows compliance, open actions, critical items, trend and category health.
+- Excludes N/A/skipped answers from compliance calculations.
+- Updates app version and cache-busters to RC 1.1.8D.
 
 ## Modified files
 - index.html
 - app.js
 - styles.css
 - service-worker.js
-
-
-RC 1.1.8C
-- Premises Workspace placeholder patch.
+- CHANGELOG.md

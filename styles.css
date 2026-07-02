@@ -10287,3 +10287,129 @@ body > #actionDropdown.action-dropdown button:last-child {
 @media (max-width: 380px) {
   .premises-stats-bar-v118b { grid-template-columns: repeat(2, 1fr); }
 }
+
+
+/* =====================================================
+   Fire-S RC 1.1.8D - Building Health Centre
+   ===================================================== */
+.fire-s-card-health {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  line-height: 1;
+}
+.fire-s-card-health span { color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+.fire-s-card-health strong { color: #0f172a; font-size: 13px; font-weight: 900; }
+.fire-s-card-health em { color: #475569; font-style: normal; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fire-s-card-health.health-excellent { background: #ecfdf5; border-color: #86efac; }
+.fire-s-card-health.health-good { background: #f0fdf4; border-color: #bbf7d0; }
+.fire-s-card-health.health-attention { background: #fffbeb; border-color: #fde68a; }
+.fire-s-card-health.health-critical { background: #fef2f2; border-color: #fecaca; }
+.fire-s-card-health.health-incomplete { background: #f8fafc; border-color: #cbd5e1; }
+
+.fire-s-health-centre {
+  margin: 0 0 14px 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15,23,42,.08);
+}
+.fire-s-health-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #111827, #1f2937);
+  color: #ffffff;
+}
+.fire-s-health-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: #fecaca;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.fire-s-health-hero h2 { margin: 0; font-size: 42px; line-height: 1; color: #ffffff; }
+.fire-s-health-hero p { margin: 5px 0 0; color: #e5e7eb; font-size: 13px; font-weight: 800; }
+.fire-s-health-small-btn {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.22);
+}
+.fire-s-health-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.fire-s-health-metrics div {
+  padding: 10px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.fire-s-health-metrics span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.fire-s-health-metrics strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 900;
+}
+.fire-s-health-breakdown { display: none; margin-top: 12px; }
+.fire-s-health-breakdown.open { display: block; }
+.fire-s-health-breakdown h3 { margin: 0 0 8px; font-size: 15px; color: #0f172a; }
+.fire-s-health-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 1.2fr 42px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-top: 1px solid #eef2f7;
+}
+.fire-s-health-row span { font-size: 12px; font-weight: 800; color: #334155; overflow-wrap: anywhere; }
+.fire-s-health-row strong { text-align: right; font-size: 12px; color: #0f172a; }
+.fire-s-health-bar { height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.fire-s-health-bar i { display: block; height: 100%; border-radius: inherit; background: #b91c1c; }
+.fire-s-health-note { margin: 10px 0 0; color: #64748b; font-size: 11px; line-height: 1.35; }
+
+.fire-s-health-centre.health-excellent .fire-s-health-bar i,
+.fire-s-health-centre.health-good .fire-s-health-bar i { background: #16a34a; }
+.fire-s-health-centre.health-attention .fire-s-health-bar i { background: #f59e0b; }
+.fire-s-health-centre.health-critical .fire-s-health-bar i { background: #dc2626; }
+
+@media (max-width: 700px) {
+  .fire-s-health-centre { padding: 10px; border-radius: 16px; }
+  .fire-s-health-hero { padding: 12px; border-radius: 14px; }
+  .fire-s-health-hero h2 { font-size: 34px; }
+  .fire-s-health-metrics { grid-template-columns: 1fr 1fr; }
+  .fire-s-health-row { grid-template-columns: 1fr; gap: 5px; }
+  .fire-s-health-row strong { text-align: left; }
+  .fire-s-card-health { grid-template-columns: auto auto 1fr; padding: 6px 7px; }
+}
