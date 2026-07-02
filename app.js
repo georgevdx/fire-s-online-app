@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.0.6 - Mobile Inspection Gate Polish';
+const APP_VERSION = 'RC 1.0.7 - Mobile Workflow Cards';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -11302,6 +11302,60 @@ function ensureInspectionOpenGateStyles() {
       line-height: 1.35;
     }
 
+
+    .inspection-open-gate-card {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .inspection-open-gate-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #f1f1f1;
+      color: #b71c1c;
+      font-size: 1rem;
+      font-weight: 900;
+      border: 1px solid #e0e0e0;
+      flex-shrink: 0;
+    }
+
+    .inspection-open-gate-copy {
+      display: block;
+      min-width: 0;
+    }
+
+    .inspection-open-gate-copy strong {
+      display: block;
+      font-size: 1rem;
+      line-height: 1.25;
+      color: inherit;
+      overflow-wrap: anywhere;
+    }
+
+    .inspection-open-gate-actions .primary-choice .inspection-open-gate-number {
+      background: #ffffff;
+      color: #b71c1c;
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    .inspection-open-gate-actions button:not(.primary-choice):not([disabled]) {
+      background: linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
+      border-color: #f0d0d0;
+    }
+
+    .inspection-open-gate-actions button:not(.primary-choice):not([disabled]):hover,
+    .inspection-open-gate-actions button:not(.primary-choice):not([disabled]):focus {
+      border-color: #b71c1c;
+      box-shadow: 0 6px 18px rgba(183,28,28,0.14);
+      outline: none;
+    }
+
     .inspection-open-gate-actions .primary-choice {
       background: #b71c1c;
       border-color: #b71c1c;
@@ -11361,10 +11415,26 @@ function ensureInspectionOpenGateStyles() {
       }
 
       .inspection-open-gate-actions button {
-        min-height: auto;
-        padding: 13px 12px;
-        border-radius: 13px;
+        min-height: 96px;
+        padding: 14px 12px;
+        border-radius: 15px;
         font-size: 0.94rem;
+      }
+
+      .inspection-open-gate-card {
+        grid-template-columns: 38px 1fr;
+        gap: 10px;
+      }
+
+      .inspection-open-gate-number {
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
+      }
+
+      .inspection-open-gate-copy strong {
+        font-size: 0.96rem;
+        line-height: 1.22;
       }
 
       .inspection-open-gate-actions button small {
@@ -11526,28 +11596,40 @@ function showInspectionOpenGate(projectId, focusMode) {
       </div>
 
       <div class="inspection-open-gate-actions">
-        <button type="button" class="primary-choice" id="openGateContinueBtn">
-          <span class="inspection-open-gate-mode-label">Continue work</span><br>
-          1. Continue / Edit Current Inspection
-          <small>Use this when the inspection is not finished yet. Existing Q&amp;A, photos, comments and actions remain editable.</small>
+        <button type="button" class="inspection-open-gate-card primary-choice" id="openGateContinueBtn">
+          <span class="inspection-open-gate-number">1</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">Continue work</span>
+            <strong>Continue / Edit Current Inspection</strong>
+            <small>Use this when the inspection is not finished yet. Existing Q&amp;A, photos, comments and actions remain editable.</small>
+          </span>
         </button>
 
-        <button type="button" id="openGateArchiveBtn">
-          <span class="inspection-open-gate-mode-label">New inspection</span><br>
-          2. Start New Inspection for this Premises
-          <small>The current inspection is safely saved into History, then Fire-S opens a clean blank inspection for the same premises.</small>
+        <button type="button" class="inspection-open-gate-card" id="openGateArchiveBtn">
+          <span class="inspection-open-gate-number">2</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">New inspection</span>
+            <strong>Start New Inspection for this Premises</strong>
+            <small>The current inspection is safely saved into History, then Fire-S opens a clean blank inspection for the same premises.</small>
+          </span>
         </button>
 
-        <button type="button" id="openGateHistoryBtn">
-          <span class="inspection-open-gate-mode-label">Read-only</span><br>
-          3. View Inspection History
-          <small>Open the premises and show previous inspection cycles without starting a new inspection.</small>
+        <button type="button" class="inspection-open-gate-card" id="openGateHistoryBtn">
+          <span class="inspection-open-gate-number">3</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">Read-only</span>
+            <strong>View Inspection History</strong>
+            <small>Open the premises and show previous inspection cycles without starting a new inspection.</small>
+          </span>
         </button>
 
-        <button type="button" class="danger-choice" id="openGateDeleteBtn" disabled aria-disabled="true" title="Delete is disabled for data safety.">
-          <span class="inspection-open-gate-mode-label">Locked</span><br>
-          Delete Inspection — Disabled
-          <small>This option is intentionally unavailable. It cannot delete premises, history or inspections from this gate.</small>
+        <button type="button" class="inspection-open-gate-card danger-choice" id="openGateDeleteBtn" disabled aria-disabled="true" title="Delete is disabled for data safety.">
+          <span class="inspection-open-gate-number">!</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">Locked</span>
+            <strong>Delete Inspection — Disabled</strong>
+            <small>This option is intentionally unavailable. It cannot delete premises, history or inspections from this gate.</small>
+          </span>
         </button>
       </div>
 

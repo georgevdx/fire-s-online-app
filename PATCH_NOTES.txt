@@ -1,17 +1,10 @@
-Fire-S RC 1.0.6 - Mobile Inspection Gate Polish
+Fire-S RC 1.0.7 - Mobile Workflow Cards
 
 Focus:
-- Improved mobile display for the existing-premises inspection choice screen.
-- The modal is now scrollable on small phone screens.
-- Cards/buttons now wrap long text properly and use full available width.
-- Better touch target spacing, card padding, and visual presentation.
-- Cancel button remains visible/sticky at bottom of modal on mobile.
-- Version bumped to RC 1.0.6.
+- Improved existing-premises inspection workflow choice cards on mobile.
+- Converted white/flat gate options into clearer card-style choices with number badges.
+- Better text wrapping for long labels such as Continue / Edit Current Inspection.
+- Larger mobile touch targets and more professional card presentation.
+- Cache-busted index references to app.js/styles.css for easier phone refresh.
 
-Files changed:
-- app.js
-
-Safe patch:
-- No data model changes.
-- No project/inspection storage changes.
-- No cloud sync changes.
+No data, sync, cloud, checklist, photo, or report logic was intentionally changed.
