@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.10 - Gateway Filter Stabilisation';
+const APP_VERSION = 'RC 1.1.11 - Premises Cards Snapshot Cleanup';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -22242,4 +22242,193 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   document.addEventListener('DOMContentLoaded', () => setTimeout(refreshStableGateway, 250));
   setTimeout(refreshStableGateway, 900);
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.11 - Premises Cards & Executive Snapshot Cleanup
+   Scope: UI polish only. No filter, cloud, inspection or storage logic changed.
+   Executive Snapshot is read-only KPI information; filters remain only inside Show Filters.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.11-premises-cards-snapshot-cleanup';
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getProjectsSafe() {
+    try {
+      if (typeof window.getProjects === 'function') return window.getProjects() || [];
+      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function visibleProjectsSafe() {
+    const projects = getProjectsSafe();
+    try {
+      if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
+        return window.getVisibleProjectsForCurrentUser(projects) || [];
+      }
+    } catch (_) {}
+    return projects;
+  }
+
+  function norm(value) { return String(value || '').trim().toLowerCase(); }
+
+  function dateKey(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function displayDate(value) {
+    const key = dateKey(value);
+    if (!key) return 'Not set';
+    const d = new Date(key + 'T00:00:00');
+    return Number.isNaN(d.getTime()) ? key : d.toLocaleDateString();
+  }
+
+  function answers(project) { return Array.isArray(project?.answers) ? project.answers : []; }
+  function photos(project) { return (Array.isArray(project?.photos) ? project.photos.length : 0) + (project?.inspectionHistory || []).reduce((s, h) => s + ((h?.photos || []).length), 0); }
+
+  function actionCount(project) {
+    if (Array.isArray(project?.actions) && project.actions.length) {
+      return project.actions.filter(a => norm(a.status) !== 'closed').length;
+    }
+    return answers(project).filter(a => norm(a?.answer) === 'no').length;
+  }
+
+  function compliance(project) {
+    const scored = answers(project).filter(a => ['yes', 'no'].includes(norm(a?.answer)));
+    if (!scored.length) return null;
+    const yes = scored.filter(a => norm(a?.answer) === 'yes').length;
+    return Math.round((yes / scored.length) * 100);
+  }
+
+  function riskLabel(project) {
+    const actions = actionCount(project);
+    const score = compliance(project);
+    if (actions >= 8 || (score !== null && score < 60)) return 'Critical';
+    if (actions >= 4 || (score !== null && score < 75)) return 'High';
+    if (actions >= 1 || (score !== null && score < 90)) return 'Medium';
+    if (score === null) return 'Draft';
+    return 'Low';
+  }
+
+  function lastInspection(project) {
+    const dates = [
+      project?.completedAt,
+      project?.inspectionDate,
+      project?.lastSaved,
+      ...(project?.inspectionHistory || []).map(h => h?.completedAt || h?.inspectionDate || h?.archivedAt || '')
+    ].map(dateKey).filter(Boolean).sort();
+    return dates.length ? dates[dates.length - 1] : '';
+  }
+
+  function snapshotData() {
+    const projects = visibleProjectsSafe();
+    const scores = projects.map(compliance).filter(v => typeof v === 'number');
+    const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : null;
+    const actions = projects.reduce((s, p) => s + actionCount(p), 0);
+    const photoTotal = projects.reduce((s, p) => s + photos(p), 0);
+    const critical = projects.filter(p => riskLabel(p) === 'Critical' || riskLabel(p) === 'High').length;
+
+    return {
+      count: projects.length,
+      health: avg,
+      actions,
+      photos: photoTotal,
+      critical,
+      last: projects.map(lastInspection).filter(Boolean).sort().pop() || ''
+    };
+  }
+
+  function tile(label, value, sub, tone) {
+    return `
+      <div class="fire-s-snapshot-kpi-v1111 ${tone || ''}" aria-label="${esc(label)} ${esc(value)}">
+        <span>${esc(label)}</span>
+        <strong>${esc(value)}</strong>
+        <small>${esc(sub || '')}</small>
+      </div>`;
+  }
+
+  function renderReadOnlyExecutiveSnapshot() {
+    const host = document.getElementById('fireSExecMiniDashboard');
+    if (!host) return;
+
+    const data = snapshotData();
+    const healthText = data.health === null ? '—' : `${data.health}%`;
+    const healthSub = data.health === null ? 'No scored data' : data.health >= 90 ? 'Excellent' : data.health >= 75 ? 'Good' : data.health >= 60 ? 'Attention' : 'Critical';
+
+    host.className = 'fire-s-exec-mini-dashboard fire-s-exec-readonly fire-s-snapshot-clean-v1111';
+    host.innerHTML = `
+      <div class="fire-s-snapshot-head-v1111">
+        <div>
+          <div class="fire-s-exec-kicker">Executive Snapshot</div>
+          <h3>Premises overview</h3>
+          <p>Read-only summary. Use <strong>Show Filters</strong> below to filter the premises list.</p>
+        </div>
+      </div>
+      <div class="fire-s-snapshot-grid-v1111">
+        ${tile('Premises', data.count, 'visible records', 'neutral')}
+        ${tile('Building Health', healthText, healthSub, data.health !== null && data.health < 75 ? 'watch' : 'good')}
+        ${tile('Open Actions', data.actions, data.actions ? 'requires follow-up' : 'none open', data.actions ? 'risk' : 'good')}
+        ${tile('Risk Sites', data.critical, 'high / critical', data.critical ? 'risk' : 'good')}
+        ${tile('Photos', data.photos, 'evidence items', 'neutral')}
+        ${tile('Last Inspection', displayDate(data.last), 'latest activity', 'neutral')}
+      </div>
+      <div class="fire-s-snapshot-note-v1111">Snapshot tiles are information only and do not filter or navigate.</div>
+    `;
+  }
+
+  function polishPremisesCards() {
+    document.querySelectorAll('.premises-card-v118b').forEach(card => {
+      card.classList.add('premises-card-v1111-polished');
+      card.setAttribute('aria-label', 'Open premises');
+
+      const footer = card.querySelector('.premises-card-footer-v118b b');
+      if (footer) footer.textContent = 'Open premises →';
+    });
+  }
+
+  function refreshUiPolish() {
+    try { renderReadOnlyExecutiveSnapshot(); } catch (error) { console.warn('Executive Snapshot cleanup failed:', error); }
+    try { polishPremisesCards(); } catch (error) { console.warn('Premises card polish failed:', error); }
+  }
+
+  // Keep the active filters owned by the Show Filters drawer only.
+  window.fireSExecSnapshotActiveFilter = 'exec-all';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(refreshUiPolish, 200);
+    setTimeout(refreshUiPolish, 900);
+  });
+
+  const observer = new MutationObserver(() => {
+    if (observer.__fireSTimer) clearTimeout(observer.__fireSTimer);
+    observer.__fireSTimer = setTimeout(refreshUiPolish, 80);
+  });
+
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => observer.observe(document.body, { childList: true, subtree: true }));
+  }
+
+  window.FireSSnapshotCleanup1111 = {
+    version: VERSION,
+    refresh: refreshUiPolish
+  };
 })();

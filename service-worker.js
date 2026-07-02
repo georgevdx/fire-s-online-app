@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-10-gateway-filter-stabilisation';
+const CACHE_NAME = 'fire-s-rc-1-1-11-premises-cards-snapshot-cleanup';
 
 const APP_SHELL = [
   './',
