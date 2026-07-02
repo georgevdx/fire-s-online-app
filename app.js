@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.15 - Executive Dashboard Module';
+const APP_VERSION = 'RC 1.1.16 - Smart Photo Centre Module';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -23316,4 +23316,288 @@ if (!window.fireSMobileSmartCardsApplied) {
     wrapped.__fireSExec1115Wrapped=true;
     window.renderProjectsList=wrapped;
   }
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.16 - Smart Photo Centre Module
+   Purpose: add practical photo metadata without changing core sync logic.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.16-smart-photo-centre';
+  const PHOTO_CATEGORIES = [
+    'General',
+    'Fire Equipment',
+    'Means of Escape',
+    'Fire Doors',
+    'Fire Detection and Alarm',
+    'Fixed Fire Suppression Systems',
+    'Emergency Lighting',
+    'Electrical',
+    'Housekeeping',
+    'Hazardous Substances',
+    'Documentation',
+    'Exterior / Access'
+  ];
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  function safePhotos() {
+    if (!Array.isArray(window.currentPhotos)) window.currentPhotos = [];
+    return window.currentPhotos;
+  }
+
+  function currentProjectSafe() {
+    try {
+      if (typeof getProjects !== 'function' || typeof currentProjectId === 'undefined' || !currentProjectId) return null;
+      return getProjects().find(project => String(project.id) === String(currentProjectId)) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function savePhotos() {
+    if (typeof saveCurrentPhotosToOpenProject === 'function') {
+      try { saveCurrentPhotosToOpenProject(); } catch (_) {}
+    }
+    if (typeof scheduleAutoSave === 'function') {
+      try { scheduleAutoSave(); } catch (_) {}
+    }
+  }
+
+  function categoryOptions(selected) {
+    const current = selected || 'General';
+    return PHOTO_CATEGORIES.map(category =>
+      `<option value="${esc(category)}" ${category === current ? 'selected' : ''}>${esc(category)}</option>`
+    ).join('');
+  }
+
+  function normalisePhoto(photo) {
+    if (!photo || typeof photo !== 'object') return photo;
+    if (!photo.category) photo.category = 'General';
+    if (!photo.area) photo.area = '';
+    if (!photo.linkedQuestion) photo.linkedQuestion = '';
+    return photo;
+  }
+
+  function photoStats() {
+    const photos = safePhotos().map(normalisePhoto);
+    const byCategory = new Map();
+    photos.forEach(photo => {
+      const category = photo.category || 'General';
+      byCategory.set(category, (byCategory.get(category) || 0) + 1);
+    });
+    return { total: photos.length, byCategory };
+  }
+
+  function renderPhotoCentreHeader(container) {
+    const stats = photoStats();
+    const top = Array.from(stats.byCategory.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 4);
+
+    const header = document.createElement('div');
+    header.className = 'fire-s-photo-centre-v1116';
+    header.innerHTML = `
+      <div class="fire-s-photo-centre-head-v1116">
+        <div>
+          <span>Smart Photo Centre</span>
+          <strong>${stats.total} photo${stats.total === 1 ? '' : 's'}</strong>
+        </div>
+        <small>Category, area and report metadata</small>
+      </div>
+      <div class="fire-s-photo-category-strip-v1116">
+        ${top.length ? top.map(([category, count]) => `<span>${esc(category)} <b>${count}</b></span>`).join('') : '<span>No categories yet</span>'}
+      </div>
+    `;
+    container.appendChild(header);
+  }
+
+  window.updatePhotoCategory = function updatePhotoCategory(index, value) {
+    const photos = safePhotos();
+    if (!photos[index]) return;
+    photos[index].category = value || 'General';
+    savePhotos();
+    if (typeof renderPhotos === 'function') renderPhotos();
+  };
+
+  window.updatePhotoArea = function updatePhotoArea(index, value) {
+    const photos = safePhotos();
+    if (!photos[index]) return;
+    photos[index].area = value || '';
+    savePhotos();
+  };
+
+  window.updatePhotoLinkedQuestion = function updatePhotoLinkedQuestion(index, value) {
+    const photos = safePhotos();
+    if (!photos[index]) return;
+    photos[index].linkedQuestion = value || '';
+    savePhotos();
+  };
+
+  const originalUpdatePhotoNote = window.updatePhotoNote;
+  window.updatePhotoNote = function updatePhotoNote(index, value) {
+    const photos = safePhotos();
+    if (!photos[index]) return;
+    photos[index].note = value || '';
+    savePhotos();
+    if (typeof originalUpdatePhotoNote === 'function') {
+      try { originalUpdatePhotoNote(index, value); } catch (_) {}
+    }
+  };
+
+  window.renderPhotos = function renderPhotosSmartCentre() {
+    const container = document.getElementById('photoPreview');
+    if (!container) return;
+
+    const photos = safePhotos().map(normalisePhoto);
+    container.innerHTML = '';
+
+    if (typeof updatePhotoUploadStatus === 'function') {
+      try { updatePhotoUploadStatus(); } catch (_) {}
+    }
+
+    renderPhotoCentreHeader(container);
+
+    if (photos.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'note fire-s-photo-empty-v1116';
+      empty.textContent = 'No photo evidence added yet. Add photos and classify them by category for cleaner reports.';
+      container.appendChild(empty);
+      return;
+    }
+
+    photos.forEach((photo, index) => {
+      const div = document.createElement('div');
+      div.className = 'photo-item fire-s-photo-item-v1116';
+
+      const photoSrc = photo.src || '';
+      const photoTime = photo.timestamp ? new Date(photo.timestamp).toLocaleString() : 'Not recorded';
+      const category = photo.category || 'General';
+      const area = photo.area || '';
+      const linkedQuestion = photo.linkedQuestion || '';
+
+      div.innerHTML = `
+        ${photoSrc ? `<img src="${esc(photoSrc)}" alt="Inspection photo ${index + 1}">` : '<div class="fire-s-photo-missing-v1116">Photo source missing</div>'}
+
+        <div class="fire-s-photo-meta-line-v1116">
+          <span>Photo ${index + 1}</span>
+          <small>${esc(photoTime)}</small>
+        </div>
+
+        <label class="fire-s-photo-field-v1116">
+          <span>Category</span>
+          <select onchange="updatePhotoCategory(${index}, this.value)">
+            ${categoryOptions(category)}
+          </select>
+        </label>
+
+        <label class="fire-s-photo-field-v1116">
+          <span>Area / Location</span>
+          <input type="text" value="${esc(area)}" placeholder="e.g. Ground floor, kitchen, warehouse" oninput="updatePhotoArea(${index}, this.value)">
+        </label>
+
+        <label class="fire-s-photo-field-v1116">
+          <span>Linked item / question</span>
+          <input type="text" value="${esc(linkedQuestion)}" placeholder="Optional question or item number" oninput="updatePhotoLinkedQuestion(${index}, this.value)">
+        </label>
+
+        <textarea class="photo-note" placeholder="Photo note..." oninput="updatePhotoNote(${index}, this.value)">${esc(photo.note || '')}</textarea>
+
+        <button class="photo-delete" type="button" onclick="deletePhoto(${index})">Delete</button>
+      `;
+
+      container.appendChild(div);
+    });
+  };
+
+  window.buildPdfPhotoAppendix = function buildPdfPhotoAppendixSmart(photos = [], emptyMessage = 'No photo evidence was added to this inspection.') {
+    const safePhotos = Array.isArray(photos) ? photos.map(normalisePhoto) : [];
+
+    if (safePhotos.length === 0) {
+      return `
+        <div class="report-photo-page first-photo-page">
+          <h2 class="appendix-title">APPENDIX A - PHOTO EVIDENCE</h2>
+          <div class="note">${esc(emptyMessage)}</div>
+        </div>
+      `;
+    }
+
+    return safePhotos.map((photo, index) => {
+      const photoNumber = index + 1;
+      const category = photo.category || 'General';
+      const area = photo.area || 'Not recorded';
+      const linkedQuestion = photo.linkedQuestion || 'Not linked';
+      const pageClass = index === 0 ? 'first-photo-page' : 'next-photo-page';
+
+      return `
+        <div class="report-photo-page ${pageClass}">
+          ${index === 0 ? '<h2 class="appendix-title">APPENDIX A - PHOTO EVIDENCE</h2>' : ''}
+          <div class="report-photo-card single-photo-card">
+            <div class="report-photo-header">Photo ${photoNumber} · ${esc(category)}</div>
+            <div class="report-photo-time">Captured: ${photo.timestamp ? new Date(photo.timestamp).toLocaleString() : 'Not recorded'}</div>
+            <div class="report-photo-meta-v1116">
+              <span><strong>Category:</strong> ${esc(category)}</span>
+              <span><strong>Area:</strong> ${esc(area)}</span>
+              <span><strong>Linked item:</strong> ${esc(linkedQuestion)}</span>
+            </div>
+            <div class="report-photo-image-box">
+              ${photo.src ? `<img src="${esc(photo.src)}" class="report-photo-img" alt="Inspection photo ${photoNumber}">` : '<div class="report-photo-missing">Photo source missing. Sync / refresh may be required.</div>'}
+            </div>
+            <div class="report-photo-note"><strong>Photo Note:</strong> ${esc(photo.note || 'No note added.')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  function patchExistingPhotos() {
+    const project = currentProjectSafe();
+    if (!project || !Array.isArray(project.photos)) return;
+    let changed = false;
+    project.photos.forEach(photo => {
+      if (!photo.category) { photo.category = 'General'; changed = true; }
+      if (typeof photo.area === 'undefined') { photo.area = ''; changed = true; }
+      if (typeof photo.linkedQuestion === 'undefined') { photo.linkedQuestion = ''; changed = true; }
+    });
+    if (changed) {
+      try {
+        const projects = getProjects();
+        const index = projects.findIndex(item => String(item.id) === String(project.id));
+        if (index !== -1) {
+          projects[index] = project;
+          if (typeof setProjects === 'function') setProjects(projects);
+        }
+      } catch (_) {}
+    }
+  }
+
+  document.addEventListener('change', event => {
+    if (event.target && event.target.id === 'photoInput') {
+      setTimeout(() => {
+        safePhotos().forEach(normalisePhoto);
+        savePhotos();
+        if (typeof renderPhotos === 'function') renderPhotos();
+      }, 800);
+    }
+  }, true);
+
+  setTimeout(() => {
+    patchExistingPhotos();
+    if (document.getElementById('photoPreview') && typeof window.renderPhotos === 'function') {
+      try { window.renderPhotos(); } catch (_) {}
+    }
+  }, 1200);
+
+  window.FireSPhotoCentre1116 = {
+    version: VERSION,
+    categories: PHOTO_CATEGORIES,
+    stats: photoStats,
+    normalisePhoto
+  };
 })();

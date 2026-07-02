@@ -11705,3 +11705,158 @@ body > #actionDropdown.action-dropdown button:last-child {
 .fire-s-exec-bar-v1115 { height:9px; border-radius:999px; background:rgba(255,255,255,.14); overflow:hidden; }
 .fire-s-exec-bar-v1115 i { display:block; height:100%; width:0%; background:#38bdf8; border-radius:999px; }
 @media (min-width: 760px) { .fire-s-exec-grid-v1115 { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+
+
+/* =====================================================
+   FIRE-S RC 1.1.16 - Smart Photo Centre
+   ===================================================== */
+.fire-s-photo-centre-v1116 {
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.fire-s-photo-centre-head-v1116 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.fire-s-photo-centre-head-v1116 span,
+.fire-s-photo-field-v1116 span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.fire-s-photo-centre-head-v1116 strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.fire-s-photo-centre-head-v1116 small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.fire-s-photo-category-strip-v1116 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fire-s-photo-category-strip-v1116 span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fire-s-photo-category-strip-v1116 b {
+  color: #b71c1c;
+}
+
+.fire-s-photo-item-v1116 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fire-s-photo-meta-line-v1116 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #334155;
+}
+
+.fire-s-photo-meta-line-v1116 small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.fire-s-photo-field-v1116 {
+  display: block;
+  margin: 0;
+}
+
+.fire-s-photo-field-v1116 select,
+.fire-s-photo-field-v1116 input {
+  width: 100%;
+  max-width: none;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 14px;
+}
+
+.fire-s-photo-empty-v1116 {
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fire-s-photo-missing-v1116 {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.report-photo-meta-v1116 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+  margin: 8px 0 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+}
+
+@media (max-width: 700px) {
+  #photoPreview {
+    grid-template-columns: 1fr;
+  }
+
+  .fire-s-photo-centre-head-v1116 {
+    display: block;
+  }
+
+  .fire-s-photo-centre-head-v1116 small {
+    display: block;
+    margin-top: 4px;
+    text-align: left;
+  }
+}

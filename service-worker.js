@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-15-executive-dashboard-module';
+const CACHE_NAME = 'fire-s-rc-1-1-16-smart-photo-centre-module';
 
 const APP_SHELL = [
   './',
