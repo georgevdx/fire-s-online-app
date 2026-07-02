@@ -1,10 +1,10 @@
-Fire-S RC 1.1.13 - Premises Workspace Module
+Fire-S RC 1.1.14 - Building Health Centre Module
 
-- Adds a real Premises Workspace landing module when a premises opens.
-- Shows Building Health, compliance, open actions, photos and last inspection.
-- Adds mobile-first workspace action cards: Inspection, Photos, Action Register, Health, History, Reports and Building Passport.
-- Adds Building Health Breakdown from answered checklist categories.
-- No cloud, storage or checklist data logic changed.
+- Adds a dedicated Fire-S Building Health™ Centre below the Premises Workspace.
+- Shows health score, compliance, open actions, critical actions, overdue actions, trend and photo count.
+- Adds category breakdown bars and top priority actions.
+- Adds rule-based Fire-S Insights for the active premises.
+- Keeps Executive Snapshot read-only and does not change inspection, storage or cloud-sync logic.
 
 Modified files:
 - index.html

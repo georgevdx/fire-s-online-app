@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.13 - Premises Workspace Module';
+const APP_VERSION = 'RC 1.1.14 - Building Health Centre Module';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -22897,4 +22897,339 @@ if (!window.fireSMobileSmartCardsApplied) {
   } else {
     install();
   }
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.14 - Building Health Centre Module
+   Purpose: adds a dedicated, mobile-first Building Health Centre for the active premises.
+   Safe add-on: reads existing answers/actions/photos/history only; no storage or sync logic changed.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.14-building-health-centre-module';
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function currentPremises() {
+    try {
+      const id = window.currentProjectId || window.currentProject?.id || '';
+      const list = typeof window.getProjects === 'function' ? window.getProjects() : [];
+      return list.find(project => String(project.id) === String(id)) || window.currentProject || null;
+    } catch (error) {
+      console.warn('Fire-S Health Centre could not read premises:', error);
+      return window.currentProject || null;
+    }
+  }
+
+  function answerValue(answer) {
+    return String(answer?.answer || '').trim().toLowerCase();
+  }
+
+  function answers(project) {
+    return Array.isArray(project?.answers) ? project.answers : [];
+  }
+
+  function actions(project) {
+    if (Array.isArray(project?.actions) && project.actions.length) return project.actions;
+    return answers(project)
+      .filter(answer => answerValue(answer) === 'no')
+      .map(answer => ({
+        status: 'Open',
+        priority: answer.priority || answer.Severity || 'High',
+        question: answer.question || answer.checklistItem || answer.item || answer.itemNumber || 'Checklist action',
+        sectionName: answer.sectionName || answer.category || '',
+        dueDate: answer.followUpDate || answer.expiryDate || ''
+      }));
+  }
+
+  function openActions(project) {
+    return actions(project).filter(action => String(action.status || 'Open').trim().toLowerCase() !== 'closed');
+  }
+
+  function priority(action) {
+    const p = String(action?.priority || action?.severity || '').trim().toLowerCase();
+    if (p.includes('critical')) return 'Critical';
+    if (p.includes('high')) return 'High';
+    if (p.includes('low')) return 'Low';
+    return 'Medium';
+  }
+
+  function categoryFor(item) {
+    const direct = item?.sectionName || item?.category || item?.section || item?.group || item?.discipline;
+    if (direct) return String(direct).trim();
+
+    const text = String(item?.question || item?.finding || item?.title || item?.note || item?.item || '').toLowerCase();
+    if (/escape|exit|egress|route|stair|corridor/.test(text)) return 'Means of Escape';
+    if (/alarm|detect|mcp|manual call|sounder|panel/.test(text)) return 'Detection & Alarm';
+    if (/sprinkler|pump|hydrant|hose reel|water|valve|booster/.test(text)) return 'Fire Protection';
+    if (/extinguisher|fire equipment/.test(text)) return 'Fire Equipment';
+    if (/emergency light|lighting|signage|exit sign/.test(text)) return 'Emergency Lighting / Signage';
+    if (/electrical|db|distribution board|cable|generator/.test(text)) return 'Electrical';
+    if (/storage|housekeeping|combustible|waste|flammable/.test(text)) return 'Housekeeping';
+    if (/document|certificate|coc|logbook|record|plan|drill/.test(text)) return 'Documentation';
+    if (/hazard|flammable|chemical|gas/.test(text)) return 'Hazardous Substances';
+    return 'General Fire Safety';
+  }
+
+  function compliance(project) {
+    const scored = answers(project).filter(answer => ['yes', 'no'].includes(answerValue(answer)));
+    if (!scored.length) return null;
+    const yes = scored.filter(answer => answerValue(answer) === 'yes').length;
+    return Math.round((yes / scored.length) * 100);
+  }
+
+  function categoryRows(project) {
+    const map = new Map();
+
+    answers(project).forEach(answer => {
+      const value = answerValue(answer);
+      if (!['yes', 'no'].includes(value)) return;
+      const category = categoryFor(answer);
+      if (!map.has(category)) map.set(category, { category, yes: 0, no: 0, total: 0, actions: 0, critical: 0, high: 0 });
+      const row = map.get(category);
+      row.total += 1;
+      if (value === 'yes') row.yes += 1;
+      if (value === 'no') row.no += 1;
+    });
+
+    openActions(project).forEach(action => {
+      const category = categoryFor(action);
+      if (!map.has(category)) map.set(category, { category, yes: 0, no: 0, total: 0, actions: 0, critical: 0, high: 0 });
+      const row = map.get(category);
+      row.actions += 1;
+      if (priority(action) === 'Critical') row.critical += 1;
+      if (priority(action) === 'High') row.high += 1;
+    });
+
+    return Array.from(map.values()).map(row => {
+      const score = row.total ? Math.round((row.yes / row.total) * 100) : Math.max(0, 100 - Math.min(row.actions * 12, 80));
+      return { ...row, score };
+    }).sort((a, b) => a.score - b.score || b.critical - a.critical || b.high - a.high || b.actions - a.actions);
+  }
+
+  function healthScore(project) {
+    const comp = compliance(project);
+    if (comp === null) return 0;
+    const open = openActions(project);
+    const critical = open.filter(action => priority(action) === 'Critical').length;
+    const high = open.filter(action => priority(action) === 'High').length;
+    const today = new Date().toISOString().slice(0, 10);
+    const overdue = open.filter(action => action.dueDate && String(action.dueDate).slice(0, 10) < today).length;
+    const score = comp - Math.min(critical * 12, 36) - Math.min(high * 5, 25) - Math.min(overdue * 4, 20) - Math.min(open.length * 1.5, 15);
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  function label(score) {
+    if (!score) return 'Incomplete';
+    if (score >= 90) return 'Excellent';
+    if (score >= 75) return 'Good';
+    if (score >= 55) return 'Attention';
+    return 'Critical';
+  }
+
+  function tone(score) {
+    if (!score) return 'neutral';
+    if (score >= 90) return 'good';
+    if (score >= 75) return 'watch';
+    if (score >= 55) return 'risk';
+    return 'critical';
+  }
+
+  function trend(project) {
+    const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+    if (!history.length) return { label: 'No trend yet', direction: 'neutral' };
+    const current = healthScore(project);
+    const previousProject = { ...project, answers: history[history.length - 1]?.answers || [], actions: history[history.length - 1]?.actions || [] };
+    const previous = healthScore(previousProject);
+    const diff = current - previous;
+    if (diff >= 3) return { label: `Improving +${diff}%`, direction: 'up' };
+    if (diff <= -3) return { label: `Declining ${diff}%`, direction: 'down' };
+    return { label: 'Stable', direction: 'neutral' };
+  }
+
+  function photoCount(project) {
+    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
+    return current + history;
+  }
+
+  function topActions(project) {
+    const order = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    return openActions(project).slice().sort((a, b) => (order[priority(a)] ?? 2) - (order[priority(b)] ?? 2)).slice(0, 5);
+  }
+
+  function actionTitle(action) {
+    return String(action?.question || action?.finding || action?.title || action?.correctiveAction || 'Action item').replace(/^are\s+/i, '').replace(/\?+$/g, '').trim();
+  }
+
+  function insights(project, rows, score) {
+    const open = openActions(project);
+    const critical = open.filter(action => priority(action) === 'Critical').length;
+    const high = open.filter(action => priority(action) === 'High').length;
+    const weakest = rows[0];
+    const items = [];
+
+    if (!answers(project).length) items.push('Answer inspection questions to generate a reliable Building Health score.');
+    else items.push(`Building Health is ${score}% (${label(score)}), based on current answers and open actions.`);
+
+    if (critical) items.push(`${critical} critical action${critical === 1 ? '' : 's'} should be escalated first.`);
+    else if (high) items.push(`${high} high priority action${high === 1 ? '' : 's'} require management attention.`);
+    else if (!open.length) items.push('No open action items are currently recorded for this premises.');
+
+    if (weakest) items.push(`${weakest.category} is currently the weakest category at ${weakest.score}%.`);
+    if (photoCount(project)) items.push(`${photoCount(project)} photo evidence record${photoCount(project) === 1 ? '' : 's'} are linked to this premises.`);
+
+    return items.slice(0, 4);
+  }
+
+  function ensureHost() {
+    const workspace = document.getElementById('fireSPremisesWorkspaceModule1113');
+    const commandShell = document.getElementById('inspectionCommandShell');
+    if (!workspace && !commandShell) return null;
+
+    let host = document.getElementById('fireSBuildingHealthCentre1114');
+    if (!host) {
+      host = document.createElement('section');
+      host.id = 'fireSBuildingHealthCentre1114';
+      host.className = 'fire-s-health-centre-v1114';
+      (workspace || commandShell).insertAdjacentElement('afterend', host);
+    }
+    return host;
+  }
+
+  function render() {
+    const project = currentPremises();
+    const host = ensureHost();
+    if (!project || !host) return;
+
+    const score = healthScore(project);
+    const comp = compliance(project);
+    const rows = categoryRows(project);
+    const open = openActions(project);
+    const critical = open.filter(action => priority(action) === 'Critical').length;
+    const high = open.filter(action => priority(action) === 'High').length;
+    const today = new Date().toISOString().slice(0, 10);
+    const overdue = open.filter(action => action.dueDate && String(action.dueDate).slice(0, 10) < today).length;
+    const tr = trend(project);
+    const actionsList = topActions(project);
+
+    host.innerHTML = `
+      <div class="fire-s-health-centre-head-v1114">
+        <div>
+          <span>Building Health Centre</span>
+          <h3>Fire-S Building Health™</h3>
+          <p>Management view of the current premises risk, compliance and action position.</p>
+        </div>
+        <div class="fire-s-health-score-v1114 ${tone(score)}">
+          <strong>${score || '—'}${score ? '%' : ''}</strong>
+          <small>${esc(label(score))}</small>
+        </div>
+      </div>
+
+      <div class="fire-s-health-kpis-v1114">
+        <div><span>Compliance</span><strong>${comp === null ? '—' : comp + '%'}</strong></div>
+        <div><span>Open Actions</span><strong>${open.length}</strong></div>
+        <div><span>Critical</span><strong>${critical}</strong></div>
+        <div><span>Overdue</span><strong>${overdue}</strong></div>
+        <div><span>Trend</span><strong>${esc(tr.label)}</strong></div>
+        <div><span>Photos</span><strong>${photoCount(project)}</strong></div>
+      </div>
+
+      <div class="fire-s-health-grid-v1114">
+        <div class="fire-s-health-card-v1114">
+          <strong>Category Breakdown</strong>
+          ${rows.length ? rows.slice(0, 8).map(row => `
+            <div class="fire-s-health-row-v1114">
+              <span>${esc(row.category)}</span>
+              <div><i style="width:${row.score}%"></i></div>
+              <b>${row.score}%</b>
+            </div>
+          `).join('') : '<p class="fire-s-health-empty-v1114">No category data yet.</p>'}
+        </div>
+
+        <div class="fire-s-health-card-v1114">
+          <strong>Top Priority Actions</strong>
+          ${actionsList.length ? actionsList.map(action => `
+            <div class="fire-s-health-action-v1114 ${priority(action).toLowerCase()}">
+              <span>${esc(priority(action))}</span>
+              <b>${esc(actionTitle(action))}</b>
+              <small>${esc(categoryFor(action))}</small>
+            </div>
+          `).join('') : '<p class="fire-s-health-empty-v1114">No open actions to show.</p>'}
+        </div>
+      </div>
+
+      <div class="fire-s-health-insights-v1114">
+        <strong>Fire-S Insights</strong>
+        ${insights(project, rows, score).map(text => `<p>${esc(text)}</p>`).join('')}
+      </div>
+    `;
+  }
+
+  function openHealthCentre() {
+    render();
+    const host = document.getElementById('fireSBuildingHealthCentre1114');
+    if (host) host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function bind() {
+    if (window.__fireSHealthCentre1114Bound) return;
+    window.__fireSHealthCentre1114Bound = true;
+
+    document.addEventListener('click', event => {
+      const target = event.target?.closest?.('[data-fire-s-workspace-target="health"], [data-health-centre], .fire-s-workspace-health-v1113');
+      if (!target) return;
+      setTimeout(openHealthCentre, 60);
+    }, true);
+  }
+
+  const originalWorkspaceOpen = window.FireSPremisesWorkspace1113?.open;
+  if (typeof originalWorkspaceOpen === 'function' && !window.__fireSHealthCentreWorkspaceHooked) {
+    window.__fireSHealthCentreWorkspaceHooked = true;
+    window.FireSPremisesWorkspace1113.open = function (target) {
+      if (target === 'health') {
+        openHealthCentre();
+        return;
+      }
+      return originalWorkspaceOpen.apply(this, arguments);
+    };
+  }
+
+  const originalOpenProject = window.openProject;
+  if (typeof originalOpenProject === 'function' && !originalOpenProject.__fireSHealthCentre1114Wrapped) {
+    const wrapped = function (...args) {
+      const result = originalOpenProject.apply(this, args);
+      setTimeout(render, 350);
+      setTimeout(render, 1100);
+      return result;
+    };
+    wrapped.__fireSHealthCentre1114Wrapped = true;
+    window.openProject = wrapped;
+  }
+
+  window.FireSBuildingHealthCentre1114 = {
+    version: VERSION,
+    render,
+    open: openHealthCentre,
+    score: healthScore
+  };
+
+  function install() {
+    bind();
+    setTimeout(render, 300);
+    setTimeout(render, 1200);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
 })();

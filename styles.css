@@ -11422,3 +11422,258 @@ body > #actionDropdown.action-dropdown button:last-child {
     grid-row: 2;
   }
 }
+
+
+/* =====================================================
+   FIRE-S RC 1.1.14 - Building Health Centre Module
+   ===================================================== */
+.fire-s-health-centre-v1114 {
+  margin: 14px 0 18px;
+  padding: 14px;
+  border: 1px solid #dbe3ef;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  scroll-margin-top: 88px;
+}
+
+.fire-s-health-centre-head-v1114 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fire-s-health-centre-head-v1114 span {
+  display: block;
+  color: #b71c1c;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fire-s-health-centre-head-v1114 h3 {
+  margin: 4px 0 4px;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.fire-s-health-centre-head-v1114 p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.fire-s-health-score-v1114 {
+  min-width: 96px;
+  padding: 12px;
+  border-radius: 16px;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.fire-s-health-score-v1114 strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1;
+  color: #334155;
+}
+
+.fire-s-health-score-v1114 small {
+  display: block;
+  margin-top: 5px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fire-s-health-score-v1114.good { background: #ecfdf5; border-color: #86efac; }
+.fire-s-health-score-v1114.good strong { color: #15803d; }
+.fire-s-health-score-v1114.watch { background: #fffbeb; border-color: #fcd34d; }
+.fire-s-health-score-v1114.watch strong { color: #b45309; }
+.fire-s-health-score-v1114.risk { background: #fff7ed; border-color: #fdba74; }
+.fire-s-health-score-v1114.risk strong { color: #c2410c; }
+.fire-s-health-score-v1114.critical { background: #fef2f2; border-color: #fca5a5; }
+.fire-s-health-score-v1114.critical strong { color: #b91c1c; }
+
+.fire-s-health-kpis-v1114 {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.fire-s-health-kpis-v1114 div {
+  padding: 10px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-health-kpis-v1114 span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fire-s-health-kpis-v1114 strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.fire-s-health-grid-v1114 {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 12px;
+}
+
+.fire-s-health-card-v1114,
+.fire-s-health-insights-v1114 {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.fire-s-health-card-v1114 > strong,
+.fire-s-health-insights-v1114 > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.fire-s-health-row-v1114 {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 1.3fr 44px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.fire-s-health-row-v1114 span {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.fire-s-health-row-v1114 div {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.fire-s-health-row-v1114 i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  color: #b71c1c;
+}
+
+.fire-s-health-row-v1114 b {
+  color: #0f172a;
+  font-size: 12px;
+  text-align: right;
+}
+
+.fire-s-health-action-v1114 {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 8px;
+  padding: 9px;
+  border-radius: 12px;
+  background: #ffffff;
+  border-left: 5px solid #94a3b8;
+}
+
+.fire-s-health-action-v1114.critical { border-left-color: #b91c1c; }
+.fire-s-health-action-v1114.high { border-left-color: #ea580c; }
+.fire-s-health-action-v1114.medium { border-left-color: #d97706; }
+.fire-s-health-action-v1114.low { border-left-color: #16a34a; }
+
+.fire-s-health-action-v1114 span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fire-s-health-action-v1114 b {
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.fire-s-health-action-v1114 small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.fire-s-health-insights-v1114 {
+  margin-top: 12px;
+}
+
+.fire-s-health-insights-v1114 p {
+  margin: 7px 0 0;
+  padding-left: 10px;
+  border-left: 3px solid #b71c1c;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.fire-s-health-empty-v1114 {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .fire-s-health-centre-v1114 {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .fire-s-health-centre-head-v1114 {
+    grid-template-columns: 1fr;
+  }
+
+  .fire-s-health-score-v1114 {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    align-items: center;
+    text-align: left;
+  }
+
+  .fire-s-health-score-v1114 small {
+    margin-top: 0;
+  }
+
+  .fire-s-health-kpis-v1114 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fire-s-health-grid-v1114 {
+    grid-template-columns: 1fr;
+  }
+
+  .fire-s-health-row-v1114 {
+    grid-template-columns: 1fr 82px 38px;
+  }
+}
