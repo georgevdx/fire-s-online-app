@@ -1,0 +1,8 @@
+Fire-S RC 1.1.6 - Conditional Sections Foundation
+
+- Adds a safe conditional section engine.
+- Trigger questions can mark unanswered downstream questions as Skipped - Not Applicable.
+- Existing answered downstream questions are not overwritten.
+- Skipped unanswered questions are stored as N/A so they do not count against compliance/risk calculations.
+- Adds visual skipped state and compact mobile summary.
+- Updates cache-busters and service worker cache name.

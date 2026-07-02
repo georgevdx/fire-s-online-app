@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-5-cloud-menu-alignment';
+const CACHE_NAME = 'fire-s-rc-1-1-6-conditional-sections';
 
 const APP_SHELL = [
   './',
@@ -7,6 +7,7 @@ const APP_SHELL = [
   './dashboard.css',
   './workspace.css',
   './app.js',
+  './sprint-111-6-conditional-sections.js',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
