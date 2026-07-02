@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.8G - Executive Snapshot Navigation Hotfix';
+const APP_VERSION = 'RC 1.1.8H - Executive Snapshot Filter Fix';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -21207,14 +21207,24 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.8G - Executive Snapshot Navigation Hotfix
-   Keeps one Executive Snapshot and makes its tiles perform predictable actions.
+   FIRE-S RC 1.1.8H - Executive Snapshot Filter Fix
+   Purpose: make Executive Snapshot behaviour clear and useful.
+   Snapshot tiles now FILTER the Premises list, with visible active state and reset.
    No data, sync or inspection storage logic changed.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.8G-executive-snapshot-navigation-hotfix';
+  const VERSION = '1.1.8H-executive-snapshot-filter-fix';
+  const CUSTOM_FILTERS = new Set([
+    'exec-all',
+    'exec-actions',
+    'exec-overdue',
+    'exec-photos',
+    'exec-health-attention'
+  ]);
+
+  window.fireSExecSnapshotActiveFilter = window.fireSExecSnapshotActiveFilter || 'exec-all';
 
   function esc(value) {
     if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
@@ -21313,9 +21323,45 @@ if (!window.fireSMobileSmartCardsApplied) {
     return { count, avg, actions, overdue, photos, attention };
   }
 
-  function stat(label, value, sub, tone, action) {
+  function projectMatchesExecFilter(project, filter) {
+    if (!filter || filter === 'exec-all') return true;
+    if (filter === 'exec-actions') return openActionCount(project) > 0;
+    if (filter === 'exec-overdue') return isOverdue(project);
+    if (filter === 'exec-photos') return photoCount(project) > 0;
+    if (filter === 'exec-health-attention') {
+      const score = healthScore(project);
+      return score > 0 && score < 75;
+    }
+    return true;
+  }
+
+  function installFilterHook() {
+    if (window.__fireSExecSnapshotFilterHook118H) return;
+    if (typeof window.projectMatchesInspectionGatewayQuickFilter !== 'function') return;
+
+    const original = window.projectMatchesInspectionGatewayQuickFilter;
+    window.projectMatchesInspectionGatewayQuickFilter = function fireSExecSnapshotQuickFilter(project, filter) {
+      if (CUSTOM_FILTERS.has(filter)) return projectMatchesExecFilter(project, filter);
+      return original.apply(this, arguments);
+    };
+
+    window.__fireSExecSnapshotFilterHook118H = true;
+  }
+
+  function activeFilterLabel(filter) {
+    switch (filter) {
+      case 'exec-actions': return 'Showing premises with open actions.';
+      case 'exec-overdue': return 'Showing overdue premises.';
+      case 'exec-photos': return 'Showing premises with photo evidence.';
+      case 'exec-health-attention': return 'Showing premises with Building Health below 75%.';
+      default: return 'Showing all premises.';
+    }
+  }
+
+  function stat(label, value, sub, tone, filter) {
+    const active = window.fireSExecSnapshotActiveFilter === filter ? ' active' : '';
     return `
-      <button type="button" class="fire-s-exec-stat ${tone || ''}" data-exec-snapshot-action="${esc(action || '')}" aria-label="${esc(label)}: ${esc(value)} ${esc(sub || '')}">
+      <button type="button" class="fire-s-exec-stat ${tone || ''}${active}" data-exec-snapshot-filter="${esc(filter || 'exec-all')}" aria-label="Filter by ${esc(label)}">
         <span>${esc(label)}</span>
         <strong>${esc(value)}</strong>
         <em>${esc(sub || '')}</em>
@@ -21324,8 +21370,6 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function showPremisesList() {
     if (typeof window.showProjectList === 'function') window.showProjectList();
-    if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
-    setTimeout(render, 80);
   }
 
   function scrollToPremisesList() {
@@ -21333,96 +21377,51 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function applyQuickFilter(filter) {
+  function setSnapshotFilter(filter) {
+    installFilterHook();
     showPremisesList();
 
-    if (typeof window.setFilter === 'function') {
-      try { window.setFilter(filter); }
-      catch (_) {
-        window.currentFilter = filter || 'all';
-      }
-    } else {
-      window.currentFilter = filter || 'all';
-    }
+    const nextFilter = filter || 'exec-all';
+    window.fireSExecSnapshotActiveFilter = nextFilter;
+
+    // Reset free text search so the snapshot filter is obvious and predictable.
+    const search = document.getElementById('projectSearch');
+    if (search && search.value && nextFilter !== 'exec-all') search.value = '';
+
+    if (typeof window.currentFilter !== 'undefined') window.currentFilter = nextFilter;
+    else window.currentFilter = nextFilter;
 
     if (typeof window.currentProjectPage !== 'undefined') window.currentProjectPage = 1;
+
     if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
     if (typeof window.updateDashboardSelection === 'function') window.updateDashboardSelection();
 
     setTimeout(() => {
       render();
+      showFilterMessage(activeFilterLabel(nextFilter));
       scrollToPremisesList();
-    }, 100);
+    }, 80);
   }
 
-  function focusSearch(placeholder) {
-    showPremisesList();
-    const search = document.getElementById('projectSearch');
-    if (search) {
-      if (placeholder) search.placeholder = placeholder;
-      search.focus();
-      search.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }
+  function showFilterMessage(message) {
+    let box = document.getElementById('fireSExecSnapshotMessage');
+    const panel = document.getElementById('fireSExecutiveMiniDashboard');
+    if (!panel) return;
 
-  function openHealthAnalytics() {
-    if (window.FireSAnalyticsIsolation1113?.show) {
-      window.FireSAnalyticsIsolation1113.show();
-      return;
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'fireSExecSnapshotMessage';
+      box.className = 'fire-s-exec-message';
+      panel.appendChild(box);
     }
-    if (typeof window.fireSOpenAnalytics === 'function') {
-      window.fireSOpenAnalytics();
-      return;
-    }
-    const btn = document.getElementById('analyticsBtn') || document.getElementById('analyticsMenuBtn');
-    if (btn) {
-      btn.click();
-      return;
-    }
-    focusSearch('Search premises by health, site name, address or inspection number');
-  }
 
-  function openActionsCentre() {
-    if (typeof window.openFindingsCentreCommand === 'function') {
-      window.openFindingsCentreCommand();
-      return;
-    }
-    applyQuickFilter('inspection-attention');
-  }
-
-  function handleSnapshotAction(action) {
-    switch (action) {
-      case 'premises':
-        applyQuickFilter('all');
-        break;
-      case 'health':
-        openHealthAnalytics();
-        break;
-      case 'actions':
-        openActionsCentre();
-        break;
-      case 'overdue':
-        applyQuickFilter('overdue');
-        break;
-      case 'photos':
-        focusSearch('Search premises with photo evidence');
-        break;
-      case 'attention':
-        applyQuickFilter('inspection-attention');
-        break;
-      default:
-        showPremisesList();
-        scrollToPremisesList();
-    }
-  }
-
-  function removeDuplicateSnapshotLikePanels(panel) {
-    document.querySelectorAll('#fireSExecutiveMiniDashboard').forEach(node => {
-      if (node !== panel) node.remove();
-    });
+    box.textContent = message || '';
+    box.style.display = message ? 'block' : 'none';
   }
 
   function render() {
+    installFilterHook();
+
     const section = document.getElementById('projectListSection');
     if (!section || section.style.display === 'none') return;
 
@@ -21437,7 +21436,9 @@ if (!window.fireSMobileSmartCardsApplied) {
       search.insertAdjacentElement('beforebegin', panel);
     }
 
-    removeDuplicateSnapshotLikePanels(panel);
+    document.querySelectorAll('#fireSExecutiveMiniDashboard').forEach(node => {
+      if (node !== panel) node.remove();
+    });
 
     const projects = readVisibleProjects();
     const data = calc(projects);
@@ -21448,49 +21449,48 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises Overview</h3>
+          <p>Tap a tile to filter the premises list below.</p>
         </div>
-        <button type="button" data-exec-snapshot-action="refresh">Refresh</button>
+        <button type="button" data-exec-snapshot-filter="exec-all">Clear</button>
       </div>
       <div class="fire-s-exec-grid">
-        ${stat('Premises', data.count, 'visible', 'neutral', 'premises')}
-        ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone, 'health')}
-        ${stat('Open Actions', data.actions, data.actions ? 'requires follow-up' : 'clear', data.actions ? 'risk' : 'good', 'actions')}
-        ${stat('Overdue', data.overdue, data.overdue ? 'attention' : 'none', data.overdue ? 'risk' : 'good', 'overdue')}
-        ${stat('Photos', data.photos, 'evidence', 'neutral', 'photos')}
-        ${stat('Attention', data.attention, 'low health', data.attention ? 'watch' : 'good', 'attention')}
+        ${stat('Premises', data.count, 'all visible', 'neutral', 'exec-all')}
+        ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone, 'exec-health-attention')}
+        ${stat('Open Actions', data.actions, data.actions ? 'tap to filter' : 'clear', data.actions ? 'risk' : 'good', 'exec-actions')}
+        ${stat('Overdue', data.overdue, data.overdue ? 'tap to filter' : 'none', data.overdue ? 'risk' : 'good', 'exec-overdue')}
+        ${stat('Photos', data.photos, 'tap to filter', 'neutral', 'exec-photos')}
+        ${stat('Attention', data.attention, 'health < 75%', data.attention ? 'watch' : 'good', 'exec-health-attention')}
       </div>
       <div class="fire-s-exec-bar"><i style="width:${Math.max(0, Math.min(100, data.avg || 0))}%"></i></div>
+      <div id="fireSExecSnapshotMessage" class="fire-s-exec-message">${esc(activeFilterLabel(window.fireSExecSnapshotActiveFilter))}</div>
     `;
   }
 
   function install() {
-    window.__fireSExecutiveMiniDashboard118G = true;
-    window.FireSExecutiveMiniDashboard = { refresh: render, action: handleSnapshotAction, version: VERSION };
+    window.__fireSExecutiveMiniDashboard118H = true;
+    window.FireSExecutiveMiniDashboard = { refresh: render, setFilter: setSnapshotFilter, version: VERSION };
 
-    if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireSExecSnapshot118G) {
+    installFilterHook();
+
+    if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireSExecSnapshot118H) {
       const original = window.renderProjectsList;
       const wrapped = function fireSRenderProjectsListWithExecutiveSnapshot() {
         const result = original.apply(this, arguments);
         setTimeout(render, 50);
         return result;
       };
-      wrapped.__fireSExecSnapshot118G = true;
+      wrapped.__fireSExecSnapshot118H = true;
       window.renderProjectsList = wrapped;
     }
 
     document.addEventListener('click', event => {
-      const snapshotButton = event.target?.closest?.('[data-exec-snapshot-action]');
+      const snapshotButton = event.target?.closest?.('[data-exec-snapshot-filter]');
       if (!snapshotButton) return;
 
       event.preventDefault();
       event.stopPropagation();
 
-      const action = snapshotButton.dataset.execSnapshotAction || '';
-      if (action === 'refresh') {
-        render();
-        return;
-      }
-      handleSnapshotAction(action);
+      setSnapshotFilter(snapshotButton.dataset.execSnapshotFilter || 'exec-all');
     }, true);
 
     setTimeout(render, 350);
@@ -21500,3 +21500,4 @@ if (!window.fireSMobileSmartCardsApplied) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
 })();
+
