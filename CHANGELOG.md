@@ -1,7 +1,14 @@
-# Fire-S RC 1.1.12 - Show Filters Drawer Polish
+Fire-S RC 1.1.13 - Premises Workspace Module
 
-- Polishes the Show Filters drawer without changing filter logic.
-- Keeps Date Filters and Workspace Filters inside the same drawer.
-- Adds clearer filter headings, helper text and mobile spacing.
-- Keeps Executive Snapshot read-only.
-- Updates version/cache busters to RC 1.1.12.
+- Adds a real Premises Workspace landing module when a premises opens.
+- Shows Building Health, compliance, open actions, photos and last inspection.
+- Adds mobile-first workspace action cards: Inspection, Photos, Action Register, Health, History, Reports and Building Passport.
+- Adds Building Health Breakdown from answered checklist categories.
+- No cloud, storage or checklist data logic changed.
+
+Modified files:
+- index.html
+- app.js
+- styles.css
+- service-worker.js
+- CHANGELOG.md

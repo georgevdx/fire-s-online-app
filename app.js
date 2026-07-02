@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.12 - Show Filters Drawer Polish';
+const APP_VERSION = 'RC 1.1.13 - Premises Workspace Module';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -22545,4 +22545,356 @@ if (!window.fireSMobileSmartCardsApplied) {
     version: VERSION,
     refresh: enhanceFilterDrawer
   };
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.13 - Premises Workspace Module
+   Purpose: add a clear, mobile-first landing workspace when a premises opens.
+   No data, cloud-sync or checklist calculation logic is changed.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.13-premises-workspace-module';
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function dateText(value) {
+    if (!value) return 'Not recorded';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10) || 'Not recorded';
+    return date.toLocaleDateString();
+  }
+
+  function getCurrentPremises() {
+    try {
+      const id = window.currentProjectId || window.currentProject?.id || '';
+      if (!id || typeof window.getProjects !== 'function') return window.currentProject || null;
+      return window.getProjects().find(project => String(project.id) === String(id)) || window.currentProject || null;
+    } catch (error) {
+      console.warn('Fire-S workspace could not read current premises:', error);
+      return window.currentProject || null;
+    }
+  }
+
+  function premisesName(project) {
+    return project?.projectName ||
+      [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') ||
+      project?.siteName ||
+      'Untitled Premises';
+  }
+
+  function premisesAddress(project) {
+    return project?.projectAddress ||
+      [project?.streetNumber, project?.addressLine].filter(Boolean).join(' ') ||
+      project?.addressLine ||
+      'No address captured';
+  }
+
+  function answerValue(answer) {
+    return String(answer?.answer || '').trim().toLowerCase();
+  }
+
+  function answers(project) {
+    return Array.isArray(project?.answers) ? project.answers : [];
+  }
+
+  function noAnswers(project) {
+    return answers(project).filter(answer => answerValue(answer) === 'no');
+  }
+
+  function answeredYesNo(project) {
+    return answers(project).filter(answer => ['yes', 'no'].includes(answerValue(answer)));
+  }
+
+  function compliance(project) {
+    const scored = answeredYesNo(project);
+    if (!scored.length) return null;
+    const yes = scored.filter(answer => answerValue(answer) === 'yes').length;
+    return Math.round((yes / scored.length) * 100);
+  }
+
+  function openActionCount(project) {
+    if (Array.isArray(project?.actions) && project.actions.length) {
+      return project.actions.filter(action => String(action.status || 'Open').toLowerCase() !== 'closed').length;
+    }
+    return noAnswers(project).length;
+  }
+
+  function photoCount(project) {
+    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
+    return current + history;
+  }
+
+  function lastInspection(project) {
+    const dates = [
+      project?.completedAt,
+      project?.inspectionDate,
+      project?.lastSaved,
+      ...(Array.isArray(project?.inspectionHistory) ? project.inspectionHistory.map(item => item.completedAt || item.inspectionDate || item.archivedAt || item.lastSaved) : [])
+    ].filter(Boolean).map(value => {
+      const time = new Date(value).getTime();
+      return Number.isFinite(time) ? { value, time } : null;
+    }).filter(Boolean).sort((a, b) => b.time - a.time);
+    return dates[0]?.value || '';
+  }
+
+  function healthScore(project) {
+    const comp = compliance(project);
+    if (comp === null) return 0;
+    const open = openActionCount(project);
+    const criticalPenalty = Math.min(noAnswers(project).length * 3, 30);
+    const actionPenalty = Math.min(open * 2, 20);
+    return Math.max(0, Math.min(100, comp - criticalPenalty - actionPenalty));
+  }
+
+  function healthLabel(score) {
+    if (!score) return 'Incomplete';
+    if (score >= 90) return 'Excellent';
+    if (score >= 75) return 'Good';
+    if (score >= 55) return 'Attention';
+    return 'Critical';
+  }
+
+  function healthTone(score) {
+    if (!score) return 'neutral';
+    if (score >= 90) return 'good';
+    if (score >= 75) return 'watch';
+    if (score >= 55) return 'risk';
+    return 'critical';
+  }
+
+  function categoryFor(answer) {
+    const direct = answer?.sectionName || answer?.category || answer?.section || answer?.group;
+    if (direct) return String(direct);
+    const text = String(answer?.question || answer?.text || answer?.item || answer?.note || '').toLowerCase();
+    if (/escape|exit|egress|route|stair|corridor/.test(text)) return 'Means of Escape';
+    if (/alarm|detect|mcp|manual call|sounder|panel/.test(text)) return 'Detection & Alarm';
+    if (/sprinkler|pump|hydrant|hose reel|water|valve/.test(text)) return 'Fire Protection';
+    if (/extinguisher|fire equipment/.test(text)) return 'Fire Equipment';
+    if (/emergency light|lighting|signage|exit sign/.test(text)) return 'Emergency Lighting / Signage';
+    if (/electrical|db|distribution board|cable/.test(text)) return 'Electrical';
+    if (/storage|housekeeping|combustible|waste|flammable/.test(text)) return 'Housekeeping';
+    if (/document|certificate|coc|logbook|record|plan/.test(text)) return 'Documentation';
+    return 'General Fire Safety';
+  }
+
+  function categoryRows(project) {
+    const map = new Map();
+    answers(project).forEach(answer => {
+      const value = answerValue(answer);
+      if (!['yes', 'no'].includes(value)) return;
+      const category = categoryFor(answer);
+      if (!map.has(category)) map.set(category, { category, total: 0, yes: 0, no: 0 });
+      const row = map.get(category);
+      row.total += 1;
+      if (value === 'yes') row.yes += 1;
+      if (value === 'no') row.no += 1;
+    });
+    return Array.from(map.values())
+      .map(row => ({ ...row, score: row.total ? Math.round((row.yes / row.total) * 100) : 0 }))
+      .sort((a, b) => a.score - b.score || b.no - a.no)
+      .slice(0, 5);
+  }
+
+  function scrollToTarget(targetId) {
+    const target = document.getElementById(targetId) || document.querySelector(targetId);
+    if (!target) return false;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  }
+
+  function openWorkspaceTarget(target) {
+    if (target === 'inspection') {
+      if (typeof window.focusInspectionSection === 'function') window.focusInspectionSection('checklistCard');
+      else scrollToTarget('checklistCard');
+      return;
+    }
+
+    if (target === 'photos') {
+      if (typeof window.focusInspectionSection === 'function') window.focusInspectionSection('photoEvidenceCard');
+      else scrollToTarget('photoEvidenceCard');
+      return;
+    }
+
+    if (target === 'actions') {
+      const actionTarget = document.getElementById('fireSActionRegisterPanelV1033') || document.querySelector('.fire-s-action-register-v1033') || document.getElementById('checklistCard');
+      if (actionTarget) actionTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    if (target === 'health') {
+      scrollToTarget('fireSPremisesWorkspaceHealth1113');
+      return;
+    }
+
+    if (target === 'history') {
+      const historyTarget = document.getElementById('siteHistoryPanel') || document.getElementById('inspectionArchivePanel') || document.querySelector('[id*="History"], [class*="history"]');
+      if (historyTarget) historyTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else {
+        const message = document.getElementById('saveMessage');
+        if (message) message.textContent = 'Inspection History will show here once archived inspections are available.';
+        scrollToTarget('inspectionQuickActions');
+      }
+      return;
+    }
+
+    if (target === 'reports') {
+      if (typeof window.generateReport === 'function') {
+        window.generateReport();
+        setTimeout(() => scrollToTarget('reportSection'), 80);
+      } else {
+        scrollToTarget('reportSection');
+      }
+      return;
+    }
+
+    if (target === 'passport') {
+      const passportTarget = document.getElementById('fireSBuildingPassportV104Wrapper') || document.querySelector('.fire-s-building-passport-v104') || document.getElementById('projectDetailsCard');
+      if (passportTarget) passportTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+  }
+
+  function workspaceCard(id, icon, title, text, meta) {
+    return `
+      <button type="button" class="fire-s-workspace-action-v1113" data-fire-s-workspace-target="${esc(id)}">
+        <span class="fire-s-workspace-action-icon-v1113">${esc(icon)}</span>
+        <strong>${esc(title)}</strong>
+        <small>${esc(text)}</small>
+        ${meta ? `<em>${esc(meta)}</em>` : ''}
+      </button>
+    `;
+  }
+
+  function renderWorkspace() {
+    const project = getCurrentPremises();
+    const commandShell = document.getElementById('inspectionCommandShell');
+    const detailsCard = document.getElementById('projectDetailsCard');
+    if (!project || !commandShell || !detailsCard) return;
+
+    let host = document.getElementById('fireSPremisesWorkspaceModule1113');
+    if (!host) {
+      host = document.createElement('section');
+      host.id = 'fireSPremisesWorkspaceModule1113';
+      host.className = 'fire-s-premises-workspace-v1113';
+      commandShell.insertAdjacentElement('afterend', host);
+    }
+
+    const score = healthScore(project);
+    const comp = compliance(project);
+    const openActions = openActionCount(project);
+    const photos = photoCount(project);
+    const rows = categoryRows(project);
+    const inspectionDate = lastInspection(project);
+    const answeredCount = answeredYesNo(project).length;
+    const historyCount = Array.isArray(project.inspectionHistory) ? project.inspectionHistory.length : 0;
+
+    host.innerHTML = `
+      <div class="fire-s-workspace-hero-v1113">
+        <div class="fire-s-workspace-title-v1113">
+          <span>Premises Workspace</span>
+          <h2>${esc(premisesName(project))}</h2>
+          <p>${esc(premisesAddress(project))}</p>
+        </div>
+
+        <div class="fire-s-workspace-health-v1113 ${healthTone(score)}">
+          <span>Building Health</span>
+          <strong>${score || '—'}${score ? '%' : ''}</strong>
+          <small>${esc(healthLabel(score))}</small>
+        </div>
+      </div>
+
+      <div class="fire-s-workspace-kpis-v1113">
+        <div><span>Compliance</span><strong>${comp === null ? '—' : comp + '%'}</strong></div>
+        <div><span>Open Actions</span><strong>${openActions}</strong></div>
+        <div><span>Photos</span><strong>${photos}</strong></div>
+        <div><span>Last Inspection</span><strong>${esc(dateText(inspectionDate))}</strong></div>
+      </div>
+
+      <div class="fire-s-workspace-actions-v1113" aria-label="Premises workspace actions">
+        ${workspaceCard('inspection', '📋', 'Inspection', 'Open the checklist and continue answering.', `${answeredCount} answered`)}
+        ${workspaceCard('photos', '📷', 'Photos', 'Capture and review photo evidence.', `${photos} photos`)}
+        ${workspaceCard('actions', '⚠', 'Action Register', 'Review open corrective actions.', `${openActions} open`)}
+        ${workspaceCard('health', '📈', 'Health', 'View category health and weak areas.', score ? `${score}%` : 'No score')}
+        ${workspaceCard('history', '📚', 'History', 'Review archived inspection cycles.', `${historyCount} records`)}
+        ${workspaceCard('reports', '📄', 'Reports', 'Generate or review the inspection report.', 'PDF ready')}
+        ${workspaceCard('passport', '🏢', 'Building Passport', 'Permanent premises profile and assets.', 'Profile')}
+      </div>
+
+      <div id="fireSPremisesWorkspaceHealth1113" class="fire-s-workspace-health-panel-v1113">
+        <div class="fire-s-workspace-panel-head-v1113">
+          <strong>Building Health Breakdown</strong>
+          <span>${rows.length ? 'Weakest categories shown first.' : 'Answer checklist items to build the health breakdown.'}</span>
+        </div>
+        ${rows.length ? `
+          <div class="fire-s-workspace-category-list-v1113">
+            ${rows.map(row => `
+              <div class="fire-s-workspace-category-row-v1113">
+                <span>${esc(row.category)}</span>
+                <div class="fire-s-workspace-bar-v1113"><i style="width:${row.score}%"></i></div>
+                <strong>${row.score}%</strong>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div class="fire-s-workspace-empty-v1113">No category data yet.</div>
+        `}
+      </div>
+    `;
+  }
+
+  function bindWorkspaceClicks() {
+    if (window.__fireSPremisesWorkspace1113Bound) return;
+    window.__fireSPremisesWorkspace1113Bound = true;
+
+    document.addEventListener('click', event => {
+      const button = event.target?.closest?.('[data-fire-s-workspace-target]');
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openWorkspaceTarget(button.dataset.fireSWorkspaceTarget || 'inspection');
+    }, true);
+  }
+
+  function install() {
+    bindWorkspaceClicks();
+    setTimeout(renderWorkspace, 100);
+    setTimeout(renderWorkspace, 450);
+    setTimeout(renderWorkspace, 1200);
+  }
+
+  const originalOpenProject = window.openProject;
+  if (typeof originalOpenProject === 'function' && !originalOpenProject.__fireSWorkspace1113Wrapped) {
+    const wrapped = function (...args) {
+      const result = originalOpenProject.apply(this, args);
+      setTimeout(renderWorkspace, 180);
+      setTimeout(renderWorkspace, 650);
+      return result;
+    };
+    wrapped.__fireSWorkspace1113Wrapped = true;
+    window.openProject = wrapped;
+  }
+
+  window.FireSPremisesWorkspace1113 = {
+    version: VERSION,
+    render: renderWorkspace,
+    open: openWorkspaceTarget
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', install);
+  } else {
+    install();
+  }
 })();

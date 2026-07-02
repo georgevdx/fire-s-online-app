@@ -11122,3 +11122,303 @@ body > #actionDropdown.action-dropdown button:last-child {
     line-height: 1.15 !important;
   }
 }
+
+
+/* =====================================================
+   FIRE-S RC 1.1.13 - Premises Workspace Module
+   ===================================================== */
+.fire-s-premises-workspace-v1113 {
+  margin: 14px 0 18px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.fire-s-workspace-hero-v1113 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+.fire-s-workspace-title-v1113 span,
+.fire-s-workspace-health-v1113 span,
+.fire-s-workspace-kpis-v1113 span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.fire-s-workspace-title-v1113 h2 {
+  margin: 4px 0 5px;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.08;
+}
+
+.fire-s-workspace-title-v1113 p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.fire-s-workspace-health-v1113 {
+  min-width: 112px;
+  padding: 12px;
+  border-radius: 16px;
+  text-align: center;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+}
+
+.fire-s-workspace-health-v1113 strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.fire-s-workspace-health-v1113 small {
+  display: block;
+  margin-top: 4px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.fire-s-workspace-health-v1113.good { background: #ecfdf5; border-color: #86efac; }
+.fire-s-workspace-health-v1113.good strong { color: #15803d; }
+.fire-s-workspace-health-v1113.watch { background: #fffbeb; border-color: #fcd34d; }
+.fire-s-workspace-health-v1113.watch strong { color: #b45309; }
+.fire-s-workspace-health-v1113.risk { background: #fff7ed; border-color: #fdba74; }
+.fire-s-workspace-health-v1113.risk strong { color: #c2410c; }
+.fire-s-workspace-health-v1113.critical { background: #fef2f2; border-color: #fca5a5; }
+.fire-s-workspace-health-v1113.critical strong { color: #b91c1c; }
+
+.fire-s-workspace-kpis-v1113 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.fire-s-workspace-kpis-v1113 div {
+  padding: 10px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-workspace-kpis-v1113 strong {
+  display: block;
+  margin-top: 4px;
+  color: #111827;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.fire-s-workspace-actions-v1113 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 6px;
+}
+
+.fire-s-workspace-action-v1113 {
+  width: 100%;
+  max-width: none;
+  min-height: 104px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+.fire-s-workspace-action-v1113:hover,
+.fire-s-workspace-action-v1113:focus {
+  opacity: 1;
+  border-color: #b91c1c;
+  box-shadow: 0 6px 18px rgba(185, 28, 28, 0.12);
+  outline: none;
+}
+
+.fire-s-workspace-action-icon-v1113 {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: #fee2e2;
+  font-size: 16px;
+}
+
+.fire-s-workspace-action-v1113 strong {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.fire-s-workspace-action-v1113 small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.fire-s-workspace-action-v1113 em {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.fire-s-workspace-health-panel-v1113 {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-workspace-panel-head-v1113 {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.fire-s-workspace-panel-head-v1113 strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.fire-s-workspace-panel-head-v1113 span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.fire-s-workspace-category-list-v1113 {
+  display: grid;
+  gap: 8px;
+}
+
+.fire-s-workspace-category-row-v1113 {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 1.4fr 48px;
+  gap: 8px;
+  align-items: center;
+}
+
+.fire-s-workspace-category-row-v1113 span,
+.fire-s-workspace-category-row-v1113 strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fire-s-workspace-category-row-v1113 strong {
+  text-align: right;
+}
+
+.fire-s-workspace-bar-v1113 {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.fire-s-workspace-bar-v1113 i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b91c1c;
+}
+
+.fire-s-workspace-empty-v1113 {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .fire-s-premises-workspace-v1113 {
+    margin: 10px 0 14px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .fire-s-workspace-hero-v1113 {
+    grid-template-columns: 1fr;
+  }
+
+  .fire-s-workspace-title-v1113 h2 {
+    font-size: 19px;
+  }
+
+  .fire-s-workspace-health-v1113 {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .fire-s-workspace-health-v1113 strong {
+    margin: 0;
+    font-size: 22px;
+    text-align: right;
+  }
+
+  .fire-s-workspace-health-v1113 small {
+    margin: 0;
+    text-align: right;
+  }
+
+  .fire-s-workspace-kpis-v1113 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fire-s-workspace-actions-v1113 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fire-s-workspace-action-v1113 {
+    min-height: 96px;
+    padding: 10px;
+  }
+
+  .fire-s-workspace-category-row-v1113 {
+    grid-template-columns: 1fr 52px;
+  }
+
+  .fire-s-workspace-category-row-v1113 .fire-s-workspace-bar-v1113 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

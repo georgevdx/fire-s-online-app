@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-12-show-filters-drawer-polish';
+const CACHE_NAME = 'fire-s-rc-1-1-13-premises-workspace-module';
 
 const APP_SHELL = [
   './',
