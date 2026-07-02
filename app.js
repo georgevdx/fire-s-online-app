@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.16 - Smart Photo Centre Module';
+const APP_VERSION = 'RC 1.1.16A - Photo Sync Phase 1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -21194,7 +21194,20 @@ if (!window.fireSMobileSmartCardsApplied) {
       };
     }
 
-    document.addEventListener('change', event => {
+  
+  function syncPhotoCentreNow() {
+    const photos = safePhotos();
+    photos.forEach(normalisePhoto);
+    savePhotos();
+    if (typeof updatePhotoUploadStatus === 'function') {
+      try { updatePhotoUploadStatus(); } catch (_) {}
+    }
+    if (typeof window.renderPhotos === 'function') {
+      try { window.renderPhotos(); } catch (_) {}
+    }
+  }
+
+  document.addEventListener('change', event => {
       if (event.target?.matches?.('.answer-select')) setTimeout(ensureCentre, 250);
     });
 
@@ -23320,13 +23333,13 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.16 - Smart Photo Centre Module
+   FIRE-S RC 1.1.16A - Photo Sync Phase 1
    Purpose: add practical photo metadata without changing core sync logic.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.16-smart-photo-centre';
+  const VERSION = '1.1.16A-photo-sync-phase-1';
   const PHOTO_CATEGORIES = [
     'General',
     'Fire Equipment',
@@ -23348,7 +23361,26 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function safePhotos() {
-    if (!Array.isArray(window.currentPhotos)) window.currentPhotos = [];
+    /*
+      Phase 1 photo synchronisation rule:
+      project.photos[] / currentPhotos is the single source of truth.
+      Do not create a second window.currentPhotos array, because top-level
+      `let currentPhotos` is not the same as `window.currentPhotos`.
+    */
+    try {
+      if (typeof currentPhotos !== 'undefined' && Array.isArray(currentPhotos)) {
+        window.currentPhotos = currentPhotos;
+        return currentPhotos;
+      }
+    } catch (_) {}
+
+    const project = currentProjectSafe();
+    if (project && Array.isArray(project.photos)) {
+      window.currentPhotos = project.photos;
+      return project.photos;
+    }
+
+    window.currentPhotos = [];
     return window.currentPhotos;
   }
 
@@ -23362,9 +23394,36 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function savePhotos() {
+    const photos = safePhotos();
+
+    try {
+      if (typeof currentPhotos !== 'undefined' && Array.isArray(currentPhotos)) {
+        window.currentPhotos = currentPhotos;
+      }
+    } catch (_) {}
+
     if (typeof saveCurrentPhotosToOpenProject === 'function') {
       try { saveCurrentPhotosToOpenProject(); } catch (_) {}
+    } else {
+      const project = currentProjectSafe();
+      if (project && typeof getProjects === 'function' && typeof setProjects === 'function') {
+        try {
+          const projects = getProjects();
+          const index = projects.findIndex(item => String(item.id) === String(project.id));
+          if (index !== -1) {
+            projects[index] = {
+              ...projects[index],
+              photos,
+              syncPending: true,
+              syncError: false,
+              lastSaved: new Date().toISOString()
+            };
+            setProjects(projects);
+          }
+        } catch (_) {}
+      }
     }
+
     if (typeof scheduleAutoSave === 'function') {
       try { scheduleAutoSave(); } catch (_) {}
     }
@@ -23577,6 +23636,19 @@ if (!window.fireSMobileSmartCardsApplied) {
     }
   }
 
+
+  function syncPhotoCentreNow() {
+    const photos = safePhotos();
+    photos.forEach(normalisePhoto);
+    savePhotos();
+    if (typeof updatePhotoUploadStatus === 'function') {
+      try { updatePhotoUploadStatus(); } catch (_) {}
+    }
+    if (typeof window.renderPhotos === 'function') {
+      try { window.renderPhotos(); } catch (_) {}
+    }
+  }
+
   document.addEventListener('change', event => {
     if (event.target && event.target.id === 'photoInput') {
       setTimeout(() => {
@@ -23598,6 +23670,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     version: VERSION,
     categories: PHOTO_CATEGORIES,
     stats: photoStats,
-    normalisePhoto
+    normalisePhoto,
+    sync: syncPhotoCentreNow
   };
 })();

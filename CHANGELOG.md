@@ -1,13 +1,14 @@
-# Fire-S RC 1.1.16 - Smart Photo Centre Module
+# Fire-S RC 1.1.16A - Photo Sync Phase 1
 
-- Adds Smart Photo Centre header to the photo evidence area.
-- Adds category, area/location and linked item metadata per photo.
-- Keeps photo cards mobile-first and uncluttered.
-- Adds photo category summary chips.
-- Includes photo metadata in report / PDF photo appendix.
-- Updates APP_VERSION and cache-busters to RC 1.1.16.
+Stability hotfix for Smart Photo Centre.
 
-Modified files:
+## Fixed
+- Smart Photo Centre now reads from the same `currentPhotos` / `project.photos[]` source as the existing Photo Evidence counter.
+- Prevents creation of a separate `window.currentPhotos` array that caused `Photos: 1/10` but `Smart Photo Centre: 0 photos`.
+- Keeps category, area, linked item and notes on the actual photo object.
+- Updates cache/version strings to RC 1.1.16A.
+
+## Modified files
 - index.html
 - app.js
 - styles.css

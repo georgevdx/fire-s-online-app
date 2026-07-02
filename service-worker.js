@@ -1,10 +1,10 @@
-const CACHE_NAME = 'fire-s-rc-1-1-16-smart-photo-centre-module';
+const CACHE_NAME = 'fire-s-rc-1-1-16A-photo-sync-phase-1';
 
 const APP_SHELL = [
   './',
   './index.html?v=rc-1-1-12-show-filters-drawer-polish',
-  './styles.css?v=rc-1-1-12-show-filters-drawer-polish',
-  './app.js?v=rc-1-1-12-show-filters-drawer-polish',
+  './styles.css?v=rc-1-1-16A-photo-sync-phase-1',
+  './app.js?v=rc-1-1-16A-photo-sync-phase-1',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
