@@ -10188,3 +10188,150 @@ body > #actionDropdown.action-dropdown button:last-child {
     gap: 6px !important;
   }
 }
+
+
+/* =====================================================
+   Fire-S RC 1.1.5 - Cloud Menu Alignment Hotfix
+   Purpose: keep cloud login/sign-in dropdown aligned on mobile.
+   ===================================================== */
+.cloud-menu {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  z-index: 5000;
+}
+
+.cloud-menu-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 86px;
+  padding: 10px 16px !important;
+  border-radius: 999px !important;
+  background: #666 !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+}
+
+.cloud-menu-btn::before {
+  content: "☁";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cloud-menu-btn::after {
+  content: "▾";
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.cloud-dropdown {
+  box-sizing: border-box !important;
+  width: min(320px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  right: 0 !important;
+  left: auto !important;
+  top: calc(100% + 10px) !important;
+  padding: 12px !important;
+  overflow: visible !important;
+  border-radius: 18px !important;
+  border: 1px solid #dbe3ef !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.22) !important;
+}
+
+.cloud-dropdown input,
+.cloud-dropdown button,
+.cloud-dropdown .admin-import-backup-btn {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 44px !important;
+  margin: 0 0 8px 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cloud-dropdown input {
+  border-radius: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #fff !important;
+  color: #0f172a !important;
+}
+
+.cloud-dropdown button,
+.cloud-dropdown .admin-import-backup-btn {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 700px) {
+  .brand-header {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+    gap: 10px !important;
+    overflow: visible !important;
+  }
+
+  .brand-left {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .brand-left > div {
+    min-width: 0 !important;
+  }
+
+  .brand-left h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    line-height: 1.05;
+  }
+
+  .brand-version {
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  .cloud-menu {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    position: relative !important;
+  }
+
+  .cloud-menu-btn {
+    min-width: 112px !important;
+    padding: 12px 18px !important;
+    font-size: 15px !important;
+  }
+
+  .cloud-dropdown {
+    position: absolute !important;
+    left: 0 !important;
+    right: auto !important;
+    top: calc(100% + 10px) !important;
+    width: min(330px, calc(100vw - 40px)) !important;
+    max-width: calc(100vw - 40px) !important;
+    max-height: min(72vh, 560px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cloud-section-title {
+    font-size: 11px !important;
+    letter-spacing: 0.05em;
+  }
+}
+
+@media (max-width: 380px) {
+  .cloud-dropdown {
+    width: calc(100vw - 28px) !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+}

@@ -1,9 +1,11 @@
-const CACHE_NAME = 'fire-s-rc-1-1-4-action-register-polish';
+const CACHE_NAME = 'fire-s-rc-1-1-5-cloud-menu-alignment';
 
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css',
+  './dashboard.css',
+  './workspace.css',
   './app.js',
   './occupancies.json',
   './requirements.json',

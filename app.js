@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.4 - Action Register Polish';
+const APP_VERSION = 'RC 1.1.5 - Cloud Menu Alignment';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const PHOTO_CATEGORIES = [
   'General Evidence',

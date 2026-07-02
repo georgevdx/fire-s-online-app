@@ -1,6 +1,7 @@
-# Fire-S RC 1.1.4 - Action Register Polish
+# Fire-S RC 1.1.5 - Cloud Menu Alignment
 
-- Polished Action Register category detection.
-- Improved generic/uncategorised action wording.
-- Added view-only duplicate hiding for repeated-looking action cards.
-- Updated cache-busters and service worker cache.
+- Fixed mobile cloud/sign-in dropdown alignment.
+- Cloud button now remains inside the header flow on phones.
+- Dropdown uses viewport-safe width and no longer clips off-screen.
+- Improved mobile touch size for cloud login/sync buttons.
+- Version and cache bump to RC 1.1.5.
