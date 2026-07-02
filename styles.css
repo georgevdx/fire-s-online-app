@@ -9860,249 +9860,53 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 
 /* =====================================================
-   Fire-S RC 1.0.9 - Professional Workflow UI polish
-   Safe visual layer only: no data/sync logic changed.
+   FIRE-S RC 1.0.10 - Inspection Card Open Hotfix UI
    ===================================================== */
-:root {
-  --fires-red: #b91c1c;
-  --fires-red-dark: #7f1d1d;
-  --fires-green: #15803d;
-  --fires-blue: #1d4ed8;
-  --fires-orange: #c2410c;
-  --fires-ink: #111827;
-  --fires-muted: #64748b;
-  --fires-line: #e5e7eb;
-  --fires-soft: #f8fafc;
-}
-
-body {
-  background:
-    radial-gradient(circle at top left, rgba(185,28,28,0.08), transparent 34rem),
-    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-}
-
-.app {
-  max-width: 1080px;
-}
-
-.brand-header,
-.card {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-}
-
-.brand-header {
-  background: rgba(255,255,255,0.94);
-  border-radius: 18px;
-  padding: 14px 16px;
-  box-shadow: 0 14px 32px rgba(15,23,42,0.08);
-}
-
-.card {
-  box-shadow: 0 14px 34px rgba(15,23,42,0.08);
-}
-
-#projectListSection > .toolbar {
-  align-items: center;
-  gap: 14px;
-}
-
-#projectListSection > .toolbar h2 {
-  margin: 0;
-  font-size: 1.55rem;
-  letter-spacing: -0.02em;
-}
-
-.project-action-buttons {
-  display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(190px, 1fr);
-  gap: 10px;
-}
-
-.compact-action-btn,
-.compact-action-secondary,
-.back-home-btn {
-  min-height: 46px;
-  border-radius: 14px;
-  font-weight: 900;
-  box-shadow: 0 10px 20px rgba(15,23,42,0.10);
-}
-
-.compact-action-btn {
-  background: linear-gradient(135deg, #dc2626, #991b1b);
-}
-
-.compact-action-secondary {
-  background: #ffffff !important;
-  color: var(--fires-ink) !important;
-  border: 1px solid #d1d5db !important;
-}
-
-.back-home-btn {
-  background: #eff6ff !important;
-  color: #1d4ed8 !important;
-  border: 1px solid #bfdbfe !important;
-}
-
-.project-search-top,
-#projectSearch {
-  max-width: none;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 8px 22px rgba(15,23,42,0.06);
-}
-
-.inspection-date-filter-panel,
-.filter-panel {
-  border-radius: 16px;
-  border: 1px solid var(--fires-line);
-  background: #ffffff;
-  box-shadow: 0 12px 28px rgba(15,23,42,0.06);
-}
-
-.inspection-date-filter-title {
-  color: var(--fires-red);
-  font-weight: 900;
-  letter-spacing: 0.04em;
-}
-
-.inspection-quick-date-row button {
-  border-radius: 999px;
-  font-weight: 900;
-  background: #f8fafc;
-  color: #334155;
-  border: 1px solid #dbe3ef;
-}
-
-.inspection-quick-date-row button:hover,
-.inspection-quick-date-row button:focus {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fecaca;
-}
-
-.project-card {
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  border-left: 6px solid var(--fires-red);
-  box-shadow: 0 10px 26px rgba(15,23,42,0.06);
+.ultra-premises-card {
+  position: relative;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
-
-.project-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 34px rgba(15,23,42,0.10);
-  border-color: #fecaca;
+.ultra-premises-card:active {
+  transform: scale(0.992);
 }
-
-.project-card h3 {
-  color: var(--fires-ink);
-  letter-spacing: -0.01em;
-}
-
-.project-open-btn {
+.ultra-premises-open-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 4px 9px;
   border-radius: 999px;
+  background: #b71c1c;
+  color: #ffffff;
+  font-size: 11px;
   font-weight: 900;
-  background: var(--fires-red);
+  letter-spacing: 0.01em;
 }
-
-.project-meta-grid div {
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
+.ultra-premises-card:hover .ultra-premises-open-hint,
+.ultra-premises-card:focus .ultra-premises-open-hint {
+  background: #8f1515;
 }
-
-.project-inspection-status,
-.project-follow,
-.project-sync,
-.project-expiry-chip {
-  font-weight: 900;
-}
-
-@media (max-width: 760px) {
-  .app {
-    padding: 10px;
-  }
-
-  .brand-header {
-    border-radius: 16px;
-    padding: 12px;
-  }
-
-  .brand-left {
-    min-width: 0;
-  }
-
-  .brand-header h1 {
-    font-size: 1.45rem;
-  }
-
-  .brand-mark {
-    width: 38px;
-    height: 38px;
-  }
-
-  #projectListSection.card {
-    padding: 12px;
-  }
-
-  #projectListSection > .toolbar {
-    align-items: stretch;
-  }
-
-  .toolbar-actions,
-  .project-action-buttons {
-    width: 100%;
-  }
-
-  .project-action-buttons {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .compact-action-btn,
-  .compact-action-secondary,
-  .back-home-btn {
-    width: 100%;
-    max-width: none;
-    min-height: 44px;
-    padding: 10px;
-    font-size: 0.8rem;
-  }
-
-  #projectListSection > .toolbar h2 {
-    font-size: 1.35rem;
-  }
-
-  .inspection-date-filter-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .inspection-quick-date-row {
+@media (min-width: 720px) {
+  .ultra-premises-body {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 7px;
+    grid-template-columns: 1fr auto;
+    column-gap: 14px;
+    align-items: center;
   }
-
-  .inspection-quick-date-row button {
+  .ultra-premises-title-row,
+  .ultra-premises-title {
+    grid-column: 1 / -1;
+  }
+  .ultra-premises-open-hint {
+    margin-top: 0;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 640px) {
+  .ultra-premises-open-hint {
     width: 100%;
-    max-width: none;
-    font-size: 0.72rem;
-    padding: 8px 6px;
-  }
-
-  .project-card {
-    padding: 12px;
-    border-radius: 14px;
-  }
-
-  .project-card-top {
-    gap: 8px;
-  }
-
-  .project-open-btn {
-    padding: 8px 12px;
-    font-size: 0.78rem;
-  }
-
-  .project-meta-grid {
-    grid-template-columns: 1fr 1fr;
+    margin-top: 7px;
+    padding: 6px 9px;
   }
 }

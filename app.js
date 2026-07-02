@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.0.9 - Professional Workflow UI';
+const APP_VERSION = 'RC 1.0.10 - Inspection Card Open Hotfix';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -11201,281 +11201,132 @@ function ensureInspectionOpenGateStyles() {
     .inspection-open-gate-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.58);
+      background: rgba(20, 20, 20, 0.58);
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
-      padding: 14px;
+      padding: 10px;
       z-index: 50000;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      backdrop-filter: blur(4px);
     }
 
     .inspection-open-gate-modal {
-      width: min(980px, 100%);
-      max-height: calc(100vh - 28px);
+      width: min(620px, 100%);
+      max-height: calc(100vh - 20px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.34);
-      padding: 0;
-      color: #111827;
+      border-radius: 16px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+      padding: 16px;
+      color: #222222;
       box-sizing: border-box;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-    }
-
-    .inspection-open-gate-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, #9f1111 0%, #c91f1f 55%, #7f0f0f 100%);
-      color: #ffffff;
     }
 
     .inspection-open-gate-kicker {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.76rem;
-      font-weight: 900;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      opacity: 0.96;
-    }
-
-    .inspection-open-gate-kicker-icon {
-      display: inline-flex;
-      width: 25px;
-      height: 25px;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.16);
-      font-size: 0.95rem;
-    }
-
-    .inspection-open-gate-version {
-      font-size: 0.68rem;
-      font-weight: 900;
+      font-size: 0.75rem;
+      font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding: 5px 9px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.18);
-      white-space: nowrap;
-    }
-
-    .inspection-open-gate-body {
-      padding: 16px;
-    }
-
-    .inspection-open-gate-title-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: start;
-      gap: 12px;
-      margin-bottom: 10px;
+      color: #b71c1c;
+      margin-bottom: 6px;
     }
 
     .inspection-open-gate-modal h3 {
-      margin: 0;
-      font-size: 1.45rem;
-      letter-spacing: -0.02em;
-      color: #111827;
+      margin: 0 0 6px;
+      font-size: 1.12rem;
     }
 
-    .inspection-open-gate-subtitle {
-      margin: 5px 0 0;
-      color: #4b5563;
-      line-height: 1.35;
-      font-size: 0.92rem;
-    }
-
-    .inspection-open-gate-status-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 8px 11px;
-      background: #ecfdf5;
-      color: #047857;
-      border: 1px solid #a7f3d0;
-      font-size: 0.72rem;
-      font-weight: 900;
-      text-transform: uppercase;
-      white-space: nowrap;
+    .inspection-open-gate-modal p {
+      margin: 0 0 8px;
+      color: #555555;
+      line-height: 1.32;
+      font-size: 0.86rem;
     }
 
     .inspection-open-gate-summary {
-      display: grid;
-      grid-template-columns: 1.3fr repeat(4, minmax(82px, 1fr));
-      gap: 8px;
-      align-items: stretch;
-      background: #f8fafc;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 9px;
-      margin: 10px 0 10px;
+      background: #f7f7f7;
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin: 8px 0 8px;
       font-size: 0.84rem;
-      line-height: 1.25;
-    }
-
-    .inspection-open-gate-site-card,
-    .inspection-open-gate-metric {
-      border-radius: 11px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      padding: 10px;
-      min-width: 0;
-    }
-
-    .inspection-open-gate-site-card span,
-    .inspection-open-gate-metric span {
-      display: block;
-      font-size: 0.66rem;
-      font-weight: 900;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 3px;
-    }
-
-    .inspection-open-gate-site-card strong,
-    .inspection-open-gate-metric strong {
-      display: block;
-      color: #111827;
-      font-weight: 900;
-      overflow-wrap: anywhere;
-    }
-
-    .inspection-open-gate-metric strong {
-      font-size: 1.1rem;
+      line-height: 1.28;
     }
 
     .inspection-open-gate-safe-note {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      border-radius: 13px;
-      padding: 10px 12px;
-      margin: 0 0 12px;
-      color: #7c2d12;
-      font-size: 0.84rem;
-      line-height: 1.32;
+      background: #fff7e6;
+      border: 1px solid #ffd591;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin: 0 0 10px;
+      color: #5c3b00;
+      font-size: 0.8rem;
+      line-height: 1.26;
     }
 
-    .inspection-open-gate-safe-note-icon {
-      flex: 0 0 auto;
-      width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: #ffedd5;
-      color: #ea580c;
-      font-weight: 900;
-    }
-
-    .inspection-open-gate-question {
-      margin: 0 0 8px;
-      padding: 12px 12px 0;
-      border: 1px solid #e5e7eb;
-      border-bottom: 0;
-      border-radius: 14px 14px 0 0;
-      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    }
-
-    .inspection-open-gate-question strong {
-      display: block;
-      font-size: 0.98rem;
+    .inspection-open-gate-mode-label {
+      display: inline-block;
+      margin-bottom: 4px;
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: #111827;
-    }
-
-    .inspection-open-gate-question span {
-      display: block;
-      color: #64748b;
-      font-size: 0.84rem;
-      margin-top: 3px;
+      opacity: 0.78;
     }
 
     .inspection-open-gate-actions {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-top: 0;
-      border-radius: 0 0 14px 14px;
-      background: #ffffff;
+      gap: 8px;
     }
 
     .inspection-open-gate-actions button {
       width: 100%;
       max-width: none;
-      min-height: 150px;
+      min-height: 72px;
       text-align: left;
-      border: 2px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 10px;
       background: #ffffff;
       cursor: pointer;
       font-weight: 800;
       white-space: normal;
-      line-height: 1.2;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-      color: #111827;
+      line-height: 1.18;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
-    .inspection-open-gate-actions button:hover,
-    .inspection-open-gate-actions button:focus {
-      transform: translateY(-2px);
-      box-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
-      outline: none;
+    .inspection-open-gate-actions button small {
+      display: block;
+      margin-top: 3px;
+      font-weight: 500;
+      color: #666666;
+      line-height: 1.2;
+      font-size: 0.72rem;
     }
+
 
     .inspection-open-gate-card {
       display: grid;
-      grid-template-columns: 54px 1fr 44px;
+      grid-template-columns: 30px 1fr;
       align-items: start;
-      gap: 12px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .inspection-open-gate-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.04;
-      background: radial-gradient(circle at 15% 20%, currentColor 0, transparent 35%);
+      gap: 8px;
     }
 
     .inspection-open-gate-number {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 48px;
-      height: 48px;
+      width: 26px;
+      height: 26px;
       border-radius: 999px;
-      font-size: 1.3rem;
+      background: #f1f1f1;
+      color: #b71c1c;
+      font-size: 0.82rem;
       font-weight: 900;
+      border: 1px solid #e0e0e0;
       flex-shrink: 0;
-      background: #fee2e2;
-      color: #b91c1c;
-      border: 1px solid #fecaca;
-      box-shadow: 0 8px 18px rgba(185, 28, 28, 0.18);
     }
 
     .inspection-open-gate-copy {
@@ -11483,342 +11334,247 @@ function ensureInspectionOpenGateStyles() {
       min-width: 0;
     }
 
-    .inspection-open-gate-mode-label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.72rem;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: #b91c1c;
-      font-weight: 900;
-    }
-
     .inspection-open-gate-copy strong {
       display: block;
-      font-size: 1.04rem;
-      line-height: 1.14;
+      font-size: 0.86rem;
+      line-height: 1.16;
       color: inherit;
       overflow-wrap: anywhere;
-      margin-bottom: 8px;
-    }
-
-    .inspection-open-gate-actions button small {
-      display: block;
-      margin-top: 0;
-      font-weight: 600;
-      color: #4b5563;
-      line-height: 1.32;
-      font-size: 0.83rem;
-    }
-
-    .inspection-open-gate-best {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 12px;
-      padding: 7px 9px;
-      border-radius: 10px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      background: #f8fafc;
-      border: 1px solid #e5e7eb;
-      color: #334155;
-    }
-
-    .inspection-open-gate-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      border: 2px solid currentColor;
-      font-size: 1.4rem;
-      opacity: 0.95;
-    }
-
-    .inspection-open-gate-actions .primary-choice {
-      border-color: #dc2626;
-      color: #991b1b;
-      background: linear-gradient(180deg, #ffffff 0%, #fff5f5 100%);
     }
 
     .inspection-open-gate-actions .primary-choice .inspection-open-gate-number {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
+      background: #ffffff;
+      color: #b71c1c;
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    .inspection-open-gate-actions button:not(.primary-choice):not([disabled]) {
+      background: linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
+      border-color: #f0d0d0;
+    }
+
+    .inspection-open-gate-actions button:not(.primary-choice):not([disabled]):hover,
+    .inspection-open-gate-actions button:not(.primary-choice):not([disabled]):focus {
+      border-color: #b71c1c;
+      box-shadow: 0 6px 18px rgba(183,28,28,0.14);
+      outline: none;
+    }
+
+    .inspection-open-gate-actions .primary-choice {
+      background: #b71c1c;
+      border-color: #b71c1c;
       color: #ffffff;
-      border-color: transparent;
     }
 
-    .inspection-open-gate-actions .primary-choice .inspection-open-gate-best {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #991b1b;
-    }
-
-    .inspection-open-gate-actions .save-choice {
-      border-color: #16a34a;
-      color: #166534;
-      background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
-    }
-
-    .inspection-open-gate-actions .save-choice .inspection-open-gate-number {
-      background: linear-gradient(135deg, #22c55e, #15803d);
-      color: #ffffff;
-      border-color: transparent;
-      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.18);
-    }
-
-    .inspection-open-gate-actions .save-choice .inspection-open-gate-mode-label {
-      color: #15803d;
-    }
-
-    .inspection-open-gate-actions .save-choice .inspection-open-gate-best {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
-      color: #166534;
-    }
-
-    .inspection-open-gate-actions .history-choice {
-      border-color: #2563eb;
-      color: #1d4ed8;
-      background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
-    }
-
-    .inspection-open-gate-actions .history-choice .inspection-open-gate-number {
-      background: linear-gradient(135deg, #2563eb, #1e40af);
-      color: #ffffff;
-      border-color: transparent;
-      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
-    }
-
-    .inspection-open-gate-actions .history-choice .inspection-open-gate-mode-label {
-      color: #1d4ed8;
-    }
-
-    .inspection-open-gate-actions .history-choice .inspection-open-gate-best {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-      color: #1e40af;
-    }
-
-    .inspection-open-gate-actions .danger-choice {
-      border-color: #f97316;
-      color: #c2410c;
-      background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
-    }
-
-    .inspection-open-gate-actions .danger-choice .inspection-open-gate-number {
-      background: linear-gradient(135deg, #f97316, #c2410c);
-      color: #ffffff;
-      border-color: transparent;
-      box-shadow: 0 8px 18px rgba(249, 115, 22, 0.18);
-    }
-
-    .inspection-open-gate-actions .danger-choice .inspection-open-gate-mode-label {
-      color: #c2410c;
-    }
-
-    .inspection-open-gate-actions .danger-choice .inspection-open-gate-best {
-      background: #fff7ed;
-      border-color: #fed7aa;
-      color: #9a3412;
+    .inspection-open-gate-actions .primary-choice small {
+      color: rgba(255,255,255,0.88);
     }
 
     .inspection-open-gate-actions .danger-choice[disabled] {
+      opacity: 0.55;
       cursor: not-allowed;
-      opacity: 0.88;
-    }
-
-    .inspection-open-gate-actions .danger-choice[disabled]:hover,
-    .inspection-open-gate-actions .danger-choice[disabled]:focus {
-      transform: none;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-    }
-
-    .inspection-open-gate-footer-note {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 13px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      border: 1px solid #bfdbfe;
-      font-size: 0.84rem;
-      font-weight: 700;
+      background: #fafafa;
     }
 
     .inspection-open-gate-footer {
       display: flex;
-      justify-content: center;
-      padding: 12px 16px 16px;
-      background: #ffffff;
+      justify-content: flex-end;
+      margin-top: 8px;
     }
 
     .inspection-open-gate-footer button {
-      width: min(420px, 100%);
-      max-width: none;
-      border: 1px solid #d1d5db;
-      background: #ffffff;
-      color: #374151;
+      border: 0;
+      background: transparent;
+      color: #666666;
       cursor: pointer;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-weight: 900;
+      padding: 8px;
     }
 
-    .inspection-open-gate-footer button:hover,
-    .inspection-open-gate-footer button:focus {
-      background: #f9fafb;
-      outline: none;
-    }
-
-    @media (max-width: 760px) {
+    @media (max-width: 700px) {
       .inspection-open-gate-backdrop {
+        align-items: flex-start;
+        justify-content: stretch;
         padding: 8px;
       }
 
       .inspection-open-gate-modal {
         width: 100%;
         max-height: calc(100vh - 16px);
-        border-radius: 15px;
+        border-radius: 14px;
+        padding: 12px;
       }
 
-      .inspection-open-gate-topbar {
-        padding: 11px 12px;
-      }
-
-      .inspection-open-gate-version {
-        display: none;
-      }
-
-      .inspection-open-gate-body {
-        padding: 11px;
-      }
-
-      .inspection-open-gate-title-row {
-        grid-template-columns: 1fr;
-        gap: 7px;
-        margin-bottom: 8px;
+      .inspection-open-gate-kicker {
+        margin-bottom: 3px;
+        font-size: 0.68rem;
       }
 
       .inspection-open-gate-modal h3 {
-        font-size: 1.18rem;
+        font-size: 1rem;
+        margin-bottom: 4px;
       }
 
-      .inspection-open-gate-subtitle {
-        font-size: 0.82rem;
+      .inspection-open-gate-modal p {
+        font-size: 0.78rem;
+        line-height: 1.22;
+        margin-bottom: 6px;
       }
 
-      .inspection-open-gate-status-pill {
-        justify-content: flex-start;
-        width: fit-content;
-        padding: 6px 9px;
-      }
-
-      .inspection-open-gate-summary {
-        grid-template-columns: 1fr 1fr;
-        gap: 7px;
-        padding: 7px;
-        margin: 8px 0;
-      }
-
-      .inspection-open-gate-site-card {
-        grid-column: 1 / -1;
-      }
-
-      .inspection-open-gate-site-card,
-      .inspection-open-gate-metric {
-        padding: 8px;
-      }
-
+      .inspection-open-gate-summary,
       .inspection-open-gate-safe-note {
-        padding: 8px 9px;
-        font-size: 0.76rem;
-        margin-bottom: 9px;
-      }
-
-      .inspection-open-gate-question {
-        padding: 10px 10px 0;
-      }
-
-      .inspection-open-gate-question strong {
-        font-size: 0.86rem;
-      }
-
-      .inspection-open-gate-question span {
         font-size: 0.74rem;
+        line-height: 1.18;
+        padding: 7px 8px;
+        margin-bottom: 6px;
       }
 
       .inspection-open-gate-actions {
-        grid-template-columns: 1fr;
-        gap: 9px;
-        padding: 10px;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
       }
 
       .inspection-open-gate-actions button {
-        min-height: 118px;
-        padding: 12px;
-        border-radius: 14px;
+        min-height: 68px;
+        padding: 8px;
+        border-radius: 11px;
+        font-size: 0.82rem;
       }
 
       .inspection-open-gate-card {
-        grid-template-columns: 44px 1fr 34px;
-        gap: 10px;
+        grid-template-columns: 24px 1fr;
+        gap: 6px;
       }
 
       .inspection-open-gate-number {
-        width: 40px;
-        height: 40px;
-        font-size: 1.05rem;
-      }
-
-      .inspection-open-gate-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 10px;
-        font-size: 1.05rem;
+        width: 22px;
+        height: 22px;
+        font-size: 0.72rem;
       }
 
       .inspection-open-gate-mode-label {
-        margin-bottom: 4px;
-        font-size: 0.64rem;
+        margin-bottom: 2px;
+        font-size: 0.58rem;
+        letter-spacing: 0.03em;
       }
 
       .inspection-open-gate-copy strong {
-        font-size: 0.94rem;
-        margin-bottom: 5px;
+        font-size: 0.78rem;
+        line-height: 1.1;
       }
 
       .inspection-open-gate-actions button small {
-        font-size: 0.75rem;
-        line-height: 1.26;
-      }
-
-      .inspection-open-gate-best {
-        margin-top: 8px;
-        padding: 6px 8px;
-        font-size: 0.7rem;
-      }
-
-      .inspection-open-gate-footer-note {
-        font-size: 0.76rem;
-        padding: 9px;
-        margin-top: 9px;
+        font-size: 0.62rem;
+        line-height: 1.12;
+        margin-top: 2px;
       }
 
       .inspection-open-gate-footer {
-        padding: 0 11px 11px;
+        margin-top: 6px;
       }
 
       .inspection-open-gate-footer button {
-        padding: 9px;
+        width: 100%;
+        max-width: none;
+        border-radius: 10px;
+        background: #eeeeee;
+        color: #333333;
+        font-weight: 800;
+        padding: 7px;
+        font-size: 0.78rem;
       }
-    }
-  `;
+    }  `;
 
   document.head.appendChild(style);
+}
+
+
+function cloneInspectionProjectForWorkflow(project) {
+  return JSON.parse(JSON.stringify(project || {}));
+}
+
+function restoreWorkflowProjectSnapshot(projectId, snapshot) {
+  if (!projectId || !snapshot) return;
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) return;
+
+  projects[index] = cloneInspectionProjectForWorkflow(snapshot);
+  setProjects(projects);
+
+  if (currentProjectId === projectId) {
+    currentProject = projects[index];
+    currentPhotos = projects[index].photos || [];
+    if (typeof renderPhotos === 'function') {
+      renderPhotos();
+    }
+  }
+}
+
+function runWorkflowReadOnlyAction(action, unlockDelay = 1200) {
+  clearTimeout(autoSaveTimer);
+  setWorkflowGateNoWriteLock(true);
+
+  try {
+    action();
+  } finally {
+    window.setTimeout(() => {
+      clearTimeout(autoSaveTimer);
+      setWorkflowGateNoWriteLock(false);
+    }, unlockDelay);
+  }
+}
+
+function closeInspectionOpenGate() {
+  const existing = document.getElementById('inspectionOpenGateBackdrop');
+  if (existing) existing.remove();
+}
+
+function archiveProjectCurrentInspectionAndStartBlank(projectId) {
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) {
+    alert('Inspection could not be found. Please refresh and try again.');
+    return false;
+  }
+
+  const original = projects[index];
+  const inspectionHistory = archiveCurrentInspectionCycle(
+    original,
+    'manual_archive_from_open_gate'
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  projects[index] = {
+    ...original,
+    inspectionHistory,
+    answers: [],
+    photos: [],
+    finalComments: '',
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+    recurringCycleEnabled: false,
+    recurringCycleNumber: '',
+    recurringCycleUnit: '',
+    recurringCycleNotes: '',
+    completedAt: null,
+    archiveStatus: '',
+    archivedAt: null,
+    scheduledStatus: 'in_progress',
+    scheduleFreshInspection: false,
+    inspectionNumber: generateInspectionNumber(),
+    inspectionDate: today,
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+
+  setProjects(projects);
+  return true;
 }
 
 function showInspectionOpenGate(projectId, focusMode) {
@@ -11846,114 +11602,62 @@ function showInspectionOpenGate(projectId, focusMode) {
 
   backdrop.innerHTML = `
     <div class="inspection-open-gate-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
-      <div class="inspection-open-gate-topbar">
-        <div class="inspection-open-gate-kicker">
-          <span class="inspection-open-gate-kicker-icon">↔</span>
-          Inspection Workflow
-        </div>
-        <div class="inspection-open-gate-version">Fire-S RC 1.0.9</div>
+      <div class="inspection-open-gate-kicker">Inspection Workflow</div>
+      <h3 id="inspectionOpenGateTitle">Existing premises found</h3>
+      <p>
+        Fire-S found an active inspection for this premises. Choose the correct workflow before opening it.
+      </p>
+
+      <div class="inspection-open-gate-summary">
+        <strong>${escapeHtml(project.projectName || project.siteName || 'Selected premises')}</strong><br>
+        Inspection: ${escapeHtml(project.inspectionNumber || 'Not numbered')} ·
+        Answers: ${answersCount} · Photos: ${photosCount} · History: ${historyCount}
       </div>
 
-      <div class="inspection-open-gate-body">
-        <div class="inspection-open-gate-title-row">
-          <div>
-            <h3 id="inspectionOpenGateTitle">Existing premises found</h3>
-            <p class="inspection-open-gate-subtitle">
-              Fire-S found an active inspection for this premises. Choose the correct workflow before opening it.
-            </p>
-          </div>
-          <div class="inspection-open-gate-status-pill">✓ Data protected</div>
-        </div>
+      <div class="inspection-open-gate-safe-note">
+        <strong>Safety note:</strong> No data is deleted here. Start New archives the current inspection first, then opens a blank one.
+      </div>
 
-        <div class="inspection-open-gate-summary">
-          <div class="inspection-open-gate-site-card">
-            <span>Premises</span>
-            <strong>${escapeHtml(project.projectName || project.siteName || 'Selected premises')}</strong>
-          </div>
-          <div class="inspection-open-gate-metric">
-            <span>Inspection</span>
-            <strong>${escapeHtml(project.inspectionNumber || 'Draft')}</strong>
-          </div>
-          <div class="inspection-open-gate-metric">
-            <span>Answers</span>
-            <strong>${answersCount}</strong>
-          </div>
-          <div class="inspection-open-gate-metric">
-            <span>Photos</span>
-            <strong>${photosCount}</strong>
-          </div>
-          <div class="inspection-open-gate-metric">
-            <span>History</span>
-            <strong>${historyCount}</strong>
-          </div>
-        </div>
+      <div class="inspection-open-gate-actions">
+        <button type="button" class="inspection-open-gate-card primary-choice" id="openGateContinueBtn">
+          <span class="inspection-open-gate-number">1</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">Continue work</span>
+            <strong>Continue / Edit Current Inspection</strong>
+            <small>Continue unfinished work. Q&amp;A, photos and comments stay editable.</small>
+          </span>
+        </button>
 
-        <div class="inspection-open-gate-safe-note">
-          <span class="inspection-open-gate-safe-note-icon">i</span>
-          <div>
-            <strong>Safety note:</strong> No data is deleted here. “Save &amp; Start New” archives the current inspection first, then opens a clean blank inspection.
-          </div>
-        </div>
+        <button type="button" class="inspection-open-gate-card" id="openGateArchiveBtn">
+          <span class="inspection-open-gate-number">2</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">New inspection</span>
+            <strong>Start New Inspection for this Premises</strong>
+            <small>Save current inspection to History, then open a clean blank inspection.</small>
+          </span>
+        </button>
 
-        <div class="inspection-open-gate-question">
-          <strong>What would you like to do?</strong>
-          <span>Select the best option for your next step.</span>
-        </div>
+        <button type="button" class="inspection-open-gate-card" id="openGateHistoryBtn">
+          <span class="inspection-open-gate-number">3</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">Read-only</span>
+            <strong>View Inspection History</strong>
+            <small>View previous cycles without changing current data.</small>
+          </span>
+        </button>
 
-        <div class="inspection-open-gate-actions">
-          <button type="button" class="inspection-open-gate-card primary-choice" id="openGateContinueBtn">
-            <span class="inspection-open-gate-number">1</span>
-            <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">Continue work</span>
-              <strong>Continue / Edit Current Inspection</strong>
-              <small>Continue unfinished work. Q&amp;A, photos and comments stay editable.</small>
-              <span class="inspection-open-gate-best">✓ Best if you are not yet done</span>
-            </span>
-            <span class="inspection-open-gate-icon">📋</span>
-          </button>
-
-          <button type="button" class="inspection-open-gate-card save-choice" id="openGateArchiveBtn">
-            <span class="inspection-open-gate-number">2</span>
-            <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">Save &amp; start new</span>
-              <strong>Save Current, Then Start a Clean Inspection</strong>
-              <small>Save current inspection to History, then open a clean blank inspection.</small>
-              <span class="inspection-open-gate-best">✓ Best for a new inspection on this site</span>
-            </span>
-            <span class="inspection-open-gate-icon">💾</span>
-          </button>
-
-          <button type="button" class="inspection-open-gate-card history-choice" id="openGateHistoryBtn">
-            <span class="inspection-open-gate-number">3</span>
-            <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">View previous history</span>
-              <strong>View Previous Cycles</strong>
-              <small>View previous cycles and reports without changing any current data.</small>
-              <span class="inspection-open-gate-best">✓ Best for reference and comparison</span>
-            </span>
-            <span class="inspection-open-gate-icon">👁</span>
-          </button>
-
-          <button type="button" class="inspection-open-gate-card danger-choice" id="openGateDeleteBtn" disabled aria-disabled="true" title="Locked for data safety.">
-            <span class="inspection-open-gate-number">4</span>
-            <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">Lock this inspection</span>
-              <strong>Lock for Data Safety</strong>
-              <small>Locked for data safety. No deletion from this screen.</small>
-              <span class="inspection-open-gate-best">✓ Protects completed work</span>
-            </span>
-            <span class="inspection-open-gate-icon">🔒</span>
-          </button>
-        </div>
-
-        <div class="inspection-open-gate-footer-note">
-          <span>ℹ</span>
-          <div>Your data is always safe. You can return to any inspection from the History at any time.</div>
-        </div>
+        <button type="button" class="inspection-open-gate-card danger-choice" id="openGateDeleteBtn" disabled aria-disabled="true" title="Delete is disabled for data safety.">
+          <span class="inspection-open-gate-number">!</span>
+          <span class="inspection-open-gate-copy">
+            <span class="inspection-open-gate-mode-label">Locked</span>
+            <strong>Delete Inspection — Disabled</strong>
+            <small>Locked for data safety. No deletion from this screen.</small>
+          </span>
+        </button>
       </div>
 
       <div class="inspection-open-gate-footer">
-        <button type="button" id="openGateCancelBtn">× Cancel</button>
+        <button type="button" id="openGateCancelBtn">Cancel</button>
       </div>
     </div>
   `;
@@ -20378,8 +20082,9 @@ function renderProjectsList() {
             role="button"
             tabindex="0"
             title="${escapeHtml(status.label)}"
-            onclick='event.stopPropagation(); openProject(${projectIdJs})'
-            onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
+            data-project-id='${escapeHtml(project.id || '')}'
+            onclick='event.stopPropagation(); window.fireSOpenProjectCard(${projectIdJs})'
+            onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); window.fireSOpenProjectCard(${projectIdJs}); }'
           >
             <div class="ultra-status-strip"></div>
             <div class="ultra-premises-body">
@@ -20525,8 +20230,9 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
               role="button"
               tabindex="0"
               title="${escapeHtml(status.label)}"
-              onclick='event.stopPropagation(); openProject(${projectIdJs})'
-              onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
+              data-project-id='${escapeHtml(project.id || '')}'
+              onclick='event.stopPropagation(); window.fireSOpenProjectCard(${projectIdJs})'
+              onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); window.fireSOpenProjectCard(${projectIdJs}); }'
             >
               <div class="ultra-status-strip"></div>
               <div class="ultra-premises-body">
@@ -20539,6 +20245,7 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
                   <span><small>Last inspection</small><b>${escapeHtml(fireSUltraDateText(fireSUltraLastInspectionDate(project)))}</b></span>
                   <span><small>Next inspection</small><b>${escapeHtml(fireSUltraDateText(fireSUltraNextInspectionDate(project)))}</b></span>
                 </div>
+                <div class="ultra-premises-open-hint">Open inspection →</div>
               </div>
             </article>
           `;
@@ -20547,4 +20254,47 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
       <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>
     `;
   };
+}
+
+
+/* =====================================================
+   FIRE-S RC 1.0.10 - Inspection Card Open Hotfix
+   Makes project cards open reliably even after UI overrides.
+   ===================================================== */
+function fireSOpenProjectCard(projectId) {
+  if (!projectId) {
+    alert('Inspection ID missing. Please refresh and try again.');
+    return;
+  }
+
+  if (typeof openProject !== 'function') {
+    alert('Inspection opener is not ready yet. Please refresh and try again.');
+    return;
+  }
+
+  openProject(projectId);
+}
+window.fireSOpenProjectCard = fireSOpenProjectCard;
+
+if (!window.fireSProjectCardDelegationApplied) {
+  window.fireSProjectCardDelegationApplied = true;
+
+  document.addEventListener('click', function(event) {
+    const card = event.target.closest && event.target.closest('.ultra-premises-card[data-project-id]');
+    if (!card) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    fireSOpenProjectCard(card.dataset.projectId);
+  }, true);
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const card = event.target.closest && event.target.closest('.ultra-premises-card[data-project-id]');
+    if (!card) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    fireSOpenProjectCard(card.dataset.projectId);
+  }, true);
 }
