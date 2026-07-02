@@ -1,8 +1,17 @@
-# Fire-S RC 1.1.16B - Photo Source Hotfix
+# Fire-S RC 1.1.16C - Photo Category Gallery
 
-- Fixes Smart Photo Centre using blank photo source fields.
-- Adds fallback source detection across src, publicUrl, previewSrc, thumbnailSrc and related fields.
-- Preserves a compact preview thumbnail for local/offline photos.
-- Prevents category/area/linked item metadata from being lost after cloud upload.
-- Improves Photo Centre card layout so images are larger and usable.
-- Version/cache bump to RC 1.1.16B.
+Small patch based on RC 1.1.16B.
+
+## Changed
+- Added category chips inside Smart Photo Centre.
+- Category chips filter the visible photo gallery.
+- Photo counts still read from the same project.photos[] source of truth.
+- Larger responsive photo cards for desktop and mobile.
+- Version/cache bump to RC 1.1.16C.
+
+## Modified files
+- index.html
+- app.js
+- styles.css
+- service-worker.js
+- CHANGELOG.md

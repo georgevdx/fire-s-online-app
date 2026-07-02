@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.16B - Photo Source Hotfix';
+const APP_VERSION = 'RC 1.1.16C - Photo Category Gallery';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -23754,4 +23754,202 @@ if (!window.fireSMobileSmartCardsApplied) {
     normalisePhoto,
     sync: syncPhotoCentreNow
   };
+})();
+
+
+/* =====================================================
+   Fire-S RC 1.1.16C - Photo Category Gallery
+   Purpose: category chips filter the visible photo gallery while all counts
+   remain based on the same project.photos[] source of truth.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.16C-photo-category-gallery';
+  window.fireSActivePhotoCategoryFilter = window.fireSActivePhotoCategoryFilter || 'All';
+
+  function esc(value) {
+    if (typeof escapeHtml === 'function') return escapeHtml(value || '');
+    return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  }
+
+  function readPhotos() {
+    if (typeof currentPhotos !== 'undefined' && Array.isArray(currentPhotos)) return currentPhotos;
+    if (window.currentProject && Array.isArray(window.currentProject.photos)) return window.currentProject.photos;
+    if (typeof currentProjectId !== 'undefined' && currentProjectId && typeof getProjects === 'function') {
+      const project = getProjects().find(p => String(p.id) === String(currentProjectId));
+      if (project && Array.isArray(project.photos)) return project.photos;
+    }
+    return [];
+  }
+
+  function savePhotos(photos) {
+    if (typeof currentPhotos !== 'undefined') currentPhotos = photos;
+    window.currentPhotos = photos;
+
+    if (typeof currentProjectId !== 'undefined' && currentProjectId && typeof getProjects === 'function' && typeof setProjects === 'function') {
+      try {
+        const projects = getProjects();
+        const index = projects.findIndex(p => String(p.id) === String(currentProjectId));
+        if (index !== -1) {
+          projects[index] = {
+            ...projects[index],
+            photos,
+            syncPending: true,
+            syncError: false,
+            lastSaved: new Date().toISOString()
+          };
+          setProjects(projects);
+        }
+      } catch (error) {
+        console.warn('Photo gallery save failed:', error);
+      }
+    }
+
+    if (typeof scheduleAutoSave === 'function') {
+      try { scheduleAutoSave(); } catch (_) {}
+    }
+  }
+
+  function sourceOf(photo) {
+    if (window.FireSPhotoCentre1116?.getPhotoSource) {
+      try { return window.FireSPhotoCentre1116.getPhotoSource(photo); } catch (_) {}
+    }
+    return photo?.src || photo?.photoSrc || photo?.imageSrc || photo?.image || photo?.dataUrl || photo?.dataURL || photo?.url || photo?.previewSrc || photo?.thumbnailSrc || '';
+  }
+
+  function normalise(photo) {
+    if (window.FireSPhotoCentre1116?.normalisePhoto) {
+      try { return window.FireSPhotoCentre1116.normalisePhoto(photo); } catch (_) {}
+    }
+    if (!photo.category) photo.category = 'General';
+    if (typeof photo.area === 'undefined') photo.area = '';
+    if (typeof photo.linkedQuestion === 'undefined') photo.linkedQuestion = '';
+    return photo;
+  }
+
+  function categoriesFor(photos) {
+    const map = new Map();
+    photos.forEach(photo => {
+      const category = photo.category || 'General';
+      map.set(category, (map.get(category) || 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }
+
+  function categoryOptions(selected) {
+    const list = window.FireSPhotoCentre1116?.categories || [
+      'General','Fire Equipment','Means of Escape','Fire Doors','Electrical','Housekeeping','Hazardous Substances','Fire Detection and Alarm','Fixed Fire Suppression Systems','Emergency Lighting','Documentation','Other'
+    ];
+    const current = selected || 'General';
+    return list.map(category => `<option value="${esc(category)}" ${category === current ? 'selected' : ''}>${esc(category)}</option>`).join('');
+  }
+
+  window.setPhotoCategoryFilter = function setPhotoCategoryFilter(category) {
+    window.fireSActivePhotoCategoryFilter = category || 'All';
+    if (typeof window.renderPhotos === 'function') window.renderPhotos();
+  };
+
+  function renderHeader(container, photos) {
+    const categories = categoriesFor(photos);
+    const active = window.fireSActivePhotoCategoryFilter || 'All';
+    const visibleCount = active === 'All' ? photos.length : photos.filter(p => (p.category || 'General') === active).length;
+
+    const header = document.createElement('div');
+    header.className = 'fire-s-photo-centre-v1116 fire-s-photo-centre-v1116c';
+    header.innerHTML = `
+      <div class="fire-s-photo-centre-head-v1116">
+        <div>
+          <span>Smart Photo Centre</span>
+          <strong>${photos.length} photo${photos.length === 1 ? '' : 's'}</strong>
+        </div>
+        <small>${active === 'All' ? 'All photo evidence' : `${esc(active)} · ${visibleCount} shown`}</small>
+      </div>
+      <div class="fire-s-photo-category-strip-v1116 fire-s-photo-category-filter-v1116c">
+        <button type="button" class="${active === 'All' ? 'active' : ''}" onclick="setPhotoCategoryFilter('All')">All <b>${photos.length}</b></button>
+        ${categories.length ? categories.map(([category, count]) => `
+          <button type="button" class="${active === category ? 'active' : ''}" onclick="setPhotoCategoryFilter('${esc(category).replace(/'/g, '&#039;')}')">${esc(category)} <b>${count}</b></button>
+        `).join('') : '<span>No categories yet</span>'}
+      </div>
+    `;
+    container.appendChild(header);
+  }
+
+  function visiblePhotos(photos) {
+    const active = window.fireSActivePhotoCategoryFilter || 'All';
+    if (active === 'All') return photos.map((photo, index) => ({ photo, index }));
+    return photos.map((photo, index) => ({ photo, index })).filter(item => (item.photo.category || 'General') === active);
+  }
+
+  window.renderPhotos = function renderPhotosCategoryGallery() {
+    const container = document.getElementById('photoPreview');
+    if (!container) return;
+
+    const photos = readPhotos().map(normalise);
+    container.innerHTML = '';
+
+    if (typeof updatePhotoUploadStatus === 'function') {
+      try { updatePhotoUploadStatus(); } catch (_) {}
+    }
+
+    renderHeader(container, photos);
+
+    if (!photos.length) {
+      const empty = document.createElement('div');
+      empty.className = 'note fire-s-photo-empty-v1116';
+      empty.textContent = 'No photo evidence added yet. Add photos and classify them by category for cleaner reports.';
+      container.appendChild(empty);
+      return;
+    }
+
+    const items = visiblePhotos(photos);
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'note fire-s-photo-empty-v1116';
+      empty.textContent = 'No photos found in this category.';
+      container.appendChild(empty);
+      return;
+    }
+
+    items.forEach(({ photo, index }) => {
+      const div = document.createElement('div');
+      div.className = 'photo-item fire-s-photo-item-v1116 fire-s-photo-item-v1116c';
+      const src = sourceOf(photo);
+      const photoTime = photo.timestamp ? new Date(photo.timestamp).toLocaleString() : 'Not recorded';
+      const category = photo.category || 'General';
+      const area = photo.area || '';
+      const linkedQuestion = photo.linkedQuestion || '';
+
+      div.innerHTML = `
+        <div class="fire-s-photo-preview-v1116c">
+          ${src ? `<img src="${esc(src)}" alt="Inspection photo ${index + 1}">` : '<div class="fire-s-photo-missing-v1116">Photo preview unavailable<br><small>Retake only if it was captured before the photo source fix.</small></div>'}
+        </div>
+        <div class="fire-s-photo-fields-v1116c">
+          <div class="fire-s-photo-meta-line-v1116"><span>Photo ${index + 1}</span><small>${esc(photoTime)}</small></div>
+          <label class="fire-s-photo-field-v1116"><span>Category</span><select onchange="updatePhotoCategory(${index}, this.value)">${categoryOptions(category)}</select></label>
+          <label class="fire-s-photo-field-v1116"><span>Area / Location</span><input type="text" value="${esc(area)}" placeholder="e.g. Ground floor, kitchen" oninput="updatePhotoArea(${index}, this.value)"></label>
+          <label class="fire-s-photo-field-v1116"><span>Linked item / question</span><input type="text" value="${esc(linkedQuestion)}" placeholder="Optional item number" oninput="updatePhotoLinkedQuestion(${index}, this.value)"></label>
+          <textarea class="photo-note" placeholder="Photo note..." oninput="updatePhotoNote(${index}, this.value)">${esc(photo.note || '')}</textarea>
+          <button class="photo-delete" type="button" onclick="deletePhoto(${index})">Delete</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    savePhotos(photos);
+  };
+
+  document.addEventListener('change', event => {
+    if (event.target && event.target.id === 'photoInput') {
+      setTimeout(() => { window.fireSActivePhotoCategoryFilter = 'All'; if (typeof window.renderPhotos === 'function') window.renderPhotos(); }, 900);
+    }
+  }, true);
+
+  setTimeout(() => {
+    if (document.getElementById('photoPreview') && typeof window.renderPhotos === 'function') {
+      try { window.renderPhotos(); } catch (_) {}
+    }
+  }, 1200);
+
+  window.FireSPhotoGallery1116C = { version: VERSION, categoriesFor, setFilter: window.setPhotoCategoryFilter };
 })();

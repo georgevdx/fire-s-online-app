@@ -11923,3 +11923,98 @@ body > #actionDropdown.action-dropdown button:last-child {
     min-height: 220px;
   }
 }
+
+
+/* =====================================================
+   Fire-S RC 1.1.16C - Photo Category Gallery
+   ===================================================== */
+.fire-s-photo-centre-v1116c {
+  margin-bottom: 12px;
+}
+
+.fire-s-photo-category-filter-v1116c {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fire-s-photo-category-filter-v1116c button {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fire-s-photo-category-filter-v1116c button.active {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+
+.fire-s-photo-category-filter-v1116c button b {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: rgba(15,23,42,.08);
+  font-size: 11px;
+}
+
+.fire-s-photo-category-filter-v1116c button.active b {
+  background: rgba(255,255,255,.22);
+}
+
+.fire-s-photo-item-v1116c {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  gap: 14px;
+  width: 100%;
+  max-width: none;
+  align-items: start;
+}
+
+.fire-s-photo-preview-v1116c img,
+.fire-s-photo-item-v1116c img {
+  width: 100%;
+  min-height: 170px;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #f1f5f9;
+}
+
+.fire-s-photo-fields-v1116c {
+  min-width: 0;
+}
+
+.fire-s-photo-fields-v1116c .fire-s-photo-field-v1116,
+.fire-s-photo-fields-v1116c .photo-note,
+.fire-s-photo-fields-v1116c .photo-delete {
+  max-width: none;
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .fire-s-photo-item-v1116c {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .fire-s-photo-preview-v1116c img,
+  .fire-s-photo-item-v1116c img {
+    min-height: 210px;
+    max-height: 300px;
+  }
+}
