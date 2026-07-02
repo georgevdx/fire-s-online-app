@@ -20465,3 +20465,194 @@ if (!window.fireSProjectCardDelegationApplied) {
     fireSOpenProjectCard(card.dataset.projectId);
   }, true);
 }
+
+
+/* =====================================================
+   FIRE-S RC 1.1.1 - Mobile Smart Premises Cards
+   Adds richer desktop cards while keeping phone cards compact.
+   ===================================================== */
+function fireSSmartCountAnswers(project) {
+  return Array.isArray(project?.answers) ? project.answers.filter(answer => String(answer?.answer || '').trim()).length : 0;
+}
+
+function fireSSmartCountPhotos(project) {
+  return Array.isArray(project?.photos) ? project.photos.length : 0;
+}
+
+function fireSSmartCountActions(project) {
+  return Array.isArray(project?.answers)
+    ? project.answers.filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no').length
+    : 0;
+}
+
+function fireSSmartStatusTone(statusLabel) {
+  if (statusLabel === 'Overdue') return 'Critical';
+  if (statusLabel === 'Action Required') return 'Action';
+  if (statusLabel === 'Due Soon') return 'Due Soon';
+  return 'Ready';
+}
+
+function fireSSmartCardSubline(project) {
+  return [
+    project?.inspectionNumber || '',
+    project?.inspectorName || '',
+    project?.projectAddress || project?.addressLine || ''
+  ].filter(Boolean).join(' · ');
+}
+
+if (!window.fireSMobileSmartCardsApplied) {
+  window.fireSMobileSmartCardsApplied = true;
+
+  renderProjectsList = function fireSRenderMobileSmartPremisesCards() {
+    const container = getEl('projectsList');
+
+    if (!currentUserProfile) {
+      currentUserProfile = {
+        id: 'local-user',
+        email: 'local@fire-s.app',
+        fullName: 'Local User',
+        role: 'super_admin',
+        companyId: null,
+        companyName: 'Local / Personal Workspace'
+      };
+      currentCompanyAccess = { status: 'active', plan: 'local', source: 'local-fallback' };
+    }
+
+    const allProjects = getProjects();
+    const projects = getVisibleProjectsForCurrentUser(allProjects);
+
+    if (typeof fireSEnsurePremisesDropdown === 'function') fireSEnsurePremisesDropdown(projects);
+
+    updateAppInfo();
+    renderDashboardMetrics(projects);
+    updateOfflineReadinessBanner();
+    updateSiteReadyPreflightChecklist();
+    updatePostSiteSyncReminder();
+
+    const searchField = document.getElementById('projectSearch');
+    const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
+
+    const baseFilteredProjects = projects.filter(project => {
+      if (
+        typeof fireSPremisesDropdownFilter !== 'undefined' &&
+        fireSPremisesDropdownFilter &&
+        typeof fireSGetPremisesKey === 'function'
+      ) {
+        if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) return false;
+      }
+
+      if (searchText) {
+        const haystack = [
+          project?.projectName,
+          project?.organisationName,
+          project?.siteName,
+          project?.projectAddress,
+          project?.addressLine,
+          project?.inspectionNumber,
+          project?.inspectorName,
+          project?.contactPerson,
+          project?.contactTel
+        ].join(' ').toLowerCase();
+
+        if (!haystack.includes(searchText)) return false;
+      }
+
+      return typeof projectMatchesInspectionDateFilter === 'function'
+        ? projectMatchesInspectionDateFilter(project)
+        : true;
+    });
+
+    const filteredProjects = baseFilteredProjects.filter(project =>
+      projectMatchesInspectionGatewayQuickFilter(project, currentFilter)
+    );
+
+    updateActiveFilterStatus(filteredProjects.length);
+    const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(baseFilteredProjects);
+
+    filteredProjects.sort((a, b) => {
+      const statusDiff = fireSUltraStatus(a).priority - fireSUltraStatus(b).priority;
+      if (statusDiff !== 0) return statusDiff;
+
+      const aNext = fireSUltraDateKey(fireSUltraNextInspectionDate(a)) || '9999-12-31';
+      const bNext = fireSUltraDateKey(fireSUltraNextInspectionDate(b)) || '9999-12-31';
+      if (aNext !== bNext) return aNext.localeCompare(bNext);
+
+      return (fireSUltraLastInspectionDate(b) || '').localeCompare(fireSUltraLastInspectionDate(a) || '');
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE));
+    if (currentProjectPage > totalPages) currentProjectPage = totalPages;
+
+    const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
+    const visibleProjects = filteredProjects.slice(startIndex, startIndex + PROJECTS_PER_PAGE);
+    window.currentProjectsListView = visibleProjects;
+
+    const pagingControls = document.getElementById('projectPagingControls');
+    if (pagingControls) {
+      pagingControls.innerHTML = `
+        <button type="button" onclick="previousProjectPage()" ${currentProjectPage === 1 ? 'disabled' : ''}>Previous</button>
+        <span>Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1} - ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)} of ${filteredProjects.length}</span>
+        <button type="button" onclick="nextProjectPage()" ${currentProjectPage >= totalPages ? 'disabled' : ''}>Next</button>
+      `;
+    }
+
+    if (filteredProjects.length === 0) {
+      container.innerHTML = `${gatewayQuickFilterHtml}<div class="empty-state">No matching premises found.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      ${gatewayQuickFilterHtml}
+      <div class="smart-card-note">Compact phone view: tap any premises card to open the workflow.</div>
+      <div id="projectListView" class="ultra-premises-list smart-premises-list">
+        ${visibleProjects.map(project => {
+          const status = fireSUltraStatus(project);
+          const projectIdJs = JSON.stringify(project.id || '');
+          const actions = fireSSmartCountActions(project);
+          const photos = fireSSmartCountPhotos(project);
+          const answers = fireSSmartCountAnswers(project);
+          const subline = fireSSmartCardSubline(project);
+
+          return `
+            <article
+              class="ultra-premises-card smart-premises-card ${escapeHtml(status.className)}"
+              role="button"
+              tabindex="0"
+              title="Open ${escapeHtml(fireSUltraCardTitle(project))}"
+              data-project-id='${escapeHtml(project.id || '')}'
+              onclick='event.stopPropagation(); window.fireSOpenProjectCard(${projectIdJs})'
+              onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); window.fireSOpenProjectCard(${projectIdJs}); }'
+            >
+              <div class="ultra-status-strip"></div>
+              <div class="ultra-premises-body smart-premises-body">
+                <div class="smart-card-main">
+                  <div class="ultra-premises-title-row smart-title-row">
+                    <strong class="ultra-premises-title">${escapeHtml(fireSUltraCardTitle(project))}</strong>
+                    <span class="ultra-status-keyword">${escapeHtml(fireSSmartStatusTone(status.label))}</span>
+                  </div>
+
+                  ${subline ? `<div class="smart-card-subline">${escapeHtml(subline)}</div>` : ''}
+
+                  <div class="ultra-premises-dates smart-date-row">
+                    <span><small>Last</small><b>${escapeHtml(fireSUltraDateText(fireSUltraLastInspectionDate(project)))}</b></span>
+                    <span><small>Next</small><b>${escapeHtml(fireSUltraDateText(fireSUltraNextInspectionDate(project)))}</b></span>
+                  </div>
+                </div>
+
+                <div class="smart-card-side">
+                  <div class="smart-metric-row" aria-label="Inspection summary">
+                    <span><b>${answers}</b><small>Answers</small></span>
+                    <span><b>${photos}</b><small>Photos</small></span>
+                    <span class="${actions ? 'smart-action-count' : ''}"><b>${actions}</b><small>Actions</small></span>
+                  </div>
+                  <div class="ultra-premises-open-hint smart-open-hint">Open →</div>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+      <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>
+    `;
+  };
+}
