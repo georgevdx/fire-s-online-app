@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=rc-1-1-8H-executive-snapshot-filter-fix">
+  <link rel="stylesheet" href="styles.css?v=rc-1-1-9-gateway-filter-consolidation">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -539,6 +539,17 @@
     class="project-search-top"
   >
 
+  <div id="projectPagingControls" class="project-paging-controls"></div>
+
+<button id="toggleFiltersBtn" type="button" class="filter-toggle-btn">
+  Show Filters
+</button>
+
+<div id="filterPanel" class="filter-panel" style="display:none;">
+  <div class="filter-panel-heading">
+    <strong>Premises Filters</strong>
+    <span>Use date and workspace filters here.</span>
+  </div>
   <div id="inspectionDateFilterPanel" class="inspection-date-filter-panel">
     <div class="inspection-date-filter-title">Inspection Date Filter</div>
 
@@ -566,13 +577,6 @@
     <div id="inspectionDateFilterStatus" class="inspection-date-filter-status"></div>
   </div>
 
-  <div id="projectPagingControls" class="project-paging-controls"></div>
-
-<button id="toggleFiltersBtn" type="button" class="filter-toggle-btn">
-  Show Filters
-</button>
-
-<div id="filterPanel" class="filter-panel" style="display:none;">
   <div id="dashboardMetrics" class="dashboard-metrics"></div>
 </div>
 
@@ -951,7 +955,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=rc-1-1-8H-executive-snapshot-filter-fix"></script>
+  <script src="app.js?v=rc-1-1-9-gateway-filter-consolidation"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

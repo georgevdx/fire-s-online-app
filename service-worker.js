@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-8H-executive-snapshot-filter-fix';
+const CACHE_NAME = 'fire-s-rc-1-1-9-gateway-filter-consolidation';
 
 const APP_SHELL = [
   './',

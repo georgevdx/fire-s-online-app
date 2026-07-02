@@ -10629,3 +10629,98 @@ body > #actionDropdown.action-dropdown button:last-child {
     line-height: 1.25;
   }
 }
+
+
+/* =====================================================
+   Fire-S RC 1.1.9 - Gateway Filter Consolidation
+   All date and workspace filters live inside Show Filters.
+   Executive Snapshot is a read-only KPI panel.
+   ===================================================== */
+.filter-panel {
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15,23,42,0.08);
+}
+
+.filter-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.filter-panel-heading strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.filter-panel-heading span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+#filterPanel .inspection-date-filter-panel {
+  margin: 0 0 12px 0;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+#filterPanel .dashboard-metrics {
+  margin: 0;
+}
+
+#filterPanel .metric-section-title {
+  margin-top: 8px;
+}
+
+#filterPanel .metric-row {
+  gap: 8px;
+}
+
+#filterPanel .metric-card {
+  min-height: 44px;
+}
+
+.fire-s-exec-readonly .fire-s-exec-stat,
+.fire-s-exec-readonly .fire-s-exec-head button {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.fire-s-exec-readonly .fire-s-exec-stat.active {
+  background: inherit !important;
+  color: inherit !important;
+  border-color: inherit !important;
+}
+
+.fire-s-exec-message {
+  font-size: 12px;
+  font-weight: 800;
+  color: #475569;
+}
+
+@media (max-width: 640px) {
+  .filter-panel-heading {
+    display: block;
+  }
+
+  .filter-panel-heading span {
+    display: block;
+    margin-top: 3px;
+    text-align: left;
+  }
+
+  #filterPanel .inspection-date-filter-grid,
+  #filterPanel .inspection-quick-date-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

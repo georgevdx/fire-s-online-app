@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.8H - Executive Snapshot Filter Fix';
+const APP_VERSION = 'RC 1.1.9 - Gateway Filter Consolidation';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -21207,7 +21207,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.8H - Executive Snapshot Filter Fix
+   FIRE-S RC 1.1.9 - Gateway Filter Consolidation
    Purpose: make Executive Snapshot behaviour clear and useful.
    Snapshot tiles now FILTER the Premises list, with visible active state and reset.
    No data, sync or inspection storage logic changed.
@@ -21501,3 +21501,158 @@ if (!window.fireSMobileSmartCardsApplied) {
   else install();
 })();
 
+
+
+/* =====================================================
+   FIRE-S RC 1.1.9 - Gateway Filter Consolidation
+   Purpose: stabilise the Premises Gateway by keeping ALL filters
+   inside the Show Filters panel and making Executive Snapshot read-only.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.9-gateway-filter-consolidation';
+  const EXEC_FILTER_PREFIX = 'exec-';
+
+  function isExecFilter(value) {
+    return String(value || '').startsWith(EXEC_FILTER_PREFIX);
+  }
+
+  function resetBrokenExecutiveFilter() {
+    if (isExecFilter(window.currentFilter)) {
+      window.currentFilter = 'all';
+    }
+    if (isExecFilter(window.fireSExecSnapshotActiveFilter)) {
+      window.fireSExecSnapshotActiveFilter = 'exec-all';
+    }
+  }
+
+  function consolidateFilterPanel() {
+    const filterPanel = document.getElementById('filterPanel');
+    if (!filterPanel) return;
+
+    if (!filterPanel.querySelector('.filter-panel-heading')) {
+      filterPanel.insertAdjacentHTML('afterbegin', `
+        <div class="filter-panel-heading">
+          <strong>Premises Filters</strong>
+          <span>Date filters and workspace filters are grouped here.</span>
+        </div>
+      `);
+    }
+
+    const datePanel = document.getElementById('inspectionDateFilterPanel');
+    const metrics = document.getElementById('dashboardMetrics');
+    const activeStatus = document.getElementById('activeFilterStatus');
+
+    if (datePanel && datePanel.parentElement !== filterPanel) {
+      const before = metrics && metrics.parentElement === filterPanel ? metrics : null;
+      filterPanel.insertBefore(datePanel, before);
+    }
+
+    if (activeStatus && activeStatus.parentElement !== filterPanel) {
+      const before = metrics && metrics.parentElement === filterPanel ? metrics : null;
+      filterPanel.insertBefore(activeStatus, before);
+    }
+
+    if (metrics && metrics.parentElement !== filterPanel) {
+      filterPanel.appendChild(metrics);
+    }
+
+    if (datePanel) {
+      datePanel.classList.add('fire-s-filter-panel-date-section');
+    }
+    if (metrics) {
+      metrics.classList.add('fire-s-filter-panel-workspace-section');
+    }
+  }
+
+  function makeExecutiveSnapshotReadOnly() {
+    const panel = document.getElementById('fireSExecutiveMiniDashboard');
+    if (!panel) return;
+
+    panel.classList.add('fire-s-exec-readonly');
+
+    const copy = panel.querySelector('.fire-s-exec-head p');
+    if (copy) copy.textContent = 'Read-only summary. Use Show Filters for date and workspace filters.';
+
+    panel.querySelectorAll('[data-exec-snapshot-filter]').forEach(node => {
+      node.removeAttribute('data-exec-snapshot-filter');
+      node.setAttribute('aria-disabled', 'true');
+      node.classList.remove('active');
+    });
+
+    const clearBtn = panel.querySelector('.fire-s-exec-head button');
+    if (clearBtn) clearBtn.remove();
+
+    const msg = document.getElementById('fireSExecSnapshotMessage');
+    if (msg) {
+      msg.textContent = 'Snapshot only. Filters are available under Show Filters.';
+      msg.style.display = 'block';
+    }
+  }
+
+  function installFilterRenderOverride() {
+    // Prevent duplicate quick-filter strips from appearing above the Premises list.
+    // The same workspace filters remain available in dashboardMetrics inside Show Filters.
+    if (typeof window.renderInspectionGatewayQuickFilters === 'function' && !window.renderInspectionGatewayQuickFilters.__fireSConsolidated119) {
+      const original = window.renderInspectionGatewayQuickFilters;
+      const wrapped = function fireSNoInlineGatewayQuickFilters() {
+        return '';
+      };
+      wrapped.__fireSConsolidated119 = true;
+      wrapped.__original = original;
+      window.renderInspectionGatewayQuickFilters = wrapped;
+    }
+  }
+
+  function refreshConsolidation() {
+    resetBrokenExecutiveFilter();
+    consolidateFilterPanel();
+    makeExecutiveSnapshotReadOnly();
+  }
+
+  function install() {
+    window.FireSGatewayFilterConsolidation119 = {
+      version: VERSION,
+      refresh: refreshConsolidation
+    };
+
+    installFilterRenderOverride();
+    refreshConsolidation();
+
+    if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireSFilterConsolidation119) {
+      const originalRenderProjectsList = window.renderProjectsList;
+      const wrappedRenderProjectsList = function fireSRenderProjectsListWithConsolidatedFilters() {
+        resetBrokenExecutiveFilter();
+        const result = originalRenderProjectsList.apply(this, arguments);
+        setTimeout(refreshConsolidation, 30);
+        setTimeout(refreshConsolidation, 180);
+        return result;
+      };
+      wrappedRenderProjectsList.__fireSFilterConsolidation119 = true;
+      window.renderProjectsList = wrappedRenderProjectsList;
+    }
+
+    if (typeof window.toggleFilterPanel === 'function' && !window.toggleFilterPanel.__fireSFilterConsolidation119) {
+      const originalToggle = window.toggleFilterPanel;
+      window.toggleFilterPanel = function fireSToggleFilterPanelConsolidated() {
+        consolidateFilterPanel();
+        return originalToggle.apply(this, arguments);
+      };
+      window.toggleFilterPanel.__fireSFilterConsolidation119 = true;
+    }
+
+    document.addEventListener('click', event => {
+      const disabledSnapshot = event.target?.closest?.('.fire-s-exec-readonly .fire-s-exec-stat, .fire-s-exec-readonly .fire-s-exec-head button');
+      if (!disabledSnapshot) return;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+
+    setTimeout(refreshConsolidation, 300);
+    setTimeout(refreshConsolidation, 1200);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+})();
