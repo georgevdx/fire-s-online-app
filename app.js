@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.0.7 - Mobile Workflow Cards';
+const APP_VERSION = 'RC 1.0.8 - Compact Workflow Page';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -11205,7 +11205,7 @@ function ensureInspectionOpenGateStyles() {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 18px;
+      padding: 10px;
       z-index: 50000;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -11213,13 +11213,13 @@ function ensureInspectionOpenGateStyles() {
 
     .inspection-open-gate-modal {
       width: min(620px, 100%);
-      max-height: calc(100vh - 36px);
+      max-height: calc(100vh - 20px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       background: #ffffff;
-      border-radius: 18px;
+      border-radius: 16px;
       box-shadow: 0 24px 70px rgba(0,0,0,0.35);
-      padding: 22px;
+      padding: 16px;
       color: #222222;
       box-sizing: border-box;
     }
@@ -11234,34 +11234,36 @@ function ensureInspectionOpenGateStyles() {
     }
 
     .inspection-open-gate-modal h3 {
-      margin: 0 0 8px;
-      font-size: 1.25rem;
+      margin: 0 0 6px;
+      font-size: 1.12rem;
     }
 
     .inspection-open-gate-modal p {
-      margin: 0 0 14px;
+      margin: 0 0 8px;
       color: #555555;
-      line-height: 1.45;
+      line-height: 1.32;
+      font-size: 0.86rem;
     }
 
     .inspection-open-gate-summary {
       background: #f7f7f7;
       border: 1px solid #e6e6e6;
-      border-radius: 12px;
-      padding: 10px 12px;
-      margin: 12px 0 10px;
-      font-size: 0.92rem;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin: 8px 0 8px;
+      font-size: 0.84rem;
+      line-height: 1.28;
     }
 
     .inspection-open-gate-safe-note {
       background: #fff7e6;
       border: 1px solid #ffd591;
-      border-radius: 12px;
-      padding: 10px 12px;
-      margin: 0 0 16px;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin: 0 0 10px;
       color: #5c3b00;
-      font-size: 0.9rem;
-      line-height: 1.35;
+      font-size: 0.8rem;
+      line-height: 1.26;
     }
 
     .inspection-open-gate-mode-label {
@@ -11275,51 +11277,53 @@ function ensureInspectionOpenGateStyles() {
 
     .inspection-open-gate-actions {
       display: grid;
-      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
     }
 
     .inspection-open-gate-actions button {
       width: 100%;
       max-width: none;
-      min-height: 86px;
+      min-height: 72px;
       text-align: left;
       border: 1px solid #ddd;
-      border-radius: 14px;
-      padding: 14px 15px;
+      border-radius: 12px;
+      padding: 10px;
       background: #ffffff;
       cursor: pointer;
       font-weight: 800;
       white-space: normal;
-      line-height: 1.25;
+      line-height: 1.18;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
     .inspection-open-gate-actions button small {
       display: block;
-      margin-top: 4px;
-      font-weight: 400;
+      margin-top: 3px;
+      font-weight: 500;
       color: #666666;
-      line-height: 1.35;
+      line-height: 1.2;
+      font-size: 0.72rem;
     }
 
 
     .inspection-open-gate-card {
       display: grid;
-      grid-template-columns: 44px 1fr;
+      grid-template-columns: 30px 1fr;
       align-items: start;
-      gap: 12px;
+      gap: 8px;
     }
 
     .inspection-open-gate-number {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 34px;
-      height: 34px;
+      width: 26px;
+      height: 26px;
       border-radius: 999px;
       background: #f1f1f1;
       color: #b71c1c;
-      font-size: 1rem;
+      font-size: 0.82rem;
       font-weight: 900;
       border: 1px solid #e0e0e0;
       flex-shrink: 0;
@@ -11332,8 +11336,8 @@ function ensureInspectionOpenGateStyles() {
 
     .inspection-open-gate-copy strong {
       display: block;
-      font-size: 1rem;
-      line-height: 1.25;
+      font-size: 0.86rem;
+      line-height: 1.16;
       color: inherit;
       overflow-wrap: anywhere;
     }
@@ -11375,7 +11379,7 @@ function ensureInspectionOpenGateStyles() {
     .inspection-open-gate-footer {
       display: flex;
       justify-content: flex-end;
-      margin-top: 14px;
+      margin-top: 8px;
     }
 
     .inspection-open-gate-footer button {
@@ -11390,75 +11394,95 @@ function ensureInspectionOpenGateStyles() {
       .inspection-open-gate-backdrop {
         align-items: flex-start;
         justify-content: stretch;
-        padding: 10px;
+        padding: 8px;
       }
 
       .inspection-open-gate-modal {
         width: 100%;
-        max-height: calc(100vh - 20px);
-        border-radius: 16px;
-        padding: 16px;
+        max-height: calc(100vh - 16px);
+        border-radius: 14px;
+        padding: 12px;
+      }
+
+      .inspection-open-gate-kicker {
+        margin-bottom: 3px;
+        font-size: 0.68rem;
       }
 
       .inspection-open-gate-modal h3 {
-        font-size: 1.08rem;
+        font-size: 1rem;
+        margin-bottom: 4px;
       }
 
-      .inspection-open-gate-modal p,
-      .inspection-open-gate-safe-note,
-      .inspection-open-gate-summary {
-        font-size: 0.86rem;
+      .inspection-open-gate-modal p {
+        font-size: 0.78rem;
+        line-height: 1.22;
+        margin-bottom: 6px;
+      }
+
+      .inspection-open-gate-summary,
+      .inspection-open-gate-safe-note {
+        font-size: 0.74rem;
+        line-height: 1.18;
+        padding: 7px 8px;
+        margin-bottom: 6px;
       }
 
       .inspection-open-gate-actions {
-        gap: 9px;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
       }
 
       .inspection-open-gate-actions button {
-        min-height: 96px;
-        padding: 14px 12px;
-        border-radius: 15px;
-        font-size: 0.94rem;
+        min-height: 68px;
+        padding: 8px;
+        border-radius: 11px;
+        font-size: 0.82rem;
       }
 
       .inspection-open-gate-card {
-        grid-template-columns: 38px 1fr;
-        gap: 10px;
+        grid-template-columns: 24px 1fr;
+        gap: 6px;
       }
 
       .inspection-open-gate-number {
-        width: 32px;
-        height: 32px;
-        font-size: 0.95rem;
+        width: 22px;
+        height: 22px;
+        font-size: 0.72rem;
+      }
+
+      .inspection-open-gate-mode-label {
+        margin-bottom: 2px;
+        font-size: 0.58rem;
+        letter-spacing: 0.03em;
       }
 
       .inspection-open-gate-copy strong {
-        font-size: 0.96rem;
-        line-height: 1.22;
+        font-size: 0.78rem;
+        line-height: 1.1;
       }
 
       .inspection-open-gate-actions button small {
-        font-size: 0.78rem;
-        line-height: 1.32;
+        font-size: 0.62rem;
+        line-height: 1.12;
+        margin-top: 2px;
       }
 
       .inspection-open-gate-footer {
-        position: sticky;
-        bottom: 0;
-        background: linear-gradient(180deg, rgba(255,255,255,0.82), #ffffff 35%);
-        padding-top: 10px;
+        margin-top: 6px;
       }
 
       .inspection-open-gate-footer button {
         width: 100%;
         max-width: none;
-        border-radius: 12px;
+        border-radius: 10px;
         background: #eeeeee;
         color: #333333;
         font-weight: 800;
+        padding: 7px;
+        font-size: 0.78rem;
       }
-    }
-  `;
+    }  `;
 
   document.head.appendChild(style);
 }
@@ -11581,8 +11605,7 @@ function showInspectionOpenGate(projectId, focusMode) {
       <div class="inspection-open-gate-kicker">Inspection Workflow</div>
       <h3 id="inspectionOpenGateTitle">Existing premises found</h3>
       <p>
-        Fire-S found an active inspection for this premises. Choose what you want to do before anything opens.
-        This keeps old inspection data separate from new site work.
+        Fire-S found an active inspection for this premises. Choose the correct workflow before opening it.
       </p>
 
       <div class="inspection-open-gate-summary">
@@ -11592,7 +11615,7 @@ function showInspectionOpenGate(projectId, focusMode) {
       </div>
 
       <div class="inspection-open-gate-safe-note">
-        <strong>Safety note:</strong> No data will be deleted or cleared from this screen. History and Cancel are read-only actions. Only Start New Inspection can create a blank inspection, and only after confirmation.
+        <strong>Safety note:</strong> No data is deleted here. Start New archives the current inspection first, then opens a blank one.
       </div>
 
       <div class="inspection-open-gate-actions">
@@ -11601,7 +11624,7 @@ function showInspectionOpenGate(projectId, focusMode) {
           <span class="inspection-open-gate-copy">
             <span class="inspection-open-gate-mode-label">Continue work</span>
             <strong>Continue / Edit Current Inspection</strong>
-            <small>Use this when the inspection is not finished yet. Existing Q&amp;A, photos, comments and actions remain editable.</small>
+            <small>Continue unfinished work. Q&amp;A, photos and comments stay editable.</small>
           </span>
         </button>
 
@@ -11610,7 +11633,7 @@ function showInspectionOpenGate(projectId, focusMode) {
           <span class="inspection-open-gate-copy">
             <span class="inspection-open-gate-mode-label">New inspection</span>
             <strong>Start New Inspection for this Premises</strong>
-            <small>The current inspection is safely saved into History, then Fire-S opens a clean blank inspection for the same premises.</small>
+            <small>Save current inspection to History, then open a clean blank inspection.</small>
           </span>
         </button>
 
@@ -11619,7 +11642,7 @@ function showInspectionOpenGate(projectId, focusMode) {
           <span class="inspection-open-gate-copy">
             <span class="inspection-open-gate-mode-label">Read-only</span>
             <strong>View Inspection History</strong>
-            <small>Open the premises and show previous inspection cycles without starting a new inspection.</small>
+            <small>View previous cycles without changing current data.</small>
           </span>
         </button>
 
@@ -11628,7 +11651,7 @@ function showInspectionOpenGate(projectId, focusMode) {
           <span class="inspection-open-gate-copy">
             <span class="inspection-open-gate-mode-label">Locked</span>
             <strong>Delete Inspection — Disabled</strong>
-            <small>This option is intentionally unavailable. It cannot delete premises, history or inspections from this gate.</small>
+            <small>Locked for data safety. No deletion from this screen.</small>
           </span>
         </button>
       </div>
