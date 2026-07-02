@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.8F - Executive Snapshot Functional Cleanup';
+const APP_VERSION = 'RC 1.1.8G - Executive Snapshot Navigation Hotfix';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -21207,14 +21207,14 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.8F - Executive Snapshot Functional Cleanup
-   Small mobile-first portfolio snapshot above Premises list.
-   No data, sync or inspection logic changed.
+   FIRE-S RC 1.1.8G - Executive Snapshot Navigation Hotfix
+   Keeps one Executive Snapshot and makes its tiles perform predictable actions.
+   No data, sync or inspection storage logic changed.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.8F-executive-snapshot-functional-cleanup';
+  const VERSION = '1.1.8G-executive-snapshot-navigation-hotfix';
 
   function esc(value) {
     if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
@@ -21226,21 +21226,32 @@ if (!window.fireSMobileSmartCardsApplied) {
       .replace(/'/g, '&#039;');
   }
 
-  function readProjects() {
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function readAllProjects() {
     try {
       const all = typeof window.getProjects === 'function'
         ? window.getProjects()
         : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
-
-      if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(all);
-      }
-
       return Array.isArray(all) ? all : [];
     } catch (error) {
-      console.warn('Fire-S Executive Mini Dashboard could not read premises:', error);
+      console.warn('Fire-S Executive Snapshot could not read premises:', error);
       return [];
     }
+  }
+
+  function readVisibleProjects() {
+    const all = readAllProjects();
+    try {
+      if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
+        return window.getVisibleProjectsForCurrentUser(all) || [];
+      }
+    } catch (error) {
+      console.warn('Fire-S Executive Snapshot could not filter visible premises:', error);
+    }
+    return all;
   }
 
   function valueDate(project) {
@@ -21249,8 +21260,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function isOverdue(project) {
     const date = String(valueDate(project) || '').slice(0, 10);
-    if (!date) return false;
-    return date < new Date().toISOString().slice(0, 10);
+    return Boolean(date && date < todayKey());
   }
 
   function openActionCount(project) {
@@ -21312,34 +21322,54 @@ if (!window.fireSMobileSmartCardsApplied) {
       </button>`;
   }
 
-  function showListAndRender() {
+  function showPremisesList() {
     if (typeof window.showProjectList === 'function') window.showProjectList();
     if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
     setTimeout(render, 80);
   }
 
-  function applyQuickFilter(filter) {
-    if (typeof window.setFilter === 'function') {
-      window.setFilter(filter);
-    } else {
-      window.currentFilter = filter || 'all';
-      if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
-      if (typeof window.updateDashboardSelection === 'function') window.updateDashboardSelection();
-    }
-    showListAndRender();
-    document.getElementById('projectsList')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function scrollToPremisesList() {
+    const target = document.getElementById('projectsList') || document.getElementById('projectListSection');
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function focusSearch() {
-    showListAndRender();
+  function applyQuickFilter(filter) {
+    showPremisesList();
+
+    if (typeof window.setFilter === 'function') {
+      try { window.setFilter(filter); }
+      catch (_) {
+        window.currentFilter = filter || 'all';
+      }
+    } else {
+      window.currentFilter = filter || 'all';
+    }
+
+    if (typeof window.currentProjectPage !== 'undefined') window.currentProjectPage = 1;
+    if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+    if (typeof window.updateDashboardSelection === 'function') window.updateDashboardSelection();
+
+    setTimeout(() => {
+      render();
+      scrollToPremisesList();
+    }, 100);
+  }
+
+  function focusSearch(placeholder) {
+    showPremisesList();
     const search = document.getElementById('projectSearch');
     if (search) {
+      if (placeholder) search.placeholder = placeholder;
       search.focus();
       search.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 
-  function openAnalytics() {
+  function openHealthAnalytics() {
+    if (window.FireSAnalyticsIsolation1113?.show) {
+      window.FireSAnalyticsIsolation1113.show();
+      return;
+    }
     if (typeof window.fireSOpenAnalytics === 'function') {
       window.fireSOpenAnalytics();
       return;
@@ -21349,7 +21379,15 @@ if (!window.fireSMobileSmartCardsApplied) {
       btn.click();
       return;
     }
-    focusSearch();
+    focusSearch('Search premises by health, site name, address or inspection number');
+  }
+
+  function openActionsCentre() {
+    if (typeof window.openFindingsCentreCommand === 'function') {
+      window.openFindingsCentreCommand();
+      return;
+    }
+    applyQuickFilter('inspection-attention');
   }
 
   function handleSnapshotAction(action) {
@@ -21358,23 +21396,30 @@ if (!window.fireSMobileSmartCardsApplied) {
         applyQuickFilter('all');
         break;
       case 'health':
-        openAnalytics();
+        openHealthAnalytics();
         break;
       case 'actions':
-        applyQuickFilter('inspection-attention');
+        openActionsCentre();
         break;
       case 'overdue':
         applyQuickFilter('overdue');
         break;
       case 'photos':
-        focusSearch();
+        focusSearch('Search premises with photo evidence');
         break;
       case 'attention':
         applyQuickFilter('inspection-attention');
         break;
       default:
-        showListAndRender();
+        showPremisesList();
+        scrollToPremisesList();
     }
+  }
+
+  function removeDuplicateSnapshotLikePanels(panel) {
+    document.querySelectorAll('#fireSExecutiveMiniDashboard').forEach(node => {
+      if (node !== panel) node.remove();
+    });
   }
 
   function render() {
@@ -21392,7 +21437,9 @@ if (!window.fireSMobileSmartCardsApplied) {
       search.insertAdjacentElement('beforebegin', panel);
     }
 
-    const projects = readProjects();
+    removeDuplicateSnapshotLikePanels(panel);
+
+    const projects = readVisibleProjects();
     const data = calc(projects);
     const healthTone = data.avg >= 90 ? 'good' : data.avg >= 75 ? 'watch' : data.avg ? 'risk' : 'neutral';
 
@@ -21402,7 +21449,7 @@ if (!window.fireSMobileSmartCardsApplied) {
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises Overview</h3>
         </div>
-        <button type="button" onclick="window.FireSExecutiveMiniDashboard.refresh()">Refresh</button>
+        <button type="button" data-exec-snapshot-action="refresh">Refresh</button>
       </div>
       <div class="fire-s-exec-grid">
         ${stat('Premises', data.count, 'visible', 'neutral', 'premises')}
@@ -21417,34 +21464,36 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function install() {
-    if (window.__fireSExecutiveMiniDashboard118E) return;
-    window.__fireSExecutiveMiniDashboard118E = true;
+    window.__fireSExecutiveMiniDashboard118G = true;
     window.FireSExecutiveMiniDashboard = { refresh: render, action: handleSnapshotAction, version: VERSION };
 
-    if (typeof window.renderProjectsList === 'function') {
+    if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireSExecSnapshot118G) {
       const original = window.renderProjectsList;
-      window.renderProjectsList = function fireSRenderProjectsListWithExecutiveMiniDashboard() {
+      const wrapped = function fireSRenderProjectsListWithExecutiveSnapshot() {
         const result = original.apply(this, arguments);
         setTimeout(render, 50);
         return result;
       };
+      wrapped.__fireSExecSnapshot118G = true;
+      window.renderProjectsList = wrapped;
     }
 
     document.addEventListener('click', event => {
       const snapshotButton = event.target?.closest?.('[data-exec-snapshot-action]');
-      if (snapshotButton) {
-        event.preventDefault();
-        event.stopPropagation();
-        handleSnapshotAction(snapshotButton.dataset.execSnapshotAction || '');
+      if (!snapshotButton) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const action = snapshotButton.dataset.execSnapshotAction || '';
+      if (action === 'refresh') {
+        render();
         return;
       }
-
-      if (event.target?.closest?.('#cmdDashboardBtn, #cmdInspectionsBtn, #projectsHomeBtn, #newProjectBtn')) {
-        setTimeout(render, 250);
-      }
+      handleSnapshotAction(action);
     }, true);
 
-    setTimeout(render, 500);
+    setTimeout(render, 350);
     setTimeout(render, 1200);
   }
 
