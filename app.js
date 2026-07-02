@@ -57,53 +57,8 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.0.5 - Photo Categories + Scroll Stability';
+const APP_VERSION = 'RC 1.0.6 - Mobile Inspection Gate Polish';
 const MAX_PHOTOS_PER_INSPECTION = 10;
-
-// =====================================================
-// PHOTO CATEGORY TAGGING - REPORT READY METADATA
-// =====================================================
-const PHOTO_CATEGORIES = [
-  'General Evidence',
-  'Fire Equipment',
-  'Sprinklers',
-  'Hose Reels / Hydrants',
-  'Emergency Lighting',
-  'Escape Routes',
-  'Fire Doors',
-  'Hazardous Substances',
-  'Electrical Risk',
-  'Housekeeping',
-  'Structural / Building',
-  'Signage',
-  'Access / Egress',
-  'Pumps / Tanks',
-  'Gas Suppression',
-  'Smoke Ventilation',
-  'Other / Uncategorized'
-];
-
-function getDefaultPhotoCategory() {
-  return 'General Evidence';
-}
-
-function normalizePhotoCategory(value) {
-  const category = String(value || '').trim();
-  return PHOTO_CATEGORIES.includes(category)
-    ? category
-    : getDefaultPhotoCategory();
-}
-
-function getPhotoCategoryOptionsHtml(selectedCategory) {
-  const selected = normalizePhotoCategory(selectedCategory);
-
-  return PHOTO_CATEGORIES.map(category => `
-    <option value="${escapeHtml(category)}" ${category === selected ? 'selected' : ''}>
-      ${escapeHtml(category)}
-    </option>
-  `).join('');
-}
-
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
 
@@ -1075,12 +1030,7 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
 
     pdf.text(`Captured: ${capturedText}`, marginX, 36);
 
-    const categoryText =
-      normalizePhotoCategory(photo.category);
-
-    pdf.text(`Category: ${categoryText}`, marginX, 41);
-
-    const imageTop = 48;
+    const imageTop = 43;
     const imageBoxWidth = pageWidth - marginX * 2;
     const imageBoxHeight = 170;
 
@@ -2081,30 +2031,24 @@ function showChecklistQuestion(sectionIndex, position, shouldScroll = true) {
   }
 
   if (shouldScroll) {
-    const activeRow = rows[safePosition];
-    const nav = document.getElementById(`sectionNav_${sectionIndex}`);
-    const target = activeRow || nav;
+  const checklistCard = document.getElementById('checklist')?.closest('.card');
+  const tabs = document.querySelector('.checklist-section-tabs');
+  const nav = document.getElementById(`sectionNav_${sectionIndex}`);
 
-    if (!target) return;
+  const target = tabs || nav || checklistCard || rows[safePosition];
 
-    const rect = target.getBoundingClientRect();
-    const safeTop = 120;
-    const safeBottom = window.innerHeight - 120;
+  const topOffset = 90;
 
-    // Only scroll when the active question is outside the comfortable viewport.
-    // This prevents the page from jumping back to the top on every answer/next action.
-    if (rect.top < safeTop || rect.bottom > safeBottom) {
-      const targetTop =
-        rect.top +
-        window.pageYOffset -
-        safeTop;
+  const targetTop =
+    target.getBoundingClientRect().top +
+    window.pageYOffset -
+    topOffset;
 
-      window.scrollTo({
-        top: Math.max(targetTop, 0),
-        behavior: 'smooth'
-      });
-    }
-  }
+  window.scrollTo({
+    top: Math.max(targetTop, 0),
+    behavior: 'smooth'
+  });
+}
 }
 
 function nextChecklistQuestion(sectionIndex) {
@@ -4805,7 +4749,6 @@ function stripHeavyPhotoData(project) {
     photos: (project.photos || []).map(photo => ({
       timestamp: photo.timestamp || null,
       note: photo.note || '',
-      category: normalizePhotoCategory(photo.category),
       src: photo.src && photo.src.length < 5000 ? photo.src : ''
     }))
   };
@@ -11264,15 +11207,21 @@ function ensureInspectionOpenGateStyles() {
       justify-content: center;
       padding: 18px;
       z-index: 50000;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .inspection-open-gate-modal {
       width: min(620px, 100%);
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       background: #ffffff;
       border-radius: 18px;
       box-shadow: 0 24px 70px rgba(0,0,0,0.35);
       padding: 22px;
       color: #222222;
+      box-sizing: border-box;
     }
 
     .inspection-open-gate-kicker {
@@ -11331,13 +11280,18 @@ function ensureInspectionOpenGateStyles() {
 
     .inspection-open-gate-actions button {
       width: 100%;
+      max-width: none;
+      min-height: 86px;
       text-align: left;
       border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 13px 14px;
+      border-radius: 14px;
+      padding: 14px 15px;
       background: #ffffff;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 800;
+      white-space: normal;
+      line-height: 1.25;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
     .inspection-open-gate-actions button small {
@@ -11376,6 +11330,63 @@ function ensureInspectionOpenGateStyles() {
       color: #666666;
       cursor: pointer;
       padding: 8px;
+    }
+
+    @media (max-width: 700px) {
+      .inspection-open-gate-backdrop {
+        align-items: flex-start;
+        justify-content: stretch;
+        padding: 10px;
+      }
+
+      .inspection-open-gate-modal {
+        width: 100%;
+        max-height: calc(100vh - 20px);
+        border-radius: 16px;
+        padding: 16px;
+      }
+
+      .inspection-open-gate-modal h3 {
+        font-size: 1.08rem;
+      }
+
+      .inspection-open-gate-modal p,
+      .inspection-open-gate-safe-note,
+      .inspection-open-gate-summary {
+        font-size: 0.86rem;
+      }
+
+      .inspection-open-gate-actions {
+        gap: 9px;
+      }
+
+      .inspection-open-gate-actions button {
+        min-height: auto;
+        padding: 13px 12px;
+        border-radius: 13px;
+        font-size: 0.94rem;
+      }
+
+      .inspection-open-gate-actions button small {
+        font-size: 0.78rem;
+        line-height: 1.32;
+      }
+
+      .inspection-open-gate-footer {
+        position: sticky;
+        bottom: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.82), #ffffff 35%);
+        padding-top: 10px;
+      }
+
+      .inspection-open-gate-footer button {
+        width: 100%;
+        max-width: none;
+        border-radius: 12px;
+        background: #eeeeee;
+        color: #333333;
+        font-weight: 800;
+      }
     }
   `;
 
@@ -13283,8 +13294,7 @@ function buildPdfPhotoAppendix(photos = [], emptyMessage = 'No photo evidence wa
               photo.timestamp
                 ? new Date(photo.timestamp).toLocaleString()
                 : 'Not recorded'
-            }<br>
-            Category: ${escapeHtml(normalizePhotoCategory(photo.category))}
+            }
           </div>
 
           <div class="report-photo-image-box">
@@ -14169,7 +14179,6 @@ function createLocalPhotoFallback(file) {
           src: compressedDataUrl,
           timestamp: new Date().toISOString(),
           note: '',
-          category: getDefaultPhotoCategory(),
           uploadFallback: true,
           uploadPending: true
         });
@@ -14295,14 +14304,10 @@ async function handlePhotoUpload(event) {
           const existingNote =
             currentPhotos[photoIndex].note || '';
 
-          const existingCategory =
-            normalizePhotoCategory(currentPhotos[photoIndex].category);
-
           currentPhotos[photoIndex] = {
             ...uploadedPhoto,
             id: localPhotoId,
             note: existingNote,
-            category: existingCategory,
             uploadFallback: false,
             uploadPending: false
           };
@@ -14850,16 +14855,6 @@ function renderPhotos() {
     Captured: ${photoTime}
   </small>
 
-  <label class="photo-category-label">
-    Photo Category
-    <select
-      class="photo-category-select"
-      onchange="updatePhotoCategory(${index}, this.value)"
-    >
-      ${getPhotoCategoryOptionsHtml(photo.category)}
-    </select>
-  </label>
-
   <textarea
     class="photo-note"
     placeholder="Photo note..."
@@ -14916,15 +14911,6 @@ function updatePhotoNote(index, value) {
 
   currentPhotos[index].note = value;
   scheduleAutoSave();
-}
-
-function updatePhotoCategory(index, value) {
-  if (!currentPhotos[index]) return;
-
-  currentPhotos[index].category = normalizePhotoCategory(value);
-  saveCurrentPhotosToOpenProject();
-  scheduleAutoSave();
-  updatePhotoUploadStatus('Photo category updated.');
 }
 
 async function shareReport() {

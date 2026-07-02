@@ -1,17 +1,17 @@
-Fire-S RC 1.0.5 - Photo Categories + Scroll Stability
+Fire-S RC 1.0.6 - Mobile Inspection Gate Polish
 
-Added:
-- Photo category dropdown for every captured photo.
-- Default photo category: General Evidence.
-- Categories include Fire Equipment, Sprinklers, Emergency Lighting, Escape Routes, Hazardous Substances, etc.
-- Photo category is saved with the inspection photo metadata.
-- Photo category appears in PDF photo appendix metadata.
-- Compact backup photo metadata now keeps the category.
+Focus:
+- Improved mobile display for the existing-premises inspection choice screen.
+- The modal is now scrollable on small phone screens.
+- Cards/buttons now wrap long text properly and use full available width.
+- Better touch target spacing, card padding, and visual presentation.
+- Cancel button remains visible/sticky at bottom of modal on mobile.
+- Version bumped to RC 1.0.6.
 
-Improved:
-- Checklist navigation scrolls only when the active question is outside the comfortable viewport.
-- This reduces jumping back to the top during question navigation.
+Files changed:
+- app.js
 
-Notes:
-- Conditional sections and full analytics dashboard are not included in this patch yet.
-- This patch is intended as a safe incremental RC update.
+Safe patch:
+- No data model changes.
+- No project/inspection storage changes.
+- No cloud sync changes.
