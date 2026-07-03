@@ -1,0 +1,19 @@
+Fire-S RC 1.1.20D - Module 04 Render Queue
+
+Purpose:
+- Add a central render queue layer without replacing the legacy app.js flow.
+- Coalesce repeated dashboard/premises renders into a single animation frame.
+- Block Home / Executive Snapshot render calls while Premises or Inspection screens are active.
+- Reduce visual bounce and ghost-dashboard flashes caused by overlapping render calls.
+
+Files changed:
+- app.js: version updated only.
+- index.html: cache-busting updated and modules/render-queue.js loaded after state-manager.js.
+- modules/render-queue.js: new module.
+
+Testing focus:
+1. Open Premises from Home.
+2. Watch for Executive Snapshot ghosting during bounce.
+3. Switch filters quickly.
+4. Open a project and go back to Premises.
+5. Confirm project cards still render and remain clickable.

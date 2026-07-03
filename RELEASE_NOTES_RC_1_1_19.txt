@@ -1,0 +1,14 @@
+Fire-S RC 1.1.19 - Action Register Clarity
+
+Focus:
+- Cleaned up Smart Action Register grouping.
+- Removed duplicate generated actions from current NO answers.
+- Replaced vague uncategorized/general action summaries with clearer fire-safety categories.
+- Preserved manual actions and user-edited responsible/due-date/comment data where possible.
+- Added grouped action cards with category count and corrective-action descriptions.
+
+Recommended test:
+1. Open an existing premises.
+2. Change a few checklist answers between Yes and No.
+3. Confirm actions appear only once.
+4. Confirm action groups show meaningful categories instead of unexplained duplicates.

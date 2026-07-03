@@ -1,0 +1,21 @@
+Fire-S RC 1.1.20C - Module 03 State Manager
+
+Sprint 2 of the modularisation/stability track.
+
+Added:
+- modules/state-manager.js
+- FireSModules.state API for central UI state
+- Session/local persistence for active screen, filter/page context and scroll positions
+- State-change events: fire-s:state:ready and fire-s:state:changed
+- Safe wrappers for navigation/filter/project functions without changing the existing data model
+
+Purpose:
+- Reduce screen bounce caused by repeated renders losing context
+- Prepare for Module 04 Render Queue
+- Keep the legacy app.js flow intact while moving toward modular structure
+
+Testing focus:
+- Open Premises repeatedly and confirm bounce is reduced
+- Switch Home/Premises/Inspection and confirm screens do not ghost through
+- Apply filters and confirm project list still works
+- Open a project and return to Premises; scroll position should be more stable

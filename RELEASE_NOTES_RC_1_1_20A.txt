@@ -1,0 +1,15 @@
+Fire-S RC 1.1.20A - Module 01 Render Stabilizer
+
+Purpose:
+- Start safe modularisation by adding /modules/render-stabilizer.js.
+- Prevent Home / Executive Snapshot rendering behind Premises.
+- Reduce ghost dashboard bleed-through and bounce during Premises navigation.
+- Keep legacy app.js intact except for version label and cache-busting.
+
+Files changed:
+- index.html: adds module include and cache-busting.
+- app.js: updates APP_VERSION only.
+- modules/render-stabilizer.js: new stabilisation module.
+
+Rollback:
+- Remove the render-stabilizer.js script line from index.html.

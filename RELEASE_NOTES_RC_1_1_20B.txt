@@ -1,0 +1,20 @@
+Fire-S RC 1.1.20B - Module 02 Navigation Manager
+
+Sprint 1 modularisation step.
+
+Added:
+- /modules/navigation-manager.js
+- Central active-screen tracking for Home, Premises, Inspection, Services and Report screens.
+- Guard that blocks Executive Dashboard / Home Command Centre rendering while Premises or Inspection is active.
+- Scroll position preservation between main screens.
+- CSS layer isolation to reduce ghost Executive Snapshot bleed-through.
+- FireSModules.navigation API for future modules.
+
+Updated:
+- app.js version label.
+- index.html cache-busting query strings.
+- index.html now loads render-stabilizer first, then navigation-manager.
+
+Focus:
+- Reduce Premises bounce and executive snapshot ghosting.
+- Start modularising safely without removing legacy app.js logic.

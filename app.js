@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.17A - Live Inspection Engine Hotfix';
+const APP_VERSION = 'RC 1.1.20D - Module 04 Render Queue';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2592,8 +2592,18 @@ async function runBackgroundSync(reason = 'background') {
     await safeDownloadNewerCloudInspections();
     await uploadPendingInspections();
 
+    // Preserve scroll position: renderProjectsList() fully rebuilds the
+    // premises list HTML, which resets scroll to the top and causes a
+    // jarring "bounce" every time background sync runs. Save the position
+    // and restore it right after the rebuild so the user's place on the
+    // page isn't disturbed by a sync they didn't initiate.
+    const scrollEl = document.scrollingElement || document.documentElement;
+    const preservedScrollTop = scrollEl.scrollTop;
+
     renderProjectsList();
     reloadCurrentOpenInspectionAfterSync();
+
+    scrollEl.scrollTop = preservedScrollTop;
 
     if (reason !== 'autosave' && reason !== 'background') {
       setSyncStatusMessage('All changes synced.');
@@ -24563,4 +24573,579 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.18 - STABILITY & RENDER ENGINE
+   Purpose:
+   - Stop Premises list jumping while typing/searching/filtering.
+   - Prevent background Premises re-renders while an inspection form is open.
+   - Stabilise Ready for Site / Offline readiness panels by only repainting
+     when their content actually changes.
+   - Stabilise inspection card risk colour classification for unchanged cards.
+   ===================================================== */
+(function fireSStabilityRenderEngine118() {
+  const VERSION = 'RC 1.1.18 - Stability & Render Engine';
+  if (window.__fireSStabilityRenderEngine118) return;
+  window.__fireSStabilityRenderEngine118 = true;
+
+  const state = {
+    renderingList: false,
+    pendingListRender: false,
+    lastListHtml: '',
+    cardClassCache: new Map(),
+    lastSiteReadyHtml: '',
+    lastOfflineHtml: '',
+    lastPostSiteHtml: ''
+  };
+
+  function isVisible(el) {
+    return !!el && el.style.display !== 'none' && !el.hidden;
+  }
+
+  function isPremisesListVisible() {
+    return isVisible(document.getElementById('projectListSection'));
+  }
+
+  function isInspectionFormVisible() {
+    return isVisible(document.getElementById('projectFormSection'));
+  }
+
+  function getScrollSnapshot() {
+    const list = document.getElementById('projectListSection');
+    const projectList = document.getElementById('projectsList');
+    const active = document.activeElement;
+    return {
+      x: window.scrollX,
+      y: window.scrollY,
+      listTop: list ? list.scrollTop : 0,
+      projectListTop: projectList ? projectList.scrollTop : 0,
+      activeId: active && active.id ? active.id : '',
+      activeStart: active && typeof active.selectionStart === 'number' ? active.selectionStart : null,
+      activeEnd: active && typeof active.selectionEnd === 'number' ? active.selectionEnd : null
+    };
+  }
+
+  function restoreScrollSnapshot(snapshot) {
+    if (!snapshot) return;
+    requestAnimationFrame(() => {
+      const list = document.getElementById('projectListSection');
+      const projectList = document.getElementById('projectsList');
+      if (list) list.scrollTop = snapshot.listTop || 0;
+      if (projectList) projectList.scrollTop = snapshot.projectListTop || 0;
+      if (snapshot.activeId) {
+        const active = document.getElementById(snapshot.activeId);
+        if (active && typeof active.focus === 'function') {
+          active.focus({ preventScroll: true });
+          if (
+            snapshot.activeStart !== null &&
+            typeof active.setSelectionRange === 'function'
+          ) {
+            try { active.setSelectionRange(snapshot.activeStart, snapshot.activeEnd); } catch (_) {}
+          }
+        }
+      }
+      window.scrollTo(snapshot.x || 0, snapshot.y || 0);
+    });
+  }
+
+  function stableSetHtml(elementId, html) {
+    const el = document.getElementById(elementId);
+    if (!el) return false;
+    const next = String(html || '');
+    if (el.innerHTML === next) return false;
+    el.innerHTML = next;
+    return true;
+  }
+
+  function projectRiskSignature(project) {
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const noCount = answers.filter(a => String(a?.answer || '').trim().toLowerCase() === 'no').length;
+    const unanswered = answers.filter(a => !['yes','no','n/a'].includes(String(a?.answer || '').trim().toLowerCase())).length;
+    const expirySig = answers.map(a => `${a?.itemIndex ?? ''}:${a?.answer ?? ''}:${a?.expiryDate ?? ''}`).join('|');
+    return [
+      project?.id || '',
+      project?.lastSaved || project?.updatedAt || project?.completedAt || '',
+      project?.scheduledDate || '',
+      project?.followUpDate || '',
+      project?.scheduledStatus || '',
+      project?.scheduleType || '',
+      project?.inspectionStatus || project?.status || '',
+      noCount,
+      unanswered,
+      expirySig
+    ].join('||');
+  }
+
+  if (typeof getInspectionCardVisualClass === 'function') {
+    const originalGetInspectionCardVisualClass = getInspectionCardVisualClass;
+    getInspectionCardVisualClass = function fireSStableInspectionCardVisualClass(project) {
+      const id = project?.id || project?.inspectionNumber || '';
+      if (!id) return originalGetInspectionCardVisualClass.apply(this, arguments);
+      const signature = projectRiskSignature(project);
+      const cached = state.cardClassCache.get(id);
+      if (cached && cached.signature === signature) return cached.className;
+      const className = originalGetInspectionCardVisualClass.apply(this, arguments);
+      state.cardClassCache.set(id, { signature, className });
+      return className;
+    };
+    window.getInspectionCardVisualClass = getInspectionCardVisualClass;
+  }
+
+  if (typeof renderProjectsList === 'function') {
+    const originalRenderProjectsList = renderProjectsList;
+    renderProjectsList = function fireSStableRenderProjectsList(options = {}) {
+      const force = !!(options && options.force === true);
+
+      // Do not rebuild the Premises list in the background while the user is
+      // actively working inside an inspection. This was the main cause of the
+      // screen hop and short colour/status flicker.
+      if (!force && isInspectionFormVisible() && !isPremisesListVisible()) {
+        state.pendingListRender = true;
+        return;
+      }
+
+      if (state.renderingList) {
+        state.pendingListRender = true;
+        return;
+      }
+
+      state.renderingList = true;
+      const snapshot = getScrollSnapshot();
+      try {
+        originalRenderProjectsList.apply(this, arguments);
+      } finally {
+        state.renderingList = false;
+        restoreScrollSnapshot(snapshot);
+      }
+
+      if (state.pendingListRender && isPremisesListVisible()) {
+        state.pendingListRender = false;
+        setTimeout(() => renderProjectsList({ force: true }), 60);
+      }
+    };
+    window.renderProjectsList = renderProjectsList;
+  }
+
+  if (typeof showProjectList === 'function') {
+    const originalShowProjectList = showProjectList;
+    showProjectList = function fireSStableShowProjectList() {
+      const result = originalShowProjectList.apply(this, arguments);
+      state.pendingListRender = false;
+      setTimeout(() => {
+        if (typeof renderProjectsList === 'function') renderProjectsList({ force: true });
+      }, 0);
+      return result;
+    };
+    window.showProjectList = showProjectList;
+  }
+
+  if (typeof renderHomeCommandCentre === 'function') {
+    const originalRenderHomeCommandCentre = renderHomeCommandCentre;
+    renderHomeCommandCentre = function fireSStableHomeCommandCentre() {
+      if (isInspectionFormVisible()) return;
+      return originalRenderHomeCommandCentre.apply(this, arguments);
+    };
+    window.renderHomeCommandCentre = renderHomeCommandCentre;
+  }
+
+  // De-duplicate expensive input renders on the search field. Existing inline
+  // listeners can remain; this wrapper keeps the visual position stable.
+  document.addEventListener('input', event => {
+    if (event.target?.id === 'projectSearch') {
+      currentProjectPage = 1;
+      clearTimeout(window.__fireSProjectSearchRenderTimer118);
+      window.__fireSProjectSearchRenderTimer118 = setTimeout(() => {
+        if (typeof renderProjectsList === 'function') renderProjectsList({ force: true });
+      }, 120);
+    }
+  }, true);
+
+  window.FireSStabilityRenderEngine118 = {
+    version: VERSION,
+    forceRenderPremises: () => typeof renderProjectsList === 'function' && renderProjectsList({ force: true }),
+    clearCardClassCache: () => state.cardClassCache.clear()
+  };
+})();
+
+/* =====================================================
+   FIRE-S RC 1.1.19 - ACTION REGISTER CLARITY
+   Purpose:
+   - Remove duplicate generated actions.
+   - Replace vague/uncategorized action groups with clear fire-safety categories.
+   - Keep Action Register as a clean summary of current NO answers.
+   - Preserve manual actions and user-edited fields where possible.
+   ===================================================== */
+(function fireSActionRegisterClarity119() {
+  'use strict';
+
+  const VERSION = 'rc-1-1-19-action-register-clarity';
+  if (window.__fireSActionRegisterClarity119) return;
+  window.__fireSActionRegisterClarity119 = true;
+
+  function norm(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function clean(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[ch]));
+  }
+
+  function readProjects() {
+    try {
+      if (typeof getProjects === 'function') return getProjects();
+      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeProjects(projects) {
+    if (!Array.isArray(projects)) return;
+    try {
+      if (typeof setProjects === 'function') setProjects(projects);
+      else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    } catch (_) {}
+  }
+
+  function currentProjectId() {
+    try {
+      if (typeof currentProjectId !== 'undefined' && currentProjectId) return currentProjectId;
+    } catch (_) {}
+    return window.currentProjectId || window.currentProject?.id || null;
+  }
+
+  function currentProject() {
+    const id = currentProjectId();
+    const list = readProjects();
+    return list.find(project => String(project.id) === String(id)) || window.currentProject || null;
+  }
+
+  function activeChecklistRaw() {
+    try {
+      if (typeof getActiveTemplateChecklist === 'function') {
+        const active = getActiveTemplateChecklist();
+        if (Array.isArray(active) && active.length) return active;
+      }
+    } catch (_) {}
+    try {
+      if (typeof checklists !== 'undefined' && Array.isArray(checklists)) return checklists;
+    } catch (_) {}
+    return Array.isArray(window.checklists) ? window.checklists : [];
+  }
+
+  function flattenChecklist(raw = activeChecklistRaw()) {
+    const out = [];
+    (Array.isArray(raw) ? raw : []).forEach(sectionOrItem => {
+      if (sectionOrItem && Array.isArray(sectionOrItem.items)) {
+        const sectionName = clean(sectionOrItem.sectionName || sectionOrItem.Section || sectionOrItem.Category || '');
+        sectionOrItem.items.forEach(item => out.push({ ...item, sectionName: clean(item.sectionName || item.Section || item.Category || sectionName) }));
+      } else if (sectionOrItem) {
+        out.push(sectionOrItem);
+      }
+    });
+    return out;
+  }
+
+  function inferCategory(text) {
+    const t = norm(text);
+    if (/escape|egress|exit|stair|corridor|route|evac|assembly point/.test(t)) return 'Means of Escape';
+    if (/sprinkler|pump|hydrant|hose reel|water|booster|valve|tank|fire brigade connection/.test(t)) return 'Fire Water / Protection';
+    if (/alarm|detect|detector|mcp|manual call|call point|sounder|panel|strobe/.test(t)) return 'Fire Detection and Alarm';
+    if (/extinguisher|fire equipment|service tag|serviced/.test(t)) return 'Fire Equipment';
+    if (/emergency light|lighting|exit sign|signage|photoluminescent/.test(t)) return 'Emergency Lighting / Signage';
+    if (/fire door|self.?closing|door closer|smoke seal|maglock|fire shutter/.test(t)) return 'Fire Doors / Compartmentation';
+    if (/hazard|flammable|chemical|substance|fuel|gas|lpg|diesel/.test(t)) return 'Hazardous Substances';
+    if (/electrical|db|distribution board|cable|generator|inverter|battery|plug/.test(t)) return 'Electrical';
+    if (/housekeeping|storage|combustible|waste|refuse|rubbish/.test(t)) return 'Housekeeping / Storage';
+    if (/document|certificate|coc|logbook|record|drill|plan|training|evacuation/.test(t)) return 'Documentation / Management';
+    return 'General Fire Safety';
+  }
+
+  function categoryFor(item, answer, question) {
+    const raw = clean(item?.sectionName || item?.Section || item?.Category || answer?.sectionName || answer?.category || '');
+    if (raw && !/^(inspection|uncategorized|undefined|null|general)$/i.test(raw)) return raw;
+    return inferCategory(question || answer?.question || answer?.item || item?.['Checklist Item'] || '');
+  }
+
+  function priorityFor(item, category, text) {
+    const explicit = clean(item?.Severity || item?.severity || '');
+    if (explicit) return explicit;
+    const t = norm(`${category} ${text}`);
+    if (/blocked|locked|isolated|failed|not working|inoperative|missing|no access/.test(t) && /escape|exit|alarm|sprinkler|pump|hydrant|fire door|emergency/.test(t)) return 'Critical';
+    if (/escape|exit|alarm|detect|sprinkler|pump|hydrant|fire door|emergency lighting|hazard|flammable/.test(t)) return 'High';
+    if (/extinguisher|electrical|housekeeping|storage|signage|document/.test(t)) return 'Medium';
+    return 'Low';
+  }
+
+  function dueDays(priority) {
+    const p = norm(priority);
+    if (p === 'critical') return 7;
+    if (p === 'high') return 21;
+    if (p === 'medium') return 30;
+    return 60;
+  }
+
+  function datePlus(days) {
+    const d = new Date();
+    d.setDate(d.getDate() + Number(days || 30));
+    return d.toISOString().slice(0, 10);
+  }
+
+  function itemForAnswer(flatChecklist, answer, fallbackIndex) {
+    const idx = Number.isFinite(Number(answer?.itemIndex)) ? Number(answer.itemIndex) : fallbackIndex;
+    const byIndex = flatChecklist[idx];
+    const answerNumber = clean(answer?.itemNumber || '');
+    const answerQuestion = norm(answer?.question || answer?.item || '');
+    if (byIndex && (!answerNumber || String(byIndex['Item Number'] || '') === answerNumber || !answerQuestion || norm(byIndex['Checklist Item'] || '') === answerQuestion)) {
+      return { item: byIndex, index: idx };
+    }
+    const foundIndex = flatChecklist.findIndex(item => {
+      const numberMatch = answerNumber && String(item['Item Number'] || '') === answerNumber;
+      const questionMatch = answerQuestion && norm(item['Checklist Item'] || '') === answerQuestion;
+      return numberMatch || questionMatch;
+    });
+    if (foundIndex >= 0) return { item: flatChecklist[foundIndex], index: foundIndex };
+    return { item: byIndex || {}, index: idx };
+  }
+
+  function correctiveActionFor(item, category, question, finding) {
+    const explicit = clean(item?.['Corrective Action'] || item?.correctiveAction || '');
+    if (explicit) return explicit;
+    const lower = norm(`${category} ${question} ${finding}`);
+    if (/extinguisher|hose reel|hydrant|fire equipment/.test(lower)) return 'Inspect, service, repair or provide the required fire equipment and keep it accessible and visible.';
+    if (/escape|exit|egress|stair|corridor|route/.test(lower)) return 'Clear and maintain the escape route or exit so that occupants can safely evacuate at all times.';
+    if (/alarm|detect|detector|call point|sounder/.test(lower)) return 'Arrange testing, repair and certification of the fire detection and alarm system by a competent service provider.';
+    if (/sprinkler|pump|booster|valve|water/.test(lower)) return 'Arrange inspection, repair and confirmation that the fire water/protection system is serviceable and available.';
+    if (/door|compartment|seal/.test(lower)) return 'Repair, maintain or reinstate the required fire door or fire compartmentation feature.';
+    if (/emergency light|exit sign|signage/.test(lower)) return 'Repair, replace or install the required emergency lighting/signage and confirm it remains operational.';
+    if (/electrical|db|cable|generator/.test(lower)) return 'Arrange electrical inspection and remedial work by a competent person where required.';
+    if (/housekeeping|storage|waste/.test(lower)) return 'Remove or control the housekeeping/storage risk and maintain the area in a safe condition.';
+    if (/document|certificate|logbook|drill|training|plan/.test(lower)) return 'Update, obtain or maintain the required fire safety records, certificates or management documentation.';
+    return 'Review the non-compliance and implement the required corrective action.';
+  }
+
+  function actionKey(project, answer, item, index) {
+    const number = clean(answer?.itemNumber || item?.['Item Number'] || String(index + 1));
+    const question = clean(item?.['Checklist Item'] || answer?.question || answer?.item || `Checklist item ${index + 1}`);
+    return [project?.id || 'premises', project?.currentInspectionId || project?.inspectionId || '', number, norm(question)].join('|');
+  }
+
+  function buildGeneratedActions(project) {
+    const flat = flattenChecklist();
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const generated = [];
+
+    answers.forEach((answer, answerIndex) => {
+      if (norm(answer?.answer) !== 'no') return;
+      const resolved = itemForAnswer(flat, answer, answerIndex);
+      const item = resolved.item || {};
+      const index = Number.isFinite(Number(resolved.index)) ? Number(resolved.index) : answerIndex;
+      const question = clean(item['Checklist Item'] || answer.question || answer.item || `Checklist item ${index + 1}`);
+      const category = categoryFor(item, answer, question);
+      const finding = clean(item['Non Compliance Text'] || answer.note || question);
+      const priority = priorityFor(item, category, `${question} ${finding}`);
+      const key = actionKey(project, answer, item, index);
+
+      generated.push({
+        actionKey: key,
+        actionId: `ACT-${String(index + 1).padStart(4, '0')}`,
+        premisesId: project?.id || '',
+        inspectionId: project?.currentInspectionId || project?.inspectionId || project?.id || '',
+        inspectionNumber: project?.inspectionNumber || '',
+        itemIndex: index,
+        itemNumber: clean(answer.itemNumber || item['Item Number'] || String(index + 1)),
+        sectionName: category,
+        category,
+        question,
+        finding,
+        correctiveAction: correctiveActionFor(item, category, question, finding),
+        reference: clean(item.Reference || item.reference || ''),
+        priority,
+        status: 'Open',
+        responsible: /critical|high/i.test(priority) ? 'Approved Contractor / Building Owner' : 'Site Manager',
+        dueDate: datePlus(dueDays(priority)),
+        createdDate: new Date().toISOString(),
+        source: 'NO answer',
+        generatedBy: VERSION
+      });
+    });
+
+    const unique = new Map();
+    generated.forEach(action => {
+      const duplicateKey = [action.itemNumber, norm(action.question)].join('|');
+      if (!unique.has(duplicateKey)) unique.set(duplicateKey, action);
+    });
+    return [...unique.values()];
+  }
+
+  function isGenerated(action) {
+    return action?.source === 'NO answer' || !!action?.generatedBy || /^ACT-/.test(String(action?.actionId || ''));
+  }
+
+  function mergeActions(project, generated) {
+    const existing = Array.isArray(project?.actions) ? project.actions : [];
+    const existingByKey = new Map();
+    existing.forEach(action => {
+      const key = action?.actionKey || action?.actionId || [action?.itemNumber, norm(action?.question || action?.finding || '')].join('|');
+      if (key && !existingByKey.has(key)) existingByKey.set(key, action);
+    });
+
+    const mergedGenerated = generated.map(action => {
+      const old = existingByKey.get(action.actionKey) || existingByKey.get(action.actionId) || existing.find(item => String(item?.itemNumber || '') === String(action.itemNumber) && norm(item?.question || item?.finding || '') === norm(action.question || action.finding || ''));
+      if (!old) return action;
+      return {
+        ...action,
+        status: norm(old.status) === 'closed' ? 'Open' : (old.status || 'Open'),
+        responsible: old.responsible || action.responsible,
+        dueDate: old.dueDate || action.dueDate,
+        comments: old.comments || [],
+        photosBefore: old.photosBefore || [],
+        photosAfter: old.photosAfter || [],
+        history: old.history || [],
+        userNotes: old.userNotes || old.notes || action.userNotes || ''
+      };
+    });
+
+    const generatedKeys = new Set(generated.map(action => action.actionKey));
+    const manual = existing.filter(action => {
+      const key = action?.actionKey || action?.actionId;
+      return !isGenerated(action) && !generatedKeys.has(key);
+    });
+
+    const finalMap = new Map();
+    [...manual, ...mergedGenerated].forEach(action => {
+      const key = action.actionKey || action.actionId || [action.itemNumber, norm(action.question || action.finding || '')].join('|');
+      if (!finalMap.has(key)) finalMap.set(key, action);
+    });
+    return [...finalMap.values()];
+  }
+
+  function syncProject(project) {
+    if (!project) return null;
+    const actions = mergeActions(project, buildGeneratedActions(project));
+    return {
+      ...project,
+      actions,
+      actionRegisterVersion: VERSION,
+      actionEngineVersion: VERSION,
+      actionEngineUpdatedAt: new Date().toISOString()
+    };
+  }
+
+  function syncCurrent() {
+    const id = currentProjectId();
+    if (!id) return null;
+    const projects = readProjects();
+    const index = projects.findIndex(project => String(project.id) === String(id));
+    if (index < 0) return null;
+    const updated = syncProject(projects[index]);
+    projects[index] = updated;
+    writeProjects(projects);
+    window.currentProject = updated;
+    window.currentProjectId = updated.id;
+    return updated;
+  }
+
+  function openActions(project) {
+    return (Array.isArray(project?.actions) ? project.actions : []).filter(action => norm(action.status || 'Open') !== 'closed');
+  }
+
+  function groupActions(actions) {
+    const order = { critical: 1, high: 2, medium: 3, low: 4 };
+    const groups = new Map();
+    actions.forEach(action => {
+      const category = categoryFor({ sectionName: action.category || action.sectionName }, action, action.question || action.finding || '') || 'General Fire Safety';
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push({ ...action, category, sectionName: category });
+    });
+    return [...groups.entries()]
+      .map(([category, items]) => ({
+        category,
+        items: items.sort((a, b) => (order[norm(a.priority)] || 9) - (order[norm(b.priority)] || 9) || String(a.itemNumber).localeCompare(String(b.itemNumber), undefined, { numeric: true }))
+      }))
+      .sort((a, b) => b.items.length - a.items.length || a.category.localeCompare(b.category));
+  }
+
+  function renderPanel(projectInput) {
+    const project = projectInput || syncCurrent() || currentProject();
+    if (!project) return;
+
+    const host = document.getElementById('smartActionEnginePanel') || document.createElement('section');
+    host.id = 'smartActionEnginePanel';
+    host.className = 'card smart-action-engine-panel smart-action-register-clarity-v1119';
+
+    const actions = openActions(project);
+    const groups = groupActions(actions);
+    const chips = groups.map(group => `<span>${esc(group.category)} <b>${group.items.length}</b></span>`).join('') || '<span>No open actions</span>';
+
+    host.innerHTML = `
+      <div class="sae-head">
+        <div>
+          <h3>Smart Action Register</h3>
+          <p>${actions.length ? 'Current NO answers converted into clear corrective actions.' : 'No open corrective actions from current checklist answers.'}</p>
+        </div>
+        <strong>${actions.length} Open</strong>
+      </div>
+      <div class="sae-chips">${chips}</div>
+      <div class="sae-list sae-grouped-list">
+        ${groups.length ? groups.map(group => `
+          <section class="sae-action-group">
+            <div class="sae-action-group-head">
+              <h4>${esc(group.category)}</h4>
+              <span>${group.items.length} ${group.items.length === 1 ? 'action' : 'actions'}</span>
+            </div>
+            ${group.items.map(action => `
+              <article class="sae-card sae-${esc(norm(action.priority || 'medium'))}">
+                <div><b>${esc(action.priority || 'Medium')}</b><span>Item ${esc(action.itemNumber || '-')}</span></div>
+                <h4>${esc(action.question || action.finding || 'Action item')}</h4>
+                <p>${esc(action.correctiveAction || action.finding || 'Corrective action required.')}</p>
+                <small>${esc(action.responsible || 'Responsible person not set')} · Due ${esc(action.dueDate || 'Not set')}</small>
+              </article>
+            `).join('')}
+          </section>
+        `).join('') : '<div class="sae-empty">No NO answers requiring action.</div>'}
+      </div>`;
+
+    const form = document.getElementById('projectFormSection') || document.body;
+    const checklistCard = document.getElementById('checklistCard') || document.getElementById('checklist')?.closest?.('.card');
+    if (!host.parentElement) {
+      if (checklistCard) checklistCard.insertAdjacentElement('afterend', host);
+      else form.appendChild(host);
+    }
+  }
+
+  function refresh() {
+    const project = syncCurrent();
+    renderPanel(project);
+    try { if (window.FireSHealthCentre?.render) window.FireSHealthCentre.render(project); } catch (_) {}
+    try { if (window.FireSExecutiveDashboard1115?.render) window.FireSExecutiveDashboard1115.render(); } catch (_) {}
+    try { if (window.FireSExecutiveSnapshot?.render) window.FireSExecutiveSnapshot.render(); } catch (_) {}
+  }
+
+  const previousEngine = window.FireSSmartActionEngine || {};
+  window.FireSSmartActionEngine = {
+    ...previousEngine,
+    version: VERSION,
+    syncCurrent,
+    render: renderPanel,
+    rebuild: refresh
+  };
+  window.FireSActionRegisterClarity119 = { version: VERSION, syncCurrent, render: renderPanel, rebuild: refresh };
+
+  document.addEventListener('change', event => {
+    if (event.target?.matches?.('.answer-select')) {
+      setTimeout(refresh, 220);
+    }
+  }, true);
+
+  window.addEventListener('fireSProjectOpened', () => setTimeout(refresh, 500));
+  setTimeout(() => { if (currentProjectId()) refresh(); }, 1400);
 })();

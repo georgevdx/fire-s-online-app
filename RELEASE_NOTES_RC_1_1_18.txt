@@ -1,0 +1,11 @@
+Fire-S RC 1.1.18 - Stability & Render Engine
+
+Focus:
+- Stabilised Premises list rendering.
+- Prevented background Premises rebuilds while an inspection is open.
+- Preserved scroll position and active search focus during list updates.
+- Added stable risk-card visual class caching for unchanged cards.
+- Updated service-worker cache key and app asset versions.
+
+Primary issue addressed:
+- Premises screen jumping and Ready / risk-card colours flickering after switching between Yes / No answers.

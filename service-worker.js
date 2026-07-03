@@ -1,10 +1,10 @@
-const CACHE_NAME = 'fire-s-rc-1-1-17A-live-inspection-engine-hotfix';
+const CACHE_NAME = 'fire-s-rc-1-1-19-action-register-clarity';
 
 const APP_SHELL = [
   './',
-  './index.html?v=rc-1-1-12-show-filters-drawer-polish',
-  './styles.css?v=rc-1-1-16C-photo-category-gallery',
-  './app.js?v=rc-1-1-16C-photo-category-gallery',
+  './index.html?v=rc-1-1-19-action-register-clarity',
+  './styles.css?v=rc-1-1-19-action-register-clarity',
+  './app.js?v=rc-1-1-19-action-register-clarity',
   './occupancies.json',
   './requirements.json',
   './checklists.json',

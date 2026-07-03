@@ -12062,3 +12062,36 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 /* RC 1.1.17 Smart Action Engine */
 .smart-action-engine-panel{border:1px solid #e5e7eb;background:#fff}.sae-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.sae-head h3{margin:0;color:#111827}.sae-head p{margin:4px 0 0;color:#64748b;font-size:13px}.sae-head strong{background:#fee2e2;color:#991b1b;border-radius:999px;padding:8px 12px;white-space:nowrap}.sae-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.sae-chips span{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;color:#334155}.sae-list{display:grid;gap:10px}.sae-card{border:1px solid #e5e7eb;border-left:5px solid #64748b;border-radius:12px;padding:12px;background:#fff}.sae-card>div{display:flex;justify-content:space-between;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.03em}.sae-card h4{margin:8px 0 4px;font-size:15px}.sae-card p{margin:0 0 8px;color:#475569;font-size:13px;line-height:1.35}.sae-card small{color:#64748b;font-weight:700}.sae-critical{border-left-color:#b91c1c;background:#fff7f7}.sae-high{border-left-color:#f97316}.sae-medium{border-left-color:#eab308}.sae-low{border-left-color:#22c55e}.sae-empty{padding:14px;background:#f8fafc;border-radius:10px;color:#64748b;font-weight:700}@media(max-width:700px){.sae-head{display:block}.sae-head strong{display:inline-block;margin-top:10px}.smart-action-engine-panel{padding:14px}.sae-card h4{font-size:14px}}
+
+/* FIRE-S RC 1.1.19 - Action Register Clarity */
+.smart-action-register-clarity-v1119 .sae-grouped-list {
+  display: grid;
+  gap: 14px;
+}
+.smart-action-register-clarity-v1119 .sae-action-group {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.03);
+}
+.smart-action-register-clarity-v1119 .sae-action-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.smart-action-register-clarity-v1119 .sae-action-group-head h4 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+.smart-action-register-clarity-v1119 .sae-action-group-head span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  background: rgba(15, 23, 42, 0.08);
+  white-space: nowrap;
+}
+.smart-action-register-clarity-v1119 .sae-card + .sae-card {
+  margin-top: 10px;
+}
