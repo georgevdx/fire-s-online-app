@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=manual-sprint-202a">
+  <link rel="stylesheet" href="styles.css?v=manual-sprint-202b">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -955,22 +955,29 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=manual-sprint-202a"></script>
+  <script src="app.js?v=manual-sprint-202b"></script>
   <script src="modules/render-stabilizer.js?v=rc-1-1-20a"></script>
   <script src="modules/navigation-manager.js?v=rc-1-1-20b"></script>
   <script src="modules/state-manager.js?v=rc-1-1-20c"></script>
-  <script src="modules/render-queue.js?v=manual-sprint-202a"></script>
-    <script src="modules/dev-diagnostics.js?v=manual-sprint-202a"></script>
+  <script src="modules/render-queue.js?v=manual-sprint-202b"></script>
+    <script src="modules/dev-diagnostics.js?v=manual-sprint-202b"></script>
   <script>
+    // Manual deployment mode: clear old service-worker caches that can serve stale/wrong files.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(() => {
-            console.log('Fire-S service worker registered.');
-          })
-          .catch(error => {
-            console.warn('Service worker registration failed:', error);
-          });
+        navigator.serviceWorker.getRegistrations()
+          .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
+          .then(() => console.log('Fire-S manual mode: service workers unregistered.'))
+          .catch(error => console.warn('Service worker unregister failed:', error));
+      });
+    }
+
+    if ('caches' in window) {
+      window.addEventListener('load', () => {
+        caches.keys()
+          .then(keys => Promise.all(keys.map(key => caches.delete(key))))
+          .then(() => console.log('Fire-S manual mode: browser caches cleared.'))
+          .catch(error => console.warn('Cache clear failed:', error));
       });
     }
   </script>

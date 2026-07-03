@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'Manual Sprint 202A - Frontpage Loading Hotfix';
+const APP_VERSION = 'Manual Sprint 202B - JSON Load and Cache Reset Hotfix';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -177,11 +177,37 @@ function combineStreetAddress(streetNumber, addressLine) {
 }
 
 async function loadJson(url) {
-  const response = await fetch(url);
+  const cacheBust = `v=manual-sprint-202b-${Date.now()}`;
+  const separator = url.includes('?') ? '&' : '?';
+  const requestUrl = `${url}${separator}${cacheBust}`;
+
+  const response = await fetch(requestUrl, {
+    cache: 'no-store',
+    headers: {
+      'Accept': 'application/json,text/plain,*/*'
+    }
+  });
+
   if (!response.ok) {
     throw new Error(`${url} failed to load: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+
+  const text = await response.text();
+  const trimmed = text.trim();
+
+  if (!trimmed) {
+    throw new Error(`${url} loaded as an empty file.`);
+  }
+
+  if (trimmed.startsWith('let ') || trimmed.startsWith('const ') || trimmed.startsWith('function ')) {
+    throw new Error(`${url} returned JavaScript instead of JSON. Replace the JSON file on the server and clear browser cache.`);
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    throw new Error(`${url} is not valid JSON: ${error.message}`);
+  }
 }
 
 function getEl(id) {

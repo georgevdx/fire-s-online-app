@@ -1,0 +1,14 @@
+Fire-S Manual Sprint 202B - JSON Load and Cache Reset Hotfix
+
+Changed files only:
+- index.html
+- app.js
+- service-worker.js
+
+Fixes:
+- Disables/unregisters old service worker caches for manual deployment mode.
+- Prevents stale cached files from returning app.js when the app expects JSON.
+- Adds clearer JSON load errors naming the affected JSON file.
+
+Upload only these files to replace the existing files at the app root.
+After upload, hard refresh the browser once: Ctrl + F5.
