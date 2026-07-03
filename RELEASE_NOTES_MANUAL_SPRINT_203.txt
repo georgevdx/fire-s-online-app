@@ -1,0 +1,16 @@
+Fire-S Manual Sprint 203 - Recovery Baseline
+
+Changed files only:
+- index.html
+- modules/data-load-checker.js
+- RELEASE_NOTES_MANUAL_SPRINT_203.txt
+
+Purpose:
+- Adds a safe JSON data-load checker before app.js.
+- Gives a clear on-screen message if checklists.json, rules.json, requirements.json, occupancies.json, or templates.json is accidentally replaced with JavaScript/HTML or invalid JSON.
+- Does not change inspection data, action logic, photos, reports, or dashboard calculations.
+
+Manual upload:
+- Upload/replace index.html.
+- Upload modules/data-load-checker.js into the modules folder.
+- Optional: upload this release note for your records.
