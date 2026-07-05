@@ -2819,7 +2819,7 @@ if (!confirmed) return;
   }
 
   const projects = filterDeletedProjects(
-    data.map(row => row.inspection_data)
+    data.map(row => normaliseProjectPhotoSources(row.inspection_data))
   );
 
   setProjects(projects);
@@ -2866,7 +2866,7 @@ if (!confirmed) return;
   }
 
   const cloudProjects = filterDeletedProjects(
-    data.map(row => row.inspection_data)
+    data.map(row => normaliseProjectPhotoSources(row.inspection_data))
   );
 
   const mergedMap = new Map();
@@ -4777,10 +4777,39 @@ function filterDeletedProjects(projects) {
   );
 }
 
+function buildPhotoPublicUrlFromStoragePath(storagePath) {
+  if (!storagePath) return '';
+
+  const path = String(storagePath || '').replace(/^\/+/, '');
+
+  if (!path) return '';
+
+  if (/^https?:\/\//i.test(path)) return path;
+
+  try {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient?.storage) {
+      const { data } = supabaseClient
+        .storage
+        .from('inspection-photos')
+        .getPublicUrl(path);
+
+      if (data?.publicUrl) return data.publicUrl;
+    }
+  } catch (_) {}
+
+  if (typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL) {
+    return `${SUPABASE_URL}/storage/v1/object/public/inspection-photos/${encodeURI(path)}`;
+  }
+
+  return '';
+}
+
 function getStoredPhotoSource(photo = {}) {
-  return (
+  const directSource = (
     photo.src ||
     photo.photoSrc ||
+    photo.photoUrl ||
+    photo.photoURL ||
     photo.imageSrc ||
     photo.image ||
     photo.dataUrl ||
@@ -4788,10 +4817,147 @@ function getStoredPhotoSource(photo = {}) {
     photo.url ||
     photo.publicUrl ||
     photo.publicURL ||
+    photo.signedUrl ||
+    photo.signedURL ||
+    photo.downloadUrl ||
+    photo.downloadURL ||
     photo.thumbnailSrc ||
     photo.previewSrc ||
     ''
   );
+
+  if (directSource) return directSource;
+
+  return buildPhotoPublicUrlFromStoragePath(
+    photo.storagePath ||
+    photo.path ||
+    photo.filePath ||
+    photo.objectPath ||
+    photo.fullPath ||
+    ''
+  );
+}
+
+function normaliseInspectionPhotoSource(photo = {}) {
+  if (!photo || typeof photo !== 'object') return photo;
+
+  const source = getStoredPhotoSource(photo);
+
+  if (source) {
+    photo.src = photo.src || source;
+    photo.previewSrc = photo.previewSrc || source;
+    photo.thumbnailSrc = photo.thumbnailSrc || photo.previewSrc || source;
+    photo.publicUrl = photo.publicUrl || source;
+    photo.sourceMissing = false;
+  } else {
+    photo.sourceMissing = true;
+  }
+
+  photo.category = photo.category || 'General';
+  photo.area = photo.area || '';
+  photo.linkedQuestion = photo.linkedQuestion || '';
+  photo.note = photo.note || '';
+  photo.timestamp = photo.timestamp || null;
+
+  return photo;
+}
+
+function normaliseInspectionPhotoSources(photos = []) {
+  return (Array.isArray(photos) ? photos : []).map(normaliseInspectionPhotoSource);
+}
+
+function normaliseProjectPhotoSources(project) {
+  if (!project || typeof project !== 'object') return project;
+
+  return {
+    ...project,
+    photos: normaliseInspectionPhotoSources(project.photos || [])
+  };
+}
+
+async function hydrateProjectPhotosFromCloudStorage(project) {
+  if (!project || !project.id) return project?.photos || [];
+  if (Array.isArray(project.photos) && project.photos.some(photo => getStoredPhotoSource(photo))) {
+    project.photos = normaliseInspectionPhotoSources(project.photos);
+    return project.photos;
+  }
+
+  try {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient?.storage) {
+      return normaliseInspectionPhotoSources(project.photos || []);
+    }
+
+    const { data: userData } = await supabaseClient.auth.getUser();
+    const userId = userData?.user?.id;
+
+    if (!userId) return normaliseInspectionPhotoSources(project.photos || []);
+
+    const safeProjectId = String(project.id).replace(/[^a-zA-Z0-9_-]/g, '');
+    const folderPath = `${userId}/${safeProjectId}`;
+
+    const { data: files, error } = await supabaseClient
+      .storage
+      .from('inspection-photos')
+      .list(folderPath, {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'asc' }
+      });
+
+    if (error || !Array.isArray(files) || files.length === 0) {
+      return normaliseInspectionPhotoSources(project.photos || []);
+    }
+
+    const existingPhotos = normaliseInspectionPhotoSources(project.photos || []);
+    const existingPaths = new Set(
+      existingPhotos
+        .map(photo => String(photo.storagePath || photo.path || photo.filePath || '').trim())
+        .filter(Boolean)
+    );
+
+    const storagePhotos = files
+      .filter(file => file && file.name && !existingPaths.has(`${folderPath}/${file.name}`))
+      .map((file, index) => {
+        const storagePath = `${folderPath}/${file.name}`;
+        const source = buildPhotoPublicUrlFromStoragePath(storagePath);
+
+        return normaliseInspectionPhotoSource({
+          id: `cloud-${safeProjectId}-${file.name}-${index}`,
+          src: source,
+          previewSrc: source,
+          thumbnailSrc: source,
+          publicUrl: source,
+          storagePath,
+          timestamp: file.created_at || file.updated_at || new Date().toISOString(),
+          note: '',
+          category: 'General',
+          area: '',
+          linkedQuestion: '',
+          recoveredFromStorage: true
+        });
+      });
+
+    project.photos = [...existingPhotos, ...storagePhotos];
+
+    if (storagePhotos.length && typeof getProjects === 'function' && typeof setProjects === 'function') {
+      const projects = getProjects();
+      const index = projects.findIndex(item => String(item.id) === String(project.id));
+
+      if (index !== -1) {
+        projects[index] = {
+          ...projects[index],
+          photos: project.photos,
+          lastPhotoRecovery: new Date().toISOString()
+        };
+        setProjects(projects);
+      }
+    }
+
+    return project.photos;
+  } catch (error) {
+    console.warn('Photo cloud storage hydration failed:', error);
+    return normaliseInspectionPhotoSources(project.photos || []);
+  }
 }
 
 function stripHeavyPhotoData(project) {
@@ -12132,8 +12298,19 @@ getEl('finalComments').value = project.finalComments || '';
 
   toggleMallFields();
 
-  currentPhotos = project.photos || [];
+  currentPhotos = normaliseInspectionPhotoSources(project.photos || []);
+  project.photos = currentPhotos;
   renderPhotos();
+  hydrateProjectPhotosFromCloudStorage(project).then(photos => {
+    if (currentProjectId === project.id && Array.isArray(photos)) {
+      currentPhotos = normaliseInspectionPhotoSources(photos);
+      project.photos = currentPhotos;
+      renderPhotos();
+      if (typeof updateDisplay === 'function') updateDisplay();
+    }
+  }).catch(error => {
+    console.warn('Photo recovery check failed:', error);
+  });
   updateDisplay();
 
   if (project.answers) {
@@ -23533,9 +23710,14 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function getPhotoSource(photo) {
     if (!photo || typeof photo !== 'object') return '';
+    if (typeof getStoredPhotoSource === 'function') {
+      try { return getStoredPhotoSource(photo); } catch (_) {}
+    }
     return (
       photo.src ||
       photo.photoSrc ||
+      photo.photoUrl ||
+      photo.photoURL ||
       photo.imageSrc ||
       photo.image ||
       photo.dataUrl ||
@@ -23543,6 +23725,10 @@ if (!window.fireSMobileSmartCardsApplied) {
       photo.url ||
       photo.publicUrl ||
       photo.publicURL ||
+      photo.signedUrl ||
+      photo.signedURL ||
+      photo.downloadUrl ||
+      photo.downloadURL ||
       photo.previewSrc ||
       photo.thumbnailSrc ||
       ''
@@ -23856,7 +24042,10 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (window.FireSPhotoCentre1116?.getPhotoSource) {
       try { return window.FireSPhotoCentre1116.getPhotoSource(photo); } catch (_) {}
     }
-    return photo?.src || photo?.photoSrc || photo?.imageSrc || photo?.image || photo?.dataUrl || photo?.dataURL || photo?.url || photo?.previewSrc || photo?.thumbnailSrc || '';
+    if (typeof getStoredPhotoSource === 'function') {
+      try { return getStoredPhotoSource(photo); } catch (_) {}
+    }
+    return photo?.src || photo?.photoSrc || photo?.photoUrl || photo?.photoURL || photo?.imageSrc || photo?.image || photo?.dataUrl || photo?.dataURL || photo?.url || photo?.publicUrl || photo?.publicURL || photo?.signedUrl || photo?.signedURL || photo?.downloadUrl || photo?.downloadURL || photo?.previewSrc || photo?.thumbnailSrc || '';
   }
 
   function normalise(photo) {
@@ -24053,7 +24242,10 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (window.FireSPhotoCentre1116?.getPhotoSource) {
       try { return window.FireSPhotoCentre1116.getPhotoSource(photo); } catch (_) {}
     }
-    return photo?.src || photo?.photoSrc || photo?.imageSrc || photo?.image || photo?.dataUrl || photo?.dataURL || photo?.url || photo?.previewSrc || photo?.thumbnailSrc || '';
+    if (typeof getStoredPhotoSource === 'function') {
+      try { return getStoredPhotoSource(photo); } catch (_) {}
+    }
+    return photo?.src || photo?.photoSrc || photo?.photoUrl || photo?.photoURL || photo?.imageSrc || photo?.image || photo?.dataUrl || photo?.dataURL || photo?.url || photo?.publicUrl || photo?.publicURL || photo?.signedUrl || photo?.signedURL || photo?.downloadUrl || photo?.downloadURL || photo?.previewSrc || photo?.thumbnailSrc || '';
   }
 
   function normalise(photo) {
