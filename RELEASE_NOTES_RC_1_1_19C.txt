@@ -1,0 +1,15 @@
+Fire-S RC 1.1.19C - New Inspection Context Reset
+
+Fixes a critical workflow bug where the previous Premises Workspace could remain visible after leaving an inspection and selecting + New.
+
+Changes:
+- Mirrors active inspection context to window.currentProject/window.currentProjectId for all workspace modules.
+- Fully clears Premises Workspace and Building Health panels when starting a new inspection.
+- Prevents delayed render timers from re-inserting the previous premises workspace on a blank new inspection.
+- Clears generated actions when starting a fresh inspection cycle from the open gate.
+
+Testing focus:
+1. Open an existing inspection.
+2. Return to Projects.
+3. Select + New.
+4. Confirm no previous premises name, photos, health data, action counts or workspace cards remain.
