@@ -5403,7 +5403,8 @@ function toggleFilterPanel() {
     filterPanel.style.display === '';
 
   filterPanel.style.display = isHidden ? 'block' : 'none';
-  toggleBtn.textContent = isHidden ? 'Hide Filters' : 'Show Filters';
+  toggleBtn.textContent = 'More Filters';
+  toggleBtn.setAttribute('aria-expanded', String(Boolean(isHidden)));
 }
 
 function closeFilterPanel() {
@@ -22761,7 +22762,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises overview</h3>
-          <p>Read-only summary. Use <strong>Show Filters</strong> below to filter the premises list.</p>
+          <p>Read-only summary. Use <strong>More Filters</strong> below to filter the premises list.</p>
         </div>
       </div>
       <div class="fire-s-snapshot-grid-v1111">
@@ -22836,7 +22837,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (toggle) {
       const isOpen = panel && panel.style.display === 'block';
       toggle.classList.add('fire-s-filter-toggle-v1112');
-      toggle.textContent = isOpen ? 'Hide Filters ▲' : 'Show Filters ▼';
+      toggle.textContent = 'More Filters';
       toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
       toggle.setAttribute('aria-controls', 'filterPanel');
     }
@@ -25958,7 +25959,7 @@ function fireSApplyLifecycleUxLabels() {
   });
 
   const toggle = document.getElementById('toggleFiltersBtn');
-  if (toggle) toggle.textContent = 'Advanced Filters';
+  if (toggle) toggle.textContent = 'More Filters';
 }
 
 (function installFireSInspectionLifecycleUx120A(){
@@ -26299,7 +26300,7 @@ function fireSApplyLifecycleUxLabels() {
               aria-label="${prefs.advancedOpen ? 'Hide more filters' : 'Show more filters'}"
               title="${prefs.advancedOpen ? 'Hide more filters' : 'Show more filters'}"
             >
-              ${prefs.advancedOpen ? 'Hide Filters' : 'More Filters'}
+              <span class="fire-s-advanced-toggle-label">More Filters</span>
             </button>
           </label>
         </div>
@@ -26519,4 +26520,44 @@ function fireSApplyLifecycleUxLabels() {
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyInitialAdvancedState);
   else applyInitialAdvancedState();
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.2.0E - More Filters mobile label hotfix
+   Keeps filter controls consistently labelled on desktop and phone.
+   ===================================================== */
+(function installMoreFiltersLabelHotfix120E(){
+  function applyMoreFiltersLabels(){
+    document.querySelectorAll('.fire-s-advanced-toggle').forEach(btn => {
+      if (!btn.textContent || !btn.textContent.trim() || /hide filters|show filters|advanced filters/i.test(btn.textContent)) {
+        btn.innerHTML = '<span class="fire-s-advanced-toggle-label">More Filters</span>';
+      }
+      btn.setAttribute('aria-label', 'More Filters');
+      btn.setAttribute('title', 'More Filters');
+    });
+
+    const toggle = document.getElementById('toggleFiltersBtn');
+    if (toggle) {
+      toggle.textContent = 'More Filters';
+      toggle.setAttribute('aria-label', 'More Filters');
+      toggle.setAttribute('title', 'More Filters');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyMoreFiltersLabels);
+  } else {
+    applyMoreFiltersLabels();
+  }
+
+  const observer = new MutationObserver(() => {
+    clearTimeout(observer.__fireSMoreFiltersTimer);
+    observer.__fireSMoreFiltersTimer = setTimeout(applyMoreFiltersLabels, 40);
+  });
+
+  const start = () => document.body && observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+
+  window.fireSApplyMoreFiltersLabels120E = applyMoreFiltersLabels;
 })();

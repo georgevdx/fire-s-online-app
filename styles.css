@@ -12392,6 +12392,11 @@ body.fire-s-render-warmup #saveMessage {
   font-size: 16px;
 }
 .fire-s-advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 128px;
+  white-space: nowrap;
   font-weight: 900;
   cursor: pointer;
   border: 0 !important;
@@ -12400,7 +12405,7 @@ body.fire-s-render-warmup #saveMessage {
   box-shadow: 0 10px 22px rgba(236, 72, 153, 0.24);
 }
 .fire-s-advanced-toggle:hover {
-  transform: translateY(-1px);
+  transform: none;
   box-shadow: 0 14px 28px rgba(124, 58, 237, 0.26);
 }
 .fire-s-advanced-toggle:active {
@@ -12594,5 +12599,30 @@ body.fire-s-render-warmup #saveMessage {
   }
   .choice-timeline-item {
     grid-template-columns: 1fr;
+  }
+}
+
+
+/* FIRE-S RC 1.2.0E - More Filters mobile label hotfix */
+.fire-s-advanced-toggle,
+#toggleFiltersBtn {
+  min-width: 128px;
+  white-space: nowrap;
+}
+.fire-s-advanced-toggle-label {
+  display: inline-block;
+  color: #ffffff;
+  font-weight: 900;
+  line-height: 1.1;
+}
+@media (max-width: 640px) {
+  .fire-s-choice-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fire-s-choice-more-control {
+    grid-column: 1 / -1;
+  }
+  .fire-s-advanced-toggle {
+    width: 100%;
   }
 }
