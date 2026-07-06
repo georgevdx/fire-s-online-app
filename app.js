@@ -17052,14 +17052,7 @@ function startAutoSyncLoop() {
   fireyeAutoSyncTimer = setInterval(() => {
     if (document.visibilityState !== 'visible') return;
     if (!navigator.onLine) return;
-    try {
-      const page = (window.currentPage || window.activePage || '').toString().toLowerCase();
-      if (page.includes('project')) return;
-      const hash = (location.hash || '').toLowerCase();
-      if (hash.includes('project')) return;
-      const projectsView = document.querySelector('[data-page="projects"].active,.projects-page.active,#projectsPage.active');
-      if (projectsView) return;
-    } catch (e) {}
+
     runBackgroundSync('auto interval');
   }, 20000);
 }
@@ -25383,4 +25376,141 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   window.addEventListener('fireSProjectOpened', () => setTimeout(refresh, 500));
   setTimeout(() => { if (currentProjectId()) refresh(); }, 1400);
+})();
+
+/* =====================================================
+   Fire-S RC 1.1.18B - Projects Sync/Layout Stability Guard
+   Purpose: stop passive background sync from rebuilding the Projects/Premises
+   page, and avoid unnecessary list renders while the visible list is stable.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.18B-projects-layout-stability';
+  const state = {
+    lastProjectsListSignature: '',
+    lastRenderAt: 0,
+    passiveSkippedAt: 0
+  };
+
+  function isVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    return el.style.display !== 'none' && !el.hidden && (!style || style.display !== 'none' && style.visibility !== 'hidden');
+  }
+
+  function isProjectsPageVisible() {
+    return isVisible(document.getElementById('projectListSection')) && !isVisible(document.getElementById('projectFormSection'));
+  }
+
+  function isPassiveSyncReason(reason) {
+    const value = String(reason || '').toLowerCase();
+    return value === 'background' || value === 'auto interval' || value === 'window focus' || value === 'app visible' || value === 'online';
+  }
+
+  function setProjectsFreezeClass() {
+    document.body.classList.toggle('fire-s-freeze-projects-sync', isProjectsPageVisible());
+  }
+
+  function readProjectsSignature() {
+    try {
+      const projects = typeof window.getProjects === 'function' ? window.getProjects() : [];
+      const search = document.getElementById('projectSearch')?.value || '';
+      const filter = window.currentFilter || '';
+      const dropdown = window.fireSPremisesDropdownFilter || '';
+      const page = window.currentProjectPage || 1;
+      return JSON.stringify({
+        count: Array.isArray(projects) ? projects.length : 0,
+        search,
+        filter,
+        dropdown,
+        page,
+        items: (Array.isArray(projects) ? projects : []).map(project => ({
+          id: project?.id || '',
+          saved: project?.lastSaved || project?.updatedAt || project?.completedAt || '',
+          status: project?.inspectionStatus || project?.status || '',
+          scheduled: project?.scheduledDate || project?.followUpDate || '',
+          actions: Array.isArray(project?.actions) ? project.actions.length : 0,
+          photos: Array.isArray(project?.photos) ? project.photos.length : 0
+        }))
+      });
+    } catch (_) {
+      return String(Date.now());
+    }
+  }
+
+  if (typeof window.runBackgroundSync === 'function') {
+    const originalRunBackgroundSync = window.runBackgroundSync;
+    window.runBackgroundSync = async function fireSProjectsPassiveSyncGuard(reason) {
+      setProjectsFreezeClass();
+      if (isProjectsPageVisible() && isPassiveSyncReason(reason)) {
+        const now = Date.now();
+        if (now - state.passiveSkippedAt > 15000) {
+          state.passiveSkippedAt = now;
+          const syncStatus = document.getElementById('syncStatus');
+          if (syncStatus && !/saved locally|sync failed/i.test(syncStatus.textContent || '')) {
+            syncStatus.textContent = 'Projects view stable. Pull refresh or sync manually when needed.';
+          }
+        }
+        return;
+      }
+      return originalRunBackgroundSync.apply(this, arguments);
+    };
+    try { runBackgroundSync = window.runBackgroundSync; } catch (_) {}
+  }
+
+  if (typeof window.renderProjectsList === 'function') {
+    const originalRenderProjectsList = window.renderProjectsList;
+    window.renderProjectsList = function fireSProjectsStableRender(options = {}) {
+      setProjectsFreezeClass();
+      const force = !!(options && options.force === true);
+      const container = document.getElementById('projectsList');
+      const signature = readProjectsSignature();
+      const now = Date.now();
+
+      if (!force && isProjectsPageVisible() && container && container.innerHTML && signature === state.lastProjectsListSignature && now - state.lastRenderAt < 3000) {
+        return;
+      }
+
+      const x = window.scrollX;
+      const y = window.scrollY;
+      const active = document.activeElement;
+      const activeId = active && active.id ? active.id : '';
+
+      const result = originalRenderProjectsList.apply(this, arguments);
+      state.lastProjectsListSignature = signature;
+      state.lastRenderAt = Date.now();
+
+      requestAnimationFrame(() => {
+        if (activeId) {
+          const nextActive = document.getElementById(activeId);
+          if (nextActive && typeof nextActive.focus === 'function') {
+            try { nextActive.focus({ preventScroll: true }); } catch (_) {}
+          }
+        }
+        window.scrollTo(x, y);
+      });
+
+      return result;
+    };
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (typeof window.showProjectList === 'function') {
+    const originalShowProjectList = window.showProjectList;
+    window.showProjectList = function fireSProjectsStableShowList() {
+      const result = originalShowProjectList.apply(this, arguments);
+      setProjectsFreezeClass();
+      return result;
+    };
+    try { showProjectList = window.showProjectList; } catch (_) {}
+  }
+
+  document.addEventListener('visibilitychange', setProjectsFreezeClass, true);
+  window.addEventListener('focus', setProjectsFreezeClass, true);
+  window.addEventListener('popstate', setProjectsFreezeClass, true);
+  document.addEventListener('click', () => setTimeout(setProjectsFreezeClass, 0), true);
+  setTimeout(setProjectsFreezeClass, 500);
+
+  window.FireSProjectsLayoutStability118B = { version: VERSION, isProjectsPageVisible };
 })();

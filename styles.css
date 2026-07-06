@@ -12150,3 +12150,128 @@ body.fire-s-screen-inspection #projectFormSection {
     gap: 10px;
   }
 }
+
+/* =====================================================
+   Fire-S RC 1.1.18B - Premises/Projects Layout Stability
+   Purpose: reduce visual "hop" caused by layout reflow, hover transforms,
+   dynamic card resizing and scrollbar changes on the Projects/Premises page.
+   ===================================================== */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable both-edges;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+#projectListSection,
+#projectsList,
+#projectListView,
+.premises-list-v118b,
+.ultra-premises-list,
+.smart-premises-list {
+  overflow-anchor: none;
+}
+
+#projectListSection {
+  min-height: 100vh;
+  contain: layout paint;
+}
+
+#projectsList {
+  min-height: 420px;
+}
+
+.inspection-gateway-quick-filters,
+.gateway-quick-filters,
+.premises-stats-bar-v118b,
+.project-paging-controls,
+.active-filter-status {
+  min-height: 44px;
+}
+
+.premises-list-v118b,
+.ultra-premises-list,
+.smart-premises-list {
+  align-content: start;
+}
+
+.premises-card-v118b,
+.ultra-premises-card,
+.smart-premises-card,
+.project-card {
+  min-height: 118px;
+  transform: none !important;
+  contain: layout paint;
+  will-change: auto !important;
+  transition: background-color .16s ease, box-shadow .16s ease, border-color .16s ease, opacity .16s ease !important;
+}
+
+.premises-card-v118b:hover,
+.premises-card-v118b:focus,
+.ultra-premises-card:hover,
+.ultra-premises-card:focus,
+.smart-premises-card:hover,
+.smart-premises-card:focus,
+.project-card:hover,
+.project-card:focus {
+  transform: none !important;
+}
+
+.premises-card-strip-v118b {
+  width: 6px;
+  min-width: 6px;
+}
+
+.premises-card-main-v118b,
+.ultra-premises-body,
+.smart-premises-body {
+  min-height: 100%;
+}
+
+.premises-card-title-block-v118b h3,
+.ultra-premises-title,
+.smart-title-row .ultra-premises-title {
+  min-height: 34px;
+}
+
+.premises-health-badge-v118b {
+  min-height: 52px;
+}
+
+.premises-card-metrics-v118b span {
+  min-height: 48px;
+}
+
+body.fire-s-freeze-projects-sync #syncStatus,
+body.fire-s-freeze-projects-sync #saveMessage {
+  overflow-anchor: none;
+}
+
+@media (max-width: 700px) {
+  #projectsList {
+    min-height: 520px;
+  }
+
+  .premises-card-v118b,
+  .ultra-premises-card,
+  .smart-premises-card,
+  .project-card {
+    min-height: 104px;
+  }
+
+  .premises-card-title-block-v118b h3,
+  .ultra-premises-title,
+  .smart-title-row .ultra-premises-title {
+    min-height: 32px;
+  }
+
+  .premises-health-badge-v118b {
+    min-height: 46px;
+  }
+
+  .premises-card-metrics-v118b span {
+    min-height: 40px;
+  }
+}
