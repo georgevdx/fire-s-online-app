@@ -12314,3 +12314,31 @@ body.fire-s-render-warmup #saveMessage {
 #projectListSection button {
   font-size: 16px;
 }
+
+
+/* RC 1.2.0A - Inspection Lifecycle UX */
+.fire-s-lifecycle-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+}
+.fire-s-lifecycle-heading strong { font-size: 1rem; }
+.fire-s-lifecycle-heading span { font-size: 0.86rem; opacity: 0.75; }
+.fire-s-lifecycle-filter-bar { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+.inspection-card-status-neutral {
+  border-left: 5px solid rgba(100, 116, 139, 0.55) !important;
+  background: #fff !important;
+}
+.inspection-card-status-blue {
+  border-left: 5px solid rgba(37, 99, 235, 0.65) !important;
+}
+.sticky-action-bar #backBtn { background: #7f1d1d; color: #fff; }
+.sticky-action-bar #saveBtn { font-weight: 800; }
+.sticky-action-bar #finishBtn { font-weight: 900; }
+@media (max-width: 720px) {
+  .fire-s-lifecycle-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

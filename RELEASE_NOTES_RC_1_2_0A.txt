@@ -1,0 +1,7 @@
+Fire-S RC 1.2.0A - Inspection Lifecycle UX
+
+- Projects button in inspection flow changed to Close / Close Inspection.
+- Close inspection now offers Save & Close, Discard & Close, or Continue Inspection.
+- Simplified Projects page into lifecycle filters: Scheduled, New Premise, Continue Current, Previous Cycles, Archive / New Cycle.
+- New or unassessed premises no longer show as high risk. They show as Not Assessed or Scheduled - Not Started.
+- Card primary actions are clearer: Start First Inspection, Continue / Edit Current, View Previous Cycles.
