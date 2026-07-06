@@ -1,0 +1,20 @@
+RC 1.1.19B - Inspection Session Guard + UX Simplification Direction
+
+Purpose:
+- Fix the major issue where old inspection data could remain visible when starting or opening another inspection.
+- Reduce cognitive load by treating every inspection open/new action as a clean session boundary.
+
+Changes:
+- Added Inspection Session Guard.
+- Starting a new inspection now clears currentProject/currentProjectId/currentPhotos/checklist answers/notes/expiry fields/archive panels/action panels.
+- Opening an existing inspection clears stale UI first, then applies only that inspection's stored data.
+- Checklist answers are explicitly reset before any saved answers are applied.
+- Old panels such as site history, archive, finish summary and smart action panel are removed during session switch.
+- App version updated to RC 1.1.19B.
+
+Test focus:
+1. Open an inspection with answers/photos.
+2. Go back to Projects/Premises.
+3. Start a new inspection at another premises.
+4. Confirm no old answers, notes, photos or comments remain.
+5. Open an existing inspection and confirm only that inspection's own data appears.

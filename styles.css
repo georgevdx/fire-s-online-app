@@ -12275,3 +12275,42 @@ body.fire-s-freeze-projects-sync #saveMessage {
     min-height: 40px;
   }
 }
+
+/* =====================================================
+   Fire-S RC 1.1.19 - Initial Render Stabiliser
+   Purpose: prevent first-load movement while Projects/Premises data settles.
+   ===================================================== */
+body.fire-s-render-warmup #projectListSection,
+body.fire-s-render-warmup #projectsList,
+body.fire-s-render-warmup .premises-list-v118b,
+body.fire-s-render-warmup .ultra-premises-list,
+body.fire-s-render-warmup .smart-premises-list {
+  overflow-anchor: none !important;
+}
+
+body.fire-s-render-warmup .premises-card-v118b,
+body.fire-s-render-warmup .ultra-premises-card,
+body.fire-s-render-warmup .smart-premises-card,
+body.fire-s-render-warmup .project-card,
+body.fire-s-render-warmup .metric-card,
+body.fire-s-render-warmup .dashboard-card,
+body.fire-s-render-warmup #filterPanel,
+body.fire-s-render-warmup #syncStatus,
+body.fire-s-render-warmup #saveMessage {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+#syncStatus,
+#saveMessage {
+  min-height: 1.35em;
+  overflow-anchor: none;
+}
+
+#projectSearch,
+#projectListSection input,
+#projectListSection select,
+#projectListSection button {
+  font-size: 16px;
+}

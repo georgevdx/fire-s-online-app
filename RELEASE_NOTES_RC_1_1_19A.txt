@@ -1,0 +1,14 @@
+Fire-S RC 1.1.19A - Initial Render Stabiliser
+
+Purpose:
+- Reduce the remaining one-time Projects/Premises page "hop" after first load.
+
+Changes:
+- Batches rapid early Projects list renders during app warm-up.
+- Preserves Projects list height while the list rebuilds.
+- Restores scroll position and focused control after a stable render.
+- Temporarily disables movement transitions during the first render window.
+- Stabilises sync/save message height so text updates do not shift the page.
+
+No database schema changes.
+No inspection data model changes.

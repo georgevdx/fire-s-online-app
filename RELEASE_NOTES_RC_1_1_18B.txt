@@ -1,0 +1,19 @@
+Fire-S RC 1.1.18B - Projects/Premises Layout Stability Patch
+
+Purpose:
+- Reduce the remaining screen "hop" on the Projects/Premises page.
+
+Changes:
+- Passive background sync is skipped while the Projects/Premises list is open.
+- Manual sync/refresh workflows remain available.
+- Projects/Premises cards now have stable minimum heights.
+- Hover/focus transform movement is disabled on list cards.
+- Scrollbar gutter and overflow anchoring are stabilised.
+- Card colour/status changes are limited to visual-only transitions.
+- Duplicate list renders within a short stable window are avoided.
+
+Test focus:
+- Open Projects and leave it idle for more than 20 seconds.
+- Scroll down the list and confirm it does not jump back up.
+- Switch filters/search and confirm the list still updates.
+- Open an inspection and return to Projects.
