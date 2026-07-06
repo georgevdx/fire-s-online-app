@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.19B - Inspection Session Guard';
+const APP_VERSION = 'RC 1.1.19C - New Inspection Context Reset';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -258,9 +258,13 @@ function resetInspectionSessionState(options = {}) {
 
   if (!keepProjectId) {
     currentProjectId = null;
+    window.currentProjectId = null;
+  } else {
+    window.currentProjectId = currentProjectId || window.currentProjectId || null;
   }
 
   currentProject = null;
+  window.currentProject = null;
   currentPhotos = [];
   archivedReportContext = null;
   followUpFindingModeActive = false;
@@ -275,7 +279,10 @@ function resetInspectionSessionState(options = {}) {
     'inspectionArchivePanel',
     'smartActionEnginePanel',
     'finishSummaryBanner',
-    'inspectionOpenGateBackdrop'
+    'inspectionOpenGateBackdrop',
+    'fireSPremisesWorkspaceModule1113',
+    'fireSBuildingHealthCentre',
+    'fireSBuildingHealthCentre1114'
   ].forEach(id => {
     const element = document.getElementById(id);
     if (element) element.remove();
@@ -5287,6 +5294,10 @@ function cancelScheduleNewInspection() {
 function createNewProject() {
 
   resetInspectionSessionState({ keepProjectId: false });
+  currentProjectId = null;
+  currentProject = null;
+  window.currentProjectId = null;
+  window.currentProject = null;
 
   if (!canCreateInspection()) {
     alert(
@@ -5363,6 +5374,20 @@ clearInputValue('finalComments');
   clearInspectionAnswerUiState();
 
   showProjectForm();
+
+  // Delayed workspace modules from the previous inspection may still be queued.
+  // Keep the new-inspection screen blank until the first save creates a new premises id.
+  window.setTimeout(() => {
+    if (!currentProjectId && !window.currentProjectId) {
+      currentProject = null;
+      window.currentProject = null;
+      [
+        'fireSPremisesWorkspaceModule1113',
+        'fireSBuildingHealthCentre',
+        'fireSBuildingHealthCentre1114'
+      ].forEach(id => document.getElementById(id)?.remove());
+    }
+  }, 140);
 }
 
 function toggleFilterPanel() {
@@ -11985,6 +12010,7 @@ function archiveProjectCurrentInspectionAndStartBlank(projectId) {
     inspectionHistory,
     answers: [],
     photos: [],
+    actions: [],
     finalComments: '',
     followUpRequired: 'No',
     followUpDate: '',
@@ -12219,6 +12245,9 @@ function openProject(projectId, focusMode, options = {}) {
 
   resetInspectionSessionState({ keepProjectId: true });
   currentProjectId = project.id;
+  window.currentProjectId = project.id;
+  currentProject = project;
+  window.currentProject = project;
  
   const shouldStartFreshScheduledInspection =
   project.scheduleFreshInspection === true;
@@ -12398,6 +12427,8 @@ getEl('finalComments').value = project.finalComments || '';
 
 if (ENABLE_GUIDED_INSPECTION_WORKFLOW) {
   currentProject = project;
+  window.currentProject = project;
+  window.currentProjectId = project.id;
   showProjectForm();
   focusInspectionSection('inspectionQuickActions');
 } else {
