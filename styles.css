@@ -12962,3 +12962,126 @@ body.fire-s-more-filters-open .fire-s-inline-filter-panel-120j {
     display: block;
   }
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.0L - More Filters Single Source Fix
+   ===================================================== */
+body.fire-s-filter-single-source-120l #toggleFiltersBtn,
+body.fire-s-filter-single-source-120l #filterPanel,
+body.fire-s-filter-single-source-120l #fireSInlineMoreFiltersBtn120J,
+body.fire-s-filter-single-source-120l #fireSInlineMoreFiltersBtn120K,
+body.fire-s-filter-single-source-120l #fireSInlineAdvancedFilters120K {
+  display: none !important;
+}
+
+body.fire-s-filter-single-source-120l .fire-s-inline-more-filters-btn:not(#fireSMoreFiltersBtn120L),
+body.fire-s-filter-single-source-120l .fire-s-inline-advanced-filters-120k,
+body.fire-s-filter-single-source-120l .fire-s-inline-filter-panel-120j {
+  display: none !important;
+}
+
+#fireSMoreFiltersBtn120L.fire-s-more-filters-final-btn-120l {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff7a18, #af002d 55%, #319197);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(175, 0, 45, 0.24);
+  white-space: nowrap;
+}
+
+#fireSAdvancedFiltersPanel120L.fire-s-advanced-filters-panel-120l {
+  display: none;
+  margin: 10px 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.fire-s-advanced-filters-head-120l {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fire-s-advanced-filters-head-120l strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.fire-s-advanced-filters-head-120l span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.fire-s-close-more-filters-120l,
+.fire-s-date-quick-row-120l button,
+.fire-s-date-custom-grid-120l button {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 9px 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fire-s-date-quick-row-120l {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.fire-s-date-custom-grid-120l {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.fire-s-date-custom-grid-120l label span {
+  display: block;
+  margin-bottom: 5px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.fire-s-date-custom-grid-120l input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.fire-s-date-status-120l {
+  margin-top: 10px;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 720px) {
+  .fire-s-date-quick-row-120l,
+  .fire-s-date-custom-grid-120l {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #fireSMoreFiltersBtn120L.fire-s-more-filters-final-btn-120l {
+    width: 100%;
+  }
+}

@@ -27154,3 +27154,543 @@ function fireSApplyLifecycleUxLabels() {
 
   window.fireSApplyMoreFiltersStability120J = apply;
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.0K - More Filters Visibility Fix
+// Purpose:
+// 1) Make More Filters open a real visible inline filter panel.
+// 2) Keep legacy filter drawers hidden so Mission Control does not jump.
+// 3) Sync inline date controls to the existing date-filter engine.
+// =====================================================
+(function fireSMoreFiltersVisibilityFix120K(){
+  'use strict';
+
+  const STORAGE_KEY = 'fireSProjectsMoreFiltersOpen120K';
+
+  function isOpen(){
+    try { return localStorage.getItem(STORAGE_KEY) === 'true'; } catch (_) { return false; }
+  }
+
+  function setOpen(value){
+    try { localStorage.setItem(STORAGE_KEY, value ? 'true' : 'false'); } catch (_) {}
+    document.body?.classList.toggle('fire-s-more-filters-open', Boolean(value));
+  }
+
+  function esc(value){
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  }
+
+  function getOriginalDateValues(){
+    return {
+      from: document.getElementById('inspectionDateFrom')?.value || '',
+      to: document.getElementById('inspectionDateTo')?.value || ''
+    };
+  }
+
+  function syncInlineInputs(){
+    const values = getOriginalDateValues();
+    const from = document.getElementById('fireSInlineDateFrom120K');
+    const to = document.getElementById('fireSInlineDateTo120K');
+    if (from && from.value !== values.from) from.value = values.from;
+    if (to && to.value !== values.to) to.value = values.to;
+  }
+
+  function applyInlineDateRange(){
+    const from = document.getElementById('fireSInlineDateFrom120K')?.value || '';
+    const to = document.getElementById('fireSInlineDateTo120K')?.value || '';
+
+    if (typeof window.setInspectionDateRange === 'function') {
+      window.setInspectionDateRange(from, to);
+    } else if (typeof setInspectionDateRange === 'function') {
+      setInspectionDateRange(from, to);
+    } else {
+      const originalFrom = document.getElementById('inspectionDateFrom');
+      const originalTo = document.getElementById('inspectionDateTo');
+      if (originalFrom) originalFrom.value = from;
+      if (originalTo) originalTo.value = to;
+      try { currentProjectPage = 1; } catch (_) {}
+      if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+    }
+
+    setTimeout(syncInlineInputs, 0);
+  }
+
+  function applyQuickDate(key){
+    if (typeof window.applyInspectionQuickDateFilter === 'function') {
+      window.applyInspectionQuickDateFilter(key);
+    } else if (typeof applyInspectionQuickDateFilter === 'function') {
+      applyInspectionQuickDateFilter(key);
+    }
+    setTimeout(syncInlineInputs, 0);
+    setTimeout(apply, 20);
+  }
+
+  function renderInlinePanel(){
+    const values = getOriginalDateValues();
+    return `
+      <section id="fireSInlineAdvancedFilters120K" class="fire-s-inline-advanced-filters-120k" aria-label="More filters">
+        <div class="fire-s-inline-filter-heading-120k">
+          <strong>More Filters</strong>
+          <span>Date range only. Status, Sort and View remain above.</span>
+        </div>
+        <div class="fire-s-inline-date-grid-120k">
+          <label>
+            <span>From</span>
+            <input id="fireSInlineDateFrom120K" type="date" value="${esc(values.from)}">
+          </label>
+          <label>
+            <span>To</span>
+            <input id="fireSInlineDateTo120K" type="date" value="${esc(values.to)}">
+          </label>
+          <button type="button" id="fireSInlineApplyDates120K">Apply Dates</button>
+          <button type="button" id="fireSInlineClearDates120K">Clear</button>
+        </div>
+        <div class="fire-s-inline-quick-dates-120k">
+          <button type="button" data-fire-s-inline-date="today">Today</button>
+          <button type="button" data-fire-s-inline-date="week">This Week</button>
+          <button type="button" data-fire-s-inline-date="month">This Month</button>
+          <button type="button" data-fire-s-inline-date="all">All</button>
+        </div>
+        <div class="fire-s-inline-filter-status-120k" id="fireSInlineFilterStatus120K"></div>
+      </section>
+    `;
+  }
+
+  function ensureInlinePanel(){
+    const choice = document.querySelector('.fire-s-choice-panel');
+    if (!choice) return;
+
+    let panel = document.getElementById('fireSInlineAdvancedFilters120K');
+    if (!panel) {
+      choice.insertAdjacentHTML('afterend', renderInlinePanel());
+      panel = document.getElementById('fireSInlineAdvancedFilters120K');
+    }
+
+    panel.style.display = isOpen() ? 'block' : 'none';
+    panel.setAttribute('aria-hidden', isOpen() ? 'false' : 'true');
+
+    const applyBtn = document.getElementById('fireSInlineApplyDates120K');
+    if (applyBtn && !applyBtn.__fireS120KBound) {
+      applyBtn.__fireS120KBound = true;
+      applyBtn.addEventListener('click', applyInlineDateRange);
+    }
+
+    const clearBtn = document.getElementById('fireSInlineClearDates120K');
+    if (clearBtn && !clearBtn.__fireS120KBound) {
+      clearBtn.__fireS120KBound = true;
+      clearBtn.addEventListener('click', () => {
+        const from = document.getElementById('fireSInlineDateFrom120K');
+        const to = document.getElementById('fireSInlineDateTo120K');
+        if (from) from.value = '';
+        if (to) to.value = '';
+        applyInlineDateRange();
+      });
+    }
+
+    ['fireSInlineDateFrom120K', 'fireSInlineDateTo120K'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input && !input.__fireS120KBound) {
+        input.__fireS120KBound = true;
+        input.addEventListener('change', applyInlineDateRange);
+      }
+    });
+
+    document.querySelectorAll('[data-fire-s-inline-date]').forEach(button => {
+      if (button.__fireS120KBound) return;
+      button.__fireS120KBound = true;
+      button.addEventListener('click', () => applyQuickDate(button.dataset.fireSInlineDate));
+    });
+
+    const status = document.getElementById('fireSInlineFilterStatus120K');
+    if (status) {
+      const values = getOriginalDateValues();
+      status.textContent = values.from || values.to
+        ? `Active date filter: ${values.from || 'start'} to ${values.to || 'end'}`
+        : 'No date filter active.';
+    }
+  }
+
+  function ensureButton(){
+    const controls = document.querySelector('.fire-s-choice-panel .fire-s-choice-controls');
+    if (!controls) return;
+
+    let btn = document.getElementById('fireSInlineMoreFiltersBtn120J') || document.getElementById('fireSInlineMoreFiltersBtn120K');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'fireSInlineMoreFiltersBtn120K';
+      btn.type = 'button';
+      btn.className = 'fire-s-inline-more-filters-btn fire-s-inline-more-filters-btn-120k';
+      controls.appendChild(btn);
+    }
+
+    btn.id = 'fireSInlineMoreFiltersBtn120K';
+    btn.classList.add('fire-s-inline-more-filters-btn', 'fire-s-inline-more-filters-btn-120k');
+    btn.style.display = '';
+    btn.removeAttribute('aria-hidden');
+    btn.textContent = isOpen() ? 'Hide Filters' : 'More Filters';
+    btn.setAttribute('aria-controls', 'fireSInlineAdvancedFilters120K');
+    btn.setAttribute('aria-expanded', String(isOpen()));
+    btn.onclick = function(event){
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(!isOpen());
+      apply();
+    };
+  }
+
+  function hideLegacyFilters(){
+    const topToggle = document.getElementById('toggleFiltersBtn');
+    if (topToggle) {
+      topToggle.style.display = 'none';
+      topToggle.setAttribute('aria-hidden', 'true');
+    }
+
+    const legacyPanel = document.getElementById('filterPanel');
+    if (legacyPanel) {
+      legacyPanel.style.display = 'none';
+      legacyPanel.setAttribute('aria-hidden', 'true');
+    }
+
+    const oldDatePanel = document.getElementById('inspectionDateFilterPanel');
+    if (oldDatePanel) {
+      oldDatePanel.style.display = 'none';
+      oldDatePanel.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function apply(){
+    document.body?.classList.add('fire-s-frontpage-stable-120k');
+    hideLegacyFilters();
+    ensureButton();
+    ensureInlinePanel();
+    syncInlineInputs();
+  }
+
+  window.fireSToggleAdvancedFilters120B = function fireSToggleAdvancedFilters120K(){
+    setOpen(!isOpen());
+    apply();
+  };
+  window.toggleFilterPanel = window.fireSToggleAdvancedFilters120B;
+  window.closeFilterPanel = function fireSCloseFilters120K(){
+    setOpen(false);
+    apply();
+  };
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120KWrapped) {
+    const previous = window.renderProjectsList;
+    window.renderProjectsList = function fireSRenderProjectsMoreFilters120K(){
+      const result = previous.apply(this, arguments);
+      setTimeout(apply, 0);
+      setTimeout(apply, 80);
+      return result;
+    };
+    window.renderProjectsList.__fireS120KWrapped = true;
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
+  else apply();
+
+  setTimeout(apply, 200);
+  setTimeout(apply, 900);
+
+  window.fireSApplyMoreFiltersVisibilityFix120K = apply;
+})();
+
+// =====================================================
+// FIRE-S RC 1.2.0L - More Filters Single Source Fix
+// Purpose:
+// 1) Remove duplicate/legacy filter buttons.
+// 2) Keep exactly one More Filters button inside Mission Control.
+// 3) Show a real Advanced Filters panel with date filters.
+// =====================================================
+(function fireSMoreFiltersSingleSourceFix120L(){
+  'use strict';
+
+  const STORAGE_KEY = 'fireSMoreFiltersOpen120L';
+  const FINAL_BUTTON_ID = 'fireSMoreFiltersBtn120L';
+  const FINAL_PANEL_ID = 'fireSAdvancedFiltersPanel120L';
+
+  function isOpen(){
+    try { return localStorage.getItem(STORAGE_KEY) === 'true'; } catch (_) { return false; }
+  }
+
+  function setOpen(value){
+    try { localStorage.setItem(STORAGE_KEY, value ? 'true' : 'false'); } catch (_) {}
+    document.body?.classList.toggle('fire-s-more-filters-open-120l', Boolean(value));
+  }
+
+  function escapeValue(value){
+    return String(value ?? '').replace(/[&<>'"]/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
+    }[ch]));
+  }
+
+  function getDateValues(){
+    return {
+      from: document.getElementById('inspectionDateFrom')?.value || '',
+      to: document.getElementById('inspectionDateTo')?.value || ''
+    };
+  }
+
+  function getChoicePanel(){
+    return document.querySelector('.fire-s-choice-panel');
+  }
+
+  function getControls(){
+    return document.querySelector('.fire-s-choice-panel .fire-s-choice-controls');
+  }
+
+  function hideLegacyFilterUi(){
+    const allowedIds = new Set([FINAL_BUTTON_ID, FINAL_PANEL_ID]);
+
+    [
+      'toggleFiltersBtn',
+      'filterPanel',
+      'fireSInlineMoreFiltersBtn120J',
+      'fireSInlineMoreFiltersBtn120K',
+      'fireSInlineAdvancedFilters120K'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !allowedIds.has(id)) {
+        el.style.setProperty('display', 'none', 'important');
+        el.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    document.querySelectorAll('.fire-s-inline-more-filters-btn').forEach(btn => {
+      if (btn.id !== FINAL_BUTTON_ID) {
+        btn.style.setProperty('display', 'none', 'important');
+        btn.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    document.querySelectorAll('.fire-s-inline-advanced-filters-120k, .fire-s-inline-filter-panel-120j').forEach(panel => {
+      if (panel.id !== FINAL_PANEL_ID) {
+        panel.style.setProperty('display', 'none', 'important');
+        panel.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    document.querySelectorAll('.fire-s-choice-panel .fire-s-choice-controls label').forEach(label => {
+      const labelText = (label.querySelector('span')?.textContent || label.textContent || '').trim().toLowerCase();
+      if (labelText === 'more' || labelText === 'advanced' || labelText === 'filters') {
+        label.style.setProperty('display', 'none', 'important');
+        label.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+  function renderPanel(){
+    const values = getDateValues();
+    return `
+      <section id="${FINAL_PANEL_ID}" class="fire-s-advanced-filters-panel-120l" aria-label="Advanced filters">
+        <div class="fire-s-advanced-filters-head-120l">
+          <div>
+            <strong>Advanced Filters</strong>
+            <span>Date filters for the Projects / Mission Control results.</span>
+          </div>
+          <button type="button" id="fireSCloseMoreFilters120L" class="fire-s-close-more-filters-120l">Close</button>
+        </div>
+
+        <div class="fire-s-date-quick-row-120l" aria-label="Quick date filters">
+          <button type="button" data-fire-s-date-filter-120l="today">Today</button>
+          <button type="button" data-fire-s-date-filter-120l="week">This Week</button>
+          <button type="button" data-fire-s-date-filter-120l="month">This Month</button>
+          <button type="button" data-fire-s-date-filter-120l="year">This Year</button>
+          <button type="button" data-fire-s-date-filter-120l="all">All Dates</button>
+        </div>
+
+        <div class="fire-s-date-custom-grid-120l">
+          <label>
+            <span>From date</span>
+            <input id="fireSDateFrom120L" type="date" value="${escapeValue(values.from)}">
+          </label>
+          <label>
+            <span>To date</span>
+            <input id="fireSDateTo120L" type="date" value="${escapeValue(values.to)}">
+          </label>
+          <button type="button" id="fireSApplyDates120L">Apply Date Range</button>
+          <button type="button" id="fireSClearDates120L">Clear Dates</button>
+        </div>
+
+        <div id="fireSDateStatus120L" class="fire-s-date-status-120l"></div>
+      </section>
+    `;
+  }
+
+  function syncPanelValues(){
+    const values = getDateValues();
+    const from = document.getElementById('fireSDateFrom120L');
+    const to = document.getElementById('fireSDateTo120L');
+    if (from && from.value !== values.from) from.value = values.from;
+    if (to && to.value !== values.to) to.value = values.to;
+
+    const status = document.getElementById('fireSDateStatus120L');
+    if (status) {
+      status.textContent = values.from || values.to
+        ? `Active date filter: ${values.from || 'start'} to ${values.to || 'end'}`
+        : 'No date filter active.';
+    }
+  }
+
+  function applyDateRange(from, to){
+    if (typeof window.setInspectionDateRange === 'function') {
+      window.setInspectionDateRange(from || '', to || '');
+    } else if (typeof setInspectionDateRange === 'function') {
+      setInspectionDateRange(from || '', to || '');
+    } else {
+      const originalFrom = document.getElementById('inspectionDateFrom');
+      const originalTo = document.getElementById('inspectionDateTo');
+      if (originalFrom) originalFrom.value = from || '';
+      if (originalTo) originalTo.value = to || '';
+      try { currentProjectPage = 1; } catch (_) {}
+      if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+    }
+    setTimeout(syncPanelValues, 0);
+  }
+
+  function applyQuickDate(key){
+    if (key === 'all') {
+      applyDateRange('', '');
+      return;
+    }
+    if (typeof window.applyInspectionQuickDateFilter === 'function') {
+      window.applyInspectionQuickDateFilter(key);
+    } else if (typeof applyInspectionQuickDateFilter === 'function') {
+      applyInspectionQuickDateFilter(key);
+    }
+    setTimeout(syncPanelValues, 0);
+    setTimeout(apply, 50);
+  }
+
+  function bindPanel(){
+    const close = document.getElementById('fireSCloseMoreFilters120L');
+    if (close && !close.__fireS120LBound) {
+      close.__fireS120LBound = true;
+      close.addEventListener('click', () => {
+        setOpen(false);
+        apply();
+      });
+    }
+
+    const applyDates = document.getElementById('fireSApplyDates120L');
+    if (applyDates && !applyDates.__fireS120LBound) {
+      applyDates.__fireS120LBound = true;
+      applyDates.addEventListener('click', () => {
+        applyDateRange(
+          document.getElementById('fireSDateFrom120L')?.value || '',
+          document.getElementById('fireSDateTo120L')?.value || ''
+        );
+      });
+    }
+
+    const clearDates = document.getElementById('fireSClearDates120L');
+    if (clearDates && !clearDates.__fireS120LBound) {
+      clearDates.__fireS120LBound = true;
+      clearDates.addEventListener('click', () => applyDateRange('', ''));
+    }
+
+    ['fireSDateFrom120L', 'fireSDateTo120L'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input && !input.__fireS120LBound) {
+        input.__fireS120LBound = true;
+        input.addEventListener('change', () => {
+          applyDateRange(
+            document.getElementById('fireSDateFrom120L')?.value || '',
+            document.getElementById('fireSDateTo120L')?.value || ''
+          );
+        });
+      }
+    });
+
+    document.querySelectorAll('[data-fire-s-date-filter-120l]').forEach(button => {
+      if (button.__fireS120LBound) return;
+      button.__fireS120LBound = true;
+      button.addEventListener('click', () => applyQuickDate(button.dataset.fireSDateFilter120l));
+    });
+  }
+
+  function ensureFinalButton(){
+    const controls = getControls();
+    if (!controls) return;
+
+    let button = document.getElementById(FINAL_BUTTON_ID);
+    if (!button) {
+      button = document.createElement('button');
+      button.id = FINAL_BUTTON_ID;
+      button.type = 'button';
+      button.className = 'fire-s-more-filters-final-btn-120l';
+      controls.appendChild(button);
+    }
+
+    button.style.removeProperty('display');
+    button.removeAttribute('aria-hidden');
+    button.textContent = 'More Filters';
+    button.setAttribute('aria-controls', FINAL_PANEL_ID);
+    button.setAttribute('aria-expanded', String(isOpen()));
+    button.onclick = function(event){
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(!isOpen());
+      apply();
+    };
+  }
+
+  function ensureFinalPanel(){
+    const choice = getChoicePanel();
+    if (!choice) return;
+
+    let panel = document.getElementById(FINAL_PANEL_ID);
+    if (!panel) {
+      choice.insertAdjacentHTML('afterend', renderPanel());
+      panel = document.getElementById(FINAL_PANEL_ID);
+    }
+
+    panel.style.setProperty('display', isOpen() ? 'block' : 'none', 'important');
+    panel.setAttribute('aria-hidden', isOpen() ? 'false' : 'true');
+    syncPanelValues();
+    bindPanel();
+  }
+
+  function apply(){
+    document.body?.classList.add('fire-s-filter-single-source-120l');
+    hideLegacyFilterUi();
+    ensureFinalButton();
+    ensureFinalPanel();
+    hideLegacyFilterUi();
+  }
+
+  window.fireSToggleAdvancedFilters120B = function fireSToggleAdvancedFilters120L(){
+    setOpen(!isOpen());
+    apply();
+  };
+
+  window.toggleFilterPanel = window.fireSToggleAdvancedFilters120B;
+
+  window.closeFilterPanel = function fireSCloseFilters120L(){
+    setOpen(false);
+    apply();
+  };
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120LWrapped) {
+    const previous = window.renderProjectsList;
+    window.renderProjectsList = function fireSRenderProjectsMoreFilters120L(){
+      const result = previous.apply(this, arguments);
+      setTimeout(apply, 0);
+      setTimeout(apply, 80);
+      return result;
+    };
+    window.renderProjectsList.__fireS120LWrapped = true;
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
+  else apply();
+
+  setTimeout(apply, 200);
+  setTimeout(apply, 1000);
+
+  window.fireSApplyMoreFiltersSingleSource120L = apply;
+})();
