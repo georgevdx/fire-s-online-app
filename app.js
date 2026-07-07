@@ -26704,3 +26704,96 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(setHomeRoleMode120F, 250);
   setTimeout(setHomeRoleMode120F, 1000);
 })();
+
+/* =====================================================
+   FIRE-S RC 1.2.0M - Stable UI Cleanup
+   Baseline: rollback stable build.
+   Purpose:
+   - Keep existing filters untouched.
+   - Remove beta Field Ready / Ready for Site panels.
+   - Remove duplicate executive snapshot/dashboard above Mission Control.
+   - Rename + New to a clearer new-site inspection action.
+   ===================================================== */
+(function fireSStableUICleanup120M(){
+  function cleanup120M(){
+    try {
+      const newBtn = document.getElementById('newProjectBtn');
+      if (newBtn) {
+        newBtn.textContent = '+ New Inspection at New Site';
+        newBtn.setAttribute('title', 'Create a new inspection for a new premises/site');
+        newBtn.setAttribute('aria-label', 'New Inspection at New Site');
+      }
+
+      // Remove beta readiness panels entirely from the UI.
+      ['offlineReadinessBanner', 'siteReadyPreflightChecklist'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+      });
+
+      // Remove duplicate executive dashboard/snapshot blocks if they are rendered above Mission Control.
+      const commandCentre = document.getElementById('mainCommandCentre');
+      const possibleDuplicates = [
+        document.getElementById('complianceHeroCard'),
+        document.querySelector('.fire-s-exec-snapshot'),
+        document.querySelector('.fire-s-executive-snapshot'),
+        document.querySelector('[data-fire-s-exec-snapshot]')
+      ].filter(Boolean);
+
+      possibleDuplicates.forEach(card => {
+        if (!card) return;
+        if (!commandCentre || (card.compareDocumentPosition(commandCentre) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+          card.remove();
+        }
+      });
+
+      // Keep management metrics only inside the existing Show Filters area; do not add extra bars above Mission Control.
+      const duplicateExecutiveTextCards = Array.from(document.querySelectorAll('.card, .dashboard-card, .command-card'))
+        .filter(card => /Executive Snapshot|Executive Dashboard/i.test(card.textContent || ''));
+
+      duplicateExecutiveTextCards.forEach(card => {
+        if (!card || card.id === 'filterPanel') return;
+        if (commandCentre && (card.compareDocumentPosition(commandCentre) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+          card.remove();
+        }
+      });
+    } catch (error) {
+      console.warn('Fire-S RC 1.2.0M cleanup failed:', error);
+    }
+  }
+
+  // Prevent the old dynamic executive hero from reappearing as a second dashboard.
+  if (typeof window.ensureExecutiveComplianceDashboardMarkup === 'function') {
+    window.ensureExecutiveComplianceDashboardMarkup = function fireSNoDuplicateExecutiveMarkup120M(){
+      cleanup120M();
+    };
+  }
+
+  if (typeof window.updateOfflineReadinessBanner === 'function') {
+    window.updateOfflineReadinessBanner = function fireSNoOfflineReadinessBanner120M(){ cleanup120M(); };
+  }
+
+  if (typeof window.updateSiteReadyPreflightChecklist === 'function') {
+    window.updateSiteReadyPreflightChecklist = function fireSNoSiteReadyPreflight120M(){ cleanup120M(); };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', cleanup120M, { once: true });
+  } else {
+    cleanup120M();
+  }
+
+  setTimeout(cleanup120M, 250);
+  setTimeout(cleanup120M, 1000);
+
+  const observerStart = () => {
+    if (!document.body) return;
+    const observer = new MutationObserver(() => {
+      clearTimeout(observer.__fireSCleanup120MTimer);
+      observer.__fireSCleanup120MTimer = setTimeout(cleanup120M, 60);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  };
+
+  if (document.body) observerStart();
+  else document.addEventListener('DOMContentLoaded', observerStart, { once: true });
+})();

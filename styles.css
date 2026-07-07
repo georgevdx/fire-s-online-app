@@ -12665,3 +12665,24 @@ body.fire-s-inspector-mode #cmdInspectionsBtn .command-title {
 body.fire-s-management-mode #mainCommandCentre .main-command-stats {
   display: grid;
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.0M - Stable UI Cleanup
+   ===================================================== */
+#offlineReadinessBanner,
+#siteReadyPreflightChecklist,
+.offline-readiness-banner,
+.site-ready-preflight {
+  display: none !important;
+}
+
+#newProjectBtn {
+  white-space: normal;
+  line-height: 1.15;
+}
+
+@media (max-width: 640px) {
+  #newProjectBtn {
+    min-width: 150px;
+  }
+}
