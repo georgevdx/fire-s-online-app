@@ -12773,3 +12773,82 @@ body.fire-s-role-management-portfolio #mainCommandCentre .main-command-stats {
     white-space: normal;
   }
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.0J - More Filters Toggle + Frontpage Stability
+   ===================================================== */
+.fire-s-frontpage-stable-120j #mainCommandCentre,
+#mainCommandCentre {
+  min-height: 220px;
+  contain: layout paint;
+}
+
+.fire-s-frontpage-stable-120j .main-command-grid,
+.main-command-grid {
+  min-height: 112px;
+}
+
+.fire-s-frontpage-stable-120j .fire-s-choice-panel,
+.fire-s-choice-panel {
+  min-height: 128px;
+}
+
+.fire-s-choice-controls {
+  align-items: end;
+}
+
+.fire-s-inline-more-filters-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(6, 182, 212, 0.18);
+  white-space: nowrap;
+}
+
+.fire-s-inline-more-filters-btn:focus-visible {
+  outline: 3px solid rgba(124, 58, 237, 0.35);
+  outline-offset: 3px;
+}
+
+.fire-s-inline-filter-panel-120j {
+  margin: 10px 0 14px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+body:not(.fire-s-more-filters-open) .fire-s-inline-filter-panel-120j {
+  display: none !important;
+}
+
+body.fire-s-more-filters-open .fire-s-inline-filter-panel-120j {
+  display: block !important;
+}
+
+/* Stop mobile/frontpage hop from old hover/animation rules. */
+#mainCommandCentre *,
+.fire-s-choice-panel *,
+.choice-card {
+  transition-property: background-color, color, border-color, box-shadow, opacity !important;
+}
+
+@media (max-width: 720px) {
+  .fire-s-frontpage-stable-120j #mainCommandCentre,
+  #mainCommandCentre {
+    min-height: 250px;
+  }
+
+  .fire-s-choice-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .fire-s-inline-more-filters-btn {
+    width: 100%;
+  }
+}

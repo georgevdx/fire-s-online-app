@@ -27022,3 +27022,135 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(apply, 250);
   setTimeout(apply, 1000);
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.0J - More Filters Toggle + Frontpage Stability Hotfix
+// Purpose:
+// 1) Restore a working More Filters toggle inside Mission Control.
+// 2) Keep the old top filter bar hidden until the user explicitly opens filters.
+// 3) Reduce frontpage hop by reserving stable layout space and avoiding repeated relayout.
+// =====================================================
+(function fireSMoreFiltersToggleAndFrontpageStability120J(){
+  const STORAGE_KEY = 'fireSProjectsAdvancedFiltersOpen120J';
+
+  function isOpen(){
+    try { return localStorage.getItem(STORAGE_KEY) === 'true'; } catch (_) { return false; }
+  }
+
+  function setOpen(value){
+    try { localStorage.setItem(STORAGE_KEY, value ? 'true' : 'false'); } catch (_) {}
+    document.body?.classList.toggle('fire-s-more-filters-open', Boolean(value));
+  }
+
+  function getPanel(){
+    return document.getElementById('filterPanel');
+  }
+
+  function getChoicePanel(){
+    return document.querySelector('.fire-s-choice-panel');
+  }
+
+  function movePanelToMissionControl(){
+    const panel = getPanel();
+    const choice = getChoicePanel();
+    if (!panel || !choice) return;
+
+    panel.classList.add('fire-s-inline-filter-panel-120j');
+
+    // Keep advanced filters directly below the Mission Control controls.
+    // This stops the old drawer from appearing above Mission Control.
+    if (panel.previousElementSibling !== choice) {
+      choice.insertAdjacentElement('afterend', panel);
+    }
+  }
+
+  function ensureMoreFiltersButton(){
+    const controls = document.querySelector('.fire-s-choice-panel .fire-s-choice-controls');
+    if (!controls) return;
+
+    let button = controls.querySelector('#fireSInlineMoreFiltersBtn120J');
+    if (!button) {
+      button = document.createElement('button');
+      button.id = 'fireSInlineMoreFiltersBtn120J';
+      button.type = 'button';
+      button.className = 'fire-s-inline-more-filters-btn';
+      controls.appendChild(button);
+    }
+
+    button.textContent = isOpen() ? 'Hide Filters' : 'More Filters';
+    button.setAttribute('aria-controls', 'filterPanel');
+    button.setAttribute('aria-expanded', String(isOpen()));
+    button.onclick = function(event){
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(!isOpen());
+      apply();
+    };
+  }
+
+  function applyPanelState(){
+    const panel = getPanel();
+    const open = isOpen();
+    setOpen(open);
+
+    if (panel) {
+      panel.style.display = open ? 'block' : 'none';
+      panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+
+    const oldTopToggle = document.getElementById('toggleFiltersBtn');
+    if (oldTopToggle) {
+      oldTopToggle.style.display = 'none';
+      oldTopToggle.setAttribute('aria-hidden', 'true');
+    }
+
+    const inlineBtn = document.getElementById('fireSInlineMoreFiltersBtn120J');
+    if (inlineBtn) {
+      inlineBtn.textContent = open ? 'Hide Filters' : 'More Filters';
+      inlineBtn.setAttribute('aria-expanded', String(open));
+    }
+  }
+
+  function apply(){
+    document.body?.classList.add('fire-s-frontpage-stable-120j');
+    movePanelToMissionControl();
+    ensureMoreFiltersButton();
+    applyPanelState();
+  }
+
+  // Replace older toggle behaviour with one stable source of truth.
+  window.fireSToggleAdvancedFilters120B = function fireSToggleAdvancedFilters120J(){
+    setOpen(!isOpen());
+    apply();
+  };
+
+  window.toggleFilterPanel = function fireSToggleFilterPanel120J(){
+    setOpen(!isOpen());
+    apply();
+  };
+
+  window.closeFilterPanel = function fireSCloseFilterPanel120J(){
+    setOpen(false);
+    apply();
+  };
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120JWrapped) {
+    const previous = window.renderProjectsList;
+    window.renderProjectsList = function fireSRenderProjectsMoreFilters120J(){
+      const result = previous.apply(this, arguments);
+      setTimeout(apply, 0);
+      setTimeout(apply, 80);
+      return result;
+    };
+    window.renderProjectsList.__fireS120JWrapped = true;
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
+  else apply();
+
+  setTimeout(apply, 250);
+  setTimeout(apply, 1000);
+
+  window.fireSApplyMoreFiltersStability120J = apply;
+})();
