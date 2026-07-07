@@ -12665,3 +12665,63 @@ body.fire-s-inspector-mode #cmdInspectionsBtn .command-title {
 body.fire-s-management-mode #mainCommandCentre .main-command-stats {
   display: grid;
 }
+
+/* FIRE-S RC 1.2.0G - Mission Control Refinement */
+#toggleFiltersBtn,
+#filterPanel,
+#offlineReadinessBanner,
+#siteReadyPreflightChecklist,
+#postSiteSyncReminder,
+#complianceHeroCard,
+.fire-s-exec-snapshot,
+.fire-s-executive-snapshot,
+.executive-snapshot-card,
+.compliance-hero-card {
+  display: none !important;
+}
+
+body.fire-s-role-inspector-clean #dashboardSummary,
+body.fire-s-role-inspector-clean #dashboardMetrics,
+body.fire-s-role-inspector-clean #complianceHeroCard,
+body.fire-s-role-inspector-clean #cmdScheduleBtn,
+body.fire-s-role-inspector-clean #cmdReportsBtn,
+body.fire-s-role-inspector-clean #cmdCompanyBtn,
+body.fire-s-role-inspector-clean #cmdServicesBtn,
+body.fire-s-role-inspector-clean #mainCommandCentre .main-command-stats {
+  display: none !important;
+}
+
+.fire-s-new-site-inspection-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  white-space: normal;
+  line-height: 1.05;
+}
+
+.fire-s-new-site-inspection-btn .new-site-label {
+  font-weight: 800;
+}
+
+.fire-s-new-site-inspection-btn small {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(14, 165, 233, 0.16);
+}
+
+@media (max-width: 640px) {
+  .fire-s-new-site-inspection-btn {
+    min-height: 44px;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .fire-s-new-site-inspection-btn small {
+    font-size: 0.68rem;
+  }
+}

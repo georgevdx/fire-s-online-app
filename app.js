@@ -26704,3 +26704,163 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(setHomeRoleMode120F, 250);
   setTimeout(setHomeRoleMode120F, 1000);
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.0G - Mission Control Refinement
+// Purpose:
+// 1) Keep Mission Control clean: no Executive Snapshot above it.
+// 2) Remove old More Filters bar above Mission Control.
+// 3) Remove beta Field Ready / Ready for Site panels.
+// 4) Rename + New to clearly mean a new inspection at a new site.
+// 5) Strengthen role-based UI separation: inspector = search/input only;
+//    management/owner/admin = portfolio stats.
+// =====================================================
+(function fireSMissionControlRefinement120G(){
+  const MANAGER_ROLES = ['super_admin', 'company_owner', 'owner', 'manager', 'management', 'viewer', 'admin'];
+  const INSPECTOR_ROLES = ['inspector', 'field_inspector', 'field-inspector'];
+
+  function role(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') return String(window.getCurrentUserRole() || '').toLowerCase();
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) return String(currentUserProfile.role).toLowerCase();
+    } catch (_) {}
+    return 'guest';
+  }
+
+  function isInspector(){ return INSPECTOR_ROLES.includes(role()); }
+  function isManagement(){ return MANAGER_ROLES.includes(role()) && !isInspector(); }
+
+  function hideElement(el){
+    if (!el) return;
+    el.style.display = 'none';
+    el.setAttribute('aria-hidden', 'true');
+  }
+
+  function showElement(el){
+    if (!el) return;
+    el.style.display = '';
+    el.removeAttribute('aria-hidden');
+  }
+
+  function removeExecutiveSnapshotAboveMission(){
+    // Executive Snapshot / compliance hero duplicated the Command Centre for this flow.
+    ['complianceHeroCard', 'fireSExecutiveSnapshot', 'fireSExecutiveSnapshot118H'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+
+    document.querySelectorAll('.fire-s-exec-snapshot, .fire-s-executive-snapshot, .executive-snapshot-card, .compliance-hero-card')
+      .forEach(el => el.remove());
+  }
+
+  function removeOldMoreFiltersAboveMission(){
+    // Old advanced filter drawer above Projects/Mission Control is not part of the simple flow.
+    hideElement(document.getElementById('toggleFiltersBtn'));
+    hideElement(document.getElementById('filterPanel'));
+  }
+
+  function removeBetaReadinessPanels(){
+    hideElement(document.getElementById('offlineReadinessBanner'));
+    hideElement(document.getElementById('siteReadyPreflightChecklist'));
+    hideElement(document.getElementById('postSiteSyncReminder'));
+  }
+
+  function renameNewInspectionButton(){
+    const btn = document.getElementById('newProjectBtn');
+    if (!btn) return;
+    btn.innerHTML = '<span class="new-site-label">+ New Inspection</span><small>New Site</small>';
+    btn.setAttribute('aria-label', 'New inspection at a new site');
+    btn.setAttribute('title', 'New inspection at a new site');
+    btn.classList.add('fire-s-new-site-inspection-btn');
+  }
+
+  function applyRoleAccessUi(){
+    const inspector = isInspector();
+    const management = isManagement();
+
+    document.body?.classList.toggle('fire-s-role-inspector-clean', inspector);
+    document.body?.classList.toggle('fire-s-role-management-stats', management);
+
+    // Inspector: only search/open/input. No portfolio stats or management cards.
+    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+    if (stats) stats.style.display = inspector ? 'none' : '';
+
+    ['dashboardSummary', 'dashboardMetrics', 'complianceHeroCard'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = inspector ? 'none' : '';
+    });
+
+    ['cmdScheduleBtn', 'cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = inspector ? 'none' : '';
+    });
+
+    const inspectionsBtn = document.getElementById('cmdInspectionsBtn');
+    if (inspectionsBtn) {
+      showElement(inspectionsBtn);
+      const titleEl = inspectionsBtn.querySelector('.command-title');
+      const copyEl = inspectionsBtn.querySelector('.command-copy');
+      if (titleEl) titleEl.textContent = inspector ? 'Search / Open Inspection' : 'Inspection Gateway';
+      if (copyEl) copyEl.textContent = inspector
+        ? 'Search for a premises, start or continue an inspection, and capture field information.'
+        : 'Open, continue, search and manage inspections.';
+    }
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = inspector
+        ? 'Search premises and capture inspection information. Portfolio stats are reserved for management.'
+        : 'Management overview: portfolio status, action items and inspection activity.';
+    }
+  }
+
+  function apply120G(){
+    removeExecutiveSnapshotAboveMission();
+    removeOldMoreFiltersAboveMission();
+    removeBetaReadinessPanels();
+    renameNewInspectionButton();
+    applyRoleAccessUi();
+  }
+
+  // Prevent older modules from recreating the removed executive snapshot.
+  window.ensureExecutiveComplianceDashboardMarkup = function fireSNoExecutiveSnapshotAboveMission120G(){
+    removeExecutiveSnapshotAboveMission();
+  };
+
+  // Neutralise beta readiness painters so hidden panels do not flash back in.
+  window.updateOfflineReadinessBanner = function fireSHideOfflineReadiness120G(){ removeBetaReadinessPanels(); };
+  window.updateSiteReadyPreflightChecklist = function fireSHideSiteReadyPreflight120G(){ removeBetaReadinessPanels(); };
+
+  if (typeof window.renderHomeCommandCentre === 'function' && !window.renderHomeCommandCentre.__fireS120GWrapped) {
+    const previousHome = window.renderHomeCommandCentre;
+    window.renderHomeCommandCentre = function fireSRenderHomeCleanMission120G(){
+      const result = previousHome.apply(this, arguments);
+      apply120G();
+      return result;
+    };
+    window.renderHomeCommandCentre.__fireS120GWrapped = true;
+  }
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120GWrapped) {
+    const previousProjects = window.renderProjectsList;
+    window.renderProjectsList = function fireSRenderProjectsCleanMission120G(){
+      const result = previousProjects.apply(this, arguments);
+      apply120G();
+      return result;
+    };
+    window.renderProjectsList.__fireS120GWrapped = true;
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', apply120G, { once: true });
+  } else {
+    apply120G();
+  }
+
+  setTimeout(apply120G, 250);
+  setTimeout(apply120G, 900);
+  setTimeout(apply120G, 1800);
+
+  window.fireSApplyMissionControlRefinement120G = apply120G;
+})();
