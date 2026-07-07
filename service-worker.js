@@ -1,5 +1,5 @@
-// Fire-S Usable Recovery 204
-// Disabled service worker: clears old cached broken index/app/json files.
+// Fire-S RC 1.2.0O Mobile Stable Repair
+// This service worker intentionally clears old caches and unregisters itself.
 self.addEventListener('install', event => {
   self.skipWaiting();
 });

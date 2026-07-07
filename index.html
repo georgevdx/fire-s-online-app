@@ -1,13 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- fire-s-mobile-stable-repair: prevent stale mobile/PWA cache from loading broken files -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    window.FIRE_S_BUILD = 'rc-1-2-0O-mobile-stable';
+    (function fireSMobileStableRepair(){
+      try {
+        if ('caches' in window) {
+          caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){ return caches.delete(k); })); }).catch(function(){});
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs){
+            regs.forEach(function(reg){ reg.unregister().catch(function(){}); });
+          }).catch(function(){});
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fire-S | Professional Fire Safety Platform</title>
-  <link rel="manifest" href="manifest.json?v=sprint-301-brand-identity">
+  <link rel="manifest" href="manifest.json?v=rc-1-2-0O-mobile-stable">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=sprint-301-brand-identity">
-  <link rel="icon" type="image/png" href="icon-192.png?v=sprint-301-brand-identity">
+  <link rel="stylesheet" href="styles.css?v=rc-1-2-0O-mobile-stable">
+  <link rel="icon" type="image/png" href="icon-192.png?v=rc-1-2-0O-mobile-stable">
 </head>
 <body>
   <div class="app">
@@ -15,7 +35,7 @@
   <div class="brand-left">
     <img
       class="brand-mark"
-      src="fire-s-logo.png?v=sprint-301-brand-identity"
+      src="fire-s-logo.png?v=rc-1-2-0O-mobile-stable"
       alt="Fire-S logo"
     >
     <div>
@@ -480,8 +500,8 @@
         </button>
 
         <div class="project-action-buttons">
-          <button id="newProjectBtn" type="button" class="compact-action-btn" aria-label="New Inspection at New Site" title="New Inspection at New Site">
-            + New Inspection at New Site
+          <button id="newProjectBtn" type="button" class="compact-action-btn">
+            + New
           </button>
 
           <button id="scheduleNewInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
@@ -975,7 +995,7 @@
     </section>
   </div>
 
-  <script src="supabase-js-v2.js?v=1"></script>
+  <script src="supabase-js-v2.js?v=rc-1-2-0O-mobile-stable"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
   <script src="building-passport.js?v=104-4-passport-stability-fix"></script>
@@ -985,7 +1005,7 @@
   <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
-  <script src="app.js?v=usable-recovery-204"></script>
+  <script src="app.js?v=rc-1-2-0O-mobile-stable"></script>
   <script src="risk-engine.js?v=108-2-category-intelligence"></script>
   <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
   <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>
@@ -998,7 +1018,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=usable-recovery-204')
+        navigator.serviceWorker.register('./service-worker.js?v=rc-1-2-0O-mobile-stable')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

@@ -12665,11 +12665,3 @@ body.fire-s-inspector-mode #cmdInspectionsBtn .command-title {
 body.fire-s-management-mode #mainCommandCentre .main-command-stats {
   display: grid;
 }
-
-
-/* FIRE-S RC 1.2.0N - emergency stable repair
-   Keep beta readiness DOM nodes available for JS, but hide them from the UI. */
-#offlineReadinessBanner,
-#siteReadyPreflightChecklist {
-  display: none !important;
-}
