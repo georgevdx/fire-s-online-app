@@ -12725,3 +12725,51 @@ body.fire-s-role-inspector-clean #mainCommandCentre .main-command-stats {
     font-size: 0.68rem;
   }
 }
+
+/* FIRE-S RC 1.2.0H - Role Boundary & Inspector Workspace Refinement */
+body.fire-s-role-inspector-workspace #dashboardSummary,
+body.fire-s-role-inspector-workspace #dashboardMetrics,
+body.fire-s-role-inspector-workspace #complianceHeroCard,
+body.fire-s-role-inspector-workspace #cmdScheduleBtn,
+body.fire-s-role-inspector-workspace #cmdReportsBtn,
+body.fire-s-role-inspector-workspace #cmdCompanyBtn,
+body.fire-s-role-inspector-workspace #cmdServicesBtn,
+body.fire-s-role-inspector-workspace #mainCommandCentre .main-command-stats,
+body.fire-s-role-inspector-workspace .choice-card-grid span:nth-child(3),
+body.fire-s-role-inspector-workspace .choice-card-grid span:nth-child(4),
+body.fire-s-role-inspector-workspace .choice-card-footer span,
+body.fire-s-role-inspector-workspace .choice-list-row span:nth-child(5),
+body.fire-s-role-inspector-workspace .choice-list-row span:nth-child(6) {
+  display: none !important;
+}
+
+body.fire-s-role-inspector-workspace .fire-s-choice-panel {
+  border-left: 4px solid rgba(14, 165, 233, 0.85);
+}
+
+body.fire-s-role-inspector-workspace .choice-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.fire-s-role-inspector-workspace .choice-card-footer {
+  justify-content: flex-end;
+}
+
+body.fire-s-role-inspector-workspace .choice-list-head span:nth-child(5),
+body.fire-s-role-inspector-workspace .choice-list-head span:nth-child(6) {
+  display: none !important;
+}
+
+body.fire-s-role-management-portfolio #mainCommandCentre .main-command-stats {
+  display: grid;
+}
+
+.fire-s-new-site-inspection-btn .new-site-label {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .fire-s-new-site-inspection-btn .new-site-label {
+    white-space: normal;
+  }
+}

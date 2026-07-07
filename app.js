@@ -26864,3 +26864,130 @@ function fireSApplyLifecycleUxLabels() {
 
   window.fireSApplyMissionControlRefinement120G = apply120G;
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.0H - Role Boundary & Inspector Workspace Refinement
+// Purpose:
+// 1) Inspector view = search, open/start inspection, and clear status only.
+// 2) Management/Owner/Admin view = dashboard stats, sort/view tools and portfolio metrics.
+// 3) Rename + New button to clearly mean a new inspection at a new site.
+// =====================================================
+(function fireSRoleBoundaryRefinement120H(){
+  const MANAGER_ROLES = ['super_admin', 'company_owner', 'owner', 'manager', 'management', 'viewer', 'admin'];
+  const INSPECTOR_ROLES = ['inspector', 'field_inspector', 'field-inspector'];
+
+  function getRole(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') return String(window.getCurrentUserRole() || '').toLowerCase();
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) return String(currentUserProfile.role || '').toLowerCase();
+    } catch (_) {}
+    return 'guest';
+  }
+
+  function isInspector(){ return INSPECTOR_ROLES.includes(getRole()); }
+  function isManagement(){ return MANAGER_ROLES.includes(getRole()) && !isInspector(); }
+
+  function setDisplay(el, show){
+    if (!el) return;
+    el.style.display = show ? '' : 'none';
+    if (show) el.removeAttribute('aria-hidden');
+    else el.setAttribute('aria-hidden', 'true');
+  }
+
+  function tuneNewButton(){
+    const btn = document.getElementById('newProjectBtn');
+    if (!btn) return;
+    btn.innerHTML = '<span class="new-site-label">+ New Site Inspection</span><small>New Site</small>';
+    btn.setAttribute('aria-label', 'New inspection at a new site');
+    btn.setAttribute('title', 'New inspection at a new site');
+    btn.classList.add('fire-s-new-site-inspection-btn');
+  }
+
+  function removeDuplicateManagementBlocks(){
+    // Mission Control must remain the first working area. No snapshot/filters above it.
+    ['complianceHeroCard', 'fireSExecutiveSnapshot', 'fireSExecutiveSnapshot118H', 'toggleFiltersBtn', 'filterPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) setDisplay(el, false);
+    });
+    document.querySelectorAll('.fire-s-exec-snapshot, .fire-s-executive-snapshot, .executive-snapshot-card, .compliance-hero-card')
+      .forEach(el => setDisplay(el, false));
+  }
+
+  function applyRoleBoundary(){
+    const inspector = isInspector();
+    const management = isManagement();
+
+    document.body?.classList.toggle('fire-s-role-inspector-workspace', inspector);
+    document.body?.classList.toggle('fire-s-role-management-portfolio', management);
+
+    removeDuplicateManagementBlocks();
+    tuneNewButton();
+
+    // Inspector: one work route only. Search/open/start inspections.
+    ['cmdScheduleBtn', 'cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn', 'dashboardSummary', 'dashboardMetrics', 'complianceHeroCard'].forEach(id => {
+      setDisplay(document.getElementById(id), !inspector);
+    });
+
+    const commandStats = document.querySelector('#mainCommandCentre .main-command-stats');
+    setDisplay(commandStats, !inspector);
+
+    const inspectionBtn = document.getElementById('cmdInspectionsBtn');
+    if (inspectionBtn) {
+      setDisplay(inspectionBtn, true);
+      const title = inspectionBtn.querySelector('.command-title');
+      const copy = inspectionBtn.querySelector('.command-copy');
+      if (title) title.textContent = inspector ? 'Search / Start Inspection' : 'Inspection Gateway';
+      if (copy) copy.textContent = inspector
+        ? 'Search a premises, start a new site inspection, or continue the current inspection.'
+        : 'Search, sort, view and manage inspections across the portfolio.';
+    }
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) subtitle.textContent = inspector
+      ? 'Field workspace: search, open and capture inspections. Portfolio statistics are shown to management only.'
+      : 'Management workspace: portfolio status, inspection activity and action items.';
+
+    // Projects/Mission Control controls: inspector gets search + status only.
+    document.querySelectorAll('.fire-s-choice-panel').forEach(panel => {
+      const heading = panel.querySelector('.fire-s-choice-heading span');
+      if (heading) heading.textContent = inspector
+        ? 'Search and open inspections. Status is shown on each premises card.'
+        : 'Choose how you want to see your inspections.';
+
+      panel.querySelectorAll('.fire-s-choice-controls label').forEach(label => {
+        const labelText = (label.querySelector('span')?.textContent || '').trim().toLowerCase();
+        if (inspector && ['sort', 'view', 'more'].includes(labelText)) setDisplay(label, false);
+        else setDisplay(label, true);
+      });
+    });
+  }
+
+  if (typeof window.renderHomeCommandCentre === 'function' && !window.renderHomeCommandCentre.__fireS120HWrapped) {
+    const previousHome = window.renderHomeCommandCentre;
+    window.renderHomeCommandCentre = function fireSRenderHomeRoleBoundary120H(){
+      const result = previousHome.apply(this, arguments);
+      setTimeout(applyRoleBoundary, 0);
+      return result;
+    };
+    window.renderHomeCommandCentre.__fireS120HWrapped = true;
+  }
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120HWrapped) {
+    const previousProjects = window.renderProjectsList;
+    window.renderProjectsList = function fireSRenderProjectsRoleBoundary120H(){
+      const result = previousProjects.apply(this, arguments);
+      setTimeout(applyRoleBoundary, 0);
+      return result;
+    };
+    window.renderProjectsList.__fireS120HWrapped = true;
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyRoleBoundary, { once: true });
+  else applyRoleBoundary();
+  setTimeout(applyRoleBoundary, 250);
+  setTimeout(applyRoleBoundary, 1000);
+  setTimeout(applyRoleBoundary, 2000);
+
+  window.fireSApplyRoleBoundary120H = applyRoleBoundary;
+})();
