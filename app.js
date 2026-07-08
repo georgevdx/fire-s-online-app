@@ -26223,8 +26223,24 @@ function fireSApplyLifecycleUxLabels() {
     if (filterKey === 'scheduled-new') return projects.filter(isScheduled).length;
     if (filterKey === 'new-premise') return projects.filter(isNewPremise).length;
     if (filterKey === 'inspection-progress') return projects.filter(isCurrent).length;
-    if (filterKey === 'existing-history') return projects.filter(project => hasHistory(project) || project?.completedAt).length;
-    if (filterKey === 'archive-new-cycle') return projects.filter(project => hasHistory(project) || project?.completedAt).length;
+    // Keep dropdown counts aligned with the actual lifecycle filter logic.
+    // Previous Cycles must count the same records that open when selected, not only archived/completed records.
+    if (filterKey === 'existing-history') return projects.filter(project => {
+      const lifecycleMatch = typeof window.projectMatchesInspectionGatewayQuickFilter === 'function'
+        ? window.projectMatchesInspectionGatewayQuickFilter(project, 'existing-history')
+        : null;
+      return lifecycleMatch === null || lifecycleMatch === undefined
+        ? (hasHistory(project) || project?.completedAt)
+        : Boolean(lifecycleMatch);
+    }).length;
+    if (filterKey === 'archive-new-cycle') return projects.filter(project => {
+      const lifecycleMatch = typeof window.projectMatchesInspectionGatewayQuickFilter === 'function'
+        ? window.projectMatchesInspectionGatewayQuickFilter(project, 'archive-new-cycle')
+        : null;
+      return lifecycleMatch === null || lifecycleMatch === undefined
+        ? (hasHistory(project) || project?.completedAt)
+        : Boolean(lifecycleMatch);
+    }).length;
     return projects.length;
   }
 
@@ -28009,4 +28025,65 @@ function fireSApplyLifecycleUxLabels() {
     writeChoicePrefs({ advancedOpen: false });
     hideAdvancedFilters();
   });
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.2.1H - Count Alignment Hotfix
+   - Status dropdown counts now use the same matcher as the selected filter.
+   - Prevents Previous Cycles count mismatch between dropdown and visible results.
+   ===================================================== */
+(function installFireS121HCountAlignment(){
+  'use strict';
+  if (window.fireS121HCountAlignmentApplied) return;
+  window.fireS121HCountAlignmentApplied = true;
+
+  function countVisibleForFilter(projects, filterKey){
+    const list = Array.isArray(projects) ? projects : [];
+    const key = String(filterKey || 'all');
+    if (key === 'all') return list.length;
+
+    const matcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
+    if (typeof matcher !== 'function') return list.length;
+    return list.filter(project => matcher(project, key)).length;
+  }
+
+  function refreshStatusDropdownCounts(){
+    const selects = Array.from(document.querySelectorAll('select'));
+    const statusSelect = selects.find(select => {
+      const values = Array.from(select.options || []).map(option => option.value);
+      return values.includes('existing-history') && values.includes('inspection-progress');
+    });
+    if (!statusSelect) return;
+
+    const list = Array.isArray(window.projects) ? window.projects : (typeof projects !== 'undefined' && Array.isArray(projects) ? projects : []);
+    const labels = {
+      'all': 'All',
+      'inspection-progress': 'Continue',
+      'scheduled-new': 'Scheduled',
+      'new-premise': 'New Premises',
+      'existing-history': 'Previous Cycles',
+      'archive-new-cycle': 'Archive / New Cycle'
+    };
+
+    Array.from(statusSelect.options || []).forEach(option => {
+      const key = option.value;
+      if (!labels[key]) return;
+      option.textContent = `${labels[key]} (${countVisibleForFilter(list, key)})`;
+    });
+  }
+
+  const previousRender = window.renderProjectsList || (typeof renderProjectsList === 'function' ? renderProjectsList : null);
+  if (previousRender && !previousRender.__fireS121HCountWrapped) {
+    const wrapped = function fireS121HRenderProjectsList(){
+      const result = previousRender.apply(this, arguments);
+      try { refreshStatusDropdownCounts(); } catch (_) {}
+      return result;
+    };
+    wrapped.__fireS121HCountWrapped = true;
+    window.renderProjectsList = wrapped;
+    try { renderProjectsList = wrapped; } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => setTimeout(refreshStatusDropdownCounts, 0));
 })();

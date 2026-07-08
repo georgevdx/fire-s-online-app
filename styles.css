@@ -16,17 +16,6 @@ body {
   margin-bottom: 20px;
 }
 
-.header h1 {
-  margin: 0 0 8px 0;
-  color: #b71c1c;
-  font-size: 28px;
-}
-
-.subtitle {
-  margin: 0;
-  color: #555;
-}
-
 .brand-version {
   margin: 4px 0 0 0;
   color: #777;
@@ -158,16 +147,6 @@ button:hover {
   margin-top: 4px;
 }
 
-/* PROJECT LIST */
-
-.project-card {
-  border: 1px solid #e5e5e5;
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 12px;
-  background: #fff;
-}
-
 .project-card h3 {
   margin: 0 0 4px 0;
   font-size: 18px;
@@ -192,13 +171,6 @@ button:hover {
   max-width: none;
   padding: 8px 14px;
   flex-shrink: 0;
-}
-
-.project-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 10px 0;
 }
 
 .project-module-badge {
@@ -318,22 +290,6 @@ button:hover {
   box-shadow: 0 0 0 4px rgba(245,124,0,0.18);
 }
 
-.project-expiry-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin: 10px 0;
-}
-
-.project-expiry-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .project-expiry-chip {
   display: inline-block;
   padding: 4px 8px;
@@ -360,13 +316,6 @@ button:hover {
   border: 1px solid #81c784;
 }
 
-.project-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-
 .project-meta-grid div {
   padding: 8px;
   border-radius: 8px;
@@ -389,18 +338,9 @@ button:hover {
   overflow-wrap: anywhere;
 }
 
-/* REPORT */
 #reportSection {
   width: 100%;
   overflow-x: hidden;
-}
-
-#reportContent {
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  background: white;
 }
 
 #reportContent * {
@@ -562,34 +502,9 @@ button:hover {
   border-bottom: 1px solid #eee;
 }
 
-/* 🔥 HIGHLIGHT FIX */
-
-.report-answer.answer-no {
-  background: #ffe5e5 !important;
-  border-left: 5px solid #b71c1c !important;
-  padding: 8px !important;
-  margin-bottom: 8px !important;
-}
-
 .report-answer.answer-no strong {
   color: #b71c1c !important;
 }
-
-.report-answer.answer-yes {
-  background: #e8f5e9 !important;
-  border-left: 5px solid #2e7d32 !important;
-  padding: 8px !important;
-  margin-bottom: 8px !important;
-}
-
-.report-answer.answer-na {
-  background: #f5f5f5 !important;
-  border-left: 5px solid #999 !important;
-  padding: 8px !important;
-  margin-bottom: 8px !important;
-}
-
-/* STATUS */
 
 .status-good {
   color: green;
@@ -604,14 +519,6 @@ button:hover {
 .status-incomplete {
   color: #d97706;
   font-weight: bold;
-}
-
-/* PHOTOS */
-
-#photoPreview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
 }
 
 .photo-item {
@@ -641,17 +548,6 @@ button:hover {
   resize: vertical;
 }
 
-.photo-delete {
-  width: 100%;
-  max-width: none;
-  margin-top: 8px;
-  padding: 9px;
-  background: #666;
-  font-size: 13px;
-}
-
-/* REPORT PHOTOS */
-
 .report-photos {
   display: flex;
   flex-wrap: wrap;
@@ -660,34 +556,6 @@ button:hover {
 
 .report-photo-item {
   width: 180px;
-}
-
-/* HEADER */
-
-.report-header {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 24px;
-  width: 100%;
-  padding-bottom: 18px;
-  margin-bottom: 24px;
-  border-bottom: 3px solid #c62828;
-}
-
-.report-meta {
-  text-align: right;
-  font-size: 13px;
-  line-height: 1.8;
-  white-space: nowrap;
-}
-
-.report-brand h1 {
-  margin: 0;
-
-  font-size: 32px;
-  letter-spacing: 2px;
-
-  color: #c62828;
 }
 
 .report-subtitle {
@@ -709,14 +577,13 @@ button:hover {
 .report-meta div {
   white-space: nowrap;
 }
-/* PRINT FIX */
 
 @media print {
-  body {
+body {
     background: white;
   }
 
-  .button-row,
+.button-row,
   #projectListSection,
   #saveBtn,
   #deleteBtn,
@@ -724,29 +591,31 @@ button:hover {
     display: none !important;
   }
 
-  .report-answer.answer-no,
+.report-answer.answer-no,
   .report-answer.answer-yes,
   .report-answer.answer-na {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  .report-summary-grid {
+.report-summary-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .report-block {
+.report-block {
     margin-bottom: 14px;
   }
 
-  .report-summary-card,
+.report-summary-card,
   .report-expiry-item,
   .report-photo-card,
   .nc-item {
     break-inside: avoid;
     page-break-inside: avoid;
   }
-}.note-input {
+}
+
+.note-input {
   width: 100%;
   max-width: 420px;
   min-height: 70px;
@@ -781,22 +650,6 @@ button:hover {
   letter-spacing: 0.04em;
 }
 
-.section-heading {
-  margin-top: 18px;
-  margin-bottom: 8px;
-  padding: 10px 12px;
-  background: #b71c1c;
-  color: white;
-  font-weight: 900;
-  text-transform: uppercase;
-  border-radius: 8px;
-  letter-spacing: 0.05em;
-
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
 #checklist {
   max-height: 70vh;
   overflow-y: auto;
@@ -813,21 +666,6 @@ button:hover {
   text-transform: uppercase;
   border-radius: 8px;
   letter-spacing: 0.05em;
-}
-.section-header {
-  font-weight: bold;
-  text-transform: uppercase;
-  background: #eee;
-  padding: 10px;
-  margin-top: 10px;
-  cursor: pointer;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.section-group {
-  padding: 5px 10px;
 }
 
 .checklist-toolbar {
@@ -870,10 +708,6 @@ button:hover {
 .answer-na {
   background: #f5f5f5;
   border-left: 5px solid #777;
-}
-
-.section-group {
-  display: block;
 }
 
 .section-group.hidden {
@@ -968,16 +802,16 @@ button:hover {
 }
 
 @media print {
-  body * {
+body * {
     visibility: hidden !important;
   }
 
-  #reportSection,
+#reportSection,
   #reportSection * {
     visibility: visible !important;
   }
 
-  #reportSection {
+#reportSection {
     display: block !important;
     position: absolute !important;
     left: 0 !important;
@@ -989,7 +823,7 @@ button:hover {
     border: none !important;
   }
 
-  #reportSection.card {
+#reportSection.card {
     box-shadow: none !important;
     border: none !important;
   }
@@ -1038,26 +872,6 @@ button:hover {
 }
 
 .risk-low {
-  color: green;
-  font-weight: bold;
-}
-
-.risk-medium {
-  color: #d97706;
-  font-weight: bold;
-}
-
-.risk-high {
-  color: #b71c1c;
-  font-weight: bold;
-}
-
-.risk-incomplete {
-  color: #666;
-  font-weight: bold;
-}
-
-.risk-low {
   color: #2e7d32;
   font-weight: 900;
 }
@@ -1085,11 +899,11 @@ button:hover {
 }
 
 @media print {
-  body {
+body {
     background: white;
   }
 
-  #reportSection {
+#reportSection {
     box-shadow: none;
     margin: 0;
   }
@@ -1112,28 +926,6 @@ button:hover {
 .nc-heading {
   break-after: avoid;
   page-break-after: avoid;
-}
-
-.project-follow {
-  font-size: 12px;
-  margin: 4px 0;
-  font-weight: bold;
-}
-
-.status-none {
-  color: #666;
-}
-
-.status-scheduled {
-  color: #2e7d32;
-}
-
-.status-soon {
-  color: #d97706;
-}
-
-.status-overdue {
-  color: #b71c1c;
 }
 
 .dashboard-summary {
@@ -1177,7 +969,7 @@ button:hover {
 
 .filter-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2 langs mekaar */
+  grid-template-columns: 1fr 1fr; 
   gap: 8px;
   margin: 12px 0;
 }
@@ -1244,28 +1036,24 @@ button:hover {
   border-color: #ccc;
 }
 
-/* 🔴 Overdue */
 .status-overdue {
   background: #ffebee;
   color: #b71c1c;
   border: 1px solid #e57373;
 }
 
-/* 🟠 Due Soon */
 .status-soon {
   background: #fff3e0;
   color: #ef6c00;
   border: 1px solid #ffb74d;
 }
 
-/* 🟢 Scheduled */
 .status-scheduled {
   background: #e8f5e9;
   color: #2e7d32;
   border: 1px solid #81c784;
 }
 
-/* ⚪ None */
 .status-none {
   background: #f5f5f5;
   color: #616161;
@@ -1300,38 +1088,6 @@ button:hover {
   font-weight: bold;
 }
 
-.home-section {
-  display: block;
-}
-
-.home-hero {
-  padding: 18px;
-  border-radius: 8px;
-  background: #111;
-  color: #fff;
-  margin-bottom: 14px;
-}
-
-.home-kicker {
-  color: #ffcc80;
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.home-hero h2 {
-  margin: 0;
-  font-size: 28px;
-  line-height: 1.1;
-}
-
-.home-hero p {
-  margin: 8px 0 0;
-  color: #f5f5f5;
-  max-width: 560px;
-}
-
 .startup-route-grid,
 .services-grid {
   display: grid;
@@ -1346,10 +1102,6 @@ button:hover {
   background: #fff;
   padding: 14px;
   text-align: left;
-}
-
-.startup-route-card {
-  cursor: pointer;
 }
 
 .startup-route-card:hover,
@@ -1377,18 +1129,6 @@ button:hover {
   color: #444;
   font-size: 13px;
   line-height: 1.35;
-}
-
-.service-card h3 {
-  margin: 0 0 8px;
-  color: #b71c1c;
-}
-
-.service-card p {
-  margin: 0 0 12px;
-  color: #444;
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .service-card button {
@@ -1517,6 +1257,7 @@ button:hover {
   flex: 1;
   min-width: 0;
 }
+
 .report-header {
   display: grid;
   grid-template-columns: 1fr 260px;
@@ -1561,28 +1302,6 @@ button:hover {
   background: white;
 }
 
-.report-photo-img {
-  width: 100%;
-
-  max-height: 320px;
-
-  object-fit: contain;
-
-  display: block;
-
-  background: #f4f4f4;
-}
-
-.report-photo-note {
-  margin-top: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  background: #f7f7f7;
-  border-left: 4px solid #c62828;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .dashboard-metrics {
   display: block;
   margin: 12px 0 18px 0;
@@ -1610,32 +1329,6 @@ button:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.metric-card {
-  display: flex;
-
-  align-items: center;
-
-  gap: 8px;
-
-  padding: 10px 14px;
-
-  border-radius: 999px;
-
-  background: white;
-
-  border: 1px solid #ddd;
-
-  cursor: pointer;
-
-  transition: all 0.2s ease;
-
-  font-size: 13px;
-
-  font-weight: 600;
-
-  white-space: nowrap;
 }
 
 .metric-number {
@@ -1750,26 +1443,6 @@ button:hover {
   color: white;
 }
 
-.brand-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-mark {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
 .cloud-menu {
   position: relative;
 }
@@ -1863,9 +1536,8 @@ button:hover {
 }
 
 @media (max-width: 700px) {
-  @media (max-width: 700px) {
-
-  .sticky-action-bar {
+@media (max-width: 700px) {
+.sticky-action-bar {
     position: fixed;
 
     left: 50%;
@@ -1896,17 +1568,17 @@ button:hover {
     backdrop-filter: blur(10px);
   }
 
-  body {
+body {
     padding-bottom: 90px;
   }
 }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     padding: 9px 11px;
     font-size: 12px;
   }
 
-  body {
+body {
     padding-bottom: 80px;
   }
 }
@@ -1937,11 +1609,11 @@ button:hover {
 }
 
 @media (max-width: 700px) {
-  .action-menu {
+.action-menu {
     position: static;
   }
 
-  .action-dropdown {
+.action-dropdown {
     position: fixed !important;
 
     left: 50% !important;
@@ -1956,13 +1628,6 @@ button:hover {
 
     z-index: 3000;
   }
-}
-
-.report-photo-card {
-  break-inside: avoid;
-  page-break-inside: avoid;
-
-  margin-bottom: 18px;
 }
 
 .report-signoff {
@@ -2057,17 +1722,6 @@ button:hover {
   width: 100%;
   padding: 8px;
   margin-top: 6px;
-}
-
-.expiry-wrapper.expiry-disabled {
-  background: #f3f3f3;
-  border-color: #d0d0d0;
-  color: #777;
-}
-
-.expiry-wrapper.expiry-disabled input {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .expiry-chip-missing {
@@ -2217,39 +1871,6 @@ button.readiness-chip:focus {
   background: #fff8e1 !important;
 }
 
-.project-search-top {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  width: 100%;
-  max-width: none;
-  margin: 0 0 12px 0;
-  padding: 12px;
-  border-radius: 10px;
-  border: 2px solid #b71c1c;
-  background: #fff;
-}
-
-.project-paging-controls {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  align-items: center;
-  margin: 8px 0 12px;
-}
-
-.project-paging-controls button {
-  width: auto;
-  max-width: none;
-  padding: 8px 12px;
-}
-
-.project-paging-controls span {
-  font-size: 13px;
-  font-weight: 700;
-  color: #555;
-}
-
 .filter-toggle-btn {
   width: 100%;
   max-width: none;
@@ -2259,14 +1880,6 @@ button.readiness-chip:focus {
   background: #333;
   color: white;
   font-weight: 800;
-}
-
-.filter-panel {
-  margin: 8px 0 12px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: #fafafa;
 }
 
 .project-search-top {
@@ -2340,34 +1953,8 @@ button.readiness-chip:focus {
   scroll-margin-top: 95px;
 }
 
-.service-request-form {
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  background: #fafafa;
-}
-
-.service-request-form h3 {
-  margin-top: 0;
-  color: #b71c1c;
-}
-
-.service-request-form textarea {
-  width: 100%;
-  max-width: 420px;
-  min-height: 110px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-family: Arial, sans-serif;
-  font-size: 15px;
-  box-sizing: border-box;
-  resize: vertical;
-}
-
 @media (max-width: 700px) {
-  .service-request-form textarea,
+.service-request-form textarea,
   #serviceMessage {
     width: 100%;
     max-width: none;
@@ -2376,7 +1963,7 @@ button.readiness-chip:focus {
     line-height: 1.45;
   }
 
-  .service-request-form input {
+.service-request-form input {
     width: 100%;
     max-width: none;
   }
@@ -2390,38 +1977,11 @@ button.readiness-chip:focus {
   margin-top: 12px;
 }
 
-.service-request-card {
-  margin-bottom: 10px;
-  padding: 12px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-left: 5px solid #b71c1c;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 .service-request-title {
   margin-bottom: 8px;
   color: #b71c1c;
   font-weight: 900;
   font-size: 15px;
-}
-
-.service-request-card {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.service-request-card div {
-  max-width: 100%;
-}
-
-.service-request-message {
-  margin-top: 6px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .service-request-card {
@@ -2437,94 +1997,16 @@ button.readiness-chip:focus {
   word-break: break-word;
 }
 
-.service-request-message {
-  display: block;
-  max-width: 100%;
-  margin-top: 6px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.service-request-message strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.service-request-message {
-  display: block;
-  max-width: 100%;
-  margin-top: 2px;
-  line-height: 1.3;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.service-request-message strong {
-  display: inline;
-  margin-bottom: 0;
-  margin-right: 4px;
-}
-
-.service-request-message {
-  display: block;
-  margin-top: 4px;
-  padding: 0;
-  text-align: left;
-  line-height: 1.25;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.service-request-message strong {
-  display: inline;
-  margin: 0 4px 0 0;
-  padding: 0;
-  text-align: left;
-}
-
 .service-request-message span {
   display: inline;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-.service-request-form {
-  clear: both;
-  margin-top: 18px;
-}
-
-.service-request-form .form-row {
-  margin-bottom: 12px;
-}
-
-.service-request-form input,
-.service-request-form textarea {
-  width: 100%;
-  max-width: none;
-}
-
-.service-request-form .button-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.service-request-form .button-row button {
-  width: 100%;
-  max-width: none;
-}
-
 @media (max-width: 700px) {
-  .service-request-form .button-row {
+.service-request-form .button-row {
     grid-template-columns: 1fr;
   }
-}
-
-.service-request-form textarea {
-  min-height: 130px;
 }
 
 .service-request-form {
@@ -2573,7 +2055,7 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .service-request-form .button-row {
+.service-request-form .button-row {
     grid-template-columns: 1fr;
   }
 }
@@ -2629,10 +2111,6 @@ button.readiness-chip:focus {
   white-space: nowrap;
 }
 
-.service-request-detail-card {
-  margin-top: 12px;
-}
-
 .service-request-category {
   display: inline-block;
   margin-bottom: 8px;
@@ -2662,15 +2140,15 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .service-request-list-item {
+.service-request-list-item {
     grid-template-columns: 1fr;
   }
 
-  .service-request-list-date {
+.service-request-list-date {
     white-space: normal;
   }
 
-  .service-request-detail-row {
+.service-request-detail-row {
     grid-template-columns: 1fr;
     gap: 2px;
   }
@@ -2708,22 +2186,6 @@ button.readiness-chip:focus {
   margin-top: 12px;
 }
 
-.inspection-project-list-item {
-  width: 100%;
-  max-width: none;
-  display: grid;
-  grid-template-columns: 1.4fr auto auto auto;
-  gap: 8px;
-  align-items: center;
-  text-align: left;
-  background: #fff;
-  color: #222;
-  border: 1px solid #ddd;
-  border-left: 5px solid #b71c1c;
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-
 .inspection-project-list-item:hover,
 .inspection-project-list-item:focus {
   background: #fff5f5;
@@ -2742,26 +2204,11 @@ button.readiness-chip:focus {
   color: #666;
 }
 
-.inspection-project-list-status,
-.inspection-project-list-follow {
-  font-size: 12px;
-  font-weight: 800;
-  border-radius: 999px;
-  padding: 4px 8px;
-}
-
 .inspection-project-list-address {
   grid-column: 1 / -1;
   color: #555;
   font-size: 13px;
   line-height: 1.35;
-}
-
-.project-summary-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 12px 0;
 }
 
 .project-summary-close-btn,
@@ -2776,11 +2223,11 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .inspection-project-list-item {
+.inspection-project-list-item {
     grid-template-columns: 1fr;
   }
 
-  .inspection-project-list-address {
+.inspection-project-list-address {
     grid-column: auto;
   }
 }
@@ -2799,11 +2246,6 @@ button.readiness-chip:focus {
   opacity: 1;
 }
 
-.appendix-title {
-  break-after: avoid;
-  page-break-after: avoid;
-}
-
 .report-photo-header,
 .report-photo-time,
 .report-photo-note {
@@ -2811,75 +2253,12 @@ button.readiness-chip:focus {
   page-break-inside: avoid;
 }
 
-.report-photo-img {
-  display: block;
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  max-height: 190mm;
-  object-fit: contain;
-  margin: 8px auto 10px auto;
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-.report-photo-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10mm;
-  align-items: start;
-}
-
-.report-photo-header {
-  font-weight: 700;
-  margin-bottom: 2mm;
-}
-
-.report-photo-time {
-  font-size: 10px;
-  margin-bottom: 4mm;
-}
-
-.report-photo-image-box {
-  height: 75mm;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.report-photo-note {
-  font-size: 10px;
-  margin-top: 4mm;
-  min-height: 12mm;
-}
-
-.report-photo-page {
-  break-before: page;
-  page-break-before: always;
-  break-after: page;
-  page-break-after: always;
-  box-sizing: border-box;
-  min-height: 260mm;
-}
-
-/* REPORT PHOTO APPENDIX - PDF STABLE VERSION */
-
 .report-photo-page {
   page-break-before: always;
   break-before: page;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-
-.appendix-title {
-  margin: 0 0 6mm 0;
-  color: #b71c1c;
-  font-size: 18px;
-  page-break-after: avoid;
-  break-after: avoid;
 }
 
 .report-photo-grid {
@@ -2952,97 +2331,6 @@ button.readiness-chip:focus {
   border-left: 3px solid #c62828;
   padding: 2mm;
 }
-
-/* REPORT PHOTO APPENDIX - PDF STABLE VERSION */
-
-.report-photo-page {
-  page-break-before: always;
-  break-before: page;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-.appendix-title {
-  margin: 0 0 6mm 0;
-  color: #b71c1c;
-  font-size: 18px;
-  page-break-after: avoid;
-  break-after: avoid;
-}
-
-.report-photo-grid {
-  display: table;
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 5mm;
-  table-layout: fixed;
-}
-
-.report-photo-row {
-  display: table-row;
-}
-
-.report-photo-cell {
-  display: table-cell;
-  width: 50%;
-  vertical-align: top;
-}
-
-.report-photo-card {
-  border: 1px solid #ddd;
-  padding: 3mm;
-  box-sizing: border-box;
-  height: 105mm;
-  overflow: hidden;
-  background: #fff;
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-.report-photo-header {
-  font-weight: 700;
-  font-size: 10px;
-  margin-bottom: 1mm;
-}
-
-.report-photo-time {
-  font-size: 8.5px;
-  margin-bottom: 2mm;
-  color: #555;
-}
-
-.report-photo-image-box {
-  height: 65mm;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #f7f7f7;
-}
-
-.report-photo-img {
-  display: block;
-  max-width: 100%;
-  max-height: 65mm;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
-
-.report-photo-note {
-  font-size: 8.5px;
-  line-height: 1.25;
-  margin-top: 2mm;
-  max-height: 22mm;
-  overflow: hidden;
-  background: #f7f7f7;
-  border-left: 3px solid #c62828;
-  padding: 2mm;
-}
-
-/* REPORT CLIENT BRAND HEADER */
 
 .report-client-header {
   display: grid;
@@ -3086,46 +2374,15 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .report-client-header {
+.report-client-header {
     grid-template-columns: 1fr;
   }
-}
-
-.inspection-quick-actions {
-  background: #ffffff;
-  border: 1px solid #dfe7ef;
-  border-radius: 12px;
-  padding: 8px 10px;
-  margin: 0 0 12px 0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-}
-
-.quick-actions-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  margin-bottom: 6px;
-  color: #607080;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .quick-actions-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.quick-actions-grid button {
-  border: 1px solid #cfe0ef;
-  border-radius: 999px;
-  padding: 6px 10px;
-  background: #f7fbff;
-  color: #123047;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  white-space: nowrap;
 }
 
 .quick-actions-grid button:hover {
@@ -3290,35 +2547,12 @@ button.readiness-chip:focus {
   line-height: 1.25;
 }
 
-.project-action-buttons {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin: 8px 0 12px;
-}
-
-.compact-action-btn {
-  padding: 7px 11px;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1;
-  min-height: 34px;
-  border: none;
-  cursor: pointer;
-}
-
-.compact-action-secondary {
-  opacity: 0.92;
-}
-
 @media (max-width: 520px) {
-  .project-action-buttons {
+.project-action-buttons {
     gap: 6px;
   }
 
-  .compact-action-btn {
+.compact-action-btn {
     padding: 7px 10px;
     font-size: 0.78rem;
     min-height: 32px;
@@ -3350,27 +2584,17 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 520px) {
-  .project-action-buttons {
+.project-action-buttons {
     gap: 12px;
     margin: 12px 0 18px;
   }
 
-  .compact-action-btn {
+.compact-action-btn {
     padding: 8px 12px;
     font-size: 0.8rem;
     min-height: 36px;
     min-width: 88px;
   }
-}
-
-.form-help-text {
-  margin: 4px 0 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #f4f7fb;
-  color: #425466;
-  font-size: 0.85rem;
-  line-height: 1.35;
 }
 
 .form-help-text {
@@ -3426,45 +2650,6 @@ button.readiness-chip:focus {
   border-color: #81c784;
 }
 
-.offline-readiness-banner {
-  margin: 10px 0 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  background: #f7f7f7;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.offline-readiness-banner strong {
-  display: block;
-  margin-bottom: 3px;
-  font-size: 13px;
-}
-
-.offline-readiness-banner span {
-  color: #555;
-  font-weight: 700;
-}
-
-.offline-readiness-banner small {
-  display: block;
-  margin-top: 4px;
-  color: #666;
-}
-
-.offline-ready {
-  background: #e8f5e9;
-  border-color: #81c784;
-  color: #1b5e20;
-}
-
-.offline-not-ready {
-  background: #fff3e0;
-  border-color: #ffb74d;
-  color: #6d3c00;
-}
-
 .floating-back-projects-btn {
   position: fixed;
   left: 14px;
@@ -3488,7 +2673,7 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .floating-back-projects-btn {
+.floating-back-projects-btn {
     left: 12px;
     bottom: 78px;
     padding: 9px 12px;
@@ -3501,101 +2686,48 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .sticky-action-bar {
+.sticky-action-bar {
     max-width: calc(100% - 16px);
     gap: 5px;
     padding: 7px;
   }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     padding: 8px 9px;
     font-size: 11px;
     min-width: 0;
   }
 
-  .sticky-projects-btn {
+.sticky-projects-btn {
     min-width: 68px;
   }
-}
-
-.checklist-section-tabs {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 8px 0 12px;
-  margin-bottom: 8px;
-  scroll-snap-type: x mandatory;
-}
-
-.checklist-section-tab {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-  border-radius: 999px;
-  padding: 9px 12px;
-  font-size: 12px;
-  white-space: nowrap;
-  background: #fff3e0;
-  color: #5d2800;
-  border: 1px solid #ffcc80;
-}
-
-.checklist-question-nav {
-  position: sticky;
-  top: 8px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 8px;
-  margin: 8px 0 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.checklist-question-nav button {
-  min-width: 72px;
-  padding: 8px 10px;
-}
-
-.checklist-question-nav span {
-  font-size: 12px;
-  font-weight: 700;
-  color: #333;
 }
 
 .checklist-row.question-hidden {
   display: none;
 }
 
-.checklist-row.active-checklist-question {
-  border: 2px solid #b71c1c;
-  box-shadow: 0 4px 14px rgba(183, 28, 28, 0.16);
-}
-
 @media (max-width: 700px) {
-  .checklist-section-tabs {
+.checklist-section-tabs {
     margin-left: -4px;
     margin-right: -4px;
     padding-left: 4px;
     padding-right: 4px;
   }
 
-  .checklist-section-tab {
+.checklist-section-tab {
     font-size: 11px;
     padding: 8px 10px;
   }
 
-  .checklist-section-tab.active-section-tab {
+.checklist-section-tab.active-section-tab {
   background: #b71c1c;
   color: #ffffff;
   border-color: #b71c1c;
   font-weight: 700;
 }
 
-  .checklist-question-nav {
+.checklist-question-nav {
     top: 6px;
   }
 }
@@ -3603,12 +2735,6 @@ button.readiness-chip:focus {
 .checklist-row.active-checklist-question {
   min-height: 620px;
   padding: 16px;
-}
-
-.checklist-row.active-checklist-question > div:first-child {
-  font-size: 15px;
-  line-height: 1.35;
-  margin-bottom: 8px;
 }
 
 .checklist-row.active-checklist-question .answer-select {
@@ -3621,15 +2747,14 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .checklist-row.active-checklist-question {
+.checklist-row.active-checklist-question {
     min-height: 680px;
   }
 }
 
-  .checklist-row.active-checklist-question > div:first-child {
+.checklist-row.active-checklist-question > div:first-child {
     font-size: 16px;
   }
-
 
 .hidden-photo-input {
   position: absolute;
@@ -3649,31 +2774,6 @@ button.readiness-chip:focus {
   margin-bottom: 8px;
 }
 
-.checklist-section-tabs {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 8px 0 12px;
-  margin-bottom: 4px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-
-.checklist-section-tab {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-  min-width: 150px;
-  max-width: 240px;
-  border-radius: 999px;
-  padding: 9px 12px;
-  font-size: 12px;
-  white-space: normal;
-  text-align: center;
-  background: #fff3e0;
-  color: #5d2800;
-  border: 1px solid #ffcc80;
-}
-
 .checklist-tab-hint {
   font-size: 11px;
   color: #777;
@@ -3687,7 +2787,6 @@ button.readiness-chip:focus {
   border-color: #b71c1c;
   font-weight: 700;
 }
-
 
 .photo-delete {
   min-width: 34px;
@@ -3811,8 +2910,6 @@ button.readiness-chip:focus {
 .beta-feedback-admin-actions button {
   justify-self: start;
 }
-
-/* Beta 9.1b — layout alignment patch */
 
 .startup-route-grid,
 .services-grid,
@@ -3938,55 +3035,53 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 640px) {
-  .startup-route-grid,
+.startup-route-grid,
   .services-grid,
   .metric-row,
   .quick-actions-grid {
     grid-template-columns: 1fr;
   }
 
-  .project-summary-actions {
+.project-summary-actions {
     grid-template-columns: 1fr;
   }
 
-  .project-meta-grid {
+.project-meta-grid {
     grid-template-columns: 1fr;
   }
 
-  .button-row,
+.button-row,
   .schedule-new-actions {
     display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .sticky-action-bar {
+.sticky-action-bar {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 
-  .sticky-action-bar .action-menu {
+.sticky-action-bar .action-menu {
     grid-column: 1 / -1;
   }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     width: 100%;
   }
 
-  .project-badges,
+.project-badges,
   .project-expiry-summary {
     align-items: stretch;
   }
 
-  .project-badges span,
+.project-badges span,
   .project-expiry-chip {
     width: 100%;
     justify-content: flex-start;
   }
 }
-
-/* Beta 9.2 — frontpage alignment */
 
 .home-section {
   overflow: hidden;
@@ -4050,44 +3145,42 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 640px) {
-  .home-section {
+.home-section {
     padding: 14px;
   }
 
-  .home-hero {
+.home-hero {
     margin-bottom: 12px;
   }
 
-  .home-hero h2 {
+.home-hero h2 {
     font-size: 22px;
   }
 
-  .home-hero p {
+.home-hero p {
     font-size: 13px;
   }
 
-  .startup-route-grid {
+.startup-route-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .startup-route-card {
+.startup-route-card {
     min-height: 86px;
     padding: 12px;
   }
 
-  .startup-route-card .route-title,
+.startup-route-card .route-title,
   .route-title {
     font-size: 15px;
   }
 
-  .startup-route-card .route-copy,
+.startup-route-card .route-copy,
   .route-copy {
     font-size: 12px;
   }
 }
-
-/* Beta 9.4 — Master inspection command menu shell */
 
 .inspection-command-shell {
   position: sticky;
@@ -4149,19 +3242,17 @@ button.readiness-chip:focus {
 }
 
 @media (min-width: 720px) {
-  .inspection-command-menu {
+.inspection-command-menu {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Beta 9.4b — sticky mobile command menu */
-
 @media (max-width: 640px) {
-  #projectFormSection {
+#projectFormSection {
     padding-bottom: 120px;
   }
 
-  .inspection-command-shell {
+.inspection-command-shell {
     position: fixed;
     left: 10px;
     right: 10px;
@@ -4172,41 +3263,39 @@ button.readiness-chip:focus {
     max-height: 70vh;
   }
 
-  .inspection-command-header {
+.inspection-command-header {
     padding: 8px 10px;
   }
 
-  .inspection-command-menu {
+.inspection-command-menu {
     max-height: 55vh;
     overflow-y: auto;
   }
 
-  .inspection-command-brand {
+.inspection-command-brand {
     grid-template-columns: 1fr;
   }
 
-  .inspection-command-brand strong,
+.inspection-command-brand strong,
   .inspection-command-brand span {
     font-size: 11px;
   }
 }
 
-/* Beta 9.4b — bottom action bar alignment */
-
 @media (max-width: 640px) {
-  .sticky-action-bar {
+.sticky-action-bar {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     align-items: stretch;
   }
 
-  .sticky-action-bar .action-menu {
+.sticky-action-bar .action-menu {
     grid-column: auto;
     min-width: 0;
   }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     width: 100%;
     min-width: 0;
     min-height: 44px;
@@ -4216,16 +3305,16 @@ button.readiness-chip:focus {
     align-items: center;
   }
 
-  .sticky-projects-btn {
+.sticky-projects-btn {
     text-align: center;
     justify-content: center;
   }
 
-  #backBtn {
+#backBtn {
     text-align: center;
   }
 
-  #actionMenuBtn {
+#actionMenuBtn {
     width: 100%;
   }
 }
@@ -4238,14 +3327,12 @@ button.readiness-chip:focus {
   text-align: center;
 }
 
-/* Beta 9.4c — compact bottom sticky bar */
-
 @media (max-width: 640px) {
-  #projectFormSection {
+#projectFormSection {
     padding-bottom: 88px;
   }
 
-  .sticky-action-bar {
+.sticky-action-bar {
     position: fixed;
     left: 8px;
     right: 8px;
@@ -4261,7 +3348,7 @@ button.readiness-chip:focus {
     box-shadow: 0 4px 16px rgba(0,0,0,0.16);
   }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     width: 100%;
     min-width: 0;
     min-height: 38px;
@@ -4274,12 +3361,12 @@ button.readiness-chip:focus {
     justify-content: center;
   }
 
-  .sticky-action-bar .action-menu {
+.sticky-action-bar .action-menu {
     grid-column: auto;
     min-width: 0;
   }
 
-  .sticky-projects-btn,
+.sticky-projects-btn,
   #backBtn,
   #saveBtn,
   #finishBtn,
@@ -4288,7 +3375,7 @@ button.readiness-chip:focus {
     justify-content: center;
   }
 
-  .action-dropdown {
+.action-dropdown {
     position: fixed;
     left: 8px;
     right: 8px;
@@ -4299,10 +3386,8 @@ button.readiness-chip:focus {
   }
 }
 
-/* Beta 9.4d — viewport-safe bottom sticky bar */
-
 @media (max-width: 640px) {
-  .sticky-action-bar {
+.sticky-action-bar {
     position: fixed !important;
     left: 8px !important;
     right: 8px !important;
@@ -4325,14 +3410,14 @@ button.readiness-chip:focus {
     box-shadow: 0 4px 16px rgba(0,0,0,0.16);
   }
 
-  .sticky-action-bar > button,
+.sticky-action-bar > button,
   .sticky-action-bar > .action-menu {
     min-width: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     width: 100% !important;
     min-width: 0 !important;
     min-height: 38px;
@@ -4347,11 +3432,11 @@ button.readiness-chip:focus {
     white-space: nowrap;
   }
 
-  .sticky-action-bar .action-menu {
+.sticky-action-bar .action-menu {
     grid-column: auto !important;
   }
 
-  #backBtn,
+#backBtn,
   #saveBtn,
   #finishBtn,
   #actionMenuBtn {
@@ -4359,7 +3444,7 @@ button.readiness-chip:focus {
     justify-content: center;
   }
 
-  .action-dropdown {
+.action-dropdown {
     position: fixed !important;
     left: 8px !important;
     right: 8px !important;
@@ -4371,14 +3456,12 @@ button.readiness-chip:focus {
   }
 }
 
-/* Beta 9.4e — final mobile bottom controls alignment */
-
 @media (max-width: 640px) {
-  #projectFormSection {
+#projectFormSection {
     padding-bottom: 118px !important;
   }
 
-  .sticky-action-bar {
+.sticky-action-bar {
     position: fixed !important;
 
     left: 50% !important;
@@ -4405,7 +3488,7 @@ button.readiness-chip:focus {
     box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
   }
 
-  .sticky-action-bar > button,
+.sticky-action-bar > button,
   .sticky-action-bar > .action-menu {
     width: 100% !important;
     min-width: 0 !important;
@@ -4414,7 +3497,7 @@ button.readiness-chip:focus {
     box-sizing: border-box !important;
   }
 
-  .sticky-action-bar button {
+.sticky-action-bar button {
     width: 100% !important;
     min-width: 0 !important;
     min-height: 38px !important;
@@ -4432,7 +3515,7 @@ button.readiness-chip:focus {
     box-sizing: border-box !important;
   }
 
-  #backBtn,
+#backBtn,
   #saveBtn,
   #finishBtn,
   #actionMenuBtn {
@@ -4440,7 +3523,7 @@ button.readiness-chip:focus {
     justify-content: center !important;
   }
 
-  .inspection-command-shell {
+.inspection-command-shell {
     position: fixed !important;
 
     left: 50% !important;
@@ -4457,29 +3540,29 @@ button.readiness-chip:focus {
     z-index: 180 !important;
   }
 
-  .inspection-command-header {
+.inspection-command-header {
     padding: 6px 8px !important;
     grid-template-columns: 1fr auto !important;
   }
 
-  .inspection-command-brand strong,
+.inspection-command-brand strong,
   .inspection-command-brand span {
     font-size: 10px !important;
     line-height: 1.05 !important;
   }
 
-  #inspectionMenuToggleBtn {
+#inspectionMenuToggleBtn {
     min-height: 36px !important;
     padding: 6px 12px !important;
     font-size: 12px !important;
   }
 
-  .inspection-command-menu {
+.inspection-command-menu {
     max-height: 48vh !important;
     overflow-y: auto !important;
   }
 
-  .action-dropdown {
+.action-dropdown {
     position: fixed !important;
 
     left: 50% !important;
@@ -4494,25 +3577,6 @@ button.readiness-chip:focus {
 
     z-index: 220 !important;
   }
-}
-
-/* Beta 9.5a — section focus mode */
-
-.inspection-section-focused {
-  position: relative;
-  border: 2px solid #b71c1c !important;
-  box-shadow: 0 0 0 4px rgba(183, 28, 28, 0.08), 0 6px 18px rgba(0,0,0,0.12) !important;
-  scroll-margin-top: 90px;
-}
-
-.inspection-section-focus-toolbar {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 12px;
-  background: #fff8f8;
-  border: 1px solid #f0c7c7;
 }
 
 .inspection-section-focus-title {
@@ -4540,22 +3604,20 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 640px) {
-  .inspection-section-focused {
+.inspection-section-focused {
     scroll-margin-top: 12px;
     margin-bottom: 86px;
   }
 
-  .inspection-section-focus-toolbar {
+.inspection-section-focus-toolbar {
     position: sticky;
     top: 8px;
     z-index: 70;
   }
 }
 
-/* Beta 9.5b — compact section focus polish */
-
 @media (max-width: 640px) {
-  .inspection-section-focus-toolbar {
+.inspection-section-focus-toolbar {
     display: grid;
     grid-template-columns: 1fr;
     gap: 6px;
@@ -4564,30 +3626,30 @@ button.readiness-chip:focus {
     border-radius: 10px;
   }
 
-  .inspection-section-focus-title {
+.inspection-section-focus-title {
     font-size: 12px;
     line-height: 1.1;
   }
 
-  .inspection-section-focus-actions {
+.inspection-section-focus-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
   }
 
-  .inspection-section-focus-actions button {
+.inspection-section-focus-actions button {
     min-height: 32px;
     padding: 5px 4px;
     font-size: 11px;
     line-height: 1.1;
   }
 
-  .inspection-section-focused {
+.inspection-section-focused {
     scroll-margin-top: 80px;
     margin-bottom: 80px;
   }
 
-  @media (max-width: 640px) {
-  #inspectionQuickActions,
+@media (max-width: 640px) {
+#inspectionQuickActions,
   #projectDetailsCard,
   #requirementsSection,
   #checklistCard,
@@ -4598,8 +3660,6 @@ button.readiness-chip:focus {
   }
 }
 }
-
-/* Beta 10.1a — report heading polish */
 
 .report-title {
   font-size: 18px;
@@ -4624,8 +3684,6 @@ button.readiness-chip:focus {
 .appendix-title {
   letter-spacing: 0.04em;
 }
-
-/* Beta 10.1b — executive summary polish */
 
 .executive-summary-grid {
   display: grid;
@@ -4674,17 +3732,17 @@ button.readiness-chip:focus {
 }
 
 @media print {
-  .executive-summary-grid {
+.executive-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .executive-summary-card {
+.executive-summary-card {
     break-inside: avoid;
   }
 }
 
 @media (max-width: 640px) {
-  .executive-summary-grid {
+.executive-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -4694,8 +3752,6 @@ button.readiness-chip:focus {
   width: 100%;
   max-width: 420px;
 }
-
-/* Beta 11.10 — blue navigation buttons */
 
 .archive-panel-top {
   display: flex;
@@ -4724,8 +3780,6 @@ button.readiness-chip:focus {
   width: 100%;
   margin-top: 10px;
 }
-
-/* Beta 11.11 — archive polish */
 
 .inspection-archive-launcher {
   margin-top: 10px;
@@ -4762,12 +3816,6 @@ button.readiness-chip:focus {
 
 .archive-actions .primary-small-btn {
   font-weight: 700;
-}
-
-/* Beta 11.12 — combined quick readiness summary */
-
-.quick-readiness-summary {
-  margin-top: 10px;
 }
 
 .quick-readiness-topline {
@@ -4840,18 +3888,8 @@ button.readiness-chip:focus {
   color: #334155;
 }
 
-/* Beta 11.12 — smart quick links */
-
 .quick-readiness-summary {
   margin-top: 10px;
-}
-
-.quick-progress-line,
-.quick-clear-line {
-  padding: 8px 10px;
-  border-radius: 10px;
-  font-size: 13px;
-  margin-bottom: 8px;
 }
 
 .quick-progress-line {
@@ -4866,68 +3904,6 @@ button.readiness-chip:focus {
   color: #166534;
 }
 
-.quick-link-section-title {
-  margin: 10px 0 6px;
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #334155;
-}
-
-.quick-link-list {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 8px;
-}
-
-.quick-link-chip {
-  width: 100%;
-  border-radius: 10px;
-  padding: 8px 10px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 8px;
-  align-items: center;
-  text-align: left;
-  cursor: pointer;
-  min-height: 0;
-}
-
-.quick-link-chip strong {
-  font-size: 17px;
-}
-
-.quick-link-main {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.quick-link-chip small {
-  grid-column: 1 / -1;
-  font-size: 11px;
-  line-height: 1.25;
-  opacity: 0.85;
-}
-
-.quick-link-progress {
-  background: #eff6ff;
-  border: 1px solid #60a5fa;
-  color: #1e3a8a;
-}
-
-.quick-link-warning {
-  background: #fffbeb;
-  border: 1px solid #f59e0b;
-  color: #92400e;
-}
-
-.quick-link-danger {
-  background: #fef2f2;
-  border: 1px solid #ef4444;
-  color: #991b1b;
-}
-
 .back-to-quick-links-btn {
   margin-bottom: 8px;
   padding: 7px 10px;
@@ -4940,42 +3916,11 @@ button.readiness-chip:focus {
   cursor: pointer;
 }
 
-/* Beta 11.13 — quick links compact polish */
-
-.quick-actions-title {
-  font-size: 14px;
-  font-weight: 900;
-}
-
 .quick-progress-line,
 .quick-clear-line {
   font-size: 12px;
   padding: 7px 9px;
 }
-
-.quick-link-chip {
-  padding: 7px 9px;
-  border-radius: 9px;
-}
-
-.quick-link-main {
-  font-size: 12px;
-}
-
-.quick-link-chip strong {
-  font-size: 15px;
-}
-
-.quick-link-chip small {
-  font-size: 10.5px;
-}
-
-.quick-link-section-title {
-  font-size: 11px;
-  margin-top: 9px;
-}
-
-/* Beta 11.15 — finish summary */
 
 #activeFilterStatus {
   align-items: center;
@@ -4985,8 +3930,6 @@ button.readiness-chip:focus {
 #activeFilterStatus span {
   line-height: 1.35;
 }
-
-/* Beta 11.15c — finish summary visual polish */
 
 .finish-summary-banner {
   margin: 12px 0;
@@ -5036,8 +3979,6 @@ button.readiness-chip:focus {
   cursor: pointer;
 }
 
-/* Beta 11.19 — field-use offline readiness */
-
 .offline-readiness-banner {
   margin: 12px 0;
   padding: 12px;
@@ -5079,8 +4020,6 @@ button.readiness-chip:focus {
   border: 1px solid #ef4444;
   color: #991b1b;
 }
-
-/* Beta 11.20 — site-ready preflight checklist */
 
 .site-ready-preflight {
   margin: 12px 0;
@@ -5161,8 +4100,6 @@ button.readiness-chip:focus {
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
-/* Beta 11.20b — collapsed site-ready preflight */
-
 .site-ready-collapsed {
   padding: 10px 12px;
 }
@@ -5179,8 +4116,6 @@ button.readiness-chip:focus {
   font-size: 12px;
   font-weight: 800;
 }
-
-/* Beta 11.21 — post-site sync reminder */
 
 .post-site-sync-reminder {
   margin: 12px 0;
@@ -5221,8 +4156,6 @@ button.readiness-chip:focus {
   font-weight: 800;
 }
 
-/* Beta 11.23c — beta feedback auto-fill hint */
-
 .beta-autofill-hint {
   margin: 8px 0 12px;
   padding: 8px 10px;
@@ -5234,8 +4167,6 @@ button.readiness-chip:focus {
   font-weight: 800;
   line-height: 1.35;
 }
-
-/* Beta 11.23d — beta feedback admin readability polish */
 
 .beta-feedback-top-polished {
   align-items: flex-start;
@@ -5340,16 +4271,14 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 640px) {
-  .beta-feedback-context-grid {
+.beta-feedback-context-grid {
     grid-template-columns: 1fr;
   }
 
-  .beta-feedback-badges {
+.beta-feedback-badges {
     justify-content: flex-start;
   }
 }
-
-/* Beta 11.23e — beta feedback status filters */
 
 .beta-feedback-filter-bar {
   display: flex;
@@ -5378,8 +4307,6 @@ button.readiness-chip:focus {
   border-color: #b71c1c;
   color: #ffffff;
 }
-
-/* Beta 11.25 — beta user quick test checklist */
 
 .beta-quick-test-panel {
   margin: 12px 0 16px;
@@ -5461,8 +4388,6 @@ button.readiness-chip:focus {
 .beta-quick-test-final {
   border-left: 4px solid #b71c1c;
 }
-
-/* Beta 11.26 — release candidate readiness checklist */
 
 .release-candidate-panel {
   margin: 12px 0 16px;
@@ -5555,8 +4480,6 @@ button.readiness-chip:focus {
   margin-top: 4px;
 }
 
-/* Beta 11.28 — RC backup reminder polish */
-
 .rc-backup-reminder-panel {
   margin: 12px 0 16px;
   border-radius: 14px;
@@ -5625,8 +4548,6 @@ button.readiness-chip:focus {
   background: #ffffff;
   border: 1px solid #e2e8f0;
 }
-
-/* Beta 11.29 — RC final preflight summary */
 
 .rc-final-preflight-panel {
   margin: 12px 0 16px;
@@ -5719,8 +4640,6 @@ button.readiness-chip:focus {
   border-left: 4px solid #f59e0b;
 }
 
-/* Beta 11.30 — Home panel button width polish */
-
 .beta-notes-header button,
 .beta-quick-test-header button,
 .release-candidate-header button,
@@ -5753,7 +4672,7 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 520px) {
-  .beta-notes-header,
+.beta-notes-header,
   .beta-quick-test-header,
   .release-candidate-header,
   .rc-backup-reminder-header,
@@ -5762,7 +4681,7 @@ button.readiness-chip:focus {
     align-items: stretch;
   }
 
-  .beta-notes-header button,
+.beta-notes-header button,
   .beta-quick-test-header button,
   .release-candidate-header button,
   .rc-backup-reminder-header button,
@@ -5772,16 +4691,12 @@ button.readiness-chip:focus {
   }
 }
 
-/* Beta 11.31 — RC final label polish */
-
 .rc-badge {
   background: #0f172a;
   color: #ffffff;
   border: 1px solid #334155;
   letter-spacing: 0.06em;
 }
-
-/* Beta 11.32 — RC tester instruction note */
 
 .rc-tester-instruction-panel {
   margin: 12px 0 16px;
@@ -5870,19 +4785,17 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 520px) {
-  .rc-tester-instruction-header {
+.rc-tester-instruction-header {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .rc-tester-instruction-header button {
+.rc-tester-instruction-header button {
     width: 100%;
     min-width: 0;
   }
 }
 
-/* Beta 11.33 — Follow-up findings-only checklist */
-
 .follow-up-finding-mode-banner {
   margin: 0 0 12px;
   padding: 11px 12px;
@@ -5906,39 +4819,6 @@ button.readiness-chip:focus {
   font-weight: 750;
   line-height: 1.35;
 }
-
-
-
-
-
-/* Beta 11.33 — Follow-up findings-only checklist */
-
-.follow-up-finding-mode-banner {
-  margin: 0 0 12px;
-  padding: 11px 12px;
-  border-radius: 12px;
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
-}
-
-.follow-up-finding-mode-banner strong {
-  display: block;
-  color: #9a3412;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.follow-up-finding-mode-banner span {
-  display: block;
-  margin-top: 3px;
-  color: #7c2d12;
-  font-size: 12px;
-  font-weight: 750;
-  line-height: 1.35;
-}
-
-
-/* Beta 11.33d — Follow-up finding navigation */
 
 .follow-up-finding-nav {
   display: flex;
@@ -5970,18 +4850,17 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 520px) {
-  .follow-up-finding-nav {
+.follow-up-finding-nav {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .follow-up-finding-nav button {
+.follow-up-finding-nav button {
     width: 100%;
     min-width: 0;
   }
 }
 
-/* Focused inspection section mode */
 .inspection-section-hidden {
   display: none !important;
 }
@@ -6007,17 +4886,6 @@ button.readiness-chip:focus {
   text-transform: uppercase;
 }
 
-.pdf-export-mode {
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  overflow: visible !important;
-}
-
-.pdf-export-mode * {
-  box-sizing: border-box !important;
-}
-
 .pdf-export-mode table,
 .pdf-export-mode .report-block,
 .pdf-export-mode .report-answer-row,
@@ -6031,121 +4899,10 @@ button.readiness-chip:focus {
   height: auto !important;
 }
 
-.pdf-export-mode .report-photo-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-.pdf-export-sandbox {
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 794px !important;
-  background: #ffffff !important;
-  z-index: -1 !important;
-  overflow: visible !important;
-}
-
-.pdf-export-mode {
-  display: block !important;
-  width: 794px !important;
-  max-width: 794px !important;
-  min-width: 794px !important;
-  margin: 0 !important;
-  padding: 24px 36px 24px 36px !important;
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  overflow: visible !important;
-  transform: none !important;
-  position: relative !important;
-  left: 0 !important;
-}
-
-.pdf-export-mode * {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.pdf-export-mode button,
-.pdf-export-mode .no-pdf,
-.pdf-export-mode .report-export-actions,
-.pdf-export-mode .archive-export-actions {
-  display: none !important;
-}
-
-.pdf-export-mode img {
-  max-width: 100% !important;
-  height: auto !important;
-}
-
 .pdf-export-mode table {
   width: 100% !important;
   max-width: 100% !important;
 }
-
-.pdf-export-mode .report-photo-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-.pdf-export-sandbox {
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 794px !important;
-  background: #ffffff !important;
-  overflow: visible !important;
-}
-
-.pdf-export-mode {
-  display: block !important;
-  width: 794px !important;
-  max-width: 794px !important;
-  min-width: 794px !important;
-  margin: 0 !important;
-  padding: 24px 36px 24px 36px !important;
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  overflow: visible !important;
-  transform: none !important;
-  position: relative !important;
-  left: 0 !important;
-}
-
-.pdf-export-mode * {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.pdf-export-mode button,
-.pdf-export-mode .no-pdf,
-.pdf-export-mode .report-export-actions,
-.pdf-export-mode .archive-export-actions {
-  display: none !important;
-}
-
-.pdf-export-mode img {
-  max-width: 100% !important;
-  height: auto !important;
-}
-
-.pdf-export-mode table {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-.pdf-export-mode .report-photo-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-
-/*.pdf-export-mode .pdf-annexure-start:last-child {
-  break-after: auto !important;
-  page-break-after: auto !important;
-}*/
 
 .pdf-export-mode .report-photo-card,
 .pdf-export-mode .report-photo-item {
@@ -6156,45 +4913,6 @@ button.readiness-chip:focus {
 .pdf-export-mode::after {
   content: none !important;
   display: none !important;
-}
-
-/*.pdf-export-mode .pdf-annexure-start {
-  display: block !important;
-  break-before: page !important;
-  page-break-before: always !important;
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}*/
-
-.pdf-export-mode .report-photo-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 10px !important;
-  align-items: start !important;
-}
-
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-  margin-bottom: 8px !important;
-}
-
-.pdf-export-mode .report-photo-card img,
-.pdf-export-mode .report-photo-item img,
-.pdf-export-mode .pdf-photo-card img {
-  max-height: 170px !important;
-  object-fit: contain !important;
-}
-
-.pdf-export-mode {
-  padding-top: 12px !important;
-}
-
-.pdf-export-mode > *:first-child {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
 }
 
 .pdf-export-mode .report-page-break,
@@ -6215,27 +4933,6 @@ button.readiness-chip:focus {
   page-break-before: always !important;
 }
 
-/*.pdf-export-mode .pdf-annexure-start {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-  break-before: auto !important;
-  page-break-before: auto !important;
-}*/
-
-.pdf-export-mode .report-photo-grid {
-  display: block !important;
-}
-
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  display: block !important;
-  width: 100% !important;
-  margin: 0 0 12px 0 !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
-
 .pdf-export-mode .report-photo-card img,
 .pdf-export-mode .report-photo-item img,
 .pdf-export-mode .pdf-photo-card img {
@@ -6243,45 +4940,6 @@ button.readiness-chip:focus {
   width: auto !important;
   max-width: 100% !important;
   object-fit: contain !important;
-}
-
-/* PDF EXPORT - STABLE A4 LAYOUT */
-
-.pdf-export-sandbox {
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 760px !important;
-  background: #ffffff !important;
-  overflow: visible !important;
-}
-
-.pdf-export-mode {
-  display: block !important;
-  width: 760px !important;
-  max-width: 760px !important;
-  min-width: 760px !important;
-  margin: 0 !important;
-  padding: 18px 22px !important;
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  overflow: visible !important;
-  transform: none !important;
-  position: relative !important;
-  left: 0 !important;
-}
-
-.pdf-export-mode * {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.pdf-export-mode button,
-.pdf-export-mode .no-pdf,
-.pdf-export-mode .report-export-actions,
-.pdf-export-mode .archive-export-actions {
-  display: none !important;
 }
 
 .pdf-export-mode > *:first-child {
@@ -6294,33 +4952,6 @@ button.readiness-chip:focus {
   page-break-inside: auto !important;
 }
 
-/*.pdf-export-mode .pdf-annexure-start {
-  break-before: page !important;
-  page-break-before: always !important;
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}*/
-
-.pdf-export-mode .report-photo-page {
-  break-before: page !important;
-  page-break-before: always !important;
-  break-after: auto !important;
-  page-break-after: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  min-height: auto !important;
-  box-sizing: border-box !important;
-}
-
-.pdf-export-mode .appendix-title {
-  margin: 0 0 6mm 0 !important;
-  color: #b71c1c !important;
-  font-size: 18px !important;
-  break-after: avoid !important;
-  page-break-after: avoid !important;
-}
-
-/* Old backup stable photo appendix layout, scoped to PDF export */
 .pdf-export-mode .report-photo-grid {
   display: table !important;
   width: 100% !important;
@@ -6339,41 +4970,6 @@ button.readiness-chip:focus {
   vertical-align: top !important;
 }
 
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  border: 1px solid #dddddd !important;
-  padding: 3mm !important;
-  box-sizing: border-box !important;
-  height: 105mm !important;
-  overflow: hidden !important;
-  background: #ffffff !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
-
-.pdf-export-mode .report-photo-header {
-  font-weight: 700 !important;
-  font-size: 10px !important;
-  margin-bottom: 1mm !important;
-}
-
-.pdf-export-mode .report-photo-time {
-  font-size: 8.5px !important;
-  margin-bottom: 2mm !important;
-  color: #555555 !important;
-}
-
-.pdf-export-mode .report-photo-image-box {
-  height: 65mm !important;
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-}
-
 .pdf-export-mode .report-photo-img,
 .pdf-export-mode img {
   display: block !important;
@@ -6382,42 +4978,6 @@ button.readiness-chip:focus {
   width: auto !important;
   height: auto !important;
   object-fit: contain !important;
-}
-
-.pdf-export-mode .report-photo-note {
-  font-size: 8.5px !important;
-  line-height: 1.25 !important;
-  margin-top: 2mm !important;
-  max-height: 22mm !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-  border-left: 3px solid #c62828 !important;
-  padding: 2mm !important;
-}
-
-.pdf-export-sandbox {
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 794px !important;
-  background: #ffffff !important;
-  overflow: visible !important;
-}
-
-.pdf-export-mode {
-  display: block !important;
-  width: 794px !important;
-  max-width: 794px !important;
-  min-width: 794px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  overflow: visible !important;
-  transform: none !important;
-  position: relative !important;
-  left: 0 !important;
 }
 
 .pdf-page-inner {
@@ -6434,35 +4994,15 @@ button.readiness-chip:focus {
   max-width: 100% !important;
 }
 
-.pdf-export-mode button,
-.pdf-export-mode .no-pdf,
-.pdf-export-mode .report-export-actions,
-.pdf-export-mode .archive-export-actions {
-  display: none !important;
-}
-
-/* PDF PAGE BREAK CONTROL - ONLY APPENDIX START */
-
 .pdf-export-mode .report-page-break,
 .pdf-export-mode .page-break,
 .pdf-export-mode .pdf-page-break,
-/*.pdf-export-mode .pdf-annexure-start,*/
+
 .pdf-export-mode .report-photo-page {
   break-before: auto !important;
   page-break-before: auto !important;
   break-after: auto !important;
   page-break-after: auto !important;
-}
-
-
-
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-  display: block !important;
-  margin-bottom: 12px !important;
 }
 
 .pdf-export-mode .report-photo-header,
@@ -6471,11 +5011,6 @@ button.readiness-chip:focus {
 .pdf-export-mode .report-photo-image-box {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
-}
-
-.pdf-export-mode .report-photo-image-box {
-  min-height: 120px !important;
-  background: #f7f7f7 !important;
 }
 
 .pdf-export-mode .report-photo-img {
@@ -6487,93 +5022,6 @@ button.readiness-chip:focus {
   object-fit: contain !important;
 }
 
-
-
-/* PDF PHOTO CARD STABILITY - NO FORCED APPENDIX PAGE BREAK */
-
-
-
-.pdf-export-mode .report-photo-page {
-  break-before: auto !important;
-  page-break-before: auto !important;
-  break-after: auto !important;
-  page-break-after: auto !important;
-  min-height: auto !important;
-}
-
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  display: block !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-  margin-bottom: 12px !important;
-  overflow: visible !important;
-}
-
-.pdf-export-mode .report-photo-header,
-.pdf-export-mode .report-photo-time,
-.pdf-export-mode .report-photo-image-box,
-.pdf-export-mode .report-photo-note {
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
-
-.pdf-export-mode .report-photo-image-box {
-  min-height: 120px !important;
-  background: #f7f7f7 !important;
-}
-
-.pdf-export-mode .report-photo-img,
-.pdf-export-mode .report-photo-card img,
-.pdf-export-mode .report-photo-item img {
-  display: block !important;
-  max-width: 100% !important;
-  max-height: 62mm !important;
-  width: auto !important;
-  height: auto !important;
-  object-fit: contain !important;
-  margin: 0 auto !important;
-}
-
-.pdf-export-mode .report-photo-note {
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-/* PDF EXPORT - RESTORE OLD REPORT LAYOUT, FIX LAPTOP LEFT CROP */
-
-.pdf-export-sandbox {
-  position: fixed !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 760px !important;
-  background: #ffffff !important;
-  overflow: visible !important;
-  z-index: -1 !important;
-}
-
-.pdf-export-mode {
-  width: 760px !important;
-  max-width: 760px !important;
-  min-width: 760px !important;
-  margin: 0 !important;
-  padding: 20px !important;
-  box-sizing: border-box !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  overflow: visible !important;
-  transform: none !important;
-  position: relative !important;
-  left: 0 !important;
-  top: 0 !important;
-}
-
-.pdf-export-mode * {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
 .pdf-export-mode button,
 .pdf-export-mode .no-pdf,
 .pdf-export-mode .report-export-actions,
@@ -6581,28 +5029,6 @@ button.readiness-chip:focus {
   display: none !important;
 }
 
-/* Keep old appendix/page flow, but stop forced blank pages after photo pages */
-.pdf-export-mode .report-photo-page {
-  break-before: page !important;
-  page-break-before: always !important;
-  break-after: auto !important;
-  page-break-after: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  min-height: auto !important;
-}
-
-/* Keep photo + timestamp + note together */
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  display: block !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-  margin-bottom: 18px !important;
-  overflow: hidden !important;
-}
-
 .pdf-export-mode .report-photo-header,
 .pdf-export-mode .report-photo-time,
 .pdf-export-mode .report-photo-image-box,
@@ -6610,134 +5036,6 @@ button.readiness-chip:focus {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
 }
-
-.pdf-export-mode .report-photo-image-box {
-  height: 65mm !important;
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-}
-
-.pdf-export-mode .report-photo-img,
-.pdf-export-mode .report-photo-card img,
-.pdf-export-mode .report-photo-item img {
-  display: block !important;
-  max-width: 100% !important;
-  max-height: 65mm !important;
-  width: auto !important;
-  height: auto !important;
-  object-fit: contain !important;
-  margin: 0 auto !important;
-}
-
-.pdf-export-mode .report-photo-note {
-  font-size: 8.5px !important;
-  line-height: 1.25 !important;
-  margin-top: 2mm !important;
-  max-height: 22mm !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-  border-left: 3px solid #c62828 !important;
-  padding: 2mm !important;
-}
-
-/* PDF REPORT PAGE BREAK AND PHOTO CARD STABILITY */
-
-.pdf-export-mode .report-page-break {
-  display: block !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  break-before: page !important;
-  page-break-before: always !important;
-}
-
-/* Do not force every photo page to create another blank page after itself */
-.pdf-export-mode .report-photo-page {
-  break-before: auto !important;
-  page-break-before: auto !important;
-  break-after: auto !important;
-  page-break-after: auto !important;
-  min-height: auto !important;
-}
-
-/* Make photo appendix flow as separate full-width cards in PDF mode */
-.pdf-export-mode .report-photo-grid,
-.pdf-export-mode .report-photo-row,
-.pdf-export-mode .report-photo-cell {
-  display: block !important;
-  width: 100% !important;
-}
-
-/* Each photo card must stay together */
-.pdf-export-mode .report-photo-card,
-.pdf-export-mode .report-photo-item,
-.pdf-export-mode .pdf-photo-card {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  max-height: 245mm !important;
-  margin: 0 0 12mm 0 !important;
-  padding: 3mm !important;
-  border: 1px solid #dddddd !important;
-  background: #ffffff !important;
-  overflow: hidden !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
-
-/* Keep timestamp, image and note with the same card */
-.pdf-export-mode .report-photo-header,
-.pdf-export-mode .report-photo-time,
-.pdf-export-mode .report-photo-image-box,
-.pdf-export-mode .report-photo-note {
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
-
-/* Keep image small enough so the whole card fits on one page */
-.pdf-export-mode .report-photo-image-box {
-  height: 92mm !important;
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-}
-
-.pdf-export-mode .report-photo-img,
-.pdf-export-mode .report-photo-card img,
-.pdf-export-mode .report-photo-item img {
-  display: block !important;
-  max-width: 100% !important;
-  max-height: 90mm !important;
-  width: auto !important;
-  height: auto !important;
-  object-fit: contain !important;
-  margin: 0 auto !important;
-}
-
-.pdf-export-mode .report-photo-time {
-  font-size: 9px !important;
-  margin: 1mm 0 2mm 0 !important;
-  color: #555555 !important;
-}
-
-.pdf-export-mode .report-photo-note {
-  font-size: 9px !important;
-  line-height: 1.25 !important;
-  margin-top: 2mm !important;
-  max-height: 30mm !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-  border-left: 3px solid #c62828 !important;
-  padding: 2mm !important;
-}
-/* FINAL PDF PHOTO FIX - KEEP EACH PHOTO CARD ON ONE PAGE */
 
 .pdf-export-mode .report-photo-grid,
 .pdf-export-mode .report-photo-row,
@@ -6764,29 +5062,6 @@ button.readiness-chip:focus {
   border: 1px solid #dddddd !important;
 }
 
-.pdf-export-mode .report-photo-header {
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  margin: 0 0 1mm 0 !important;
-}
-
-.pdf-export-mode .report-photo-time {
-  font-size: 8.5px !important;
-  margin: 0 0 2mm 0 !important;
-  color: #555555 !important;
-}
-
-.pdf-export-mode .report-photo-image-box {
-  height: 86mm !important;
-  max-height: 86mm !important;
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-}
-
 .pdf-export-mode .report-photo-img,
 .pdf-export-mode .report-photo-card img,
 .pdf-export-mode .report-photo-item img {
@@ -6798,21 +5073,6 @@ button.readiness-chip:focus {
   object-fit: contain !important;
   margin: 0 auto !important;
 }
-
-.pdf-export-mode .report-photo-note {
-  font-size: 8.5px !important;
-  line-height: 1.2 !important;
-  margin-top: 2mm !important;
-  height: 22mm !important;
-  max-height: 22mm !important;
-  overflow: hidden !important;
-  background: #f7f7f7 !important;
-  border-left: 3px solid #c62828 !important;
-  padding: 2mm !important;
-  box-sizing: border-box !important;
-}
-
-/* FINAL PDF PHOTO APPENDIX - ONE PHOTO PER PAGE */
 
 .pdf-export-mode .report-page-break {
   display: block !important;
@@ -6905,8 +5165,6 @@ button.readiness-chip:focus {
   box-sizing: border-box !important;
 }
 
-/* PDF BODY ALIGNMENT FIX - LAPTOP LEFT CROP */
-
 .pdf-export-sandbox {
   position: fixed !important;
   left: 0 !important;
@@ -6942,8 +5200,6 @@ button.readiness-chip:focus {
   box-sizing: border-box !important;
   max-width: 100% !important;
 }
-
-/* PDF BODY PAGEBREAK FIX - KEEP REPORT CARDS TOGETHER */
 
 .pdf-export-mode .report-block,
 .pdf-export-mode .report-answer,
@@ -7024,8 +5280,6 @@ button.readiness-chip:focus {
   border-left-color: #2e7d32;
   color: #1b5e20;
 }
-
-/* PROJECT CARD SCHEDULE DISPLAY */
 
 .project-schedule {
   margin: 8px 0;
@@ -7111,79 +5365,6 @@ button.readiness-chip:focus {
   cursor: not-allowed;
 }
 
-.scheduling-card {
-  margin-top: 18px;
-  padding: 16px;
-  border: 1px solid #dbe3ea;
-  border-radius: 16px;
-  background: #f8fafc;
-}
-
-.scheduling-card-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.scheduling-card-header h3 {
-  margin: 0 0 6px;
-  color: #111827;
-}
-
-.scheduling-card-header p {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.scheduling-card-badge {
-  flex-shrink: 0;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #fee2e2;
-  color: #991b1b;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.scheduling-card-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.schedule-option-card {
-  padding: 14px;
-  border: 1px solid #dbe3ea;
-  border-radius: 14px;
-  background: #ffffff;
-}
-
-.schedule-option-card h4 {
-  margin: 4px 0 6px;
-  color: #111827;
-}
-
-.schedule-option-card p {
-  margin: 0 0 12px;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.schedule-option-label {
-  display: inline-block;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
 .schedule-option-new-site {
   border-left: 5px solid #1565c0;
 }
@@ -7193,69 +5374,17 @@ button.readiness-chip:focus {
   color: #1565c0;
 }
 
-.schedule-option-followup {
-  border-left: 5px solid #b71c1c;
-}
-
-.schedule-option-followup .schedule-option-label {
-  background: #ffebee;
-  color: #b71c1c;
-}
-
-.schedule-option-recurring {
-  border-left: 5px solid #2e7d32;
-}
-
-.schedule-option-recurring .schedule-option-label {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.schedule-option-card label {
-  margin-top: 10px;
-}
-
-.schedule-option-card input,
-.schedule-option-card select,
-.schedule-option-card textarea {
-  width: 100%;
-  max-width: none;
-}
-
-.schedule-option-card textarea {
-  min-height: 90px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-family: Arial, sans-serif;
-  font-size: 15px;
-  box-sizing: border-box;
-}
-
-.recurring-coming-soon {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #f1f8f4;
-  color: #2e7d32;
-  font-size: 13px;
-  font-weight: 800;
-}
-
 @media (min-width: 760px) {
-  .scheduling-card-grid {
+.scheduling-card-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (min-width: 760px) {
-  .scheduling-card-grid-two {
+.scheduling-card-grid-two {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
-/* =====================================================
-   EXISTING-SITE SCHEDULING CENTRE MAKEOVER
-   ===================================================== */
 
 .scheduling-card {
   margin-top: 18px;
@@ -7397,30 +5526,26 @@ button.readiness-chip:focus {
 }
 
 @media (min-width: 760px) {
-  .scheduling-card-grid-two {
+.scheduling-card-grid-two {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 700px) {
-  .scheduling-card {
+.scheduling-card {
     padding: 14px;
     border-radius: 16px;
   }
 
-  .scheduling-card-header {
+.scheduling-card-header {
     display: block;
   }
 
-  .scheduling-card-badge {
+.scheduling-card-badge {
     display: inline-block;
     margin-top: 10px;
   }
 }
-
-/* =====================================================
-   INSPECTION SUMMARY CARD - CLEAN CLIENT VIEW
-   ===================================================== */
 
 .inspection-summary-card {
   margin-top: 12px;
@@ -7473,7 +5598,6 @@ button.readiness-chip:focus {
   white-space: nowrap;
 }
 
-/* Status badge compatibility */
 .inspection-summary-status.inspection-attention,
 .inspection-summary-status.status-overdue {
   background: #ffebee;
@@ -7500,27 +5624,6 @@ button.readiness-chip:focus {
   background: #f5f5f5;
   color: #616161;
   border: 1px solid #d1d5db;
-}
-
-.inspection-summary-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0;
-}
-
-.inspection-summary-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #f8fafc;
-  color: #334155;
-  border: 1px solid #dbe3ea;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .inspection-summary-chip.status-none {
@@ -7564,16 +5667,6 @@ button.readiness-chip:focus {
   gap: 10px;
   margin: 12px 0 14px;
   align-items: center;
-}
-
-.inspection-card-action {
-  width: 100%;
-  max-width: none;
-  min-height: 44px;
-  padding: 10px 13px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 900;
 }
 
 .inspection-card-action.primary-action {
@@ -7726,24 +5819,24 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 700px) {
-  .inspection-summary-card {
+.inspection-summary-card {
     padding: 14px;
     border-radius: 16px;
   }
 
-  .inspection-summary-header {
+.inspection-summary-header {
     display: block;
   }
 
-  .inspection-summary-status {
+.inspection-summary-status {
     margin-top: 10px;
   }
 
-  .inspection-summary-action-row {
+.inspection-summary-action-row {
     grid-template-columns: 1fr;
   }
 
-  .inspection-details-grid {
+.inspection-details-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -7776,11 +5869,6 @@ button.readiness-chip:focus {
   color: #ef6c00;
   border-color: #ffb74d;
 }
-
-/* =====================================================
-   ACCESSIBLE INSPECTION ACTION BAR
-   Keeps Save / Finish / More reachable during inspection
-   ===================================================== */
 
 #projectFormSection {
   padding-bottom: 110px;
@@ -7816,14 +5904,6 @@ button.readiness-chip:focus {
   border-radius: 14px;
   font-size: 14px;
   font-weight: 900;
-}
-
-.sticky-action-bar #saveBtn {
-  background: #1565c0;
-}
-
-.sticky-action-bar #finishBtn {
-  background: #2e7d32;
 }
 
 .sticky-action-bar .action-menu {
@@ -7863,7 +5943,7 @@ button.readiness-chip:focus {
 }
 
 @media (max-width: 560px) {
-  .sticky-action-bar .action-dropdown {
+.sticky-action-bar .action-dropdown {
     right: 0;
     bottom: 72px;
     width: min(300px, calc(100vw - 24px));
@@ -7996,16 +6076,16 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 560px) {
-  .mobile-photo-export-item {
+.mobile-photo-export-item {
     grid-template-columns: 56px 1fr;
   }
 
-  .mobile-photo-export-item a {
+.mobile-photo-export-item a {
     grid-column: 1 / -1;
     width: 100%;
   }
 
-  .mobile-photo-export-item img {
+.mobile-photo-export-item img {
     width: 56px;
     height: 56px;
   }
@@ -8254,11 +6334,11 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 640px) {
-  .inspection-card-action-row {
+.inspection-card-action-row {
     grid-template-columns: 1fr 1fr;
   }
 
-  .inspection-card-action {
+.inspection-card-action {
     width: 100%;
   }
 }
@@ -8325,13 +6405,13 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 560px) {
-  .inspection-movement-dock {
+.inspection-movement-dock {
     left: 8px;
     right: 8px;
     bottom: 8px;
   }
 
-  .inspection-movement-buttons {
+.inspection-movement-buttons {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -8340,9 +6420,6 @@ body > #actionDropdown.action-dropdown button:last-child {
   padding-bottom: 120px;
 }
 
-/* =====================================================
-   MAIN DASHBOARD / HOME COMMAND CENTRE v1
-   ===================================================== */
 .main-command-centre {
   margin: 14px 0 16px;
   padding: 16px;
@@ -8394,24 +6471,6 @@ body > #actionDropdown.action-dropdown button:last-child {
   letter-spacing: 0.04em;
   max-width: 220px;
   overflow-wrap: anywhere;
-}
-
-.main-command-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.main-stat-card {
-  width: 100%;
-  max-width: none;
-  padding: 12px 10px;
-  background: #f9fafb;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  text-align: left;
 }
 
 .main-stat-card:hover,
@@ -8522,37 +6581,31 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .main-command-centre {
+.main-command-centre {
     padding: 12px;
   }
 
-  .main-command-top {
+.main-command-top {
     display: block;
   }
 
-  .main-command-status {
+.main-command-status {
     margin-top: 10px;
     max-width: none;
   }
 
-  .main-command-stats {
+.main-command-stats {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .main-command-grid {
+.main-command-grid {
     grid-template-columns: 1fr;
   }
 
-  .main-command-card {
+.main-command-card {
     min-height: 92px;
   }
 }
-
-
-/* =====================================================
-   FIRE-S COMMAND CENTRE V1
-   Card-based inspection hub to reduce scrolling.
-   ===================================================== */
 
 .inspection-quick-actions {
   border: 1px solid #dfe7ef;
@@ -8817,51 +6870,46 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .inspection-quick-actions {
+.inspection-quick-actions {
     margin: 0 -2px 14px;
     padding: 10px;
     border-radius: 16px;
   }
 
-  .command-centre-hero {
+.command-centre-hero {
     grid-template-columns: 1fr;
   }
 
-  .command-centre-progress {
+.command-centre-progress {
     display: flex;
     align-items: center;
     justify-content: space-between;
     text-align: left;
   }
 
-  .command-centre-progress strong {
+.command-centre-progress strong {
     font-size: 24px;
   }
 
-  .command-centre-grid {
+.command-centre-grid {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
-  .command-centre-card {
+.command-centre-card {
     min-height: 118px;
     padding: 10px;
   }
 
-  .command-centre-card strong {
+.command-centre-card strong {
     font-size: 13px;
   }
 
-  .command-centre-card span:last-child {
+.command-centre-card span:last-child {
     font-size: 11px;
   }
 }
 
-
-/* =====================================================
-   FIRE-S COMPLIANCE ENGINE v1
-   Executive dashboard hero + role-aware home layout
-   ===================================================== */
 .compliance-hero-card {
   margin: 0 0 14px 0;
   padding: 16px;
@@ -8943,15 +6991,6 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: -0.05em;
-}
-
-.compliance-score-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: #e5e7eb;
 }
 
 .compliance-breakdown-grid {
@@ -9084,32 +7123,28 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .compliance-hero-card {
+.compliance-hero-card {
     padding: 13px;
   }
 
-  .compliance-hero-top {
+.compliance-hero-top {
     display: block;
   }
 
-  .compliance-mode-pill {
+.compliance-mode-pill {
     display: inline-block;
     margin-top: 10px;
   }
 
-  .compliance-breakdown-grid {
+.compliance-breakdown-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .compliance-score-button {
+.compliance-score-button {
     min-height: 112px;
   }
 }
 
-
-/* =====================================================
-   FINDINGS CENTRE v1
-   ===================================================== */
 .findings-centre {
   margin: 14px 0 18px;
   padding: 16px;
@@ -9352,47 +7387,45 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .findings-centre {
+.findings-centre {
     padding: 12px;
     border-radius: 14px;
   }
 
-  .findings-centre-header {
+.findings-centre-header {
     display: block;
   }
 
-  .findings-close-btn {
+.findings-close-btn {
     margin-top: 10px;
     width: 100%;
   }
 
-  .findings-centre-stats {
+.findings-centre-stats {
     grid-template-columns: 1fr 1fr;
   }
 
-  .findings-toolbar {
+.findings-toolbar {
     grid-template-columns: 1fr;
   }
 
-  .finding-detail-grid {
+.finding-detail-grid {
     grid-template-columns: 1fr 1fr;
   }
 
-  .finding-item-top {
+.finding-item-top {
     display: block;
   }
 
-  .finding-risk {
+.finding-risk {
     margin-top: 8px;
   }
 
-  .finding-actions button {
+.finding-actions button {
     width: 100%;
   }
 }
 
-
-/* FINDINGS CENTRE v1.2 */
 .finding-stat-card.danger {
   background: #fee2e2;
   border-color: #fecaca;
@@ -9462,28 +7495,25 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .findings-centre-stats {
+.findings-centre-stats {
     grid-template-columns: 1fr 1fr;
   }
 
-  .findings-site-summary-grid {
+.findings-site-summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .finding-detail-grid {
+.finding-detail-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-
-/* Fire-S v1.6 - remove inspection movement navigation dock */
 #inspectionMovementDock,
 .inspection-movement-dock,
 .inspection-section-focus-toolbar {
   display: none !important;
 }
 
-/* Fire-S v1.6 - section cards scroll only; never hide other inspection sections */
 #projectFormSection .inspection-section-hidden {
   display: block !important;
 }
@@ -9493,8 +7523,6 @@ body > #actionDropdown.action-dropdown button:last-child {
   margin-bottom: 18px !important;
 }
 
-
-/* INSPECTION GATEWAY ADVANCED DATE FILTERS */
 .inspection-date-filter-panel {
   margin: 0 0 12px 0;
   padding: 12px;
@@ -9569,26 +7597,25 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .inspection-date-filter-grid {
+.inspection-date-filter-grid {
     grid-template-columns: 1fr 1fr;
   }
 
-  .inspection-quick-date-row button {
+.inspection-quick-date-row button {
     flex: 1 1 calc(33.333% - 6px);
     padding: 8px 6px;
     font-size: 11px;
   }
 }
 
-
-
-/* FIRE-S Executive Dashboard v1.1 */
 .main-command-stats {
   grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
 }
+
 .main-stat-card {
   min-height: 110px;
 }
+
 .main-stat-card .stat-label {
   white-space: normal;
   line-height: 1.15;
@@ -9596,38 +7623,11 @@ body > #actionDropdown.action-dropdown button:last-child {
   max-width: 145px;
   margin: 0 auto;
 }
-.executive-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 6px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-.executive-status-action {
-  background: #ffebee;
-  color: #b71c1c;
-  border: 1px solid #e57373;
-}
-.executive-status-overdue {
-  background: #fff3e0;
-  color: #ef6c00;
-  border: 1px solid #ffb74d;
-}
-.executive-status-compliant {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #81c784;
-}
 
-
-/* FIRE-S Executive Activity Feed v1.0 */
 .executive-activity-row {
   grid-template-columns: 1.3fr auto auto;
 }
+
 .executive-status-badge {
   display: inline-flex;
   align-items: center;
@@ -9641,89 +7641,81 @@ body > #actionDropdown.action-dropdown button:last-child {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
+
 .executive-status-action {
   background: #ffebee;
   color: #b71c1c;
   border: 1px solid #e57373;
 }
+
 .executive-status-overdue {
   background: #fff3e0;
   color: #ef6c00;
   border: 1px solid #ffb74d;
 }
+
 .executive-status-compliant {
   background: #e8f5e9;
   color: #2e7d32;
   border: 1px solid #81c784;
 }
+
 .executive-status-progress {
   background: #e3f2fd;
   color: #1565c0;
   border: 1px solid #64b5f6;
 }
+
 @media (max-width: 640px) {
-  .executive-activity-row {
+.executive-activity-row {
     grid-template-columns: 1fr;
     gap: 7px;
   }
-  .executive-activity-row .attention-site-meta {
+
+.executive-activity-row .attention-site-meta {
     text-align: left;
   }
-  .executive-status-badge {
+
+.executive-status-badge {
     width: fit-content;
   }
 }
 
-
-
-/* FIRE-S Executive Dashboard Count Sync v1.1 */
 .compliance-score-label {
   white-space: normal;
   line-height: 1.2;
 }
+
 .compliance-breakdown-card strong,
 .main-stat-card .stat-label {
   white-space: normal;
   line-height: 1.15;
 }
 
-
-
-/* =====================================================
-   FIRE-S Ultra Compact Premises Cards v1.0
-   ===================================================== */
 .ultra-premises-list {
   display: grid;
   gap: 8px;
   margin-top: 10px;
 }
-.ultra-premises-card {
-  display: grid;
-  grid-template-columns: 8px 1fr;
-  align-items: stretch;
-  overflow: hidden;
-  min-height: 72px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  cursor: pointer;
-  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.06);
-}
+
 .ultra-premises-card:hover,
 .ultra-premises-card:focus {
   outline: none;
   border-color: #94a3b8;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
+
 .ultra-status-strip {
   width: 8px;
   min-height: 100%;
   background: #94a3b8;
 }
+
 .ultra-premises-body {
   padding: 10px 12px;
   min-width: 0;
 }
+
 .ultra-premises-title {
   display: block;
   margin-bottom: 8px;
@@ -9732,11 +7724,13 @@ body > #actionDropdown.action-dropdown button:last-child {
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
+
 .ultra-premises-dates {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+
 .ultra-premises-dates small {
   display: block;
   margin-bottom: 2px;
@@ -9746,28 +7740,31 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
 .ultra-premises-dates b {
   display: block;
   color: #1f2937;
   font-size: 13px;
   line-height: 1.15;
 }
+
 .ultra-status-compliant .ultra-status-strip { background: #2e7d32; }
+
 .ultra-status-due .ultra-status-strip { background: #facc15; }
+
 .ultra-status-action .ultra-status-strip { background: #f97316; }
+
 .ultra-status-overdue .ultra-status-strip { background: #b71c1c; }
+
 @media (max-width: 640px) {
-  .ultra-premises-card { min-height: 68px; }
-  .ultra-premises-body { padding: 9px 10px; }
-  .ultra-premises-title { font-size: 14px; }
-  .ultra-premises-dates b { font-size: 12px; }
+.ultra-premises-card { min-height: 68px; }
+
+.ultra-premises-body { padding: 9px 10px; }
+
+.ultra-premises-title { font-size: 14px; }
+
+.ultra-premises-dates b { font-size: 12px; }
 }
-
-
-
-/* =====================================================
-   FIRE-S Card Keyword + Mobile Status Fix v1.1
-   ===================================================== */
 
 .ultra-premises-title-row {
   display: flex;
@@ -9818,9 +7815,8 @@ body > #actionDropdown.action-dropdown button:last-child {
   border-color: #e57373;
 }
 
-/* Executive dashboard mobile status fix */
 @media (max-width: 640px) {
-  .executive-status-badge,
+.executive-status-badge,
   .compact-status-badge,
   .compact-primary-action,
   .project-inspection-status,
@@ -9834,7 +7830,7 @@ body > #actionDropdown.action-dropdown button:last-child {
     text-align: center !important;
   }
 
-  .compliance-breakdown-card strong,
+.compliance-breakdown-card strong,
   .main-stat-card .stat-label,
   .compliance-score-label {
     font-size: 10px !important;
@@ -9842,33 +7838,31 @@ body > #actionDropdown.action-dropdown button:last-child {
     white-space: normal !important;
   }
 
-  .main-stat-card,
+.main-stat-card,
   .compliance-breakdown-card {
     min-width: 0 !important;
     overflow: hidden !important;
   }
 
-  .ultra-status-keyword {
+.ultra-status-keyword {
     font-size: 9px;
     padding: 3px 6px;
   }
 
-  .ultra-premises-title-row {
+.ultra-premises-title-row {
     align-items: flex-start;
   }
 }
 
-
-/* =====================================================
-   FIRE-S RC 1.0.10 - Inspection Card Open Hotfix UI
-   ===================================================== */
 .ultra-premises-card {
   position: relative;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
+
 .ultra-premises-card:active {
   transform: scale(0.992);
 }
+
 .ultra-premises-open-hint {
   display: inline-flex;
   align-items: center;
@@ -9883,39 +7877,39 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-weight: 900;
   letter-spacing: 0.01em;
 }
+
 .ultra-premises-card:hover .ultra-premises-open-hint,
 .ultra-premises-card:focus .ultra-premises-open-hint {
   background: #8f1515;
 }
+
 @media (min-width: 720px) {
-  .ultra-premises-body {
+.ultra-premises-body {
     display: grid;
     grid-template-columns: 1fr auto;
     column-gap: 14px;
     align-items: center;
   }
-  .ultra-premises-title-row,
+
+.ultra-premises-title-row,
   .ultra-premises-title {
     grid-column: 1 / -1;
   }
-  .ultra-premises-open-hint {
+
+.ultra-premises-open-hint {
     margin-top: 0;
     white-space: nowrap;
   }
 }
+
 @media (max-width: 640px) {
-  .ultra-premises-open-hint {
+.ultra-premises-open-hint {
     width: 100%;
     margin-top: 7px;
     padding: 6px 9px;
   }
 }
 
-
-/* =====================================================
-   FIRE-S RC 1.1.1 - Mobile Smart Premises Cards
-   Rich on desktop, calm and compact on phones.
-   ===================================================== */
 .smart-card-note {
   margin: 8px 0 10px;
   padding: 8px 10px;
@@ -9926,18 +7920,22 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-size: 12px;
   font-weight: 800;
 }
+
 .smart-premises-list {
   gap: 10px;
 }
+
 .smart-premises-card {
   min-height: 86px;
   border-color: #e5e7eb;
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
+
 .smart-premises-card:hover,
 .smart-premises-card:focus {
   transform: translateY(-1px);
 }
+
 .smart-premises-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -9945,12 +7943,15 @@ body > #actionDropdown.action-dropdown button:last-child {
   align-items: center;
   padding: 12px 14px;
 }
+
 .smart-card-main {
   min-width: 0;
 }
+
 .smart-title-row {
   margin-bottom: 4px;
 }
+
 .smart-card-subline {
   margin: 0 0 8px;
   color: #64748b;
@@ -9961,20 +7962,24 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .smart-date-row {
   max-width: 360px;
 }
+
 .smart-card-side {
   display: grid;
   gap: 8px;
   justify-items: end;
   align-items: center;
 }
+
 .smart-metric-row {
   display: grid;
   grid-template-columns: repeat(3, auto);
   gap: 6px;
 }
+
 .smart-metric-row span {
   min-width: 58px;
   padding: 5px 8px;
@@ -9983,12 +7988,14 @@ body > #actionDropdown.action-dropdown button:last-child {
   border: 1px solid #e2e8f0;
   text-align: center;
 }
+
 .smart-metric-row b {
   display: block;
   color: #111827;
   font-size: 14px;
   line-height: 1;
 }
+
 .smart-metric-row small {
   display: block;
   margin-top: 2px;
@@ -9997,38 +8004,47 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-weight: 900;
   text-transform: uppercase;
 }
+
 .smart-metric-row .smart-action-count {
   background: #fff3e0;
   border-color: #ffb74d;
 }
+
 .smart-metric-row .smart-action-count b,
 .smart-metric-row .smart-action-count small {
   color: #ef6c00;
 }
+
 .smart-open-hint {
   margin-top: 0;
   padding: 6px 11px;
 }
+
 @media (max-width: 700px) {
-  .smart-card-note {
+.smart-card-note {
     display: none;
   }
-  .smart-premises-list {
+
+.smart-premises-list {
     gap: 8px;
   }
-  .smart-premises-card {
+
+.smart-premises-card {
     min-height: 70px;
     border-radius: 12px;
   }
-  .smart-premises-body {
+
+.smart-premises-body {
     display: block;
     padding: 9px 10px;
   }
-  .smart-title-row {
+
+.smart-title-row {
     gap: 6px;
     margin-bottom: 6px;
   }
-  .smart-title-row .ultra-premises-title {
+
+.smart-title-row .ultra-premises-title {
     font-size: 13px;
     line-height: 1.15;
     display: -webkit-box;
@@ -10036,47 +8052,43 @@ body > #actionDropdown.action-dropdown button:last-child {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .smart-title-row .ultra-status-keyword {
+
+.smart-title-row .ultra-status-keyword {
     font-size: 8px;
     padding: 3px 5px;
   }
-  .smart-card-subline,
+
+.smart-card-subline,
   .smart-metric-row,
   .smart-open-hint {
     display: none !important;
   }
-  .smart-date-row {
+
+.smart-date-row {
     grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
-  .smart-date-row small {
+
+.smart-date-row small {
     font-size: 8.5px;
     letter-spacing: 0.03em;
   }
-  .smart-date-row b {
+
+.smart-date-row b {
     font-size: 11px;
   }
 }
+
 @media (max-width: 380px) {
-  .smart-title-row .ultra-premises-title {
+.smart-title-row .ultra-premises-title {
     font-size: 12.5px;
   }
-  .smart-date-row b {
+
+.smart-date-row b {
     font-size: 10.5px;
   }
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.8B - Premises Cards 2.0
-   Mobile-first professional premises list cards.
-   ===================================================== */
-.premises-stats-bar-v118b {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin: 10px 0 12px;
-}
 .premises-stats-bar-v118b span {
   padding: 9px 8px;
   border: 1px solid #e2e8f0;
@@ -10085,12 +8097,14 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-align: center;
   box-shadow: 0 2px 8px rgba(15,23,42,0.05);
 }
+
 .premises-stats-bar-v118b strong {
   display: block;
   font-size: 17px;
   color: #111827;
   line-height: 1;
 }
+
 .premises-stats-bar-v118b small {
   display: block;
   margin-top: 3px;
@@ -10100,10 +8114,12 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
+
 .premises-list-v118b {
   display: grid;
   gap: 10px;
 }
+
 .premises-card-v118b {
   position: relative;
   display: block;
@@ -10115,6 +8131,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
+
 .premises-card-v118b:hover,
 .premises-card-v118b:focus {
   transform: translateY(-1px);
@@ -10122,28 +8139,30 @@ body > #actionDropdown.action-dropdown button:last-child {
   box-shadow: 0 12px 28px rgba(15,23,42,0.12);
   outline: none;
 }
-.premises-card-strip-v118b {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 6px;
-  background: #94a3b8;
-}
+
 .premises-card-v118b.ultra-status-overdue .premises-card-strip-v118b,
 .premises-card-v118b.ultra-status-action .premises-card-strip-v118b,
 .premises-card-v118b.health-critical .premises-card-strip-v118b { background: #b71c1c; }
+
 .premises-card-v118b.health-attention .premises-card-strip-v118b { background: #f57c00; }
+
 .premises-card-v118b.health-good .premises-card-strip-v118b { background: #1565c0; }
+
 .premises-card-v118b.health-excellent .premises-card-strip-v118b { background: #2e7d32; }
+
 .premises-card-main-v118b {
   padding: 13px 14px 12px 18px;
 }
+
 .premises-card-head-v118b {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
 }
+
 .premises-card-title-block-v118b { min-width: 0; }
+
 .premises-card-title-block-v118b h3 {
   margin: 0;
   color: #111827;
@@ -10151,6 +8170,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
+
 .premises-card-title-block-v118b p {
   margin: 5px 0 0;
   color: #64748b;
@@ -10162,21 +8182,14 @@ body > #actionDropdown.action-dropdown button:last-child {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.premises-health-badge-v118b {
-  flex: 0 0 auto;
-  min-width: 74px;
-  padding: 7px 8px;
-  border-radius: 14px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  text-align: center;
-}
+
 .premises-health-badge-v118b strong {
   display: block;
   font-size: 17px;
   line-height: 1;
   color: #334155;
 }
+
 .premises-health-badge-v118b span {
   display: block;
   margin-top: 3px;
@@ -10186,31 +8199,34 @@ body > #actionDropdown.action-dropdown button:last-child {
   letter-spacing: .04em;
   color: #64748b;
 }
+
 .premises-health-badge-v118b.health-excellent { background: #e8f5e9; border-color: #81c784; }
+
 .premises-health-badge-v118b.health-excellent strong,
 .premises-health-badge-v118b.health-excellent span { color: #1b5e20; }
+
 .premises-health-badge-v118b.health-good { background: #e3f2fd; border-color: #64b5f6; }
+
 .premises-health-badge-v118b.health-good strong,
 .premises-health-badge-v118b.health-good span { color: #1565c0; }
+
 .premises-health-badge-v118b.health-attention { background: #fff3e0; border-color: #ffb74d; }
+
 .premises-health-badge-v118b.health-attention strong,
 .premises-health-badge-v118b.health-attention span { color: #ef6c00; }
+
 .premises-health-badge-v118b.health-critical { background: #ffebee; border-color: #e57373; }
+
 .premises-health-badge-v118b.health-critical strong,
 .premises-health-badge-v118b.health-critical span { color: #b71c1c; }
+
 .premises-card-metrics-v118b {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 7px;
   margin-top: 11px;
 }
-.premises-card-metrics-v118b span {
-  min-width: 0;
-  padding: 7px 8px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
+
 .premises-card-metrics-v118b small {
   display: block;
   color: #64748b;
@@ -10219,6 +8235,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
+
 .premises-card-metrics-v118b strong {
   display: block;
   margin-top: 3px;
@@ -10229,15 +8246,22 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .premises-card-metrics-v118b .risk-high { background: #ffebee; border-color: #e57373; }
+
 .premises-card-metrics-v118b .risk-high strong,
 .premises-card-metrics-v118b .risk-high small { color: #b71c1c; }
+
 .premises-card-metrics-v118b .risk-medium { background: #fff3e0; border-color: #ffb74d; }
+
 .premises-card-metrics-v118b .risk-medium strong,
 .premises-card-metrics-v118b .risk-medium small { color: #ef6c00; }
+
 .premises-card-metrics-v118b .risk-low { background: #e8f5e9; border-color: #81c784; }
+
 .premises-card-metrics-v118b .risk-low strong,
 .premises-card-metrics-v118b .risk-low small { color: #1b5e20; }
+
 .premises-card-footer-v118b {
   display: flex;
   justify-content: space-between;
@@ -10247,6 +8271,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   padding-top: 9px;
   border-top: 1px solid #e2e8f0;
 }
+
 .premises-card-footer-v118b span {
   min-width: 0;
   color: #64748b;
@@ -10256,42 +8281,60 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .premises-card-footer-v118b b {
   flex: 0 0 auto;
   color: #b71c1c;
   font-size: 12px;
   font-weight: 900;
 }
+
 @media (max-width: 700px) {
-  .premises-stats-bar-v118b { gap: 6px; }
-  .premises-stats-bar-v118b span { padding: 7px 5px; border-radius: 12px; }
-  .premises-stats-bar-v118b strong { font-size: 15px; }
-  .premises-stats-bar-v118b small { font-size: 8px; }
-  .premises-list-v118b { gap: 8px; }
-  .premises-card-v118b { border-radius: 14px; box-shadow: 0 4px 14px rgba(15,23,42,0.07); }
-  .premises-card-main-v118b { padding: 10px 10px 10px 15px; }
-  .premises-card-title-block-v118b h3 { font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .premises-card-title-block-v118b p { display: none; }
-  .premises-health-badge-v118b { min-width: 62px; padding: 6px; border-radius: 12px; }
-  .premises-health-badge-v118b strong { font-size: 14px; }
-  .premises-health-badge-v118b span { font-size: 7.5px; }
-  .premises-card-metrics-v118b { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
-  .premises-card-metrics-v118b span:nth-child(2) { display: none; }
-  .premises-card-metrics-v118b span { padding: 6px; }
-  .premises-card-metrics-v118b small { font-size: 7.5px; }
-  .premises-card-metrics-v118b strong { font-size: 11px; }
-  .premises-card-footer-v118b { margin-top: 8px; padding-top: 7px; }
-  .premises-card-footer-v118b span { display: none; }
-  .premises-card-footer-v118b b { margin-left: auto; font-size: 11px; }
+.premises-stats-bar-v118b { gap: 6px; }
+
+.premises-stats-bar-v118b span { padding: 7px 5px; border-radius: 12px; }
+
+.premises-stats-bar-v118b strong { font-size: 15px; }
+
+.premises-stats-bar-v118b small { font-size: 8px; }
+
+.premises-list-v118b { gap: 8px; }
+
+.premises-card-v118b { border-radius: 14px; box-shadow: 0 4px 14px rgba(15,23,42,0.07); }
+
+.premises-card-main-v118b { padding: 10px 10px 10px 15px; }
+
+.premises-card-title-block-v118b h3 { font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.premises-card-title-block-v118b p { display: none; }
+
+.premises-health-badge-v118b { min-width: 62px; padding: 6px; border-radius: 12px; }
+
+.premises-health-badge-v118b strong { font-size: 14px; }
+
+.premises-health-badge-v118b span { font-size: 7.5px; }
+
+.premises-card-metrics-v118b { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+
+.premises-card-metrics-v118b span:nth-child(2) { display: none; }
+
+.premises-card-metrics-v118b span { padding: 6px; }
+
+.premises-card-metrics-v118b small { font-size: 7.5px; }
+
+.premises-card-metrics-v118b strong { font-size: 11px; }
+
+.premises-card-footer-v118b { margin-top: 8px; padding-top: 7px; }
+
+.premises-card-footer-v118b span { display: none; }
+
+.premises-card-footer-v118b b { margin-left: auto; font-size: 11px; }
 }
+
 @media (max-width: 380px) {
-  .premises-stats-bar-v118b { grid-template-columns: repeat(2, 1fr); }
+.premises-stats-bar-v118b { grid-template-columns: repeat(2, 1fr); }
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.8D - Building Health Centre
-   ===================================================== */
 .fire-s-card-health {
   display: grid;
   grid-template-columns: auto auto 1fr;
@@ -10305,13 +8348,21 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-size: 11px;
   line-height: 1;
 }
+
 .fire-s-card-health span { color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+
 .fire-s-card-health strong { color: #0f172a; font-size: 13px; font-weight: 900; }
+
 .fire-s-card-health em { color: #475569; font-style: normal; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .fire-s-card-health.health-excellent { background: #ecfdf5; border-color: #86efac; }
+
 .fire-s-card-health.health-good { background: #f0fdf4; border-color: #bbf7d0; }
+
 .fire-s-card-health.health-attention { background: #fffbeb; border-color: #fde68a; }
+
 .fire-s-card-health.health-critical { background: #fef2f2; border-color: #fecaca; }
+
 .fire-s-card-health.health-incomplete { background: #f8fafc; border-color: #cbd5e1; }
 
 .fire-s-health-centre {
@@ -10322,6 +8373,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   border: 1px solid #e2e8f0;
   box-shadow: 0 8px 24px rgba(15,23,42,.08);
 }
+
 .fire-s-health-hero {
   display: flex;
   justify-content: space-between;
@@ -10332,6 +8384,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   background: linear-gradient(135deg, #111827, #1f2937);
   color: #ffffff;
 }
+
 .fire-s-health-kicker {
   display: block;
   margin-bottom: 4px;
@@ -10341,8 +8394,11 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-transform: uppercase;
   letter-spacing: .06em;
 }
+
 .fire-s-health-hero h2 { margin: 0; font-size: 42px; line-height: 1; color: #ffffff; }
+
 .fire-s-health-hero p { margin: 5px 0 0; color: #e5e7eb; font-size: 13px; font-weight: 800; }
+
 .fire-s-health-small-btn {
   width: auto;
   max-width: none;
@@ -10355,18 +8411,21 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-weight: 900;
   border: 1px solid rgba(255,255,255,.22);
 }
+
 .fire-s-health-metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 10px;
 }
+
 .fire-s-health-metrics div {
   padding: 10px;
   border-radius: 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
+
 .fire-s-health-metrics span {
   display: block;
   color: #64748b;
@@ -10375,6 +8434,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
+
 .fire-s-health-metrics strong {
   display: block;
   margin-top: 4px;
@@ -10382,9 +8442,13 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-size: 17px;
   font-weight: 900;
 }
+
 .fire-s-health-breakdown { display: none; margin-top: 12px; }
+
 .fire-s-health-breakdown.open { display: block; }
+
 .fire-s-health-breakdown h3 { margin: 0 0 8px; font-size: 15px; color: #0f172a; }
+
 .fire-s-health-row {
   display: grid;
   grid-template-columns: minmax(110px, 1fr) 1.2fr 42px;
@@ -10393,31 +8457,40 @@ body > #actionDropdown.action-dropdown button:last-child {
   padding: 7px 0;
   border-top: 1px solid #eef2f7;
 }
+
 .fire-s-health-row span { font-size: 12px; font-weight: 800; color: #334155; overflow-wrap: anywhere; }
+
 .fire-s-health-row strong { text-align: right; font-size: 12px; color: #0f172a; }
+
 .fire-s-health-bar { height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+
 .fire-s-health-bar i { display: block; height: 100%; border-radius: inherit; background: #b91c1c; }
+
 .fire-s-health-note { margin: 10px 0 0; color: #64748b; font-size: 11px; line-height: 1.35; }
 
 .fire-s-health-centre.health-excellent .fire-s-health-bar i,
 .fire-s-health-centre.health-good .fire-s-health-bar i { background: #16a34a; }
+
 .fire-s-health-centre.health-attention .fire-s-health-bar i { background: #f59e0b; }
+
 .fire-s-health-centre.health-critical .fire-s-health-bar i { background: #dc2626; }
 
 @media (max-width: 700px) {
-  .fire-s-health-centre { padding: 10px; border-radius: 16px; }
-  .fire-s-health-hero { padding: 12px; border-radius: 14px; }
-  .fire-s-health-hero h2 { font-size: 34px; }
-  .fire-s-health-metrics { grid-template-columns: 1fr 1fr; }
-  .fire-s-health-row { grid-template-columns: 1fr; gap: 5px; }
-  .fire-s-health-row strong { text-align: left; }
-  .fire-s-card-health { grid-template-columns: auto auto 1fr; padding: 6px 7px; }
+.fire-s-health-centre { padding: 10px; border-radius: 16px; }
+
+.fire-s-health-hero { padding: 12px; border-radius: 14px; }
+
+.fire-s-health-hero h2 { font-size: 34px; }
+
+.fire-s-health-metrics { grid-template-columns: 1fr 1fr; }
+
+.fire-s-health-row { grid-template-columns: 1fr; gap: 5px; }
+
+.fire-s-health-row strong { text-align: left; }
+
+.fire-s-card-health { grid-template-columns: auto auto 1fr; padding: 6px 7px; }
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.8E - Executive Mini Dashboard
-   ===================================================== */
 .fire-s-exec-mini-dashboard {
   margin: 10px 0 14px;
   padding: 12px;
@@ -10506,12 +8579,17 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-exec-stat.good { border-color: #bbf7d0; background: #f0fdf4; }
+
 .fire-s-exec-stat.watch { border-color: #fed7aa; background: #fff7ed; }
+
 .fire-s-exec-stat.risk { border-color: #fecaca; background: #fef2f2; }
+
 .fire-s-exec-stat.neutral { border-color: #e2e8f0; background: #f8fafc; }
 
 .fire-s-exec-stat.good strong { color: #166534; }
+
 .fire-s-exec-stat.watch strong { color: #c2410c; }
+
 .fire-s-exec-stat.risk strong { color: #b91c1c; }
 
 .fire-s-exec-bar {
@@ -10530,27 +8608,24 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .fire-s-exec-mini-dashboard {
+.fire-s-exec-mini-dashboard {
     padding: 10px;
     border-radius: 16px;
   }
 
-  .fire-s-exec-grid {
+.fire-s-exec-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .fire-s-exec-stat {
+.fire-s-exec-stat {
     padding: 9px;
   }
 
-  .fire-s-exec-stat strong {
+.fire-s-exec-stat strong {
     font-size: 18px;
   }
 }
 
-/* =====================================================
-   Fire-S RC 1.1.8G - Executive Snapshot Navigation Hotfix
-   ===================================================== */
 .fire-s-exec-grid .fire-s-exec-stat {
   width: 100%;
   max-width: none;
@@ -10561,24 +8636,26 @@ body > #actionDropdown.action-dropdown button:last-child {
   border: 1px solid rgba(148,163,184,.35);
   background: #fff;
 }
+
 .fire-s-exec-grid .fire-s-exec-stat:hover,
 .fire-s-exec-grid .fire-s-exec-stat:focus {
   transform: translateY(-1px);
   outline: 2px solid rgba(183,28,28,.18);
   outline-offset: 2px;
 }
+
 .fire-s-exec-grid .fire-s-exec-stat.good { background: #ecfdf5; }
+
 .fire-s-exec-grid .fire-s-exec-stat.watch { background: #fffbeb; }
+
 .fire-s-exec-grid .fire-s-exec-stat.risk { background: #fef2f2; }
+
 .fire-s-exec-grid .fire-s-exec-stat.neutral { background: #f8fafc; }
+
 .premises-stats-bar-v118b {
   display: none !important;
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.8H - Executive Snapshot Filter Fix
-   ===================================================== */
 .fire-s-exec-head p {
   margin: 2px 0 0;
   color: #64748b;
@@ -10604,38 +8681,21 @@ body > #actionDropdown.action-dropdown button:last-child {
   letter-spacing: .05em;
 }
 
-.fire-s-exec-message {
-  margin-top: 9px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 900;
-}
-
 @media (max-width: 700px) {
-  .fire-s-exec-head {
+.fire-s-exec-head {
     align-items: flex-start;
   }
 
-  .fire-s-exec-head h3 {
+.fire-s-exec-head h3 {
     font-size: 16px;
   }
 
-  .fire-s-exec-head p {
+.fire-s-exec-head p {
     max-width: 210px;
     line-height: 1.25;
   }
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.9 - Gateway Filter Consolidation
-   All date and workspace filters live inside Show Filters.
-   Executive Snapshot is a read-only KPI panel.
-   ===================================================== */
 .filter-panel {
   border: 1px solid #dbe3ef;
   border-radius: 16px;
@@ -10709,29 +8769,28 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 640px) {
-  .filter-panel-heading {
+.filter-panel-heading {
     display: block;
   }
 
-  .filter-panel-heading span {
+.filter-panel-heading span {
     display: block;
     margin-top: 3px;
     text-align: left;
   }
 
-  #filterPanel .inspection-date-filter-grid,
+#filterPanel .inspection-date-filter-grid,
   #filterPanel .inspection-quick-date-row {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-
-/* Fire-S RC 1.1.10 - Gateway Filter Stabilisation */
 .fire-s-stable-filter-row {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
   gap: 8px !important;
 }
+
 .fire-s-stable-filter-row .metric-card {
   width: 100% !important;
   max-width: none !important;
@@ -10743,38 +8802,43 @@ body > #actionDropdown.action-dropdown button:last-child {
   gap: 6px !important;
   text-align: center !important;
 }
+
 .fire-s-stable-filter-row .metric-card .metric-number {
   font-size: 18px !important;
   font-weight: 900 !important;
 }
+
 .fire-s-stable-filter-row .metric-card .metric-label {
   font-size: 11px !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
 }
+
 .fire-s-stable-premises-list {
   display: grid;
   gap: 10px;
 }
+
 .fire-s-stable-premises-card {
   cursor: pointer;
 }
+
 .fire-s-stable-premises-card:focus {
   outline: 3px solid rgba(183,28,28,.28);
   outline-offset: 2px;
 }
+
 @media (max-width: 700px) {
-  .fire-s-stable-filter-row {
+.fire-s-stable-filter-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
-  .fire-s-stable-filter-row .metric-card {
+
+.fire-s-stable-filter-row .metric-card {
     min-height: 50px !important;
     padding: 8px !important;
   }
 }
 
-
-/* Fire-S RC 1.1.11 - Premises Cards & Executive Snapshot Cleanup */
 .fire-s-snapshot-clean-v1111 {
   padding: 14px !important;
   border-radius: 18px !important;
@@ -10848,8 +8912,11 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-snapshot-kpi-v1111.good { border-left: 4px solid #16a34a !important; }
+
 .fire-s-snapshot-kpi-v1111.watch { border-left: 4px solid #f59e0b !important; }
+
 .fire-s-snapshot-kpi-v1111.risk { border-left: 4px solid #b91c1c !important; }
+
 .fire-s-snapshot-kpi-v1111.neutral { border-left: 4px solid #64748b !important; }
 
 .fire-s-snapshot-note-v1111 {
@@ -10926,35 +8993,35 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .fire-s-snapshot-clean-v1111 {
+.fire-s-snapshot-clean-v1111 {
     padding: 10px !important;
     border-radius: 16px !important;
   }
 
-  .fire-s-snapshot-grid-v1111 {
+.fire-s-snapshot-grid-v1111 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 7px !important;
   }
 
-  .fire-s-snapshot-kpi-v1111 {
+.fire-s-snapshot-kpi-v1111 {
     min-height: 62px !important;
     padding: 8px !important;
   }
 
-  .fire-s-snapshot-kpi-v1111 strong {
+.fire-s-snapshot-kpi-v1111 strong {
     font-size: 17px !important;
   }
 
-  .premises-card-v1111-polished .premises-card-metrics-v118b {
+.premises-card-v1111-polished .premises-card-metrics-v118b {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .premises-card-v1111-polished .premises-health-badge-v118b {
+.premises-card-v1111-polished .premises-health-badge-v118b {
     min-width: 70px !important;
     padding: 7px 8px !important;
   }
 
-  .premises-card-v1111-polished .premises-card-footer-v118b span {
+.premises-card-v1111-polished .premises-card-footer-v118b span {
     max-width: 62% !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -10962,8 +9029,6 @@ body > #actionDropdown.action-dropdown button:last-child {
   }
 }
 
-
-/* Fire-S RC 1.1.12 - Show Filters Drawer Polish */
 .fire-s-filter-toggle-v1112,
 #toggleFiltersBtn.fire-s-filter-toggle-v1112 {
   display: flex !important;
@@ -11096,37 +9161,33 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .fire-s-filter-panel-v1112,
+.fire-s-filter-panel-v1112,
   #filterPanel.fire-s-filter-panel-v1112 {
     padding: 10px !important;
     border-radius: 16px !important;
   }
 
-  .fire-s-filter-panel-v1112 .filter-panel-heading {
+.fire-s-filter-panel-v1112 .filter-panel-heading {
     align-items: stretch !important;
   }
 
-  .fire-s-filter-panel-v1112 .inspection-date-filter-grid,
+.fire-s-filter-panel-v1112 .inspection-date-filter-grid,
   .fire-s-filter-panel-v1112 .inspection-quick-date-row,
   .fire-s-filter-panel-v1112 .metric-row {
     grid-template-columns: 1fr 1fr !important;
   }
 
-  .fire-s-filter-panel-v1112 .metric-card {
+.fire-s-filter-panel-v1112 .metric-card {
     padding: 9px 10px !important;
     gap: 6px !important;
   }
 
-  .fire-s-filter-panel-v1112 .metric-label {
+.fire-s-filter-panel-v1112 .metric-label {
     font-size: 11px !important;
     line-height: 1.15 !important;
   }
 }
 
-
-/* =====================================================
-   FIRE-S RC 1.1.13 - Premises Workspace Module
-   ===================================================== */
 .fire-s-premises-workspace-v1113 {
   margin: 14px 0 18px;
   padding: 14px;
@@ -11195,12 +9256,19 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-workspace-health-v1113.good { background: #ecfdf5; border-color: #86efac; }
+
 .fire-s-workspace-health-v1113.good strong { color: #15803d; }
+
 .fire-s-workspace-health-v1113.watch { background: #fffbeb; border-color: #fcd34d; }
+
 .fire-s-workspace-health-v1113.watch strong { color: #b45309; }
+
 .fire-s-workspace-health-v1113.risk { background: #fff7ed; border-color: #fdba74; }
+
 .fire-s-workspace-health-v1113.risk strong { color: #c2410c; }
+
 .fire-s-workspace-health-v1113.critical { background: #fef2f2; border-color: #fca5a5; }
+
 .fire-s-workspace-health-v1113.critical strong { color: #b91c1c; }
 
 .fire-s-workspace-kpis-v1113 {
@@ -11366,21 +9434,21 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 720px) {
-  .fire-s-premises-workspace-v1113 {
+.fire-s-premises-workspace-v1113 {
     margin: 10px 0 14px;
     padding: 10px;
     border-radius: 16px;
   }
 
-  .fire-s-workspace-hero-v1113 {
+.fire-s-workspace-hero-v1113 {
     grid-template-columns: 1fr;
   }
 
-  .fire-s-workspace-title-v1113 h2 {
+.fire-s-workspace-title-v1113 h2 {
     font-size: 19px;
   }
 
-  .fire-s-workspace-health-v1113 {
+.fire-s-workspace-health-v1113 {
     display: grid;
     grid-template-columns: 1fr auto auto;
     gap: 8px;
@@ -11389,44 +9457,40 @@ body > #actionDropdown.action-dropdown button:last-child {
     text-align: left;
   }
 
-  .fire-s-workspace-health-v1113 strong {
+.fire-s-workspace-health-v1113 strong {
     margin: 0;
     font-size: 22px;
     text-align: right;
   }
 
-  .fire-s-workspace-health-v1113 small {
+.fire-s-workspace-health-v1113 small {
     margin: 0;
     text-align: right;
   }
 
-  .fire-s-workspace-kpis-v1113 {
+.fire-s-workspace-kpis-v1113 {
     grid-template-columns: 1fr 1fr;
   }
 
-  .fire-s-workspace-actions-v1113 {
+.fire-s-workspace-actions-v1113 {
     grid-template-columns: 1fr 1fr;
   }
 
-  .fire-s-workspace-action-v1113 {
+.fire-s-workspace-action-v1113 {
     min-height: 96px;
     padding: 10px;
   }
 
-  .fire-s-workspace-category-row-v1113 {
+.fire-s-workspace-category-row-v1113 {
     grid-template-columns: 1fr 52px;
   }
 
-  .fire-s-workspace-category-row-v1113 .fire-s-workspace-bar-v1113 {
+.fire-s-workspace-category-row-v1113 .fire-s-workspace-bar-v1113 {
     grid-column: 1 / -1;
     grid-row: 2;
   }
 }
 
-
-/* =====================================================
-   FIRE-S RC 1.1.15 - Executive Dashboard Module
-   ===================================================== */
 .fire-s-health-centre-v1114 {
   margin: 14px 0 18px;
   padding: 14px;
@@ -11494,12 +9558,19 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-health-score-v1114.good { background: #ecfdf5; border-color: #86efac; }
+
 .fire-s-health-score-v1114.good strong { color: #15803d; }
+
 .fire-s-health-score-v1114.watch { background: #fffbeb; border-color: #fcd34d; }
+
 .fire-s-health-score-v1114.watch strong { color: #b45309; }
+
 .fire-s-health-score-v1114.risk { background: #fff7ed; border-color: #fdba74; }
+
 .fire-s-health-score-v1114.risk strong { color: #c2410c; }
+
 .fire-s-health-score-v1114.critical { background: #fef2f2; border-color: #fca5a5; }
+
 .fire-s-health-score-v1114.critical strong { color: #b91c1c; }
 
 .fire-s-health-kpis-v1114 {
@@ -11602,8 +9673,11 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-health-action-v1114.critical { border-left-color: #b91c1c; }
+
 .fire-s-health-action-v1114.high { border-left-color: #ea580c; }
+
 .fire-s-health-action-v1114.medium { border-left-color: #d97706; }
+
 .fire-s-health-action-v1114.low { border-left-color: #16a34a; }
 
 .fire-s-health-action-v1114 span {
@@ -11644,16 +9718,16 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 760px) {
-  .fire-s-health-centre-v1114 {
+.fire-s-health-centre-v1114 {
     padding: 12px;
     border-radius: 16px;
   }
 
-  .fire-s-health-centre-head-v1114 {
+.fire-s-health-centre-head-v1114 {
     grid-template-columns: 1fr;
   }
 
-  .fire-s-health-score-v1114 {
+.fire-s-health-score-v1114 {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 8px;
@@ -11661,28 +9735,23 @@ body > #actionDropdown.action-dropdown button:last-child {
     text-align: left;
   }
 
-  .fire-s-health-score-v1114 small {
+.fire-s-health-score-v1114 small {
     margin-top: 0;
   }
 
-  .fire-s-health-kpis-v1114 {
+.fire-s-health-kpis-v1114 {
     grid-template-columns: 1fr 1fr;
   }
 
-  .fire-s-health-grid-v1114 {
+.fire-s-health-grid-v1114 {
     grid-template-columns: 1fr;
   }
 
-  .fire-s-health-row-v1114 {
+.fire-s-health-row-v1114 {
     grid-template-columns: 1fr 82px 38px;
   }
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.15 - Executive Dashboard Module
-   Mobile-first portfolio dashboard cards.
-   ===================================================== */
 .fire-s-exec-dashboard-v1115 {
   margin: 14px 0 18px;
   padding: 14px;
@@ -11691,25 +9760,37 @@ body > #actionDropdown.action-dropdown button:last-child {
   color: #fff;
   box-shadow: 0 12px 28px rgba(15,23,42,.18);
 }
+
 .fire-s-exec-dashboard-v1115 h3 { margin: 0; font-size: 18px; }
+
 .fire-s-exec-dashboard-v1115 p { margin: 4px 0 0; color: #cbd5e1; font-size: 13px; line-height: 1.35; }
+
 .fire-s-exec-top-v1115 { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:12px; }
+
 .fire-s-exec-refresh-v1115 { width:auto; max-width:none; padding:8px 10px; border-radius:999px; background:#334155; color:#fff; font-size:12px; font-weight:800; }
+
 .fire-s-exec-grid-v1115 { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; }
+
 .fire-s-exec-tile-v1115 { padding:10px; border-radius:14px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); min-height:72px; }
+
 .fire-s-exec-tile-v1115 span { display:block; color:#cbd5e1; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+
 .fire-s-exec-tile-v1115 strong { display:block; margin-top:5px; color:#fff; font-size:24px; line-height:1; }
+
 .fire-s-exec-tile-v1115 em { display:block; margin-top:5px; color:#e2e8f0; font-size:12px; font-style:normal; font-weight:700; }
+
 .fire-s-exec-bars-v1115 { margin-top:12px; display:grid; gap:8px; }
+
 .fire-s-exec-bar-row-v1115 { display:grid; grid-template-columns: 105px 1fr 42px; gap:8px; align-items:center; font-size:12px; color:#e2e8f0; }
+
 .fire-s-exec-bar-v1115 { height:9px; border-radius:999px; background:rgba(255,255,255,.14); overflow:hidden; }
+
 .fire-s-exec-bar-v1115 i { display:block; height:100%; width:0%; background:#38bdf8; border-radius:999px; }
-@media (min-width: 760px) { .fire-s-exec-grid-v1115 { grid-template-columns: repeat(4, minmax(0,1fr)); } }
 
+@media (min-width: 760px) {
+.fire-s-exec-grid-v1115 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
 
-/* =====================================================
-   FIRE-S RC 1.1.16B - Photo Source Hotfix
-   ===================================================== */
 .fire-s-photo-centre-v1116 {
   grid-column: 1 / -1;
   width: 100%;
@@ -11822,17 +9903,6 @@ body > #actionDropdown.action-dropdown button:last-child {
   box-sizing: border-box;
 }
 
-.fire-s-photo-missing-v1116 {
-  min-height: 150px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 800;
-}
-
 .report-photo-meta-v1116 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -11846,30 +9916,27 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  #photoPreview {
+#photoPreview {
     grid-template-columns: 1fr;
   }
 
-  .fire-s-photo-centre-head-v1116 {
+.fire-s-photo-centre-head-v1116 {
     display: block;
   }
 
-  .fire-s-photo-centre-head-v1116 small {
+.fire-s-photo-centre-head-v1116 small {
     display: block;
     margin-top: 4px;
     text-align: left;
   }
 }
 
-
-/* =====================================================
-   FIRE-S RC 1.1.16B - Photo Source + Card Layout Hotfix
-   ===================================================== */
 #photoPreview {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
 }
+
 .photo-item.fire-s-photo-item-v1116 {
   display: grid;
   grid-template-columns: minmax(180px, 280px) 1fr;
@@ -11879,6 +9946,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   max-width: none;
   box-sizing: border-box;
 }
+
 .photo-item.fire-s-photo-item-v1116 img,
 .photo-item.fire-s-photo-item-v1116 .fire-s-photo-missing-v1116 {
   grid-row: span 6;
@@ -11889,6 +9957,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   border-radius: 10px;
   background: #eef2f7;
 }
+
 .fire-s-photo-missing-v1116 {
   display: flex;
   flex-direction: column;
@@ -11901,11 +9970,13 @@ body > #actionDropdown.action-dropdown button:last-child {
   text-align: center;
   border: 1px dashed #cbd5e1;
 }
+
 .fire-s-photo-missing-v1116 small {
   margin-top: 6px;
   font-size: 11px;
   font-weight: 700;
 }
+
 .photo-item.fire-s-photo-item-v1116 .photo-delete,
 .photo-item.fire-s-photo-item-v1116 .photo-note,
 .photo-item.fire-s-photo-item-v1116 input,
@@ -11913,21 +9984,19 @@ body > #actionDropdown.action-dropdown button:last-child {
   width: 100%;
   max-width: none;
 }
+
 @media (max-width: 700px) {
-  .photo-item.fire-s-photo-item-v1116 {
+.photo-item.fire-s-photo-item-v1116 {
     grid-template-columns: 1fr;
   }
-  .photo-item.fire-s-photo-item-v1116 img,
+
+.photo-item.fire-s-photo-item-v1116 img,
   .photo-item.fire-s-photo-item-v1116 .fire-s-photo-missing-v1116 {
     grid-row: auto;
     min-height: 220px;
   }
 }
 
-
-/* =====================================================
-   Fire-S RC 1.1.16C - Photo Category Gallery
-   ===================================================== */
 .fire-s-photo-centre-v1116c {
   margin-bottom: 12px;
 }
@@ -12007,25 +10076,24 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 @media (max-width: 700px) {
-  .fire-s-photo-item-v1116c {
+.fire-s-photo-item-v1116c {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .fire-s-photo-preview-v1116c img,
+.fire-s-photo-preview-v1116c img,
   .fire-s-photo-item-v1116c img {
     min-height: 210px;
     max-height: 300px;
   }
 }
 
-
-/* Fire-S RC 1.1.16D - Photo Question Linking */
 .fire-s-photo-item-v1116d .fire-s-photo-field-v1116 select {
   width: 100%;
   max-width: none;
   min-height: 42px;
 }
+
 .fire-s-linked-question-summary-v1116d {
   padding: 8px 10px;
   border-radius: 10px;
@@ -12036,12 +10104,14 @@ body > #actionDropdown.action-dropdown button:last-child {
   line-height: 1.35;
   font-weight: 700;
 }
+
 .fire-s-linked-question-summary-v1116d span {
   display: inline-block;
   margin-top: 3px;
   color: #334155;
   font-weight: 600;
 }
+
 .fire-s-question-photo-count-v1116d {
   display: inline-flex;
   margin-top: 8px;
@@ -12053,27 +10123,71 @@ body > #actionDropdown.action-dropdown button:last-child {
   font-size: 11px;
   font-weight: 900;
 }
+
 @media (max-width: 700px) {
-  .fire-s-photo-item-v1116d {
+.fire-s-photo-item-v1116d {
     grid-template-columns: 1fr !important;
   }
 }
 
+.smart-action-engine-panel {border:1px solid #e5e7eb;background:#fff}
 
-/* RC 1.1.17 Smart Action Engine */
-.smart-action-engine-panel{border:1px solid #e5e7eb;background:#fff}.sae-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.sae-head h3{margin:0;color:#111827}.sae-head p{margin:4px 0 0;color:#64748b;font-size:13px}.sae-head strong{background:#fee2e2;color:#991b1b;border-radius:999px;padding:8px 12px;white-space:nowrap}.sae-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.sae-chips span{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;color:#334155}.sae-list{display:grid;gap:10px}.sae-card{border:1px solid #e5e7eb;border-left:5px solid #64748b;border-radius:12px;padding:12px;background:#fff}.sae-card>div{display:flex;justify-content:space-between;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.03em}.sae-card h4{margin:8px 0 4px;font-size:15px}.sae-card p{margin:0 0 8px;color:#475569;font-size:13px;line-height:1.35}.sae-card small{color:#64748b;font-weight:700}.sae-critical{border-left-color:#b91c1c;background:#fff7f7}.sae-high{border-left-color:#f97316}.sae-medium{border-left-color:#eab308}.sae-low{border-left-color:#22c55e}.sae-empty{padding:14px;background:#f8fafc;border-radius:10px;color:#64748b;font-weight:700}@media(max-width:700px){.sae-head{display:block}.sae-head strong{display:inline-block;margin-top:10px}.smart-action-engine-panel{padding:14px}.sae-card h4{font-size:14px}}
+.sae-head {display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 
-/* FIRE-S RC 1.1.19 - Action Register Clarity */
+.sae-head h3 {margin:0;color:#111827}
+
+.sae-head p {margin:4px 0 0;color:#64748b;font-size:13px}
+
+.sae-head strong {background:#fee2e2;color:#991b1b;border-radius:999px;padding:8px 12px;white-space:nowrap}
+
+.sae-chips {display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+
+.sae-chips span {background:#f1f5f9;border:1px solid #cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;color:#334155}
+
+.sae-list {display:grid;gap:10px}
+
+.sae-card {border:1px solid #e5e7eb;border-left:5px solid #64748b;border-radius:12px;padding:12px;background:#fff}
+
+.sae-card>div {display:flex;justify-content:space-between;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+
+.sae-card h4 {margin:8px 0 4px;font-size:15px}
+
+.sae-card p {margin:0 0 8px;color:#475569;font-size:13px;line-height:1.35}
+
+.sae-card small {color:#64748b;font-weight:700}
+
+.sae-critical {border-left-color:#b91c1c;background:#fff7f7}
+
+.sae-high {border-left-color:#f97316}
+
+.sae-medium {border-left-color:#eab308}
+
+.sae-low {border-left-color:#22c55e}
+
+.sae-empty {padding:14px;background:#f8fafc;border-radius:10px;color:#64748b;font-weight:700}
+
+@media(max-width:700px) {
+.sae-head {display:block}
+
+.sae-head strong {display:inline-block;margin-top:10px}
+
+.smart-action-engine-panel {padding:14px}
+
+.sae-card h4 {font-size:14px}
+}
+
 .smart-action-register-clarity-v1119 .sae-grouped-list {
   display: grid;
   gap: 14px;
 }
+
 .smart-action-register-clarity-v1119 .sae-action-group {
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 18px;
   padding: 12px;
   background: rgba(15, 23, 42, 0.03);
 }
+
 .smart-action-register-clarity-v1119 .sae-action-group-head {
   display: flex;
   align-items: center;
@@ -12081,10 +10195,12 @@ body > #actionDropdown.action-dropdown button:last-child {
   gap: 12px;
   margin-bottom: 10px;
 }
+
 .smart-action-register-clarity-v1119 .sae-action-group-head h4 {
   margin: 0;
   font-size: 0.98rem;
 }
+
 .smart-action-register-clarity-v1119 .sae-action-group-head span {
   border-radius: 999px;
   padding: 5px 9px;
@@ -12092,11 +10208,11 @@ body > #actionDropdown.action-dropdown button:last-child {
   background: rgba(15, 23, 42, 0.08);
   white-space: nowrap;
 }
+
 .smart-action-register-clarity-v1119 .sae-card + .sae-card {
   margin-top: 10px;
 }
 
-/* Manual Sprint 202 - Screen Guard */
 body.fire-s-screen-guard-premises #homeSection,
 body.fire-s-screen-guard-premises #mainCommandCentre {
   display: none !important;
@@ -12111,10 +10227,6 @@ body.fire-s-screen-inspection #projectFormSection {
   opacity: 1 !important;
 }
 
-/* =====================================================
-   Fire-S Sprint 301 - Brand Identity
-   Safe visual-only overrides. No app logic changed.
-   ===================================================== */
 .brand-header {
   align-items: center;
 }
@@ -12141,21 +10253,16 @@ body.fire-s-screen-inspection #projectFormSection {
 }
 
 @media (max-width: 520px) {
-  .brand-mark {
+.brand-mark {
     width: 50px;
     height: 50px;
   }
 
-  .brand-left {
+.brand-left {
     gap: 10px;
   }
 }
 
-/* =====================================================
-   Fire-S RC 1.1.18B - Premises/Projects Layout Stability
-   Purpose: reduce visual "hop" caused by layout reflow, hover transforms,
-   dynamic card resizing and scrollbar changes on the Projects/Premises page.
-   ===================================================== */
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable both-edges;
@@ -12250,36 +10357,32 @@ body.fire-s-freeze-projects-sync #saveMessage {
 }
 
 @media (max-width: 700px) {
-  #projectsList {
+#projectsList {
     min-height: 520px;
   }
 
-  .premises-card-v118b,
+.premises-card-v118b,
   .ultra-premises-card,
   .smart-premises-card,
   .project-card {
     min-height: 104px;
   }
 
-  .premises-card-title-block-v118b h3,
+.premises-card-title-block-v118b h3,
   .ultra-premises-title,
   .smart-title-row .ultra-premises-title {
     min-height: 32px;
   }
 
-  .premises-health-badge-v118b {
+.premises-health-badge-v118b {
     min-height: 46px;
   }
 
-  .premises-card-metrics-v118b span {
+.premises-card-metrics-v118b span {
     min-height: 40px;
   }
 }
 
-/* =====================================================
-   Fire-S RC 1.1.19 - Initial Render Stabiliser
-   Purpose: prevent first-load movement while Projects/Premises data settles.
-   ===================================================== */
 body.fire-s-render-warmup #projectListSection,
 body.fire-s-render-warmup #projectsList,
 body.fire-s-render-warmup .premises-list-v118b,
@@ -12315,8 +10418,6 @@ body.fire-s-render-warmup #saveMessage {
   font-size: 16px;
 }
 
-
-/* RC 1.2.0A - Inspection Lifecycle UX */
 .fire-s-lifecycle-heading {
   display: flex;
   flex-direction: column;
@@ -12326,24 +10427,30 @@ body.fire-s-render-warmup #saveMessage {
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.04);
 }
+
 .fire-s-lifecycle-heading strong { font-size: 1rem; }
+
 .fire-s-lifecycle-heading span { font-size: 0.86rem; opacity: 0.75; }
-.fire-s-lifecycle-filter-bar { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+
 .inspection-card-status-neutral {
   border-left: 5px solid rgba(100, 116, 139, 0.55) !important;
   background: #fff !important;
 }
+
 .inspection-card-status-blue {
   border-left: 5px solid rgba(37, 99, 235, 0.65) !important;
 }
+
 .sticky-action-bar #backBtn { background: #7f1d1d; color: #fff; }
+
 .sticky-action-bar #saveBtn { font-weight: 800; }
+
 .sticky-action-bar #finishBtn { font-weight: 900; }
+
 @media (max-width: 720px) {
-  .fire-s-lifecycle-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fire-s-lifecycle-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* RC 1.2.0B - User Choice Layer */
 .fire-s-choice-panel {
   display: grid;
   gap: 12px;
@@ -12354,27 +10461,32 @@ body.fire-s-render-warmup #saveMessage {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
 }
+
 .fire-s-choice-heading {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
 }
+
 .fire-s-choice-heading strong {
   display: block;
   font-size: 1.05rem;
 }
+
 .fire-s-choice-heading span,
 .fire-s-choice-heading small {
   color: #64748b;
   font-size: 0.84rem;
 }
+
 .fire-s-choice-controls {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
 }
+
 .fire-s-choice-controls label {
   display: grid;
   gap: 5px;
@@ -12382,6 +10494,7 @@ body.fire-s-render-warmup #saveMessage {
   color: #334155;
   font-size: 0.78rem;
 }
+
 .fire-s-choice-controls select,
 .fire-s-choice-controls button {
   min-height: 42px;
@@ -12391,6 +10504,7 @@ body.fire-s-render-warmup #saveMessage {
   padding: 8px 10px;
   font-size: 16px;
 }
+
 .fire-s-advanced-toggle {
   display: inline-flex;
   align-items: center;
@@ -12404,13 +10518,16 @@ body.fire-s-render-warmup #saveMessage {
   background: linear-gradient(135deg, #7c3aed 0%, #ec4899 52%, #f97316 100%) !important;
   box-shadow: 0 10px 22px rgba(236, 72, 153, 0.24);
 }
+
 .fire-s-advanced-toggle:hover {
   transform: none;
   box-shadow: 0 14px 28px rgba(124, 58, 237, 0.26);
 }
+
 .fire-s-advanced-toggle:active {
   transform: translateY(0);
 }
+
 .fire-s-advanced-note {
   margin: 8px 0 12px;
   padding: 10px 12px;
@@ -12420,11 +10537,13 @@ body.fire-s-render-warmup #saveMessage {
   color: #9a3412;
   font-size: 0.86rem;
 }
+
 .choice-card-grid-view,
 .choice-card-stack {
   display: grid;
   gap: 12px;
 }
+
 .choice-card {
   cursor: pointer;
   border: 1px solid rgba(203, 213, 225, 0.9);
@@ -12437,15 +10556,21 @@ body.fire-s-render-warmup #saveMessage {
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.055);
   overflow-anchor: none;
 }
+
 .choice-card:hover,
 .choice-list-row:not(.choice-list-head):hover,
 .choice-timeline-item:hover {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.09);
 }
+
 .choice-card.status-current { border-left-color: #2563eb; }
+
 .choice-card.status-scheduled { border-left-color: #f59e0b; }
+
 .choice-card.status-not-assessed { border-left-color: #94a3b8; }
+
 .choice-card.status-completed { border-left-color: #16a34a; }
+
 .choice-card-top,
 .choice-card-footer {
   display: flex;
@@ -12453,11 +10578,13 @@ body.fire-s-render-warmup #saveMessage {
   gap: 12px;
   align-items: flex-start;
 }
+
 .choice-card-top strong {
   display: block;
   color: #0f172a;
   font-size: 1rem;
 }
+
 .choice-card-top span,
 .choice-card-footer span {
   display: block;
@@ -12465,6 +10592,7 @@ body.fire-s-render-warmup #saveMessage {
   font-size: 0.84rem;
   margin-top: 3px;
 }
+
 .choice-status-pill {
   display: inline-flex;
   align-items: center;
@@ -12477,12 +10605,14 @@ body.fire-s-render-warmup #saveMessage {
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
+
 .choice-card-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin: 12px 0;
 }
+
 .choice-card-grid span {
   display: grid;
   gap: 2px;
@@ -12492,20 +10622,24 @@ body.fire-s-render-warmup #saveMessage {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
+
 .choice-card-grid small {
   color: #64748b;
   font-size: 0.68rem;
   text-transform: uppercase;
   font-weight: 900;
 }
+
 .choice-card-grid strong {
   color: #0f172a;
   font-size: 0.9rem;
 }
+
 .choice-list-table {
   display: grid;
   gap: 7px;
 }
+
 .choice-list-row {
   display: grid;
   grid-template-columns: minmax(180px, 1.8fr) 130px 110px 110px 80px 80px;
@@ -12517,6 +10651,7 @@ body.fire-s-render-warmup #saveMessage {
   background: #fff;
   cursor: pointer;
 }
+
 .choice-list-head {
   cursor: default;
   background: #f8fafc;
@@ -12525,17 +10660,20 @@ body.fire-s-render-warmup #saveMessage {
   text-transform: uppercase;
   font-size: 0.72rem;
 }
+
 .choice-list-row span small {
   display: block;
   color: #64748b;
   font-size: 0.76rem;
   margin-top: 2px;
 }
+
 .choice-grouped-view,
 .choice-timeline-view {
   display: grid;
   gap: 18px;
 }
+
 .choice-group h3,
 .choice-timeline-year h3 {
   display: flex;
@@ -12544,16 +10682,19 @@ body.fire-s-render-warmup #saveMessage {
   margin: 8px 0 10px;
   color: #0f172a;
 }
+
 .choice-group h3 span {
   border-radius: 999px;
   background: #e2e8f0;
   padding: 4px 8px;
   font-size: 0.78rem;
 }
+
 .choice-timeline-year {
   border-left: 3px solid #cbd5e1;
   padding-left: 12px;
 }
+
 .choice-timeline-item {
   display: grid;
   grid-template-columns: 110px 1fr auto;
@@ -12566,71 +10707,78 @@ body.fire-s-render-warmup #saveMessage {
   background: #fff;
   cursor: pointer;
 }
+
 .choice-timeline-item time {
   color: #64748b;
   font-weight: 800;
   font-size: 0.82rem;
 }
+
 .choice-timeline-item span {
   color: #64748b;
   font-size: 0.82rem;
 }
+
 @media (min-width: 980px) {
-  .choice-card-grid-view {
+.choice-card-grid-view {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (max-width: 760px) {
-  .fire-s-choice-controls {
+.fire-s-choice-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .choice-card-grid {
+
+.choice-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .choice-card-top,
+
+.choice-card-top,
   .choice-card-footer {
     flex-direction: column;
   }
-  .choice-list-row {
+
+.choice-list-row {
     grid-template-columns: 1fr;
   }
-  .choice-list-head {
+
+.choice-list-head {
     display: none;
   }
-  .choice-timeline-item {
+
+.choice-timeline-item {
     grid-template-columns: 1fr;
   }
 }
 
-
-/* FIRE-S RC 1.2.0E - More Filters mobile label hotfix */
 .fire-s-advanced-toggle,
 #toggleFiltersBtn {
   min-width: 128px;
   white-space: nowrap;
 }
+
 .fire-s-advanced-toggle-label {
   display: inline-block;
   color: #ffffff;
   font-weight: 900;
   line-height: 1.1;
 }
+
 @media (max-width: 640px) {
-  .fire-s-choice-controls {
+.fire-s-choice-controls {
     grid-template-columns: 1fr 1fr;
   }
-  .fire-s-choice-more-control {
+
+.fire-s-choice-more-control {
     grid-column: 1 / -1;
   }
-  .fire-s-advanced-toggle {
+
+.fire-s-advanced-toggle {
     width: 100%;
   }
 }
 
-
-/* =====================================================
-   FIRE-S RC 1.2.0F - Role Based Home Cleanup
-   ===================================================== */
 body.fire-s-inspector-mode #complianceHeroCard,
 body.fire-s-inspector-mode .compliance-hero-card,
 body.fire-s-inspector-mode #dashboardMetrics,
@@ -12666,10 +10814,6 @@ body.fire-s-management-mode #mainCommandCentre .main-command-stats {
   display: grid;
 }
 
-/* =====================================================
-   FIRE-S RC 1.2.1A - Phase 1 Safe Stabilisation Cleanup
-   Conservative CSS-only safety net. No filter logic changes.
-   ===================================================== */
 #offlineReadinessBanner,
 #siteReadyPreflightChecklist,
 .offline-readiness-banner,
@@ -12686,20 +10830,11 @@ body.fire-s-phase1-inspector .fire-s-exec-dashboard-v1115 {
   display: none !important;
 }
 
-#newProjectBtn {
-  white-space: normal;
-  min-height: 42px;
-}
-
 #mainCommandCentre {
   min-height: 180px;
   contain: layout paint;
 }
 
-/* =====================================================
-   FIRE-S RC 1.2.1B - Phase 2 Role Simplicity Layer
-   Safe UI-only role separation. Does not alter filter logic.
-   ===================================================== */
 body.fire-s-role-inspector #mainCommandCentre .main-command-stats,
 body.fire-s-role-inspector #dashboardMetrics,
 body.fire-s-role-inspector .dashboard-metrics,
@@ -12749,23 +10884,20 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
 }
 
 @media (max-width: 640px) {
-  body.fire-s-role-inspector #mainCommandCentre .main-command-grid {
+body.fire-s-role-inspector #mainCommandCentre .main-command-grid {
     grid-template-columns: 1fr;
   }
 
-  body.fire-s-role-inspector #cmdInspectionsBtn,
+body.fire-s-role-inspector #cmdInspectionsBtn,
   body.fire-s-role-inspector #cmdScheduleBtn {
     min-height: 88px;
   }
 
-  #newProjectBtn {
+#newProjectBtn {
     width: 100%;
   }
 }
 
-/* =====================================================
-   FIRE-S RC 1.2.1C - Inspector Access + Services CSS Hotfix
-   ===================================================== */
 .fire-s-inspector-access-121c #cmdReportsBtn,
 .fire-s-inspector-access-121c #cmdCompanyBtn,
 .fire-s-inspector-access-121c #cmdServicesBtn,
@@ -12779,7 +10911,6 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
   display: none !important;
 }
 
-/* Services screen: compact, cleaner buttons/cards for phones and laptop. */
 .services-grid {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
@@ -12816,24 +10947,24 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
 }
 
 @media (max-width: 640px) {
-  .services-grid {
+.services-grid {
     grid-template-columns: 1fr;
     gap: 8px;
   }
 
-  .service-card {
+.service-card {
     padding: 10px;
   }
 
-  .service-card h3 {
+.service-card h3 {
     font-size: 14px;
   }
 
-  .service-card p {
+.service-card p {
     font-size: 12px;
   }
 
-  .service-card button,
+.service-card button,
   .services-grid button {
     min-height: 36px;
     padding: 8px;
@@ -12841,8 +10972,6 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
   }
 }
 
-
-/* FIRE-S RC 1.2.1D - Inspector Mission Control Hard Lock */
 .fire-s-inspector-mission-lock-121d #cmdReportsBtn,
 .fire-s-inspector-mission-lock-121d #cmdCompanyBtn,
 .fire-s-inspector-mission-lock-121d #cmdServicesBtn,
@@ -12863,13 +10992,11 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
 }
 
 @media (max-width: 640px) {
-  .fire-s-inspector-mission-lock-121d #mainCommandCentre .main-command-grid {
+.fire-s-inspector-mission-lock-121d #mainCommandCentre .main-command-grid {
     grid-template-columns: 1fr;
   }
 }
 
-
-/* FIRE-S RC 1.2.1E - persistent inspector home lock after Back to Home */
 .fire-s-inspector-mission-lock-121e #cmdReportsBtn,
 .fire-s-inspector-mission-lock-121e #cmdCompanyBtn,
 .fire-s-inspector-mission-lock-121e #cmdServicesBtn,
@@ -12889,14 +11016,11 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
 }
 
 @media (max-width: 640px) {
-  .fire-s-inspector-mission-lock-121e #mainCommandCentre .main-command-grid {
+.fire-s-inspector-mission-lock-121e #mainCommandCentre .main-command-grid {
     grid-template-columns: 1fr;
   }
 }
 
-/* =====================================================
-   RC 1.2.1F - Projects Lifecycle Quick View
-   ===================================================== */
 .fire-s-lifecycle-filter-bar {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -12937,16 +11061,16 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
 }
 
 @media (max-width: 720px) {
-  .fire-s-lifecycle-filter-bar {
+.fire-s-lifecycle-filter-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .fire-s-lifecycle-filter-bar button {
+.fire-s-lifecycle-filter-bar button {
     min-height: 72px;
     padding: 0.65rem;
   }
 
-  .fire-s-lifecycle-filter-bar button small {
+.fire-s-lifecycle-filter-bar button small {
     display: none;
   }
 }
