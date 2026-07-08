@@ -11159,3 +11159,38 @@ body.fire-s-home-resolved-inspector-121j #cmdScheduleBtn {
   display: flex !important;
   visibility: visible !important;
 }
+
+/* RC 1.2.1K — Emergency single-home-view CSS guard
+   If the inspector work area renders together with Command Centre, hide Command Centre
+   so the user does not see two home experiences fighting during startup/re-render. */
+body:has(.inspection-quick-actions) .main-command-centre,
+body:has(.inspection-quick-actions) .fire-s-exec-mini-dashboard,
+body:has(.inspection-quick-actions) .compliance-hero-card {
+  display: none !important;
+}
+
+/* Prevent startup colour/position jump on the remaining inspector work area. */
+.inspection-quick-actions,
+.command-centre-card,
+.command-centre-hero,
+.command-centre-grid,
+.main-command-centre,
+.main-command-card {
+  transition-property: background-color, border-color, box-shadow, opacity !important;
+  transform: none !important;
+}
+
+.command-centre-card:hover,
+.command-centre-card:focus,
+.main-command-card:hover,
+.main-command-card:focus {
+  transform: none !important;
+}
+
+/* Keep the home container stable while the correct role-specific view settles. */
+.home-section,
+.inspection-quick-actions,
+.main-command-centre {
+  min-height: 0;
+  contain: layout paint;
+}
