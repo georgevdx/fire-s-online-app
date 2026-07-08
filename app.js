@@ -26995,3 +26995,168 @@ function fireSApplyLifecycleUxLabels() {
 
   [150, 500, 1200, 2500].forEach(delay => setTimeout(applyPhase2RoleSimplicity, delay));
 })();
+
+/* =====================================================
+   FIRE-S RC 1.2.1C - Inspector Access Hotfix
+   Purpose:
+   - Inspector access keeps only Inspection Gateway + Schedule on Mission Control.
+   - Reports, Company and Services are removed from inspector Mission Control.
+   - Prevent accidental Cloud menu open from inspector Company route if button remains cached.
+   - Keep management/admin access unchanged.
+   ===================================================== */
+(function fireSInspectorAccessHotfix121C(){
+  const MANAGEMENT_ROLES = new Set(['super_admin', 'company_owner', 'owner', 'manager', 'management', 'admin', 'viewer']);
+  const INSPECTOR_ROLES = new Set(['inspector', 'field_inspector', 'field-inspector', 'field inspector', 'guest', 'local']);
+
+  function getRole(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') {
+        return String(window.getCurrentUserRole() || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) {
+        return String(currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (window.currentUserProfile?.role) {
+        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    return 'inspector';
+  }
+
+  function isInspectorAccess(){
+    const role = getRole();
+    return INSPECTOR_ROLES.has(role) || !MANAGEMENT_ROLES.has(role);
+  }
+
+  function hideButton(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'none';
+    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('tabindex', '-1');
+  }
+
+  function showButton(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = '';
+    el.removeAttribute('aria-hidden');
+    el.removeAttribute('tabindex');
+  }
+
+  function updateCard(id, title, copy){
+    const el = document.getElementById(id);
+    if (!el) return;
+    const titleEl = el.querySelector('.command-title, strong, h3, h4');
+    const copyEl = el.querySelector('.command-copy, p, small');
+    if (titleEl) titleEl.textContent = title;
+    if (copyEl) copyEl.textContent = copy;
+  }
+
+  function applyInspectorAccess(){
+    const inspector = isInspectorAccess();
+    document.body?.classList.toggle('fire-s-inspector-access-121c', inspector);
+    document.body?.classList.toggle('fire-s-management-access-121c', !inspector);
+
+    if (inspector) {
+      // Inspector Mission Control: field-work only.
+      showButton('cmdInspectionsBtn');
+      showButton('cmdScheduleBtn');
+      ['cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn', 'cmdDashboardBtn', 'cmdFindingsBtn', 'cmdOverdueBtn'].forEach(hideButton);
+
+      updateCard('cmdInspectionsBtn', 'Inspection Gateway', 'Search/open an inspection or continue field work.');
+      updateCard('cmdScheduleBtn', 'Schedule / New Site', 'Schedule or start a new inspection at a new site.');
+
+      const subtitle = document.getElementById('mainCommandSubtitle');
+      if (subtitle) subtitle.textContent = 'Inspector access: search, schedule and capture inspections.';
+
+      const access = document.getElementById('mainCommandAccessStatus');
+      if (access) access.textContent = 'Inspector access';
+
+      const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+      if (stats) stats.style.display = 'none';
+    } else {
+      // Management/Admin: dashboard and support tools stay available.
+      ['cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn', 'cmdDashboardBtn', 'cmdFindingsBtn', 'cmdOverdueBtn', 'cmdInspectionsBtn', 'cmdScheduleBtn'].forEach(showButton);
+    }
+  }
+
+  // Safety: if the old Company button route is triggered while in inspector mode, do not open Cloud menu.
+  if (typeof window.openCompanyCommand === 'function' && !window.openCompanyCommand.__fireS121CWrapped) {
+    const previousOpenCompany = window.openCompanyCommand;
+    const wrappedCompany = function fireSOpenCompanyRoleGuard121C(){
+      if (isInspectorAccess()) {
+        const msg = document.getElementById('mainCommandMessage');
+        if (msg) {
+          msg.textContent = 'Company tools are available to management/admin users only.';
+          msg.style.display = 'block';
+        }
+        return;
+      }
+      return previousOpenCompany.apply(this, arguments);
+    };
+    wrappedCompany.__fireS121CWrapped = true;
+    window.openCompanyCommand = wrappedCompany;
+  }
+
+  // Safety: if Reports is clicked in inspector mode from a stale cached DOM, keep user on Home.
+  if (typeof window.openReportsCommand === 'function' && !window.openReportsCommand.__fireS121CWrapped) {
+    const previousOpenReports = window.openReportsCommand;
+    const wrappedReports = function fireSOpenReportsRoleGuard121C(){
+      if (isInspectorAccess()) {
+        const msg = document.getElementById('mainCommandMessage');
+        if (msg) {
+          msg.textContent = 'Reports are available to management/admin users only.';
+          msg.style.display = 'block';
+        }
+        return;
+      }
+      return previousOpenReports.apply(this, arguments);
+    };
+    wrappedReports.__fireS121CWrapped = true;
+    window.openReportsCommand = wrappedReports;
+  }
+
+  window.fireSApplyInspectorAccessHotfix121C = applyInspectorAccess;
+
+  function wrap(name){
+    const fn = window[name];
+    if (typeof fn !== 'function' || fn.__fireS121CAccessWrapped) return;
+    const wrapped = function fireS121CAccessWrapped(){
+      const result = fn.apply(this, arguments);
+      setTimeout(applyInspectorAccess, 0);
+      return result;
+    };
+    wrapped.__fireS121CAccessWrapped = true;
+    window[name] = wrapped;
+  }
+
+  ['renderHomeCommandCentre', 'showHome', 'showProjectList', 'renderProjectsList'].forEach(wrap);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyInspectorAccess, { once: true });
+  } else {
+    applyInspectorAccess();
+  }
+
+  [150, 500, 1200, 2500].forEach(delay => setTimeout(applyInspectorAccess, delay));
+
+  const startObserver = () => {
+    if (!document.body) return;
+    let timer = null;
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(applyInspectorAccess, 100);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+  };
+
+  if (document.body) startObserver(); else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+})();

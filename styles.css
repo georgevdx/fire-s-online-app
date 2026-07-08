@@ -12762,3 +12762,81 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
     width: 100%;
   }
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.1C - Inspector Access + Services CSS Hotfix
+   ===================================================== */
+.fire-s-inspector-access-121c #cmdReportsBtn,
+.fire-s-inspector-access-121c #cmdCompanyBtn,
+.fire-s-inspector-access-121c #cmdServicesBtn,
+.fire-s-inspector-access-121c #cmdDashboardBtn,
+.fire-s-inspector-access-121c #cmdFindingsBtn,
+.fire-s-inspector-access-121c #cmdOverdueBtn {
+  display: none !important;
+}
+
+.fire-s-inspector-access-121c #mainCommandCentre .main-command-stats {
+  display: none !important;
+}
+
+/* Services screen: compact, cleaner buttons/cards for phones and laptop. */
+.services-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.service-card {
+  padding: 12px;
+  border-radius: 12px;
+  min-height: 0;
+}
+
+.service-card h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.service-card p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.service-card button,
+.services-grid button {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+@media (max-width: 640px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .service-card {
+    padding: 10px;
+  }
+
+  .service-card h3 {
+    font-size: 14px;
+  }
+
+  .service-card p {
+    font-size: 12px;
+  }
+
+  .service-card button,
+  .services-grid button {
+    min-height: 36px;
+    padding: 8px;
+    font-size: 12px;
+  }
+}
