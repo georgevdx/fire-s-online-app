@@ -27608,3 +27608,220 @@ function fireSApplyLifecycleUxLabels() {
 
   window.fireSApplyInspectorHomeLock121E = applyInspectorHomeLock;
 })();
+
+// =====================================================
+// RC 1.2.1F - Projects Lifecycle Quick View
+// Safe layer: replaces only the Gateway quick-filter buttons
+// with practical inspection lifecycle views. Date/advanced filters
+// remain untouched.
+// =====================================================
+(function fireS121FProjectsLifecycleLayer(){
+  const LIFECYCLE_KEYS = new Set([
+    'lifecycle-continue',
+    'lifecycle-scheduled',
+    'lifecycle-new-site',
+    'lifecycle-existing',
+    'lifecycle-history'
+  ]);
+
+  const previousMatcher =
+    typeof projectMatchesInspectionGatewayQuickFilter === 'function'
+      ? projectMatchesInspectionGatewayQuickFilter
+      : null;
+
+  function hasInspectionHistory(project){
+    return Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0;
+  }
+
+  function isCompletedOrArchived(project){
+    return Boolean(
+      project?.completedAt ||
+      project?.archivedAt ||
+      project?.archiveStatus === 'completed' ||
+      project?.scheduledStatus === 'completed'
+    );
+  }
+
+  function hasInspectionWorkStarted(project){
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const photos = Array.isArray(project?.photos) ? project.photos : [];
+    const hasAnswered = answers.some(answer => String(answer?.answer || '').trim());
+    const hasNotes = answers.some(answer => String(answer?.notes || '').trim());
+    const hasFinalNotes = String(project?.finalComments || '').trim().length > 0;
+    return hasAnswered || hasNotes || photos.length > 0 || hasFinalNotes;
+  }
+
+  function isScheduledInspection(project){
+    if (isCompletedOrArchived(project)) return false;
+    if (project?.scheduledStatus === 'scheduled') return true;
+    if (project?.scheduledDate && !hasInspectionWorkStarted(project)) return true;
+    return false;
+  }
+
+  function isNewPremise(project){
+    if (isCompletedOrArchived(project)) return false;
+    if (hasInspectionHistory(project)) return false;
+    if (hasInspectionWorkStarted(project)) return false;
+    if (project?.scheduledStatus === 'scheduled') return false;
+    return true;
+  }
+
+  function isCurrentInspection(project){
+    if (isCompletedOrArchived(project)) return false;
+    if (isScheduledInspection(project) && !hasInspectionWorkStarted(project)) return false;
+    return hasInspectionWorkStarted(project);
+  }
+
+  function isExistingPremise(project){
+    if (!hasInspectionHistory(project)) return false;
+    if (isCurrentInspection(project)) return false;
+    return true;
+  }
+
+  function lifecycleLabelForProject(project){
+    if (isCurrentInspection(project)) return 'Continue / Edit Current';
+    if (isScheduledInspection(project)) return 'Scheduled';
+    if (isNewPremise(project)) return 'Start First Inspection';
+    if (isExistingPremise(project)) return 'View Previous Cycles';
+    if (isCompletedOrArchived(project) || hasInspectionHistory(project)) return 'Archive / Start New Cycle';
+    return 'Open Inspection';
+  }
+
+  function lifecycleSortValue(project, key){
+    const safeTime = value => {
+      const time = value ? new Date(value).getTime() : 0;
+      return Number.isFinite(time) ? time : 0;
+    };
+
+    if (key === 'lifecycle-scheduled') {
+      const scheduleDate = project?.scheduledDate || project?.followUpDate || project?.lastSaved || '';
+      const time = safeTime(scheduleDate);
+      return time || Number.MAX_SAFE_INTEGER;
+    }
+
+    return -safeTime(project?.lastSaved || project?.updatedAt || project?.completedAt || project?.archivedAt || '');
+  }
+
+  function lifecycleMatches(project, filter){
+    switch (filter) {
+      case 'lifecycle-continue': return isCurrentInspection(project);
+      case 'lifecycle-scheduled': return isScheduledInspection(project);
+      case 'lifecycle-new-site': return isNewPremise(project);
+      case 'lifecycle-existing': return isExistingPremise(project);
+      case 'lifecycle-history': return isCompletedOrArchived(project) || hasInspectionHistory(project);
+      default: return null;
+    }
+  }
+
+  function countLifecycle(projects, key){
+    return (Array.isArray(projects) ? projects : []).filter(project => lifecycleMatches(project, key)).length;
+  }
+
+  window.fireSLifecycle121F = {
+    isCurrentInspection,
+    isScheduledInspection,
+    isNewPremise,
+    isExistingPremise,
+    hasInspectionHistory,
+    lifecycleLabelForProject
+  };
+
+  projectMatchesInspectionGatewayQuickFilter = function fireS121FProjectMatchesGatewayQuickFilter(project, filter){
+    if (!filter || filter === 'all') return true;
+
+    const lifecycleResult = lifecycleMatches(project, filter);
+    if (lifecycleResult !== null) return lifecycleResult;
+
+    return previousMatcher ? previousMatcher(project, filter) : true;
+  };
+
+  renderInspectionGatewayQuickFilters = function fireS121FRenderInspectionGatewayQuickFilters(projects){
+    const safeProjects = Array.isArray(projects) ? projects : [];
+    const filters = [
+      { key: 'all', label: 'All', hint: 'All visible inspections' },
+      { key: 'lifecycle-continue', label: 'Continue', hint: 'Open current work' },
+      { key: 'lifecycle-scheduled', label: 'Scheduled', hint: 'Planned inspections' },
+      { key: 'lifecycle-new-site', label: 'New Site', hint: 'First inspection' },
+      { key: 'lifecycle-existing', label: 'Previous Cycles', hint: 'Existing premises history' },
+      { key: 'lifecycle-history', label: 'Archive / New Cycle', hint: 'Completed or historical' }
+    ];
+
+    return `
+      <div class="gateway-quick-filter-bar fire-s-lifecycle-filter-bar" aria-label="Inspection lifecycle filters">
+        ${filters.map(filter => {
+          const count = filter.key === 'all' ? safeProjects.length : countLifecycle(safeProjects, filter.key);
+          return `
+            <button
+              type="button"
+              class="${currentFilter === filter.key ? 'gateway-filter-active' : ''}"
+              onclick="setInspectionGatewayQuickFilter('${filter.key}')"
+              title="${escapeHtml(filter.hint)}"
+            >
+              <strong>${count}</strong>
+              <span>${escapeHtml(filter.label)}</span>
+              <small>${escapeHtml(filter.hint)}</small>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  };
+
+  const previousGetProjectPrimaryAction =
+    typeof getProjectPrimaryAction === 'function'
+      ? getProjectPrimaryAction
+      : null;
+
+  getProjectPrimaryAction = function fireS121FGetProjectPrimaryAction(project){
+    const label = lifecycleLabelForProject(project);
+
+    if (label === 'Start First Inspection') {
+      return { label, focusMode: '', className: 'action-primary' };
+    }
+
+    if (label === 'Continue / Edit Current') {
+      return { label, focusMode: 'unanswered', className: 'action-primary' };
+    }
+
+    if (label === 'View Previous Cycles') {
+      return { label, focusMode: '', className: 'action-secondary' };
+    }
+
+    if (label === 'Archive / Start New Cycle') {
+      return { label, focusMode: '', className: 'action-warning' };
+    }
+
+    if (previousGetProjectPrimaryAction) {
+      return previousGetProjectPrimaryAction(project);
+    }
+
+    return { label: 'Open Inspection', focusMode: '', className: 'action-primary' };
+  };
+
+  const previousRenderProjectsList =
+    typeof renderProjectsList === 'function'
+      ? renderProjectsList
+      : null;
+
+  if (previousRenderProjectsList && !previousRenderProjectsList.__fireS121FWrapped) {
+    const wrapped = function fireS121FRenderProjectsListWrapped(){
+      const result = previousRenderProjectsList.apply(this, arguments);
+
+      try {
+        const visible = window.currentProjectsListView || [];
+        if (LIFECYCLE_KEYS.has(currentFilter)) {
+          visible.sort((a, b) => lifecycleSortValue(a, currentFilter) - lifecycleSortValue(b, currentFilter));
+        }
+      } catch (error) {}
+
+      return result;
+    };
+    wrapped.__fireS121FWrapped = true;
+    renderProjectsList = wrapped;
+    window.renderProjectsList = wrapped;
+  }
+
+  window.renderInspectionGatewayQuickFilters = renderInspectionGatewayQuickFilters;
+  window.projectMatchesInspectionGatewayQuickFilter = projectMatchesInspectionGatewayQuickFilter;
+  window.getProjectPrimaryAction = getProjectPrimaryAction;
+})();
