@@ -27294,3 +27294,290 @@ function fireSApplyLifecycleUxLabels() {
     renderHomeController();
   }
 })();
+
+
+// =====================================================
+// FIRE-S RC 1.3.1 - Role Test Mode + Management Cards Fix
+// Purpose:
+// - Super Admin can test each role without changing accounts.
+// - Management KPI cards get correct counts and working filters.
+// - “Inspections This Month” opens the month-filtered Inspection Gateway.
+// =====================================================
+(function fireSRoleTestAndManagementCards131(){
+  const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
+  const originalGetCurrentUserRole = typeof window.getCurrentUserRole === 'function'
+    ? window.getCurrentUserRole.bind(window)
+    : null;
+
+  function actualRole(){
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.role) {
+        return String(currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (_) {}
+    try {
+      if (window.currentUserProfile && window.currentUserProfile.role) {
+        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (_) {}
+    try {
+      return originalGetCurrentUserRole ? String(originalGetCurrentUserRole() || '').toLowerCase().trim() : 'inspector';
+    } catch (_) {}
+    return 'inspector';
+  }
+
+  function viewAsRole(){
+    const real = actualRole();
+    if (real !== 'super_admin') return real;
+    try {
+      return String(localStorage.getItem(ROLE_PREF_KEY) || real).toLowerCase().trim();
+    } catch (_) {
+      return real;
+    }
+  }
+
+  function roleLabel(role){
+    const map = {
+      inspector: 'Inspector',
+      manager: 'Management',
+      company_owner: 'Company Owner',
+      super_admin: 'Super Admin'
+    };
+    return map[role] || role || 'User';
+  }
+
+  window.fireSActualUserRole131 = actualRole;
+  window.fireSViewAsRole131 = viewAsRole;
+  window.getCurrentUserRole = function fireSGetCurrentUserRole131(){
+    return viewAsRole();
+  };
+  try { getCurrentUserRole = window.getCurrentUserRole; } catch (_) {}
+
+  function projects(){
+    try {
+      const raw = typeof getProjects === 'function' ? getProjects() : [];
+      if (typeof getVisibleProjectsForCurrentUser === 'function' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+        return getVisibleProjectsForCurrentUser(raw);
+      }
+      return Array.isArray(raw) ? raw : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function answerValue(answer){
+    return String(answer?.answer || '').trim().toLowerCase();
+  }
+
+  function hasNoAnswers(project){
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    return answers.some(answer => answerValue(answer) === 'no');
+  }
+
+  function isClosed(project){
+    return Boolean(project?.completedAt || project?.archivedAt || project?.scheduledStatus === 'completed' || project?.archiveStatus === 'completed');
+  }
+
+  function isOverdue(project){
+    if (!project || isClosed(project)) return false;
+    const dateValue = project?.scheduledDate || project?.followUpDate || project?.nextInspectionDate || '';
+    if (!dateValue) return false;
+    return String(dateValue).slice(0, 10) < new Date().toISOString().slice(0, 10);
+  }
+
+  function isCompliant(project){
+    if (typeof isProjectCompliantForGateway === 'function') {
+      try { return isProjectCompliantForGateway(project); } catch (_) {}
+    }
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    if (!isClosed(project) || !answers.length) return false;
+    const complete = answers.every(answer => ['yes','no','n/a'].includes(answerValue(answer)));
+    return complete && !hasNoAnswers(project);
+  }
+
+  function latestProjectDate(project){
+    return project?.completedAt || project?.archivedAt || project?.lastSaved || project?.updatedAt || project?.createdAt || project?.scheduledDate || project?.inspectionDate || '';
+  }
+
+  function isThisMonth(project){
+    if (typeof projectMatchesThisMonth === 'function') {
+      try { if (projectMatchesThisMonth(project)) return true; } catch (_) {}
+    }
+    const value = latestProjectDate(project);
+    if (!value) return false;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return false;
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
+  function kpis(){
+    const list = projects();
+    return {
+      projects: list,
+      requiringAction: list.filter(hasNoAnswers).length,
+      overdue: list.filter(isOverdue).length,
+      compliant: list.filter(isCompliant).length,
+      month: list.filter(isThisMonth).length
+    };
+  }
+
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  }
+
+  function setButtonLabel(buttonId, label){
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    const labelEl = btn.querySelector('.stat-label, strong, .command-title');
+    if (labelEl) labelEl.textContent = label;
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+  }
+
+  function openGateway(filter, message){
+    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
+    setTimeout(() => {
+      try {
+        if (typeof window.setInspectionGatewayQuickFilter === 'function') {
+          window.setInspectionGatewayQuickFilter(filter || 'all');
+        } else {
+          currentFilter = filter || 'all';
+          currentProjectPage = 1;
+          if (typeof renderProjectsList === 'function') renderProjectsList();
+        }
+      } catch (_) {}
+      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(message || ''); } catch (_) {}
+      try {
+        const section = document.getElementById('projectListSection');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    }, 80);
+  }
+
+  function bindClick(id, handler){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.onclick = function fireS131CardClick(event){
+      if (event) event.preventDefault();
+      handler();
+    };
+  }
+
+  function updateManagementCards(){
+    if (viewAsRole() === 'inspector') return;
+    const data = kpis();
+
+    setText('cmdOpenFindings', data.requiringAction);
+    setText('cmdOverdueItems', data.overdue);
+    setText('cmdTotalInspections', data.compliant);
+    setText('cmdPhotoCount', data.month);
+
+    setButtonLabel('cmdFindingsBtn', 'Premises Requiring Action');
+    setButtonLabel('cmdOverdueBtn', 'Overdue Inspections');
+    setButtonLabel('cmdDashboardBtn', 'Compliant Sites');
+    setButtonLabel('cmdInspectionsBtn', 'Inspections This Month');
+
+    bindClick('cmdFindingsBtn', () => openGateway('inspection-attention', 'Showing premises requiring action.'));
+    bindClick('cmdOverdueBtn', () => openGateway('inspection-warning', 'Showing overdue inspections.'));
+    bindClick('cmdDashboardBtn', () => openGateway('inspection-complete', 'Showing compliant/closed inspections.'));
+    bindClick('cmdInspectionsBtn', () => openGateway('month', 'Showing inspections from this month.'));
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`;
+    }
+  }
+
+  function ensureRoleTestMode(){
+    const centre = document.getElementById('mainCommandCentre');
+    if (!centre) return;
+
+    let panel = document.getElementById('fireSRoleTestModePanel');
+    if (actualRole() !== 'super_admin') {
+      if (panel) panel.remove();
+      return;
+    }
+
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'fireSRoleTestModePanel';
+      panel.className = 'fire-s-role-test-panel';
+      panel.innerHTML = `
+        <label for="fireSRoleTestSelect">
+          <span>Role Test Mode</span>
+          <select id="fireSRoleTestSelect">
+            <option value="inspector">View as Inspector</option>
+            <option value="manager">View as Management</option>
+            <option value="company_owner">View as Company Owner</option>
+            <option value="super_admin">View as Super Admin</option>
+          </select>
+        </label>
+        <small id="fireSRoleTestHint">Actual login: Super Admin</small>
+      `;
+      const top = centre.querySelector('.main-command-top');
+      if (top && top.nextSibling) centre.insertBefore(panel, top.nextSibling);
+      else centre.prepend(panel);
+    }
+
+    const select = document.getElementById('fireSRoleTestSelect');
+    if (select) {
+      select.value = viewAsRole();
+      select.onchange = function(){
+        try { localStorage.setItem(ROLE_PREF_KEY, this.value); } catch (_) {}
+        try { if (typeof window.fireSRenderHomeController130 === 'function') window.fireSRenderHomeController130(); } catch (_) {}
+        setTimeout(() => {
+          ensureRoleTestMode();
+          updateManagementCards();
+          updateAccessLabel();
+        }, 30);
+      };
+    }
+
+    const hint = document.getElementById('fireSRoleTestHint');
+    if (hint) hint.textContent = `Actual login: ${roleLabel(actualRole())} · Viewing: ${roleLabel(viewAsRole())}`;
+  }
+
+  function updateAccessLabel(){
+    const access = document.getElementById('mainCommandAccessStatus');
+    if (!access) return;
+    const companyName =
+      (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.companyName) ||
+      (typeof currentCompanyAccess !== 'undefined' && currentCompanyAccess && currentCompanyAccess.companyName) ||
+      'Local/Personal Workspace';
+    const actual = actualRole();
+    const viewing = viewAsRole();
+    access.textContent = actual === 'super_admin'
+      ? `${companyName} · actual: super_admin · viewing: ${viewing}`
+      : `${companyName} · ${viewing}`;
+  }
+
+  function applyAll(){
+    ensureRoleTestMode();
+    updateAccessLabel();
+    updateManagementCards();
+  }
+
+  const previousController = window.fireSRenderHomeController130;
+  if (typeof previousController === 'function') {
+    window.fireSRenderHomeController130 = function fireSRenderHomeController131(){
+      previousController();
+      applyAll();
+    };
+    try { renderHomeCommandCentre = window.fireSRenderHomeController130; } catch (_) {}
+    try { initHomeCommandCentre = window.fireSRenderHomeController130; } catch (_) {}
+  }
+
+  const previousShowHome = window.showHome;
+  if (typeof previousShowHome === 'function') {
+    window.showHome = function fireSShowHome131(){
+      previousShowHome();
+      applyAll();
+    };
+    try { showHome = window.showHome; } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => setTimeout(applyAll, 100));
+  window.fireSApplyRoleAndManagementCards131 = applyAll;
+})();
