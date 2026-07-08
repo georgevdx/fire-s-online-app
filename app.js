@@ -27581,3 +27581,205 @@ function fireSApplyLifecycleUxLabels() {
   document.addEventListener('DOMContentLoaded', () => setTimeout(applyAll, 100));
   window.fireSApplyRoleAndManagementCards131 = applyAll;
 })();
+
+// =====================================================
+// FIRE-S RC 1.3.2 - MANAGEMENT KPI COUNT/FILTER SYNC
+// Purpose:
+// - KPI card counts must match the exact filter opened by the card.
+// - Avoid separate dashboard calculations that drift from Gateway logic.
+// =====================================================
+(function fireSManagementKpiCountFilterSync132(){
+  function getRoleSafe(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') {
+        return String(window.getCurrentUserRole() || '').toLowerCase().trim();
+      }
+    } catch (_) {}
+    try {
+      if (typeof getCurrentUserRole === 'function') {
+        return String(getCurrentUserRole() || '').toLowerCase().trim();
+      }
+    } catch (_) {}
+    try {
+      return String(currentUserProfile?.role || 'inspector').toLowerCase().trim();
+    } catch (_) {}
+    return 'inspector';
+  }
+
+  function isInspectorRole(){
+    return getRoleSafe() === 'inspector';
+  }
+
+  function getGatewayProjectsSafe(){
+    try {
+      const all = typeof getProjects === 'function' ? getProjects() : [];
+      if (typeof getVisibleProjectsForCurrentUser === 'function') {
+        return getVisibleProjectsForCurrentUser(Array.isArray(all) ? all : []);
+      }
+      return Array.isArray(all) ? all : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function matchesGatewayFilter(project, filter){
+    try {
+      if (typeof projectMatchesInspectionGatewayQuickFilter === 'function') {
+        return projectMatchesInspectionGatewayQuickFilter(project, filter);
+      }
+    } catch (_) {}
+    return filter === 'all';
+  }
+
+  function countGatewayFilter(filter){
+    return getGatewayProjectsSafe().filter(project => matchesGatewayFilter(project, filter)).length;
+  }
+
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  }
+
+  function setLabel(buttonId, label){
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    const labelEl = btn.querySelector('.stat-label, strong, .command-title');
+    if (labelEl) labelEl.textContent = label;
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+  }
+
+  function openGatewayFilter(filter, message){
+    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
+
+    setTimeout(() => {
+      try {
+        if (typeof setInspectionGatewayQuickFilter === 'function') {
+          setInspectionGatewayQuickFilter(filter || 'all');
+        } else if (typeof window.setInspectionGatewayQuickFilter === 'function') {
+          window.setInspectionGatewayQuickFilter(filter || 'all');
+        } else {
+          try { currentFilter = filter || 'all'; } catch (_) {}
+          try { window.currentFilter = filter || 'all'; } catch (_) {}
+          try { currentProjectPage = 1; } catch (_) {}
+          try { window.currentProjectPage = 1; } catch (_) {}
+          if (typeof renderProjectsList === 'function') renderProjectsList();
+          else if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+        }
+      } catch (_) {}
+
+      try { if (typeof updateDashboardSelection === 'function') updateDashboardSelection(); } catch (_) {}
+      try { if (typeof closeFilterPanel === 'function') closeFilterPanel(); } catch (_) {}
+      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(message || ''); } catch (_) {}
+
+      try {
+        const section = document.getElementById('projectListSection') || document.getElementById('projectsSection');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    }, 80);
+  }
+
+  function syncManagementCards(){
+    if (isInspectorRole()) return;
+
+    const requiringAction = countGatewayFilter('inspection-attention');
+    const overdue = countGatewayFilter('overdue');
+    const compliant = countGatewayFilter('compliant');
+    const month = countGatewayFilter('month');
+
+    // Main Command Centre cards
+    setText('cmdOpenFindings', requiringAction);
+    setText('cmdOverdueItems', overdue);
+    setText('cmdTotalInspections', compliant);
+    setText('cmdPhotoCount', month);
+
+    setLabel('cmdFindingsBtn', 'Premises Requiring Action');
+    setLabel('cmdOverdueBtn', 'Overdue Inspections');
+    setLabel('cmdDashboardBtn', 'Compliant Sites');
+    setLabel('cmdInspectionsBtn', 'Inspections This Month');
+
+    // Executive Compliance cards, if present
+    setText('cmdComplianceOpenFindings', requiringAction);
+    setText('cmdComplianceOverdueActions', overdue);
+    setText('cmdComplianceSites', compliant);
+    setText('cmdComplianceInspections', month);
+
+    setLabel('cmdComplianceFindingsBtn', 'Premises Requiring Action');
+    setLabel('cmdComplianceOverdueBtn', 'Overdue Inspections');
+    setLabel('cmdComplianceSitesBtn', 'Compliant Sites');
+    setLabel('cmdComplianceInspectionsBtn', 'Inspections This Month');
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`;
+    }
+
+    bindManagementCardClicks();
+  }
+
+  function bindClick(id, filter, message){
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.onclick = function fireS132KpiCardClick(event){
+      if (event) event.preventDefault();
+      openGatewayFilter(filter, message);
+      return false;
+    };
+  }
+
+  function bindManagementCardClicks(){
+    bindClick('cmdFindingsBtn', 'inspection-attention', 'Premises Requiring Action filter active in the Inspection Gateway.');
+    bindClick('cmdOverdueBtn', 'overdue', 'Overdue Inspections filter active in the Inspection Gateway.');
+    bindClick('cmdDashboardBtn', 'compliant', 'Compliant Sites filter active in the Inspection Gateway.');
+    bindClick('cmdInspectionsBtn', 'month', 'Inspections This Month filter active in the Inspection Gateway.');
+
+    bindClick('cmdComplianceFindingsBtn', 'inspection-attention', 'Premises Requiring Action filter active in the Inspection Gateway.');
+    bindClick('cmdComplianceOverdueBtn', 'overdue', 'Overdue Inspections filter active in the Inspection Gateway.');
+    bindClick('cmdComplianceSitesBtn', 'compliant', 'Compliant Sites filter active in the Inspection Gateway.');
+    bindClick('cmdComplianceInspectionsBtn', 'month', 'Inspections This Month filter active in the Inspection Gateway.');
+  }
+
+  // Override older RC 1.3.1 updater if it exists, so no older count logic can win later.
+  window.fireSApplyRoleAndManagementCards131 = function fireSApplyRoleAndManagementCards132(){
+    try {
+      if (typeof window.fireSActualUserRole131 === 'function') {
+        const centre = document.getElementById('mainCommandCentre');
+        const panel = document.getElementById('fireSRoleTestModePanel');
+        if (centre && !panel && typeof window.fireSRenderHomeController130 === 'function') {
+          // Role panel is still created by the 1.3.1 controller on render.
+        }
+      }
+    } catch (_) {}
+    syncManagementCards();
+  };
+
+  const previousController = window.fireSRenderHomeController130;
+  if (typeof previousController === 'function' && !previousController.__fireS132KpiSync) {
+    const wrapped = function fireSRenderHomeController132(){
+      previousController();
+      setTimeout(syncManagementCards, 30);
+    };
+    wrapped.__fireS132KpiSync = true;
+    window.fireSRenderHomeController130 = wrapped;
+    try { renderHomeCommandCentre = wrapped; } catch (_) {}
+    try { initHomeCommandCentre = wrapped; } catch (_) {}
+  }
+
+  const previousShowHome = window.showHome;
+  if (typeof previousShowHome === 'function' && !previousShowHome.__fireS132KpiSync) {
+    const wrappedShowHome = function fireSShowHome132(){
+      previousShowHome();
+      setTimeout(syncManagementCards, 30);
+    };
+    wrappedShowHome.__fireS132KpiSync = true;
+    window.showHome = wrappedShowHome;
+    try { showHome = wrappedShowHome; } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(syncManagementCards, 120);
+    setTimeout(syncManagementCards, 500);
+  });
+
+  window.fireSSyncManagementCards132 = syncManagementCards;
+})();
