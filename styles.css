@@ -11074,3 +11074,55 @@ body.fire-s-role-inspector #cmdInspectionsBtn,
     display: none;
   }
 }
+
+/* FIRE-S RC 1.2.1I - Mission Control Gateway Stability Fix
+   Prevents Inspection Gateway from rendering blue then repainting red on Home/Mission Control.
+   The gateway action must keep one stable visual state across initial load, role-lock and Back to Home renders. */
+#mainCommandCentre #cmdInspectionsBtn,
+#mainCommandCentre #cmdInspectionsBtn.main-command-card,
+#mainCommandCentre #cmdInspectionsBtn.main-command-card.primary,
+body.fire-s-inspector-mode #mainCommandCentre #cmdInspectionsBtn,
+body.fire-s-role-inspector #mainCommandCentre #cmdInspectionsBtn,
+body.fire-s-inspector-mission-lock-121d #mainCommandCentre #cmdInspectionsBtn,
+body.fire-s-inspector-mission-lock-121e #mainCommandCentre #cmdInspectionsBtn {
+  min-height: 104px !important;
+  border: 2px solid #0ea5e9 !important;
+  background: linear-gradient(135deg, #0f172a 0%, #075985 55%, #0ea5e9 100%) !important;
+  color: #ffffff !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  transition: box-shadow 140ms ease, opacity 140ms ease !important;
+}
+
+#mainCommandCentre #cmdInspectionsBtn .command-title,
+#mainCommandCentre #cmdInspectionsBtn .command-copy,
+#mainCommandCentre #cmdInspectionsBtn .command-icon {
+  color: #ffffff !important;
+}
+
+#mainCommandCentre .main-command-card,
+#mainCommandCentre .command-centre-card,
+#mainCommandCentre .main-command-card:hover,
+#mainCommandCentre .main-command-card:focus,
+#mainCommandCentre .command-centre-card:hover,
+#mainCommandCentre .command-centre-card:focus {
+  transform: none !important;
+}
+
+#mainCommandCentre .main-command-grid {
+  align-items: stretch !important;
+}
+
+#mainCommandCentre {
+  min-height: 210px;
+  overflow-anchor: none;
+  contain: layout style;
+}
+
+@media (max-width: 640px) {
+  #mainCommandCentre #cmdInspectionsBtn,
+  #mainCommandCentre #cmdInspectionsBtn.main-command-card,
+  #mainCommandCentre #cmdInspectionsBtn.main-command-card.primary {
+    min-height: 92px !important;
+  }
+}
