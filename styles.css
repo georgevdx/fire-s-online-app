@@ -12840,3 +12840,31 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
     font-size: 12px;
   }
 }
+
+
+/* FIRE-S RC 1.2.1D - Inspector Mission Control Hard Lock */
+.fire-s-inspector-mission-lock-121d #cmdReportsBtn,
+.fire-s-inspector-mission-lock-121d #cmdCompanyBtn,
+.fire-s-inspector-mission-lock-121d #cmdServicesBtn,
+.fire-s-inspector-mission-lock-121d #cmdDashboardBtn,
+.fire-s-inspector-mission-lock-121d #cmdFindingsBtn,
+.fire-s-inspector-mission-lock-121d #cmdOverdueBtn,
+.fire-s-inspector-hidden-card-121d {
+  display: none !important;
+}
+
+.fire-s-inspector-mission-lock-121d #mainCommandCentre .main-command-stats {
+  display: none !important;
+}
+
+.fire-s-inspector-mission-lock-121d #mainCommandCentre .main-command-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+@media (max-width: 640px) {
+  .fire-s-inspector-mission-lock-121d #mainCommandCentre .main-command-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

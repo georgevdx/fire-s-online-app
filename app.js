@@ -27160,3 +27160,237 @@ function fireSApplyLifecycleUxLabels() {
 
   if (document.body) startObserver(); else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
 })();
+
+
+/* =====================================================
+   FIRE-S RC 1.2.1D - Inspector Mission Control Hard Lock
+   Purpose:
+   - Fix Reports/Company/Services still showing in inspector/local access.
+   - Stop Company card from opening Cloud if stale click handlers exist.
+   - Keep management/admin roles available when a real cloud role is present.
+   ===================================================== */
+(function fireSInspectorMissionControlHardLock121D(){
+  const MANAGEMENT_ROLES = new Set(['company_owner', 'owner', 'manager', 'management', 'admin', 'viewer']);
+  const SUPER_ROLES = new Set(['super_admin', 'super-admin']);
+
+  function readRole(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') {
+        const role = String(window.getCurrentUserRole() || '').toLowerCase().trim();
+        if (role) return role;
+      }
+    } catch (error) {}
+
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.role) {
+        return String(currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (window.currentUserProfile && window.currentUserProfile.role) {
+        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    return 'inspector';
+  }
+
+  function isLocalFallback(){
+    try {
+      if (typeof currentCompanyAccess !== 'undefined' && currentCompanyAccess && currentCompanyAccess.source === 'local-fallback') return true;
+    } catch (error) {}
+
+    try {
+      if (window.currentCompanyAccess && window.currentCompanyAccess.source === 'local-fallback') return true;
+    } catch (error) {}
+
+    try {
+      const companyName =
+        (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.companyName) ||
+        (window.currentUserProfile && window.currentUserProfile.companyName) ||
+        '';
+      if (/local|personal workspace/i.test(String(companyName))) return true;
+    } catch (error) {}
+
+    return false;
+  }
+
+  function isInspectorMissionMode(){
+    const body = document.body;
+    if (body && (body.classList.contains('fire-s-role-inspector') || body.classList.contains('fire-s-inspector-access-121c'))) return true;
+
+    const accessText = String(document.getElementById('mainCommandAccessStatus')?.textContent || '').toLowerCase();
+    if (accessText.includes('inspector')) return true;
+
+    const role = readRole();
+
+    if (role.includes('inspector') || role === 'guest' || role === 'local') return true;
+
+    // In local/test fallback, do not expose admin/cloud cards as the inspector workflow.
+    if (isLocalFallback()) return true;
+
+    if (SUPER_ROLES.has(role)) return false;
+    if (MANAGEMENT_ROLES.has(role)) return false;
+
+    return true;
+  }
+
+  function hideCard(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('fire-s-inspector-hidden-card-121d');
+    el.style.setProperty('display', 'none', 'important');
+    el.setAttribute('hidden', 'hidden');
+    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('tabindex', '-1');
+  }
+
+  function showCard(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('fire-s-inspector-hidden-card-121d');
+    el.style.removeProperty('display');
+    el.removeAttribute('hidden');
+    el.removeAttribute('aria-hidden');
+    el.removeAttribute('tabindex');
+  }
+
+  function setCardText(id, title, copy){
+    const el = document.getElementById(id);
+    if (!el) return;
+    const titleEl = el.querySelector('.command-title, strong, h3, h4');
+    const copyEl = el.querySelector('.command-copy, p, small');
+    if (titleEl) titleEl.textContent = title;
+    if (copyEl) copyEl.textContent = copy;
+  }
+
+  function setMessage(text){
+    const msg = document.getElementById('mainCommandMessage');
+    if (!msg) return;
+    msg.textContent = text;
+    msg.style.display = 'block';
+  }
+
+  function apply(){
+    const inspector = isInspectorMissionMode();
+    document.body?.classList.toggle('fire-s-inspector-mission-lock-121d', inspector);
+    document.body?.classList.toggle('fire-s-management-mission-lock-121d', !inspector);
+
+    if (inspector) {
+      showCard('cmdInspectionsBtn');
+      showCard('cmdScheduleBtn');
+
+      ['cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn', 'cmdDashboardBtn', 'cmdFindingsBtn', 'cmdOverdueBtn'].forEach(hideCard);
+
+      setCardText('cmdInspectionsBtn', 'Inspection Gateway', 'Search, open or continue inspection work.');
+      setCardText('cmdScheduleBtn', 'Schedule / New Site', 'Schedule or start a new inspection at a new site.');
+
+      const kicker = document.querySelector('#mainCommandCentre .main-command-kicker');
+      if (kicker) kicker.textContent = 'Inspector Work Area';
+
+      const heading = document.querySelector('#mainCommandCentre .main-command-top h3');
+      if (heading) heading.textContent = 'Find or Start an Inspection';
+
+      const subtitle = document.getElementById('mainCommandSubtitle');
+      if (subtitle) subtitle.textContent = 'Search a premises, continue an inspection, or start a new inspection at a new site.';
+
+      const access = document.getElementById('mainCommandAccessStatus');
+      if (access) access.textContent = 'Inspector access';
+
+      const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+      if (stats) stats.style.setProperty('display', 'none', 'important');
+    } else {
+      ['cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn', 'cmdDashboardBtn', 'cmdFindingsBtn', 'cmdOverdueBtn', 'cmdInspectionsBtn', 'cmdScheduleBtn'].forEach(showCard);
+    }
+  }
+
+  // Capture stale clicks before older handlers can open Reports/Cloud/Services.
+  function stopInspectorOnlyClick(event){
+    const blocked = event.target?.closest?.('#cmdReportsBtn, #cmdCompanyBtn, #cmdServicesBtn');
+    if (!blocked) return;
+
+    if (!isInspectorMissionMode()) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (blocked.id === 'cmdCompanyBtn') {
+      const cloudDropdown = document.getElementById('cloudDropdown');
+      if (cloudDropdown) cloudDropdown.style.display = 'none';
+      setMessage('Company tools are available to management/admin users only.');
+    } else if (blocked.id === 'cmdReportsBtn') {
+      setMessage('Reports are available to management/admin users only.');
+    } else {
+      setMessage('Services are available to management/admin users only.');
+    }
+
+    apply();
+  }
+
+  document.addEventListener('click', stopInspectorOnlyClick, true);
+
+  // Override direct routes too, in case they are called programmatically.
+  const guardRoute = (name, message, extra) => {
+    const previous = window[name];
+    if (typeof previous !== 'function' || previous.__fireS121DGuarded) return;
+
+    const guarded = function fireS121DGuardedRoute(){
+      if (isInspectorMissionMode()) {
+        if (typeof extra === 'function') extra();
+        setMessage(message);
+        apply();
+        return;
+      }
+      return previous.apply(this, arguments);
+    };
+
+    guarded.__fireS121DGuarded = true;
+    window[name] = guarded;
+  };
+
+  guardRoute('openCompanyCommand', 'Company tools are available to management/admin users only.', () => {
+    const cloudDropdown = document.getElementById('cloudDropdown');
+    if (cloudDropdown) cloudDropdown.style.display = 'none';
+  });
+  guardRoute('openReportsCommand', 'Reports are available to management/admin users only.');
+  guardRoute('showServices', 'Services are available to management/admin users only.');
+
+  function wrapRender(name){
+    const fn = window[name];
+    if (typeof fn !== 'function' || fn.__fireS121DWrapped) return;
+    const wrapped = function fireS121DWrapped(){
+      const result = fn.apply(this, arguments);
+      setTimeout(apply, 0);
+      return result;
+    };
+    wrapped.__fireS121DWrapped = true;
+    window[name] = wrapped;
+  }
+
+  ['renderHomeCommandCentre', 'showHome', 'showProjectList', 'renderProjectsList', 'initHomeCommandCentre'].forEach(wrapRender);
+
+  window.fireSApplyInspectorMissionLock121D = apply;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', apply, { once: true });
+  } else {
+    apply();
+  }
+
+  [50, 150, 400, 900, 1500, 3000].forEach(delay => setTimeout(apply, delay));
+
+  const startObserver = () => {
+    if (!document.body) return;
+    let timer = null;
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(apply, 60);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+  };
+
+  if (document.body) startObserver(); else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+})();
+
