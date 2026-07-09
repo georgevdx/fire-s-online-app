@@ -11544,116 +11544,185 @@ button,
   }
 }
 
+
 /* =====================================================
-   FIRE-S RC 1.3.6B - Management KPI card readability
-   Scope: only the four Management Overview KPI cards.
+   FIRE-S RC 1.3.6C - KPI CARDS FINAL FOCUS
+   Scope: ONLY the 4 Management Overview KPI cards.
    ===================================================== */
-#mainCommandCentre .main-command-stats {
+#mainCommandCentre .main-command-stats.fs-kpi-row {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 10px !important;
+  margin: 12px 0 14px !important;
   align-items: stretch !important;
 }
 
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b {
-  position: relative !important;
+#mainCommandCentre .fs-kpi-card {
   width: 100% !important;
   max-width: none !important;
-  min-height: 94px !important;
-  padding: 14px 10px 12px !important;
+  min-height: 158px !important;
+  padding: 14px 12px !important;
   border-radius: 16px !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid #dbe3ea !important;
+  border-top: 4px solid #94a3b8 !important;
   background: #ffffff !important;
   color: #0f172a !important;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07) !important;
   display: grid !important;
-  place-items: center !important;
-  align-content: center !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  justify-items: center !important;
+  align-content: start !important;
   gap: 6px !important;
   text-align: center !important;
-  overflow: hidden !important;
+  cursor: pointer !important;
+  transform: none !important;
+  overflow: visible !important;
+  white-space: normal !important;
   word-break: normal !important;
   overflow-wrap: normal !important;
-  white-space: normal !important;
 }
 
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: #94a3b8;
+#mainCommandCentre .fs-kpi-card:hover,
+#mainCommandCentre .fs-kpi-card:focus {
+  opacity: 1 !important;
+  transform: none !important;
+  outline: none !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.11) !important;
 }
 
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b.fs-kpi-compliant::before { background: #22c55e; }
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b.fs-kpi-action::before { background: #ef4444; }
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b.fs-kpi-overdue::before { background: #f59e0b; }
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b.fs-kpi-month::before { background: #2563eb; }
+#mainCommandCentre .fs-kpi-icon {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 13px !important;
+  margin-bottom: 2px !important;
+  font-size: 20px !important;
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
 
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b .stat-number,
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b span:first-child {
+#mainCommandCentre .fs-kpi-number {
   display: block !important;
-  color: #111827 !important;
-  font-size: clamp(22px, 3vw, 31px) !important;
+  color: #0f172a !important;
+  font-size: 32px !important;
   font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: -0.02em !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
+  letter-spacing: -0.03em !important;
 }
 
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b .stat-label,
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b strong {
+#mainCommandCentre .fs-kpi-title {
   display: block !important;
-  max-width: 100% !important;
-  color: #334155 !important;
-  font-size: 10.5px !important;
+  color: #0f172a !important;
+  font-size: 11px !important;
   font-weight: 950 !important;
-  line-height: 1.16 !important;
-  letter-spacing: 0.045em !important;
+  line-height: 1.15 !important;
   text-transform: uppercase !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  letter-spacing: 0.035em !important;
+  max-width: 128px !important;
   white-space: normal !important;
   word-break: normal !important;
   overflow-wrap: normal !important;
   hyphens: none !important;
 }
 
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b:hover,
-#mainCommandCentre .main-stat-card.fs-kpi-card-v136b:focus {
-  opacity: 1 !important;
-  outline: none !important;
-  transform: none !important;
-  border-color: #94a3b8 !important;
-  background: #f8fafc !important;
+#mainCommandCentre .fs-kpi-action {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  min-height: 34px !important;
+  margin-top: 4px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
 }
 
-@media (max-width: 700px) {
-  #mainCommandCentre .main-command-stats {
+#mainCommandCentre .fs-kpi-filter-label {
+  display: block !important;
+  margin-top: 2px !important;
+  color: #475569 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+#mainCommandCentre .fs-kpi-compliant {
+  border-top-color: #22c55e !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%) !important;
+}
+#mainCommandCentre .fs-kpi-compliant .fs-kpi-icon { background:#ecfdf5 !important; border-color:#86efac !important; }
+#mainCommandCentre .fs-kpi-compliant .fs-kpi-number,
+#mainCommandCentre .fs-kpi-compliant .fs-kpi-filter-label { color:#166534 !important; }
+
+#mainCommandCentre .fs-kpi-scheduled {
+  border-top-color: #f59e0b !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%) !important;
+}
+#mainCommandCentre .fs-kpi-scheduled .fs-kpi-icon { background:#fff7ed !important; border-color:#fdba74 !important; }
+#mainCommandCentre .fs-kpi-scheduled .fs-kpi-number,
+#mainCommandCentre .fs-kpi-scheduled .fs-kpi-filter-label { color:#c2410c !important; }
+
+#mainCommandCentre .fs-kpi-overdue {
+  border-top-color: #ef4444 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fef2f2 100%) !important;
+}
+#mainCommandCentre .fs-kpi-overdue .fs-kpi-icon { background:#fff1f2 !important; border-color:#fca5a5 !important; }
+#mainCommandCentre .fs-kpi-overdue .fs-kpi-number,
+#mainCommandCentre .fs-kpi-overdue .fs-kpi-filter-label { color:#b91c1c !important; }
+
+#mainCommandCentre .fs-kpi-month {
+  border-top-color: #3b82f6 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%) !important;
+}
+#mainCommandCentre .fs-kpi-month .fs-kpi-icon { background:#eff6ff !important; border-color:#93c5fd !important; }
+#mainCommandCentre .fs-kpi-month .fs-kpi-number,
+#mainCommandCentre .fs-kpi-month .fs-kpi-filter-label { color:#1d4ed8 !important; }
+
+@media (max-width: 760px) {
+  #mainCommandCentre .main-command-stats.fs-kpi-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px !important;
   }
-
-  #mainCommandCentre .main-stat-card.fs-kpi-card-v136b {
-    min-height: 86px !important;
-    padding: 13px 8px 10px !important;
-    border-radius: 14px !important;
+  #mainCommandCentre .fs-kpi-card {
+    min-height: 142px !important;
+    padding: 11px 9px !important;
   }
-
-  #mainCommandCentre .main-stat-card.fs-kpi-card-v136b .stat-number,
-  #mainCommandCentre .main-stat-card.fs-kpi-card-v136b span:first-child {
-    font-size: 25px !important;
+  #mainCommandCentre .fs-kpi-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 17px !important;
   }
-
-  #mainCommandCentre .main-stat-card.fs-kpi-card-v136b .stat-label,
-  #mainCommandCentre .main-stat-card.fs-kpi-card-v136b strong {
+  #mainCommandCentre .fs-kpi-number {
+    font-size: 27px !important;
+  }
+  #mainCommandCentre .fs-kpi-title {
+    font-size: 10px !important;
+    max-width: 118px !important;
+    letter-spacing: 0.025em !important;
+  }
+  #mainCommandCentre .fs-kpi-action {
+    min-height: 32px !important;
+    font-size: 12px !important;
+  }
+  #mainCommandCentre .fs-kpi-filter-label {
     font-size: 9.5px !important;
-    line-height: 1.13 !important;
-    letter-spacing: 0.035em !important;
+  }
+}
+
+@media (max-width: 380px) {
+  #mainCommandCentre .fs-kpi-title {
+    font-size: 9.2px !important;
+    letter-spacing: 0.015em !important;
+  }
+  #mainCommandCentre .fs-kpi-number {
+    font-size: 24px !important;
   }
 }

@@ -28619,113 +28619,100 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(applyLabelsAndCounts, 700);
 })();
 
-/* =====================================================
-   FIRE-S RC 1.3.6B - MANAGEMENT KPI CARDS FINAL FOCUS
-   Scope: ONLY the four KPI cards in Management Overview and their filters.
-   - Compliant Sites
-   - Premises Requiring Action
-   - Overdue Inspections
-   - Inspections This Month
-   Notes:
-   - Inspection Gateway card is not touched.
-   - Scheduled remains separate and excludes overdue for gateway filters.
-   ===================================================== */
-(function fireS136BManagementKpiCards(){
-  const KPI = {
-    compliant: 'compliant',
-    action: 'inspection-attention',
-    overdue: 'overdue',
-    month: 'month',
-    scheduled: 'scheduled'
+
+// =====================================================
+// FIRE-S RC 1.3.6C - KPI CARDS + FILTER SINGLE SOURCE
+// Scope: ONLY the 4 Management Overview KPI cards and their filters.
+// - Rebuilds the KPI row as: Compliant, Scheduled, Overdue, This Month.
+// - Scheduled excludes Overdue.
+// - Each count uses the same matcher as the click filter.
+// - Gateway card remains untouched.
+// =====================================================
+(function fireSKpiCardsFilterFocus136C(){
+  const FILTERS = {
+    compliant: 'fs-kpi-compliant',
+    scheduled: 'fs-kpi-scheduled',
+    overdue: 'fs-kpi-overdue',
+    month: 'fs-kpi-month'
   };
 
   function norm(value){ return String(value || '').toLowerCase().trim(); }
-  function dateKey(value){ return value ? String(value).slice(0, 10) : ''; }
   function todayKey(){ return new Date().toISOString().slice(0, 10); }
+  function dateKey(value){
+    if (!value) return '';
+    const raw = String(value).trim();
+    if (!raw) return '';
+    const direct = raw.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toISOString().slice(0, 10);
+  }
   function parseDate(value){
-    if (!value) return null;
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? null : d;
+    const key = dateKey(value);
+    if (!key) return null;
+    const parsed = new Date(key + 'T00:00:00');
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
-
-  function actualRole(){
-    try { return norm(currentUserProfile?.role || window.currentUserProfile?.role || 'inspector'); } catch (_) {}
-    return 'inspector';
-  }
-
-  function viewRole(){
-    const real = actualRole();
-    if (real !== 'super_admin') return real;
-    try { return norm(localStorage.getItem('fireS.viewAsRole.v131') || real); } catch (_) { return real; }
-  }
-
-  function isManagement(){ return viewRole() !== 'inspector'; }
-
-  function allProjects(){
-    try {
-      if (typeof getProjects === 'function') {
-        const list = getProjects();
-        return Array.isArray(list) ? list : [];
-      }
-    } catch (_) {}
-    return [];
-  }
-
-  function scopedProjects(){
-    const list = allProjects();
-    try {
-      if (typeof getVisibleProjectsForCurrentUser === 'function' && actualRole() !== 'super_admin') {
-        return getVisibleProjectsForCurrentUser(list) || [];
-      }
-    } catch (_) {}
-    return list;
-  }
-
   function answers(project){ return Array.isArray(project?.answers) ? project.answers : []; }
   function answerValue(answer){ return norm(answer?.answer); }
   function noCount(project){ return answers(project).filter(a => answerValue(a) === 'no').length; }
-
-  function isClosed(project){
-    return Boolean(project && (
-      project.completedAt ||
-      project.archivedAt ||
-      norm(project.status) === 'completed' ||
-      norm(project.status) === 'closed' ||
-      norm(project.inspectionStatus) === 'completed' ||
-      norm(project.inspectionStatus) === 'closed' ||
-      norm(project.scheduledStatus) === 'completed' ||
-      norm(project.archiveStatus) === 'completed'
-    ));
+  function getAllProjects(){
+    try {
+      const raw = typeof getProjects === 'function' ? getProjects() : [];
+      const list = Array.isArray(raw) ? raw : [];
+      if (typeof getVisibleProjectsForCurrentUser === 'function' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+        return getVisibleProjectsForCurrentUser(list) || [];
+      }
+      return list;
+    } catch (_) { return []; }
   }
-
   function scheduleDate(project){
     return project?.scheduledDate || project?.nextInspectionDate || project?.followUpDate || project?.inspectionDate || '';
   }
-
-  function activityDate(project){
-    return project?.inspectionDate || project?.completedAt || project?.archivedAt || project?.lastSaved || project?.updatedAt || project?.updated_at || project?.createdAt || project?.created_at || project?.scheduledDate || project?.nextInspectionDate || project?.followUpDate || '';
+  function monthDate(project){
+    return project?.inspectionDate || project?.scheduledDate || project?.completedAt || project?.lastSaved || project?.updatedAt || project?.updated_at || project?.createdAt || project?.created_at || '';
   }
-
+  function isClosed(project){
+    const status = norm(project?.status);
+    const scheduledStatus = norm(project?.scheduledStatus);
+    const archiveStatus = norm(project?.archiveStatus);
+    return Boolean(
+      project?.completedAt ||
+      project?.archivedAt ||
+      status === 'completed' || status === 'closed' || status === 'archived' ||
+      scheduledStatus === 'completed' || scheduledStatus === 'closed' ||
+      archiveStatus === 'completed' || archiveStatus === 'archived'
+    );
+  }
+  function hasMeaningfulInspectionData(project){
+    return Boolean(
+      answers(project).some(a => answerValue(a)) ||
+      (Array.isArray(project?.photos) && project.photos.length) ||
+      project?.completedAt || project?.archivedAt || project?.lastSaved || project?.inspectionDate
+    );
+  }
   function isOverdue(project){
     if (!project || isClosed(project)) return false;
     const key = dateKey(scheduleDate(project));
     return Boolean(key && key < todayKey());
   }
-
   function isScheduled(project){
     if (!project || isClosed(project) || isOverdue(project)) return false;
     const key = dateKey(scheduleDate(project));
-    if (key && key >= todayKey()) return true;
-    return norm(project.status) === 'scheduled' || norm(project.scheduledStatus) === 'scheduled';
+    return Boolean(key && key >= todayKey());
   }
-
   function isThisMonth(project){
-    const d = parseDate(activityDate(project));
+    const d = parseDate(monthDate(project));
     if (!d) return false;
     const now = new Date();
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }
-
+  function isCompliant(project){
+    if (!project || !hasMeaningfulInspectionData(project)) return false;
+    try { if (typeof isProjectCompliantForGateway === 'function' && isProjectCompliantForGateway(project)) return true; } catch (_) {}
+    return isClosed(project) && noCount(project) === 0;
+  }
   function isActionRequired(project){
     if (!project) return false;
     if (noCount(project) > 0) return true;
@@ -28733,180 +28720,128 @@ function fireSApplyLifecycleUxLabels() {
     return false;
   }
 
-  function hasInspectionData(project){
-    return Boolean(project && (
-      answers(project).some(a => answerValue(a)) ||
-      (Array.isArray(project.photos) && project.photos.length) ||
-      project.completedAt || project.archivedAt || project.lastSaved || project.inspectionDate
-    ));
-  }
-
-  function isCompliant(project){
-    if (!project || !hasInspectionData(project)) return false;
-    try { if (typeof isProjectCompliantForGateway === 'function' && isProjectCompliantForGateway(project)) return true; } catch (_) {}
-    return isClosed(project) && noCount(project) === 0;
-  }
-
   const previousMatcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
-
-  function matcher(project, filter){
-    const f = norm(filter || 'all');
+  function kpiMatcher(project, filter){
+    const f = filter || 'all';
     if (f === 'all' || f === 'gateway') return true;
-    if (f === KPI.compliant || f === 'inspection-complete' || f === 'clear-completed') return isCompliant(project);
-    if (f === KPI.action || f === 'actions-required' || f === 'risk') return isActionRequired(project);
-    if (f === KPI.overdue || f === 'inspection-overdue' || f === 'expiry-overdue') return isOverdue(project);
-    if (f === KPI.month || f === 'inspections-month' || f === 'this-month') return isThisMonth(project);
-    if (f === KPI.scheduled || f === 'scheduled-inspections') return isScheduled(project);
-    if (previousMatcher && previousMatcher !== matcher) {
-      try { return previousMatcher(project, filter); } catch (_) {}
+    if (f === FILTERS.compliant || f === 'compliant' || f === 'inspection-complete' || f === 'clear-completed') return isCompliant(project);
+    if (f === FILTERS.scheduled || f === 'scheduled' || f === 'scheduled-inspections' || f === 'scheduled-new') return isScheduled(project);
+    if (f === FILTERS.overdue || f === 'overdue' || f === 'inspection-overdue' || f === 'inspection-warning') return isOverdue(project);
+    if (f === FILTERS.month || f === 'month' || f === 'inspections-month' || f === 'this-month') return isThisMonth(project);
+    if (f === 'inspection-attention' || f === 'actions-required' || f === 'action-required') return isActionRequired(project);
+    if (previousMatcher && previousMatcher !== kpiMatcher) {
+      try { return previousMatcher(project, f); } catch (_) {}
     }
     return true;
   }
+  window.projectMatchesInspectionGatewayQuickFilter = kpiMatcher;
+  try { projectMatchesInspectionGatewayQuickFilter = kpiMatcher; } catch (_) {}
 
-  window.projectMatchesInspectionGatewayQuickFilter = matcher;
-  try { projectMatchesInspectionGatewayQuickFilter = matcher; } catch (_) {}
-
-  function count(filter){ return scopedProjects().filter(project => matcher(project, filter)).length; }
-
-  function setText(id, value){
-    const el = document.getElementById(id);
-    if (el) el.textContent = String(value);
-  }
-
-  function setCard(buttonId, numberId, countValue, label, filter, accentClass, message){
-    const btn = document.getElementById(buttonId);
-    if (!btn) return;
-    btn.classList.add('fs-kpi-card-v136b');
-    btn.classList.remove('attention', 'warning', 'primary', 'danger');
-    btn.classList.add(accentClass);
-    const number = numberId ? document.getElementById(numberId) : btn.querySelector('.stat-number');
-    if (number) {
-      number.textContent = String(countValue);
-      number.classList.add('stat-number');
-    }
-    const labelEl = btn.querySelector('.stat-label, strong, .command-title');
-    if (labelEl) {
-      labelEl.textContent = label;
-      labelEl.classList.add('stat-label');
-    }
-    btn.setAttribute('aria-label', label + ': ' + countValue);
-    btn.title = label;
-    btn.onclick = function fireSKpi136BClick(event){
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-      }
-      openKpiFilter(filter, message || label);
-      return false;
+  function kpiCounts(){
+    const list = getAllProjects();
+    return {
+      total: list.length,
+      action: list.filter(p => kpiMatcher(p, 'inspection-attention')).length,
+      compliant: list.filter(p => kpiMatcher(p, FILTERS.compliant)).length,
+      scheduled: list.filter(p => kpiMatcher(p, FILTERS.scheduled)).length,
+      overdue: list.filter(p => kpiMatcher(p, FILTERS.overdue)).length,
+      month: list.filter(p => kpiMatcher(p, FILTERS.month)).length
     };
   }
 
-  function setCurrentFilter(filter){
-    const f = filter || 'all';
-    try { currentFilter = f; } catch (_) {}
-    window.currentFilter = f;
-    try { currentProjectPage = 1; } catch (_) {}
-    window.currentProjectPage = 1;
+  function iconFor(type){
+    return { compliant:'✅', scheduled:'🗓️', overdue:'⚠️', month:'📆' }[type] || '•';
+  }
+  function cardHtml(type, count, title, filterLabel){
+    return `<button type="button" class="fs-kpi-card fs-kpi-${type}" data-fs-kpi-filter="${FILTERS[type]}" aria-label="${title}">
+      <span class="fs-kpi-icon" aria-hidden="true">${iconFor(type)}</span>
+      <span class="fs-kpi-number">${count}</span>
+      <span class="fs-kpi-title">${title}</span>
+      <span class="fs-kpi-action">View</span>
+      <span class="fs-kpi-filter-label">Filter: ${filterLabel}</span>
+    </button>`;
   }
 
-  function openKpiFilter(filter, message){
-    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
-    const apply = () => {
-      setCurrentFilter(filter || 'all');
-      try { if (typeof renderProjectsList === 'function') renderProjectsList(); } catch (_) {}
-      try { if (typeof updateDashboardSelection === 'function') updateDashboardSelection(); } catch (_) {}
-      try { if (typeof closeFilterPanel === 'function') closeFilterPanel(); } catch (_) {}
-      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(message || ''); } catch (_) {}
-      try {
-        const section = document.getElementById('projectListSection') || document.getElementById('projectsSection') || document.getElementById('projectsList');
-        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (_) {}
-    };
-    apply();
-    setTimeout(apply, 75);
-    setTimeout(apply, 220);
-  }
+  function renderKpiCards(){
+    const centre = document.getElementById('mainCommandCentre');
+    if (!centre) return;
+    const stats = centre.querySelector('.main-command-stats');
+    if (!stats) return;
+    const counts = kpiCounts();
 
-  function refreshKpiCards(){
-    if (!isManagement()) return;
-
-    const compliant = count(KPI.compliant);
-    const action = count(KPI.action);
-    const overdue = count(KPI.overdue);
-    const month = count(KPI.month);
-    const scheduled = count(KPI.scheduled);
-
-    setCard('cmdDashboardBtn', 'cmdTotalInspections', compliant, 'Compliant Sites', KPI.compliant, 'fs-kpi-compliant', 'Showing compliant sites.');
-    setCard('cmdFindingsBtn', 'cmdOpenFindings', action, 'Premises Requiring Action', KPI.action, 'fs-kpi-action', 'Showing premises requiring action.');
-    setCard('cmdOverdueBtn', 'cmdOverdueItems', overdue, 'Overdue Inspections', KPI.overdue, 'fs-kpi-overdue', 'Showing overdue inspections.');
-    setCard('cmdInspectionsBtn', 'cmdPhotoCount', month, 'Inspections This Month', KPI.month, 'fs-kpi-month', 'Showing inspections from this month.');
-
-    // Keep the lower command Gateway untouched. If older patches changed it, restore only the label/copy.
-    const gateway = document.querySelector('.main-command-grid #cmdGatewayBtn, .main-command-grid #cmdInspectionsGatewayBtn');
-    if (gateway) {
-      const title = gateway.querySelector('.command-title, strong');
-      const copy = gateway.querySelector('.command-copy, span:last-child');
-      if (title) title.textContent = 'Inspection Gateway';
-      if (copy) copy.textContent = 'Search, open, continue or manage inspections.';
-    }
+    stats.classList.add('fs-kpi-row');
+    stats.innerHTML = [
+      cardHtml('compliant', counts.compliant, 'Compliant Sites', 'Compliant'),
+      cardHtml('scheduled', counts.scheduled, 'Scheduled Inspections', 'Scheduled'),
+      cardHtml('overdue', counts.overdue, 'Overdue Inspections', 'Overdue'),
+      cardHtml('month', counts.month, 'Inspections This Month', 'This Month')
+    ].join('');
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) {
-      subtitle.textContent = `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
-    }
+    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
   }
 
-  // Hard click capture so older stacked handlers cannot win.
-  document.addEventListener('click', function(event){
-    const btn = event.target && event.target.closest && event.target.closest('#cmdDashboardBtn, #cmdFindingsBtn, #cmdOverdueBtn, #cmdInspectionsBtn');
-    if (!btn || !isManagement()) return;
-    const map = {
-      cmdDashboardBtn: [KPI.compliant, 'Showing compliant sites.'],
-      cmdFindingsBtn: [KPI.action, 'Showing premises requiring action.'],
-      cmdOverdueBtn: [KPI.overdue, 'Showing overdue inspections.'],
-      cmdInspectionsBtn: [KPI.month, 'Showing inspections from this month.']
+  function applyGatewayFilter(filter, message){
+    const doApply = () => {
+      try { currentFilter = filter; } catch (_) {}
+      window.currentFilter = filter;
+      try { currentProjectPage = 1; } catch (_) {}
+      window.currentProjectPage = 1;
+      try { if (typeof renderProjectsList === 'function') renderProjectsList(); } catch (_) {}
+      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(message || ''); } catch (_) {}
+      try {
+        const section = document.getElementById('projectListSection') || document.getElementById('projectsSection');
+        if (section) section.scrollIntoView({ behavior:'smooth', block:'start' });
+      } catch (_) {}
     };
-    const route = map[btn.id];
-    if (!route) return;
+    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
+    doApply();
+    setTimeout(doApply, 100);
+    setTimeout(doApply, 260);
+  }
+
+  document.addEventListener('click', function(event){
+    const card = event.target && event.target.closest && event.target.closest('.fs-kpi-card[data-fs-kpi-filter]');
+    if (!card) return;
     event.preventDefault();
     event.stopPropagation();
     if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-    openKpiFilter(route[0], route[1]);
+    const filter = card.getAttribute('data-fs-kpi-filter') || 'all';
+    const label = card.querySelector('.fs-kpi-title')?.textContent || 'KPI';
+    applyGatewayFilter(filter, `${label} filter active in the Inspection Gateway.`);
   }, true);
 
-  const oldController = window.fireSRenderHomeController130;
-  if (typeof oldController === 'function' && !oldController.__fireS136BKpiCards) {
-    const wrapped = function fireSRenderHomeController136B(){
-      const result = oldController.apply(this, arguments);
-      setTimeout(refreshKpiCards, 0);
-      setTimeout(refreshKpiCards, 180);
+  function scheduleRender(){
+    renderKpiCards();
+    setTimeout(renderKpiCards, 80);
+    setTimeout(renderKpiCards, 300);
+  }
+
+  const oldRender = window.renderHomeCommandCentre || (typeof renderHomeCommandCentre === 'function' ? renderHomeCommandCentre : null);
+  if (oldRender && !oldRender.__fireS136CKpiWrapped) {
+    const wrapped = function fireSRenderHomeCommandCentre136C(){
+      const result = oldRender.apply(this, arguments);
+      scheduleRender();
       return result;
     };
-    wrapped.__fireS136BKpiCards = true;
-    window.fireSRenderHomeController130 = wrapped;
+    wrapped.__fireS136CKpiWrapped = true;
+    window.renderHomeCommandCentre = wrapped;
     try { renderHomeCommandCentre = wrapped; } catch (_) {}
-    try { initHomeCommandCentre = wrapped; } catch (_) {}
   }
 
-  const oldShowHome = window.showHome;
-  if (typeof oldShowHome === 'function' && !oldShowHome.__fireS136BKpiCards) {
-    const wrappedHome = function fireSShowHome136B(){
-      const result = oldShowHome.apply(this, arguments);
-      setTimeout(refreshKpiCards, 0);
-      setTimeout(refreshKpiCards, 180);
+  const oldHomeController = window.fireSRenderHomeController130;
+  if (typeof oldHomeController === 'function' && !oldHomeController.__fireS136CKpiWrapped) {
+    const wrappedController = function fireSHomeController136C(){
+      const result = oldHomeController.apply(this, arguments);
+      scheduleRender();
       return result;
     };
-    wrappedHome.__fireS136BKpiCards = true;
-    window.showHome = wrappedHome;
-    try { showHome = wrappedHome; } catch (_) {}
+    wrappedController.__fireS136CKpiWrapped = true;
+    window.fireSRenderHomeController130 = wrappedController;
   }
 
-  window.fireSRefreshManagementKpiCards136B = refreshKpiCards;
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(refreshKpiCards, 150));
-  } else {
-    setTimeout(refreshKpiCards, 150);
-  }
-  setTimeout(refreshKpiCards, 700);
+  window.fireSRenderManagementKpiCards136C = scheduleRender;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleRender, { once:true });
+  else scheduleRender();
+  setTimeout(scheduleRender, 700);
 })();
