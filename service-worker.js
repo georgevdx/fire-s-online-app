@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-2-2-command-centre-counts';
+const CACHE_NAME = 'fire-s-rc-1-2-3-gateway-integrity';
 
 const APP_SHELL = [
   './',

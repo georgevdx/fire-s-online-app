@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.2 - Command Centre Initial Counts';
+const APP_VERSION = 'RC 1.2.3 - Gateway Count & Filter Integrity';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -8913,78 +8913,13 @@ function renderDashboard(projects) {
 }
 
 function renderDashboardMetrics(projectsOverride) {
-
   const container =
     document.getElementById('dashboardMetrics');
 
   if (!container) return;
 
-  const projects =
-    projectsOverride || getVisibleProjectsForCurrentUser(getProjects());
-
-  let expiredItems = 0;
-  let expiringSoonItems = 0;
-  let scheduledItems = 0;
-  let missingExpiryItems = 0;
-
-  projects.forEach(project => {
-    const counts = getProjectExpiryCounts(project);
-
-    expiredItems += counts.overdue;
-    expiringSoonItems += counts.soon;
-    scheduledItems += counts.scheduled;
-    missingExpiryItems += counts.missing;
-  });
-
-  const total = projects.length;
-
-  const followUps = projects.filter(
-    p => p.followUpRequired === 'Yes'
-  );
-
-  const scheduledNewInspections = projects.filter(
-  p =>
-    p.scheduledStatus === 'scheduled' &&
-    p.scheduleType === 'new_site' &&
-    !p.completedAt
-);
-
-  const clearCompletedInspections = projects.filter(
-    p => isCompletedAllClearInspection(p)
-  );
-
-  const overdue = followUps.filter(p => {
-
-    if (!p.followUpDate) return false;
-
-    return new Date(p.followUpDate) < new Date();
-
-  }).length;
-
-  const dueSoon = followUps.filter(p => {
-
-    if (!p.followUpDate) return false;
-
-    const today = new Date();
-
-    const due = new Date(p.followUpDate);
-
-    const diffDays =
-      (due - today) / (1000 * 60 * 60 * 24);
-
-    return diffDays >= 0 && diffDays <= 7;
-
-  }).length;
-
-  const highRisk = projects.filter(p =>
-    p.answers?.some(a => a.answer === 'No')
-  ).length;
-
-  const inspectionStatusCounts = projects.reduce((counts, project) => {
-    const status = getProjectInspectionStatus(project);
-    counts[status.filter] = (counts[status.filter] || 0) + 1;
-    return counts;
-  }, {});
+  const counts =
+    fireSGetGatewayMetricCounts(projectsOverride);
 
   container.innerHTML = `
     <div class="metric-group">
@@ -8994,136 +8929,114 @@ function renderDashboardMetrics(projectsOverride) {
         <div class="metric-card"
          data-filter="all"
          onclick="setFilter('all')">
-          <div class="metric-number">${total}</div>
-          <div class="metric-label">
-            Total Inspections
-          </div>
+          <div class="metric-number">${counts.all || 0}</div>
+          <div class="metric-label">Total Inspections</div>
         </div>
 
         <div class="metric-card"
          data-filter="followups"
          onclick="setFilter('followups')">
-          <div class="metric-number">${followUps.length}</div>
-          <div class="metric-label">
-            Follow-ups
-          </div>
+          <div class="metric-number">${counts.followups || 0}</div>
+          <div class="metric-label">Follow-ups</div>
         </div>
 
         <div class="metric-card"
-        data-filter="scheduled-new"
-        onclick="setFilter('scheduled-new')">
-          <div class="metric-number">${scheduledNewInspections.length}</div>
-          <div class="metric-label">
-            Scheduled New
-          </div>
+         data-filter="scheduled-new"
+         onclick="setFilter('scheduled-new')">
+          <div class="metric-number">${counts['scheduled-new'] || 0}</div>
+          <div class="metric-label">Scheduled New</div>
         </div>
 
         <div class="metric-card"
-        data-filter="clear-completed"
-        onclick="setFilter('clear-completed')">
-          <div class="metric-number">${clearCompletedInspections.length}</div>
-          <div class="metric-label">
-            Clear Completed
-          </div>
+         data-filter="clear-completed"
+         onclick="setFilter('clear-completed')">
+          <div class="metric-number">${counts['clear-completed'] || 0}</div>
+          <div class="metric-label">Clear Completed</div>
         </div>
 
         <div class="metric-card"
          data-filter="soon"
          onclick="setFilter('soon')">
-          <div class="metric-number">${dueSoon}</div>
-          <div class="metric-label">
-            Due Soon
-          </div>
+          <div class="metric-number">${counts.soon || 0}</div>
+          <div class="metric-label">Due Soon</div>
         </div>
 
         <div class="metric-card"
          data-filter="overdue"
          onclick="setFilter('overdue')">
-          <div class="metric-number">${overdue}</div>
-          <div class="metric-label">
-            Overdue
-          </div>
+          <div class="metric-number">${counts.overdue || 0}</div>
+          <div class="metric-label">Overdue</div>
         </div>
 
         <div class="metric-card"
-          data-filter="risk"
-          onclick="setFilter('risk')">
-          <div class="metric-number">${highRisk}</div>
-          <div class="metric-label">
-            High Risk
-          </div>
+         data-filter="risk"
+         onclick="setFilter('risk')">
+          <div class="metric-number">${counts.risk || 0}</div>
+          <div class="metric-label">High Risk</div>
         </div>
       </div>
     </div>
 
     <div class="metric-group metric-group-secondary">
-      <div class="metric-section-title">
-        Inspection status
-      </div>
+      <div class="metric-section-title">Inspection status</div>
       <div class="metric-row">
 
         <div class="metric-card"
-          data-filter="inspection-attention"
-          onclick="setFilter('inspection-attention')">
-          <div class="metric-number">${inspectionStatusCounts['inspection-attention'] || 0}</div>
+         data-filter="inspection-attention"
+         onclick="setFilter('inspection-attention')">
+          <div class="metric-number">${counts['inspection-attention'] || 0}</div>
           <div class="metric-label">Attention</div>
         </div>
 
         <div class="metric-card"
-          data-filter="inspection-warning"
-          onclick="setFilter('inspection-warning')">
-          <div class="metric-number">${inspectionStatusCounts['inspection-warning'] || 0}</div>
+         data-filter="inspection-warning"
+         onclick="setFilter('inspection-warning')">
+          <div class="metric-number">${counts['inspection-warning'] || 0}</div>
           <div class="metric-label">Missing Data</div>
         </div>
 
-       
         <div class="metric-card"
-          data-filter="inspection-complete"
-          onclick="setFilter('inspection-complete')">
-          <div class="metric-number">${inspectionStatusCounts['inspection-complete'] || 0}</div>
+         data-filter="inspection-complete"
+         onclick="setFilter('inspection-complete')">
+          <div class="metric-number">${counts['inspection-complete'] || 0}</div>
           <div class="metric-label">Completed</div>
         </div>
-        
       </div>
     </div>
 
     <div class="metric-group metric-group-secondary">
-      <div class="metric-section-title">
-        Equipment expiry summary
-      </div>
+      <div class="metric-section-title">Equipment expiry summary</div>
       <div class="metric-row">
 
         <div class="metric-card"
-          data-filter="expiry-overdue"
-          onclick="setFilter('expiry-overdue')">
-          <div class="metric-number">${expiredItems}</div>
-          <div class="metric-label">Expired</div>
+         data-filter="expiry-overdue"
+         onclick="setFilter('expiry-overdue')">
+          <div class="metric-number">${counts['expiry-overdue'] || 0}</div>
+          <div class="metric-label">Premises Expired</div>
         </div>
 
         <div class="metric-card"
-          data-filter="expiry-soon"
-          onclick="setFilter('expiry-soon')">
-          <div class="metric-number">${expiringSoonItems}</div>
-          <div class="metric-label">Due Soon</div>
+         data-filter="expiry-soon"
+         onclick="setFilter('expiry-soon')">
+          <div class="metric-number">${counts['expiry-soon'] || 0}</div>
+          <div class="metric-label">Premises Due Soon</div>
         </div>
 
         <div class="metric-card"
-          data-filter="expiry-scheduled"
-          onclick="setFilter('expiry-scheduled')">
-          <div class="metric-number">${scheduledItems}</div>
-          <div class="metric-label">Valid</div>
+         data-filter="expiry-scheduled"
+         onclick="setFilter('expiry-scheduled')">
+          <div class="metric-number">${counts['expiry-scheduled'] || 0}</div>
+          <div class="metric-label">Premises Valid</div>
         </div>
 
         <div class="metric-card"
-          data-filter="expiry-missing"
-          onclick="setFilter('expiry-missing')">
-          <div class="metric-number">${missingExpiryItems}</div>
-          <div class="metric-label">Date Missing</div>
+         data-filter="expiry-missing"
+         onclick="setFilter('expiry-missing')">
+          <div class="metric-number">${counts['expiry-missing'] || 0}</div>
+          <div class="metric-label">Premises Date Missing</div>
         </div>
-        
       </div>
     </div>
-
   `;
 
   updateDashboardSelection();
@@ -9654,6 +9567,158 @@ function initInspectionGatewayFilters() {
   updateInspectionDateFilterStatus();
 }
 
+
+// =====================================================
+// RC 1.2.3 - GATEWAY COUNT & FILTER INTEGRITY
+// The KPI count and displayed cards now use the same predicate.
+// =====================================================
+function fireSProjectMatchesGatewaySearchAndDate(project) {
+  const searchField = document.getElementById('projectSearch');
+  const searchText = searchField
+    ? searchField.value.trim().toLowerCase()
+    : '';
+
+  if (searchText) {
+    const searchableValues = [
+      project.projectName,
+      project.organisationName,
+      project.siteName,
+      project.projectAddress,
+      project.addressLine,
+      project.mallName,
+      project.unitNumber,
+      normalizeProductType(project.productType),
+      project.inspectionType,
+      project.inspectorName,
+      project.inspectionNumber,
+      getProjectDateForFiltering(project)
+    ]
+      .map(value => String(value || '').toLowerCase());
+
+    if (!searchableValues.some(value => value.includes(searchText))) {
+      return false;
+    }
+  }
+
+  return projectMatchesInspectionDateFilter(project);
+}
+
+function fireSProjectMatchesGatewayStatusFilter(project, filter = currentFilter) {
+  if (!filter || filter === 'all') return true;
+
+  const followStatus = getFollowUpStatus(project);
+
+  if (filter === 'overdue') {
+    return followStatus.class === 'status-overdue';
+  }
+
+  if (filter === 'soon') {
+    return followStatus.class === 'status-soon';
+  }
+
+  if (filter === 'none') {
+    return followStatus.class === 'status-none';
+  }
+
+  if (filter === 'followups') {
+    return project.followUpRequired === 'Yes';
+  }
+
+  if (filter === 'scheduled-new') {
+    return (
+      project.scheduledStatus === 'scheduled' &&
+      project.scheduleType === 'new_site' &&
+      !project.completedAt
+    );
+  }
+
+  if (filter === 'clear-completed') {
+    return isCompletedAllClearInspection(project);
+  }
+
+  if (filter === 'risk') {
+    return Boolean(
+      project.answers?.some(answer =>
+        String(answer.answer || '').trim().toLowerCase() === 'no'
+      )
+    );
+  }
+
+  if (filter.startsWith('module-')) {
+    return (
+      getModuleFilterKey(
+        normalizeProductType(project.productType)
+      ) === filter
+    );
+  }
+
+  if (filter.startsWith('inspection-')) {
+    return getProjectInspectionStatus(project).filter === filter;
+  }
+
+  if (filter === 'expiry-overdue') {
+    return getProjectExpiryCounts(project).overdue > 0;
+  }
+
+  if (filter === 'expiry-soon') {
+    return getProjectExpiryCounts(project).soon > 0;
+  }
+
+  if (filter === 'expiry-scheduled') {
+    return getProjectExpiryCounts(project).scheduled > 0;
+  }
+
+  if (filter === 'expiry-missing') {
+    return getProjectExpiryCounts(project).missing > 0;
+  }
+
+  return true;
+}
+
+function fireSProjectMatchesGateway(project, filter = currentFilter) {
+  return (
+    fireSProjectMatchesGatewaySearchAndDate(project) &&
+    fireSProjectMatchesGatewayStatusFilter(project, filter)
+  );
+}
+
+function fireSGetGatewayMetricCounts(projectsOverride) {
+  const visibleProjects =
+    projectsOverride ||
+    getVisibleProjectsForCurrentUser(getProjects());
+
+  // Search and date are global Gateway filters. KPI cards must reflect
+  // the same candidate set that will be displayed after clicking a card.
+  const candidates =
+    visibleProjects.filter(fireSProjectMatchesGatewaySearchAndDate);
+
+  const filters = [
+    'all',
+    'followups',
+    'scheduled-new',
+    'clear-completed',
+    'soon',
+    'overdue',
+    'risk',
+    'inspection-attention',
+    'inspection-warning',
+    'inspection-complete',
+    'expiry-overdue',
+    'expiry-soon',
+    'expiry-scheduled',
+    'expiry-missing'
+  ];
+
+  return filters.reduce((counts, filter) => {
+    counts[filter] =
+      candidates.filter(project =>
+        fireSProjectMatchesGatewayStatusFilter(project, filter)
+      ).length;
+
+    return counts;
+  }, {});
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -9690,106 +9755,10 @@ function renderProjectsList() {
 
   container.innerHTML = '';
 
- const filteredProjects = projects.filter(project => {
-
-  const followStatus = getFollowUpStatus(project);
-
-  // Search filter
-  if (searchText) {
-    const placeName = (project.projectName || '').toLowerCase();
-    const organisationName = (project.organisationName || '').toLowerCase();
-    const siteName = (project.siteName || '').toLowerCase();
-    const address = (project.projectAddress || project.addressLine || '').toLowerCase();
-    const mallName = (project.mallName || '').toLowerCase();
-    const unitNumber = (project.unitNumber || '').toLowerCase();
-    const moduleName = normalizeProductType(project.productType).toLowerCase();
-    const inspectionType = (project.inspectionType || '').toLowerCase();
-    const inspectorName = (project.inspectorName || '').toLowerCase();
-    const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
-    const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
-
-    const matchesSearch =
-      placeName.includes(searchText) ||
-      organisationName.includes(searchText) ||
-      siteName.includes(searchText) ||
-      address.includes(searchText) ||
-      mallName.includes(searchText) ||
-      unitNumber.includes(searchText) ||
-      moduleName.includes(searchText) ||
-      inspectionType.includes(searchText) ||
-      inspectorName.includes(searchText) ||
-      inspectionNumber.includes(searchText) ||
-      inspectionDate.includes(searchText);
-
-    if (!matchesSearch) return false;
-  }
-
-  // Inspection date filter
-  if (!projectMatchesInspectionDateFilter(project)) {
-    return false;
-  }
-
-  // Follow-up filter
-  if (currentFilter === 'overdue') {
-    return followStatus.class === 'status-overdue';
-  }
-
-  if (currentFilter === 'soon') {
-    return followStatus.class === 'status-soon';
-  }
-
-  if (currentFilter === 'none') {
-    return followStatus.class === 'status-none';
-  }
-
-  if (currentFilter === 'followups') {
-    return project.followUpRequired === 'Yes';
-  }
-
-  if (currentFilter === 'scheduled-new') {
-  return (
-    project.scheduledStatus === 'scheduled' &&
-    project.scheduleType === 'new_site' &&
-    !project.completedAt
-  );
-}
-
-  if (currentFilter === 'clear-completed') {
-    return isCompletedAllClearInspection(project);
-  }
-
-  if (currentFilter === 'risk') {
-    return project.answers?.some(
-      a => a.answer === 'No'
+ const filteredProjects =
+    projects.filter(project =>
+      fireSProjectMatchesGateway(project, currentFilter)
     );
-  }
-
-  if (currentFilter.startsWith('module-')) {
-    return getModuleFilterKey(normalizeProductType(project.productType)) === currentFilter;
-  }
-
-  if (currentFilter.startsWith('inspection-')) {
-    return getProjectInspectionStatus(project).filter === currentFilter;
-  }
-
-  if (currentFilter === 'expiry-overdue') {
-    return getProjectExpiryCounts(project).overdue > 0;
-  }
-
-  if (currentFilter === 'expiry-soon') {
-    return getProjectExpiryCounts(project).soon > 0;
-  }
-
-  if (currentFilter === 'expiry-scheduled') {
-    return getProjectExpiryCounts(project).scheduled > 0;
-  }
-
-  if (currentFilter === 'expiry-missing') {
-    return getProjectExpiryCounts(project).missing > 0;
-  }
-
-  return true; // default = all
-});
 
   updateActiveFilterStatus(filteredProjects.length);
 
