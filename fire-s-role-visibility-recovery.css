@@ -1,0 +1,35 @@
+/* FIRE-S Role Visibility Recovery Module
+   Load after the main styles.css. */
+
+body.fire-s-recovered-role-loading #mainCommandCentre [id^="cmd"],
+body.fire-s-recovered-role-management #mainCommandCentre [id^="cmd"],
+body.fire-s-recovered-role-super #mainCommandCentre [id^="cmd"],
+#mainCommandCentre .fire-s-role-visible-recovery {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.fire-s-recovered-role-management #cmdDashboardBtn,
+body.fire-s-recovered-role-management #cmdReportsBtn,
+body.fire-s-recovered-role-management #cmdCompanyBtn,
+body.fire-s-recovered-role-management #cmdServicesBtn,
+body.fire-s-recovered-role-management #cmdFindingsBtn,
+body.fire-s-recovered-role-management #cmdOverdueBtn,
+body.fire-s-recovered-role-super #cmdDashboardBtn,
+body.fire-s-recovered-role-super #cmdReportsBtn,
+body.fire-s-recovered-role-super #cmdCompanyBtn,
+body.fire-s-recovered-role-super #cmdServicesBtn,
+body.fire-s-recovered-role-super #cmdFindingsBtn,
+body.fire-s-recovered-role-super #cmdOverdueBtn {
+  display: block !important;
+}
+
+body.fire-s-recovered-role-inspector #cmdDashboardBtn,
+body.fire-s-recovered-role-inspector #cmdReportsBtn,
+body.fire-s-recovered-role-inspector #cmdCompanyBtn,
+body.fire-s-recovered-role-inspector #cmdServicesBtn,
+body.fire-s-recovered-role-inspector #cmdFindingsBtn,
+body.fire-s-recovered-role-inspector #cmdOverdueBtn {
+  display: none !important;
+}
