@@ -32178,3 +32178,100 @@ function fireSApplyLifecycleUxLabels() {
     window.fireSApplyMissionFilter136A11(filter, true);
   }, true);
 })();
+
+/* =====================================================
+   FIRE-S STEP 7 - Gateway filter row isolation
+   Purpose:
+   - Isolate the visible Gateway filter row from legacy KPI sync loops.
+   - Keep one stable click path for All, Action Required, Compliant,
+     Scheduled, Overdue and This Month.
+   - No matching/count rules are changed.
+   ===================================================== */
+(function fireSStep7GatewayFilterStability(){
+  'use strict';
+  if (window.__fireSStep7GatewayFilterStabilityInstalled) return;
+  window.__fireSStep7GatewayFilterStabilityInstalled = true;
+
+  function canonical(value){
+    const key = String(value || '').trim().toLowerCase().replace(/_/g, '-');
+    if (!key || key === 'gateway') return 'all';
+    if (key === 'action-required' || key === 'actions-required') return 'inspection-attention';
+    if (key === 'scheduled' || key === 'scheduled-inspections' || key === 'fs-kpi-scheduled') return 'scheduled-new';
+    if (key === 'this-month' || key === 'inspections-this-month' || key === 'fs-kpi-month') return 'month';
+    if (key === 'compliant-sites' || key === 'fs-kpi-compliant') return 'compliant';
+    if (key === 'overdue-inspections' || key === 'fs-kpi-overdue') return 'overdue';
+    return key;
+  }
+
+  function isolateGatewayButtons(root){
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('.fire-s-136a11-filter-grid .fire-s-136a8-filter, .fire-s-136a8-filter-grid .fire-s-136a8-filter').forEach(function(button){
+      const value = button.getAttribute('data-gateway-filter') || button.getAttribute('data-filter') || 'all';
+      button.setAttribute('data-gateway-filter', canonical(value));
+      button.removeAttribute('data-filter');
+      button.removeAttribute('data-fs-kpi-filter');
+      button.removeAttribute('data-authoritative-kpi');
+      button.removeAttribute('onclick');
+    });
+  }
+
+  function setActive(filter){
+    const key = canonical(filter);
+    window.__fireS136A11ActiveFilter = key;
+    window.__fireS136A8ActiveFilter = key;
+    window.__fireSAuthoritativeFilter = key;
+    window.__fireSAuthoritativeKpiFilter = key;
+    window.__fireSActiveKpiFilter = key;
+    window.currentFilter = key;
+    try { currentFilter = key; } catch (_) {}
+    window.currentProjectPage = 1;
+    try { currentProjectPage = 1; } catch (_) {}
+    return key;
+  }
+
+  function apply(filter){
+    const key = setActive(filter);
+    const render = window.fireS136A11RenderProjects;
+    if (typeof render === 'function') {
+      render();
+      isolateGatewayButtons(document);
+      requestAnimationFrame(function(){
+        setActive(key);
+        render();
+        isolateGatewayButtons(document);
+      });
+      return;
+    }
+    if (typeof window.fireSApplyMissionFilter136A11 === 'function') {
+      window.fireSApplyMissionFilter136A11(key, true);
+      setTimeout(function(){ isolateGatewayButtons(document); }, 0);
+    }
+  }
+
+  document.addEventListener('click', function(event){
+    const button = event.target && event.target.closest
+      ? event.target.closest('[data-gateway-filter]')
+      : null;
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+    apply(button.getAttribute('data-gateway-filter') || 'all');
+  }, true);
+
+  const observer = new MutationObserver(function(records){
+    records.forEach(function(record){
+      record.addedNodes.forEach(function(node){
+        if (node && node.nodeType === 1) isolateGatewayButtons(node);
+      });
+    });
+  });
+
+  function install(){
+    isolateGatewayButtons(document);
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
+  else install();
+})();
