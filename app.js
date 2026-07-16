@@ -2075,8 +2075,7 @@ function closeAllChecklistSections() {
 }
 
 function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
-  
-    if (followUpFindingModeActive && followUpFindingNavIndexes.length > 0) {
+  if (followUpFindingModeActive && followUpFindingNavIndexes.length > 0) {
     const firstFindingRowInSection =
       Array.from(document.querySelectorAll('.checklist-row'))
         .find(row =>
@@ -2085,51 +2084,51 @@ function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
         );
 
     if (firstFindingRowInSection) {
-      const findingIndex =
-        getChecklistRowItemIndex(firstFindingRowInSection);
-
-      const navPosition =
-        followUpFindingNavIndexes.indexOf(findingIndex);
-
+      const findingIndex = getChecklistRowItemIndex(firstFindingRowInSection);
+      const navPosition = followUpFindingNavIndexes.indexOf(findingIndex);
       showFollowUpFindingAt(navPosition);
     }
-
     return;
   }
-  
+
   closeAllChecklistSections();
 
   const section = document.getElementById(`section_${sectionIndex}`);
   const arrow = document.getElementById(`arrow_${sectionIndex}`);
   const nav = document.getElementById(`sectionNav_${sectionIndex}`);
-
   if (!section) return;
 
-  document
-    .querySelectorAll('.checklist-section-tab')
-    .forEach(tab => tab.classList.remove('active-section-tab'));
-
-  const activeTab =
-    document.querySelector(`.checklist-section-tab[data-section-index="${sectionIndex}"]`);
-
-  if (activeTab) {
-    activeTab.classList.add('active-section-tab');
-  }
+  document.querySelectorAll('.checklist-section-tab').forEach(tab => {
+    tab.classList.toggle(
+      'active-section-tab',
+      Number(tab.dataset.sectionIndex) === Number(sectionIndex)
+    );
+  });
 
   section.classList.remove('hidden');
+  if (arrow) arrow.textContent = 'v';
 
-  if (arrow) {
-    arrow.textContent = 'v';
-  }
-
-  if (nav) {
-    nav.style.display = 'flex';
-  }
+  // Normal inspections use a stable expanded section. Never hide completed
+  // questions or auto-advance the viewport after an answer selection.
+  if (nav) nav.style.display = 'none';
+  getChecklistSectionRows(sectionIndex).forEach(row => {
+    row.classList.remove('question-hidden');
+    row.classList.remove('active-checklist-question');
+    row.style.removeProperty('display');
+  });
 
   activeChecklistSectionIndex = sectionIndex;
   activeChecklistQuestionPosition = 0;
 
-  showChecklistQuestion(sectionIndex, 0, focusFirstQuestion);
+  if (focusFirstQuestion) {
+    const firstRow = getChecklistSectionRows(sectionIndex)[0];
+    if (firstRow) {
+      requestAnimationFrame(() => {
+        const top = firstRow.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+      });
+    }
+  }
 }
 
 function toggleSection(sectionIndex) {
@@ -2148,66 +2147,37 @@ function toggleSection(sectionIndex) {
 
 function showChecklistQuestion(sectionIndex, position, shouldScroll = true) {
   const rows = getChecklistSectionRows(sectionIndex);
-
   if (rows.length === 0) return;
 
-  const safePosition = Math.max(
-    0,
-    Math.min(position, rows.length - 1)
-  );
-
+  const safePosition = Math.max(0, Math.min(position, rows.length - 1));
   activeChecklistSectionIndex = sectionIndex;
   activeChecklistQuestionPosition = safePosition;
 
-  rows.forEach((row, index) => {
-    row.classList.toggle('question-hidden', index !== safePosition);
-    row.classList.toggle('active-checklist-question', index === safePosition);
+  // In a normal inspection all questions in the open section remain visible.
+  // Single-question navigation is reserved for the dedicated follow-up mode.
+  rows.forEach(row => {
+    row.classList.remove('question-hidden');
+    row.classList.remove('active-checklist-question');
+    row.style.removeProperty('display');
   });
+
+  const nav = document.getElementById(`sectionNav_${sectionIndex}`);
+  if (nav) nav.style.display = 'none';
 
   const status = document.getElementById(`sectionNavStatus_${sectionIndex}`);
+  if (status) status.textContent = `Question ${safePosition + 1} of ${rows.length}`;
 
-  if (status) {
-    status.textContent =
-      `Question ${safePosition + 1} of ${rows.length}`;
+  if (shouldScroll && rows[safePosition]) {
+    const targetTop = rows[safePosition].getBoundingClientRect().top + window.scrollY - 100;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: 'auto' });
   }
-
-  if (shouldScroll) {
-  const checklistCard = document.getElementById('checklist')?.closest('.card');
-  const tabs = document.querySelector('.checklist-section-tabs');
-  const nav = document.getElementById(`sectionNav_${sectionIndex}`);
-
-  const target = tabs || nav || checklistCard || rows[safePosition];
-
-  const topOffset = 90;
-
-  const targetTop =
-    target.getBoundingClientRect().top +
-    window.pageYOffset -
-    topOffset;
-
-  window.scrollTo({
-    top: Math.max(targetTop, 0),
-    behavior: 'smooth'
-  });
-}
 }
 
 function nextChecklistQuestion(sectionIndex) {
   const rows = getChecklistSectionRows(sectionIndex);
-
   if (rows.length === 0) return;
-
-  if (activeChecklistQuestionPosition >= rows.length - 1) {
-    closeChecklistSection(sectionIndex);
-    setReadinessMessage('Section completed and closed.');
-    return;
-  }
-
-  showChecklistQuestion(
-    sectionIndex,
-    activeChecklistQuestionPosition + 1,
-    true
-  );
+  const nextPosition = Math.min(activeChecklistQuestionPosition + 1, rows.length - 1);
+  showChecklistQuestion(sectionIndex, nextPosition, true);
 }
 
 function previousChecklistQuestion(sectionIndex) {
@@ -2224,28 +2194,9 @@ function previousChecklistQuestion(sectionIndex) {
 }
 
 function autoCloseSectionIfCompleted(selectEl) {
-  const row = selectEl.closest('.checklist-row');
-
-  if (!row) return;
-
-  const sectionIndex = Number(row.dataset.sectionIndex);
-  const rows = getChecklistSectionRows(sectionIndex);
-
-  if (rows.length === 0) return;
-
-  const lastRow = rows[rows.length - 1];
-
-  if (row !== lastRow) return;
-
-  const allAnswered = rows.every(sectionRow => {
-    const answerField = sectionRow.querySelector('.answer-select');
-    return answerField && answerField.value;
-  });
-
-  if (!allAnswered) return;
-
-  closeChecklistSection(sectionIndex);
-  setReadinessMessage('Section completed and closed.');
+  // Deliberately disabled. Completing a question or section must never collapse
+  // the checklist or move the inspector away from the current field.
+  return;
 }
 
 function sanitizeFileName(value, fallback = 'Inspection') {
@@ -16127,6 +16078,72 @@ function handleAnswerChange(selectEl, options = {}) {
   }, 1400);
 }
 
+// Findings/checklist stability guard.
+// Other legacy modules may still try to add question-hidden after a selection.
+// During a normal inspection, immediately undo that without touching follow-up mode.
+(function installChecklistVisibilityGuard() {
+  if (window.__fireSChecklistVisibilityGuardInstalled) return;
+  window.__fireSChecklistVisibilityGuardInstalled = true;
+
+  function stabiliseFromRow(row, topBefore = null) {
+    if (!row || followUpFindingModeActive) return;
+    const section = row.closest('.section-group');
+    if (!section) return;
+
+    section.classList.remove('hidden');
+    const sectionIndex = Number(row.dataset.sectionIndex);
+    getChecklistSectionRows(sectionIndex).forEach(sectionRow => {
+      sectionRow.classList.remove('question-hidden');
+      sectionRow.classList.remove('active-checklist-question');
+      sectionRow.style.removeProperty('display');
+    });
+
+    const nav = document.getElementById(`sectionNav_${sectionIndex}`);
+    if (nav) nav.style.display = 'none';
+
+    if (topBefore !== null && document.body.contains(row)) {
+      const topAfter = row.getBoundingClientRect().top;
+      const delta = topAfter - topBefore;
+      if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+    }
+  }
+
+  document.addEventListener('change', event => {
+    const field = event.target;
+    if (!field?.classList?.contains('answer-select')) return;
+    const row = field.closest('.checklist-row');
+    const topBefore = row ? row.getBoundingClientRect().top : null;
+    [0, 30, 120, 300, 900].forEach(delay => {
+      setTimeout(() => stabiliseFromRow(row, topBefore), delay);
+    });
+  }, true);
+
+  const startObserver = () => {
+    const checklist = document.getElementById('checklist');
+    if (!checklist) return;
+    const observer = new MutationObserver(mutations => {
+      if (followUpFindingModeActive) return;
+      mutations.forEach(mutation => {
+        const row = mutation.target?.closest?.('.checklist-row');
+        if (row && row.classList.contains('question-hidden')) {
+          row.classList.remove('question-hidden');
+        }
+      });
+    });
+    observer.observe(checklist, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+  } else {
+    startObserver();
+  }
+})();
+
 function updateAnswerSummary() {
   const answers = document.querySelectorAll(".answer-select");
 
@@ -24931,7 +24948,14 @@ if (!window.fireSMobileSmartCardsApplied) {
   function renderPanel(){const project=syncCurrent()||current(); if(!project)return; const host=document.getElementById('smartActionEnginePanel')||document.createElement('section'); host.id='smartActionEnginePanel'; host.className='card smart-action-engine-panel'; const actions=(project.actions||[]).filter(a=>norm(a.status)!=='closed'); const byCat={}; actions.forEach(a=>{const c=a.category||a.sectionName||'General Fire Safety'; byCat[c]=(byCat[c]||0)+1;}); host.innerHTML=`<div class="sae-head"><div><h3>Smart Action Register</h3><p>Generated from current NO answers. Source: project.actions[]</p></div><strong>${actions.length} Open</strong></div><div class="sae-chips">${Object.entries(byCat).map(([c,n])=>`<span>${esc(c)} <b>${n}</b></span>`).join('')||'<span>No open actions</span>'}</div><div class="sae-list">${actions.slice(0,20).map(a=>`<article class="sae-card sae-${norm(a.priority)}"><div><b>${esc(a.priority||'Medium')}</b><span>${esc(a.category||a.sectionName||'General')}</span></div><h4>${esc(a.question||a.finding||'Action item')}</h4><p>${esc(a.correctiveAction||a.finding||'Corrective action required.')}</p><small>Item ${esc(a.itemNumber||'-')} · Due ${esc(a.dueDate||'Not set')}</small></article>`).join('')||'<div class="sae-empty">No NO answers requiring action.</div>'}</div>`; const form=document.getElementById('projectFormSection')||document.body; const checklistCard=document.getElementById('checklistCard')||document.getElementById('checklist')?.closest('.card'); if(!host.parentElement){ if(checklistCard) checklistCard.insertAdjacentElement('afterend',host); else form.appendChild(host);} }
   window.FireSSmartActionEngine={syncCurrent,render:renderPanel,version:VERSION};
   const oldAuto=window.autoSaveProject; if(typeof oldAuto==='function'){window.autoSaveProject=function(){const r=oldAuto.apply(this,arguments); setTimeout(syncCurrent,50); return r;};}
-  document.addEventListener('change',e=>{if(e.target&&e.target.classList&&e.target.classList.contains('answer-select')) setTimeout(()=>{syncCurrent(); renderPanel();},80);});
+  document.addEventListener('change', e => {
+    if (!e.target?.classList?.contains('answer-select')) return;
+
+    // Keep action data current, but never rebuild the Smart Action Register
+    // while the inspector is answering checklist questions. The register sits
+    // outside the checklist and its changing height causes mobile scroll jumps.
+    setTimeout(() => { syncCurrent(); }, 120);
+  });
   window.addEventListener('fireSProjectOpened',()=>setTimeout(renderPanel,400));
   setTimeout(()=>{try{if(window.currentProjectId) renderPanel();}catch(e){}},1200);
 })();
@@ -25155,22 +25179,39 @@ if (!window.fireSMobileSmartCardsApplied) {
     return updated;
   }
 
+  function inspectionChecklistIsOpen() {
+    const form = document.getElementById('projectFormSection');
+    return Boolean(form && !form.classList.contains('hidden') && form.style.display !== 'none');
+  }
+
   function refreshLiveUi(project) {
     try { if (typeof updateAnswerSummary === 'function') updateAnswerSummary(); } catch (_) {}
+
+    // Never repaint panels outside the checklist while an inspection is open.
+    // These panels alter document height and make mobile browsers navigate away
+    // from the active question. They refresh normally when the user explicitly
+    // opens them or leaves/returns to the inspection workspace.
+    if (inspectionChecklistIsOpen() || window.__fireSChecklistInputActive) return;
+
     try { if (typeof updateProjectReadinessPanel === 'function') updateProjectReadinessPanel(); } catch (_) {}
     try { if (window.FireSSmartActionEngine?.render) window.FireSSmartActionEngine.render(); } catch (_) {}
     try { if (window.FireSHealthCentre?.render) window.FireSHealthCentre.render(project); } catch (_) {}
+    try { if (window.FireSBuildingHealthCentre1114?.render) window.FireSBuildingHealthCentre1114.render(); } catch (_) {}
     try { if (window.FireSExecutiveDashboard1115?.render) window.FireSExecutiveDashboard1115.render(); } catch (_) {}
     try { if (window.FireSExecutiveSnapshot?.render) window.FireSExecutiveSnapshot.render(); } catch (_) {}
     try { if (typeof renderHomeCommandCentre === 'function') renderHomeCommandCentre(); } catch (_) {}
   }
 
+  let liveSyncTimer = null;
   function runLiveSync() {
-    const project = syncProjectFromDom();
-    if (!project) return;
-    refreshLiveUi(project);
-    const msg = document.getElementById('saveMessage');
-    if (msg) msg.textContent = 'Live update saved. Actions and counters refreshed.';
+    clearTimeout(liveSyncTimer);
+    liveSyncTimer = setTimeout(() => {
+      const project = syncProjectFromDom();
+      if (!project) return;
+      refreshLiveUi(project);
+      const msg = document.getElementById('saveMessage');
+      if (msg) msg.textContent = 'Answer saved.';
+    }, 220);
   }
 
   function install() {
@@ -25183,8 +25224,7 @@ if (!window.fireSMobileSmartCardsApplied) {
       handleAnswerChange = function fireSLiveHandleAnswerChange(selectEl, options = {}) {
         const result = originalHandleAnswerChange.apply(this, arguments);
         if (!options || !options.skipAutoSave) {
-          setTimeout(runLiveSync, 0);
-          setTimeout(runLiveSync, 180);
+          runLiveSync();
         }
         return result;
       };
@@ -25192,8 +25232,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
     document.addEventListener('change', event => {
       if (event.target?.matches?.('.answer-select')) {
-        setTimeout(runLiveSync, 0);
-        setTimeout(runLiveSync, 180);
+        runLiveSync();
       }
     }, true);
 
