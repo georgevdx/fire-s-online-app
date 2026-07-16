@@ -29894,6 +29894,11 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function updateKpiCardAttributesAndCounts(){
+    const gatewaySection = document.getElementById('projectListSection');
+    const homeSection = document.getElementById('homeSection');
+    const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
+    const homeVisible = homeSection && getComputedStyle(homeSection).display !== 'none';
+    if (gatewayVisible && !homeVisible) return;
     const cards = Array.from(document.querySelectorAll('.fs-kpi-card, [data-fs-kpi-filter], .main-stat-card, .compliance-breakdown-card'));
     cards.forEach(card => {
       const text = (card.textContent || '').toLowerCase();
@@ -31617,6 +31622,11 @@ function fireSApplyLifecycleUxLabels() {
     if (numeric) numeric.textContent = String(value);
   }
   function sync(){
+    const gatewaySection = document.getElementById('projectListSection');
+    const homeSection = document.getElementById('homeSection');
+    const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
+    const homeVisible = homeSection && getComputedStyle(homeSection).display !== 'none';
+    if (gatewayVisible && !homeVisible) return;
     const c = counts();
     const map = { compliant: c.compliant, scheduled: c.scheduled, overdue: c.overdue, month: c.month };
     document.querySelectorAll('.fs-kpi-card, .main-stat-card, [data-fs-kpi-filter], [data-authoritative-kpi]').forEach(card => {
@@ -31763,6 +31773,11 @@ function fireSApplyLifecycleUxLabels() {
     </button>`;
   }
   function renderKpis(){
+    const gatewaySection = document.getElementById('projectListSection');
+    const homeSection = document.getElementById('homeSection');
+    const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
+    const homeVisible = homeSection && getComputedStyle(homeSection).display !== 'none';
+    if (gatewayVisible && !homeVisible) return;
     const centre = document.getElementById('mainCommandCentre');
     if (!centre) return;
     const row = centre.querySelector('.main-command-stats');
@@ -31822,6 +31837,11 @@ function fireSApplyLifecycleUxLabels() {
   else install();
 
   const obs = new MutationObserver(() => {
+    const gatewaySection = document.getElementById('projectListSection');
+    const homeSection = document.getElementById('homeSection');
+    const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
+    const homeVisible = homeSection && getComputedStyle(homeSection).display !== 'none';
+    if (gatewayVisible && !homeVisible) return;
     if (window.__fireS136A10Pending) return;
     window.__fireS136A10Pending = true;
     requestAnimationFrame(() => {
