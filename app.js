@@ -32148,3 +32148,33 @@ function fireSApplyLifecycleUxLabels() {
 
   setTimeout(renderProjects, 250);
 })();
+
+/* =====================================================
+   FIRE-S STEP 6 - Gateway KPI filter click reliability
+   Purpose: Ensure every Mission Control filter card uses the
+   final authoritative filter function after any Gateway re-render.
+   No count or matching logic is changed here.
+   ===================================================== */
+(function fireSStep6GatewayFilterClicks(){
+  'use strict';
+  if (window.__fireSStep6GatewayFilterClicksInstalled) return;
+  window.__fireSStep6GatewayFilterClicksInstalled = true;
+
+  document.addEventListener('click', function(event){
+    const button = event.target && event.target.closest
+      ? event.target.closest('.fire-s-136a8-filter[data-filter]')
+      : null;
+    if (!button) return;
+
+    const filter = button.getAttribute('data-filter') || 'all';
+    if (typeof window.fireSApplyMissionFilter136A11 !== 'function') return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') {
+      event.stopImmediatePropagation();
+    }
+
+    window.fireSApplyMissionFilter136A11(filter, true);
+  }, true);
+})();
