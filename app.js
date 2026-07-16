@@ -27567,9 +27567,12 @@ function fireSApplyLifecycleUxLabels() {
         </label>
         <small id="fireSRoleTestHint">Actual login: Super Admin</small>
       `;
-      const top = centre.querySelector('.main-command-top');
-      if (top && top.nextSibling) centre.insertBefore(panel, top.nextSibling);
-      else centre.prepend(panel);
+      // Keep the selector outside mainCommandCentre because the Home
+      // controller replaces the centre contents when switching workspaces.
+      // As a sibling, the same dropdown survives Inspector/Management renders.
+      if (centre.parentNode) centre.parentNode.insertBefore(panel, centre);
+    } else if (panel.parentNode === centre && centre.parentNode) {
+      centre.parentNode.insertBefore(panel, centre);
     }
 
     const select = document.getElementById('fireSRoleTestSelect');
