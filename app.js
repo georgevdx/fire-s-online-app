@@ -27101,7 +27101,7 @@ function fireSApplyLifecycleUxLabels() {
 // =====================================================
 (function fireSSingleHomeController130(){
   const MANAGEMENT_ROLES = new Set(['super_admin','company_owner','owner','manager','management','admin','viewer']);
-  const INSPECTOR_ROLES = new Set(['inspector','field_inspector','field-inspector','field inspector','guest','local','']);
+  const INSPECTOR_ROLES = new Set(['inspector','field_inspector','field-inspector','field inspector']);
 
   function role(){
     try {
@@ -27119,7 +27119,7 @@ function fireSApplyLifecycleUxLabels() {
         return String(window.currentUserProfile.role || '').toLowerCase().trim();
       }
     } catch (error) {}
-    return 'inspector';
+    return '';
   }
 
   function isManagement(){
@@ -27127,8 +27127,7 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function isInspector(){
-    const r = role();
-    return INSPECTOR_ROLES.has(r) || !isManagement();
+    return INSPECTOR_ROLES.has(role());
   }
 
   function qs(sel){ return document.querySelector(sel); }
@@ -27280,8 +27279,13 @@ function fireSApplyLifecycleUxLabels() {
     removeDuplicatePanels();
     clarifyNewButton();
     bindHomeCards();
-    if (isManagement()) setManagementHome();
-    else setInspectorHome();
+    if (isManagement()) {
+      setManagementHome();
+    } else if (isInspector()) {
+      setInspectorHome();
+    }
+    // When the profile is still loading or the role is unknown, preserve the
+    // existing working layout instead of hiding cards as an inspector.
   }
 
   window.fireSRenderHomeController130 = renderHomeController;
@@ -27360,9 +27364,9 @@ function fireSApplyLifecycleUxLabels() {
       }
     } catch (_) {}
     try {
-      return originalGetCurrentUserRole ? String(originalGetCurrentUserRole() || '').toLowerCase().trim() : 'inspector';
+      return originalGetCurrentUserRole ? String(originalGetCurrentUserRole() || '').toLowerCase().trim() : '';
     } catch (_) {}
-    return 'inspector';
+    return '';
   }
 
   function viewAsRole(){
