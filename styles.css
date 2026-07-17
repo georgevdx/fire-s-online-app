@@ -12212,3 +12212,154 @@ button,
   .fs-prod-kpi-title { font-size: 10px !important; max-width: 112px !important; }
   .fs-prod-kpi-icon { width: 36px; height: 36px; font-size: 16px; }
 }
+
+/* ================================================================
+   FIRE-S PRODUCTION HARDENING S1 / PHASE 2
+   Natural text wrapping without splitting normal words
+   ================================================================ */
+
+/* Default readable wrapping for user-facing copy. */
+:where(
+  .card,
+  .panel,
+  .section-card,
+  .form-group,
+  .inspection-summary-card,
+  .inspection-project-list-item,
+  .inspection-details-panel,
+  .inspection-attention-panel,
+  .inspection-open-gate-modal,
+  .question-card,
+  .checklist-item,
+  .finding-card,
+  .action-card,
+  .equipment-card,
+  .photo-card,
+  .health-card,
+  .building-health-card,
+  .premises-card,
+  .workspace-card
+) :where(
+  h1, h2, h3, h4, h5, h6,
+  p, label, small, strong, em, b,
+  span:not(.icon):not([aria-hidden="true"]),
+  button, a
+) {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
+  line-height: 1.35;
+}
+
+/* Allow flex/grid children to shrink so text can wrap at spaces. */
+:where(
+  .card,
+  .panel,
+  .section-card,
+  .inspection-summary-card,
+  .inspection-project-list-item,
+  .inspection-details-grid,
+  .inspection-summary-header,
+  .inspection-summary-title-block,
+  .inspection-card-stat-grid,
+  .question-card,
+  .checklist-item,
+  .finding-card,
+  .action-card,
+  .equipment-card,
+  .health-card,
+  .building-health-card,
+  .premises-card,
+  .workspace-card
+) > * {
+  min-width: 0;
+}
+
+/* High-value inspection labels and descriptions. */
+:where(
+  .inspection-project-list-title,
+  .inspection-project-list-meta,
+  .inspection-project-list-address,
+  .inspection-summary-number,
+  .inspection-summary-address,
+  .inspection-details-title,
+  .inspection-attention-title,
+  .inspection-attention-item,
+  .inspection-open-gate-copy,
+  .inspection-open-gate-mode-label,
+  .inspection-open-gate-tip,
+  .question-text,
+  .question-title,
+  .question-description,
+  .field-label,
+  .field-help,
+  .card-title,
+  .card-subtitle,
+  .section-title,
+  .section-subtitle,
+  .empty-state,
+  .helper-text
+) {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+}
+
+/* Buttons may wrap cleanly, but never split words. */
+:where(
+  button,
+  .btn,
+  .button,
+  .inspection-card-action,
+  .primary-action,
+  .secondary-action,
+  .quiet-action
+) {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+}
+
+/* Long machine-generated values may break only as an emergency measure. */
+:where(
+  .email,
+  .url,
+  .record-id,
+  .reference-number,
+  [data-wrap="machine"]
+) {
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  hyphens: none !important;
+}
+
+@media (max-width: 640px) {
+  :where(
+    .inspection-summary-header,
+    .inspection-details-grid,
+    .inspection-card-stat-grid,
+    .inspection-project-list-item,
+    .question-card,
+    .checklist-item
+  ) {
+    min-width: 0;
+  }
+
+  :where(
+    .inspection-summary-title-block,
+    .inspection-project-list-title,
+    .inspection-project-list-address,
+    .question-text,
+    .question-title,
+    .field-label,
+    .card-title,
+    .section-title
+  ) {
+    max-width: 100%;
+  }
+}
