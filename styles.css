@@ -12734,3 +12734,192 @@ button,
     font-size: 9px;
   }
 }
+
+/* =========================================================
+   FIRE-S DESIGN SYSTEM v1.0 — PHASE 5.4A UI CONSISTENCY
+   Presentation-only overrides. No application logic changes.
+   ========================================================= */
+:root {
+  --fs-space-1: 4px;
+  --fs-space-2: 8px;
+  --fs-space-3: 12px;
+  --fs-space-4: 16px;
+  --fs-space-6: 24px;
+  --fs-radius-control: 10px;
+  --fs-radius-pill: 999px;
+  --fs-radius-card: 14px;
+  --fs-control-height: 44px;
+  --fs-control-font-size: 13px;
+  --fs-control-font-weight: 700;
+  --fs-border-soft: 1px solid rgba(15, 23, 42, 0.14);
+  --fs-shadow-card: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+
+/* Shared control rhythm. Keep compact checklist controls intentionally small. */
+:where(
+  button,
+  .btn,
+  .button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"]
+):not(.checklist-toolbar button):not(.checklist-view-controls button):not(.checklist-section-tab) {
+  min-height: var(--fs-control-height);
+  padding: 9px 14px;
+  border-radius: var(--fs-radius-control);
+  font-size: var(--fs-control-font-size);
+  font-weight: var(--fs-control-font-weight);
+  line-height: 1.15;
+  letter-spacing: 0;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-align: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Inputs and selects use the same height and corner language. */
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select,
+  textarea
+) {
+  border-radius: var(--fs-radius-control);
+  border: var(--fs-border-soft);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select
+) {
+  min-height: var(--fs-control-height);
+}
+
+textarea {
+  padding: 10px 12px;
+}
+
+/* Unified pill/chip/badge language without forcing long labels onto one line. */
+:where(
+  .pill,
+  .chip,
+  .badge,
+  .tag,
+  .status-pill,
+  .status-chip,
+  .filter-pill,
+  .quick-link-chip,
+  .choice-status-pill,
+  .active-filter-status
+) {
+  border-radius: var(--fs-radius-pill);
+  font-weight: 700;
+  line-height: 1.15;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+/* Cards share a clean edge, radius and restrained depth. */
+:where(
+  .card,
+  .service-card,
+  .inspection-card,
+  .metric-card,
+  .dashboard-card,
+  .project-card,
+  .premises-card,
+  .section-card
+) {
+  border-radius: var(--fs-radius-card);
+  box-shadow: var(--fs-shadow-card);
+}
+
+/* Keyboard and accessibility focus should look the same everywhere. */
+:where(button, [role="button"], a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.28);
+  outline-offset: 2px;
+}
+
+/* Small, deliberate press feedback; no layout shift or sliding animation. */
+@media (hover: hover) {
+  :where(button, .btn, .button, [role="button"]):not(:disabled):hover {
+    filter: brightness(0.985);
+  }
+}
+
+:where(button, .btn, .button, [role="button"]):not(:disabled):active {
+  transform: translateY(1px);
+}
+
+:where(button, .btn, .button, [role="button"]):disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+/* Preserve the intentionally compact checklist overview. */
+.checklist-toolbar.checklist-toolbar-compact button,
+.checklist-view-controls button {
+  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: 0;
+  touch-action: manipulation;
+}
+
+.checklist-section-status-panel .checklist-section-tab.checklist-section-label {
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+/* Mobile consistency: comfortable primary controls, compact secondary chips. */
+@media (max-width: 700px) {
+  :where(
+    button,
+    .btn,
+    .button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"]
+  ):not(.checklist-toolbar button):not(.checklist-view-controls button):not(.checklist-section-tab) {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+  }
+
+  :where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select
+  ) {
+    min-height: 44px;
+    font-size: 16px; /* Prevent Android/iOS browser zoom on focus. */
+  }
+
+  :where(.card, .service-card, .inspection-card, .metric-card, .dashboard-card, .project-card, .premises-card, .section-card) {
+    border-radius: 12px;
+  }
+
+  /* Avoid crushed button rows: wrap cleanly rather than splitting captions. */
+  :where(
+    .button-row,
+    .action-row,
+    .toolbar-actions,
+    .cloud-sync-actions,
+    .post-site-sync-actions,
+    .inspection-movement-buttons,
+    .finding-actions
+  ) {
+    flex-wrap: wrap;
+    gap: var(--fs-space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button, .btn, .button, [role="button"]) {
+    transition: none !important;
+  }
+}
