@@ -867,29 +867,25 @@
 
   <section class="card" id="photoEvidenceCard">
   <h2>Photo Evidence</h2>
-  <div class="photo-source-actions" aria-label="Add photo evidence">
-    <label class="photo-source-btn take-photo-btn">
-      <span>Take Photo</span>
-      <input
-        type="file"
-        id="photoInput"
-        accept="image/*"
-        capture="environment"
-        data-photo-source="camera"
-        aria-label="Take a new photo with the camera"
-      >
-    </label>
+  <div class="photo-source-controls" aria-label="Add photo evidence">
+    <input
+      type="file"
+      id="photoInput"
+      accept="image/*"
+      capture="environment"
+      class="native-photo-file-control camera-file-control"
+      aria-label="Take Photo"
+      data-photo-source="camera"
+    >
 
-    <label class="photo-source-btn gallery-photo-btn">
-      <span>Choose from Gallery</span>
-      <input
-        type="file"
-        id="galleryPhotoInput"
-        accept="image/*"
-        data-photo-source="gallery"
-        aria-label="Choose an existing photo from the gallery"
-      >
-    </label>
+    <input
+      type="file"
+      id="galleryPhotoInput"
+      accept="image/*"
+      class="native-photo-file-control gallery-file-control"
+      aria-label="Choose from Gallery"
+      data-photo-source="gallery"
+    >
   </div>
 
 <button
@@ -1018,7 +1014,7 @@
   <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
-  <script src="app.js?v=production-hardening-s1-phase4-6-camera-gallery-split"></script>
+  <script src="app.js?v=production-hardening-s1-phase4-7-real-native-file-controls"></script>
   <script src="risk-engine.js?v=108-2-category-intelligence"></script>
   <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
   <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>

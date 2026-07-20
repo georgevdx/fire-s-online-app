@@ -4254,11 +4254,11 @@ if (cancelScheduledInspectionBtn) {
   if (floatingBackToProjectsBtn) {
     floatingBackToProjectsBtn.addEventListener('click', closeInspectionSession);
   }
-  const photoInput = document.getElementById('photoInput');
+  const cameraPhotoInput = document.getElementById('photoInput');
   const galleryPhotoInput = document.getElementById('galleryPhotoInput');
 
-  if (photoInput) {
-    photoInput.addEventListener('change', handlePhotoUpload);
+  if (cameraPhotoInput) {
+    cameraPhotoInput.addEventListener('change', handlePhotoUpload);
   }
 
   if (galleryPhotoInput) {
@@ -15140,16 +15140,15 @@ async function handlePhotoUpload(event) {
       );
 
       const localPhoto = await createLocalPhotoFallback(file);
-      const selectedSource =
-        event.target?.dataset?.photoSource === 'camera'
-          ? 'camera'
-          : 'gallery';
+      const selectedSource = event.target?.dataset?.photoSource || 'device';
 
       localPhoto.sourceType = selectedSource;
       localPhoto.sourceLabel =
         selectedSource === 'camera'
           ? 'Captured with device camera'
-          : 'Selected from device gallery';
+          : selectedSource === 'gallery'
+            ? 'Selected from device gallery'
+            : 'Added from device';
       localPhoto.originalFileName = file.name || '';
       localPhoto.originalLastModified = file.lastModified || null;
 
