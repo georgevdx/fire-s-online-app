@@ -12363,3 +12363,249 @@ button,
     max-width: 100%;
   }
 }
+
+/* =========================================================
+   Fire-S Production Hardening S1 Phase 2.1
+   Building Passport offline-safe style recovery
+   Restores the component styling that must remain available
+   when the app is opened or resumed without a network.
+   ========================================================= */
+.fire-s-building-passport-v104 {
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 14px;
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+}
+
+.fire-s-building-passport-v104,
+.fire-s-building-passport-v104 * {
+  box-sizing: border-box;
+  min-width: 0;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
+}
+
+.fire-s-passport-hero-v104 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 16px;
+  background: linear-gradient(135deg, #111827, #334155);
+  color: #fff;
+}
+
+.fire-s-passport-hero-v104 span {
+  display: block;
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fire-s-passport-hero-v104 h2 {
+  margin: 5px 0 0;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.fire-s-passport-hero-v104 p {
+  margin: 7px 0 0;
+  color: #e5e7eb;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.fire-s-passport-score-v104 {
+  min-width: 105px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.fire-s-passport-score-v104 small {
+  display: block;
+  color: #fecaca;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fire-s-passport-score-v104 strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.fire-s-passport-tabs-v104 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  width: 100%;
+  background: #e2e8f0;
+}
+
+.fire-s-passport-tabs-v104 button {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #334155;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.fire-s-passport-tabs-v104 button.active {
+  background: #b71c1c;
+  color: #fff;
+}
+
+.fire-s-passport-grid-v104 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  width: 100%;
+  background: #e2e8f0;
+}
+
+.fire-s-passport-grid-v104 > div {
+  min-width: 0;
+  padding: 11px;
+  background: #fff;
+}
+
+.fire-s-passport-grid-v104 span {
+  display: block;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.fire-s-passport-grid-v104 strong {
+  display: block;
+  margin-top: 4px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.fire-s-passport-summary-v104,
+.fire-s-passport-insight-v1041,
+.fire-s-passport-timeline-v1041,
+.fire-s-passport-health-v104 {
+  padding: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.fire-s-passport-insight-v1041 h3,
+.fire-s-passport-timeline-v1041 h3,
+.fire-s-passport-summary-v104 h3,
+.fire-s-passport-health-v104 h3 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.fire-s-passport-insight-v1041 ul,
+.fire-s-passport-summary-v104 ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.fire-s-passport-insight-v1041 li,
+.fire-s-passport-summary-v104 li {
+  margin-bottom: 5px;
+}
+
+.fire-s-health-row-v104 {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(90px, 1.3fr) 45px;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+.fire-s-health-row-v104:first-of-type { border-top: 0; }
+.fire-s-health-row-v104 strong { display: block; color: #111827; font-size: 13px; }
+.fire-s-health-row-v104 span { display: block; margin-top: 2px; color: #64748b; font-size: 11px; }
+.fire-s-health-row-v104 b { color: #111827; font-size: 13px; text-align: right; }
+
+.fire-s-health-bar-v104 {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.fire-s-health-bar-v104 i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b71c1c;
+}
+
+.fire-s-passport-muted-v104 {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .fire-s-passport-hero-v104 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fire-s-passport-score-v104 {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .fire-s-passport-tabs-v104 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fire-s-passport-tabs-v104 button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .fire-s-passport-grid-v104 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fire-s-health-row-v104 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fire-s-health-row-v104 b {
+    text-align: left;
+  }
+}
