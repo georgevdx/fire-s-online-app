@@ -12674,3 +12674,69 @@ button,
     font-size: 9.5px !important;
   }
 }
+
+
+/* =====================================================
+   Fire-S Production Hardening S1 Phase 4.3
+   Direct native camera control
+   The actual file input is visible and receives the user's tap directly.
+   No label proxy, synthetic click or transparent overlay is used.
+   ===================================================== */
+#photoEvidenceCard .native-camera-input {
+  display: block !important;
+  position: static !important;
+  left: auto !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  min-height: 48px !important;
+  margin: 0 0 10px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: #b71c1c !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+  overflow: hidden !important;
+}
+
+#photoEvidenceCard .native-camera-input::file-selector-button {
+  width: 100% !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 11px 14px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: #b71c1c !important;
+  color: #ffffff !important;
+  font: inherit !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+}
+
+#photoEvidenceCard .native-camera-input::-webkit-file-upload-button {
+  width: 100% !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 11px 14px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: #b71c1c !important;
+  color: #ffffff !important;
+  font: inherit !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+}
+
+@media (max-width: 700px) {
+  #photoEvidenceCard .native-camera-input {
+    max-width: none !important;
+  }
+}

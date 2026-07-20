@@ -26,7 +26,7 @@
   <title>Fire-S | Professional Fire Safety Platform</title>
   <link rel="manifest" href="manifest.json?v=rc-1-2-0O-mobile-stable">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=production-hardening-s1-phase4-2-camera-trigger-restore">
+  <link rel="stylesheet" href="styles.css?v=production-hardening-s1-phase4-3-direct-native-camera-input">
   <link rel="icon" type="image/png" href="icon-192.png?v=rc-1-2-0O-mobile-stable">
 </head>
 <body>
@@ -867,16 +867,12 @@
 
   <section class="card" id="photoEvidenceCard">
   <h2>Photo Evidence</h2>
-  <label for="photoInput" class="take-photo-btn">
-  Take Photo
-</label>
-
-<input
+  <input
   type="file"
   id="photoInput"
   accept="image/*"
   capture="environment"
-  class="hidden-photo-input"
+  class="native-camera-input"
   aria-label="Take Photo"
 >
 
@@ -1006,7 +1002,7 @@
   <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
-  <script src="app.js?v=production-hardening-s1-phase4-2-camera-trigger-restore"></script>
+  <script src="app.js?v=production-hardening-s1-phase4-3-direct-native-camera-input"></script>
   <script src="risk-engine.js?v=108-2-category-intelligence"></script>
   <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
   <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>
