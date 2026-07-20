@@ -12457,3 +12457,102 @@ button,
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Sprint 1 Phase 5.2: compact checklist overview outside question console */
+.checklist-overview {
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.checklist-toolbar.checklist-toolbar-compact {
+  position: static;
+  z-index: auto;
+  min-height: 0;
+  padding: 4px 0 7px;
+  gap: 6px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.checklist-view-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.checklist-toolbar.checklist-toolbar-compact button {
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.checklist-toolbar.checklist-toolbar-compact .answer-summary {
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.checklist-section-status-panel {
+  width: 100%;
+  margin: 0;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #e4e4e4;
+}
+
+.checklist-section-status-panel .checklist-section-tabs {
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist-section-status-panel .checklist-section-tab.checklist-section-label {
+  min-height: 31px;
+  padding: 5px 7px;
+  border-radius: 8px;
+  gap: 5px;
+}
+
+.checklist-section-status-panel .checklist-section-label-name {
+  font-size: 9.5px;
+  line-height: 1.15;
+}
+
+.checklist-section-status-panel .checklist-section-label-status {
+  min-width: 36px;
+  padding: 3px 5px;
+  font-size: 9.5px;
+}
+
+#checklist {
+  padding-top: 2px;
+}
+
+@media (max-width: 700px) {
+  .checklist-section-status-panel .checklist-section-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .checklist-toolbar.checklist-toolbar-compact {
+    align-items: center;
+  }
+
+  .checklist-toolbar.checklist-toolbar-compact .answer-summary {
+    width: auto;
+    font-size: 10px;
+  }
+
+  .checklist-section-status-panel .checklist-section-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checklist-section-status-panel .checklist-section-label-name {
+    font-size: 9px;
+  }
+}

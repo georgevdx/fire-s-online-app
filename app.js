@@ -13923,13 +13923,30 @@ function getActiveTemplateChecklist() {
 function renderChecklist(selected) {
   const chkDiv = getEl('checklist');
 
-  let html = `
-    <div class="checklist-toolbar">
-      <button type="button" onclick="expandAllSections()">Expand</button>
-      <button type="button" onclick="collapseAllSections()">Collapse</button>
+  // Keep the compact controls and live section progress outside the
+  // scrollable question console. This prevents the status area from moving
+  // with the questions and keeps the inspection workspace visually stable.
+  let checklistOverview = document.getElementById('checklistOverview');
+
+  if (!checklistOverview) {
+    checklistOverview = document.createElement('div');
+    checklistOverview.id = 'checklistOverview';
+    checklistOverview.className = 'checklist-overview';
+    chkDiv.parentNode.insertBefore(checklistOverview, chkDiv);
+  }
+
+  checklistOverview.innerHTML = `
+    <div class="checklist-toolbar checklist-toolbar-compact">
+      <div class="checklist-view-controls" aria-label="Checklist view controls">
+        <button type="button" onclick="expandAllSections()">Expand</button>
+        <button type="button" onclick="collapseAllSections()">Collapse</button>
+      </div>
       <div id="answerSummary" class="answer-summary">Yes: 0 | No: 0 | N/A: 0</div>
     </div>
+    <div id="checklistSectionStatus" class="checklist-section-status-panel"></div>
   `;
+
+  let html = '';
 
   const templateChecklist = getActiveTemplateChecklist();
 
@@ -13938,6 +13955,7 @@ function renderChecklist(selected) {
   );
 
   if (selectedChecklist.length === 0) {
+    checklistOverview.innerHTML = '';
     chkDiv.innerHTML = `<div class="note">No checklist items found for this occupancy yet.</div>`;
     return;
   }
@@ -13968,22 +13986,26 @@ const orderedSectionNames = [
   )
 ];
 
-html += `
-  <div class="checklist-section-tabs">
-    ${orderedSectionNames.map((sectionName, sectionIndex) => `
-      <div
-        class="checklist-section-tab checklist-section-label"
-        data-section-index="${sectionIndex}"
-        role="status"
-        aria-live="polite"
-      >
-        <span class="checklist-section-label-name">${escapeHtml(sectionName.toUpperCase())}</span>
-        <span class="checklist-section-label-status" data-section-status="${sectionIndex}">0/${(groupedSections.get(sectionName) || []).length}</span>
-      </div>
-    `).join('')}
-  </div>
+const sectionStatusPanel = document.getElementById('checklistSectionStatus');
 
-`;
+if (sectionStatusPanel) {
+  sectionStatusPanel.innerHTML = `
+    <div class="checklist-section-tabs">
+      ${orderedSectionNames.map((sectionName, sectionIndex) => `
+        <div
+          class="checklist-section-tab checklist-section-label"
+          data-section-index="${sectionIndex}"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="checklist-section-label-name">${escapeHtml(sectionName.toUpperCase())}</span>
+          <span class="checklist-section-label-status" data-section-status="${sectionIndex}">0/${(groupedSections.get(sectionName) || []).length}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 
 orderedSectionNames.forEach((sectionName, sectionIndex) => {
   const sectionItems = groupedSections.get(sectionName) || [];
