@@ -12364,73 +12364,53 @@ button,
   }
 }
 
-
-/* =====================================================
-   Fire-S Production Hardening S1 Phase 4.8
-   Direct native input overlays: the Android browser receives the tap itself.
-   ===================================================== */
+/* Fire-S camera runtime patch: true in-app camera + separate gallery picker */
 .photo-source-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  width: 100%;
-  max-width: 520px;
-  margin: 8px 0 12px;
+  margin-bottom: 10px;
 }
 
-.native-photo-control {
-  position: relative !important;
-  display: flex !important;
+.camera-capture-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.92);
+}
+
+.camera-capture-modal.hidden {
+  display: none !important;
+}
+
+.camera-capture-panel {
+  width: min(100%, 720px);
+  max-height: 96vh;
+  overflow: auto;
+  background: #111;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+#cameraPreview {
+  display: block;
   width: 100%;
-  overflow: hidden;
+  max-height: 72vh;
+  object-fit: contain;
+  background: #000;
   border-radius: 10px;
-  font-weight: 800;
-  text-align: center;
-  box-sizing: border-box;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
-.native-photo-control.camera-control {
-  background: #b71c1c;
-  color: #fff;
+.camera-capture-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-.native-photo-control.gallery-control {
-  background: #555;
-  color: #fff;
-}
-
-.native-photo-control > span {
-  position: relative;
-  z-index: 1;
-  pointer-events: none !important;
-}
-
-.native-photo-control > input[type="file"] {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 5 !important;
-  display: block !important;
-  width: 100% !important;
-  max-width: none !important;
-  height: 100% !important;
-  min-height: 48px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 10px !important;
-  opacity: 0.001 !important;
-  cursor: pointer !important;
-  pointer-events: auto !important;
-  font-size: 100px !important;
-}
-
-@media (max-width: 520px) {
-  .photo-source-actions {
-    grid-template-columns: 1fr;
-  }
+.camera-capture-actions button {
+  flex: 1 1 0;
 }
