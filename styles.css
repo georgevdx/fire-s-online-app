@@ -12365,61 +12365,72 @@ button,
 }
 
 
-/* Phase 4.7: the visible controls are the actual native file inputs. */
-.photo-source-controls {
+/* =====================================================
+   Fire-S Production Hardening S1 Phase 4.8
+   Direct native input overlays: the Android browser receives the tap itself.
+   ===================================================== */
+.photo-source-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   width: 100%;
   max-width: 520px;
-  margin: 0 0 12px;
+  margin: 8px 0 12px;
 }
 
-.native-photo-file-control {
-  display: block;
-  position: static;
-  left: auto;
-  width: 100%;
-  max-width: none;
+.native-photo-control {
+  position: relative !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
   min-height: 48px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
+  width: 100%;
   overflow: hidden;
-  background: transparent;
-  color: transparent;
-  font-size: 0;
-  opacity: 1;
-  cursor: pointer;
+  border-radius: 10px;
+  font-weight: 800;
+  text-align: center;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.native-photo-file-control::file-selector-button {
-  width: 100%;
-  min-height: 48px;
-  margin: 0;
-  padding: 12px 14px;
-  border: 0;
-  border-radius: 10px;
+.native-photo-control.camera-control {
   background: #b71c1c;
   color: #fff;
-  font: 700 16px Arial, sans-serif;
-  cursor: pointer;
 }
 
-.gallery-file-control::file-selector-button {
+.native-photo-control.gallery-control {
   background: #555;
+  color: #fff;
 }
 
-.camera-file-control::file-selector-button {
-  content: "Take Photo";
+.native-photo-control > span {
+  position: relative;
+  z-index: 1;
+  pointer-events: none !important;
 }
 
-.gallery-file-control::file-selector-button {
-  content: "Choose from Gallery";
+.native-photo-control > input[type="file"] {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 5 !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  opacity: 0.001 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  font-size: 100px !important;
 }
 
 @media (max-width: 520px) {
-  .photo-source-controls {
+  .photo-source-actions {
     grid-template-columns: 1fr;
   }
 }

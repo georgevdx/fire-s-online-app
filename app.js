@@ -4258,11 +4258,17 @@ if (cancelScheduledInspectionBtn) {
   const galleryPhotoInput = document.getElementById('galleryPhotoInput');
 
   if (cameraPhotoInput) {
-    cameraPhotoInput.addEventListener('change', handlePhotoUpload);
+    cameraPhotoInput.addEventListener('change', event => {
+      event.photoSource = 'camera';
+      handlePhotoUpload(event);
+    });
   }
 
   if (galleryPhotoInput) {
-    galleryPhotoInput.addEventListener('change', handlePhotoUpload);
+    galleryPhotoInput.addEventListener('change', event => {
+      event.photoSource = 'gallery';
+      handlePhotoUpload(event);
+    });
   }
   const downloadAllPhotosBtn =
     document.getElementById('downloadAllPhotosBtn');
@@ -15140,15 +15146,13 @@ async function handlePhotoUpload(event) {
       );
 
       const localPhoto = await createLocalPhotoFallback(file);
-      const selectedSource = event.target?.dataset?.photoSource || 'device';
+      const photoSource = event.photoSource ||
+        (event.target?.id === 'galleryPhotoInput' ? 'gallery' : 'camera');
 
-      localPhoto.sourceType = selectedSource;
-      localPhoto.sourceLabel =
-        selectedSource === 'camera'
-          ? 'Captured with device camera'
-          : selectedSource === 'gallery'
-            ? 'Selected from device gallery'
-            : 'Added from device';
+      localPhoto.captureSource = photoSource;
+      localPhoto.sourceLabel = photoSource === 'gallery'
+        ? 'Selected from device gallery'
+        : 'Captured with device camera';
       localPhoto.originalFileName = file.name || '';
       localPhoto.originalLastModified = file.lastModified || null;
 
@@ -24454,7 +24458,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   document.addEventListener('change', event => {
-    if (event.target && event.target.id === 'photoInput') {
+    if (event.target && (event.target.id === 'photoInput' || event.target.id === 'galleryPhotoInput')) {
       setTimeout(() => {
         safePhotos().forEach(normalisePhoto);
         savePhotos();
@@ -24667,7 +24671,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   };
 
   document.addEventListener('change', event => {
-    if (event.target && event.target.id === 'photoInput') {
+    if (event.target && (event.target.id === 'photoInput' || event.target.id === 'galleryPhotoInput')) {
       setTimeout(() => { window.fireSActivePhotoCategoryFilter = 'All'; if (typeof window.renderPhotos === 'function') window.renderPhotos(); }, 900);
     }
   }, true);
