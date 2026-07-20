@@ -450,7 +450,8 @@ function autoSaveProject() {
           ? noteField.value.trim()
           : '',
 
-      expiryDate: expiryField ? expiryField.value : null
+      expiryDate: expiryField ? expiryField.value : null,
+      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
     });
   });
 
@@ -8794,7 +8795,8 @@ function getCurrentFormProjectSnapshot() {
         String(index + 1),
       answer: field.value,
       note: noteField ? noteField.value.trim() : '',
-      expiryDate: expiryField ? expiryField.value : null
+      expiryDate: expiryField ? expiryField.value : null,
+      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
     });
   });
 
@@ -12649,6 +12651,7 @@ getEl('finalComments').value = project.finalComments || '';
       const field = document.getElementById(`check_${item.itemIndex}`);
      if (field) {
         field.value = item.answer;
+        field.dataset.assessment = item.assessment || (item.answer === 'Yes' ? 'Compliant' : item.answer === 'No' ? 'Action Required' : item.answer === 'N/A' ? 'N/A' : '');
      }
 
       const noteField = document.getElementById(`note_${item.itemIndex}`);
@@ -12663,7 +12666,7 @@ getEl('finalComments').value = project.finalComments || '';
       }
 
       if (field) {
-        handleAnswerChange(field, { skipAutoSave: true });
+        setProfessionalAssessment(item.itemIndex, field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : ''), { skipAutoSave: true });
       }
     });
   }
@@ -13124,7 +13127,8 @@ const finalComments = getEl('finalComments').value.trim();
           ? noteField.value.trim()
           : '',
 
-      expiryDate: expiryField ? expiryField.value : null
+      expiryDate: expiryField ? expiryField.value : null,
+      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
     });
   });
 
@@ -13951,7 +13955,7 @@ function renderChecklist(selected) {
         <button type="button" onclick="expandAllSections()">Expand</button>
         <button type="button" onclick="collapseAllSections()">Collapse</button>
       </div>
-      <div id="answerSummary" class="answer-summary">Yes: 0 | No: 0 | N/A: 0</div>
+      <div id="answerSummary" class="answer-summary">Compliant: 0 | Action/Critical: 0 | N/A: 0</div>
     </div>
     <div id="checklistSectionStatus" class="checklist-section-status-panel"></div>
   `;
@@ -14071,21 +14075,30 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
           Answer type: ${escapeHtml(c["Answer Type"])}
         </div>
 
+        <div class="professional-assessment" role="group" aria-label="Assessment status">
+          <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Compliant</button>
+          <button type="button" class="assessment-chip assessment-action" data-assessment="Action Required" onclick="setProfessionalAssessment(${originalIndex}, 'Action Required')">Action Required</button>
+          <button type="button" class="assessment-chip assessment-critical" data-assessment="Critical" onclick="setProfessionalAssessment(${originalIndex}, 'Critical')">Critical</button>
+          <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">N/A</button>
+        </div>
+
         <select
-          class="answer-select"
+          class="answer-select professional-answer-select"
           id="${itemId}"
           onchange="handleAnswerChange(this)"
+          aria-hidden="true"
+          tabindex="-1"
         >
-          <option value="">Select answer</option>
+          <option value=""></option>
           <option value="Yes">Yes</option>
           <option value="No">No</option>
           <option value="N/A">N/A</option>
         </select>
 
         <textarea
-          class="note-input"
+          class="note-input professional-note"
           id="note_${originalIndex}"
-          placeholder="Add note for this item..."
+          placeholder="Describe the condition, location and required corrective action..."
           oninput="scheduleAutoSave()"
         ></textarea>
 
@@ -14311,7 +14324,8 @@ function generateReport() {
       itemNumber: item["Item Number"] || String(index + 1),
       answer,
       note: itemNote,
-      expiryDate: expiryField ? expiryField.value : null
+      expiryDate: expiryField ? expiryField.value : null,
+      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
     });
 
     if (trackExpiry && expiryApplies && expiryDate) {
@@ -16174,6 +16188,38 @@ function collapseAllSections() {
   closeAllChecklistSections();
 }
 
+function setProfessionalAssessment(itemIndex, assessment, options = {}) {
+  const selectEl = document.getElementById(`check_${itemIndex}`);
+  if (!selectEl) return;
+
+  const answerMap = {
+    'Compliant': 'Yes',
+    'Action Required': 'No',
+    'Critical': 'No',
+    'N/A': 'N/A'
+  };
+
+  selectEl.value = answerMap[assessment] || '';
+  selectEl.dataset.assessment = assessment || '';
+
+  const row = selectEl.closest('.checklist-row');
+  if (row) {
+    row.querySelectorAll('.assessment-chip').forEach(button => {
+      button.classList.toggle('is-selected', button.dataset.assessment === assessment);
+      button.setAttribute('aria-pressed', button.dataset.assessment === assessment ? 'true' : 'false');
+    });
+    row.classList.toggle('has-critical', assessment === 'Critical');
+    const note = row.querySelector('.professional-note');
+    if (note) {
+      const needsDetail = assessment === 'Action Required' || assessment === 'Critical';
+      note.classList.toggle('is-required-visible', needsDetail);
+      note.setAttribute('aria-hidden', needsDetail ? 'false' : 'true');
+    }
+  }
+
+  handleAnswerChange(selectEl, options);
+}
+
 function handleAnswerChange(selectEl, options = {}) {
   const row = selectEl.closest(".checklist-row");
   const rowTopBefore = row ? row.getBoundingClientRect().top : null;
@@ -16328,7 +16374,7 @@ function updateAnswerSummary() {
 
   const summary = document.getElementById("answerSummary");
   if (summary) {
-    summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
+    summary.textContent = `Compliant: ${yes} | Action/Critical: ${no} | N/A: ${na}`;
   }
 
   updateChecklistSectionLabels();
@@ -32998,3 +33044,5 @@ function fireSApplyLifecycleUxLabels() {
   window.addEventListener('pageshow', bindPhotoControls);
   setTimeout(bindPhotoControls, 750);
 })();
+
+window.setProfessionalAssessment = setProfessionalAssessment;
