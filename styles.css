@@ -12556,3 +12556,181 @@ button,
     font-size: 9px;
   }
 }
+
+/* =====================================================
+   Sprint 1 Phase 5.3 — compact control typography safety
+   Prevent button, pill, chip and status-label text from
+   splitting inside words on narrow mobile layouts.
+   ===================================================== */
+
+/* User-facing compact controls may wrap only at natural spaces. */
+:where(
+  button,
+  [role="button"],
+  .btn,
+  .button,
+  .pill,
+  .chip,
+  .badge,
+  .tag,
+  .status-pill,
+  .status-chip,
+  .filter-pill,
+  .quick-link-chip,
+  .choice-status-pill,
+  .active-filter-status,
+  .checklist-section-label,
+  .checklist-section-label-name,
+  .checklist-section-label-status,
+  .checklist-view-controls,
+  .compact-action-btn,
+  .inspection-card-action,
+  .sticky-action-bar button
+),
+:where(
+  button,
+  [role="button"],
+  .btn,
+  .button,
+  .pill,
+  .chip,
+  .badge,
+  .tag,
+  .status-pill,
+  .status-chip,
+  .filter-pill,
+  .quick-link-chip,
+  .choice-status-pill,
+  .active-filter-status,
+  .checklist-section-label,
+  .checklist-view-controls,
+  .compact-action-btn,
+  .inspection-card-action,
+  .sticky-action-bar button
+) :where(span, strong, small, b, em) {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  text-wrap: pretty;
+}
+
+/* Small action controls must keep short captions such as Collapse intact. */
+.checklist-view-controls,
+.checklist-view-controls button,
+.checklist-toolbar.checklist-toolbar-compact button,
+.checklist-toolbar.checklist-toolbar-compact button * {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  text-align: center;
+}
+
+/* Status labels can use two lines, but never split a word letter-by-letter. */
+.checklist-section-status-panel .checklist-section-tab.checklist-section-label {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.checklist-section-status-panel .checklist-section-label-name {
+  min-width: 0;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-wrap: balance;
+}
+
+.checklist-section-status-panel .checklist-section-label-status {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
+/* Give toolbar controls enough room before allowing the summary to wrap. */
+.checklist-toolbar.checklist-toolbar-compact {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.checklist-toolbar.checklist-toolbar-compact .answer-summary {
+  min-width: 0;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+@media (max-width: 700px) {
+  /* Maintain touch-friendly controls without oversized text. */
+  :where(
+    button,
+    [role="button"],
+    .btn,
+    .button,
+    .pill,
+    .chip,
+    .badge,
+    .tag,
+    .status-pill,
+    .status-chip,
+    .filter-pill,
+    .quick-link-chip,
+    .choice-status-pill,
+    .active-filter-status,
+    .compact-action-btn,
+    .inspection-card-action
+  ) {
+    line-height: 1.2 !important;
+  }
+
+  .checklist-toolbar.checklist-toolbar-compact button {
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 10.5px;
+  }
+
+  .checklist-section-status-panel .checklist-section-tab.checklist-section-label {
+    padding: 5px 6px;
+  }
+
+  .checklist-section-status-panel .checklist-section-label-name {
+    font-size: 9.5px;
+    line-height: 1.2;
+  }
+
+  .checklist-section-status-panel .checklist-section-label-status {
+    min-width: 34px;
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 430px) {
+  .checklist-toolbar.checklist-toolbar-compact {
+    gap: 5px;
+  }
+
+  .checklist-view-controls {
+    gap: 4px;
+  }
+
+  .checklist-toolbar.checklist-toolbar-compact button {
+    min-height: 28px;
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+
+  .checklist-toolbar.checklist-toolbar-compact .answer-summary {
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 1px;
+    font-size: 9.5px;
+  }
+
+  .checklist-section-status-panel .checklist-section-label-name {
+    font-size: 9px;
+  }
+}
