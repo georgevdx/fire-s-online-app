@@ -4255,41 +4255,15 @@ if (cancelScheduledInspectionBtn) {
     floatingBackToProjectsBtn.addEventListener('click', closeInspectionSession);
   }
   const photoInput = document.getElementById('photoInput');
-  const takePhotoBtn = document.getElementById('takePhotoBtn');
+  const galleryPhotoInput = document.getElementById('galleryPhotoInput');
 
   if (photoInput) {
     photoInput.addEventListener('change', handlePhotoUpload);
   }
 
-  if (takePhotoBtn && photoInput) {
-    takePhotoBtn.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      // Reset first so Android allows the same camera/file selection twice.
-      photoInput.value = '';
-
-      try {
-        // showPicker() keeps the chooser inside the direct user gesture and is
-        // more reliable than a synthetic click in installed Android PWAs.
-        if (typeof photoInput.showPicker === 'function') {
-          photoInput.showPicker();
-          return;
-        }
-      } catch (error) {
-        console.warn('Native photo picker could not open with showPicker:', error);
-      }
-
-      // Browser fallback for platforms without showPicker().
-      try {
-        photoInput.click();
-      } catch (error) {
-        console.error('Photo picker could not open:', error);
-        updatePhotoUploadStatus('Camera could not open. Check camera permission and try again.');
-      }
-    });
+  if (galleryPhotoInput) {
+    galleryPhotoInput.addEventListener('change', handlePhotoUpload);
   }
-
   const downloadAllPhotosBtn =
     document.getElementById('downloadAllPhotosBtn');
 
@@ -15166,6 +15140,18 @@ async function handlePhotoUpload(event) {
       );
 
       const localPhoto = await createLocalPhotoFallback(file);
+      const selectedSource =
+        event.target?.dataset?.photoSource === 'camera'
+          ? 'camera'
+          : 'gallery';
+
+      localPhoto.sourceType = selectedSource;
+      localPhoto.sourceLabel =
+        selectedSource === 'camera'
+          ? 'Captured with device camera'
+          : 'Selected from device gallery';
+      localPhoto.originalFileName = file.name || '';
+      localPhoto.originalLastModified = file.lastModified || null;
 
       currentPhotos.push(localPhoto);
 
