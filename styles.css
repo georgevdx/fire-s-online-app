@@ -13351,3 +13351,62 @@ body.camera-workspace-open {
 .professional-note.is-required-visible{display:block;}
 .checklist-row.has-critical{border-left:5px solid #c93838;}
 @media(min-width:720px){.professional-assessment{grid-template-columns:repeat(4,minmax(0,1fr));}}
+
+/* =========================================================
+   FIRE-S Inspection Engine v2 — Sprint 1A
+   Status chip visibility hardening
+   Keeps all assessment labels readable in default, selected,
+   mobile, dark-theme and inherited button-colour contexts.
+   ========================================================= */
+.professional-assessment .assessment-chip,
+.professional-assessment .assessment-chip * {
+  color: #17202a !important;
+  -webkit-text-fill-color: #17202a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.professional-assessment .assessment-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  background-color: #ffffff !important;
+  border-color: #cfd6df !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+}
+
+.professional-assessment .assessment-compliant.is-selected {
+  background-color: #e8f7ed !important;
+  border-color: #2f8f4e !important;
+  color: #155b2d !important;
+  -webkit-text-fill-color: #155b2d !important;
+}
+
+.professional-assessment .assessment-action.is-selected {
+  background-color: #fff4dd !important;
+  border-color: #d28b00 !important;
+  color: #724600 !important;
+  -webkit-text-fill-color: #724600 !important;
+}
+
+.professional-assessment .assessment-critical.is-selected {
+  background-color: #fde8e8 !important;
+  border-color: #c93838 !important;
+  color: #7d1717 !important;
+  -webkit-text-fill-color: #7d1717 !important;
+}
+
+.professional-assessment .assessment-na.is-selected {
+  background-color: #f1f3f5 !important;
+  border-color: #7b848d !important;
+  color: #343a40 !important;
+  -webkit-text-fill-color: #343a40 !important;
+}
+
+.professional-assessment .assessment-chip:focus-visible {
+  outline: 3px solid rgba(29, 78, 216, .35) !important;
+  outline-offset: 2px !important;
+}
