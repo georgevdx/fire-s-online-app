@@ -5297,6 +5297,14 @@ button.readiness-chip:focus {
   overflow: hidden !important;
 }
 
+/* Report Layout v1.3: large report sections must be allowed to flow. */
+.pdf-export-mode .report-block {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
+  overflow: visible !important;
+}
+
 .pdf-export-mode .nc-item {
   margin-top: 8px !important;
   margin-bottom: 12px !important;
@@ -5312,14 +5320,14 @@ button.readiness-chip:focus {
 }
 
 .pdf-export-mode .report-priority-actions-block {
-  break-before: page !important;
-  page-break-before: always !important;
+  break-before: auto !important;
+  page-break-before: auto !important;
 }
 
 .pdf-export-mode .report-conclusion-signoff {
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-  -webkit-column-break-inside: avoid !important;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
 }
 
 .pdf-export-mode .report-conclusion-signoff .report-block {
@@ -5329,6 +5337,19 @@ button.readiness-chip:focus {
 .pdf-export-mode .report-conclusion-signoff .report-signoff {
   margin-top: 14px !important;
   padding-top: 12px !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+.pdf-export-mode .pdf-programmatic-page-break {
+  display: block !important;
+  width: 100% !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  break-after: page !important;
+  page-break-after: always !important;
 }
 
 .pdf-export-mode .nc-section-lead > .nc-heading {

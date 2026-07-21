@@ -1352,6 +1352,26 @@ pdfClone
       element.remove();
     });
 
+  /*
+    Report Layout v1.3:
+    Insert a real html2pdf page-break marker immediately before Priority
+    Actions. This is more reliable than depending on print CSS alone and
+    prevents the heading from being stranded at the bottom of page 1.
+  */
+  const priorityActionsBlock =
+    pdfClone.querySelector('.report-priority-actions-block');
+
+  if (priorityActionsBlock) {
+    const priorityPageBreak =
+      document.createElement('div');
+
+    priorityPageBreak.className =
+      'html2pdf__page-break pdf-programmatic-page-break';
+
+    priorityPageBreak.setAttribute('aria-hidden', 'true');
+    priorityActionsBlock.before(priorityPageBreak);
+  }
+
   pdfSandbox.appendChild(pdfClone);
   document.body.appendChild(pdfSandbox);
 
@@ -1384,16 +1404,15 @@ pdfClone
     },
 
     pagebreak: {
-  mode: ['css', 'legacy'],
+  mode: ['legacy', 'css'],
   avoid: [
-    '.report-block',
     '.report-answer',
     '.report-summary-card',
     '.executive-summary-card',
     '.report-expiry-item',
     '.action-item',
     '.nc-item',
-    '.report-signoff'
+    '.nc-section-lead'
   ]
 }
   };
