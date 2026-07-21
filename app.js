@@ -16613,24 +16613,18 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   if (ncSections.length > 0) {
     ncSections.forEach(section => {
-      nonComplianceHtml += `
-        <div class="nc-section">
-          <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
-      `;
+      nonComplianceHtml += `<div class="nc-section">`;
 
-      nonCompliance[section].forEach(item => {
+      nonCompliance[section].forEach((item, itemIndex) => {
+        if (itemIndex === 0) {
+          nonComplianceHtml += `
+            <div class="nc-section-lead">
+              <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
+          `;
+        }
+
         nonComplianceHtml += `
           <div class="nc-item nc-${escapeHtml(String(item.severity).toLowerCase())}">
-            <div class="nc-item-title">
-              <strong>${escapeHtml(item.itemNumber)}. ${escapeHtml(item.assessmentName || item.checklistItem)}</strong>
-              <span>${escapeHtml(item.assessment)}</span>
-            </div>
-
-            <div>
-              <strong>Inspection question:</strong>
-              ${escapeHtml(item.checklistItem)}
-            </div>
-
             <div>
               <strong>Priority:</strong>
               ${escapeHtml(item.severity)}
@@ -16675,6 +16669,10 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
             }
           </div>
         `;
+
+        if (itemIndex === 0) {
+          nonComplianceHtml += `</div>`;
+        }
       });
 
       nonComplianceHtml += `</div>`;
@@ -16879,7 +16877,7 @@ reportContent.innerHTML = `
       ${sectionSummaryHtml || '<div class="note">No assessed sections recorded.</div>'}
     </div>
 
-    <div class="report-block">
+    <div class="report-block report-priority-actions-block">
       <h2>Priority Actions Required</h2>
       ${actionHtml}
     </div>

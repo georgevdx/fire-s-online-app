@@ -5299,6 +5299,17 @@ button.readiness-chip:focus {
   line-height: 1.35 !important;
 }
 
+.pdf-export-mode .report-priority-actions-block,
+.pdf-export-mode .nc-section-lead {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+.pdf-export-mode .nc-section-lead > .nc-heading {
+  margin-bottom: 8px !important;
+}
+
 .pdf-export-mode .nc-item div {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
