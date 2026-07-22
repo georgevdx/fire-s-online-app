@@ -1083,6 +1083,80 @@ function waitForPdfImages(container) {
   );
 }
 
+function applyMeasuredA4Pagination(pdfClone) {
+  if (!pdfClone) return;
+
+  pdfClone
+    .querySelectorAll('.pdf-measured-page-spacer')
+    .forEach(spacer => spacer.remove());
+
+  /*
+    html2pdf renders the report to one canvas before slicing it into A4 pages.
+    CSS break-inside rules alone are therefore not reliable on every browser.
+    Measure each logical report unit at the fixed export width and add only the
+    space needed to start it on the next printable A4 page when necessary.
+  */
+  const exportWidthPx = pdfClone.getBoundingClientRect().width || 760;
+  const printableWidthMm = 210 - 24;
+  const printableHeightMm = 297 - 30;
+  const pageHeightPx = exportWidthPx * printableHeightMm / printableWidthMm;
+  const tolerancePx = 4;
+
+  const atomicSelectors = [
+    '.formal-letter-routing',
+    '.formal-subject',
+    '.formal-opening',
+    '.report-section-lead',
+    '.findings-reference-note',
+    '.nc-section-lead',
+    '.nc-item',
+    '.finding-code-reference',
+    '.finding-photo-reference',
+    '.report-conclusion-signoff',
+    '.report-signoff',
+    'table tr',
+    'figure',
+    'blockquote',
+    'pre',
+    'li'
+  ];
+
+  const candidates = Array.from(
+    pdfClone.querySelectorAll(atomicSelectors.join(','))
+  ).filter(element => {
+    if (!element.isConnected) return false;
+
+    return !atomicSelectors.some(selector => {
+      const parent = element.parentElement?.closest(selector);
+      return parent && parent !== element;
+    });
+  });
+
+  candidates.forEach(element => {
+    const cloneTop = pdfClone.getBoundingClientRect().top;
+    const rect = element.getBoundingClientRect();
+    const elementTop = rect.top - cloneTop;
+    const elementHeight = rect.height;
+
+    if (!elementHeight || elementHeight >= pageHeightPx - tolerancePx) {
+      return;
+    }
+
+    const positionOnPage = ((elementTop % pageHeightPx) + pageHeightPx) % pageHeightPx;
+    const remainingOnPage = pageHeightPx - positionOnPage;
+
+    if (elementHeight <= remainingOnPage + tolerancePx) {
+      return;
+    }
+
+    const spacer = document.createElement('div');
+    spacer.className = 'pdf-measured-page-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    spacer.style.height = `${Math.ceil(remainingOnPage + 1)}px`;
+    element.before(spacer);
+  });
+}
+
 function getPhotosForPdfExport() {
   if (archivedReportContext) {
     const projects = getProjects();
@@ -1500,6 +1574,8 @@ pagebreak: {
 
   try {
     await waitForPdfImages(pdfClone);
+
+    applyMeasuredA4Pagination(pdfClone);
 
     const worker =
       html2pdf()
