@@ -13657,3 +13657,24 @@ body.camera-workspace-open {
   outline: 3px solid rgba(29, 78, 216, .35) !important;
   outline-offset: 2px !important;
 }
+
+/* Formal report v1.1 - single findings flow and evidence references */
+.formal-letter-report .finding-reference-line {
+  margin-bottom: 6px;
+  color: #7f1d1d;
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+}
+
+.formal-letter-report .finding-photo-reference {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(127, 29, 29, 0.16);
+  color: #273449;
+}
+
+.pdf-export-mode .finding-reference-line,
+.pdf-export-mode .finding-photo-reference {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}

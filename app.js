@@ -1162,7 +1162,12 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`Photo ${photoNumber} of ${safePhotos.length}`, marginX, 32);
+    const photoReference = `P-${String(photoNumber).padStart(2, '0')}`;
+    const findingReferences = Array.isArray(photo.reportFindingRefs)
+      ? photo.reportFindingRefs.filter(Boolean)
+      : [];
+
+    pdf.text(`${photoReference} | Photo ${photoNumber} of ${safePhotos.length}`, marginX, 32);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
@@ -1174,7 +1179,16 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
 
     pdf.text(`Captured: ${capturedText}`, marginX, 36);
 
-    const imageTop = 45;
+    const linkedEvidenceText = findingReferences.length
+      ? `Linked finding${findingReferences.length === 1 ? '' : 's'}: ${findingReferences.join(', ')}`
+      : photo.linkedQuestion
+      ? `Linked checklist item: ${photo.linkedQuestion} (no action finding)`
+      : 'General evidence - no finding linked';
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(linkedEvidenceText, marginX, 40);
+
+    const imageTop = 48;
     const imageBoxWidth = pageWidth - marginX * 2;
     const imageBoxHeight = 170;
 
@@ -16489,6 +16503,9 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   const productType = normalizeProductType(inspection.productType);
   const finalComments = inspection.finalComments || '';
   const inspectionNumber = inspection.inspectionNumber || '-';
+  const reportPhotos = Array.isArray(inspection.photos)
+    ? inspection.photos
+    : [];
 
   let compliantCount = 0;
   let actionRequiredCount = 0;
@@ -16584,6 +16601,37 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   const answeredCount = compliantCount + actionRequiredCount + criticalCount + naCount;
 
+  const photoReferencesByItem = reportPhotos.reduce((references, photo, photoIndex) => {
+    const linkedItem = String(photo.linkedQuestion || '').trim();
+    if (!linkedItem) return references;
+
+    if (!references[linkedItem]) references[linkedItem] = [];
+    references[linkedItem].push(`P-${String(photoIndex + 1).padStart(2, '0')}`);
+    return references;
+  }, {});
+
+  const findingReferencesByItem = {};
+  let findingSequence = 0;
+
+  Object.keys(nonCompliance).forEach(section => {
+    nonCompliance[section].forEach(item => {
+      findingSequence++;
+      item.findingReference = `F-${String(findingSequence).padStart(2, '0')}`;
+      item.photoReferences = photoReferencesByItem[String(item.itemNumber)] || [];
+
+      const itemKey = String(item.itemNumber);
+      if (!findingReferencesByItem[itemKey]) findingReferencesByItem[itemKey] = [];
+      findingReferencesByItem[itemKey].push(item.findingReference);
+    });
+  });
+
+  reportPhotos.forEach(photo => {
+    const linkedItem = String(photo.linkedQuestion || '').trim();
+    photo.reportFindingRefs = linkedItem
+      ? (findingReferencesByItem[linkedItem] || [])
+      : [];
+  });
+
   let overallStatus = 'Compliant / Acceptable';
   let riskRating = 'LOW RISK';
   let riskComment = 'No significant fire safety risks identified.';
@@ -16599,28 +16647,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
       actionRequiredCount >= 5
         ? 'Immediate attention required. Multiple fire safety non-compliances identified.'
         : 'Fire safety deficiencies identified. Corrective action required.';
-  }
-
-  let actionHtml = '';
-
-  const sections =
-    Object.keys(actionSections)
-      .sort((a, b) => actionSections[b].total - actionSections[a].total);
-
-  if (sections.length > 0) {
-    actionHtml = sections.map(section => {
-      const count = actionSections[section].total;
-      const critical = actionSections[section].critical;
-
-      return `
-        <div class="action-item">
-          <strong>${escapeHtml(section.toUpperCase())}</strong>
-          <span>${count} action ${count === 1 ? 'item' : 'items'}${critical ? ` · ${critical} critical` : ''}</span>
-        </div>
-      `;
-    }).join('');
-  } else {
-    actionHtml = `<div class="note">No action required.</div>`;
   }
 
   const sectionSummaryHtml = Object.keys(sectionSummary).map(section => {
@@ -16666,6 +16692,11 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
         nonComplianceHtml += `
           <div class="nc-item nc-${escapeHtml(String(item.severity).toLowerCase())}">
+            <div class="finding-reference-line">
+              <strong>Finding Reference:</strong>
+              ${escapeHtml(item.findingReference)}
+            </div>
+
             <div>
               <strong>Priority:</strong>
               ${escapeHtml(item.severity)}
@@ -16708,6 +16739,15 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
                 `
                 : ''
             }
+
+            <div class="finding-photo-reference">
+              <strong>Photo Reference:</strong>
+              ${
+                item.photoReferences.length
+                  ? escapeHtml(item.photoReferences.join(', '))
+                  : 'No photograph linked'
+              }
+            </div>
           </div>
         `;
 
@@ -16763,37 +16803,6 @@ reportContent.innerHTML = `
         </div>
       </div>
 
-      <div class="report-meta-card">
-        <div>
-          <strong>Inspection No:</strong>
-          ${escapeHtml(inspectionNumber)}
-        </div>
-
-        <div>
-          <strong>Inspection Date:</strong>
-          ${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}
-        </div>
-
-        <div>
-          <strong>Inspector:</strong>
-          ${escapeHtml(inspectorName)}
-        </div>
-
-        <div>
-          <strong>Premises / Site:</strong>
-          ${escapeHtml(projectName)}
-        </div>
-
-        <div>
-          <strong>Occupancy:</strong>
-          ${escapeHtml(occupancy)}
-        </div>
-
-        <div>
-          <strong>Inspection Type:</strong>
-          ${escapeHtml(inspectionType)}
-        </div>
-      </div>
     </div>
 
     <div class="formal-letter-routing">
@@ -16944,19 +16953,14 @@ reportContent.innerHTML = `
       ${sectionSummaryHtml || '<div class="note">No assessed sections recorded.</div>'}
     </div>
 
-    <div class="report-block report-priority-actions-block formal-numbered-section">
-      <h2><span>4.</span> Priority Actions Required</h2>
-      ${actionHtml}
-    </div>
-
     <div class="report-block formal-numbered-section formal-action-register">
-      <h3><span>5.</span> Detailed Corrective Action Register</h3>
+      <h3><span>4.</span> Findings and Required Actions</h3>
       ${nonComplianceHtml}
     </div>
 
     <div class="report-conclusion-signoff">
       <div class="report-block report-conclusion-block">
-        <h3><span>6.</span> Inspector's Conclusion</h3>
+        <h3><span>5.</span> Inspector's Conclusion</h3>
         <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
       </div>
 
