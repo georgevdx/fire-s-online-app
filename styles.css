@@ -5320,8 +5320,12 @@ button.readiness-chip:focus {
 }
 
 .pdf-export-mode .pdf-force-new-page {
-  break-before: page !important;
-  page-break-before: always !important;
+  /*
+    Forced A4 transitions are inserted as measured spacers by app.js.
+    Do not add a second CSS break after the positions have been measured.
+  */
+  break-before: auto !important;
+  page-break-before: auto !important;
 }
 
 .pdf-export-mode .formal-letter-routing,

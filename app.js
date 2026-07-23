@@ -1111,13 +1111,23 @@ function applyMeasuredA4Pagination(pdfClone) {
     const elementTop = element.getBoundingClientRect().top - cloneTop;
     const positionOnPage = ((elementTop % pageHeightPx) + pageHeightPx) % pageHeightPx;
 
-    if (positionOnPage <= tolerancePx) return;
+    if (positionOnPage > tolerancePx) {
+      const spacer = document.createElement('div');
+      spacer.className = 'pdf-measured-page-spacer pdf-forced-page-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      spacer.style.height = `${Math.ceil(pageHeightPx - positionOnPage + 1)}px`;
+      element.before(spacer);
+    }
 
-    const spacer = document.createElement('div');
-    spacer.className = 'pdf-measured-page-spacer pdf-forced-page-spacer';
-    spacer.setAttribute('aria-hidden', 'true');
-    spacer.style.height = `${Math.ceil(pageHeightPx - positionOnPage + 1)}px`;
-    element.before(spacer);
+    /*
+      The measured spacer is now the single source of truth for this page
+      transition. Leaving the CSS break class active makes html2pdf add a
+      second break after measurement, invalidating every later card position
+      and causing large gaps and split finding cards.
+    */
+    element.classList.remove('pdf-force-new-page');
+    element.style.setProperty('break-before', 'auto', 'important');
+    element.style.setProperty('page-break-before', 'auto', 'important');
   });
 
   const atomicSelectors = [
