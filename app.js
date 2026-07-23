@@ -1500,7 +1500,11 @@ async function addTwoUpPhotoAppendixToPdf(pdf, photos = []) {
   }
 }
 
-async function exportReport() {
+async function exportReport(options = {}) {
+  const returnFile =
+    options &&
+    options.returnFile === true;
+
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -1509,7 +1513,7 @@ async function exportReport() {
   }
 
   if (!archivedReportContext) {
-    generateReport();
+    await generateReport();
   }
 
   getEl('reportSection').style.display = 'block';
@@ -1751,12 +1755,26 @@ pagebreak: {
       photosForPdf
     );
 
-    pdf.save(
-      `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`
-    );
+    const fileName =
+      `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`;
+
+    if (returnFile) {
+      return {
+        blob: pdf.output('blob'),
+        fileName
+      };
+    }
+
+    pdf.save(fileName);
+    return {
+      fileName
+    };
   } catch (error) {
     console.error('PDF export failed:', error);
-    alert('PDF export failed. Please try again.');
+    if (!returnFile) {
+      alert('PDF export failed. Please try again.');
+    }
+    throw error;
   } finally {
     pdfSandbox.remove();
   }
@@ -16390,7 +16408,6 @@ function updatePhotoNote(index, value) {
 }
 
 async function shareReport() {
-
   if (!canViewReports()) {
     alert(
       'Your company access does not allow sharing reports. Please contact your company admin or Fire-S support.'
@@ -16399,209 +16416,82 @@ async function shareReport() {
   }
 
   const currentProject = getProjects().find(
-    p => p.id === currentProjectId
+    project => String(project.id) === String(currentProjectId)
   );
 
-  const projectName =
-    currentProject?.projectName || 'Untitled Project';
-  const inspectorName = getEl('inspectorName').value.trim() || '-';
-  const occupancy = getEl('occupancySelect').value || '-';
+  if (!currentProject) {
+    alert('Save the inspection before sharing the report.');
+    return;
+  }
 
-  const projectAddress = getEl('projectAddress').value.trim() || '-';
-  const gps = getEl('gps').value.trim() || '-';
+  const shareButton = getEl('shareBtn');
+  const saveMessage = getEl('saveMessage');
+  const originalLabel = shareButton.textContent;
 
-  const contactPerson = getEl('contactPerson').value.trim() || '-';
-  const contactTel = getEl('contactTel').value.trim() || '-';
-  const contactEmail = getEl('contactEmail').value.trim() || '-';
+  shareButton.disabled = true;
+  shareButton.textContent = 'Preparing PDF...';
+  saveMessage.textContent = 'Preparing the formal report for sharing...';
 
-  const inMall = getEl('inMall').value || 'No';
-  const mallName = getEl('mallName').value.trim() || '-';
-  const unitNumber = getEl('unitNumber').value.trim() || '-';
+  try {
+    await generateReport();
 
-  const productType = normalizeProductType(getEl('productType').value) || '-';
-  const inspectionType = getEl('inspectionType').value || '-';
+    const pdfResult =
+      await exportReport({ returnFile: true });
 
-  const inspectionDate =
-  formatInspectionDate(
-    getProjectInspectionDate(currentProject)
-  );
+    if (!pdfResult?.blob || !pdfResult?.fileName) {
+      throw new Error('The report PDF could not be prepared.');
+    }
 
-  const selectedChecklist = getActiveTemplateChecklist() || [];
+    const reportFile = new File(
+      [pdfResult.blob],
+      pdfResult.fileName,
+      { type: 'application/pdf' }
+    );
 
-  let yesCount = 0;
-  let noCount = 0;
-  let naCount = 0;
+    const sharePayload = {
+      title: 'Fire-S Fire Safety Inspection Report',
+      text: 'Please find the Fire-S fire safety inspection report attached.',
+      files: [reportFile]
+    };
 
-  let actionSections = {};
-  let checklistText = '';
-  let currentSection = '';
+    const canShareFile =
+      typeof navigator.share === 'function' &&
+      (
+        typeof navigator.canShare !== 'function' ||
+        navigator.canShare({ files: [reportFile] })
+      );
 
-  selectedChecklist.forEach((item, index) => {
-    const field = document.getElementById(`check_${index}`);
-    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
-    const answer = rawAnswer.trim();
-
-    const noteField = document.getElementById(`note_${index}`);
-    const itemNote = noteField ? noteField.value.trim() : '';
-
-    const expiryField =
-      document.querySelector(`.expiry-date[data-index="${index}"]`);
-
-    const expiryDate =
-      expiryField ? expiryField.value : '';
-
-    const trackExpiry =
-      isExpiryTrackedChecklistItem(item);
-
-    const expiryApplies =
-      isExpiryApplicableAnswer(answer);
-      
-    if (rawAnswer === 'Not answered' && !itemNote) {
+    if (canShareFile) {
+      await navigator.share(sharePayload);
+      saveMessage.textContent = 'Formal PDF report shared.';
       return;
     }
 
-    const sectionName = item.Section || 'General';
+    const downloadUrl =
+      URL.createObjectURL(pdfResult.blob);
+    const downloadLink =
+      document.createElement('a');
 
-    if (sectionName !== currentSection) {
-      currentSection = sectionName;
-      checklistText += `\n${sectionName.toUpperCase()}\n`;
+    downloadLink.href = downloadUrl;
+    downloadLink.download = pdfResult.fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+
+    saveMessage.textContent =
+      'Direct file sharing is not supported on this device. The formal PDF was downloaded and is ready to attach.';
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      saveMessage.textContent = 'Sharing cancelled.';
+    } else {
+      console.error('Share report failed:', error);
+      saveMessage.textContent =
+        'The PDF could not be shared. Please use the PDF button to download it.';
     }
-
-    if (answer.toLowerCase() === 'yes') {
-      yesCount++;
-    } else if (answer.toLowerCase() === 'no') {
-      noCount++;
-
-      if (!actionSections[sectionName]) {
-        actionSections[sectionName] = 0;
-      }
-
-      actionSections[sectionName]++;
-    } else if (answer.toUpperCase() === 'N/A') {
-      naCount++;
-    }
-
-    checklistText += `${item["Item Number"]}. ${item["Checklist Item"]}\n`;
-    checklistText += `Answer: ${rawAnswer}\n`;
-
-    if (itemNote) {
-      checklistText += `Note: ${itemNote}\n`;
-    }
-
-    if (trackExpiry && expiryApplies && expiryDate) {
-      checklistText += `Expiry Date: ${expiryDate}\n`;
-    }
-
-    if (trackExpiry && !expiryApplies) {
-      checklistText += `Expiry: Not applicable\n`;
-    }
-
-    if (trackExpiry && expiryApplies && !expiryDate) {
-      checklistText += `Expiry Date: Missing\n`;
-    }
-
-    checklistText += `\n`;
-  });
-
-  const totalItems = selectedChecklist.length;
-  const answeredCount = yesCount + noCount + naCount;
-  const notAnsweredCount = totalItems - answeredCount;
-
-  let overallStatus = 'Compliant / Acceptable';
-
-  if (noCount > 0) {
-    overallStatus = 'Attention Required';
-  } else if (notAnsweredCount > 0) {
-    overallStatus = 'Incomplete Inspection';
-  }
-
-  let riskRating = 'LOW RISK';
-  let riskComment = 'No significant fire safety risks identified.';
-
-  if (noCount >= 5) {
-    riskRating = 'HIGH RISK';
-    riskComment = 'Immediate attention required. Multiple fire safety non-compliances identified.';
-  } else if (noCount >= 1) {
-    riskRating = 'MEDIUM RISK';
-    riskComment = 'Fire safety deficiencies identified. Corrective action required.';
-  }
-
-  if (notAnsweredCount > 0 && noCount === 0) {
-    riskRating = 'INCOMPLETE';
-    riskComment = 'Inspection incomplete. Some items were not assessed.';
-  }
-
-  let actionText = '';
-
-  const sections = Object.keys(actionSections)
-    .sort((a, b) => actionSections[b] - actionSections[a]);
-
-  if (sections.length > 0) {
-    sections.forEach(section => {
-      const count = actionSections[section];
-      const label = count === 1 ? 'item' : 'items';
-      actionText += `- ${section.toUpperCase()} - ${count} No ${label}\n`;
-    });
-  } else {
-    actionText = 'No action required.\n';
-  }
-
-  const shareText =
-`Fire-S Fire Safety Report
-
-INSPECTION DETAILS
-Place Name: ${projectName}
-Contact Person: ${contactPerson}
-Telephone: ${contactTel}
-Email: ${contactEmail}
-Compliance Area: ${productType}
-Inspection Type: ${inspectionType}
-Address: ${projectAddress}
-GPS: ${gps}
-In Mall/Centre: ${inMall}
-${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}
-Unit / Shop Number: ${unitNumber}
-` : ''}Inspector Name: ${inspectorName}
-Occupancy: ${occupancy}
-Inspection Date: ${inspectionDate}
-
-INSPECTION SUMMARY
-Total Items: ${totalItems}
-Answered: ${answeredCount}
-Yes: ${yesCount}
-No: ${noCount}
-N/A: ${naCount}
-Not Answered: ${notAnsweredCount}
-Overall Status: ${overallStatus}
-Risk Rating: ${riskRating}
-${riskComment}
-
-ACTION REQUIRED
-${actionText}
-
-CHECKLIST RESULTS
-${checklistText || 'No checklist answers or notes captured.'}`;
-
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: `Fire-S Report - ${projectName}`,
-        text: shareText
-      });
-
-      getEl('saveMessage').textContent = 'Report shared.';
-    } catch (error) {
-      getEl('saveMessage').textContent = 'Share cancelled or failed.';
-      console.error('Share error:', error);
-    }
-  } else {
-    try {
-      await navigator.clipboard.writeText(shareText);
-      getEl('saveMessage').textContent = 'Share not supported. Report copied to clipboard.';
-    } catch (error) {
-      getEl('saveMessage').textContent = 'Share not supported on this device.';
-      console.error('Clipboard error:', error);
-    }
+  } finally {
+    shareButton.disabled = false;
+    shareButton.textContent = originalLabel;
   }
 }
 
