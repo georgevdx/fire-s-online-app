@@ -1500,6 +1500,66 @@ async function addTwoUpPhotoAppendixToPdf(pdf, photos = []) {
   }
 }
 
+function getReportPdfFileName(
+  currentProject,
+  reportMode = 'live'
+) {
+  const historyIndex =
+    Number(archivedReportContext?.historyIndex);
+
+  const archivedInspection =
+    reportMode === 'archived' &&
+    Number.isInteger(historyIndex) &&
+    historyIndex >= 0
+      ? currentProject?.inspectionHistory?.[historyIndex]
+      : null;
+
+  const reportInspection =
+    liveReportContext?.inspection ||
+    archivedInspection ||
+    currentProject ||
+    {};
+
+  const {
+    premisesName
+  } = getReportShareIdentity(reportInspection);
+
+  const inspectionDateValue =
+    reportInspection.inspectionDate ||
+    currentProject?.inspectionDate ||
+    '';
+
+  const inspectionDate =
+    /^\d{4}-\d{2}-\d{2}/.test(
+      String(inspectionDateValue)
+    )
+      ? String(inspectionDateValue).slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+
+  const reportLabel =
+    reportMode === 'archived'
+      ? 'Fire-S_Archived_Inspection_Report'
+      : 'Fire-S_Inspection_Report';
+
+  const maxPremisesLength =
+    Math.max(
+      18,
+      70 -
+        reportLabel.length -
+        inspectionDate.length -
+        2
+    );
+
+  const safePremisesName =
+    sanitizeFileName(
+      String(premisesName)
+        .replace(/\s+-\s+/g, '-'),
+      'Inspected_Premises'
+    ).slice(0, maxPremisesLength);
+
+  return `${reportLabel}_${safePremisesName}_${inspectionDate}.pdf`;
+}
+
 async function exportReport(options = {}) {
   const returnFile =
     options &&
@@ -1529,21 +1589,16 @@ async function exportReport(options = {}) {
   const currentProject =
     getProjects().find(p => p.id === currentProjectId);
 
-  const projectName =
-    archivedReportContext?.projectName ||
-    currentProject?.projectName ||
-    'Inspection';
-
-  const reportDate =
-    new Date().toISOString().slice(0, 10);
-
-  const reportPrefix =
+  const reportMode =
     archivedReportContext?.mode === 'archived'
-      ? 'Fire-S_Archived_Report'
-      : 'Fire-S_Report';
+      ? 'archived'
+      : 'live';
 
-  const safeProjectName =
-    sanitizeFileName(projectName);
+  const reportFileName =
+    getReportPdfFileName(
+      currentProject,
+      reportMode
+    );
 
   const photosForPdf =
     getPhotosForPdfExport();
@@ -1679,7 +1734,7 @@ pdfClone
   const opt = {
     margin: [15, 12, 15, 12],
 
-    filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
+    filename: reportFileName,
 
     image: {
       type: 'jpeg',
@@ -1756,7 +1811,7 @@ pagebreak: {
     );
 
     const fileName =
-      `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`;
+      reportFileName;
 
     if (returnFile) {
       return {
