@@ -34698,3 +34698,287 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     }
   }, 1200);
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.1 - PHASE 5
+// Finalisation Engine + logical Existing Premises workflow
+// =====================================================
+(function fireSPhase5FinalisationEngine(){
+  'use strict';
+
+  const VERSION = '1.2.1-phase-5';
+  const originalFinishInspection = typeof finishInspection === 'function' ? finishInspection : null;
+  const originalGenerateReport = typeof generateReport === 'function' ? generateReport : null;
+
+  function currentProjectRecord(){
+    const id = String(window.currentProjectId || (typeof currentProjectId !== 'undefined' ? currentProjectId : '') || '');
+    return (typeof getProjects === 'function' ? getProjects() : []).find(project => String(project?.id) === id) || null;
+  }
+
+  function checklistCounts(project){
+    try {
+      if (typeof getProjectCompletionCounts === 'function') {
+        const counts = getProjectCompletionCounts(project) || {};
+        return {
+          total: Number(counts.total || 0),
+          answered: Number(counts.answered ?? Math.max(0, Number(counts.total || 0) - Number(counts.unanswered || 0))),
+          unanswered: Number(counts.unanswered || 0)
+        };
+      }
+    } catch (_) {}
+
+    const fields = Array.from(document.querySelectorAll('.answer-select'));
+    const answered = fields.filter(field => String(field.value || '').trim()).length;
+    return { total: fields.length, answered, unanswered: Math.max(0, fields.length - answered) };
+  }
+
+  function checklistComplete(project){
+    const counts = checklistCounts(project);
+    return counts.total > 0 && counts.unanswered === 0;
+  }
+
+  function isHistoryMode(){
+    return document.body?.classList?.contains('fire-s-history-view-mode') ||
+      Boolean(window.fireSHistoryViewMode);
+  }
+
+  function ensureStyles(){
+    if (document.getElementById('fireSPhase5Styles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSPhase5Styles';
+    style.textContent = `
+      .fire-s-finalise-lock-note{margin:0 20px 18px;padding:12px 14px;border:1px solid #fbbf24;border-radius:10px;background:#fffbeb;color:#78350f;font-size:.86rem;line-height:1.4}
+      .fire-s-finalise-ready{background:#166534!important;color:#fff!important}
+      #finishBtn[disabled],#reportBtn[disabled]{opacity:.48;cursor:not-allowed;filter:grayscale(.25)}
+      .inspection-open-gate-card[disabled]{opacity:.48;cursor:not-allowed!important;transform:none!important;box-shadow:none!important}
+      .inspection-open-gate-card[disabled] .inspection-open-gate-tip{background:#f1f5f9!important;color:#64748b!important;border-color:#e2e8f0!important}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function updateFinalisationControls(){
+    ensureStyles();
+    if (isHistoryMode()) return;
+    const project = currentProjectRecord();
+    if (!project) return;
+    const complete = checklistComplete(project);
+    const finishBtn = document.getElementById('finishBtn');
+    const reportBtn = document.getElementById('reportBtn');
+
+    if (finishBtn) {
+      finishBtn.disabled = !complete;
+      finishBtn.textContent = complete ? 'Finalise Inspection' : 'Complete Checklist to Finalise';
+      finishBtn.title = complete
+        ? 'Finalise this inspection and move the completed record to Inspection History.'
+        : 'Every checklist item must be answered before this inspection can be finalised.';
+    }
+
+    // The final report is a completed-inspection output. Archived reports remain available from History.
+    if (reportBtn) {
+      reportBtn.disabled = !complete;
+      reportBtn.title = complete
+        ? 'Generate the completed inspection report.'
+        : 'Complete every checklist item before generating the final report.';
+    }
+
+    const review = document.getElementById('fireSInspectionReviewPanel');
+    if (review) {
+      review.querySelector('.fire-s-finalise-lock-note')?.remove();
+      if (!complete) {
+        const note = document.createElement('div');
+        note.className = 'fire-s-finalise-lock-note';
+        const counts = checklistCounts(project);
+        note.innerHTML = `<strong>Finalisation locked.</strong> ${counts.unanswered} checklist item${counts.unanswered === 1 ? '' : 's'} must still be answered. You may save and resume this inspection later.`;
+        review.appendChild(note);
+      }
+    }
+  }
+
+  function persistFinalisedLifecycle(projectId){
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0) return;
+    const now = new Date().toISOString();
+    projects[index] = {
+      ...projects[index],
+      inspectionLifecycleStatus: 'finalised',
+      inspectionStatus: 'finalised',
+      archiveStatus: 'completed',
+      inspectionFinalisedAt: projects[index].inspectionFinalisedAt || now,
+      inspectionReviewCompletedAt: projects[index].inspectionReviewCompletedAt || now,
+      phase5FinalisationVersion: VERSION,
+      syncPending: true,
+      lastSaved: now
+    };
+    if (typeof setProjects === 'function') setProjects(projects);
+    else if (typeof writeProjects === 'function') writeProjects(projects);
+  }
+
+  if (originalFinishInspection) {
+    finishInspection = function fireSPhase5FinishInspection(){
+      const project = currentProjectRecord();
+      if (!project) {
+        alert('Save the inspection before finalising it.');
+        return;
+      }
+      const counts = checklistCounts(project);
+      if (!(counts.total > 0 && counts.unanswered === 0)) {
+        alert(`This inspection cannot be finalised yet. ${counts.unanswered} checklist item${counts.unanswered === 1 ? '' : 's'} still require an answer. Save the inspection and continue later.`);
+        updateFinalisationControls();
+        document.getElementById('checklistCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      const confirmed = confirm(
+        `Finalise this inspection?\n\nChecklist: ${counts.answered} / ${counts.total} complete\nPhotos: ${Array.isArray(project.photos) ? project.photos.length : 0} (optional)\n\nThe completed record will be added to Inspection History and become the permanent inspection record.`
+      );
+      if (!confirmed) return;
+
+      const id = project.id;
+      originalFinishInspection();
+      window.setTimeout(() => persistFinalisedLifecycle(id), 80);
+    };
+    window.finishInspection = finishInspection;
+  }
+
+  if (originalGenerateReport) {
+    generateReport = async function fireSPhase5GenerateReport(){
+      // History has its own archived-report path and must remain usable.
+      if (!isHistoryMode()) {
+        const project = currentProjectRecord();
+        if (!project) {
+          alert('Save the inspection before generating the report.');
+          return;
+        }
+        const counts = checklistCounts(project);
+        if (!(counts.total > 0 && counts.unanswered === 0)) {
+          alert(`The final report is not available yet. Complete the remaining ${counts.unanswered} checklist item${counts.unanswered === 1 ? '' : 's'} first.`);
+          return;
+        }
+      }
+      return originalGenerateReport.apply(this, arguments);
+    };
+    window.generateReport = generateReport;
+  }
+
+  // Existing premises workflow: only actions that are valid after a completed cycle are shown.
+  // An unfinished current inspection still bypasses this gate and opens directly in Edit mode.
+  if (typeof showInspectionOpenGate === 'function') {
+    showInspectionOpenGate = function fireSPhase5ShowInspectionOpenGate(projectIdentifier, focusMode){
+      const project = typeof resolveProjectOpenIdentifier === 'function'
+        ? resolveProjectOpenIdentifier(projectIdentifier)
+        : (typeof getProjects === 'function' ? getProjects().find(item => String(item.id) === String(projectIdentifier)) : null);
+      if (!project) return;
+
+      if (typeof ensureInspectionOpenGateStyles === 'function') ensureInspectionOpenGateStyles();
+      if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+
+      const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory : [];
+      const hasHistory = history.length > 0;
+      const latestHistoryIndex = hasHistory ? history.length - 1 : -1;
+      const backdrop = document.createElement('div');
+      backdrop.id = 'inspectionOpenGateBackdrop';
+      backdrop.className = 'inspection-open-gate-backdrop';
+      backdrop.innerHTML = `
+        <div class="inspection-open-gate-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
+          <div class="inspection-open-gate-header">
+            <div class="inspection-open-gate-kicker">Existing premises found</div>
+            <h3 id="inspectionOpenGateTitle">Choose the next valid workflow</h3>
+            <p>The previous completed inspection is protected. Select what you need to do next.</p>
+          </div>
+          <div class="inspection-open-gate-body">
+            <div class="inspection-open-gate-summary">
+              <div><strong>${typeof escapeHtml === 'function' ? escapeHtml(project.projectName || project.siteName || 'Selected premises') : (project.projectName || project.siteName || 'Selected premises')}</strong>
+              <div class="inspection-open-gate-summary-meta">Completed history records: ${history.length}</div></div>
+              <span class="inspection-open-gate-summary-badge">${history.length}</span>
+            </div>
+            <div class="inspection-open-gate-question"><strong>What would you like to do?</strong><span>Only one current inspection is allowed for each premises.</span></div>
+            <div class="inspection-open-gate-actions">
+              <button type="button" class="inspection-open-gate-card inspection-open-gate-green" id="phase5StartNewBtn">
+                <span class="inspection-open-gate-number">1</span><span class="inspection-open-gate-copy"><span class="inspection-open-gate-mode-label">New cycle</span><strong>Start New Inspection</strong><small>Create a clean inspection workspace. Premises information remains available, while Q&amp;A, photos and Action Items start clean.</small></span><span class="inspection-open-gate-icon">＋</span><span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Use for the next site inspection</span>
+              </button>
+              <button type="button" class="inspection-open-gate-card inspection-open-gate-red" id="phase5LatestBtn" ${hasHistory ? '' : 'disabled'}>
+                <span class="inspection-open-gate-number">2</span><span class="inspection-open-gate-copy"><span class="inspection-open-gate-mode-label">Latest completed record</span><strong>View Latest Inspection</strong><small>Open the most recent completed inspection as a protected read-only record.</small></span><span class="inspection-open-gate-icon">▤</span><span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>${hasHistory ? 'Best for quick reference' : 'No completed history available'}</span>
+              </button>
+              <button type="button" class="inspection-open-gate-card inspection-open-gate-blue" id="phase5HistoryBtn" ${hasHistory ? '' : 'disabled'}>
+                <span class="inspection-open-gate-number">3</span><span class="inspection-open-gate-copy"><span class="inspection-open-gate-mode-label">All previous cycles</span><strong>Inspection History</strong><small>View all completed cycles, archived reports and historical photos without changing current data.</small></span><span class="inspection-open-gate-icon">◉</span><span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>${hasHistory ? 'Best for comparison' : 'No completed history available'}</span>
+              </button>
+              <button type="button" class="inspection-open-gate-card inspection-open-gate-orange" id="phase5CloseBtn">
+                <span class="inspection-open-gate-number">4</span><span class="inspection-open-gate-copy"><span class="inspection-open-gate-mode-label">No changes</span><strong>Return to Projects</strong><small>Close this workflow without opening or changing the premises record.</small></span><span class="inspection-open-gate-icon">×</span><span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Safe exit</span>
+              </button>
+            </div>
+            <div class="inspection-open-gate-data-note"><span>●</span><span>Completed inspection records remain protected in Inspection History.</span></div>
+          </div>
+        </div>`;
+      document.body.appendChild(backdrop);
+
+      const close = () => typeof closeInspectionOpenGate === 'function' ? closeInspectionOpenGate() : backdrop.remove();
+
+      document.getElementById('phase5StartNewBtn')?.addEventListener('click', () => {
+        const latest = (typeof getProjects === 'function' ? getProjects() : []).find(item => String(item.id) === String(project.id)) || project;
+        if (typeof hasCurrentIncompleteInspection === 'function' && hasCurrentIncompleteInspection(latest)) {
+          alert('An unfinished current inspection already exists. Fire-S will open it in Edit mode. Complete or delete it before starting a new inspection.');
+          close();
+          openProject(project.id, focusMode, { bypassOpenGate: true });
+          return;
+        }
+        const confirmed = confirm('Start a clean new inspection for this premises? The completed inspection history will remain protected.');
+        if (!confirmed) return;
+        const started = typeof archiveProjectCurrentInspectionAndStartBlank === 'function'
+          ? archiveProjectCurrentInspectionAndStartBlank(project.id)
+          : false;
+        if (!started) return;
+        close();
+        if (typeof renderProjectsList === 'function') renderProjectsList();
+        openProject(project.id, focusMode, { bypassOpenGate: true });
+      });
+
+      document.getElementById('phase5LatestBtn')?.addEventListener('click', () => {
+        if (!hasHistory) return;
+        close();
+        openProject(project.id, focusMode, { bypassOpenGate: true });
+        window.setTimeout(() => {
+          if (typeof openInspectionArchiveFromMore === 'function') openInspectionArchiveFromMore();
+          window.setTimeout(() => {
+            if (typeof viewArchivedInspection === 'function') viewArchivedInspection(project.id, latestHistoryIndex);
+          }, 180);
+        }, 220);
+      });
+
+      document.getElementById('phase5HistoryBtn')?.addEventListener('click', () => {
+        if (!hasHistory) return;
+        close();
+        openProject(project.id, focusMode, { bypassOpenGate: true });
+        window.setTimeout(() => {
+          if (typeof openInspectionArchiveFromMore === 'function') openInspectionArchiveFromMore();
+        }, 220);
+      });
+
+      document.getElementById('phase5CloseBtn')?.addEventListener('click', close);
+      backdrop.addEventListener('click', event => { if (event.target === backdrop) close(); });
+    };
+    window.showInspectionOpenGate = showInspectionOpenGate;
+  }
+
+  document.addEventListener('change', event => {
+    if (event.target?.classList?.contains('answer-select')) {
+      window.setTimeout(updateFinalisationControls, 260);
+    }
+  }, true);
+  window.addEventListener('fireSProjectOpened', () => window.setTimeout(updateFinalisationControls, 650));
+
+  const observer = new MutationObserver(() => {
+    if (!currentProjectRecord() || isHistoryMode()) return;
+    window.clearTimeout(window.__fireSPhase5ControlTimer);
+    window.__fireSPhase5ControlTimer = window.setTimeout(updateFinalisationControls, 80);
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  window.FireSFinalisationEngine = {
+    version: VERSION,
+    refresh: updateFinalisationControls,
+    canFinalise: () => checklistComplete(currentProjectRecord())
+  };
+
+  window.setTimeout(updateFinalisationControls, 1400);
+})();
