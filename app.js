@@ -35494,7 +35494,11 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       window.fireSHistoryLaunchContext ||
       null;
 
-    if (context?.mode !== 'history' || !context?.projectId) return;
+    // The History date list can be opened from either workflow option 3
+    // or from the Inspection History action inside workflow option 2
+    // (View Latest Inspection). In both cases its Close button must return
+    // to the Existing Premises Found workflow, never to the editable screen.
+    if (!context?.projectId) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -35515,6 +35519,6 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   }, true);
 
   window.FireSWorkflowHistoryCloseDirectRouting = {
-    version: '1.2.2-sprint-1f'
+    version: '1.2.2-sprint-1g'
   };
 })();
