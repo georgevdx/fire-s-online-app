@@ -35075,3 +35075,178 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 window.openSelectedHistoryReport = openSelectedHistoryReport;
 window.exportSelectedHistoryPdf = exportSelectedHistoryPdf;
 window.shareSelectedHistoryReport = shareSelectedHistoryReport;
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 1C
+// Historical view return routing + clean workspace reset
+// =====================================================
+(function fireSHistoryReturnRouting(){
+  'use strict';
+
+  const VERSION = '1.2.2-sprint-1c';
+  let historyLaunchContext = null;
+
+  function rememberHistoryLaunch(mode, projectId, focusMode = '') {
+    const resolvedProjectId = String(
+      projectId ||
+      window.currentProjectId ||
+      (typeof currentProjectId !== 'undefined' ? currentProjectId : '') ||
+      ''
+    );
+
+    if (!resolvedProjectId) return;
+
+    historyLaunchContext = {
+      mode: mode === 'latest' ? 'latest' : 'history',
+      projectId: resolvedProjectId,
+      focusMode: focusMode || '',
+      capturedAt: Date.now()
+    };
+
+    window.fireSHistoryLaunchContext = { ...historyLaunchContext };
+  }
+
+  function getHistoryLaunchContext() {
+    const context = historyLaunchContext || window.fireSHistoryLaunchContext;
+    if (!context?.projectId) return null;
+    return context;
+  }
+
+  function clearHistoricalRuntimeState() {
+    clearTimeout(typeof autoSaveTimer !== 'undefined' ? autoSaveTimer : null);
+
+    try {
+      if (typeof exitInspectionHistoryViewMode === 'function') {
+        exitInspectionHistoryViewMode();
+      }
+    } catch (_) {}
+
+    const ids = [
+      'archivedInspectionDetailPanel',
+      'inspectionArchivePanel',
+      'inspectionArchiveLauncher',
+      'siteHistoryPanel',
+      'smartActionEnginePanel'
+    ];
+
+    ids.forEach(id => document.getElementById(id)?.remove());
+
+    try {
+      selectedHistoryInspectionContext = null;
+      archivedReportContext = null;
+      liveReportContext = null;
+      inspectionHistoryViewMode = false;
+    } catch (_) {}
+
+    document.body.classList.remove('fire-s-history-view-mode');
+
+    // Historical photos must never remain in the live workspace.
+    try {
+      currentPhotos = [];
+      if (typeof renderPhotos === 'function') renderPhotos();
+    } catch (_) {}
+
+    const reportSection = document.getElementById('reportSection');
+    if (reportSection) reportSection.style.display = 'none';
+  }
+
+  function returnToExistingPremisesWorkflow(projectId, focusMode = '') {
+    const resolvedProjectId = String(projectId || '');
+    if (!resolvedProjectId) {
+      clearHistoricalRuntimeState();
+      if (typeof resetInspectionSessionState === 'function') {
+        resetInspectionSessionState({ keepProjectId: false });
+      }
+      if (typeof showProjectList === 'function') showProjectList();
+      return;
+    }
+
+    clearHistoricalRuntimeState();
+
+    // Fully clear the temporary live workspace before displaying the decision gate.
+    // This prevents a blank Q&A with photos from the archived record still visible.
+    if (typeof resetInspectionSessionState === 'function') {
+      resetInspectionSessionState({ keepProjectId: false });
+    }
+
+    if (typeof showProjectList === 'function') showProjectList();
+
+    window.setTimeout(() => {
+      if (typeof showInspectionOpenGate === 'function') {
+        showInspectionOpenGate(resolvedProjectId, focusMode || '');
+      }
+    }, 120);
+  }
+
+  // Capture which workflow option opened History before the existing click handlers run.
+  document.addEventListener('click', event => {
+    const button = event.target instanceof Element ? event.target.closest('button') : null;
+    if (!button) return;
+
+    if (button.id === 'phase5LatestBtn') {
+      rememberHistoryLaunch('latest');
+    } else if (button.id === 'phase5HistoryBtn') {
+      rememberHistoryLaunch('history');
+    }
+  }, true);
+
+  const originalCloseArchivedInspectionDetail =
+    typeof window.closeArchivedInspectionDetail === 'function'
+      ? window.closeArchivedInspectionDetail
+      : (typeof closeArchivedInspectionDetail === 'function' ? closeArchivedInspectionDetail : null);
+
+  const routedCloseArchivedInspectionDetail = function fireSRoutedCloseArchivedInspectionDetail(){
+    const context = getHistoryLaunchContext();
+
+    // Latest Inspection is a single protected record. Closing it must return to
+    // Existing Premises Found (1-4), not expose a blank editable workspace.
+    if (context?.mode === 'latest') {
+      returnToExistingPremisesWorkflow(context.projectId, context.focusMode);
+      return;
+    }
+
+    // From the full History list, Close Archived View returns to the date list.
+    if (originalCloseArchivedInspectionDetail) {
+      originalCloseArchivedInspectionDetail.apply(this, arguments);
+    }
+  };
+
+  try { closeArchivedInspectionDetail = routedCloseArchivedInspectionDetail; } catch (_) {}
+  window.closeArchivedInspectionDetail = routedCloseArchivedInspectionDetail;
+
+  const originalCloseInspectionSession =
+    typeof window.closeInspectionSession === 'function'
+      ? window.closeInspectionSession
+      : (typeof closeInspectionSession === 'function' ? closeInspectionSession : null);
+
+  const routedCloseInspectionSession = function fireSRoutedCloseInspectionSession(){
+    const isHistorical = Boolean(
+      inspectionHistoryViewMode ||
+      document.body.classList.contains('fire-s-history-view-mode') ||
+      selectedHistoryInspectionContext ||
+      document.getElementById('inspectionArchivePanel') ||
+      document.getElementById('archivedInspectionDetailPanel')
+    );
+
+    const context = getHistoryLaunchContext();
+
+    if (isHistorical && context?.projectId) {
+      returnToExistingPremisesWorkflow(context.projectId, context.focusMode);
+      return;
+    }
+
+    if (originalCloseInspectionSession) {
+      return originalCloseInspectionSession.apply(this, arguments);
+    }
+  };
+
+  try { closeInspectionSession = routedCloseInspectionSession; } catch (_) {}
+  window.closeInspectionSession = routedCloseInspectionSession;
+
+  window.FireSHistoryReturnRouting = {
+    version: VERSION,
+    remember: rememberHistoryLaunch,
+    returnToWorkflow: returnToExistingPremisesWorkflow,
+    getContext: getHistoryLaunchContext
+  };
+})();
