@@ -35871,3 +35871,150 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   showInspectionOpenGate = wrappedShowInspectionOpenGate;
   window.showInspectionOpenGate = wrappedShowInspectionOpenGate;
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 2.1 PATCH 4
+// Command Centre primary action hierarchy
+// =====================================================
+(function fireSSprint21PrimaryActionHierarchy(){
+  'use strict';
+
+  const VERSION = '1.2.2-sprint-2.1-patch-4';
+  const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
+    (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
+
+  if (typeof previousShowInspectionOpenGate !== 'function') return;
+
+  function ensureStyles(){
+    if (document.getElementById('fireSSprint21PrimaryActionStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSSprint21PrimaryActionStyles';
+    style.textContent = `
+      .fire-s-command-centre-modal .fire-s-command-action-label {
+        margin: 2px 0 9px;
+        color: #526476;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+      }
+      .fire-s-command-centre-modal .inspection-open-gate-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .fire-s-command-centre-modal .inspection-open-gate-card {
+        min-height: 126px;
+        height: 100%;
+      }
+      .fire-s-command-centre-modal .inspection-open-gate-card.fire-s-command-primary-action {
+        grid-column: 1 / -1;
+        min-height: 116px;
+        border-width: 2px;
+        box-shadow: 0 7px 20px rgba(20, 91, 55, .12);
+      }
+      .fire-s-command-centre-modal .inspection-open-gate-card.fire-s-command-secondary-action {
+        min-height: 132px;
+      }
+      .fire-s-command-exit-row {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e2e8ef;
+      }
+      .fire-s-command-exit-row .inspection-open-gate-card {
+        width: 100%;
+        min-height: 70px;
+        margin: 0;
+        box-shadow: none;
+      }
+      .fire-s-command-exit-row .inspection-open-gate-card .inspection-open-gate-copy small,
+      .fire-s-command-exit-row .inspection-open-gate-card .inspection-open-gate-tip {
+        display: none;
+      }
+      .fire-s-command-exit-row .inspection-open-gate-card .inspection-open-gate-mode-label {
+        margin-bottom: 2px;
+      }
+      @media (max-width: 620px) {
+        .fire-s-command-centre-modal .inspection-open-gate-actions {
+          grid-template-columns: 1fr;
+        }
+        .fire-s-command-centre-modal .inspection-open-gate-card.fire-s-command-primary-action {
+          grid-column: auto;
+        }
+        .fire-s-command-centre-modal .inspection-open-gate-card,
+        .fire-s-command-centre-modal .inspection-open-gate-card.fire-s-command-primary-action,
+        .fire-s-command-centre-modal .inspection-open-gate-card.fire-s-command-secondary-action {
+          min-height: 104px;
+        }
+        .fire-s-command-centre-modal .inspection-open-gate-tip {
+          display: none;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function setText(root, selector, value){
+    const node = root?.querySelector(selector);
+    if (node) node.textContent = value;
+  }
+
+  function decorate(){
+    ensureStyles();
+    const modal = document.querySelector('#inspectionOpenGateBackdrop .fire-s-command-centre-modal') ||
+      document.querySelector('#inspectionOpenGateBackdrop .inspection-open-gate-modal');
+    if (!modal || modal.dataset.fireSPrimaryActions === VERSION) return;
+
+    const actions = modal.querySelector('.inspection-open-gate-actions');
+    const start = modal.querySelector('#phase5StartNewBtn');
+    const latest = modal.querySelector('#phase5LatestBtn');
+    const history = modal.querySelector('#phase5HistoryBtn');
+    const close = modal.querySelector('#phase5CloseBtn');
+    if (!actions || !start || !latest || !history || !close) return;
+
+    modal.dataset.fireSPrimaryActions = VERSION;
+
+    if (!actions.previousElementSibling?.classList?.contains('fire-s-command-action-label')) {
+      const label = document.createElement('div');
+      label.className = 'fire-s-command-action-label';
+      label.textContent = 'Inspection actions';
+      actions.parentNode.insertBefore(label, actions);
+    }
+
+    start.classList.add('fire-s-command-primary-action');
+    latest.classList.add('fire-s-command-secondary-action');
+    history.classList.add('fire-s-command-secondary-action');
+
+    setText(start, '.inspection-open-gate-mode-label', 'Current workflow');
+    setText(start, 'strong', 'Start New Inspection');
+    setText(start, 'small', 'Open a clean inspection workspace for the next site inspection.');
+
+    setText(latest, '.inspection-open-gate-mode-label', 'Most recent completed record');
+    setText(latest, 'strong', 'Latest Inspection');
+    setText(latest, 'small', 'Open the latest completed inspection in protected read-only mode.');
+
+    setText(history, '.inspection-open-gate-mode-label', 'All completed records');
+    setText(history, 'strong', 'Inspection History');
+    setText(history, 'small', 'Browse every completed inspection without changing current data.');
+
+    setText(close, '.inspection-open-gate-mode-label', 'Close Command Centre');
+    setText(close, 'strong', 'Return to Projects');
+
+    let exitRow = modal.querySelector('.fire-s-command-exit-row');
+    if (!exitRow) {
+      exitRow = document.createElement('div');
+      exitRow.className = 'fire-s-command-exit-row';
+      actions.insertAdjacentElement('afterend', exitRow);
+    }
+    exitRow.appendChild(close);
+  }
+
+  const wrapped = function fireSSprint21PrimaryActionGate(){
+    const result = previousShowInspectionOpenGate.apply(this, arguments);
+    window.setTimeout(decorate, 0);
+    return result;
+  };
+
+  showInspectionOpenGate = wrapped;
+  window.showInspectionOpenGate = wrapped;
+})();
