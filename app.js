@@ -18666,6 +18666,55 @@ function openInspectionArchiveFromMore() {
   }
 }
 
+function closeInspectionHistoryToPremisesWorkflow(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') {
+      event.stopImmediatePropagation();
+    }
+  }
+
+  const routedContext =
+    (window.FireSHistoryReturnRouting &&
+      typeof window.FireSHistoryReturnRouting.getContext === 'function'
+      ? window.FireSHistoryReturnRouting.getContext()
+      : null) ||
+    window.fireSHistoryLaunchContext ||
+    null;
+
+  const projectId = String(
+    routedContext?.projectId ||
+    window.currentProjectId ||
+    (typeof currentProjectId !== 'undefined' ? currentProjectId : '') ||
+    ''
+  );
+
+  const focusMode = routedContext?.focusMode || '';
+
+  if (projectId) {
+    const router = window.FireSHistoryReturnRouting;
+    if (router && typeof router.returnToWorkflow === 'function') {
+      router.returnToWorkflow(projectId, focusMode);
+      return false;
+    }
+
+    if (typeof fireSReturnFromHistoricalViewToPremisesWorkflow === 'function') {
+      fireSReturnFromHistoricalViewToPremisesWorkflow(projectId, focusMode);
+      return false;
+    }
+  }
+
+  // Safe fallback: never expose the editable inspection behind History.
+  document.getElementById('archivedInspectionDetailPanel')?.remove();
+  document.getElementById('inspectionArchivePanel')?.remove();
+  exitInspectionHistoryViewMode();
+  if (typeof showProjectList === 'function') showProjectList();
+  return false;
+}
+
+window.closeInspectionHistoryToPremisesWorkflow = closeInspectionHistoryToPremisesWorkflow;
+
 function closeInspectionArchivePanel() {
   const launchContext =
     (window.FireSHistoryReturnRouting &&
@@ -18798,7 +18847,7 @@ function renderInspectionArchive(project) {
     <div class="archive-panel-top">
       <h3>Inspection History</h3>
       <div class="archive-panel-actions">
-        <button type="button" class="small-btn" id="closeInspectionHistoryBtn">Close</button>
+        <button type="button" class="small-btn" id="closeInspectionHistoryBtn" onclick="return closeInspectionHistoryToPremisesWorkflow(event)">Close</button>
       </div>
     </div>
 
@@ -18823,7 +18872,9 @@ function renderInspectionArchive(project) {
   });
 
   const closeBtn = panel.querySelector('#closeInspectionHistoryBtn');
-  if (closeBtn) closeBtn.addEventListener('click', closeInspectionArchivePanel);
+  if (closeBtn) {
+    closeBtn.setAttribute('aria-label', 'Close Inspection History and return to premises workflow');
+  }
 }
 
 function renderSiteHistory(project) {
