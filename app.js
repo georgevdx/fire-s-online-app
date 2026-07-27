@@ -35573,3 +35573,237 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     version: '1.2.2-sprint-1g'
   };
 })();
+
+/* ============================================================================
+   RC 1.2.2 — Sprint 2.1 Patch 2
+   Premises Command Centre visual foundation
+   Safe presentation layer only: retains the existing workflow handlers.
+   ========================================================================== */
+(function fireSSprint21CommandCentreFoundation(){
+  if (window.__fireSSprint21CommandCentreFoundationInstalled) return;
+  window.__fireSSprint21CommandCentreFoundationInstalled = true;
+
+  const previousShowInspectionOpenGate = typeof window.showInspectionOpenGate === 'function'
+    ? window.showInspectionOpenGate
+    : (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
+  if (!previousShowInspectionOpenGate) return;
+
+  function text(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function dateValue(value){
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatDate(value){
+    const date = dateValue(value);
+    if (!date) return '—';
+    try {
+      return new Intl.DateTimeFormat('en-ZA', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      }).format(date);
+    } catch (_error) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  function historyTimestamp(entry){
+    const candidates = [
+      entry?.completedAt,
+      entry?.finalisedAt,
+      entry?.finalizedAt,
+      entry?.inspectionDate,
+      entry?.archivedAt,
+      entry?.date,
+      entry?.createdAt
+    ];
+    for (const candidate of candidates) {
+      const date = dateValue(candidate);
+      if (date) return date.getTime();
+    }
+    return 0;
+  }
+
+  function latestInspectionDate(project){
+    const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+    const latest = history.slice().sort((a, b) => historyTimestamp(b) - historyTimestamp(a))[0];
+    return latest?.completedAt || latest?.finalisedAt || latest?.finalizedAt ||
+      latest?.inspectionDate || latest?.archivedAt || latest?.date || project?.completedAt ||
+      project?.inspectionDate || '';
+  }
+
+  function nextInspectionDate(project){
+    const candidates = [
+      project?.nextInspectionDate,
+      project?.followUpDate,
+      project?.scheduledDate,
+      project?.nextDueDate,
+      project?.dueDate
+    ];
+    return candidates.find(candidate => dateValue(candidate)) || '';
+  }
+
+  function isClosed(value){
+    return ['closed', 'complete', 'completed', 'resolved'].includes(text(value).toLowerCase());
+  }
+
+  function openActions(project){
+    const items = Array.isArray(project?.actions)
+      ? project.actions
+      : (Array.isArray(project?.actionItems) ? project.actionItems : []);
+    return items.filter(item => !isClosed(item?.status)).length;
+  }
+
+  function hasCriticalOpenAction(project){
+    const items = Array.isArray(project?.actions)
+      ? project.actions
+      : (Array.isArray(project?.actionItems) ? project.actionItems : []);
+    return items.some(item => {
+      if (isClosed(item?.status)) return false;
+      const priority = text(item?.priority || item?.severity || item?.risk).toLowerCase();
+      return priority.includes('critical') || priority.includes('high');
+    });
+  }
+
+  function hasOverdueOpenAction(project){
+    const items = Array.isArray(project?.actions)
+      ? project.actions
+      : (Array.isArray(project?.actionItems) ? project.actionItems : []);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return items.some(item => {
+      if (isClosed(item?.status)) return false;
+      const due = dateValue(item?.dueDate || item?.targetDate || item?.expiryDate);
+      return due && due.getTime() < today.getTime();
+    });
+  }
+
+  function servicesDue(project){
+    const collections = [project?.services, project?.serviceRecords, project?.equipmentServices]
+      .filter(Array.isArray);
+    if (!collections.length) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return collections.flat().filter(item => {
+      if (isClosed(item?.status)) return false;
+      const due = dateValue(item?.dueDate || item?.nextServiceDate || item?.expiryDate);
+      return due && due.getTime() <= today.getTime();
+    }).length;
+  }
+
+  function health(project){
+    if (hasCriticalOpenAction(project) || hasOverdueOpenAction(project)) {
+      return { label: 'High Risk', className: 'fire-s-command-health-high', symbol: '●' };
+    }
+    if (openActions(project) > 0) {
+      return { label: 'Attention Required', className: 'fire-s-command-health-attention', symbol: '●' };
+    }
+    return { label: 'Healthy', className: 'fire-s-command-health-healthy', symbol: '●' };
+  }
+
+  function resolveProject(projectIdentifier){
+    if (typeof resolveProjectOpenIdentifier === 'function') {
+      const resolved = resolveProjectOpenIdentifier(projectIdentifier);
+      if (resolved) return resolved;
+    }
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    return projects.find(item => String(item?.id) === String(projectIdentifier)) || null;
+  }
+
+  function ensureStyles(){
+    if (document.getElementById('fireSSprint21CommandCentreStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSSprint21CommandCentreStyles';
+    style.textContent = `
+      .inspection-open-gate-modal.fire-s-command-centre-modal { max-width: 840px; }
+      .fire-s-command-centre-modal .inspection-open-gate-header { padding-bottom: 18px; }
+      .fire-s-command-centre-modal .inspection-open-gate-kicker { letter-spacing: .08em; }
+      .fire-s-command-centre-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+      .fire-s-command-centre-title-row h3 { margin:0; }
+      .fire-s-command-health { flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:800; white-space:nowrap; border:1px solid transparent; }
+      .fire-s-command-health-healthy { background:#e9f8ef; color:#176b3a; border-color:#b9e7ca; }
+      .fire-s-command-health-attention { background:#fff7df; color:#875f00; border-color:#eed98b; }
+      .fire-s-command-health-high { background:#fdeaea; color:#9d2525; border-color:#efb6b6; }
+      .fire-s-command-centre-modal .inspection-open-gate-summary { display:none; }
+      .fire-s-command-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0 0 18px; }
+      .fire-s-command-metric { min-width:0; padding:13px 12px; border:1px solid #dfe6ed; border-radius:13px; background:#fff; box-shadow:0 3px 12px rgba(23,43,66,.05); }
+      .fire-s-command-metric span { display:block; color:#687887; font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; }
+      .fire-s-command-metric strong { display:block; overflow:hidden; text-overflow:ellipsis; margin-top:5px; color:#172b3f; font-size:15px; line-height:1.25; }
+      .fire-s-command-centre-modal .inspection-open-gate-question { margin-top:0; }
+      .fire-s-command-centre-modal .inspection-open-gate-actions { margin-top:12px; }
+      @media (max-width:720px) {
+        .fire-s-command-centre-title-row { display:block; }
+        .fire-s-command-health { margin-top:10px; }
+        .fire-s-command-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      }
+      @media (max-width:420px) {
+        .fire-s-command-metrics { gap:8px; }
+        .fire-s-command-metric { padding:11px 10px; }
+        .fire-s-command-metric strong { font-size:14px; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function decorate(project){
+    ensureStyles();
+    const modal = document.querySelector('#inspectionOpenGateBackdrop .inspection-open-gate-modal');
+    if (!modal || !project) return;
+    modal.classList.add('fire-s-command-centre-modal');
+
+    const header = modal.querySelector('.inspection-open-gate-header');
+    const kicker = header?.querySelector('.inspection-open-gate-kicker');
+    const title = header?.querySelector('h3');
+    const paragraph = header?.querySelector('p');
+    const body = modal.querySelector('.inspection-open-gate-body');
+    const question = body?.querySelector('.inspection-open-gate-question');
+    if (kicker) kicker.textContent = '▦ Premises Command Centre';
+    if (paragraph) paragraph.textContent = 'Premises status, inspection history and the next valid action in one place.';
+
+    const state = health(project);
+    if (title && !header.querySelector('.fire-s-command-centre-title-row')) {
+      const row = document.createElement('div');
+      row.className = 'fire-s-command-centre-title-row';
+      title.parentNode.insertBefore(row, title);
+      row.appendChild(title);
+      const badge = document.createElement('span');
+      badge.className = `fire-s-command-health ${state.className}`;
+      badge.innerHTML = `<span aria-hidden="true">${state.symbol}</span>${state.label}`;
+      row.appendChild(badge);
+    }
+
+    if (body && question && !body.querySelector('.fire-s-command-metrics')) {
+      const due = servicesDue(project);
+      const metrics = document.createElement('div');
+      metrics.className = 'fire-s-command-metrics';
+      metrics.setAttribute('aria-label', 'Premises quick information');
+      metrics.innerHTML = `
+        <div class="fire-s-command-metric"><span>Last Inspection</span><strong>${formatDate(latestInspectionDate(project))}</strong></div>
+        <div class="fire-s-command-metric"><span>Next Inspection</span><strong>${formatDate(nextInspectionDate(project))}</strong></div>
+        <div class="fire-s-command-metric"><span>Open Actions</span><strong>${openActions(project)}</strong></div>
+        <div class="fire-s-command-metric"><span>Services Due</span><strong>${due == null ? '—' : due}</strong></div>
+      `;
+      body.insertBefore(metrics, question);
+    }
+
+    if (question) {
+      const heading = question.querySelector('strong');
+      const copy = question.querySelector('span');
+      if (heading) heading.textContent = 'Choose the next action';
+      if (copy) copy.textContent = 'Only valid actions are shown. Historical inspection records remain protected.';
+    }
+  }
+
+  const wrappedShowInspectionOpenGate = function fireSSprint21ShowCommandCentre(projectIdentifier, focusMode){
+    const project = resolveProject(projectIdentifier);
+    const result = previousShowInspectionOpenGate.apply(this, arguments);
+    window.setTimeout(() => decorate(resolveProject(projectIdentifier) || project), 0);
+    return result;
+  };
+
+  showInspectionOpenGate = wrappedShowInspectionOpenGate;
+  window.showInspectionOpenGate = wrappedShowInspectionOpenGate;
+})();
