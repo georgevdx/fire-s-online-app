@@ -55,10 +55,11 @@ let siteReadyPreflightOpen = false;
 let currentPhotos = [];
 let archivedReportContext = null;
 let liveReportContext = null;
+let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.0B - User Choice Layer';
+const APP_VERSION = 'RC 1.2.1 - Phase 2 History Isolation';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -268,6 +269,8 @@ function resetInspectionSessionState(options = {}) {
   window.currentProject = null;
   currentPhotos = [];
   archivedReportContext = null;
+  inspectionHistoryViewMode = false;
+  document.body.classList.remove('fire-s-history-view-mode');
   followUpFindingModeActive = false;
   followUpFindingNavIndexes = [];
   followUpFindingNavPosition = 0;
@@ -6345,6 +6348,9 @@ function updateFloatingBackButton() {
 }
 
 function showProjectList() {
+  if (inspectionHistoryViewMode) {
+    exitInspectionHistoryViewMode();
+  }
    if (!currentUserProfile) {
   currentUserProfile = {
     id: 'local-user',
@@ -9235,6 +9241,19 @@ function getCurrentFormProjectSnapshot() {
 }
 
 function updateProjectReadinessPanel() {
+  // Phase 2: Inspection History is a read-only snapshot. Never calculate
+  // current-workspace Smart Actions while the history view is active.
+  if (inspectionHistoryViewMode || document.body.classList.contains('fire-s-history-view-mode')) {
+    const historyQuickSummary = document.getElementById('quickReadinessSummary');
+    const historyOldPanel = document.getElementById('projectReadinessPanel');
+    if (historyQuickSummary) historyQuickSummary.innerHTML = '';
+    if (historyOldPanel) {
+      historyOldPanel.innerHTML = '';
+      historyOldPanel.style.display = 'none';
+    }
+    return;
+  }
+
   const quickSummary =
     document.getElementById('quickReadinessSummary');
 
@@ -9402,6 +9421,8 @@ function updateProjectReadinessPanel() {
 }
 
 function handleSmartQuickLink(action) {
+  if (inspectionHistoryViewMode) return;
+
   if (action === 'missing-info') {
     focusInspectionSection('projectDetailsCard');
 
@@ -18156,6 +18177,24 @@ const photosHtml =
     </div>
 
     <div class="report-block">
+      <h3>Archived Q&amp;A</h3>
+      ${answersHtml}
+    </div>
+
+    ${
+      inspection.followUpNotes || inspection.followUpRequired || inspection.followUpDate
+        ? `
+          <div class="report-block">
+            <h3>Follow-up Record</h3>
+            <div><strong>Required:</strong> ${escapeHtml(inspection.followUpRequired || 'No')}</div>
+            <div><strong>Date:</strong> ${escapeHtml(inspection.followUpDate || '-')}</div>
+            <div><strong>Notes:</strong> ${escapeHtml(inspection.followUpNotes || 'No notes provided.')}</div>
+          </div>
+        `
+        : ''
+    }
+
+    <div class="report-block">
       <h3>Archived Photos</h3>
       ${photosHtml}
     </div>
@@ -18236,13 +18275,79 @@ function prepareInspectionArchiveButton(project) {
   }
 }
 
+function ensureInspectionHistoryIsolationStyles() {
+  if (document.getElementById('inspectionHistoryIsolationStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'inspectionHistoryIsolationStyles';
+  style.textContent = `
+    body.fire-s-history-view-mode #inspectionQuickActions,
+    body.fire-s-history-view-mode #projectDetailsCard,
+    body.fire-s-history-view-mode #checklistCard,
+    body.fire-s-history-view-mode #photoEvidenceCard,
+    body.fire-s-history-view-mode #nextInspectionCard,
+    body.fire-s-history-view-mode #smartActionEnginePanel,
+    body.fire-s-history-view-mode #finishSummaryBanner,
+    body.fire-s-history-view-mode .back-to-quick-links-btn {
+      display: none !important;
+    }
+
+    body.fire-s-history-view-mode #inspectionArchivePanel,
+    body.fire-s-history-view-mode #archivedInspectionDetailPanel,
+    body.fire-s-history-view-mode #reportSection {
+      display: block;
+    }
+
+    .inspection-history-readonly-banner {
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid #b9d5ef;
+      border-radius: 10px;
+      background: #eef7ff;
+      color: #173b5f;
+      font-weight: 700;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function enterInspectionHistoryViewMode() {
+  ensureInspectionHistoryIsolationStyles();
+  inspectionHistoryViewMode = true;
+  document.body.classList.add('fire-s-history-view-mode');
+  setWorkflowGateNoWriteLock(true);
+  clearTimeout(autoSaveTimer);
+
+  const quickSummary = document.getElementById('quickReadinessSummary');
+  if (quickSummary) quickSummary.innerHTML = '';
+
+  const smartActionPanel = document.getElementById('smartActionEnginePanel');
+  if (smartActionPanel) smartActionPanel.remove();
+}
+
+function exitInspectionHistoryViewMode() {
+  inspectionHistoryViewMode = false;
+  document.body.classList.remove('fire-s-history-view-mode');
+  setWorkflowGateNoWriteLock(false);
+
+  const archivedDetail = document.getElementById('archivedInspectionDetailPanel');
+  if (archivedDetail) archivedDetail.remove();
+
+  if (currentProjectId && document.getElementById('projectFormSection')?.style.display !== 'none') {
+    updateProjectReadinessPanel();
+  }
+}
+
 function openInspectionArchiveFromMore() {
+  enterInspectionHistoryViewMode();
+
   const projects = getProjects();
   const project = projects.find(
     p => p.id === currentProjectId
   );
 
   if (!project) {
+    exitInspectionHistoryViewMode();
     alert('Open an inspection first.');
     return;
   }
@@ -18267,6 +18372,8 @@ function closeInspectionArchivePanel() {
   if (panel) {
     panel.remove();
   }
+
+  exitInspectionHistoryViewMode();
 }
 
 function renderInspectionArchive(project) {
@@ -18495,6 +18602,10 @@ function renderInspectionArchive(project) {
           Close Archive
         </button>
       </div>
+    </div>
+
+    <div class="inspection-history-readonly-banner">
+      Read-only Inspection History — current inspection data and Smart Actions are not used in this view.
     </div>
 
     <div class="note">
