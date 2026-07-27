@@ -12153,6 +12153,26 @@ function hasActiveInspectionDataForOpenGate(project) {
   );
 }
 
+function isInspectionChecklistComplete(project) {
+  if (!project) return false;
+  const completion = getProjectCompletionCounts(project);
+  return completion.total > 0 && completion.unanswered === 0;
+}
+
+function hasCurrentIncompleteInspection(project) {
+  if (!project) return false;
+
+  const isFinalised = Boolean(
+    project.completedAt ||
+    project.archivedAt ||
+    String(project.archiveStatus || '').toLowerCase() === 'completed' ||
+    String(project.scheduledStatus || '').toLowerCase() === 'completed'
+  );
+
+  if (isFinalised) return false;
+  return hasActiveInspectionDataForOpenGate(project);
+}
+
 function shouldShowInspectionOpenGate(project, focusMode) {
   if (!project) return false;
 
@@ -12162,7 +12182,13 @@ function shouldShowInspectionOpenGate(project, focusMode) {
   // Scheduled fresh inspections already have a specific workflow.
   if (project.scheduleFreshInspection === true) return false;
 
-  return hasActiveInspectionDataForOpenGate(project);
+  // Phase 1 lifecycle rule: an unfinished current inspection resumes immediately.
+  // The user must complete or delete it before a new cycle can be started.
+  if (hasCurrentIncompleteInspection(project)) return false;
+
+  // Completed premises/history may still show the workflow choice screen.
+  return hasActiveInspectionDataForOpenGate(project) ||
+    (Array.isArray(project.inspectionHistory) && project.inspectionHistory.length > 0);
 }
 
 function ensureInspectionOpenGateStyles() {
@@ -12646,6 +12672,13 @@ function archiveProjectCurrentInspectionAndStartBlank(projectId) {
   }
 
   const original = projects[index];
+
+  // Phase 1 hard guard: incomplete current work may be saved, but never archived.
+  if (hasCurrentIncompleteInspection(original) && !isInspectionChecklistComplete(original)) {
+    alert('Complete all checklist items before moving this inspection to Inspection History.');
+    return false;
+  }
+
   const inspectionHistory = archiveCurrentInspectionCycle(
     original,
     'manual_archive_from_open_gate'
@@ -12818,8 +12851,24 @@ function showInspectionOpenGate(projectId, focusMode) {
   const archiveBtn = document.getElementById('openGateArchiveBtn');
   if (archiveBtn) {
     archiveBtn.addEventListener('click', () => {
+      const latestProject = getProjects().find(item => item.id === project.id) || project;
+
+      if (hasCurrentIncompleteInspection(latestProject)) {
+        alert(
+          'This premises already has an unfinished current inspection. Fire-S will open it in Edit mode. Complete or delete the current inspection before starting a new one.'
+        );
+        closeInspectionOpenGate();
+        openProject(project.id, focusMode, { bypassOpenGate: true });
+        return;
+      }
+
+      if (!isInspectionChecklistComplete(latestProject) && hasActiveInspectionDataForOpenGate(latestProject)) {
+        alert('The current inspection cannot be moved to Inspection History until every checklist item has been answered.');
+        return;
+      }
+
       const confirmed = confirm(
-        'Start a new inspection for this premises? The current inspection will be saved to History first. No data will be deleted.'
+        'Start a new inspection for this premises? The completed current inspection will be saved to History first. No data will be deleted.'
       );
 
       if (!confirmed) return;
@@ -12889,6 +12938,12 @@ function openProject(projectId, focusMode, options = {}) {
   if (!options.bypassOpenGate && shouldShowInspectionOpenGate(project, focusMode)) {
     showInspectionOpenGate(project.id, focusMode);
     return;
+  }
+
+  // Phase 1: unfinished current inspections always open directly in edit mode.
+  // This preserves the single-current-inspection rule and resumes exactly where work stopped.
+  if (!options.bypassOpenGate && hasCurrentIncompleteInspection(project)) {
+    console.info('Fire-S lifecycle: resuming existing incomplete inspection', project.id);
   }
 
   resetInspectionSessionState({ keepProjectId: true });
