@@ -55,6 +55,7 @@ let currentProjectSummaryId = null;
 let siteReadyPreflightOpen = false;
 let currentPhotos = [];
 let archivedReportContext = null;
+let selectedHistoryInspectionContext = null;
 let liveReportContext = null;
 let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
@@ -271,6 +272,8 @@ function resetInspectionSessionState(options = {}) {
   currentPhotos = [];
   archivedReportContext = null;
   inspectionHistoryViewMode = false;
+  selectedHistoryInspectionContext = null;
+  archivedReportContext = null;
   document.body.classList.remove('fire-s-history-view-mode');
   followUpFindingModeActive = false;
   followUpFindingNavIndexes = [];
@@ -17959,6 +17962,147 @@ ${photosHtml}
   });
 }
 
+
+function updateHistoryActionBarForSelection() {
+  const historyMode = inspectionHistoryViewMode || document.body.classList.contains('fire-s-history-view-mode');
+  if (!historyMode) return;
+
+  const hasSelection = Boolean(
+    selectedHistoryInspectionContext &&
+    Number.isInteger(Number(selectedHistoryInspectionContext.historyIndex))
+  );
+
+  const saveBtn = document.getElementById('saveBtn');
+  const finishBtn = document.getElementById('finishBtn');
+  const reportBtn = document.getElementById('reportBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const actionMenuBtn = document.getElementById('actionMenuBtn');
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.title = 'Inspection History is read-only.';
+  }
+  if (finishBtn) {
+    finishBtn.disabled = true;
+    finishBtn.textContent = 'History: Read-only';
+    finishBtn.title = 'Historical inspection records cannot be edited or finalised again.';
+  }
+  if (actionMenuBtn) {
+    actionMenuBtn.textContent = hasSelection ? 'More' : 'More';
+    actionMenuBtn.title = hasSelection
+      ? 'Report actions apply to the selected historical inspection.'
+      : 'Select an inspection date before opening its report.';
+  }
+  if (reportBtn) {
+    reportBtn.disabled = !hasSelection;
+    reportBtn.textContent = hasSelection ? 'Historical Report' : 'Select History Date';
+    reportBtn.title = hasSelection
+      ? 'Open the report for the selected historical inspection.'
+      : 'Select an inspection date first.';
+  }
+  if (exportBtn) {
+    exportBtn.disabled = !hasSelection;
+    exportBtn.textContent = hasSelection ? 'Historical PDF' : 'PDF';
+    exportBtn.title = hasSelection
+      ? 'Export the selected historical inspection as PDF.'
+      : 'Select an inspection date first.';
+  }
+  if (shareBtn) {
+    shareBtn.disabled = !hasSelection;
+    shareBtn.title = hasSelection
+      ? 'Share the selected historical inspection report.'
+      : 'Select an inspection date first.';
+  }
+}
+
+function restoreCurrentInspectionActionBar() {
+  const saveBtn = document.getElementById('saveBtn');
+  const finishBtn = document.getElementById('finishBtn');
+  const reportBtn = document.getElementById('reportBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const shareBtn = document.getElementById('shareBtn');
+
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.title = '';
+  }
+  if (finishBtn) {
+    finishBtn.textContent = 'Finish';
+    finishBtn.title = '';
+  }
+  if (reportBtn) {
+    reportBtn.textContent = 'Report';
+    reportBtn.title = '';
+  }
+  if (exportBtn) {
+    exportBtn.disabled = false;
+    exportBtn.textContent = 'PDF';
+    exportBtn.title = '';
+  }
+  if (shareBtn) {
+    shareBtn.disabled = false;
+    shareBtn.title = '';
+  }
+
+  try {
+    if (typeof window.fireSUpdateFinalisationControls === 'function') {
+      window.fireSUpdateFinalisationControls();
+    }
+  } catch (_) {}
+}
+
+function openSelectedHistoryReport() {
+  const context = selectedHistoryInspectionContext;
+  if (!context) {
+    alert('Select an inspection date first.');
+    return false;
+  }
+  generateArchivedInspectionReport(context.projectId, Number(context.historyIndex));
+  return true;
+}
+
+function exportSelectedHistoryPdf() {
+  if (!openSelectedHistoryReport()) return;
+  exportReport();
+}
+
+function shareSelectedHistoryReport() {
+  if (!openSelectedHistoryReport()) return;
+  shareReport();
+}
+
+function installHistoryReportActionRouting() {
+  if (window.__fireSHistoryReportActionRoutingInstalled) return;
+  window.__fireSHistoryReportActionRoutingInstalled = true;
+
+  document.addEventListener('click', event => {
+    if (!(inspectionHistoryViewMode || document.body.classList.contains('fire-s-history-view-mode'))) return;
+
+    const target = event.target instanceof Element ? event.target.closest('button') : null;
+    if (!target) return;
+
+    if (target.id === 'reportBtn') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openSelectedHistoryReport();
+    } else if (target.id === 'exportBtn') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      exportSelectedHistoryPdf();
+    } else if (target.id === 'shareBtn') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      shareSelectedHistoryReport();
+    } else if (target.id === 'saveBtn' || target.id === 'finishBtn') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+}
+
+installHistoryReportActionRouting();
+
 function viewArchivedInspection(projectId, historyIndex) {
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
@@ -17968,6 +18112,13 @@ function viewArchivedInspection(projectId, historyIndex) {
   const inspection = project.inspectionHistory[historyIndex];
 
   if (!inspection) return;
+
+  selectedHistoryInspectionContext = {
+    projectId,
+    historyIndex: Number(historyIndex)
+  };
+  archivedReportContext = null;
+  updateHistoryActionBarForSelection();
 
   const existing =
     document.getElementById('archivedInspectionDetailPanel');
@@ -18122,6 +18273,24 @@ const photosHtml =
       </button>
     </div>
 
+    <div class="project-summary-actions inspection-history-report-actions">
+      <button
+        type="button"
+        class="primary-btn"
+        onclick="openSelectedHistoryReport()"
+      >
+        View Historical Report
+      </button>
+
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="exportSelectedHistoryPdf()"
+      >
+        Export Historical PDF
+      </button>
+    </div>
+
     <h3>Archived Inspection Detail</h3>
 
     <div class="report-block">
@@ -18228,6 +18397,10 @@ function closeArchivedInspectionDetail() {
   if (panel) {
     panel.remove();
   }
+
+  selectedHistoryInspectionContext = null;
+  archivedReportContext = null;
+  updateHistoryActionBarForSelection();
 }
 
 function prepareInspectionArchiveButton(project) {
@@ -18375,6 +18548,8 @@ function ensureInspectionHistoryIsolationStyles() {
 function enterInspectionHistoryViewMode() {
   ensureInspectionHistoryIsolationStyles();
   inspectionHistoryViewMode = true;
+  selectedHistoryInspectionContext = null;
+  archivedReportContext = null;
   document.body.classList.add('fire-s-history-view-mode');
   setWorkflowGateNoWriteLock(true);
   clearTimeout(autoSaveTimer);
@@ -18384,6 +18559,8 @@ function enterInspectionHistoryViewMode() {
 
   const smartActionPanel = document.getElementById('smartActionEnginePanel');
   if (smartActionPanel) smartActionPanel.remove();
+
+  updateHistoryActionBarForSelection();
 }
 
 function exitInspectionHistoryViewMode() {
@@ -18393,6 +18570,8 @@ function exitInspectionHistoryViewMode() {
 
   const archivedDetail = document.getElementById('archivedInspectionDetailPanel');
   if (archivedDetail) archivedDetail.remove();
+
+  restoreCurrentInspectionActionBar();
 
   if (currentProjectId && document.getElementById('projectFormSection')?.style.display !== 'none') {
     updateProjectReadinessPanel();
@@ -34894,3 +35073,8 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
   window.setTimeout(updateFinalisationControls, 1400);
 })();
+
+// RC 1.2.2 Sprint 1A — selected History report routing
+window.openSelectedHistoryReport = openSelectedHistoryReport;
+window.exportSelectedHistoryPdf = exportSelectedHistoryPdf;
+window.shareSelectedHistoryReport = shareSelectedHistoryReport;
