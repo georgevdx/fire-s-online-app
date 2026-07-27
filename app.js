@@ -36542,13 +36542,13 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 })();
 
 // =====================================================
-// FIRE-S RC 1.2.2 - SPRINT 2.1 PATCH 8
-// Premises Command Centre v1.0 - unified snapshot layout
+// FIRE-S RC 1.2.2 - SPRINT 2.1 PATCH 9
+// Inspection Lifecycle Engine v1 + accurate Today action
 // =====================================================
 (function fireSSprint21CommandCentreV1(){
   'use strict';
 
-  const VERSION = '1.2.2-sprint-2.1-patch-8';
+  const VERSION = '1.2.2-sprint-2.1-patch-9';
   const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
     (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
   if (typeof previousShowInspectionOpenGate !== 'function') return;
@@ -36651,13 +36651,24 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const percentage = total ? Math.round((answered / total) * 100) : 0;
     const explicit = lower(project?.inspectionStatus || project?.status || project?.scheduledStatus);
     const hasData = answered > 0 || photos.length > 0;
-    if (['ready_for_review', 'ready for review', 'review'].includes(explicit)) {
-      return { label:'Ready for Review', percentage:Math.max(percentage, 1), hasCurrent:true, photos:photos.length };
+    const hasCurrentFlag = Boolean(
+      project?.currentInspectionId ||
+      project?.currentInspection ||
+      project?.inspectionStartedAt ||
+      project?.inspectionCreatedAt ||
+      ['created', 'draft', 'in_progress', 'in progress', 'active', 'ready_for_review', 'ready for review', 'review'].includes(explicit)
+    );
+
+    if (['ready_for_review', 'ready for review', 'review'].includes(explicit) || (total > 0 && answered >= total)) {
+      return { lifecycle:'READY_FOR_REVIEW', label:'Ready for Review', percentage:100, hasCurrent:true, photos:photos.length };
     }
-    if (hasData || ['draft', 'in_progress', 'in progress', 'active'].includes(explicit)) {
-      return { label:'In Progress', percentage, hasCurrent:true, photos:photos.length };
+    if (hasData || ['in_progress', 'in progress', 'active'].includes(explicit)) {
+      return { lifecycle:'IN_PROGRESS', label:'In Progress', percentage, hasCurrent:true, photos:photos.length };
     }
-    return { label:'No Current Inspection', percentage:0, hasCurrent:false, photos:photos.length };
+    if (hasCurrentFlag) {
+      return { lifecycle:'CREATED', label:'Not Started', percentage:0, hasCurrent:true, photos:photos.length };
+    }
+    return { lifecycle:'NONE', label:'No Current Inspection', percentage:0, hasCurrent:false, photos:photos.length };
   }
 
   function healthSnapshot(project){
@@ -36777,11 +36788,14 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const nextDate = validDate(project?.nextInspectionDate || project?.followUpDate || project?.scheduledDate || project?.nextDueDate || project?.dueDate);
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    if (workspace.label === 'Ready for Review') {
-      return { label:'Review Current Inspection', reason:'The current inspection is ready for review.', target:'start' };
+    if (workspace.lifecycle === 'READY_FOR_REVIEW') {
+      return { label:'Review & Finalise Inspection', reason:'All inspection questions are complete and ready for review.', target:'start' };
     }
-    if (workspace.hasCurrent) {
-      return { label:'Continue Current Inspection', reason:`Current inspection is ${workspace.percentage}% complete.`, target:'start' };
+    if (workspace.lifecycle === 'CREATED') {
+      return { label:'Start Inspection', reason:'A clean new inspection has been created and has not yet been started.', target:'start' };
+    }
+    if (workspace.lifecycle === 'IN_PROGRESS') {
+      return { label:'Continue Inspection', reason:`Current inspection is ${workspace.percentage}% complete.`, target:'start' };
     }
     if (nextDate && nextDate.getTime() < now.getTime()) {
       return { label:'Start Overdue Inspection', reason:`The scheduled inspection date was ${dateLabel(nextDate)}.`, target:'start' };
@@ -36893,7 +36907,14 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     primaryHost.appendChild(copyButton(primarySource, recommended.label, 'fire-s-cc-primary'));
 
     const quick = shell.querySelector('.fire-s-cc-quick');
-    quick.appendChild(copyButton(startButton, workspace.hasCurrent ? 'Continue Inspection' : 'New Inspection'));
+    const quickInspectionLabel = workspace.lifecycle === 'CREATED'
+      ? 'Start Inspection'
+      : workspace.lifecycle === 'IN_PROGRESS'
+        ? 'Continue Inspection'
+        : workspace.lifecycle === 'READY_FOR_REVIEW'
+          ? 'Review & Finalise'
+          : 'New Inspection';
+    quick.appendChild(copyButton(startButton, quickInspectionLabel));
     quick.appendChild(copyButton(latestButton, 'Latest Inspection'));
     quick.appendChild(copyButton(historyButton, 'Inspection History'));
     quick.appendChild(copyButton(closeButton, 'Return to Projects'));
