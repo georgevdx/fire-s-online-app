@@ -36018,3 +36018,144 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   showInspectionOpenGate = wrapped;
   window.showInspectionOpenGate = wrapped;
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 2.1 PATCH 5
+// Command Centre More panel + latest archived report shortcut
+// =====================================================
+(function fireSSprint21CommandCentreMorePanel(){
+  'use strict';
+
+  const VERSION = '1.2.2-sprint-2.1-patch-5';
+  const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
+    (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
+
+  if (typeof previousShowInspectionOpenGate !== 'function') return;
+
+  function resolveProject(projectIdentifier){
+    if (typeof resolveProjectOpenIdentifier === 'function') {
+      const resolved = resolveProjectOpenIdentifier(projectIdentifier);
+      if (resolved) return resolved;
+    }
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    return projects.find(item => String(item?.id) === String(projectIdentifier)) || null;
+  }
+
+  function safeText(value, fallback){
+    const output = String(value ?? '').trim();
+    return output || fallback;
+  }
+
+  function premisesDetails(project){
+    return [
+      ['Premises', safeText(project?.projectName || project?.siteName || project?.premisesName, 'Not captured')],
+      ['Organisation', safeText(project?.organisationName || project?.clientName || project?.companyName, 'Not captured')],
+      ['Occupancy', safeText(project?.occupancy || project?.occupancyType || project?.buildingUse || project?.premisesType, 'Not captured')],
+      ['Address', safeText(project?.address || project?.siteAddress || project?.physicalAddress || project?.location, 'Not captured')]
+    ];
+  }
+
+  function ensureStyles(){
+    if (document.getElementById('fireSSprint21MorePanelStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSSprint21MorePanelStyles';
+    style.textContent = `
+      .fire-s-command-more-wrap { margin-top: 12px; }
+      .fire-s-command-more-toggle {
+        width: 100%; min-height: 48px; display:flex; align-items:center; justify-content:space-between;
+        gap:12px; padding:11px 14px; border:1px solid #d8e0e8; border-radius:12px;
+        background:#f8fafc; color:#263b50; font:inherit; font-weight:800; cursor:pointer;
+      }
+      .fire-s-command-more-toggle:hover { background:#f1f5f8; }
+      .fire-s-command-more-toggle span:last-child { font-size:18px; line-height:1; transition:transform .16s ease; }
+      .fire-s-command-more-wrap.is-open .fire-s-command-more-toggle span:last-child { transform:rotate(45deg); }
+      .fire-s-command-more-panel { display:none; margin-top:9px; padding:12px; border:1px solid #dfe6ed; border-radius:13px; background:#fff; }
+      .fire-s-command-more-wrap.is-open .fire-s-command-more-panel { display:block; }
+      .fire-s-command-more-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+      .fire-s-command-more-action { min-height:54px; border:1px solid #cfd9e3; border-radius:11px; background:#fff; color:#21384e; font:inherit; font-weight:800; cursor:pointer; }
+      .fire-s-command-more-action:hover:not(:disabled) { background:#f5f8fa; }
+      .fire-s-command-more-action:disabled { opacity:.52; cursor:not-allowed; }
+      .fire-s-command-premises-details { display:none; margin-top:11px; border-top:1px solid #e4eaf0; padding-top:11px; }
+      .fire-s-command-premises-details.is-open { display:grid; gap:8px; }
+      .fire-s-command-detail-row { display:grid; grid-template-columns:110px minmax(0,1fr); gap:10px; align-items:start; font-size:12px; }
+      .fire-s-command-detail-row span { color:#6a7a89; font-weight:800; }
+      .fire-s-command-detail-row strong { color:#22384d; overflow-wrap:anywhere; }
+      .fire-s-command-more-note { margin:10px 1px 0; color:#6b7c8d; font-size:11px; }
+      @media (max-width:620px) {
+        .fire-s-command-more-actions { grid-template-columns:1fr; }
+        .fire-s-command-detail-row { grid-template-columns:90px minmax(0,1fr); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function decorate(project){
+    ensureStyles();
+    const modal = document.querySelector('#inspectionOpenGateBackdrop .fire-s-command-centre-modal') ||
+      document.querySelector('#inspectionOpenGateBackdrop .inspection-open-gate-modal');
+    if (!modal || !project || modal.dataset.fireSMorePanel === VERSION) return;
+
+    const exitRow = modal.querySelector('.fire-s-command-exit-row');
+    const actions = modal.querySelector('.inspection-open-gate-actions');
+    const anchor = exitRow || actions;
+    if (!anchor) return;
+
+    modal.dataset.fireSMorePanel = VERSION;
+    const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory : [];
+    const latestIndex = history.length ? history.length - 1 : -1;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'fire-s-command-more-wrap';
+    wrap.innerHTML = `
+      <button type="button" class="fire-s-command-more-toggle" aria-expanded="false">
+        <span>More</span><span aria-hidden="true">＋</span>
+      </button>
+      <div class="fire-s-command-more-panel">
+        <div class="fire-s-command-more-actions">
+          <button type="button" class="fire-s-command-more-action" data-command="latest-report" ${latestIndex < 0 ? 'disabled' : ''}>Latest Report</button>
+          <button type="button" class="fire-s-command-more-action" data-command="premises-information">Premises Information</button>
+        </div>
+        <div class="fire-s-command-premises-details">
+          ${premisesDetails(project).map(([label, value]) => `<div class="fire-s-command-detail-row"><span>${label}</span><strong>${value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong></div>`).join('')}
+        </div>
+        <p class="fire-s-command-more-note">Documents and Analytics remain outside this foundation patch until their data routes are standardised.</p>
+      </div>
+    `;
+
+    anchor.insertAdjacentElement('beforebegin', wrap);
+
+    const toggle = wrap.querySelector('.fire-s-command-more-toggle');
+    const details = wrap.querySelector('.fire-s-command-premises-details');
+    toggle?.addEventListener('click', () => {
+      const isOpen = wrap.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    wrap.querySelector('[data-command="premises-information"]')?.addEventListener('click', () => {
+      details?.classList.toggle('is-open');
+    });
+
+    wrap.querySelector('[data-command="latest-report"]')?.addEventListener('click', () => {
+      if (latestIndex < 0) return;
+      const backdrop = document.getElementById('inspectionOpenGateBackdrop');
+      if (backdrop) backdrop.remove();
+      if (typeof window.generateArchivedInspectionReport === 'function') {
+        window.generateArchivedInspectionReport(project.id, latestIndex);
+      } else if (typeof generateArchivedInspectionReport === 'function') {
+        generateArchivedInspectionReport(project.id, latestIndex);
+      } else {
+        alert('Latest report is not available in this build.');
+      }
+    });
+  }
+
+  const wrapped = function fireSSprint21MorePanelGate(projectIdentifier){
+    const project = resolveProject(projectIdentifier);
+    const result = previousShowInspectionOpenGate.apply(this, arguments);
+    window.setTimeout(() => decorate(resolveProject(projectIdentifier) || project), 0);
+    return result;
+  };
+
+  showInspectionOpenGate = wrapped;
+  window.showInspectionOpenGate = wrapped;
+})();
