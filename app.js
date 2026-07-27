@@ -35575,8 +35575,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 })();
 
 /* ============================================================================
-   RC 1.2.2 — Sprint 2.1 Patch 2
-   Premises Command Centre visual foundation
+   RC 1.2.2 — Sprint 2.1 Patch 3
+   Premises context and inspection-state clarity
    Safe presentation layer only: retains the existing workflow handlers.
    ========================================================================== */
 (function fireSSprint21CommandCentreFoundation(){
@@ -35704,6 +35704,39 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return { label: 'Healthy', className: 'fire-s-command-health-healthy', symbol: '●' };
   }
 
+  function premisesOccupancy(project){
+    return text(
+      project?.occupancy || project?.occupancyClass || project?.buildingOccupancy ||
+      project?.premisesType || project?.productType
+    ) || 'Occupancy not recorded';
+  }
+
+  function premisesAddress(project){
+    return text(
+      project?.projectAddress || project?.address || project?.addressLine ||
+      [project?.streetNumber, project?.streetName].filter(Boolean).join(' ')
+    ) || 'Address not recorded';
+  }
+
+  function historyCount(project){
+    return Array.isArray(project?.inspectionHistory) ? project.inspectionHistory.length : 0;
+  }
+
+  function inspectionWorkspaceState(project){
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const photos = Array.isArray(project?.photos) ? project.photos : [];
+    const hasWorkspaceData = answers.some(item => text(item?.answer)) || photos.length > 0;
+    const explicit = text(project?.inspectionStatus || project?.status || project?.scheduledStatus).toLowerCase();
+
+    if (['ready_for_review', 'ready for review', 'review'].includes(explicit)) {
+      return { label: 'Ready for Review', className: 'fire-s-command-workspace-review' };
+    }
+    if (hasWorkspaceData || ['draft', 'in_progress', 'in progress', 'active'].includes(explicit)) {
+      return { label: 'Current Inspection In Progress', className: 'fire-s-command-workspace-active' };
+    }
+    return { label: 'No Current Inspection', className: 'fire-s-command-workspace-empty' };
+  }
+
   function resolveProject(projectIdentifier){
     if (typeof resolveProjectOpenIdentifier === 'function') {
       const resolved = resolveProjectOpenIdentifier(projectIdentifier);
@@ -35728,6 +35761,17 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-command-health-attention { background:#fff7df; color:#875f00; border-color:#eed98b; }
       .fire-s-command-health-high { background:#fdeaea; color:#9d2525; border-color:#efb6b6; }
       .fire-s-command-centre-modal .inspection-open-gate-summary { display:none; }
+      .fire-s-command-context { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; margin:0 0 12px; padding:12px 14px; border:1px solid #dfe6ed; border-radius:13px; background:#f8fafc; }
+      .fire-s-command-premises-meta { min-width:0; }
+      .fire-s-command-premises-meta strong, .fire-s-command-premises-meta span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .fire-s-command-premises-meta strong { color:#23384d; font-size:13px; }
+      .fire-s-command-premises-meta span { margin-top:3px; color:#687887; font-size:12px; }
+      .fire-s-command-workspace { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px; font-size:11px; font-weight:800; white-space:nowrap; border:1px solid transparent; }
+      .fire-s-command-workspace::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; }
+      .fire-s-command-workspace-empty { color:#526476; background:#edf1f5; border-color:#d4dce4; }
+      .fire-s-command-workspace-active { color:#1763a6; background:#eaf4fd; border-color:#b8d8f1; }
+      .fire-s-command-workspace-review { color:#875f00; background:#fff7df; border-color:#eed98b; }
+      .fire-s-command-history-note { margin-top:7px; color:#687887; font-size:11px; text-align:right; }
       .fire-s-command-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0 0 18px; }
       .fire-s-command-metric { min-width:0; padding:13px 12px; border:1px solid #dfe6ed; border-radius:13px; background:#fff; box-shadow:0 3px 12px rgba(23,43,66,.05); }
       .fire-s-command-metric span { display:block; color:#687887; font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; }
@@ -35737,6 +35781,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       @media (max-width:720px) {
         .fire-s-command-centre-title-row { display:block; }
         .fire-s-command-health { margin-top:10px; }
+        .fire-s-command-context { grid-template-columns:1fr; align-items:start; }
+        .fire-s-command-history-note { text-align:left; }
         .fire-s-command-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
       }
       @media (max-width:420px) {
@@ -35773,6 +35819,24 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       badge.className = `fire-s-command-health ${state.className}`;
       badge.innerHTML = `<span aria-hidden="true">${state.symbol}</span>${state.label}`;
       row.appendChild(badge);
+    }
+
+    if (body && question && !body.querySelector('.fire-s-command-context')) {
+      const workspaceState = inspectionWorkspaceState(project);
+      const context = document.createElement('div');
+      context.className = 'fire-s-command-context';
+      context.setAttribute('aria-label', 'Premises and inspection context');
+      context.innerHTML = `
+        <div class="fire-s-command-premises-meta">
+          <strong>${premisesOccupancy(project)}</strong>
+          <span>${premisesAddress(project)}</span>
+        </div>
+        <div>
+          <span class="fire-s-command-workspace ${workspaceState.className}">${workspaceState.label}</span>
+          <div class="fire-s-command-history-note">${historyCount(project)} completed inspection${historyCount(project) === 1 ? '' : 's'} in History</div>
+        </div>
+      `;
+      body.insertBefore(context, question);
     }
 
     if (body && question && !body.querySelector('.fire-s-command-metrics')) {
