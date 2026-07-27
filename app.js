@@ -36370,3 +36370,173 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   showInspectionOpenGate = wrapped;
   window.showInspectionOpenGate = wrapped;
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 2.1 PATCH 7
+// Intelligence transparency + safe recommended-action routing
+// =====================================================
+(function fireSSprint21IntelligenceDetail(){
+  'use strict';
+
+  const VERSION = '1.2.2-sprint-2.1-patch-7';
+  const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
+    (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
+
+  if (typeof previousShowInspectionOpenGate !== 'function') return;
+
+  const text = value => String(value ?? '').trim();
+  const lower = value => text(value).toLowerCase();
+  const isClosed = value => /closed|complete|completed|resolved|done|cancelled|canceled/.test(lower(value));
+  const dateValue = value => {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+  const today = () => {
+    const value = new Date();
+    value.setHours(0, 0, 0, 0);
+    return value;
+  };
+
+  function resolveProject(identifier){
+    if (identifier && typeof identifier === 'object') return identifier;
+    const list = Array.isArray(window.projects) ? window.projects :
+      (typeof projects !== 'undefined' && Array.isArray(projects) ? projects : []);
+    if (identifier !== undefined && identifier !== null) {
+      const directIndex = Number(identifier);
+      if (Number.isInteger(directIndex) && list[directIndex]) return list[directIndex];
+      const key = text(identifier);
+      const match = list.find(project => [project?.id, project?.projectId, project?.premisesId, project?.inspectionId]
+        .some(value => text(value) === key));
+      if (match) return match;
+    }
+    const index = Number(window.currentProjectIndex ??
+      (typeof currentProjectIndex !== 'undefined' ? currentProjectIndex : -1));
+    return Number.isInteger(index) && list[index] ? list[index] : null;
+  }
+
+  function actionItems(project){
+    const collections = [project?.actions, project?.actionItems, project?.findings];
+    return collections.find(Array.isArray) || [];
+  }
+
+  function services(project){
+    const collections = [project?.services, project?.serviceItems, project?.equipmentServices, project?.serviceRegister];
+    return collections.find(Array.isArray) || [];
+  }
+
+  function inspect(project){
+    const now = today();
+    const openActions = actionItems(project).filter(item => !isClosed(item?.status));
+    const criticalActions = openActions.filter(item => /critical|high/.test(lower(item?.priority || item?.severity || item?.risk || item?.riskLevel)));
+    const overdueActions = openActions.filter(item => {
+      const due = dateValue(item?.dueDate || item?.targetDate || item?.expiryDate);
+      return due && due.getTime() < now.getTime();
+    });
+    const serviceList = services(project).filter(item => !isClosed(item?.status));
+    const overdueServices = serviceList.filter(item => {
+      const due = dateValue(item?.dueDate || item?.nextServiceDate || item?.expiryDate);
+      return due && due.getTime() < now.getTime();
+    });
+    const dueSoonServices = serviceList.filter(item => {
+      const due = dateValue(item?.dueDate || item?.nextServiceDate || item?.expiryDate);
+      if (!due || due.getTime() < now.getTime()) return false;
+      return Math.ceil((due.getTime() - now.getTime()) / 86400000) <= 30;
+    });
+    const nextInspection = dateValue(project?.nextInspectionDate || project?.followUpDate || project?.scheduledDate || project?.nextDueDate || project?.dueDate);
+    const inspectionOverdue = Boolean(nextInspection && nextInspection.getTime() < now.getTime());
+
+    return {
+      openActions: openActions.length,
+      criticalActions: criticalActions.length,
+      overdueActions: overdueActions.length,
+      overdueServices: overdueServices.length,
+      dueSoonServices: dueSoonServices.length,
+      inspectionOverdue
+    };
+  }
+
+  function ensureStyles(){
+    if (document.getElementById('fireSSprint21IntelligenceDetailStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSSprint21IntelligenceDetailStyles';
+    style.textContent = `
+      .fire-s-command-health-detail { margin:-4px 0 14px; border:1px solid #dfe7ee; border-radius:12px; background:#fff; overflow:hidden; }
+      .fire-s-command-health-detail summary { padding:10px 12px; cursor:pointer; color:#375166; font-size:12px; font-weight:900; list-style:none; }
+      .fire-s-command-health-detail summary::-webkit-details-marker { display:none; }
+      .fire-s-command-health-detail summary::after { content:'+'; float:right; font-size:16px; line-height:1; }
+      .fire-s-command-health-detail[open] summary::after { content:'−'; }
+      .fire-s-command-health-signals { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:0 12px 12px; }
+      .fire-s-command-health-signal { padding:9px; border-radius:9px; background:#f6f8fa; }
+      .fire-s-command-health-signal span { display:block; color:#6a7b89; font-size:10px; font-weight:800; text-transform:uppercase; }
+      .fire-s-command-health-signal strong { display:block; margin-top:3px; color:#1d3448; font-size:15px; }
+      .fire-s-command-health-note { margin:0; padding:0 12px 12px; color:#667786; font-size:11px; line-height:1.4; }
+      @media (max-width:560px) { .fire-s-command-health-signals { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function openActionRegister(modal){
+    const startButton = modal.querySelector('#phase5StartNewBtn');
+    if (!startButton) return false;
+    startButton.click();
+    window.setTimeout(() => {
+      const panel = document.getElementById('smartActionEnginePanel') ||
+        document.querySelector('.smart-action-engine-panel, [data-section="action-items"], #actionItemsSection');
+      if (panel) {
+        panel.scrollIntoView({ behavior:'smooth', block:'start' });
+        const details = panel.closest('details');
+        if (details) details.open = true;
+      }
+    }, 450);
+    return true;
+  }
+
+  function decorate(project){
+    ensureStyles();
+    const modal = document.querySelector('#inspectionOpenGateBackdrop .fire-s-command-centre-modal') ||
+      document.querySelector('#inspectionOpenGateBackdrop .inspection-open-gate-modal');
+    if (!modal || !project || modal.dataset.fireSIntelligenceDetail === VERSION) return;
+    modal.dataset.fireSIntelligenceDetail = VERSION;
+
+    const intelligence = modal.querySelector('.fire-s-command-intelligence');
+    const alert = modal.querySelector('.fire-s-command-alert');
+    if (!intelligence) return;
+
+    const result = inspect(project);
+    const detail = document.createElement('details');
+    detail.className = 'fire-s-command-health-detail';
+    detail.innerHTML = `
+      <summary>Why this premises status?</summary>
+      <div class="fire-s-command-health-signals">
+        <div class="fire-s-command-health-signal"><span>Open actions</span><strong>${result.openActions}</strong></div>
+        <div class="fire-s-command-health-signal"><span>Critical / high</span><strong>${result.criticalActions}</strong></div>
+        <div class="fire-s-command-health-signal"><span>Actions overdue</span><strong>${result.overdueActions}</strong></div>
+        <div class="fire-s-command-health-signal"><span>Services overdue</span><strong>${result.overdueServices}</strong></div>
+        <div class="fire-s-command-health-signal"><span>Services due soon</span><strong>${result.dueSoonServices}</strong></div>
+        <div class="fire-s-command-health-signal"><span>Inspection overdue</span><strong>${result.inspectionOverdue ? 'Yes' : 'No'}</strong></div>
+      </div>
+      <p class="fire-s-command-health-note">The score is advisory and is calculated from the records currently stored for this premises. Missing service data is not treated as compliant.</p>
+    `;
+    (alert || intelligence).insertAdjacentElement('afterend', detail);
+
+    const recommendationButton = intelligence.querySelector('.fire-s-command-recommendation button');
+    if (recommendationButton && /review open action items/i.test(recommendationButton.textContent || '')) {
+      const cleanButton = recommendationButton.cloneNode(true);
+      recommendationButton.replaceWith(cleanButton);
+      cleanButton.addEventListener('click', () => {
+        if (!openActionRegister(modal)) window.alert('The current inspection workspace could not be opened.');
+      });
+    }
+  }
+
+  const wrapped = function fireSSprint21IntelligenceDetailGate(projectIdentifier){
+    const project = resolveProject(projectIdentifier);
+    const result = previousShowInspectionOpenGate.apply(this, arguments);
+    window.setTimeout(() => decorate(resolveProject(projectIdentifier) || project), 0);
+    return result;
+  };
+
+  showInspectionOpenGate = wrapped;
+  window.showInspectionOpenGate = wrapped;
+})();
