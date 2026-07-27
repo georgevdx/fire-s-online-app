@@ -35343,3 +35343,101 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     getContext: getHistoryLaunchContext
   };
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 1E
+// Inspection History list Close -> Existing Premises workflow
+// =====================================================
+(function fireSInspectionHistoryListCloseRouting(){
+  'use strict';
+
+  if (window.fireSInspectionHistoryListCloseRoutingInstalled) return;
+  window.fireSInspectionHistoryListCloseRoutingInstalled = true;
+
+  const CLOSE_BUTTON_IDS = new Set([
+    'backBtn',
+    'topBackBtn',
+    'floatingBackToProjectsBtn'
+  ]);
+
+  function getHistoryContext() {
+    try {
+      const routed = window.FireSHistoryReturnRouting;
+      if (routed && typeof routed.getContext === 'function') {
+        const context = routed.getContext();
+        if (context?.projectId) return context;
+      }
+    } catch (_) {}
+
+    const fallback = window.fireSHistoryLaunchContext;
+    if (fallback?.projectId) return fallback;
+
+    const fallbackProjectId = String(
+      window.currentProjectId ||
+      (typeof currentProjectId !== 'undefined' ? currentProjectId : '') ||
+      ''
+    );
+
+    return fallbackProjectId
+      ? { mode: 'history', projectId: fallbackProjectId, focusMode: '' }
+      : null;
+  }
+
+  function isHistoryDateListOpen() {
+    const archivePanel = document.getElementById('inspectionArchivePanel');
+    const detailPanel = document.getElementById('archivedInspectionDetailPanel');
+
+    return Boolean(
+      archivePanel &&
+      !detailPanel &&
+      (
+        document.body.classList.contains('fire-s-history-view-mode') ||
+        (typeof inspectionHistoryViewMode !== 'undefined' && inspectionHistoryViewMode)
+      )
+    );
+  }
+
+  function returnToWorkflow(context) {
+    const router = window.FireSHistoryReturnRouting;
+    if (router && typeof router.returnToWorkflow === 'function') {
+      router.returnToWorkflow(context.projectId, context.focusMode || '');
+      return true;
+    }
+
+    if (typeof fireSReturnFromHistoricalViewToPremisesWorkflow === 'function') {
+      fireSReturnFromHistoricalViewToPremisesWorkflow(
+        context.projectId,
+        context.focusMode || ''
+      );
+      return true;
+    }
+
+    return false;
+  }
+
+  // The original buttons were bound to an earlier closeInspectionSession
+  // function reference. Capture the click before those legacy handlers run.
+  document.addEventListener('click', event => {
+    const button = event.target instanceof Element
+      ? event.target.closest('button')
+      : null;
+
+    if (!button || !CLOSE_BUTTON_IDS.has(button.id)) return;
+    if (!isHistoryDateListOpen()) return;
+
+    const context = getHistoryContext();
+    if (!context?.projectId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    returnToWorkflow(context);
+  }, true);
+
+  window.FireSInspectionHistoryListCloseRouting = {
+    version: '1.2.2-sprint-1e',
+    isHistoryDateListOpen,
+    getContext: getHistoryContext
+  };
+})();
