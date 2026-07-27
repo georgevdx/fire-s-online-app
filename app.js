@@ -18667,12 +18667,38 @@ function openInspectionArchiveFromMore() {
 }
 
 function closeInspectionArchivePanel() {
-  const panel =
-    document.getElementById('inspectionArchivePanel');
+  const launchContext =
+    (window.FireSHistoryReturnRouting &&
+      typeof window.FireSHistoryReturnRouting.getContext === 'function'
+      ? window.FireSHistoryReturnRouting.getContext()
+      : null) ||
+    window.fireSHistoryLaunchContext ||
+    null;
 
-  if (panel) {
-    panel.remove();
+  // Workflow option 3 (Inspection History) must return to the
+  // Existing Premises Found decision gate, never to the editable workspace.
+  if (launchContext?.mode === 'history' && launchContext?.projectId) {
+    const router = window.FireSHistoryReturnRouting;
+
+    if (router && typeof router.returnToWorkflow === 'function') {
+      router.returnToWorkflow(
+        launchContext.projectId,
+        launchContext.focusMode || ''
+      );
+      return;
+    }
+
+    if (typeof fireSReturnFromHistoricalViewToPremisesWorkflow === 'function') {
+      fireSReturnFromHistoricalViewToPremisesWorkflow(
+        launchContext.projectId,
+        launchContext.focusMode || ''
+      );
+      return;
+    }
   }
+
+  const panel = document.getElementById('inspectionArchivePanel');
+  if (panel) panel.remove();
 
   exitInspectionHistoryViewMode();
 }
@@ -35439,5 +35465,56 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     version: '1.2.2-sprint-1e',
     isHistoryDateListOpen,
     getContext: getHistoryContext
+  };
+})();
+
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 1F
+// Direct Workflow Option 3 History Close routing
+// =====================================================
+(function fireSWorkflowHistoryCloseDirectRouting(){
+  'use strict';
+
+  if (window.fireSWorkflowHistoryCloseDirectRoutingInstalled) return;
+  window.fireSWorkflowHistoryCloseDirectRoutingInstalled = true;
+
+  document.addEventListener('click', event => {
+    const button = event.target instanceof Element
+      ? event.target.closest('#closeInspectionHistoryBtn')
+      : null;
+
+    if (!button) return;
+
+    const context =
+      (window.FireSHistoryReturnRouting &&
+        typeof window.FireSHistoryReturnRouting.getContext === 'function'
+        ? window.FireSHistoryReturnRouting.getContext()
+        : null) ||
+      window.fireSHistoryLaunchContext ||
+      null;
+
+    if (context?.mode !== 'history' || !context?.projectId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const router = window.FireSHistoryReturnRouting;
+    if (router && typeof router.returnToWorkflow === 'function') {
+      router.returnToWorkflow(context.projectId, context.focusMode || '');
+      return;
+    }
+
+    if (typeof fireSReturnFromHistoricalViewToPremisesWorkflow === 'function') {
+      fireSReturnFromHistoricalViewToPremisesWorkflow(
+        context.projectId,
+        context.focusMode || ''
+      );
+    }
+  }, true);
+
+  window.FireSWorkflowHistoryCloseDirectRouting = {
+    version: '1.2.2-sprint-1f'
   };
 })();
