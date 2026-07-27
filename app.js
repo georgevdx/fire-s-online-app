@@ -17449,6 +17449,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     historyIndex,
     mode: isLiveReport ? 'live' : 'archived',
     inspectionNumber: inspection.inspectionNumber || '',
+    inspectionDate: getCanonicalHistoricalInspectionDate(inspection),
     projectName:
       inspection.projectName ||
       [inspection.organisationName, inspection.siteName]
@@ -18307,12 +18308,10 @@ const photosHtml =
       </div>
 
       <div class="report-line">
-        <strong>Date:</strong>
-        ${
-          inspection.lastSaved
-            ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
-            : '-'
-        }
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(
+          getInspectionHistoryDateLabel(inspection)
+        )}
       </div>
 
       <div class="report-line">
@@ -18617,32 +18616,30 @@ function closeInspectionArchivePanel() {
 }
 
 
+function getCanonicalHistoricalInspectionDate(inspection) {
+  // The recorded inspection date is the authoritative date for History,
+  // the archived detail view and the historical report. Completion/archive
+  // timestamps are only fallbacks for older records without inspectionDate.
+  return (
+    inspection?.inspectionDate ||
+    inspection?.completedAt?.slice?.(0, 10) ||
+    inspection?.archivedAt?.slice?.(0, 10) ||
+    inspection?.lastSaved?.slice?.(0, 10) ||
+    inspection?.createdAt?.slice?.(0, 10) ||
+    ''
+  );
+}
+
 function getInspectionHistoryTimestamp(inspection) {
-  const candidates = [
-    inspection?.completedAt,
-    inspection?.archivedAt,
-    inspection?.inspectionDate,
-    inspection?.lastSaved,
-    inspection?.createdAt
-  ];
-
-  for (const value of candidates) {
-    const timestamp = value ? new Date(value).getTime() : NaN;
-    if (Number.isFinite(timestamp)) return timestamp;
-  }
-
-  return 0;
+  const value = getCanonicalHistoricalInspectionDate(inspection);
+  const timestamp = value ? new Date(value).getTime() : NaN;
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function getInspectionHistoryDateLabel(inspection) {
-  const timestamp = getInspectionHistoryTimestamp(inspection);
-  if (!timestamp) return 'Date not recorded';
-
-  return new Date(timestamp).toLocaleDateString('en-ZA', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
+  const value = getCanonicalHistoricalInspectionDate(inspection);
+  if (!value) return 'Date not recorded';
+  return formatInspectionDate(value);
 }
 
 function getInspectionHistoryColourStatus(inspection) {
