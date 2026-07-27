@@ -59,7 +59,7 @@ let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.1 - Phase 2 History Isolation';
+const APP_VERSION = 'RC 1.2.1 - Phase 3 Workspace Isolation';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -5551,6 +5551,23 @@ function normaliseProjectPhotoSources(project) {
   };
 }
 
+function getInspectionPhotoStorageFolder(projectOrId) {
+  const project = typeof projectOrId === 'object' && projectOrId
+    ? projectOrId
+    : (typeof getProjects === 'function'
+      ? getProjects().find(item => String(item?.id) === String(projectOrId))
+      : null);
+
+  const projectId = String(project?.id || projectOrId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '');
+  const inspectionId = String(project?.currentInspectionId || project?.inspectionId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '');
+
+  // New lifecycle workspaces receive their own storage namespace so photos
+  // from an earlier inspection can never be recovered into a clean cycle.
+  return inspectionId ? `${projectId}/${inspectionId}` : projectId;
+}
+
 async function hydrateProjectPhotosFromCloudStorage(project) {
   if (!project || !project.id) return project?.photos || [];
 
@@ -5565,7 +5582,8 @@ async function hydrateProjectPhotosFromCloudStorage(project) {
     if (!userId) return normaliseInspectionPhotoSources(project.photos || []);
 
     const safeProjectId = String(project.id).replace(/[^a-zA-Z0-9_-]/g, '');
-    const folderPath = `${userId}/${safeProjectId}`;
+    const inspectionFolder = getInspectionPhotoStorageFolder(project);
+    const folderPath = `${userId}/${inspectionFolder}`;
 
     const { data: files, error } = await supabaseClient
       .storage
@@ -13349,8 +13367,9 @@ async function uploadPhotoToStorage(file, projectId) {
   const safeProjectId =
     String(projectId).replace(/[^a-zA-Z0-9_-]/g, '');
 
+  const inspectionFolder = getInspectionPhotoStorageFolder(projectId) || safeProjectId;
   const filePath =
-    `${userData.user.id}/${safeProjectId}/${Date.now()}.jpg`;
+    `${userData.user.id}/${inspectionFolder}/${Date.now()}.jpg`;
 
   console.log('Starting compressed photo storage upload:', {
     bucket: 'inspection-photos',
@@ -34220,3 +34239,100 @@ function fireSApplyLifecycleUxLabels() {
 })();
 
 window.setProfessionalAssessment = setProfessionalAssessment;
+
+
+// =====================================================
+// RC 1.2.1 - PHASE 3 WORKSPACE ISOLATION
+// A clean inspection cycle keeps premises/building identity, but receives a
+// new inspection identity and completely fresh checklist, photo, action and
+// service-expiry state. Historical snapshots remain untouched.
+// =====================================================
+function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const today = nowIso.slice(0, 10);
+  const currentInspectionId = `inspection-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  return {
+    ...original,
+    inspectionHistory: Array.isArray(inspectionHistory) ? inspectionHistory : [],
+
+    // New current-inspection identity and lifecycle state.
+    currentInspectionId,
+    inspectionId: currentInspectionId,
+    inspectionNumber: generateInspectionNumber(),
+    inspectionDate: today,
+    inspectionStartedAt: nowIso,
+    workspaceCreatedAt: nowIso,
+    completedAt: null,
+    archivedAt: null,
+    archiveStatus: '',
+    scheduledStatus: 'in_progress',
+    scheduleFreshInspection: false,
+    locked: false,
+    isReadOnly: false,
+
+    // Isolated inspection content. Premises/building/contact details above are retained.
+    answers: [],
+    photos: [],
+    actions: [],
+    actionItems: [],
+    findings: [],
+    finalComments: '',
+    inspectorComments: '',
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+    recurringCycleEnabled: false,
+    recurringCycleNumber: '',
+    recurringCycleUnit: '',
+    recurringCycleNotes: '',
+
+    // Clear any legacy top-level service/expiry values that could leak into a new cycle.
+    equipmentExpiryDate: '',
+    extinguisherExpiryDate: '',
+    fireEquipmentExpiryDate: '',
+    serviceExpiryDate: '',
+    missingExpiryItems: [],
+    expiryDetails: [],
+
+    syncPending: true,
+    syncError: false,
+    lastSaved: nowIso
+  };
+}
+
+archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndStartBlank(projectId) {
+  const projects = getProjects();
+  const index = projects.findIndex(project => String(project.id) === String(projectId));
+
+  if (index === -1) {
+    alert('Inspection could not be found. Please refresh and try again.');
+    return false;
+  }
+
+  const original = projects[index];
+
+  if (hasCurrentIncompleteInspection(original) && !isInspectionChecklistComplete(original)) {
+    alert('Complete all checklist items before moving this inspection to Inspection History.');
+    return false;
+  }
+
+  const inspectionHistory = archiveCurrentInspectionCycle(
+    original,
+    'manual_archive_from_open_gate'
+  );
+
+  projects[index] = createFireSCleanInspectionWorkspace(original, inspectionHistory);
+  setProjects(projects);
+
+  // Clear live UI state immediately; openProject will then hydrate only the new cycle.
+  if (String(currentProjectId || '') === String(projectId)) {
+    currentProject = projects[index];
+    currentPhotos = [];
+    if (typeof clearInspectionAnswerUiState === 'function') clearInspectionAnswerUiState();
+    if (typeof renderPhotos === 'function') renderPhotos();
+  }
+
+  return true;
+};
