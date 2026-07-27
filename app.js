@@ -1,3 +1,4 @@
+// RC 1.2.2 Sprint 1 — Workflow Engine + colour-coded date-only Inspection History
 let currentFilter = 'all';
 let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
@@ -12781,139 +12782,104 @@ function showInspectionOpenGate(projectId, focusMode) {
   backdrop.innerHTML = `
     <div class="inspection-open-gate-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
       <div class="inspection-open-gate-header">
-        <div class="inspection-open-gate-kicker">▦ Inspection Workflow</div>
-        <h3 id="inspectionOpenGateTitle">Existing premises found</h3>
-        <p>
-          Fire-S found an active inspection for this premises. Choose the correct workflow before opening it.
-        </p>
+        <div class="inspection-open-gate-kicker">▦ Premises Workflow</div>
+        <h3 id="inspectionOpenGateTitle">${escapeHtml(project.projectName || project.siteName || 'Selected premises')}</h3>
+        <p>Choose the next logical step for this premises.</p>
       </div>
 
       <div class="inspection-open-gate-body">
         <div class="inspection-open-gate-summary">
           <div>
-            <strong>${escapeHtml(project.projectName || project.siteName || 'Selected premises')}</strong>
+            <strong>Completed inspection record available</strong>
             <div class="inspection-open-gate-summary-meta">
-              Inspection: ${escapeHtml(project.inspectionNumber || 'Not numbered')} &nbsp;·&nbsp;
-              Answers: ${answersCount} &nbsp;·&nbsp; Photos: ${photosCount} &nbsp;·&nbsp; History: ${historyCount}
+              Inspection History: ${historyCount} &nbsp;·&nbsp; Latest answers: ${answersCount} &nbsp;·&nbsp; Photos: ${photosCount}
             </div>
           </div>
-          <span class="inspection-open-gate-summary-badge">${answersCount}</span>
-        </div>
-
-        <div class="inspection-open-gate-safe-note">
-          <span>ⓘ</span>
-          <span><strong>Safety note:</strong> No data is deleted here. Start New archives the current inspection first, then opens a blank one.</span>
+          <span class="inspection-open-gate-summary-badge">${historyCount}</span>
         </div>
 
         <div class="inspection-open-gate-question">
           <strong>What would you like to do?</strong>
-          <span>Select the best option for your next step.</span>
+          <span>Fire-S keeps the premises permanent and every finalised inspection read-only.</span>
         </div>
 
         <div class="inspection-open-gate-actions">
-          <button type="button" class="inspection-open-gate-card inspection-open-gate-red" id="openGateContinueBtn">
+          <button type="button" class="inspection-open-gate-card inspection-open-gate-green" id="openGateStartBtn">
             <span class="inspection-open-gate-number">1</span>
             <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">Continue work</span>
-              <strong>Continue / Edit Current Inspection</strong>
-              <small>Continue unfinished work. Q&amp;A, photos and comments stay editable.</small>
+              <span class="inspection-open-gate-mode-label">New inspection cycle</span>
+              <strong>Start New Inspection</strong>
+              <small>Open a clean inspection while retaining permanent premises information.</small>
             </span>
-            <span class="inspection-open-gate-icon">▤</span>
-            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Best if you are not yet done</span>
+            <span class="inspection-open-gate-icon">＋</span>
+            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Clean current workspace</span>
           </button>
 
-          <button type="button" class="inspection-open-gate-card inspection-open-gate-green" id="openGateArchiveBtn">
+          <button type="button" class="inspection-open-gate-card inspection-open-gate-blue" id="openGateLatestBtn">
             <span class="inspection-open-gate-number">2</span>
             <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">Save &amp; start new</span>
-              <strong>Save Current, Then Start a Clean Inspection</strong>
-              <small>Save current inspection to History, then open a clean blank inspection.</small>
-            </span>
-            <span class="inspection-open-gate-icon">▣</span>
-            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Best for a new inspection on this site</span>
-          </button>
-
-          <button type="button" class="inspection-open-gate-card inspection-open-gate-blue" id="openGateHistoryBtn">
-            <span class="inspection-open-gate-number">3</span>
-            <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">View previous history</span>
-              <strong>View Previous Cycles</strong>
-              <small>View previous cycles and reports without changing any current data.</small>
+              <span class="inspection-open-gate-mode-label">Quick reference</span>
+              <strong>Latest Inspection</strong>
+              <small>Open the latest finalised inspection directly in read-only mode.</small>
             </span>
             <span class="inspection-open-gate-icon">◉</span>
-            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Best for reference and comparison</span>
+            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Fastest historical view</span>
           </button>
 
-          <button type="button" class="inspection-open-gate-card inspection-open-gate-orange" id="openGateLockBtn" title="Locking workflow is planned. Deletion remains disabled from this screen.">
+          <button type="button" class="inspection-open-gate-card inspection-open-gate-red" id="openGateHistoryBtn">
+            <span class="inspection-open-gate-number">3</span>
+            <span class="inspection-open-gate-copy">
+              <span class="inspection-open-gate-mode-label">Previous records</span>
+              <strong>Inspection History</strong>
+              <small>Select a colour-coded inspection date from the full history.</small>
+            </span>
+            <span class="inspection-open-gate-icon">▤</span>
+            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Newest date first</span>
+          </button>
+
+          <button type="button" class="inspection-open-gate-card inspection-open-gate-orange" id="openGateReturnBtn">
             <span class="inspection-open-gate-number">4</span>
             <span class="inspection-open-gate-copy">
-              <span class="inspection-open-gate-mode-label">Lock this inspection</span>
-              <strong>Lock for Data Safety</strong>
-              <small>Lock this inspection. No deletion from this screen.</small>
+              <span class="inspection-open-gate-mode-label">Leave premises</span>
+              <strong>Return to Projects</strong>
+              <small>Close this workflow without changing inspection data.</small>
             </span>
-            <span class="inspection-open-gate-icon">▢</span>
-            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>Best to protect completed work</span>
+            <span class="inspection-open-gate-icon">←</span>
+            <span class="inspection-open-gate-tip"><span class="inspection-open-gate-check">✓</span>No changes made</span>
           </button>
         </div>
 
         <div class="inspection-open-gate-data-note">
           <span>●</span>
-          <span>Your data is always safe. You can return to any inspection from the History at any time.</span>
+          <span>Only one Current Inspection is permitted per premises. History remains read-only.</span>
         </div>
       </div>
 
       <div class="inspection-open-gate-footer">
-        <button type="button" id="openGateCancelBtn">× &nbsp; Cancel</button>
+        <button type="button" id="openGateCancelBtn">× &nbsp; Close</button>
       </div>
     </div>
   `;
-
   document.body.appendChild(backdrop);
 
-  const continueBtn = document.getElementById('openGateContinueBtn');
-  if (continueBtn) {
-    continueBtn.addEventListener('click', () => {
-      const snapshot = cloneInspectionProjectForWorkflow(
-        getProjects().find(item => item.id === project.id) || project
-      );
-
-      closeInspectionOpenGate();
-      openProject(project.id, focusMode, { bypassOpenGate: true });
-
-      // Continue/Edit is the only editable path. It must preserve the current
-      // inspection exactly as stored before opening. This protects photos and
-      // answers from UI reset code during the open transition.
-      restoreWorkflowProjectSnapshot(project.id, snapshot);
-    });
-  }
-
-  const archiveBtn = document.getElementById('openGateArchiveBtn');
-  if (archiveBtn) {
-    archiveBtn.addEventListener('click', () => {
+  const startBtn = document.getElementById('openGateStartBtn');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
       const latestProject = getProjects().find(item => item.id === project.id) || project;
 
       if (hasCurrentIncompleteInspection(latestProject)) {
-        alert(
-          'This premises already has an unfinished current inspection. Fire-S will open it in Edit mode. Complete or delete the current inspection before starting a new one.'
-        );
         closeInspectionOpenGate();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         return;
       }
 
-      if (!isInspectionChecklistComplete(latestProject) && hasActiveInspectionDataForOpenGate(latestProject)) {
-        alert('The current inspection cannot be moved to Inspection History until every checklist item has been answered.');
-        return;
-      }
-
       const confirmed = confirm(
-        'Start a new inspection for this premises? The completed current inspection will be saved to History first. No data will be deleted.'
+        'Start a clean new inspection for this premises? Previous finalised inspection records will remain available in Inspection History.'
       );
-
       if (!confirmed) return;
 
-      const archived = archiveProjectCurrentInspectionAndStartBlank(project.id);
-      if (!archived) return;
+      const started = archiveProjectCurrentInspectionAndStartBlank(project.id);
+      if (!started) return;
 
       closeInspectionOpenGate();
       renderProjectsList();
@@ -12921,21 +12887,42 @@ function showInspectionOpenGate(projectId, focusMode) {
     });
   }
 
+  const latestBtn = document.getElementById('openGateLatestBtn');
+  if (latestBtn) {
+    latestBtn.addEventListener('click', () => {
+      const latestProject = getProjects().find(item => item.id === project.id) || project;
+      const history = Array.isArray(latestProject.inspectionHistory)
+        ? latestProject.inspectionHistory
+        : [];
+
+      if (!history.length) {
+        alert('No finalised inspection is available for this premises yet.');
+        return;
+      }
+
+      const latestEntry = history
+        .map((inspection, historyIndex) => ({ inspection, historyIndex }))
+        .sort((a, b) => getInspectionHistoryTimestamp(b.inspection) - getInspectionHistoryTimestamp(a.inspection))[0];
+
+      closeInspectionOpenGate();
+      runWorkflowReadOnlyAction(() => {
+        openProject(project.id, focusMode, { bypassOpenGate: true });
+        window.setTimeout(() => {
+          enterInspectionHistoryViewMode();
+          renderInspectionArchive(getProjects().find(item => item.id === project.id) || project);
+          viewArchivedInspection(project.id, latestEntry.historyIndex);
+        }, 250);
+      }, 1600);
+    });
+  }
+
   const historyBtn = document.getElementById('openGateHistoryBtn');
   if (historyBtn) {
     historyBtn.addEventListener('click', () => {
-      const snapshot = cloneInspectionProjectForWorkflow(
-        getProjects().find(item => item.id === project.id) || project
-      );
-
       closeInspectionOpenGate();
-
       runWorkflowReadOnlyAction(() => {
         openProject(project.id, focusMode, { bypassOpenGate: true });
-
         window.setTimeout(() => {
-          restoreWorkflowProjectSnapshot(project.id, snapshot);
-
           if (typeof openInspectionArchiveFromMore === 'function') {
             openInspectionArchiveFromMore();
           }
@@ -12944,17 +12931,16 @@ function showInspectionOpenGate(projectId, focusMode) {
     });
   }
 
-  const lockBtn = document.getElementById('openGateLockBtn');
-  if (lockBtn) {
-    lockBtn.addEventListener('click', () => {
-      alert('Lock workflow is planned for the next data-safety release. Delete remains disabled from this screen.');
+  const returnBtn = document.getElementById('openGateReturnBtn');
+  if (returnBtn) {
+    returnBtn.addEventListener('click', () => {
+      closeInspectionOpenGate();
+      if (typeof showProjectList === 'function') showProjectList();
     });
   }
 
   const cancelBtn = document.getElementById('openGateCancelBtn');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', closeInspectionOpenGate);
-  }
+  if (cancelBtn) cancelBtn.addEventListener('click', closeInspectionOpenGate);
 
   backdrop.addEventListener('click', event => {
     if (event.target === backdrop) {
@@ -18326,6 +18312,62 @@ function ensureInspectionHistoryIsolationStyles() {
       color: #173b5f;
       font-weight: 700;
     }
+
+
+    .inspection-history-date-panel {
+      max-width: 680px;
+      margin-inline: auto;
+    }
+
+    .inspection-history-date-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .inspection-history-date-button {
+      width: 100%;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 12px 15px;
+      border: 1px solid #dbe3ec;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #172033;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .inspection-history-date-button:hover,
+    .inspection-history-date-button:focus-visible {
+      border-color: #94a3b8;
+      background: #f8fafc;
+      transform: none;
+    }
+
+    .inspection-history-status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      flex: 0 0 14px;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+    }
+
+    .inspection-history-date-text {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    @media (max-width: 560px) {
+      .inspection-history-date-button {
+        min-height: 50px;
+        padding: 11px 13px;
+      }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -18395,259 +18437,129 @@ function closeInspectionArchivePanel() {
   exitInspectionHistoryViewMode();
 }
 
-function renderInspectionArchive(project) {
-  const existingArchive =
-    document.getElementById('inspectionArchivePanel');
 
-  if (existingArchive) {
-    existingArchive.remove();
+function getInspectionHistoryTimestamp(inspection) {
+  const candidates = [
+    inspection?.completedAt,
+    inspection?.archivedAt,
+    inspection?.inspectionDate,
+    inspection?.lastSaved,
+    inspection?.createdAt
+  ];
+
+  for (const value of candidates) {
+    const timestamp = value ? new Date(value).getTime() : NaN;
+    if (Number.isFinite(timestamp)) return timestamp;
   }
 
-  const history = project.inspectionHistory || [];
+  return 0;
+}
 
-  if (history.length === 0) return;
+function getInspectionHistoryDateLabel(inspection) {
+  const timestamp = getInspectionHistoryTimestamp(inspection);
+  if (!timestamp) return 'Date not recorded';
+
+  return new Date(timestamp).toLocaleDateString('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function getInspectionHistoryColourStatus(inspection) {
+  const answers = Array.isArray(inspection?.answers) ? inspection.answers : [];
+  const noAnswers = answers.filter(answer =>
+    String(answer?.answer || '').trim().toLowerCase() === 'no'
+  );
+
+  if (!answers.length) {
+    return { key: 'unknown', label: 'Legacy / status unknown', colour: '#64748b' };
+  }
+
+  const checklist = getChecklistForProject(inspection) || [];
+  const hasCritical = noAnswers.some(answer => {
+    const item = checklist[Number(answer?.itemIndex)] || {};
+    const priority = String(
+      answer?.priority || item?.Priority || item?.priority || item?.Risk || item?.risk || ''
+    ).toLowerCase();
+    return priority.includes('critical') || priority.includes('high');
+  });
+
+  if (hasCritical) {
+    return { key: 'critical', label: 'High / critical risk', colour: '#b91c1c' };
+  }
+
+  if (noAnswers.length > 0) {
+    return { key: 'action', label: 'Action items recorded', colour: '#d97706' };
+  }
+
+  return { key: 'compliant', label: 'Compliant', colour: '#15803d' };
+}
+
+function renderInspectionArchive(project) {
+  const existingArchive = document.getElementById('inspectionArchivePanel');
+  if (existingArchive) existingArchive.remove();
+
+  const history = Array.isArray(project?.inspectionHistory)
+    ? project.inspectionHistory
+    : [];
 
   const panel = document.createElement('div');
-
   panel.id = 'inspectionArchivePanel';
-  panel.className = 'site-history-panel';
+  panel.className = 'site-history-panel inspection-history-date-panel';
 
   const sortedHistory = history
-    .slice()
-    .sort((a, b) => {
-      const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
-      const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+    .map((inspection, historyIndex) => ({ inspection, historyIndex }))
+    .sort((a, b) => getInspectionHistoryTimestamp(b.inspection) - getInspectionHistoryTimestamp(a.inspection));
 
-      return bTime - aTime;
-    });
-
-  const latestInspection = sortedHistory[0];
-  const olderInspections = sortedHistory.slice(1, 5);
-
-  function countAnswered(inspection) {
-    return (inspection.answers || []).filter(answer =>
-      ['yes', 'no', 'n/a'].includes(
-        String(answer.answer || '').trim().toLowerCase()
-      )
-    ).length;
-  }
-
-  function countFindings(inspection) {
-    return (inspection.answers || []).filter(answer =>
-      String(answer.answer || '').trim().toLowerCase() === 'no'
-    ).length;
-  }
-
-  function buildPhotoPreview(inspection) {
-    const photos = (inspection.photos || []).slice(0, 4);
-
-    if (photos.length === 0) {
-      return `<div class="note">No archived photos.</div>`;
-    }
-
-    return `
-      <div class="archive-photo-preview">
-        ${photos.map((photo, index) => `
-          <div class="archive-photo-thumb">
-            <img
-              src="${photo.src || ''}"
-              alt="Archived photo ${index + 1}"
-            >
-            <small>
-              ${
-                photo.timestamp
-                  ? escapeHtml(new Date(photo.timestamp).toLocaleString())
-                  : 'No timestamp'
-              }
-            </small>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  function buildArchiveCard(inspection, label, historyIndex) {
-    const businessName =
-      inspection.projectName ||
-      [inspection.organisationName, inspection.siteName]
-        .filter(Boolean)
-        .join(' ') ||
-      project.projectName ||
-      [project.organisationName, project.siteName]
-        .filter(Boolean)
-        .join(' ') ||
-      'Unnamed business / site';
-
-    const archivedDate =
-      inspection.lastSaved
-        ? new Date(inspection.lastSaved).toLocaleString()
-        : '-';
-
-    const inspectionDate =
-      formatInspectionDate(
-        getProjectInspectionDate(inspection)
-      );
-
-    const answeredCount = countAnswered(inspection);
-    const findingCount = countFindings(inspection);
-    const photoCount = (inspection.photos || []).length;
-
-    return `
-      <div class="archive-inspection-card">
-        <div>
-          <strong>${escapeHtml(label)}</strong>
-        </div>
-
-        <div>
-          <strong>Business / Site:</strong>
-          ${escapeHtml(businessName)}
-        </div>
-
-        <div>
-          <strong>Inspection No:</strong>
-          ${escapeHtml(inspection.inspectionNumber || '-')}
-        </div>
-
-        <div>
-          <strong>Inspection Date:</strong>
-          ${escapeHtml(inspectionDate)}
-        </div>
-
-        <div>
-          <strong>Archived / Last Saved:</strong>
-          ${escapeHtml(archivedDate)}
-        </div>
-
-        <div>
-          <strong>Inspector:</strong>
-          ${escapeHtml(inspection.inspectorName || '-')}
-        </div>
-
-        <div>
-          <strong>Answered items:</strong>
-          ${answeredCount}
-        </div>
-
-        <div>
-          <strong>Action Items:</strong>
-          ${findingCount}
-        </div>
-
-        <div>
-          <strong>Photos:</strong>
-          ${photoCount}
-        </div>
-
-        ${
-          inspection.finalComments
-            ? `
-              <div>
-                <strong>Final comments:</strong>
-                ${escapeHtml(inspection.finalComments)}
-              </div>
-            `
-            : ''
-        }
-
-        <div class="archive-actions">
+  const dateRows = sortedHistory.length
+    ? sortedHistory.map(({ inspection, historyIndex }) => {
+        const status = getInspectionHistoryColourStatus(inspection);
+        const dateLabel = getInspectionHistoryDateLabel(inspection);
+        return `
           <button
             type="button"
-            class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
+            class="inspection-history-date-button inspection-history-${status.key}"
+            data-history-index="${historyIndex}"
+            aria-label="Open inspection dated ${escapeHtml(dateLabel)}. ${escapeHtml(status.label)}"
           >
-            View Details
+            <span class="inspection-history-status-dot" style="background:${status.colour}" aria-hidden="true"></span>
+            <span class="inspection-history-date-text">${escapeHtml(dateLabel)}</span>
           </button>
-
-          <button
-            type="button"
-            class="small-btn primary-small-btn"
-            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
-          >
-            Generate Report
-          </button>
-
-          <button
-            type="button"
-            class="small-btn secondary-btn"
-            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${historyIndex})"
-          >
-            Download Photos
-          </button>
-        </div>
-
-      </div>
-    `;
-  }
-
-  const olderHtml =
-    olderInspections.length > 0
-      ? `
-        <details class="archive-more-details">
-          <summary>
-            Show older previous inspections (${olderInspections.length})
-          </summary>
-
-          <div class="archive-older-list">
-            ${olderInspections.map((inspection, index) =>
-              buildArchiveCard(
-                inspection,
-                `Older Finished Inspection ${index + 1}`,
-                history.indexOf(inspection)
-              )
-            ).join('')}
-          </div>
-        </details>
-      `
-      : '';
+        `;
+      }).join('')
+    : `<div class="note">No finalised inspections are available for this premises yet.</div>`;
 
   panel.innerHTML = `
     <div class="archive-panel-top">
       <h3>Inspection History</h3>
-
       <div class="archive-panel-actions">
-        <button
-          type="button"
-          class="primary-small-btn archive-back-projects-btn"
-          onclick="showProjectList()"
-        >
-          Back to Projects
-        </button>
-
-        <button
-          type="button"
-          class="small-btn"
-          onclick="closeInspectionArchivePanel()"
-        >
-          Close Archive
-        </button>
+        <button type="button" class="small-btn" id="closeInspectionHistoryBtn">Close</button>
       </div>
     </div>
 
     <div class="inspection-history-readonly-banner">
-      Read-only Inspection History — current inspection data and Smart Actions are not used in this view.
+      Read-only inspection records. Select an inspection date to open it.
     </div>
 
-    <div class="note">
-      <div class="note archive-history-note">
-        Finished inspections for this site are listed below. Open an inspection to review the full Q&A, photos, comments and follow-up notes.
-      </div>
+    <div class="inspection-history-date-list" role="list" aria-label="Inspection history dates">
+      ${dateRows}
     </div>
-
-    ${buildArchiveCard(
-      latestInspection,
-      'Latest Finished Inspection',
-      history.indexOf(latestInspection)
-    )}
-
-    ${olderHtml}
   `;
 
-  const form =
-    document.getElementById('projectFormSection');
+  const form = document.getElementById('projectFormSection');
+  if (form) form.prepend(panel);
 
-  if (form) {
-    form.prepend(panel);
-  }
+  panel.querySelectorAll('.inspection-history-date-button').forEach(button => {
+    button.addEventListener('click', () => {
+      const historyIndex = Number(button.dataset.historyIndex);
+      if (!Number.isInteger(historyIndex)) return;
+      viewArchivedInspection(project.id, historyIndex);
+    });
+  });
+
+  const closeBtn = panel.querySelector('#closeInspectionHistoryBtn');
+  if (closeBtn) closeBtn.addEventListener('click', closeInspectionArchivePanel);
 }
 
 function renderSiteHistory(project) {
