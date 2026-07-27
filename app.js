@@ -34336,3 +34336,365 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
   return true;
 };
+
+// =====================================================
+// FIRE-S RC 1.2.1 - PHASE 4 INSPECTION REVIEW ENGINE
+// Action Items stay inactive until every checklist item is answered.
+// Once complete, Fire-S evaluates the inspection, shows the completion
+// prompt and opens a review summary. Photos remain optional.
+// =====================================================
+(function fireSPhase4InspectionReviewEngine() {
+  'use strict';
+
+  if (window.__fireSPhase4InspectionReviewEngineInstalled) return;
+  window.__fireSPhase4InspectionReviewEngineInstalled = true;
+
+  const VERSION = 'RC 1.2.1 - Phase 4 Inspection Review Engine';
+  const REVIEW_ID = 'fireSInspectionReviewPanel';
+  const MODAL_ID = 'fireSChecklistCompleteModal';
+  let previousCompleteState = false;
+  let evaluationTimer = 0;
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[char]));
+  }
+
+  function norm(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function currentId() {
+    try {
+      if (typeof currentProjectId !== 'undefined' && currentProjectId) return currentProjectId;
+    } catch (_) {}
+    return window.currentProjectId || window.currentProject?.id || null;
+  }
+
+  function readProjects() {
+    try {
+      if (typeof getProjects === 'function') return getProjects();
+      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeProjects(projects) {
+    if (!Array.isArray(projects)) return;
+    if (typeof setProjects === 'function') setProjects(projects);
+    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+  }
+
+  function getCurrentProject() {
+    const id = currentId();
+    const projects = readProjects();
+    return projects.find(project => String(project.id) === String(id)) || window.currentProject || null;
+  }
+
+  function isHistoryView() {
+    return Boolean(
+      window.__fireSHistoryViewActive ||
+      document.body.classList.contains('fire-s-history-view-active') ||
+      document.getElementById('inspectionHistoryReadOnlyView')
+    );
+  }
+
+  function uiCompletion() {
+    const fields = Array.from(document.querySelectorAll('.answer-select'));
+    if (!fields.length) {
+      const project = getCurrentProject();
+      try {
+        if (typeof getProjectCompletionCounts === 'function' && project) {
+          return getProjectCompletionCounts(project);
+        }
+      } catch (_) {}
+      return { total: 0, answered: 0, unanswered: 0, noCount: 0 };
+    }
+
+    const valid = value => ['yes', 'no', 'n/a'].includes(norm(value));
+    const answered = fields.filter(field => valid(field.value)).length;
+    const noCount = fields.filter(field => norm(field.value) === 'no').length;
+    return {
+      total: fields.length,
+      answered,
+      unanswered: Math.max(fields.length - answered, 0),
+      noCount
+    };
+  }
+
+  function isComplete(counts) {
+    return counts.total > 0 && counts.unanswered === 0;
+  }
+
+  function persistLifecycle(complete, extra) {
+    const id = currentId();
+    if (!id) return null;
+    const projects = readProjects();
+    const index = projects.findIndex(project => String(project.id) === String(id));
+    if (index < 0) return null;
+
+    const now = new Date().toISOString();
+    projects[index] = {
+      ...projects[index],
+      scheduledStatus: complete ? 'ready_for_review' : 'in_progress',
+      inspectionLifecycleStatus: complete ? 'ready_for_review' : 'in_progress',
+      checklistCompletedAt: complete
+        ? (projects[index].checklistCompletedAt || now)
+        : null,
+      inspectionReviewVersion: VERSION,
+      inspectionReviewUpdatedAt: now,
+      ...(extra || {})
+    };
+    writeProjects(projects);
+    window.currentProject = projects[index];
+    return projects[index];
+  }
+
+  function openActionCount(project) {
+    return (Array.isArray(project?.actions) ? project.actions : [])
+      .filter(action => norm(action?.status) !== 'closed').length;
+  }
+
+  function criticalCount(project) {
+    return (Array.isArray(project?.actions) ? project.actions : [])
+      .filter(action => norm(action?.status) !== 'closed' && norm(action?.priority) === 'critical').length;
+  }
+
+  function expirySummary(project) {
+    try {
+      if (typeof getProjectExpiryCounts === 'function') {
+        const counts = getProjectExpiryCounts(project) || {};
+        return {
+          expired: Number(counts.overdue || 0),
+          dueSoon: Number(counts.soon || 0),
+          missing: Number(counts.missing || 0)
+        };
+      }
+    } catch (_) {}
+
+    let expired = 0;
+    let dueSoon = 0;
+    let missing = 0;
+    (project?.answers || []).forEach(answer => {
+      const date = String(answer?.expiryDate || '').trim();
+      if (!date) return;
+      try {
+        const status = typeof getExpiryStatus === 'function' ? getExpiryStatus(date) : '';
+        if (status === 'overdue' || status === 'expired') expired += 1;
+        else if (status === 'soon') dueSoon += 1;
+      } catch (_) {}
+    });
+    return { expired, dueSoon, missing };
+  }
+
+  function compliancePercent(counts) {
+    if (!counts.total) return 0;
+    return Math.max(0, Math.round(((counts.total - counts.noCount) / counts.total) * 100));
+  }
+
+  function ensureStyles() {
+    if (document.getElementById('fireSPhase4ReviewStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSPhase4ReviewStyles';
+    style.textContent = `
+      .fire-s-review-panel{margin-top:16px;border:1px solid #d8dee8;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+      .fire-s-review-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:18px 20px;background:#f8fafc;border-bottom:1px solid #e5e7eb}
+      .fire-s-review-head h3{margin:0 0 5px;font-size:1.12rem}.fire-s-review-head p{margin:0;color:#64748b}
+      .fire-s-review-badge{white-space:nowrap;border-radius:999px;padding:7px 11px;font-weight:800;font-size:.78rem}
+      .fire-s-review-badge.locked{background:#f1f5f9;color:#64748b}.fire-s-review-badge.ready{background:#dcfce7;color:#166534}
+      .fire-s-review-progress{padding:14px 20px;border-bottom:1px solid #eef2f7}.fire-s-review-progress-row{display:flex;justify-content:space-between;margin-bottom:7px;font-size:.9rem}
+      .fire-s-review-track{height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden}.fire-s-review-fill{height:100%;background:#334155;border-radius:999px}
+      .fire-s-review-lock{padding:22px 20px;color:#475569}.fire-s-review-lock strong{display:block;color:#0f172a;margin-bottom:4px}
+      .fire-s-review-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:18px 20px}
+      .fire-s-review-stat{border:1px solid #e5e7eb;border-radius:12px;padding:13px;background:#fff}.fire-s-review-stat span{display:block;color:#64748b;font-size:.78rem;margin-bottom:5px}.fire-s-review-stat strong{font-size:1.35rem;color:#0f172a}
+      .fire-s-review-note{margin:0 20px 18px;padding:12px 14px;border-radius:10px;background:#f8fafc;color:#475569;font-size:.88rem}
+      .fire-s-review-actions{display:flex;gap:10px;justify-content:flex-end;padding:0 20px 18px}.fire-s-review-actions button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.fire-s-review-primary{background:#1e293b;color:#fff}.fire-s-review-secondary{background:#e2e8f0;color:#1e293b}
+      .fire-s-complete-modal{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.58)}
+      .fire-s-complete-dialog{width:min(520px,100%);background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.28);overflow:hidden}
+      .fire-s-complete-dialog-body{padding:24px}.fire-s-complete-dialog h2{margin:0 0 8px;font-size:1.4rem}.fire-s-complete-dialog p{margin:0;color:#64748b}
+      .fire-s-complete-count{margin:18px 0;padding:14px;border-radius:12px;background:#f8fafc;text-align:center}.fire-s-complete-count strong{display:block;font-size:1.55rem;color:#0f172a}.fire-s-complete-count span{color:#64748b;font-size:.85rem}
+      .fire-s-complete-dialog-actions{display:flex;gap:10px;justify-content:flex-end;padding:0 24px 24px}.fire-s-complete-dialog-actions button{border:0;border-radius:9px;padding:11px 15px;font-weight:800;cursor:pointer}.fire-s-complete-review{background:#1e293b;color:#fff}.fire-s-complete-edit{background:#e2e8f0;color:#1e293b}
+      @media(max-width:720px){.fire-s-review-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fire-s-review-head{flex-direction:column}.fire-s-review-actions,.fire-s-complete-dialog-actions{flex-direction:column-reverse}.fire-s-review-actions button,.fire-s-complete-dialog-actions button{width:100%}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function reviewHost() {
+    let host = document.getElementById(REVIEW_ID);
+    if (!host) {
+      host = document.createElement('section');
+      host.id = REVIEW_ID;
+      host.className = 'fire-s-review-panel';
+      const checklistCard = document.getElementById('checklistCard') || document.getElementById('checklist')?.closest('.card');
+      const actionPanel = document.getElementById('smartActionEnginePanel');
+      if (actionPanel?.parentElement) actionPanel.insertAdjacentElement('beforebegin', host);
+      else if (checklistCard?.parentElement) checklistCard.insertAdjacentElement('afterend', host);
+      else (document.getElementById('projectFormSection') || document.body).appendChild(host);
+    }
+    return host;
+  }
+
+  function hideLegacyActions(locked) {
+    const panel = document.getElementById('smartActionEnginePanel');
+    if (panel) panel.style.display = locked ? 'none' : '';
+  }
+
+  function renderReview(options) {
+    ensureStyles();
+    if (isHistoryView()) {
+      const existing = document.getElementById(REVIEW_ID);
+      if (existing) existing.style.display = 'none';
+      return;
+    }
+
+    const counts = uiCompletion();
+    const complete = isComplete(counts);
+    const host = reviewHost();
+    host.style.display = '';
+    hideLegacyActions(!complete);
+    const percentage = counts.total ? Math.round((counts.answered / counts.total) * 100) : 0;
+
+    if (!complete) {
+      host.innerHTML = `
+        <div class="fire-s-review-head"><div><h3>Inspection Review</h3><p>Action Items activate only after the checklist is complete.</p></div><span class="fire-s-review-badge locked">LOCKED</span></div>
+        <div class="fire-s-review-progress"><div class="fire-s-review-progress-row"><span>Checklist progress</span><strong>${counts.answered} / ${counts.total}</strong></div><div class="fire-s-review-track"><div class="fire-s-review-fill" style="width:${percentage}%"></div></div></div>
+        <div class="fire-s-review-lock"><strong>Complete all checklist items to unlock Inspection Review.</strong>${counts.unanswered} item${counts.unanswered === 1 ? '' : 's'} still require an answer. The inspection may still be saved and resumed later.</div>`;
+      return;
+    }
+
+    const project = getCurrentProject();
+    const expiry = expirySummary(project);
+    const actions = openActionCount(project);
+    const critical = criticalCount(project);
+    const compliance = compliancePercent(counts);
+    host.innerHTML = `
+      <div class="fire-s-review-head"><div><h3>Inspection Review</h3><p>The checklist is complete and the inspection has been evaluated.</p></div><span class="fire-s-review-badge ready">READY FOR REVIEW</span></div>
+      <div class="fire-s-review-progress"><div class="fire-s-review-progress-row"><span>Checklist progress</span><strong>${counts.answered} / ${counts.total}</strong></div><div class="fire-s-review-track"><div class="fire-s-review-fill" style="width:100%"></div></div></div>
+      <div class="fire-s-review-grid">
+        <div class="fire-s-review-stat"><span>Action Items</span><strong>${actions}</strong></div>
+        <div class="fire-s-review-stat"><span>Expired Services</span><strong>${expiry.expired}</strong></div>
+        <div class="fire-s-review-stat"><span>Critical Items</span><strong>${critical}</strong></div>
+        <div class="fire-s-review-stat"><span>Compliance</span><strong>${compliance}%</strong></div>
+      </div>
+      <div class="fire-s-review-note">Photos recorded: <strong>${Array.isArray(project?.photos) ? project.photos.length : 0}</strong>. Photos are optional unless the premises or company configuration later requires them.</div>
+      <div class="fire-s-review-actions"><button type="button" class="fire-s-review-secondary" data-fire-s-review-action="edit">Continue Editing</button><button type="button" class="fire-s-review-primary" data-fire-s-review-action="actions">Review Action Items</button></div>`;
+
+    if (options?.scroll) host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function closeModal() {
+    document.getElementById(MODAL_ID)?.remove();
+  }
+
+  function showCompleteModal(counts) {
+    closeModal();
+    ensureStyles();
+    const modal = document.createElement('div');
+    modal.id = MODAL_ID;
+    modal.className = 'fire-s-complete-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'fireSCompleteTitle');
+    modal.innerHTML = `
+      <div class="fire-s-complete-dialog">
+        <div class="fire-s-complete-dialog-body">
+          <h2 id="fireSCompleteTitle">Inspection Checklist Completed</h2>
+          <p>All checklist items have been answered. Fire-S has activated Inspection Review and evaluated the Action Items.</p>
+          <div class="fire-s-complete-count"><strong>${counts.answered} / ${counts.total}</strong><span>Checklist items completed</span></div>
+        </div>
+        <div class="fire-s-complete-dialog-actions">
+          <button type="button" class="fire-s-complete-edit" data-fire-s-modal-action="edit">Continue Editing</button>
+          <button type="button" class="fire-s-complete-review" data-fire-s-modal-action="review">Review Inspection</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  function evaluateInspection(showPopup) {
+    clearTimeout(evaluationTimer);
+    evaluationTimer = setTimeout(() => {
+      const counts = uiCompletion();
+      const complete = isComplete(counts);
+
+      if (!complete) {
+        persistLifecycle(false, { inspectionReviewCompletedAt: null });
+        renderReview();
+        previousCompleteState = false;
+        return;
+      }
+
+      // First persist the current answers through the existing save/autosave path.
+      try {
+        if (typeof autoSaveProject === 'function') autoSaveProject();
+      } catch (_) {}
+
+      setTimeout(() => {
+        try {
+          if (window.FireSSmartActionEngine?.syncCurrent) {
+            window.FireSSmartActionEngine.syncCurrent();
+          }
+        } catch (error) {
+          console.warn('Phase 4 Action Item evaluation could not complete:', error);
+        }
+
+        persistLifecycle(true, {
+          inspectionReviewCompletedAt: new Date().toISOString()
+        });
+        renderReview();
+        if (showPopup && !previousCompleteState) showCompleteModal(counts);
+        previousCompleteState = true;
+      }, 180);
+    }, 140);
+  }
+
+  document.addEventListener('change', event => {
+    if (!event.target?.classList?.contains('answer-select')) return;
+    evaluateInspection(true);
+  }, true);
+
+  document.addEventListener('click', event => {
+    const modalAction = event.target?.closest?.('[data-fire-s-modal-action]')?.getAttribute('data-fire-s-modal-action');
+    if (modalAction) {
+      closeModal();
+      if (modalAction === 'review') renderReview({ scroll: true });
+      return;
+    }
+
+    const reviewAction = event.target?.closest?.('[data-fire-s-review-action]')?.getAttribute('data-fire-s-review-action');
+    if (reviewAction === 'actions') {
+      const panel = document.getElementById('smartActionEnginePanel');
+      if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (reviewAction === 'edit') {
+      document.getElementById('checklistCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, true);
+
+  window.addEventListener('fireSProjectOpened', () => {
+    previousCompleteState = isComplete(uiCompletion());
+    setTimeout(() => evaluateInspection(false), 450);
+  });
+
+  // Re-apply the gate after legacy renderers rebuild the Action Register.
+  const observer = new MutationObserver(() => {
+    if (!currentId() || isHistoryView()) return;
+    const complete = isComplete(uiCompletion());
+    hideLegacyActions(!complete);
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  window.FireSInspectionReviewEngine = {
+    version: VERSION,
+    evaluate: () => evaluateInspection(false),
+    render: renderReview,
+    isComplete: () => isComplete(uiCompletion())
+  };
+
+  setTimeout(() => {
+    if (currentId()) {
+      previousCompleteState = isComplete(uiCompletion());
+      evaluateInspection(false);
+    }
+  }, 1200);
+})();
