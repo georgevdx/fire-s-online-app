@@ -12733,7 +12733,9 @@ function archiveProjectCurrentInspectionAndStartBlank(projectId) {
     ...original,
     inspectionHistory,
     answers: [],
+    inspectionAnswers: [],
     photos: [],
+    inspectionPhotos: [],
     actions: [],
     finalComments: '',
     followUpRequired: 'No',
@@ -12746,7 +12748,8 @@ function archiveProjectCurrentInspectionAndStartBlank(projectId) {
     completedAt: null,
     archiveStatus: '',
     archivedAt: null,
-    scheduledStatus: 'in_progress',
+    inspectionStatus: 'created',
+    scheduledStatus: 'created',
     scheduleFreshInspection: false,
     inspectionNumber: generateInspectionNumber(),
     inspectionDate: today,
@@ -34508,19 +34511,23 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
     inspectionId: currentInspectionId,
     inspectionNumber: generateInspectionNumber(),
     inspectionDate: today,
-    inspectionStartedAt: nowIso,
+    inspectionCreatedAt: nowIso,
+    inspectionStartedAt: null,
     workspaceCreatedAt: nowIso,
     completedAt: null,
     archivedAt: null,
     archiveStatus: '',
-    scheduledStatus: 'in_progress',
+    inspectionStatus: 'created',
+    scheduledStatus: 'created',
     scheduleFreshInspection: false,
     locked: false,
     isReadOnly: false,
 
     // Isolated inspection content. Premises/building/contact details above are retained.
     answers: [],
+    inspectionAnswers: [],
     photos: [],
+    inspectionPhotos: [],
     actions: [],
     actionItems: [],
     findings: [],
@@ -35723,16 +35730,24 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   }
 
   function inspectionWorkspaceState(project){
-    const answers = Array.isArray(project?.answers) ? project.answers : [];
-    const photos = Array.isArray(project?.photos) ? project.photos : [];
-    const hasWorkspaceData = answers.some(item => text(item?.answer)) || photos.length > 0;
+    const answers = Array.isArray(project?.answers)
+      ? project.answers
+      : (Array.isArray(project?.inspectionAnswers) ? project.inspectionAnswers : []);
+    const hasAnsweredQuestions = answers.some(item => text(item?.answer || item?.value || item?.response));
     const explicit = text(project?.inspectionStatus || project?.status || project?.scheduledStatus).toLowerCase();
+    const hasCreatedWorkspace = Boolean(
+      project?.currentInspectionId || project?.currentInspection || project?.inspectionCreatedAt ||
+      project?.workspaceCreatedAt || ['created', 'draft'].includes(explicit)
+    );
 
     if (['ready_for_review', 'ready for review', 'review'].includes(explicit)) {
       return { label: 'Ready for Review', className: 'fire-s-command-workspace-review' };
     }
-    if (hasWorkspaceData || ['draft', 'in_progress', 'in progress', 'active'].includes(explicit)) {
+    if (hasAnsweredQuestions || ['in_progress', 'in progress', 'active'].includes(explicit)) {
       return { label: 'Current Inspection In Progress', className: 'fire-s-command-workspace-active' };
+    }
+    if (hasCreatedWorkspace) {
+      return { label: 'Inspection Ready to Start', className: 'fire-s-command-workspace-active' };
     }
     return { label: 'No Current Inspection', className: 'fire-s-command-workspace-empty' };
   }
@@ -36650,25 +36665,26 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const total = answers.length;
     const percentage = total ? Math.round((answered / total) * 100) : 0;
     const explicit = lower(project?.inspectionStatus || project?.status || project?.scheduledStatus);
-    const hasData = answered > 0 || photos.length > 0;
+    const hasAnsweredQuestions = answered > 0;
     const hasCurrentFlag = Boolean(
       project?.currentInspectionId ||
       project?.currentInspection ||
-      project?.inspectionStartedAt ||
       project?.inspectionCreatedAt ||
+      project?.workspaceCreatedAt ||
+      project?.inspectionStartedAt ||
       ['created', 'draft', 'in_progress', 'in progress', 'active', 'ready_for_review', 'ready for review', 'review'].includes(explicit)
     );
 
     if (['ready_for_review', 'ready for review', 'review'].includes(explicit) || (total > 0 && answered >= total)) {
-      return { lifecycle:'READY_FOR_REVIEW', label:'Ready for Review', percentage:100, hasCurrent:true, photos:photos.length };
+      return { lifecycle:'READY_FOR_REVIEW', label:'Ready for Review', percentage:100, hasCurrent:true, photos:photos.length, answered, total };
     }
-    if (hasData || ['in_progress', 'in progress', 'active'].includes(explicit)) {
-      return { lifecycle:'IN_PROGRESS', label:'In Progress', percentage, hasCurrent:true, photos:photos.length };
+    if (hasAnsweredQuestions || ['in_progress', 'in progress', 'active'].includes(explicit)) {
+      return { lifecycle:'IN_PROGRESS', label:'In Progress', percentage, hasCurrent:true, photos:photos.length, answered, total };
     }
     if (hasCurrentFlag) {
-      return { lifecycle:'CREATED', label:'Not Started', percentage:0, hasCurrent:true, photos:photos.length };
+      return { lifecycle:'CREATED', label:'Ready to Start', percentage:0, hasCurrent:true, photos:photos.length, answered, total };
     }
-    return { lifecycle:'NONE', label:'No Current Inspection', percentage:0, hasCurrent:false, photos:photos.length };
+    return { lifecycle:'NONE', label:'No Current Inspection', percentage:0, hasCurrent:false, photos:photos.length, answered, total };
   }
 
   function healthSnapshot(project){
@@ -36869,7 +36885,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         <article class="fire-s-cc-card">
           <span class="label">Current Inspection</span>
           <span class="value">${escapeHtml(workspace.label)}</span>
-          <span class="meta">${workspace.hasCurrent ? `${workspace.percentage}% complete · ${workspace.photos} photo${workspace.photos === 1 ? '' : 's'}` : 'Ready when the next inspection starts'}</span>
+          <span class="meta">${workspace.hasCurrent ? `${workspace.answered || 0} of ${workspace.total || 0} questions answered · ${workspace.photos} photo${workspace.photos === 1 ? '' : 's'}` : 'Ready when the next inspection starts'}</span>
           <div class="fire-s-cc-progress"><span style="width:${Math.max(0, Math.min(100, workspace.percentage))}%"></span></div>
         </article>
         <article class="fire-s-cc-card">
@@ -36891,7 +36907,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       <div class="fire-s-cc-activity">
         <span class="fire-s-cc-eyebrow">Premises Activity</span>
         <div class="fire-s-cc-activity-list">
-          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${workspace.hasCurrent ? 'Current inspection workspace is active' : 'No current inspection workspace'}</span><time>${workspace.hasCurrent ? `${workspace.percentage}%` : '—'}</time></div>
+          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${workspace.lifecycle === 'CREATED' ? 'Current inspection is ready to start' : (workspace.hasCurrent ? 'Current inspection workspace is active' : 'No current inspection workspace')}</span><time>${workspace.hasCurrent ? `${workspace.percentage}%` : '—'}</time></div>
           <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${history.length ? 'Latest inspection finalised' : 'No finalised inspection history yet'}</span><time>${history.length ? escapeHtml(dateLabel(latest?.completedAt || latest?.finalisedAt || latest?.inspectionDate || latest?.date)) : '—'}</time></div>
           <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>Next inspection date</span><time>${escapeHtml(dateLabel(nextDate))}</time></div>
         </div>
