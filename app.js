@@ -18389,7 +18389,69 @@ const photosHtml =
   });
 }
 
+function fireSReturnFromHistoricalViewToPremisesWorkflow(projectId, focusMode = '') {
+  const resolvedProjectId = String(
+    projectId ||
+    window.fireSHistoryLaunchContext?.projectId ||
+    window.currentProjectId ||
+    (typeof currentProjectId !== 'undefined' ? currentProjectId : '') ||
+    ''
+  );
+
+  clearTimeout(typeof autoSaveTimer !== 'undefined' ? autoSaveTimer : null);
+
+  document.getElementById('archivedInspectionDetailPanel')?.remove();
+  document.getElementById('inspectionArchivePanel')?.remove();
+  document.getElementById('inspectionArchiveLauncher')?.remove();
+  document.getElementById('smartActionEnginePanel')?.remove();
+
+  selectedHistoryInspectionContext = null;
+  archivedReportContext = null;
+  liveReportContext = null;
+  inspectionHistoryViewMode = false;
+  document.body.classList.remove('fire-s-history-view-mode');
+
+  // Remove all archived runtime content before leaving the protected view.
+  try {
+    currentPhotos = [];
+    if (typeof renderPhotos === 'function') renderPhotos();
+  } catch (_) {}
+
+  const reportSection = document.getElementById('reportSection');
+  if (reportSection) reportSection.style.display = 'none';
+
+  if (typeof resetInspectionSessionState === 'function') {
+    resetInspectionSessionState({ keepProjectId: false });
+  }
+
+  if (typeof restoreCurrentInspectionActionBar === 'function') {
+    restoreCurrentInspectionActionBar();
+  }
+
+  if (typeof showProjectList === 'function') showProjectList();
+
+  if (!resolvedProjectId) return;
+
+  window.setTimeout(() => {
+    if (typeof showInspectionOpenGate === 'function') {
+      showInspectionOpenGate(resolvedProjectId, focusMode || window.fireSHistoryLaunchContext?.focusMode || '');
+    }
+  }, 160);
+}
+
 function closeArchivedInspectionDetail() {
+  const launchContext = window.fireSHistoryLaunchContext || null;
+
+  // Latest Inspection is a single-record shortcut. Closing it must return to
+  // Existing Premises Found (1-4), never to the editable inspection workspace.
+  if (launchContext?.mode === 'latest') {
+    fireSReturnFromHistoricalViewToPremisesWorkflow(
+      launchContext.projectId,
+      launchContext.focusMode || ''
+    );
+    return;
+  }
+
   const panel =
     document.getElementById('archivedInspectionDetailPanel');
 
@@ -27809,6 +27871,25 @@ function getProjectPrimaryAction(project) {
 function closeInspectionSession() {
   clearTimeout(autoSaveTimer);
 
+  const historicalContext = window.fireSHistoryLaunchContext || null;
+  const historicalViewOpen = Boolean(
+    inspectionHistoryViewMode ||
+    document.body.classList.contains('fire-s-history-view-mode') ||
+    selectedHistoryInspectionContext ||
+    document.getElementById('inspectionArchivePanel') ||
+    document.getElementById('archivedInspectionDetailPanel')
+  );
+
+  // Leaving Latest Inspection or the History workflow must always return to
+  // Existing Premises Found (1-4). Never expose the temporary editable form.
+  if (historicalViewOpen && historicalContext?.projectId) {
+    fireSReturnFromHistoricalViewToPremisesWorkflow(
+      historicalContext.projectId,
+      historicalContext.focusMode || ''
+    );
+    return;
+  }
+
   if (!document.getElementById('projectFormSection') || document.getElementById('projectFormSection').style.display === 'none') {
     showProjectList();
     return;
@@ -35023,6 +35104,12 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       document.getElementById('phase5LatestBtn')?.addEventListener('click', () => {
         if (!hasHistory) return;
+        window.fireSHistoryLaunchContext = {
+          mode: 'latest',
+          projectId: String(project.id),
+          focusMode: focusMode || '',
+          capturedAt: Date.now()
+        };
         close();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         window.setTimeout(() => {
@@ -35035,6 +35122,12 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       document.getElementById('phase5HistoryBtn')?.addEventListener('click', () => {
         if (!hasHistory) return;
+        window.fireSHistoryLaunchContext = {
+          mode: 'history',
+          projectId: String(project.id),
+          focusMode: focusMode || '',
+          capturedAt: Date.now()
+        };
         close();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         window.setTimeout(() => {
