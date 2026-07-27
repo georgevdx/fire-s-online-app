@@ -36159,3 +36159,214 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   showInspectionOpenGate = wrapped;
   window.showInspectionOpenGate = wrapped;
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.2 - SPRINT 2.1 PATCH 6
+// Premises Intelligence: priority banner + recommended next action
+// =====================================================
+(function fireSSprint21PremisesIntelligence(){
+  'use strict';
+
+  const VERSION = '1.2.2-sprint-2.1-patch-6';
+  const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
+    (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
+
+  if (typeof previousShowInspectionOpenGate !== 'function') return;
+
+  function text(value){ return String(value ?? '').trim(); }
+  function lower(value){ return text(value).toLowerCase(); }
+  function dateValue(value){
+    if (!value) return null;
+    const parsed = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  function startOfToday(){
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  function daysBetween(from, to){
+    return Math.max(0, Math.floor((to.getTime() - from.getTime()) / 86400000));
+  }
+  function isClosed(value){
+    return ['closed','complete','completed','resolved','cancelled','canceled'].includes(lower(value));
+  }
+  function resolveProject(projectIdentifier){
+    if (typeof resolveProjectOpenIdentifier === 'function') {
+      const resolved = resolveProjectOpenIdentifier(projectIdentifier);
+      if (resolved) return resolved;
+    }
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    return projects.find(item => String(item?.id) === String(projectIdentifier)) || null;
+  }
+  function actionItems(project){
+    if (Array.isArray(project?.actions)) return project.actions;
+    if (Array.isArray(project?.actionItems)) return project.actionItems;
+    if (Array.isArray(project?.findings)) return project.findings;
+    return [];
+  }
+  function serviceItems(project){
+    return [project?.services, project?.serviceRecords, project?.equipmentServices]
+      .filter(Array.isArray).flat();
+  }
+  function workspaceState(project){
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const photos = Array.isArray(project?.photos) ? project.photos : [];
+    const explicit = lower(project?.inspectionStatus || project?.status || project?.scheduledStatus);
+    const hasData = answers.some(item => text(item?.answer || item?.status || item?.value)) || photos.length > 0;
+    if (['ready_for_review','ready for review','review'].includes(explicit)) return 'review';
+    if (hasData || ['draft','in_progress','in progress','active'].includes(explicit)) return 'active';
+    return 'empty';
+  }
+  function nextInspectionDate(project){
+    const candidates = [project?.nextInspectionDate, project?.followUpDate, project?.scheduledDate, project?.nextDueDate, project?.dueDate];
+    return candidates.map(dateValue).find(Boolean) || null;
+  }
+  function analyse(project){
+    const today = startOfToday();
+    const actions = actionItems(project).filter(item => !isClosed(item?.status));
+    const critical = actions.filter(item => {
+      const risk = lower(item?.priority || item?.severity || item?.risk || item?.riskLevel);
+      return risk.includes('critical') || risk.includes('high');
+    });
+    const overdueActions = actions.filter(item => {
+      const due = dateValue(item?.dueDate || item?.targetDate || item?.expiryDate);
+      return due && due.getTime() < today.getTime();
+    });
+    const overdueServices = serviceItems(project).filter(item => {
+      if (isClosed(item?.status)) return false;
+      const due = dateValue(item?.dueDate || item?.nextServiceDate || item?.expiryDate);
+      return due && due.getTime() < today.getTime();
+    });
+    const dueSoonServices = serviceItems(project).filter(item => {
+      if (isClosed(item?.status)) return false;
+      const due = dateValue(item?.dueDate || item?.nextServiceDate || item?.expiryDate);
+      if (!due || due.getTime() < today.getTime()) return false;
+      return daysBetween(today, due) <= 30;
+    });
+    const nextInspection = nextInspectionDate(project);
+    const overdueInspectionDays = nextInspection && nextInspection.getTime() < today.getTime()
+      ? daysBetween(nextInspection, today)
+      : 0;
+    const workspace = workspaceState(project);
+
+    let score = 100;
+    score -= Math.min(35, critical.length * 18);
+    score -= Math.min(20, overdueActions.length * 7);
+    score -= Math.min(20, overdueServices.length * 8);
+    score -= overdueInspectionDays ? Math.min(20, 8 + Math.floor(overdueInspectionDays / 30) * 4) : 0;
+    score -= Math.min(10, Math.max(0, actions.length - critical.length) * 2);
+    score = Math.max(0, Math.round(score));
+
+    let health = { label:'Healthy', tone:'good' };
+    if (critical.length || overdueInspectionDays || overdueServices.length) health = { label:'High Risk', tone:'high' };
+    else if (actions.length || dueSoonServices.length) health = { label:'Attention Required', tone:'attention' };
+
+    let recommendation = { label:'Start New Inspection', target:'#phase5StartNewBtn', reason:'No current inspection is in progress.' };
+    if (workspace === 'review') {
+      recommendation = { label:'Review Current Inspection', target:'#phase5StartNewBtn', reason:'The current inspection is ready for review.' };
+    } else if (workspace === 'active') {
+      recommendation = { label:'Continue Current Inspection', target:'#phase5StartNewBtn', reason:'A current inspection already contains saved work.' };
+    } else if (critical.length || overdueActions.length) {
+      recommendation = { label:'Review Open Action Items', target:null, reason:`${critical.length || overdueActions.length} urgent action item${(critical.length || overdueActions.length) === 1 ? '' : 's'} require attention.` };
+    } else if (overdueInspectionDays) {
+      recommendation = { label:'Start Overdue Inspection', target:'#phase5StartNewBtn', reason:`The next inspection is ${overdueInspectionDays} day${overdueInspectionDays === 1 ? '' : 's'} overdue.` };
+    } else if (actions.length) {
+      recommendation = { label:'Review Open Action Items', target:null, reason:`${actions.length} open action item${actions.length === 1 ? '' : 's'} remain.` };
+    } else if ((Array.isArray(project?.inspectionHistory) ? project.inspectionHistory.length : 0) > 0) {
+      recommendation = { label:'View Latest Inspection', target:'#phase5LatestBtn', reason:'Review the latest completed inspection record.' };
+    }
+
+    const alerts = [];
+    if (overdueInspectionDays) alerts.push(`Inspection overdue by ${overdueInspectionDays} day${overdueInspectionDays === 1 ? '' : 's'}`);
+    if (critical.length) alerts.push(`${critical.length} critical open action${critical.length === 1 ? '' : 's'}`);
+    if (overdueServices.length) alerts.push(`${overdueServices.length} service${overdueServices.length === 1 ? '' : 's'} overdue`);
+    if (!alerts.length && dueSoonServices.length) alerts.push(`${dueSoonServices.length} service${dueSoonServices.length === 1 ? '' : 's'} due within 30 days`);
+
+    return { score, health, recommendation, alerts };
+  }
+  function ensureStyles(){
+    if (document.getElementById('fireSSprint21IntelligenceStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'fireSSprint21IntelligenceStyles';
+    style.textContent = `
+      .fire-s-command-intelligence { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; margin:0 0 14px; padding:14px; border:1px solid #dce4eb; border-radius:14px; background:#f8fafc; }
+      .fire-s-command-recommendation small { display:block; color:#687887; font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+      .fire-s-command-recommendation button { margin-top:5px; padding:0; border:0; background:none; color:#145f9b; font:inherit; font-size:16px; font-weight:900; text-align:left; cursor:pointer; }
+      .fire-s-command-recommendation button:hover { text-decoration:underline; }
+      .fire-s-command-recommendation p { margin:4px 0 0; color:#596b7b; font-size:12px; line-height:1.35; }
+      .fire-s-command-score { min-width:84px; text-align:right; }
+      .fire-s-command-score strong { display:block; color:#172b3f; font-size:22px; line-height:1; }
+      .fire-s-command-score span { display:block; margin-top:4px; color:#687887; font-size:10px; font-weight:900; text-transform:uppercase; }
+      .fire-s-command-alert { margin:0 0 14px; padding:11px 13px; border-radius:12px; font-size:12px; font-weight:800; line-height:1.4; }
+      .fire-s-command-alert-high { background:#fdeaea; color:#922323; border:1px solid #efb6b6; }
+      .fire-s-command-alert-attention { background:#fff7df; color:#7b5900; border:1px solid #eed98b; }
+      .fire-s-command-alert-good { background:#e9f8ef; color:#176b3a; border:1px solid #b9e7ca; }
+      @media (max-width:520px) {
+        .fire-s-command-intelligence { grid-template-columns:1fr; }
+        .fire-s-command-score { text-align:left; display:flex; align-items:baseline; gap:7px; }
+        .fire-s-command-score span { margin-top:0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  function decorate(project){
+    ensureStyles();
+    const modal = document.querySelector('#inspectionOpenGateBackdrop .fire-s-command-centre-modal') ||
+      document.querySelector('#inspectionOpenGateBackdrop .inspection-open-gate-modal');
+    if (!modal || !project || modal.dataset.fireSIntelligence === VERSION) return;
+    const body = modal.querySelector('.inspection-open-gate-body');
+    const context = body?.querySelector('.fire-s-command-context');
+    if (!body) return;
+
+    modal.dataset.fireSIntelligence = VERSION;
+    const result = analyse(project);
+    const intelligence = document.createElement('div');
+    intelligence.className = 'fire-s-command-intelligence';
+    intelligence.innerHTML = `
+      <div class="fire-s-command-recommendation">
+        <small>Next recommended action</small>
+        <button type="button">${result.recommendation.label}</button>
+        <p>${result.recommendation.reason}</p>
+      </div>
+      <div class="fire-s-command-score" title="Premises Health Score">
+        <strong>${result.score}/100</strong><span>${result.health.label}</span>
+      </div>
+    `;
+    body.insertBefore(intelligence, context || body.firstChild);
+
+    const recommendedButton = intelligence.querySelector('button');
+    recommendedButton?.addEventListener('click', () => {
+      if (result.recommendation.target) {
+        modal.querySelector(result.recommendation.target)?.click();
+        return;
+      }
+      const openActionsButton = modal.querySelector('[data-command="open-actions"], #openActionItemsBtn, #actionItemsBtn');
+      if (openActionsButton) openActionsButton.click();
+      else window.alert('Open Action Items from the Action Items Centre.');
+    });
+
+    const alert = document.createElement('div');
+    alert.className = `fire-s-command-alert fire-s-command-alert-${result.health.tone}`;
+    alert.textContent = result.alerts.length
+      ? `Priority: ${result.alerts.join(' • ')}`
+      : 'No urgent inspection, service or action-item alerts are currently recorded.';
+    intelligence.insertAdjacentElement('afterend', alert);
+
+    const oldBadge = modal.querySelector('.fire-s-command-health');
+    if (oldBadge) {
+      oldBadge.className = `fire-s-command-health ${result.health.tone === 'high' ? 'fire-s-command-health-high' : result.health.tone === 'attention' ? 'fire-s-command-health-attention' : 'fire-s-command-health-healthy'}`;
+      oldBadge.innerHTML = `<span aria-hidden="true">●</span>${result.health.label}`;
+    }
+  }
+
+  const wrapped = function fireSSprint21IntelligenceGate(projectIdentifier){
+    const project = resolveProject(projectIdentifier);
+    const result = previousShowInspectionOpenGate.apply(this, arguments);
+    window.setTimeout(() => decorate(resolveProject(projectIdentifier) || project), 0);
+    return result;
+  };
+
+  showInspectionOpenGate = wrapped;
+  window.showInspectionOpenGate = wrapped;
+})();
