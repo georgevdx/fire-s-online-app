@@ -229,6 +229,247 @@ function clearInputValue(id) {
   field.setAttribute('value', '');
 }
 
+// =====================================================
+// Premises identity guard
+// One premises name per company, shared by New Inspection
+// and Schedule Inspection for New Site.
+// =====================================================
+function normalizePremisesIdentityName(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('en-ZA');
+}
+
+function getProjectPremisesName(project) {
+  return String(
+    project?.siteName ||
+    project?.premisesName ||
+    project?.site_name ||
+    ''
+  ).trim();
+}
+
+function isProjectInPremisesCompanyScope(project, accessMetadata = getAccessMetadata()) {
+  const activeCompanyId = String(accessMetadata?.companyId || '').trim();
+  const projectCompanyId = String(
+    project?.companyId ||
+    project?.company_id ||
+    ''
+  ).trim();
+
+  if (activeCompanyId) {
+    return projectCompanyId === activeCompanyId;
+  }
+
+  // Personal/local workspaces must never collide with a company workspace.
+  if (projectCompanyId) return false;
+
+  const activeUserId = String(accessMetadata?.createdByUserId || '').trim();
+  const projectUserId = String(project?.createdByUserId || '').trim();
+
+  if (activeUserId && projectUserId) {
+    return projectUserId === activeUserId;
+  }
+
+  const activeEmail = String(accessMetadata?.createdByEmail || '')
+    .trim()
+    .toLowerCase();
+  const projectEmail = String(project?.createdByEmail || '')
+    .trim()
+    .toLowerCase();
+
+  if (activeEmail && projectEmail) {
+    return projectEmail === activeEmail;
+  }
+
+  return true;
+}
+
+function findDuplicatePremisesByName(siteName, options = {}) {
+  const identityName = normalizePremisesIdentityName(siteName);
+  if (!identityName) return null;
+
+  const excludedProjectId = String(options.excludeProjectId || '').trim();
+  const accessMetadata = options.accessMetadata || getAccessMetadata();
+
+  return filterDeletedProjects(getProjects()).find(project => {
+    if (!project) return false;
+    if (
+      excludedProjectId &&
+      String(project.id || '') === excludedProjectId
+    ) {
+      return false;
+    }
+
+    return (
+      isProjectInPremisesCompanyScope(project, accessMetadata) &&
+      normalizePremisesIdentityName(getProjectPremisesName(project)) === identityName
+    );
+  }) || null;
+}
+
+function getPremisesDuplicateNoticeId(fieldId) {
+  return `${fieldId}DuplicateNotice`;
+}
+
+function clearPremisesDuplicateFieldState(fieldId) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  field.setCustomValidity('');
+  field.removeAttribute('aria-invalid');
+  field.classList.remove('fire-s-premises-duplicate-input');
+
+  const notice = document.getElementById(
+    getPremisesDuplicateNoticeId(fieldId)
+  );
+  if (notice) notice.remove();
+}
+
+function openExistingDuplicatePremises(projectId, source = 'inspection') {
+  const duplicateProject = getProjects().find(
+    project => String(project?.id || '') === String(projectId || '')
+  );
+  if (!duplicateProject) {
+    alert('The existing premises could not be opened. Refresh or sync and try again.');
+    return;
+  }
+
+  clearTimeout(autoSaveTimer);
+
+  if (
+    source === 'inspection' &&
+    currentProjectId &&
+    currentInspectionSessionSnapshot
+  ) {
+    restoreWorkflowProjectSnapshot(
+      currentProjectId,
+      currentInspectionSessionSnapshot
+    );
+  }
+
+  if (source === 'schedule') {
+    clearScheduleNewInspectionForm();
+    const schedulePanel = document.getElementById('scheduleNewPanel');
+    if (schedulePanel) schedulePanel.style.display = 'none';
+  }
+
+  resetInspectionSessionState({ keepProjectId: false });
+  showProjectList();
+
+  window.setTimeout(() => {
+    openProject(duplicateProject.id);
+  }, 80);
+}
+
+function renderPremisesDuplicateFieldState(
+  fieldId,
+  duplicateProject,
+  source = 'inspection'
+) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  clearPremisesDuplicateFieldState(fieldId);
+  if (!duplicateProject) return;
+
+  const existingName =
+    getProjectPremisesName(duplicateProject) ||
+    'this premises';
+
+  field.setCustomValidity(
+    `A premises named "${existingName}" already exists in this company.`
+  );
+  field.setAttribute('aria-invalid', 'true');
+  field.classList.add('fire-s-premises-duplicate-input');
+
+  const notice = document.createElement('div');
+  notice.id = getPremisesDuplicateNoticeId(fieldId);
+  notice.className = 'fire-s-premises-duplicate-notice';
+  notice.setAttribute('role', 'alert');
+  notice.style.cssText =
+    'margin:6px 0 10px;padding:10px 12px;border:1px solid #dc2626;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:.84rem;line-height:1.4;';
+
+  const message = document.createElement('span');
+  message.textContent =
+    `“${existingName}” already exists. Open the existing premises, or use a unique branch/location name such as “${existingName} Menlyn”.`;
+
+  const openButton = document.createElement('button');
+  openButton.type = 'button';
+  openButton.textContent = 'Open Existing Premises';
+  openButton.style.cssText =
+    'display:block;margin-top:8px;padding:8px 10px;border:0;border-radius:7px;background:#991b1b;color:#fff;font-weight:700;cursor:pointer;';
+  openButton.addEventListener('click', () => {
+    openExistingDuplicatePremises(duplicateProject.id, source);
+  });
+
+  notice.append(message, openButton);
+  field.insertAdjacentElement('afterend', notice);
+}
+
+function validatePremisesNameInput(fieldId, options = {}) {
+  const field = document.getElementById(fieldId);
+  if (!field) return null;
+
+  const duplicateProject = findDuplicatePremisesByName(
+    field.value,
+    options
+  );
+
+  renderPremisesDuplicateFieldState(
+    fieldId,
+    duplicateProject,
+    options.source || 'inspection'
+  );
+
+  return duplicateProject;
+}
+
+function guardPremisesNameBeforeWrite(options = {}) {
+  const fieldId = options.fieldId || 'siteName';
+  const field = document.getElementById(fieldId);
+  const siteName = String(options.siteName ?? field?.value ?? '').trim();
+
+  if (!siteName) {
+    alert('Enter a Site / Premises name before saving.');
+    field?.focus({ preventScroll: true });
+    field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+
+  const duplicateProject = validatePremisesNameInput(fieldId, {
+    excludeProjectId: options.excludeProjectId,
+    accessMetadata: options.accessMetadata,
+    source: options.source || 'inspection'
+  });
+
+  if (!duplicateProject) return true;
+
+  const existingName =
+    getProjectPremisesName(duplicateProject) ||
+    siteName;
+
+  const shouldOpenExisting = confirm(
+    `A premises named "${existingName}" already exists in this company.\n\n` +
+    'OK = Open the existing premises\n' +
+    'Cancel = Return and enter a unique branch/location name'
+  );
+
+  if (shouldOpenExisting) {
+    openExistingDuplicatePremises(
+      duplicateProject.id,
+      options.source || 'inspection'
+    );
+  } else {
+    field?.focus({ preventScroll: true });
+    field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return false;
+}
+
 
 // =====================================================
 // RC 1.1.19B - Inspection Session Guard
@@ -259,6 +500,8 @@ function resetInspectionSessionState(options = {}) {
 
   clearTimeout(autoSaveTimer);
   setWorkflowGateNoWriteLock(true);
+  clearPremisesDuplicateFieldState('siteName');
+  clearPremisesDuplicateFieldState('scheduleSiteName');
 
   if (!keepProjectId) {
     currentProjectId = null;
@@ -392,6 +635,22 @@ function autoSaveProject() {
 
   if (!siteName) return;
 
+  const accessMetadata = getAccessMetadata();
+  const duplicateProject = validatePremisesNameInput('siteName', {
+    excludeProjectId: currentProjectId,
+    accessMetadata,
+    source: 'inspection'
+  });
+
+  if (duplicateProject) {
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent =
+        'Not saved: this premises name already exists. Open the existing premises or enter a unique branch/location name.';
+    }
+    return;
+  }
+
   if (
     !projectAddressField ||
     !gpsField ||
@@ -422,8 +681,6 @@ function autoSaveProject() {
   const unitNumber = unitNumberField.value.trim();
   const productType = normalizeProductType(getEl('productType').value);
   const inspectionType = getEl('inspectionType').value;
-
-  const accessMetadata = getAccessMetadata();
   
   const siteId = [
     projectAddress?.toLowerCase().trim(),
@@ -4644,6 +4901,17 @@ if (saveScheduledInspectionBtn) {
   saveScheduledInspectionBtn.addEventListener('click', saveScheduledNewInspection);
 }
 
+const scheduleSiteNameField =
+  document.getElementById('scheduleSiteName');
+
+if (scheduleSiteNameField) {
+  scheduleSiteNameField.addEventListener('input', () => {
+    validatePremisesNameInput('scheduleSiteName', {
+      source: 'schedule'
+    });
+  });
+}
+
 const cancelScheduledInspectionBtn =
   document.getElementById('cancelScheduledInspectionBtn');
 
@@ -4689,7 +4957,13 @@ if (cancelScheduledInspectionBtn) {
     downloadAllPhotosBtn.addEventListener('click', downloadAllInspectionPhotos);
   }
   getEl('organisationName').addEventListener('input', scheduleAutoSave);
-  getEl('siteName').addEventListener('input', scheduleAutoSave);
+  getEl('siteName').addEventListener('input', () => {
+    validatePremisesNameInput('siteName', {
+      excludeProjectId: currentProjectId,
+      source: 'inspection'
+    });
+    scheduleAutoSave();
+  });
   getEl('contactPerson').addEventListener('input', scheduleAutoSave);
   getEl('contactTel').addEventListener('input', scheduleAutoSave);
   getEl('contactEmail').addEventListener('input', scheduleAutoSave);
@@ -5768,8 +6042,9 @@ function saveScheduledNewInspection() {
   const contactTel =
     document.getElementById('scheduleContactTel')?.value.trim() || '';
 
-  if (!organisationName && !siteName) {
-    alert('Enter at least a client / organisation or site / premises name.');
+  if (!siteName) {
+    alert('Enter a Site / Premises name before scheduling the inspection.');
+    document.getElementById('scheduleSiteName')?.focus();
     return;
   }
 
@@ -5779,6 +6054,15 @@ function saveScheduledNewInspection() {
   }
 
   const accessMetadata = getAccessMetadata();
+
+  if (!guardPremisesNameBeforeWrite({
+    fieldId: 'scheduleSiteName',
+    siteName,
+    accessMetadata,
+    source: 'schedule'
+  })) {
+    return;
+  }
 
   const projectName =
     [organisationName, siteName]
@@ -5851,6 +6135,9 @@ function saveScheduledNewInspection() {
     scheduleFreshInspection: false,
     scheduledReason: 'New inspection scheduled',
 
+    premisesIdentityName: normalizePremisesIdentityName(siteName),
+    premisesIdentityVersion: 1,
+
     completedAt: null,
     archiveStatus: '',
     archivedAt: null,
@@ -5905,6 +6192,8 @@ function clearScheduleNewInspectionForm() {
 
   const typeField = document.getElementById('scheduleInspectionType');
   if (typeField) typeField.value = 'General Fire Inspection';
+
+  clearPremisesDuplicateFieldState('scheduleSiteName');
 }
 
 function cancelScheduleNewInspection() {
@@ -13470,7 +13759,17 @@ const { error } = await supabaseClient
     if (error) {
       console.error('Single upload failed:', error);
       markUploadQueueFailure(project.id, error);
-      if (syncStatus) syncStatus.textContent = `Cloud upload failed: ${error.message}`;
+      const isDuplicatePremisesError =
+        String(error.code || '') === '23505' &&
+        String(error.message || '').includes(
+          'inspections_company_premises_name_unique'
+        );
+
+      if (syncStatus) {
+        syncStatus.textContent = isDuplicatePremisesError
+          ? 'Cloud save blocked: this premises name already exists in the company.'
+          : `Cloud upload failed: ${error.message}`;
+      }
       return;
     }
 
@@ -13544,11 +13843,27 @@ function saveProject() {
     alert(
       'Your company access does not allow editing inspections. Please contact your company admin or Fire-S support.'
     );
-    return;
+    return false;
   }
 
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
+  const accessMetadata = getAccessMetadata();
+
+  if (!guardPremisesNameBeforeWrite({
+    fieldId: 'siteName',
+    siteName,
+    excludeProjectId: currentProjectId,
+    accessMetadata,
+    source: 'inspection'
+  })) {
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent =
+        'Not saved: use the existing premises or enter a unique branch/location name.';
+    }
+    return false;
+  }
   
   const projectName =
     [organisationName, siteName]
@@ -13594,8 +13909,6 @@ const recurringCycleNotes =
   getEl('recurringCycleNotes').value.trim();
 
 const finalComments = getEl('finalComments').value.trim();
-  
-  const accessMetadata = getAccessMetadata();
   
   const answers = [];
 
@@ -13669,6 +13982,8 @@ const finalComments = getEl('finalComments').value.trim();
       inspectionNumber:
         projects[index].inspectionNumber ||
         generateInspectionNumber(),
+      premisesIdentityName: normalizePremisesIdentityName(siteName),
+      premisesIdentityVersion: 1,
       projectName,
       organisationName,
       siteName,
@@ -13740,6 +14055,8 @@ lastSaved: new Date().toISOString()
       syncError: false,
       
       inspectionNumber: generateInspectionNumber(),
+      premisesIdentityName: normalizePremisesIdentityName(siteName),
+      premisesIdentityVersion: 1,
       projectName,
       organisationName,
       siteName,
@@ -13816,7 +14133,7 @@ lastSaved: new Date().toISOString()
   if (savedProject) {
   if (!navigator.onLine) {
     setSyncStatusMessage('Saved offline. Will sync when signal returns.');
-    return;
+    return true;
   }
 
   uploadSingleInspection(savedProject)
@@ -13826,10 +14143,12 @@ lastSaved: new Date().toISOString()
     });
 } else {
   console.warn('Auto upload skipped: saved project not found.');
+  return false;
 }
 
 
 
+  return true;
 }
 
 function buildFinishSummaryMessage(project) {
@@ -14012,7 +14331,9 @@ function confirmFinishInspectionWithWarnings(project) {
 }
 
 function finishInspection() {
-  saveProject();
+  if (saveProject() === false) {
+    return;
+  }
 
   if (!currentProjectId) {
     return;
@@ -27984,7 +28305,9 @@ function closeInspectionSession() {
 
   const saveAndClose = confirm('Close inspection?\n\nOK = Save & Close\nCancel = choose Discard or Continue');
   if (saveAndClose) {
-    saveProject();
+    if (saveProject() === false) {
+      return;
+    }
     resetInspectionSessionState({ keepProjectId: false });
     showProjectList();
     return;
