@@ -24,8 +24,8 @@
   <span class="beta-badge rc-badge">RC BETA</span>
     </h1>
 
-    <p class="subtitle">Fire Safety App</p>
-    <p id="appVersion" class="brand-version">Version loading...</p></div>
+    <p class="subtitle">Fire Safety </p>
+    <p id="Version" class="brand-version">Version loading...</p></div>
   </div>
 
   <div class="cloud-menu">
@@ -74,10 +74,10 @@
 
       <div id="syncStatus" class="note"></div>
 
-      <div id="cloudAdminPanel" class="app-info" style="display:none;">
-        <div class="cloud-section-title">App Info</div>
-        <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudAppVersion">Loading...</span></div>
+      <div id="cloudAdminPanel" class="-info" style="display:none;">
+        <div class="cloud-section-title"> Info</div>
+        <div><strong>:</strong> Fire-S</div>
+        <div><strong>Version:</strong> <span id="cloudVersion">Loading...</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -96,7 +96,7 @@
         <input
           id="importBackupInput"
           type="file"
-          accept=".json,application/json"
+          accept=".json,lication/json"
           style="display:none;"
         >
         <div id="manualBackupPanel" class="manual-backup-panel" style="display:none;">
@@ -440,9 +440,9 @@
   </div>
 
   <div class="form-row">
-    <label for="betaWhatHappened">What happened?</label>
+    <label for="betaWhatHened">What hened?</label>
     <textarea
-      id="betaWhatHappened"
+      id="betaWhatHened"
       placeholder="Describe the issue..."
     ></textarea>
   </div>
@@ -451,7 +451,7 @@
     <label for="betaExpectedResult">What did you expect?</label>
     <textarea
       id="betaExpectedResult"
-      placeholder="What should have happened?"
+      placeholder="What should have hened?"
     ></textarea>
   </div>
 
@@ -665,7 +665,7 @@
     <div class="field-stack">
       <input id="gps" type="text" placeholder="-25.7479, 28.2293" autocomplete="off">
       <button id="useLocationBtn" type="button">Use Current Location</button>
-      <div id="gpsMapPreview" class="gps-map-preview">
+      <div id="gpsMreview" class="gps-map-preview">
         <div id="gpsMapStatus" class="gps-map-status">
           Map will show here after GPS is captured.
         </div>
@@ -962,7 +962,8 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-0-new-inspection-flow"></script>
   <script src="app.js?v=report-file-identity-v4"></script>
-  <script src="fire-s-premises-integrity-guard.js?v=1.1"></script>
+  <script src="app.js"></script>
+  <script src="fire-s-premises-integrity-guard.js?v=1.2"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script>
     if ('serviceWorker' in navigator) {
