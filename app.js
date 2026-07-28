@@ -231,8 +231,9 @@ function clearInputValue(id) {
 
 // =====================================================
 // Premises identity guard
-// One premises name per company, shared by New Inspection
-// and Schedule Inspection for New Site.
+// One Organisation / Company name per company, shared by New Inspection
+// and Schedule Inspection for New Site. Site / Branch / Location is deliberately
+// not a blocking identity field because different organisations may share it.
 // =====================================================
 function normalizePremisesIdentityName(value) {
   return String(value || '')
@@ -244,9 +245,12 @@ function normalizePremisesIdentityName(value) {
 
 function getProjectPremisesName(project) {
   return String(
-    project?.siteName ||
+    project?.organisationName ||
+    project?.organizationName ||
+    project?.businessName ||
+    project?.clientName ||
     project?.premisesName ||
-    project?.site_name ||
+    (!project?.siteName ? project?.projectName : '') ||
     ''
   ).trim();
 }
@@ -287,8 +291,8 @@ function isProjectInPremisesCompanyScope(project, accessMetadata = getAccessMeta
   return true;
 }
 
-function findDuplicatePremisesByName(siteName, options = {}) {
-  const identityName = normalizePremisesIdentityName(siteName);
+function findDuplicatePremisesByName(premisesName, options = {}) {
+  const identityName = normalizePremisesIdentityName(premisesName);
   if (!identityName) return null;
 
   const excludedProjectId = String(options.excludeProjectId || '').trim();
@@ -394,7 +398,7 @@ function renderPremisesDuplicateFieldState(
 
   const message = document.createElement('span');
   message.textContent =
-    `“${existingName}” already exists. Open the existing premises, or use a unique branch/location name such as “${existingName} Menlyn”.`;
+    `“${existingName}” already exists. Open the existing premises, or use a unique premises name such as “${existingName} Menlyn”.`;
 
   const openButton = document.createElement('button');
   openButton.type = 'button';
@@ -428,12 +432,14 @@ function validatePremisesNameInput(fieldId, options = {}) {
 }
 
 function guardPremisesNameBeforeWrite(options = {}) {
-  const fieldId = options.fieldId || 'siteName';
+  const fieldId = options.fieldId || 'organisationName';
   const field = document.getElementById(fieldId);
-  const siteName = String(options.siteName ?? field?.value ?? '').trim();
+  const premisesName = String(
+    options.premisesName ?? field?.value ?? ''
+  ).trim();
 
-  if (!siteName) {
-    alert('Enter a Site / Premises name before saving.');
+  if (!premisesName) {
+    alert('Enter the Organisation / Company name before saving.');
     field?.focus({ preventScroll: true });
     field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return false;
@@ -449,12 +455,12 @@ function guardPremisesNameBeforeWrite(options = {}) {
 
   const existingName =
     getProjectPremisesName(duplicateProject) ||
-    siteName;
+    premisesName;
 
   const shouldOpenExisting = confirm(
     `A premises named "${existingName}" already exists in this company.\n\n` +
     'OK = Open the existing premises\n' +
-    'Cancel = Return and enter a unique branch/location name'
+    'Cancel = Return and enter a unique premises name, such as "Checkers Menlyn"'
   );
 
   if (shouldOpenExisting) {
@@ -500,8 +506,8 @@ function resetInspectionSessionState(options = {}) {
 
   clearTimeout(autoSaveTimer);
   setWorkflowGateNoWriteLock(true);
-  clearPremisesDuplicateFieldState('siteName');
-  clearPremisesDuplicateFieldState('scheduleSiteName');
+  clearPremisesDuplicateFieldState('organisationName');
+  clearPremisesDuplicateFieldState('scheduleOrganisationName');
 
   if (!keepProjectId) {
     currentProjectId = null;
@@ -633,10 +639,10 @@ function autoSaveProject() {
 
   const finalComments = getEl('finalComments').value.trim();
 
-  if (!siteName) return;
+  if (!organisationName || !siteName) return;
 
   const accessMetadata = getAccessMetadata();
-  const duplicateProject = validatePremisesNameInput('siteName', {
+  const duplicateProject = validatePremisesNameInput('organisationName', {
     excludeProjectId: currentProjectId,
     accessMetadata,
     source: 'inspection'
@@ -646,7 +652,7 @@ function autoSaveProject() {
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent =
-        'Not saved: this premises name already exists. Open the existing premises or enter a unique branch/location name.';
+        'Not saved: this premises name already exists. Open the existing premises or enter a unique name such as "Checkers Menlyn".';
     }
     return;
   }
@@ -4901,12 +4907,12 @@ if (saveScheduledInspectionBtn) {
   saveScheduledInspectionBtn.addEventListener('click', saveScheduledNewInspection);
 }
 
-const scheduleSiteNameField =
-  document.getElementById('scheduleSiteName');
+const scheduleOrganisationNameField =
+  document.getElementById('scheduleOrganisationName');
 
-if (scheduleSiteNameField) {
-  scheduleSiteNameField.addEventListener('input', () => {
-    validatePremisesNameInput('scheduleSiteName', {
+if (scheduleOrganisationNameField) {
+  scheduleOrganisationNameField.addEventListener('input', () => {
+    validatePremisesNameInput('scheduleOrganisationName', {
       source: 'schedule'
     });
   });
@@ -4956,14 +4962,14 @@ if (cancelScheduledInspectionBtn) {
   if (downloadAllPhotosBtn) {
     downloadAllPhotosBtn.addEventListener('click', downloadAllInspectionPhotos);
   }
-  getEl('organisationName').addEventListener('input', scheduleAutoSave);
-  getEl('siteName').addEventListener('input', () => {
-    validatePremisesNameInput('siteName', {
+  getEl('organisationName').addEventListener('input', () => {
+    validatePremisesNameInput('organisationName', {
       excludeProjectId: currentProjectId,
       source: 'inspection'
     });
     scheduleAutoSave();
   });
+  getEl('siteName').addEventListener('input', scheduleAutoSave);
   getEl('contactPerson').addEventListener('input', scheduleAutoSave);
   getEl('contactTel').addEventListener('input', scheduleAutoSave);
   getEl('contactEmail').addEventListener('input', scheduleAutoSave);
@@ -6056,8 +6062,8 @@ function saveScheduledNewInspection() {
   const accessMetadata = getAccessMetadata();
 
   if (!guardPremisesNameBeforeWrite({
-    fieldId: 'scheduleSiteName',
-    siteName,
+    fieldId: 'scheduleOrganisationName',
+    premisesName: organisationName,
     accessMetadata,
     source: 'schedule'
   })) {
@@ -6135,8 +6141,8 @@ function saveScheduledNewInspection() {
     scheduleFreshInspection: false,
     scheduledReason: 'New inspection scheduled',
 
-    premisesIdentityName: normalizePremisesIdentityName(siteName),
-    premisesIdentityVersion: 1,
+    premisesIdentityName: normalizePremisesIdentityName(organisationName),
+    premisesIdentityVersion: 2,
 
     completedAt: null,
     archiveStatus: '',
@@ -6193,7 +6199,7 @@ function clearScheduleNewInspectionForm() {
   const typeField = document.getElementById('scheduleInspectionType');
   if (typeField) typeField.value = 'General Fire Inspection';
 
-  clearPremisesDuplicateFieldState('scheduleSiteName');
+  clearPremisesDuplicateFieldState('scheduleOrganisationName');
 }
 
 function cancelScheduleNewInspection() {
@@ -13851,8 +13857,8 @@ function saveProject() {
   const accessMetadata = getAccessMetadata();
 
   if (!guardPremisesNameBeforeWrite({
-    fieldId: 'siteName',
-    siteName,
+    fieldId: 'organisationName',
+    premisesName: organisationName,
     excludeProjectId: currentProjectId,
     accessMetadata,
     source: 'inspection'
@@ -13860,7 +13866,7 @@ function saveProject() {
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent =
-        'Not saved: use the existing premises or enter a unique branch/location name.';
+        'Not saved: use the existing premises or enter a unique name such as "Checkers Menlyn".';
     }
     return false;
   }
@@ -13982,8 +13988,8 @@ const finalComments = getEl('finalComments').value.trim();
       inspectionNumber:
         projects[index].inspectionNumber ||
         generateInspectionNumber(),
-      premisesIdentityName: normalizePremisesIdentityName(siteName),
-      premisesIdentityVersion: 1,
+      premisesIdentityName: normalizePremisesIdentityName(organisationName),
+      premisesIdentityVersion: 2,
       projectName,
       organisationName,
       siteName,
@@ -14055,8 +14061,8 @@ lastSaved: new Date().toISOString()
       syncError: false,
       
       inspectionNumber: generateInspectionNumber(),
-      premisesIdentityName: normalizePremisesIdentityName(siteName),
-      premisesIdentityVersion: 1,
+      premisesIdentityName: normalizePremisesIdentityName(organisationName),
+      premisesIdentityVersion: 2,
       projectName,
       organisationName,
       siteName,
