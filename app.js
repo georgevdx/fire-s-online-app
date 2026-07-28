@@ -300,6 +300,81 @@ function isProjectInPremisesCompanyScope(project, accessMetadata = getAccessMeta
   return true;
 }
 
+function getActivePremisesGuardReferences(options = {}) {
+  const projectIds = new Set();
+  const inspectionNumbers = new Set();
+  const inspectionIds = new Set();
+
+  const addValue = (set, value) => {
+    const normalisedValue = String(value || '').trim();
+    if (normalisedValue) set.add(normalisedValue);
+  };
+
+  addValue(projectIds, options.excludeProjectId);
+
+  (Array.isArray(options.excludeProjectIds) ? options.excludeProjectIds : [])
+    .forEach(projectId => addValue(projectIds, projectId));
+
+  // Scheduled-new validation has no active inspection workspace. Do not let a
+  // previously opened inspection weaken the duplicate check in that workflow.
+  if ((options.source || 'inspection') !== 'schedule') {
+    try { addValue(projectIds, currentProjectId); } catch (_) {}
+    try { addValue(projectIds, window.currentProjectId); } catch (_) {}
+    try { addValue(projectIds, currentProject?.id); } catch (_) {}
+    try { addValue(projectIds, window.currentProject?.id); } catch (_) {}
+    try { addValue(projectIds, currentInspectionSessionSnapshot?.id); } catch (_) {}
+
+    const activeProjectReferences = [];
+    try { activeProjectReferences.push(currentProject); } catch (_) {}
+    try { activeProjectReferences.push(window.currentProject); } catch (_) {}
+    try { activeProjectReferences.push(currentInspectionSessionSnapshot); } catch (_) {}
+
+    activeProjectReferences
+      .filter(Boolean)
+      .forEach(project => {
+        addValue(inspectionNumbers, project.inspectionNumber);
+        addValue(
+          inspectionIds,
+          project.currentInspectionId || project.inspectionId
+        );
+      });
+  }
+
+  return {
+    projectIds,
+    inspectionNumbers,
+    inspectionIds
+  };
+}
+
+function isActivePremisesGuardRecord(project, activeReferences) {
+  if (!project || !activeReferences) return false;
+
+  const projectId = String(project.id || '').trim();
+  if (projectId && activeReferences.projectIds.has(projectId)) {
+    return true;
+  }
+
+  const inspectionNumber = String(project.inspectionNumber || '').trim();
+  if (
+    inspectionNumber &&
+    activeReferences.inspectionNumbers.has(inspectionNumber)
+  ) {
+    return true;
+  }
+
+  const inspectionId = String(
+    project.currentInspectionId ||
+    project.inspectionId ||
+    ''
+  ).trim();
+
+  return Boolean(
+    inspectionId &&
+    activeReferences.inspectionIds.has(inspectionId)
+  );
+}
+
 function findDuplicatePremisesByNameAndSite(
   premisesName,
   siteName,
@@ -309,17 +384,12 @@ function findDuplicatePremisesByNameAndSite(
   const identitySite = normalizePremisesIdentityName(siteName);
   if (!identityName || !identitySite) return null;
 
-  const excludedProjectId = String(options.excludeProjectId || '').trim();
   const accessMetadata = options.accessMetadata || getAccessMetadata();
+  const activeReferences = getActivePremisesGuardReferences(options);
 
   return filterDeletedProjects(getProjects()).find(project => {
     if (!project) return false;
-    if (
-      excludedProjectId &&
-      String(project.id || '') === excludedProjectId
-    ) {
-      return false;
-    }
+    if (isActivePremisesGuardRecord(project, activeReferences)) return false;
 
     return (
       isProjectInPremisesCompanyScope(project, accessMetadata) &&
