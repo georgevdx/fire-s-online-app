@@ -231,9 +231,8 @@ function clearInputValue(id) {
 
 // =====================================================
 // Premises identity guard
-// One Organisation / Company name per company, shared by New Inspection
-// and Schedule Inspection for New Site. Site / Branch / Location is deliberately
-// not a blocking identity field because different organisations may share it.
+// The combined Organisation / Company + Site / Branch / Location pair identifies
+// a premises within a company. Either value may be reused on its own.
 // =====================================================
 function normalizePremisesIdentityName(value) {
   return String(value || '')
@@ -251,6 +250,16 @@ function getProjectPremisesName(project) {
     project?.clientName ||
     project?.premisesName ||
     (!project?.siteName ? project?.projectName : '') ||
+    ''
+  ).trim();
+}
+
+function getProjectPremisesSite(project) {
+  return String(
+    project?.siteName ||
+    project?.site_name ||
+    project?.branchName ||
+    project?.locationName ||
     ''
   ).trim();
 }
@@ -291,9 +300,14 @@ function isProjectInPremisesCompanyScope(project, accessMetadata = getAccessMeta
   return true;
 }
 
-function findDuplicatePremisesByName(premisesName, options = {}) {
+function findDuplicatePremisesByNameAndSite(
+  premisesName,
+  siteName,
+  options = {}
+) {
   const identityName = normalizePremisesIdentityName(premisesName);
-  if (!identityName) return null;
+  const identitySite = normalizePremisesIdentityName(siteName);
+  if (!identityName || !identitySite) return null;
 
   const excludedProjectId = String(options.excludeProjectId || '').trim();
   const accessMetadata = options.accessMetadata || getAccessMetadata();
@@ -309,7 +323,8 @@ function findDuplicatePremisesByName(premisesName, options = {}) {
 
     return (
       isProjectInPremisesCompanyScope(project, accessMetadata) &&
-      normalizePremisesIdentityName(getProjectPremisesName(project)) === identityName
+      normalizePremisesIdentityName(getProjectPremisesName(project)) === identityName &&
+      normalizePremisesIdentityName(getProjectPremisesSite(project)) === identitySite
     );
   }) || null;
 }
@@ -382,9 +397,12 @@ function renderPremisesDuplicateFieldState(
   const existingName =
     getProjectPremisesName(duplicateProject) ||
     'this premises';
+  const existingSite =
+    getProjectPremisesSite(duplicateProject) ||
+    'this site';
 
   field.setCustomValidity(
-    `A premises named "${existingName}" already exists in this company.`
+    `The premises "${existingName}" at "${existingSite}" already exists in this company.`
   );
   field.setAttribute('aria-invalid', 'true');
   field.classList.add('fire-s-premises-duplicate-input');
@@ -398,7 +416,7 @@ function renderPremisesDuplicateFieldState(
 
   const message = document.createElement('span');
   message.textContent =
-    `“${existingName}” already exists. Open the existing premises, or use a unique premises name such as “${existingName} Menlyn”.`;
+    `“${existingName}” at “${existingSite}” already exists. Open the existing premises, or correct the Name or Site.`;
 
   const openButton = document.createElement('button');
   openButton.type = 'button';
@@ -417,8 +435,19 @@ function validatePremisesNameInput(fieldId, options = {}) {
   const field = document.getElementById(fieldId);
   if (!field) return null;
 
-  const duplicateProject = findDuplicatePremisesByName(
-    field.value,
+  const siteField = document.getElementById(
+    options.siteFieldId || 'siteName'
+  );
+  const premisesName = String(
+    options.premisesName ?? field.value ?? ''
+  ).trim();
+  const siteName = String(
+    options.siteName ?? siteField?.value ?? ''
+  ).trim();
+
+  const duplicateProject = findDuplicatePremisesByNameAndSite(
+    premisesName,
+    siteName,
     options
   );
 
@@ -437,6 +466,11 @@ function guardPremisesNameBeforeWrite(options = {}) {
   const premisesName = String(
     options.premisesName ?? field?.value ?? ''
   ).trim();
+  const siteFieldId = options.siteFieldId || 'siteName';
+  const siteField = document.getElementById(siteFieldId);
+  const siteName = String(
+    options.siteName ?? siteField?.value ?? ''
+  ).trim();
 
   if (!premisesName) {
     alert('Enter the Organisation / Company name before saving.');
@@ -445,7 +479,17 @@ function guardPremisesNameBeforeWrite(options = {}) {
     return false;
   }
 
+  if (!siteName) {
+    alert('Enter the Site / Branch / Location before saving.');
+    siteField?.focus({ preventScroll: true });
+    siteField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+
   const duplicateProject = validatePremisesNameInput(fieldId, {
+    premisesName,
+    siteName,
+    siteFieldId,
     excludeProjectId: options.excludeProjectId,
     accessMetadata: options.accessMetadata,
     source: options.source || 'inspection'
@@ -456,11 +500,14 @@ function guardPremisesNameBeforeWrite(options = {}) {
   const existingName =
     getProjectPremisesName(duplicateProject) ||
     premisesName;
+  const existingSite =
+    getProjectPremisesSite(duplicateProject) ||
+    siteName;
 
   const shouldOpenExisting = confirm(
-    `A premises named "${existingName}" already exists in this company.\n\n` +
+    `"${existingName}" at "${existingSite}" already exists in this company.\n\n` +
     'OK = Open the existing premises\n' +
-    'Cancel = Return and enter a unique premises name, such as "Checkers Menlyn"'
+    'Cancel = Return and correct the Name or Site'
   );
 
   if (shouldOpenExisting) {
@@ -643,6 +690,8 @@ function autoSaveProject() {
 
   const accessMetadata = getAccessMetadata();
   const duplicateProject = validatePremisesNameInput('organisationName', {
+    siteFieldId: 'siteName',
+    siteName,
     excludeProjectId: currentProjectId,
     accessMetadata,
     source: 'inspection'
@@ -652,7 +701,7 @@ function autoSaveProject() {
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent =
-        'Not saved: this premises name already exists. Open the existing premises or enter a unique name such as "Checkers Menlyn".';
+        'Not saved: this exact Name and Site combination already exists. Open the existing premises or correct the Name or Site.';
     }
     return;
   }
@@ -767,6 +816,9 @@ function autoSaveProject() {
         inspectionNumber:
           projects[index].inspectionNumber ||
           generateInspectionNumber(),
+        premisesIdentityName: normalizePremisesIdentityName(organisationName),
+        premisesIdentitySite: normalizePremisesIdentityName(siteName),
+        premisesIdentityVersion: 3,
 
         syncPending: true,
         syncError: false,
@@ -4909,10 +4961,22 @@ if (saveScheduledInspectionBtn) {
 
 const scheduleOrganisationNameField =
   document.getElementById('scheduleOrganisationName');
+const scheduleSiteNameField =
+  document.getElementById('scheduleSiteName');
 
 if (scheduleOrganisationNameField) {
   scheduleOrganisationNameField.addEventListener('input', () => {
     validatePremisesNameInput('scheduleOrganisationName', {
+      siteFieldId: 'scheduleSiteName',
+      source: 'schedule'
+    });
+  });
+}
+
+if (scheduleSiteNameField) {
+  scheduleSiteNameField.addEventListener('input', () => {
+    validatePremisesNameInput('scheduleOrganisationName', {
+      siteFieldId: 'scheduleSiteName',
       source: 'schedule'
     });
   });
@@ -4964,12 +5028,20 @@ if (cancelScheduledInspectionBtn) {
   }
   getEl('organisationName').addEventListener('input', () => {
     validatePremisesNameInput('organisationName', {
+      siteFieldId: 'siteName',
       excludeProjectId: currentProjectId,
       source: 'inspection'
     });
     scheduleAutoSave();
   });
-  getEl('siteName').addEventListener('input', scheduleAutoSave);
+  getEl('siteName').addEventListener('input', () => {
+    validatePremisesNameInput('organisationName', {
+      siteFieldId: 'siteName',
+      excludeProjectId: currentProjectId,
+      source: 'inspection'
+    });
+    scheduleAutoSave();
+  });
   getEl('contactPerson').addEventListener('input', scheduleAutoSave);
   getEl('contactTel').addEventListener('input', scheduleAutoSave);
   getEl('contactEmail').addEventListener('input', scheduleAutoSave);
@@ -6064,6 +6136,8 @@ function saveScheduledNewInspection() {
   if (!guardPremisesNameBeforeWrite({
     fieldId: 'scheduleOrganisationName',
     premisesName: organisationName,
+    siteFieldId: 'scheduleSiteName',
+    siteName,
     accessMetadata,
     source: 'schedule'
   })) {
@@ -6142,7 +6216,8 @@ function saveScheduledNewInspection() {
     scheduledReason: 'New inspection scheduled',
 
     premisesIdentityName: normalizePremisesIdentityName(organisationName),
-    premisesIdentityVersion: 2,
+    premisesIdentitySite: normalizePremisesIdentityName(siteName),
+    premisesIdentityVersion: 3,
 
     completedAt: null,
     archiveStatus: '',
@@ -13767,13 +13842,17 @@ const { error } = await supabaseClient
       markUploadQueueFailure(project.id, error);
       const isDuplicatePremisesError =
         String(error.code || '') === '23505' &&
-        String(error.message || '').includes(
-          'inspections_company_premises_name_unique'
+        [
+          'inspections_company_premises_name_unique',
+          'inspections_company_organisation_name_unique',
+          'inspections_company_organisation_site_unique'
+        ].some(indexName =>
+          String(error.message || '').includes(indexName)
         );
 
       if (syncStatus) {
         syncStatus.textContent = isDuplicatePremisesError
-          ? 'Cloud save blocked: this premises name already exists in the company.'
+          ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
           : `Cloud upload failed: ${error.message}`;
       }
       return;
@@ -13859,6 +13938,8 @@ function saveProject() {
   if (!guardPremisesNameBeforeWrite({
     fieldId: 'organisationName',
     premisesName: organisationName,
+    siteFieldId: 'siteName',
+    siteName,
     excludeProjectId: currentProjectId,
     accessMetadata,
     source: 'inspection'
@@ -13866,7 +13947,7 @@ function saveProject() {
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent =
-        'Not saved: use the existing premises or enter a unique name such as "Checkers Menlyn".';
+        'Not saved: this exact Name and Site combination already exists. Open the existing premises or correct the Name or Site.';
     }
     return false;
   }
@@ -13989,7 +14070,8 @@ const finalComments = getEl('finalComments').value.trim();
         projects[index].inspectionNumber ||
         generateInspectionNumber(),
       premisesIdentityName: normalizePremisesIdentityName(organisationName),
-      premisesIdentityVersion: 2,
+      premisesIdentitySite: normalizePremisesIdentityName(siteName),
+      premisesIdentityVersion: 3,
       projectName,
       organisationName,
       siteName,
@@ -14062,7 +14144,8 @@ lastSaved: new Date().toISOString()
       
       inspectionNumber: generateInspectionNumber(),
       premisesIdentityName: normalizePremisesIdentityName(organisationName),
-      premisesIdentityVersion: 2,
+      premisesIdentitySite: normalizePremisesIdentityName(siteName),
+      premisesIdentityVersion: 3,
       projectName,
       organisationName,
       siteName,

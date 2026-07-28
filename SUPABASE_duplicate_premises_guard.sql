@@ -1,16 +1,17 @@
--- Fire-S premises-name identity guard v2
+-- Fire-S premises Name + Site identity guard v3
 -- Run once in the Supabase SQL Editor after resolving any legacy duplicates.
 --
--- v1 incorrectly treated Site / Branch / Location as the unique field.
--- Remove that rule first so different organisations may share the same site.
+-- Remove the earlier Site-only and Name-only rules.
 drop index if exists public.inspections_company_premises_name_unique;
+drop index if exists public.inspections_company_organisation_name_unique;
 
--- The Organisation / Company name is the protected premises name.
+-- Only the combined Organisation / Company + Site / Branch / Location pair
+-- identifies a duplicate within the same Fire-S company.
 -- Examples:
---   Checkers Menlyn + Menlyn Shopping Centre = allowed
---   Pick n Pay Menlyn + Menlyn Shopping Centre = allowed
---   A second Checkers Menlyn in the same Fire-S company = blocked
-create unique index if not exists inspections_company_organisation_name_unique
+--   Checkers + Menlyn = blocked when the exact pair already exists
+--   Checkers + Brooklyn = allowed
+--   Pick n Pay + Menlyn = allowed
+create unique index if not exists inspections_company_organisation_site_unique
 on public.inspections (
   company_id,
   lower(
@@ -20,6 +21,21 @@ on public.inspections (
           inspection_data ->> 'organisationName',
           inspection_data ->> 'organizationName',
           inspection_data ->> 'premisesName'
+        )
+      ),
+      '\s+',
+      ' ',
+      'g'
+    )
+  ),
+  lower(
+    regexp_replace(
+      btrim(
+        coalesce(
+          inspection_data ->> 'siteName',
+          inspection_data ->> 'site_name',
+          inspection_data ->> 'branchName',
+          inspection_data ->> 'locationName'
         )
       ),
       '\s+',
@@ -36,6 +52,17 @@ where
         inspection_data ->> 'organisationName',
         inspection_data ->> 'organizationName',
         inspection_data ->> 'premisesName'
+      )
+    ),
+    ''
+  ) is not null
+  and nullif(
+    btrim(
+      coalesce(
+        inspection_data ->> 'siteName',
+        inspection_data ->> 'site_name',
+        inspection_data ->> 'branchName',
+        inspection_data ->> 'locationName'
       )
     ),
     ''
