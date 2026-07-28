@@ -1,312 +1,227 @@
 /* ============================================================
-   Fire-S Premises Integrity Guard v1.0
-   Purpose:
-   - Require premises/site name and address before saving/closing/finalising
-     a NEW premises.
-   - Prevent duplicate premises names within the same company.
-   - Apply to New Inspection and Schedule New Premises workflows.
-   - Re-check at action time to protect all UI routes.
+   FIRE-S PREMISES INTEGRITY GUARD v1.2
+   Central write-gate protection.
+   Load AFTER app.js.
    ============================================================ */
-(function FireSPremisesIntegrityGuard() {
+(function () {
   'use strict';
 
-  const VERSION = '1.0.0';
-  const WRAPPED_FLAG = '__fireSPremisesIntegrityWrapped';
+  const VERSION = '1.2.0';
+  const STORAGE_KEY = 'fireyeProjects';
+  const ERROR_CODE = 'FIRE_S_PREMISES_INTEGRITY_BLOCK';
 
-  function text(value) {
+  function clean(value) {
     return String(value == null ? '' : value).trim();
   }
 
-  function normaliseName(value) {
-    return text(value)
+  function normalize(value) {
+    return clean(value)
       .toLocaleLowerCase()
       .replace(/[‐‑‒–—―]/g, '-')
+      .replace(/[.,]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
 
-  function fieldValue(ids) {
-    for (const id of ids) {
-      const field = document.getElementById(id);
-      if (field && text(field.value)) return text(field.value);
-    }
-    return '';
-  }
-
-  function getEnteredPremisesName() {
-    const organisation = fieldValue([
-      'organisationName',
-      'organizationName',
-      'companyName'
-    ]);
-    const site = fieldValue([
-      'siteName',
-      'premisesName',
-      'projectName'
-    ]);
-
-    // Fire-S currently builds projectName from organisation + site.
-    return text([organisation, site].filter(Boolean).join(' ')) || site || organisation;
-  }
-
-  function getEnteredAddress() {
-    const streetNumber = fieldValue(['streetNumber']);
-    const addressLine = fieldValue([
-      'projectAddress',
-      'addressLine',
-      'premisesAddress',
-      'siteAddress'
-    ]);
-    return text([streetNumber, addressLine].filter(Boolean).join(' '));
-  }
-
-  function getCurrentId() {
-    return (
-      window.currentProjectId ||
-      (typeof currentProjectId !== 'undefined' ? currentProjectId : null) ||
-      window.currentProject?.id ||
-      null
-    );
-  }
-
-  function projects() {
-    try {
-      if (typeof window.getProjects === 'function') {
-        const result = window.getProjects();
-        return Array.isArray(result) ? result : [];
-      }
-      if (typeof getProjects === 'function') {
-        const result = getProjects();
-        return Array.isArray(result) ? result : [];
-      }
-    } catch (error) {
-      console.warn('[Fire-S Integrity] Could not read projects:', error);
-    }
-    return [];
-  }
-
-  function currentCompanyId() {
-    return (
-      window.currentCompanyAccess?.companyId ||
-      window.currentUserProfile?.companyId ||
-      window.currentProject?.companyId ||
-      null
-    );
-  }
-
-  function projectCompanyId(project) {
-    return project?.companyId || project?.company_id || null;
-  }
-
-  function projectName(project) {
-    return text(
+  function displayName(project) {
+    return clean(
       project?.projectName ||
-      project?.premisesName ||
-      [project?.organisationName, project?.siteName].filter(Boolean).join(' ')
+      [project?.organisationName, project?.siteName].filter(Boolean).join(' ') ||
+      project?.siteName ||
+      project?.organisationName
     );
   }
 
-  function isSameCompany(project) {
-    const companyId = currentCompanyId();
-    if (!companyId) return true; // Existing local single-company behaviour.
-    return String(projectCompanyId(project) || '') === String(companyId);
+  function siteName(project) {
+    return clean(project?.siteName || project?.projectName || '');
   }
 
-  function duplicateFor(name) {
-    const key = normaliseName(name);
-    if (!key) return null;
+  function companyKey(project) {
+    return clean(project?.companyId || project?.company_id || '__local_company__');
+  }
 
-    const currentId = getCurrentId();
+  function storedProjects() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
 
-    return projects().find(project => {
-      if (!project || !isSameCompany(project)) return false;
-      if (currentId && String(project.id) === String(currentId)) return false;
-      return normaliseName(projectName(project)) === key;
+  function projectById(list, id) {
+    return (list || []).find(p => String(p?.id || '') === String(id || '')) || null;
+  }
+
+  function sameIdentityName(a, b) {
+    const aSite = normalize(siteName(a));
+    const bSite = normalize(siteName(b));
+    const aFull = normalize(displayName(a));
+    const bFull = normalize(displayName(b));
+
+    // Site/premises name is the strongest uniqueness key.
+    if (aSite && bSite && aSite === bSite) return true;
+
+    // Fallback for records that only have projectName.
+    if (aFull && bFull && aFull === bFull) return true;
+
+    return false;
+  }
+
+  function duplicateOf(candidate, proposed) {
+    return (proposed || []).find(other => {
+      if (!other || other === candidate) return false;
+      if (String(other.id || '') === String(candidate.id || '')) return false;
+      if (companyKey(other) !== companyKey(candidate)) return false;
+      return sameIdentityName(candidate, other);
     }) || null;
   }
 
-  function findField(ids) {
-    return ids.map(id => document.getElementById(id)).find(Boolean) || null;
+  function changedName(oldProject, newProject) {
+    if (!oldProject) return true;
+    return (
+      normalize(siteName(oldProject)) !== normalize(siteName(newProject)) ||
+      normalize(displayName(oldProject)) !== normalize(displayName(newProject))
+    );
   }
 
-  function focusField(field) {
-    if (!field) return;
-    try {
-      field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      window.setTimeout(() => field.focus({ preventScroll: true }), 250);
-    } catch (_) {
-      try { field.focus(); } catch (_) {}
+  function isNewOrRenamed(project, oldList) {
+    const oldProject = projectById(oldList, project?.id);
+    return !oldProject || changedName(oldProject, project);
+  }
+
+  function focusBestNameField(project) {
+    const scheduleLikely =
+      project?.scheduleType === 'new_site' ||
+      project?.scheduledStatus === 'scheduled';
+
+    const ids = scheduleLikely
+      ? ['scheduleSiteName', 'scheduleOrganisationName', 'siteName', 'organisationName']
+      : ['siteName', 'organisationName', 'scheduleSiteName', 'scheduleOrganisationName'];
+
+    for (const id of ids) {
+      const field = document.getElementById(id);
+      if (!field) continue;
+      try {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => field.focus({ preventScroll: true }), 150);
+      } catch (_) {
+        try { field.focus(); } catch (_) {}
+      }
+      break;
     }
   }
 
-  function warn(title, message, field) {
-    alert(`${title}\n\n${message}`);
-    focusField(field);
+  function warnDuplicate(candidate, existing) {
+    const attempted = displayName(candidate) || siteName(candidate) || 'This premises';
+    const existingName = displayName(existing) || siteName(existing) || 'Existing premises';
+
+    alert(
+      'Premises name already exists\n\n' +
+      `"${attempted}" cannot be saved because "${existingName}" already exists.\n\n` +
+      'Open the existing premises if it is the same location. ' +
+      'If this is another branch or site, add the branch, suburb, building or area ' +
+      'to make the premises name unique, for example "Checkers Menlyn".'
+    );
+
+    focusBestNameField(candidate);
   }
 
-  function validateNewPremises(options = {}) {
-    const name = getEnteredPremisesName();
-    const address = getEnteredAddress();
+  function makeIntegrityError(message) {
+    const error = new Error(message);
+    error.code = ERROR_CODE;
+    error.fireSIntegrityBlock = true;
+    return error;
+  }
 
-    const nameField = findField([
-      'siteName',
-      'premisesName',
-      'projectName',
-      'organisationName',
-      'organizationName'
-    ]);
+  function validateProposedWrite(proposed) {
+    const oldList = storedProjects();
+    const newList = Array.isArray(proposed) ? proposed : [];
 
-    const addressField = findField([
-      'projectAddress',
-      'addressLine',
-      'premisesAddress',
-      'siteAddress',
-      'streetNumber'
-    ]);
+    /*
+      Only examine records that are NEW or whose identity name was changed.
+      This is important because old installations may already contain historical
+      duplicates. Normal saves/syncs on unchanged records must continue working.
+    */
+    for (const candidate of newList) {
+      if (!candidate || !isNewOrRenamed(candidate, oldList)) continue;
 
-    if (!name) {
-      warn(
-        'Premises details required',
-        'Enter a premises name before saving, closing, scheduling or finalising this inspection.',
-        nameField
+      const candidateName = siteName(candidate) || displayName(candidate);
+      if (!normalize(candidateName)) continue;
+
+      const duplicate = duplicateOf(candidate, newList);
+      if (!duplicate) continue;
+
+      warnDuplicate(candidate, duplicate);
+
+      throw makeIntegrityError(
+        `Duplicate premises blocked: ${displayName(candidate) || candidateName}`
       );
-      return { ok: false, reason: 'missing-name' };
     }
 
-    if (!address) {
-      warn(
-        'Premises details required',
-        'Enter the premises address before saving, closing, scheduling or finalising this inspection.',
-        addressField
-      );
-      return { ok: false, reason: 'missing-address' };
-    }
-
-    const duplicate = duplicateFor(name);
-    if (duplicate) {
-      const existingName = projectName(duplicate) || name;
-      warn(
-        'Premises name already exists',
-        `A premises named "${existingName}" already exists. Open the existing premises if it is the same location, or add the branch, suburb, site or area to create a unique name, for example "Checkers Menlyn".`,
-        nameField
-      );
-      return {
-        ok: false,
-        reason: 'duplicate-name',
-        duplicate
-      };
-    }
-
-    return { ok: true };
-  }
-
-  function looksLikeProtectedAction(element) {
-    const button = element?.closest?.('button, input[type="button"], input[type="submit"], a');
-    if (!button) return null;
-
-    const label = text(
-      button.innerText ||
-      button.value ||
-      button.getAttribute('aria-label') ||
-      button.title
-    ).toLocaleLowerCase();
-
-    const protectedTerms = [
-      'close',
-      'save',
-      'save draft',
-      'finish',
-      'finish inspection',
-      'finalise',
-      'finalize',
-      'save schedule',
-      'schedule inspection',
-      'schedule new',
-      'create schedule'
-    ];
-
-    return protectedTerms.some(term => label === term || label.includes(term))
-      ? button
-      : null;
-  }
-
-  // Capture phase means validation runs before existing click handlers.
-  document.addEventListener('click', event => {
-    const action = looksLikeProtectedAction(event.target);
-    if (!action) return;
-
-    const result = validateNewPremises({ source: 'click' });
-    if (result.ok) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-  }, true);
-
-  // Protect form submission routes as well.
-  document.addEventListener('submit', event => {
-    const result = validateNewPremises({ source: 'submit' });
-    if (result.ok) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-  }, true);
-
-  function wrapFunction(name) {
-    let original;
-    try {
-      original = window[name] || eval(name);
-    } catch (_) {
-      original = window[name];
-    }
-
-    if (typeof original !== 'function' || original[WRAPPED_FLAG]) return false;
-
-    const wrapped = function FireSPremisesIntegrityProtectedAction() {
-      const result = validateNewPremises({ source: name });
-      if (!result.ok) return false;
-      return original.apply(this, arguments);
-    };
-
-    wrapped[WRAPPED_FLAG] = true;
-    wrapped.__original = original;
-    window[name] = wrapped;
-
-    try { eval(`${name} = window.${name}`); } catch (_) {}
     return true;
   }
 
-  const guardedFunctions = [
-    'saveProject',
-    'saveInspection',
-    'saveDraft',
-    'closeInspection',
-    'closeProject',
-    'finishInspection',
-    'finaliseInspection',
-    'finalizeInspection',
-    'scheduleInspection',
-    'saveSchedule',
-    'createScheduledInspection',
-    'createNewSiteSchedule'
-  ];
+  function install() {
+    const original =
+      window.setProjects ||
+      (typeof setProjects === 'function' ? setProjects : null);
 
-  function installWrappers() {
-    guardedFunctions.forEach(wrapFunction);
+    if (typeof original !== 'function') {
+      console.error('[Fire-S Integrity v1.2] setProjects() was not found.');
+      return false;
+    }
+
+    if (original.__fireSPremisesIntegrityV12) {
+      return true;
+    }
+
+    function protectedSetProjects(projects) {
+      validateProposedWrite(projects);
+      return original.call(this, projects);
+    }
+
+    protectedSetProjects.__fireSPremisesIntegrityV12 = true;
+    protectedSetProjects.__fireSOriginal = original;
+
+    /*
+      In a classic browser script, top-level function declarations are global
+      bindings backed by window properties. Assigning both covers the live app.
+    */
+    window.setProjects = protectedSetProjects;
+    try {
+      setProjects = protectedSetProjects;
+    } catch (_) {
+      // window assignment is sufficient on standard Fire-S deployment.
+    }
+
+    console.info(`[Fire-S] Premises Integrity Guard ${VERSION} installed at setProjects().`);
+    return true;
   }
 
-  // Install immediately and again after app initialisation.
-  installWrappers();
-  [250, 1000, 2500].forEach(delay => window.setTimeout(installWrappers, delay));
+  // Install after app.js and retry in case app initialisation is still completing.
+  install();
+  [100, 500, 1500].forEach(delay => {
+    window.setTimeout(install, delay);
+  });
+
+  /*
+    Prevent our intentional block from being mistaken for an app crash in the UI.
+    The thrown error is deliberate: it aborts the caller immediately so a rejected
+    scheduled project cannot continue to uploadSingleInspection().
+  */
+  window.addEventListener('error', event => {
+    const err = event?.error;
+    if (err?.fireSIntegrityBlock || err?.code === ERROR_CODE) {
+      event.preventDefault();
+      console.warn('[Fire-S Integrity] Save route stopped:', err.message);
+    }
+  });
 
   window.FireSPremisesIntegrityGuard = {
     version: VERSION,
-    validate: validateNewPremises,
-    normaliseName,
-    findDuplicate: duplicateFor,
-    reinstall: installWrappers
+    install,
+    validateProposedWrite,
+    normalize
   };
-
-  console.info(`[Fire-S] Premises Integrity Guard ${VERSION} active.`);
 })();
