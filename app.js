@@ -399,6 +399,82 @@ function findDuplicatePremisesByNameAndSite(
   }) || null;
 }
 
+function getPersistedInspectionForPremisesGuard(options = {}) {
+  const candidateIds = [
+    options.excludeProjectId,
+    options.projectId
+  ];
+
+  try { candidateIds.push(currentProjectId); } catch (_) {}
+  try { candidateIds.push(window.currentProjectId); } catch (_) {}
+  try { candidateIds.push(currentProject?.id); } catch (_) {}
+  try { candidateIds.push(window.currentProject?.id); } catch (_) {}
+  try { candidateIds.push(currentInspectionSessionSnapshot?.id); } catch (_) {}
+
+  const ids = new Set(
+    candidateIds
+      .map(value => String(value || '').trim())
+      .filter(Boolean)
+  );
+
+  if (ids.size === 0) return null;
+
+  return getProjects().find(project =>
+    ids.has(String(project?.id || '').trim())
+  ) || null;
+}
+
+function shouldCheckInspectionPremisesDuplicate(
+  premisesName,
+  siteName,
+  options = {}
+) {
+  const persistedProject =
+    getPersistedInspectionForPremisesGuard(options);
+
+  // A new premises must always be checked before its first save.
+  if (!persistedProject) return true;
+
+  const savedName = normalizePremisesIdentityName(
+    getProjectPremisesName(persistedProject)
+  );
+  const savedSite = normalizePremisesIdentityName(
+    getProjectPremisesSite(persistedProject)
+  );
+  const enteredName = normalizePremisesIdentityName(premisesName);
+  const enteredSite = normalizePremisesIdentityName(siteName);
+
+  // Saving, closing or finalising an unchanged existing premises is an update,
+  // not a new-premises creation. Do not let legacy duplicate cards block it.
+  return savedName !== enteredName || savedSite !== enteredSite;
+}
+
+function validateCurrentInspectionPremisesIdentity() {
+  const nameField = document.getElementById('organisationName');
+  const siteField = document.getElementById('siteName');
+  if (!nameField || !siteField) return null;
+
+  const premisesName = nameField.value.trim();
+  const siteName = siteField.value.trim();
+
+  if (!shouldCheckInspectionPremisesDuplicate(
+    premisesName,
+    siteName,
+    { excludeProjectId: currentProjectId }
+  )) {
+    clearPremisesDuplicateFieldState('organisationName');
+    return null;
+  }
+
+  return validatePremisesNameInput('organisationName', {
+    premisesName,
+    siteName,
+    siteFieldId: 'siteName',
+    excludeProjectId: currentProjectId,
+    source: 'inspection'
+  });
+}
+
 function getPremisesDuplicateNoticeId(fieldId) {
   return `${fieldId}DuplicateNotice`;
 }
@@ -759,13 +835,8 @@ function autoSaveProject() {
   if (!organisationName || !siteName) return;
 
   const accessMetadata = getAccessMetadata();
-  const duplicateProject = validatePremisesNameInput('organisationName', {
-    siteFieldId: 'siteName',
-    siteName,
-    excludeProjectId: currentProjectId,
-    accessMetadata,
-    source: 'inspection'
-  });
+  const duplicateProject =
+    validateCurrentInspectionPremisesIdentity();
 
   if (duplicateProject) {
     const saveMessage = document.getElementById('saveMessage');
@@ -5097,19 +5168,11 @@ if (cancelScheduledInspectionBtn) {
     downloadAllPhotosBtn.addEventListener('click', downloadAllInspectionPhotos);
   }
   getEl('organisationName').addEventListener('input', () => {
-    validatePremisesNameInput('organisationName', {
-      siteFieldId: 'siteName',
-      excludeProjectId: currentProjectId,
-      source: 'inspection'
-    });
+    validateCurrentInspectionPremisesIdentity();
     scheduleAutoSave();
   });
   getEl('siteName').addEventListener('input', () => {
-    validatePremisesNameInput('organisationName', {
-      siteFieldId: 'siteName',
-      excludeProjectId: currentProjectId,
-      source: 'inspection'
-    });
+    validateCurrentInspectionPremisesIdentity();
     scheduleAutoSave();
   });
   getEl('contactPerson').addEventListener('input', scheduleAutoSave);
@@ -14005,15 +14068,25 @@ function saveProject() {
   const siteName = getEl('siteName').value.trim();
   const accessMetadata = getAccessMetadata();
 
-  if (!guardPremisesNameBeforeWrite({
-    fieldId: 'organisationName',
-    premisesName: organisationName,
-    siteFieldId: 'siteName',
-    siteName,
-    excludeProjectId: currentProjectId,
-    accessMetadata,
-    source: 'inspection'
-  })) {
+  const mustCheckPremisesDuplicate =
+    shouldCheckInspectionPremisesDuplicate(
+      organisationName,
+      siteName,
+      { excludeProjectId: currentProjectId }
+    );
+
+  if (
+    mustCheckPremisesDuplicate &&
+    !guardPremisesNameBeforeWrite({
+      fieldId: 'organisationName',
+      premisesName: organisationName,
+      siteFieldId: 'siteName',
+      siteName,
+      excludeProjectId: currentProjectId,
+      accessMetadata,
+      source: 'inspection'
+    })
+  ) {
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent =
@@ -35551,7 +35624,15 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
   if (originalFinishInspection) {
     finishInspection = function fireSPhase5FinishInspection(){
-      const project = currentProjectRecord();
+      let project = currentProjectRecord();
+
+      // A fully completed first inspection may be finalised directly without
+      // forcing the inspector to press Save Draft first.
+      if (!project && typeof saveProject === 'function') {
+        if (saveProject() === false) return;
+        project = currentProjectRecord();
+      }
+
       if (!project) {
         alert('Save the inspection before finalising it.');
         return;
