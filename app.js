@@ -37287,6 +37287,41 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const open = openActionItems(project);
     const critical = criticalOpenActions(project);
     const service = serviceSummary(project);
+    const history = inspectionHistory(project);
+    const answers = arrays(project, ['answers', 'inspectionAnswers']);
+    const hasRecordedAnswer = answers.some(item =>
+      ['yes', 'no', 'n/a', 'na'].includes(lower(item?.answer || item?.value || item?.response))
+    );
+    const lifecycleStates = [
+      project?.inspectionLifecycleStatus,
+      project?.inspectionStatus,
+      project?.status,
+      project?.archiveStatus,
+      project?.scheduledStatus
+    ].map(lower);
+    const hasCompletedInspection = Boolean(
+      history.length ||
+      project?.completedAt ||
+      project?.finalisedAt ||
+      project?.archivedAt ||
+      project?.inspectionFinalisedAt ||
+      lifecycleStates.some(status =>
+        ['finalised', 'finalized', 'complete', 'completed', 'closed', 'archived'].includes(status)
+      )
+    );
+    const hasAssessmentEvidence = Boolean(
+      hasRecordedAnswer ||
+      hasCompletedInspection ||
+      open.length ||
+      service.total
+    );
+
+    // A blank premises/current workspace is not evidence of compliance.
+    // Never present an uninspected premises as Healthy 100/100.
+    if (!hasAssessmentEvidence) {
+      return { label:'Not Assessed', score:null, tone:'unassessed' };
+    }
+
     const nextDate = validDate(project?.nextInspectionDate || project?.followUpDate || project?.scheduledDate || project?.nextDueDate || project?.dueDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -37346,6 +37381,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-cc-health.healthy { color:#146538; background:#e8f7ed; border-color:#b8e2c6; }
       .fire-s-cc-health.attention { color:#7b5900; background:#fff6da; border-color:#ead48a; }
       .fire-s-cc-health.high { color:#922525; background:#fde9e9; border-color:#ecb5b5; }
+      .fire-s-cc-health.unassessed { color:#475569; background:#f1f5f9; border-color:#cbd5e1; }
       .fire-s-cc-today { padding:15px; border-radius:15px; border:1px solid #cddbe5; background:#fff; box-shadow:0 4px 14px rgba(18,42,61,.06); }
       .fire-s-cc-eyebrow { color:#71818e; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
       .fire-s-cc-today-row { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:8px; }
@@ -37467,7 +37503,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         </div>
         <div class="fire-s-cc-health ${health.tone}">
           <strong>${escapeHtml(health.label)}</strong>
-          <span>${health.score}/100</span>
+          <span>${health.score == null ? '—' : `${health.score}/100`}</span>
         </div>
       </div>
       <div class="fire-s-cc-today">
