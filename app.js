@@ -37948,7 +37948,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 })();
 
 // =====================================================
-// FIRE-S V12 - DELETE / DATA MANAGEMENT
+// FIRE-S V12-V14 - DELETE / DATA MANAGEMENT
 // Recoverable, role-controlled deletion for:
 // 1) the current incomplete inspection;
 // 2) one selected historical inspection;
@@ -37958,7 +37958,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function installFireSDataManagementV12(){
   'use strict';
 
-  const VERSION = 'delete-data-management-v12';
+  const VERSION = 'delete-data-management-v14';
   const RETENTION_DAYS = 30;
   const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1000;
   const MODAL_ID = 'fireSDataManagementV12';
@@ -38072,6 +38072,16 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       'admin',
       'local'
     ]).has(role());
+  }
+
+  function canPurgeBeforeExpiry(){
+    const currentRole = role();
+    if (currentRole === 'super_admin' || currentRole === 'local') return true;
+    try {
+      return typeof isSuperAdmin === 'function' && isSuperAdmin();
+    } catch (_) {
+      return false;
+    }
   }
 
   function actor(){
@@ -38504,6 +38514,138 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return true;
   }
 
+  function canPermanentlyDeleteEntry(item){
+    return canAdminDelete() &&
+      (!isWithinRetention(item) || canPurgeBeforeExpiry());
+  }
+
+  async function deletePremisesFromCloud(projectId){
+    if (
+      typeof supabaseClient === 'undefined' ||
+      !supabaseClient?.auth ||
+      !supabaseClient?.from
+    ) {
+      return role() === 'local';
+    }
+
+    try {
+      const { data: userData, error: userError } =
+        await supabaseClient.auth.getUser();
+      if (userError || !userData?.user) {
+        alert('Permanent deletion requires an active cloud session.');
+        return false;
+      }
+
+      let query = supabaseClient
+        .from('inspections')
+        .delete()
+        .eq('id', projectId);
+
+      if (typeof applyInspectionDeleteFilter === 'function') {
+        query = applyInspectionDeleteFilter(query, userData.user.id);
+      }
+
+      const { error } = await query.select();
+      if (error) {
+        console.error('Permanent premises deletion failed:', error);
+        alert(`Permanent cloud deletion failed: ${error.message}`);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Permanent premises deletion failed:', error);
+      alert('Permanent cloud deletion failed. The premises remains in the Recycle Bin.');
+      return false;
+    }
+  }
+
+  async function permanentlyDeleteRecycleEntry(kind, projectId, recycleId){
+    if (!canAdminDelete()) {
+      alert('Only a Company Admin or Super Admin may permanently delete recycled data.');
+      return false;
+    }
+
+    const projects = rawProjects();
+    const projectIndex = projects.findIndex(project =>
+      String(project?.id) === String(projectId)
+    );
+    if (projectIndex < 0) return false;
+
+    const project = projects[projectIndex];
+    let item = null;
+    let itemIndex = -1;
+    const bin = ensureRecycleBin(project);
+
+    if (kind === 'premises') {
+      item = {
+        purgeAfter: project.deletePurgeAfter,
+        deletedAt: project.deletedAt || project.dataManagementDeletedAt
+      };
+      if (!item.deletedAt) return false;
+    } else if (kind === 'current') {
+      itemIndex = bin.currentInspections.findIndex(candidate =>
+        String(candidate?.recycleId) === String(recycleId)
+      );
+      item = bin.currentInspections[itemIndex];
+    } else if (kind === 'history') {
+      itemIndex = bin.historyInspections.findIndex(candidate =>
+        String(candidate?.recycleId) === String(recycleId)
+      );
+      item = bin.historyInspections[itemIndex];
+    }
+
+    if (!item) return false;
+    if (isWithinRetention(item) && !canPurgeBeforeExpiry()) {
+      alert('This item is still inside the 30-day recovery period. Only the Super Admin may permanently delete it early.');
+      return false;
+    }
+
+    const permanentAt = new Date().toISOString();
+
+    if (kind === 'premises') {
+      if (!await deletePremisesFromCloud(projectId)) return false;
+      appendAudit(project, 'permanent_delete_entire_premises', {
+        recycleId,
+        permanentAt,
+        recoveryExpired: !isWithinRetention(item)
+      });
+      if (typeof markProjectDeleted === 'function') {
+        markProjectDeleted(projectId);
+      }
+      projects.splice(projectIndex, 1);
+      writeProjects(projects);
+      return true;
+    }
+
+    if (kind === 'current') {
+      bin.currentInspections.splice(itemIndex, 1);
+    } else {
+      bin.historyInspections.splice(itemIndex, 1);
+    }
+
+    const updated = {
+      ...project,
+      recycleBin: bin,
+      syncPending: true,
+      syncError: false,
+      lastSaved: permanentAt
+    };
+    appendAudit(
+      updated,
+      kind === 'current'
+        ? 'permanent_delete_current_inspection'
+        : 'permanent_delete_history_inspection',
+      {
+        recycleId,
+        permanentAt,
+        recoveryExpired: !isWithinRetention(item)
+      }
+    );
+    projects[projectIndex] = updated;
+    writeProjects(projects);
+    return true;
+  }
+
   function ensureStyles(){
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
@@ -38536,10 +38678,13 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-recycle-count-v12{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:5px;padding:0 5px;border-radius:999px;background:#a62424;color:#fff;font-size:11px}
       .fire-s-recycle-v12-list{display:grid;gap:10px}
       .fire-s-recycle-v12-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px;border:1px solid #dbe4ea;border-radius:12px;background:#fff}
+      .fire-s-recycle-v12-item.expired{border-color:#dfb0b0;background:#fffafa}
       .fire-s-recycle-v12-item strong{display:block;color:#20384a;font-size:13px}
       .fire-s-recycle-v12-item span{display:block;margin-top:4px;color:#687b89;font-size:11px;line-height:1.4}
       .fire-s-recycle-v12-item button{min-height:38px;padding:8px 12px;border:1px solid #268150;border-radius:9px;background:#effaf3;color:#17653c;font-weight:900;cursor:pointer}
       .fire-s-recycle-v12-item button:disabled{opacity:.45;cursor:not-allowed}
+      .fire-s-recycle-v14-actions{display:flex;gap:7px;align-items:center}
+      .fire-s-recycle-v12-item .fire-s-recycle-v14-permanent{border-color:#b42323;background:#fff2f2;color:#941f1f}
       .fire-s-cc-data-v12{border-color:#e0b0b0!important;background:#fff8f8!important;color:#952525!important}
       .fire-s-cc-data-section-v13{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 15px;border:1px solid #e2b5b5;border-radius:14px;background:#fff8f8}
       .fire-s-cc-data-section-v13 strong{display:block;color:#7f1d1d;font-size:13px}
@@ -38550,6 +38695,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         .fire-s-data-v12-dialog{max-height:calc(100vh - 14px);border-radius:14px}
         .fire-s-data-v12-head,.fire-s-data-v12-body{padding-left:13px;padding-right:13px}
         .fire-s-recycle-v12-item{grid-template-columns:1fr}
+        .fire-s-recycle-v14-actions{display:grid;grid-template-columns:1fr}
         .fire-s-recycle-v12-item button{width:100%}
         .fire-s-data-v12-confirm-actions{display:grid;grid-template-columns:1fr}
         .fire-s-cc-data-section-v13{grid-template-columns:1fr}
@@ -38820,20 +38966,33 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       ? entries.map(entry => {
           const active = isWithinRetention(entry);
           const remaining = daysRemaining(entry);
+          const canPermanentlyDelete = canPermanentlyDeleteEntry(entry);
           return `
-            <article class="fire-s-recycle-v12-item">
+            <article class="fire-s-recycle-v12-item ${active ? '' : 'expired'}">
               <div>
                 <strong>${safeHtml(entry.title)}</strong>
                 <span>${safeHtml(entry.subtitle)} · Deleted ${safeHtml(new Date(entry.deletedAt).toLocaleDateString('en-ZA'))}</span>
                 <span>${active ? `${remaining} day${remaining === 1 ? '' : 's'} remaining` : '30-day restore period expired'}</span>
               </div>
-              <button
-                type="button"
-                data-kind="${safeHtml(entry.kind)}"
-                data-project-id="${safeHtml(entry.projectId)}"
-                data-recycle-id="${safeHtml(entry.recycleId)}"
-                ${active && entry.canRestore ? '' : 'disabled'}
-              >Restore</button>
+              <div class="fire-s-recycle-v14-actions">
+                <button
+                  type="button"
+                  data-restore-recycle-id="${safeHtml(entry.recycleId)}"
+                  data-kind="${safeHtml(entry.kind)}"
+                  data-project-id="${safeHtml(entry.projectId)}"
+                  ${active && entry.canRestore ? '' : 'disabled'}
+                >Restore</button>
+                <button
+                  type="button"
+                  class="fire-s-recycle-v14-permanent"
+                  data-permanent-recycle-id="${safeHtml(entry.recycleId)}"
+                  data-kind="${safeHtml(entry.kind)}"
+                  data-project-id="${safeHtml(entry.projectId)}"
+                  data-entry-title="${safeHtml(entry.title)}"
+                  ${canPermanentlyDelete ? '' : 'disabled'}
+                  title="${active && !canPermanentlyDelete ? 'Available to Super Admin during the recovery period' : 'This cannot be undone'}"
+                >Delete Permanently</button>
+              </div>
             </article>
           `;
         }).join('')
@@ -38853,7 +39012,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         </div>
         <div class="fire-s-data-v12-body">
           <div class="fire-s-data-v12-safety">
-            Restore is available for 30 days. Role restrictions still apply to History and entire-premises records.
+            Restore is available for 30 days. After expiry, a Company Admin or Super Admin may permanently delete the item. Only the Super Admin may permanently delete it before expiry.
           </div>
           <div class="fire-s-recycle-v12-list">${rows}</div>
         </div>
@@ -38866,7 +39025,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     backdrop.addEventListener('click', event => {
       if (event.target === backdrop) close();
     });
-    backdrop.querySelectorAll('[data-recycle-id]').forEach(button => {
+    backdrop.querySelectorAll('[data-restore-recycle-id]').forEach(button => {
       button.addEventListener('click', () => {
         const kind = button.dataset.kind;
         const projectId = button.dataset.projectId;
@@ -38887,6 +39046,53 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         showRecycleBin();
       });
     });
+    backdrop.querySelectorAll('[data-permanent-recycle-id]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const kind = button.dataset.kind;
+        const projectId = button.dataset.projectId;
+        const recycleId = button.dataset.permanentRecycleId;
+        const entryTitle = text(button.dataset.entryTitle);
+        const entry = recycleEntries().find(candidate =>
+          candidate.kind === kind &&
+          String(candidate.projectId) === String(projectId) &&
+          String(candidate.recycleId) === String(recycleId)
+        );
+        if (!entry || !canPermanentlyDeleteEntry(entry)) {
+          alert('This item cannot be permanently deleted with the current role or retention status.');
+          return;
+        }
+
+        if (kind === 'premises') {
+          const typed = prompt(
+            `Permanent deletion cannot be undone.\n\nType the exact premises Name + Site to continue:\n${entryTitle}`
+          );
+          if (text(typed) !== entryTitle) {
+            if (typed !== null) alert('The premises name did not match. Nothing was deleted.');
+            return;
+          }
+        } else {
+          const confirmed = confirm(
+            `Permanently delete this recycled ${kind === 'current' ? 'incomplete inspection' : 'History record'}?\n\nThis cannot be undone.`
+          );
+          if (!confirmed) return;
+        }
+
+        button.disabled = true;
+        const deleted = await permanentlyDeleteRecycleEntry(
+          kind,
+          projectId,
+          recycleId
+        );
+        if (!deleted) {
+          button.disabled = false;
+          return;
+        }
+        refreshAfterMutation();
+        close();
+        alert('The selected item was permanently deleted and cannot be restored.');
+        showRecycleBin();
+      });
+    });
   }
 
   function ensureRecycleBinButton(){
@@ -38903,9 +39109,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       button.addEventListener('click', showRecycleBin);
       host.appendChild(button);
     }
-    const count = recycleEntries().length;
+    const entries = recycleEntries();
+    const count = entries.length;
+    const recoverableCount = entries.filter(isWithinRetention).length;
+    const expiredCount = count - recoverableCount;
     button.innerHTML = `Recycle Bin <span class="fire-s-recycle-count-v12">${count}</span>`;
-    button.title = `${count} recoverable deleted item${count === 1 ? '' : 's'}`;
+    button.title = `${recoverableCount} recoverable · ${expiredCount} expired`;
   }
 
   function decorateCommandCentre(projectIdentifier){
@@ -39093,6 +39302,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     restoreCurrentInspection,
     restoreHistoryInspection,
     restorePremises,
+    permanentlyDeleteRecycleEntry,
+    canPermanentlyDeleteEntry,
     recycleEntries
   };
 })();
