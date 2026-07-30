@@ -5676,12 +5676,19 @@ function getVisibleProjectsForCurrentUser(projects) {
     return [];
   }
 
+  const activeProjects = (Array.isArray(projects) ? projects : []).filter(project =>
+    project &&
+    !project.deletedAt &&
+    !project.dataManagementDeletedAt &&
+    !isProjectDeleted(project.id)
+  );
+
   if (isSuperAdmin()) {
-    return projects;
+    return activeProjects;
   }
 
   if (currentUserProfile.companyId) {
-    return projects.filter(project =>
+    return activeProjects.filter(project =>
       project.companyId === currentUserProfile.companyId
     );
   }
@@ -5689,7 +5696,7 @@ function getVisibleProjectsForCurrentUser(projects) {
   const currentEmail =
     String(currentUserProfile.email || '').toLowerCase();
 
-  return projects.filter(project =>
+  return activeProjects.filter(project =>
     project.createdByUserId === currentUserProfile.id ||
     String(project.createdByEmail || '').toLowerCase() === currentEmail
   );
@@ -37938,4 +37945,1039 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   };
   showInspectionOpenGate = wrapped;
   window.showInspectionOpenGate = wrapped;
+})();
+
+// =====================================================
+// FIRE-S V12 - DELETE / DATA MANAGEMENT
+// Recoverable, role-controlled deletion for:
+// 1) the current incomplete inspection;
+// 2) one selected historical inspection;
+// 3) an entire premises.
+// Items remain restorable for 30 days.
+// =====================================================
+(function installFireSDataManagementV12(){
+  'use strict';
+
+  const VERSION = 'delete-data-management-v12';
+  const RETENTION_DAYS = 30;
+  const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const MODAL_ID = 'fireSDataManagementV12';
+  const RECYCLE_MODAL_ID = 'fireSRecycleBinV12';
+  const STYLE_ID = 'fireSDataManagementV12Styles';
+  const AUDIT_KEY = 'fireSDataManagementAuditV12';
+  const CURRENT_INSPECTION_KEYS = [
+    'currentInspectionId',
+    'inspectionId',
+    'inspectionNumber',
+    'inspectionDate',
+    'inspectionCreatedAt',
+    'inspectionStartedAt',
+    'workspaceCreatedAt',
+    'completedAt',
+    'finalisedAt',
+    'finalizedAt',
+    'archivedAt',
+    'archiveStatus',
+    'status',
+    'inspectionLifecycleStatus',
+    'inspectionStatus',
+    'scheduledStatus',
+    'inspectionFinalisedAt',
+    'inspectionFinalizedAt',
+    'inspectionReviewCompletedAt',
+    'checklistCompletedAt',
+    'scheduleCompletedAt',
+    'scheduleFreshInspection',
+    'locked',
+    'isReadOnly',
+    'answers',
+    'inspectionAnswers',
+    'photos',
+    'inspectionPhotos',
+    'actions',
+    'actionItems',
+    'findings',
+    'finalComments',
+    'inspectorComments',
+    'followUpRequired',
+    'followUpDate',
+    'followUpNotes',
+    'recurringCycleEnabled',
+    'recurringCycleNumber',
+    'recurringCycleUnit',
+    'recurringCycleNotes',
+    'equipmentExpiryDate',
+    'extinguisherExpiryDate',
+    'fireEquipmentExpiryDate',
+    'serviceExpiryDate',
+    'missingExpiryItems',
+    'expiryDetails'
+  ];
+
+  function text(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function safeHtml(value){
+    if (typeof escapeHtml === 'function') return escapeHtml(text(value));
+    return text(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function rawProjects(){
+    try {
+      const parsed = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeProjects(projects){
+    if (typeof setProjects === 'function') setProjects(projects);
+    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+  }
+
+  function role(){
+    return text(
+      typeof getCurrentUserRole === 'function'
+        ? getCurrentUserRole()
+        : currentUserProfile?.role
+    ).toLowerCase();
+  }
+
+  function canDeleteIncomplete(){
+    return new Set([
+      'super_admin',
+      'company_owner',
+      'company_admin',
+      'owner',
+      'admin',
+      'manager',
+      'inspector',
+      'local'
+    ]).has(role());
+  }
+
+  function canAdminDelete(){
+    return new Set([
+      'super_admin',
+      'company_owner',
+      'company_admin',
+      'owner',
+      'admin',
+      'local'
+    ]).has(role());
+  }
+
+  function actor(){
+    return {
+      id: text(currentUserProfile?.id) || 'local-user',
+      email: text(currentUserProfile?.email),
+      name: text(currentUserProfile?.fullName || currentUserProfile?.full_name),
+      role: role() || 'guest'
+    };
+  }
+
+  function premisesName(project){
+    return text(
+      typeof getProjectPremisesName === 'function'
+        ? getProjectPremisesName(project)
+        : (
+            project?.organisationName ||
+            project?.organizationName ||
+            project?.premisesName ||
+            project?.projectName ||
+            project?.name
+          )
+    ) || 'Unnamed premises';
+  }
+
+  function premisesSite(project){
+    return text(
+      typeof getProjectPremisesSite === 'function'
+        ? getProjectPremisesSite(project)
+        : (
+            project?.siteName ||
+            project?.site ||
+            project?.branchName ||
+            project?.locationName ||
+            project?.location
+          )
+    );
+  }
+
+  function premisesLabel(project){
+    const name = premisesName(project);
+    const site = premisesSite(project);
+    return site && site.toLowerCase() !== name.toLowerCase()
+      ? `${name} – ${site}`
+      : name;
+  }
+
+  function confirmationPhrase(project){
+    return [premisesName(project), premisesSite(project)]
+      .filter(Boolean)
+      .join(' | ');
+  }
+
+  function nowMetadata(type){
+    const deletedAt = new Date().toISOString();
+    return {
+      recycleId: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      deletedAt,
+      purgeAfter: new Date(Date.now() + RETENTION_MS).toISOString(),
+      deletedBy: actor(),
+      deleteType: type,
+      dataManagementVersion: VERSION
+    };
+  }
+
+  function ensureRecycleBin(project){
+    const bin = project?.recycleBin && typeof project.recycleBin === 'object'
+      ? project.recycleBin
+      : {};
+    return {
+      currentInspections: Array.isArray(bin.currentInspections)
+        ? bin.currentInspections
+        : [],
+      historyInspections: Array.isArray(bin.historyInspections)
+        ? bin.historyInspections
+        : []
+    };
+  }
+
+  function captureCurrentInspection(project){
+    const snapshot = {};
+    CURRENT_INSPECTION_KEYS.forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(project || {}, key)) {
+        snapshot[key] = project[key];
+      }
+    });
+    return snapshot;
+  }
+
+  function clearCurrentInspection(project, recycleBin, nowIso){
+    return {
+      ...project,
+      recycleBin,
+      currentInspectionId: null,
+      inspectionId: null,
+      inspectionNumber: '',
+      inspectionDate: '',
+      inspectionCreatedAt: null,
+      inspectionStartedAt: null,
+      workspaceCreatedAt: null,
+      completedAt: null,
+      finalisedAt: null,
+      finalizedAt: null,
+      archivedAt: null,
+      archiveStatus: '',
+      status: 'premises',
+      inspectionLifecycleStatus: 'none',
+      inspectionStatus: 'none',
+      scheduledStatus: '',
+      inspectionFinalisedAt: null,
+      inspectionFinalizedAt: null,
+      inspectionReviewCompletedAt: null,
+      checklistCompletedAt: null,
+      scheduleCompletedAt: null,
+      scheduleFreshInspection: false,
+      locked: false,
+      isReadOnly: false,
+      answers: [],
+      inspectionAnswers: [],
+      photos: [],
+      inspectionPhotos: [],
+      actions: [],
+      actionItems: [],
+      findings: [],
+      finalComments: '',
+      inspectorComments: '',
+      followUpRequired: 'No',
+      followUpDate: '',
+      followUpNotes: '',
+      recurringCycleEnabled: false,
+      recurringCycleNumber: '',
+      recurringCycleUnit: '',
+      recurringCycleNotes: '',
+      equipmentExpiryDate: '',
+      extinguisherExpiryDate: '',
+      fireEquipmentExpiryDate: '',
+      serviceExpiryDate: '',
+      missingExpiryItems: [],
+      expiryDetails: [],
+      syncPending: true,
+      syncError: false,
+      lastSaved: nowIso
+    };
+  }
+
+  function appendAudit(project, action, details){
+    const entry = {
+      id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      action,
+      details: details || {},
+      recordedAt: new Date().toISOString(),
+      actor: actor(),
+      dataManagementVersion: VERSION
+    };
+    const projectAudit = Array.isArray(project?.dataManagementAudit)
+      ? project.dataManagementAudit
+      : [];
+    project.dataManagementAudit = [...projectAudit, entry].slice(-200);
+    try {
+      const existing = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+      const audit = Array.isArray(existing) ? existing : [];
+      localStorage.setItem(AUDIT_KEY, JSON.stringify([...audit, {
+        ...entry,
+        projectId: project?.id || '',
+        premises: premisesLabel(project)
+      }].slice(-500)));
+    } catch (_) {}
+    return project;
+  }
+
+  function findProject(projectId){
+    return rawProjects().find(project => String(project?.id) === String(projectId)) || null;
+  }
+
+  function hasCurrentIncomplete(project){
+    try {
+      return typeof hasCurrentIncompleteInspection === 'function' &&
+        hasCurrentIncompleteInspection(project);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function refreshAfterMutation(){
+    try {
+      currentProjectPage = 1;
+      window.currentProjectPage = 1;
+    } catch (_) {}
+    try {
+      if (typeof renderProjectsList === 'function') renderProjectsList({ force: true });
+      else if (typeof window.renderProjectsList === 'function') {
+        window.renderProjectsList({ force: true });
+      }
+    } catch (_) {}
+    ensureRecycleBinButton();
+  }
+
+  function deleteCurrentInspection(projectId){
+    if (!canDeleteIncomplete()) {
+      alert('Your access does not allow deleting an incomplete inspection.');
+      return false;
+    }
+    const projects = rawProjects();
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0) return false;
+    const project = projects[index];
+    if (!hasCurrentIncomplete(project)) {
+      alert('There is no incomplete current inspection to delete.');
+      return false;
+    }
+    const metadata = nowMetadata('current_inspection');
+    const bin = ensureRecycleBin(project);
+    bin.currentInspections.push({
+      ...metadata,
+      inspectionLabel:
+        text(project.inspectionNumber) ||
+        text(project.inspectionDate) ||
+        'Incomplete inspection',
+      snapshot: captureCurrentInspection(project)
+    });
+    const updated = clearCurrentInspection(project, bin, metadata.deletedAt);
+    appendAudit(updated, 'delete_current_inspection', {
+      recycleId: metadata.recycleId,
+      retentionDays: RETENTION_DAYS
+    });
+    projects[index] = updated;
+    writeProjects(projects);
+    return true;
+  }
+
+  function deleteHistoryInspection(projectId, historyIndex){
+    if (!canAdminDelete()) {
+      alert('Only a Company Admin or Super Admin may delete Inspection History.');
+      return false;
+    }
+    const projects = rawProjects();
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0) return false;
+    const project = projects[index];
+    const history = Array.isArray(project.inspectionHistory)
+      ? [...project.inspectionHistory]
+      : [];
+    if (!Number.isInteger(historyIndex) || !history[historyIndex]) {
+      alert('The selected historical inspection could not be found.');
+      return false;
+    }
+    const metadata = nowMetadata('history_inspection');
+    const [snapshot] = history.splice(historyIndex, 1);
+    const bin = ensureRecycleBin(project);
+    bin.historyInspections.push({
+      ...metadata,
+      inspectionLabel:
+        text(snapshot?.inspectionNumber) ||
+        text(snapshot?.inspectionDate) ||
+        text(snapshot?.completedAt)?.slice(0, 10) ||
+        'Historical inspection',
+      originalHistoryIndex: historyIndex,
+      snapshot
+    });
+    const updated = {
+      ...project,
+      inspectionHistory: history,
+      hasSiteHistory: history.length > 0,
+      previousInspectionCount: history.length,
+      recycleBin: bin,
+      syncPending: true,
+      syncError: false,
+      lastSaved: metadata.deletedAt
+    };
+    appendAudit(updated, 'delete_history_inspection', {
+      recycleId: metadata.recycleId,
+      inspectionNumber: snapshot?.inspectionNumber || '',
+      inspectionDate: snapshot?.inspectionDate || '',
+      retentionDays: RETENTION_DAYS
+    });
+    projects[index] = updated;
+    writeProjects(projects);
+    return true;
+  }
+
+  function deleteEntirePremises(projectId){
+    if (!canAdminDelete()) {
+      alert('Only a Company Admin or Super Admin may delete an entire premises.');
+      return false;
+    }
+    const projects = rawProjects();
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0) return false;
+    const project = projects[index];
+    const metadata = nowMetadata('entire_premises');
+    const updated = {
+      ...project,
+      deletedAt: metadata.deletedAt,
+      dataManagementDeletedAt: metadata.deletedAt,
+      deletePurgeAfter: metadata.purgeAfter,
+      deletedBy: metadata.deletedBy,
+      deleteType: metadata.deleteType,
+      dataManagementVersion: VERSION,
+      syncPending: true,
+      syncError: false,
+      lastSaved: metadata.deletedAt
+    };
+    appendAudit(updated, 'delete_entire_premises', {
+      retentionDays: RETENTION_DAYS,
+      purgeAfter: metadata.purgeAfter
+    });
+    projects[index] = updated;
+    writeProjects(projects);
+    return true;
+  }
+
+  function isWithinRetention(item){
+    const expiry = new Date(item?.purgeAfter || 0).getTime();
+    return Number.isFinite(expiry) && expiry >= Date.now();
+  }
+
+  function daysRemaining(item){
+    const expiry = new Date(item?.purgeAfter || 0).getTime();
+    if (!Number.isFinite(expiry)) return 0;
+    return Math.max(0, Math.ceil((expiry - Date.now()) / (24 * 60 * 60 * 1000)));
+  }
+
+  function restorePremises(projectId){
+    if (!canAdminDelete()) return false;
+    const projects = rawProjects();
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0 || !isWithinRetention({
+      purgeAfter: projects[index].deletePurgeAfter
+    })) return false;
+    const updated = {
+      ...projects[index],
+      deletedAt: null,
+      dataManagementDeletedAt: null,
+      deletePurgeAfter: null,
+      deletedBy: null,
+      deleteType: '',
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+    appendAudit(updated, 'restore_entire_premises', {});
+    projects[index] = updated;
+    try {
+      const deleted = typeof getDeletedProjectIds === 'function'
+        ? getDeletedProjectIds()
+        : {};
+      if (deleted && deleted[projectId]) {
+        delete deleted[projectId];
+        localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+      }
+    } catch (_) {}
+    writeProjects(projects);
+    return true;
+  }
+
+  function restoreCurrentInspection(projectId, recycleId){
+    if (!canDeleteIncomplete()) return false;
+    const projects = rawProjects();
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0) return false;
+    const project = projects[index];
+    if (hasCurrentIncomplete(project)) {
+      alert('A current inspection already exists. Delete or complete it before restoring another one.');
+      return false;
+    }
+    const bin = ensureRecycleBin(project);
+    const itemIndex = bin.currentInspections.findIndex(item =>
+      String(item?.recycleId) === String(recycleId)
+    );
+    const item = bin.currentInspections[itemIndex];
+    if (itemIndex < 0 || !item || !isWithinRetention(item)) return false;
+    bin.currentInspections.splice(itemIndex, 1);
+    const updated = {
+      ...project,
+      ...(item.snapshot || {}),
+      recycleBin: bin,
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+    appendAudit(updated, 'restore_current_inspection', {
+      recycleId
+    });
+    projects[index] = updated;
+    writeProjects(projects);
+    return true;
+  }
+
+  function restoreHistoryInspection(projectId, recycleId){
+    if (!canAdminDelete()) return false;
+    const projects = rawProjects();
+    const index = projects.findIndex(project => String(project?.id) === String(projectId));
+    if (index < 0) return false;
+    const project = projects[index];
+    const bin = ensureRecycleBin(project);
+    const itemIndex = bin.historyInspections.findIndex(item =>
+      String(item?.recycleId) === String(recycleId)
+    );
+    const item = bin.historyInspections[itemIndex];
+    if (itemIndex < 0 || !item || !isWithinRetention(item)) return false;
+    bin.historyInspections.splice(itemIndex, 1);
+    const history = Array.isArray(project.inspectionHistory)
+      ? [...project.inspectionHistory]
+      : [];
+    const duplicate = history.some(record =>
+      text(record?.inspectionNumber) &&
+      text(record?.inspectionNumber) === text(item.snapshot?.inspectionNumber)
+    );
+    if (duplicate) {
+      alert('This inspection already exists in History and was not restored twice.');
+      return false;
+    }
+    history.push(item.snapshot || {});
+    const updated = {
+      ...project,
+      inspectionHistory: history,
+      hasSiteHistory: history.length > 0,
+      previousInspectionCount: history.length,
+      recycleBin: bin,
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+    appendAudit(updated, 'restore_history_inspection', {
+      recycleId,
+      inspectionNumber: item.snapshot?.inspectionNumber || ''
+    });
+    projects[index] = updated;
+    writeProjects(projects);
+    return true;
+  }
+
+  function ensureStyles(){
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      .fire-s-data-v12-backdrop{position:fixed;inset:0;z-index:10120;display:grid;place-items:center;padding:16px;background:rgba(8,22,33,.68)}
+      .fire-s-data-v12-dialog{width:min(100%,760px);max-height:calc(100vh - 28px);overflow:auto;border:1px solid #d4dde4;border-radius:18px;background:#fff;box-shadow:0 28px 80px rgba(3,16,26,.35)}
+      .fire-s-data-v12-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px;border-bottom:1px solid #e3e9ed;background:#f8fafb}
+      .fire-s-data-v12-head h3{margin:3px 0 0;color:#172e42;font-size:21px}
+      .fire-s-data-v12-eyebrow{display:block;color:#a62424;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+      .fire-s-data-v12-close{width:38px;height:38px;border:1px solid #cbd6de;border-radius:10px;background:#fff;color:#3f5667;font-size:20px;cursor:pointer}
+      .fire-s-data-v12-body{display:grid;gap:13px;padding:18px 20px 21px}
+      .fire-s-data-v12-safety{padding:12px 13px;border:1px solid #f1cf7a;border-radius:12px;background:#fff8e7;color:#6f4a00;font-size:12px;line-height:1.45}
+      .fire-s-data-v12-card{padding:15px;border:1px solid #dbe4ea;border-radius:14px;background:#fff}
+      .fire-s-data-v12-card h4{margin:0;color:#1c3447;font-size:15px}
+      .fire-s-data-v12-card p{margin:6px 0 12px;color:#617483;font-size:12px;line-height:1.45}
+      .fire-s-data-v12-card select,.fire-s-data-v12-card input{width:100%;min-height:43px;box-sizing:border-box;margin:0 0 9px;padding:9px 11px;border:1px solid #cbd7df;border-radius:10px;background:#fff;color:#20384a}
+      .fire-s-data-v12-card button,.fire-s-data-v12-recycle-button{min-height:42px;padding:9px 13px;border:1px solid #b42323;border-radius:10px;background:#fff;color:#a11d1d;font-weight:900;cursor:pointer}
+      .fire-s-data-v12-card button:disabled{opacity:.45;cursor:not-allowed}
+      .fire-s-data-v12-card.admin-locked{background:#f7f9fa}
+      .fire-s-data-v12-card.danger{border-color:#e5aaaa;background:#fffafa}
+      .fire-s-data-v12-confirm{display:none;margin-top:11px;padding:12px;border:1px solid #e7b1b1;border-radius:11px;background:#fff}
+      .fire-s-data-v12-confirm.open{display:block}
+      .fire-s-data-v12-confirm strong{display:block;margin-bottom:7px;color:#7f1d1d;font-size:12px}
+      .fire-s-data-v12-confirm-actions{display:flex;gap:8px;justify-content:flex-end}
+      .fire-s-data-v12-confirm-actions .cancel{border-color:#cbd7df;background:#fff;color:#455d6d}
+      .fire-s-data-v12-confirm-actions .confirm{background:#b42323;color:#fff}
+      .fire-s-data-v12-recycle-button{border-color:#899cab;color:#314b5d;background:#f8fafb}
+      #fireSRecycleBinBtnV12{position:relative}
+      .fire-s-recycle-count-v12{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:5px;padding:0 5px;border-radius:999px;background:#a62424;color:#fff;font-size:11px}
+      .fire-s-recycle-v12-list{display:grid;gap:10px}
+      .fire-s-recycle-v12-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px;border:1px solid #dbe4ea;border-radius:12px;background:#fff}
+      .fire-s-recycle-v12-item strong{display:block;color:#20384a;font-size:13px}
+      .fire-s-recycle-v12-item span{display:block;margin-top:4px;color:#687b89;font-size:11px;line-height:1.4}
+      .fire-s-recycle-v12-item button{min-height:38px;padding:8px 12px;border:1px solid #268150;border-radius:9px;background:#effaf3;color:#17653c;font-weight:900;cursor:pointer}
+      .fire-s-recycle-v12-item button:disabled{opacity:.45;cursor:not-allowed}
+      .fire-s-cc-data-v12{border-color:#e0b0b0!important;background:#fff8f8!important;color:#952525!important}
+      @media(max-width:560px){
+        .fire-s-data-v12-backdrop{padding:7px;place-items:start center}
+        .fire-s-data-v12-dialog{max-height:calc(100vh - 14px);border-radius:14px}
+        .fire-s-data-v12-head,.fire-s-data-v12-body{padding-left:13px;padding-right:13px}
+        .fire-s-recycle-v12-item{grid-template-columns:1fr}
+        .fire-s-recycle-v12-item button{width:100%}
+        .fire-s-data-v12-confirm-actions{display:grid;grid-template-columns:1fr}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function closeModal(id){
+    document.getElementById(id)?.remove();
+  }
+
+  function historyDate(record){
+    const value =
+      record?.inspectionDate ||
+      record?.completedAt ||
+      record?.archivedAt ||
+      record?.lastSaved;
+    if (!value) return 'Date not recorded';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return text(value);
+    return date.toLocaleDateString('en-ZA');
+  }
+
+  function showDataManagement(projectIdentifier){
+    const project = findProject(
+      typeof projectIdentifier === 'object'
+        ? projectIdentifier?.id
+        : projectIdentifier
+    );
+    if (!project || project.deletedAt) return;
+    ensureStyles();
+    closeModal(MODAL_ID);
+
+    const history = Array.isArray(project.inspectionHistory)
+      ? project.inspectionHistory
+      : [];
+    const hasCurrent = hasCurrentIncomplete(project);
+    const adminAllowed = canAdminDelete();
+    const historyOptions = history
+      .map((record, index) => `
+        <option value="${index}">
+          ${safeHtml(historyDate(record))} · ${safeHtml(record?.inspectionNumber || 'No reference')}
+        </option>
+      `)
+      .join('');
+
+    const backdrop = document.createElement('div');
+    backdrop.id = MODAL_ID;
+    backdrop.className = 'fire-s-data-v12-backdrop';
+    backdrop.innerHTML = `
+      <div class="fire-s-data-v12-dialog" role="dialog" aria-modal="true" aria-labelledby="fireSDataTitleV12">
+        <div class="fire-s-data-v12-head">
+          <div>
+            <span class="fire-s-data-v12-eyebrow">Delete / Data Management</span>
+            <h3 id="fireSDataTitleV12">${safeHtml(premisesLabel(project))}</h3>
+          </div>
+          <button type="button" class="fire-s-data-v12-close" aria-label="Close">×</button>
+        </div>
+        <div class="fire-s-data-v12-body">
+          <div class="fire-s-data-v12-safety">
+            Deleted data is moved to the Recycle Bin for ${RETENTION_DAYS} days and recorded in the premises audit trail. It is not immediately erased.
+          </div>
+
+          <section class="fire-s-data-v12-card">
+            <h4>1. Delete Incomplete Inspection</h4>
+            <p>Removes only the current unfinished inspection, including its Q&amp;A, photos and Action Items. Premises information, Building Passport and Inspection History remain.</p>
+            <button type="button" id="fireSDeleteCurrentV12" ${hasCurrent && canDeleteIncomplete() ? '' : 'disabled'}>
+              ${hasCurrent ? 'Delete Incomplete Inspection' : 'No Incomplete Inspection'}
+            </button>
+            <div class="fire-s-data-v12-confirm" id="fireSDeleteCurrentConfirmV12">
+              <strong>Move this incomplete inspection to the Recycle Bin?</strong>
+              <div class="fire-s-data-v12-confirm-actions">
+                <button type="button" class="cancel">Cancel</button>
+                <button type="button" class="confirm">Yes, Delete Inspection</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="fire-s-data-v12-card ${adminAllowed ? '' : 'admin-locked'}">
+            <h4>2. Delete Inspection from History</h4>
+            <p>Select one completed cycle. Only that inspection, its report data, photos and linked Action Items move to the Recycle Bin. Company Admin or Super Admin access is required.</p>
+            <select id="fireSHistoryDeleteSelectV12" ${history.length && adminAllowed ? '' : 'disabled'}>
+              ${historyOptions || '<option value="">No History records available</option>'}
+            </select>
+            <button type="button" id="fireSDeleteHistoryV12" ${history.length && adminAllowed ? '' : 'disabled'}>Delete Selected History Record</button>
+            <div class="fire-s-data-v12-confirm" id="fireSDeleteHistoryConfirmV12">
+              <strong>Move the selected completed inspection to the Recycle Bin?</strong>
+              <div class="fire-s-data-v12-confirm-actions">
+                <button type="button" class="cancel">Cancel</button>
+                <button type="button" class="confirm">Yes, Delete History Record</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="fire-s-data-v12-card danger ${adminAllowed ? '' : 'admin-locked'}">
+            <h4>3. Delete Entire Premises</h4>
+            <p>Removes the premises from the Gateway together with its current inspection, all History, reports, photos and Action Items. Building Passport data is included. Company Admin or Super Admin access is required.</p>
+            <button type="button" id="fireSDeletePremisesV12" ${adminAllowed ? '' : 'disabled'}>Delete Entire Premises</button>
+            <div class="fire-s-data-v12-confirm" id="fireSDeletePremisesConfirmV12">
+              <strong>Type the exact Name + Site shown below to confirm:</strong>
+              <input type="text" id="fireSDeletePremisesPhraseV12" autocomplete="off" placeholder="${safeHtml(confirmationPhrase(project))}">
+              <div class="fire-s-data-v12-confirm-actions">
+                <button type="button" class="cancel">Cancel</button>
+                <button type="button" class="confirm" disabled>Delete Entire Premises</button>
+              </div>
+            </div>
+          </section>
+
+          <button type="button" class="fire-s-data-v12-recycle-button" id="fireSOpenRecycleV12">
+            Open 30-Day Recycle Bin
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = () => closeModal(MODAL_ID);
+    backdrop.querySelector('.fire-s-data-v12-close')?.addEventListener('click', close);
+    backdrop.addEventListener('click', event => {
+      if (event.target === backdrop) close();
+    });
+
+    function wireConfirmation(openButtonId, panelId, action){
+      const openButton = backdrop.querySelector(`#${openButtonId}`);
+      const panel = backdrop.querySelector(`#${panelId}`);
+      const cancel = panel?.querySelector('.cancel');
+      const confirmButton = panel?.querySelector('.confirm');
+      openButton?.addEventListener('click', () => panel?.classList.add('open'));
+      cancel?.addEventListener('click', () => panel?.classList.remove('open'));
+      confirmButton?.addEventListener('click', action);
+    }
+
+    wireConfirmation(
+      'fireSDeleteCurrentV12',
+      'fireSDeleteCurrentConfirmV12',
+      () => {
+        if (!deleteCurrentInspection(project.id)) return;
+        close();
+        if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+        refreshAfterMutation();
+        if (typeof showProjectList === 'function') showProjectList();
+        alert('The incomplete inspection was moved to the Recycle Bin for 30 days.');
+      }
+    );
+
+    wireConfirmation(
+      'fireSDeleteHistoryV12',
+      'fireSDeleteHistoryConfirmV12',
+      () => {
+        const selected = Number(
+          backdrop.querySelector('#fireSHistoryDeleteSelectV12')?.value
+        );
+        if (!deleteHistoryInspection(project.id, selected)) return;
+        close();
+        refreshAfterMutation();
+        alert('The selected History record was moved to the Recycle Bin for 30 days.');
+        showDataManagement(project.id);
+      }
+    );
+
+    const premisesPanel = backdrop.querySelector('#fireSDeletePremisesConfirmV12');
+    const premisesInput = backdrop.querySelector('#fireSDeletePremisesPhraseV12');
+    const premisesConfirm = premisesPanel?.querySelector('.confirm');
+    const expected = confirmationPhrase(project);
+    backdrop.querySelector('#fireSDeletePremisesV12')?.addEventListener('click', () => {
+      premisesPanel?.classList.add('open');
+      premisesInput?.focus();
+    });
+    premisesPanel?.querySelector('.cancel')?.addEventListener('click', () => {
+      premisesPanel.classList.remove('open');
+      if (premisesInput) premisesInput.value = '';
+      if (premisesConfirm) premisesConfirm.disabled = true;
+    });
+    premisesInput?.addEventListener('input', () => {
+      if (premisesConfirm) {
+        premisesConfirm.disabled = text(premisesInput.value) !== expected;
+      }
+    });
+    premisesConfirm?.addEventListener('click', () => {
+      if (text(premisesInput?.value) !== expected) return;
+      if (!deleteEntirePremises(project.id)) return;
+      close();
+      if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+      refreshAfterMutation();
+      if (typeof showProjectList === 'function') showProjectList();
+      alert('The entire premises was moved to the Recycle Bin for 30 days.');
+    });
+
+    backdrop.querySelector('#fireSOpenRecycleV12')?.addEventListener('click', () => {
+      close();
+      showRecycleBin();
+    });
+  }
+
+  function scopedRawProjects(){
+    const projects = rawProjects();
+    const currentRole = role();
+    if (currentRole === 'super_admin' || currentRole === 'local') return projects;
+    const companyId = text(currentUserProfile?.companyId);
+    if (companyId) {
+      return projects.filter(project => text(project?.companyId) === companyId);
+    }
+    const userId = text(currentUserProfile?.id);
+    const email = text(currentUserProfile?.email).toLowerCase();
+    return projects.filter(project =>
+      text(project?.createdByUserId) === userId ||
+      text(project?.createdByEmail).toLowerCase() === email
+    );
+  }
+
+  function recycleEntries(){
+    const entries = [];
+    scopedRawProjects().forEach(project => {
+      if (project?.deletedAt || project?.dataManagementDeletedAt) {
+        entries.push({
+          kind: 'premises',
+          projectId: project.id,
+          recycleId: `premises-${project.id}`,
+          title: premisesLabel(project),
+          subtitle: 'Entire premises',
+          deletedAt: project.deletedAt || project.dataManagementDeletedAt,
+          purgeAfter: project.deletePurgeAfter,
+          canRestore: canAdminDelete()
+        });
+        // The entire premises entry already contains its current and historical
+        // recycle data. Do not expose nested restore actions while the premises
+        // itself is still deleted.
+        return;
+      }
+      const bin = ensureRecycleBin(project);
+      bin.currentInspections.forEach(item => {
+        entries.push({
+          kind: 'current',
+          projectId: project.id,
+          recycleId: item.recycleId,
+          title: premisesLabel(project),
+          subtitle: `Incomplete inspection · ${item.inspectionLabel || 'No reference'}`,
+          deletedAt: item.deletedAt,
+          purgeAfter: item.purgeAfter,
+          canRestore: canDeleteIncomplete()
+        });
+      });
+      bin.historyInspections.forEach(item => {
+        entries.push({
+          kind: 'history',
+          projectId: project.id,
+          recycleId: item.recycleId,
+          title: premisesLabel(project),
+          subtitle: `History record · ${item.inspectionLabel || 'No reference'}`,
+          deletedAt: item.deletedAt,
+          purgeAfter: item.purgeAfter,
+          canRestore: canAdminDelete()
+        });
+      });
+    });
+    return entries.sort((a, b) =>
+      new Date(b.deletedAt || 0).getTime() - new Date(a.deletedAt || 0).getTime()
+    );
+  }
+
+  function showRecycleBin(){
+    ensureStyles();
+    closeModal(RECYCLE_MODAL_ID);
+    const entries = recycleEntries();
+    const rows = entries.length
+      ? entries.map(entry => {
+          const active = isWithinRetention(entry);
+          const remaining = daysRemaining(entry);
+          return `
+            <article class="fire-s-recycle-v12-item">
+              <div>
+                <strong>${safeHtml(entry.title)}</strong>
+                <span>${safeHtml(entry.subtitle)} · Deleted ${safeHtml(new Date(entry.deletedAt).toLocaleDateString('en-ZA'))}</span>
+                <span>${active ? `${remaining} day${remaining === 1 ? '' : 's'} remaining` : '30-day restore period expired'}</span>
+              </div>
+              <button
+                type="button"
+                data-kind="${safeHtml(entry.kind)}"
+                data-project-id="${safeHtml(entry.projectId)}"
+                data-recycle-id="${safeHtml(entry.recycleId)}"
+                ${active && entry.canRestore ? '' : 'disabled'}
+              >Restore</button>
+            </article>
+          `;
+        }).join('')
+      : '<div class="fire-s-data-v12-safety">The Recycle Bin is empty.</div>';
+
+    const backdrop = document.createElement('div');
+    backdrop.id = RECYCLE_MODAL_ID;
+    backdrop.className = 'fire-s-data-v12-backdrop';
+    backdrop.innerHTML = `
+      <div class="fire-s-data-v12-dialog" role="dialog" aria-modal="true" aria-labelledby="fireSRecycleTitleV12">
+        <div class="fire-s-data-v12-head">
+          <div>
+            <span class="fire-s-data-v12-eyebrow">Recovery</span>
+            <h3 id="fireSRecycleTitleV12">30-Day Recycle Bin</h3>
+          </div>
+          <button type="button" class="fire-s-data-v12-close" aria-label="Close">×</button>
+        </div>
+        <div class="fire-s-data-v12-body">
+          <div class="fire-s-data-v12-safety">
+            Restore is available for 30 days. Role restrictions still apply to History and entire-premises records.
+          </div>
+          <div class="fire-s-recycle-v12-list">${rows}</div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = () => closeModal(RECYCLE_MODAL_ID);
+    backdrop.querySelector('.fire-s-data-v12-close')?.addEventListener('click', close);
+    backdrop.addEventListener('click', event => {
+      if (event.target === backdrop) close();
+    });
+    backdrop.querySelectorAll('[data-recycle-id]').forEach(button => {
+      button.addEventListener('click', () => {
+        const kind = button.dataset.kind;
+        const projectId = button.dataset.projectId;
+        const recycleId = button.dataset.recycleId;
+        const restored =
+          kind === 'premises'
+            ? restorePremises(projectId)
+            : kind === 'current'
+              ? restoreCurrentInspection(projectId, recycleId)
+              : restoreHistoryInspection(projectId, recycleId);
+        if (!restored) {
+          alert('This item could not be restored. Check the 30-day period and your access level.');
+          return;
+        }
+        refreshAfterMutation();
+        close();
+        alert('The selected item was restored.');
+        showRecycleBin();
+      });
+    });
+  }
+
+  function ensureRecycleBinButton(){
+    const host =
+      document.querySelector('#projectListSection .project-action-buttons') ||
+      document.querySelector('#projectListSection .toolbar-actions');
+    if (!host) return;
+    let button = document.getElementById('fireSRecycleBinBtnV12');
+    if (!button) {
+      button = document.createElement('button');
+      button.id = 'fireSRecycleBinBtnV12';
+      button.type = 'button';
+      button.className = 'compact-action-btn compact-action-secondary';
+      button.addEventListener('click', showRecycleBin);
+      host.appendChild(button);
+    }
+    const count = recycleEntries().length;
+    button.innerHTML = `Recycle Bin <span class="fire-s-recycle-count-v12">${count}</span>`;
+    button.title = `${count} recoverable deleted item${count === 1 ? '' : 's'}`;
+  }
+
+  function decorateCommandCentre(projectIdentifier){
+    const project = findProject(
+      typeof projectIdentifier === 'object'
+        ? projectIdentifier?.id
+        : projectIdentifier
+    );
+    const quick = document.querySelector(
+      '#inspectionOpenGateBackdrop .fire-s-cc-quick'
+    );
+    if (!project || !quick || quick.querySelector('.fire-s-cc-data-v12')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'fire-s-cc-data-v12';
+    button.textContent = 'Delete / Data Management';
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      showDataManagement(project.id);
+    });
+    quick.appendChild(button);
+  }
+
+  function wrapCommandCentre(){
+    if (
+      typeof showInspectionOpenGate !== 'function' ||
+      showInspectionOpenGate.__fireSDataManagementV12
+    ) return;
+    const previous = showInspectionOpenGate;
+    const wrapped = function fireSDataManagementV12Gate(projectIdentifier){
+      const result = previous.apply(this, arguments);
+      [50, 140].forEach(delay => {
+        window.setTimeout(() => decorateCommandCentre(projectIdentifier), delay);
+      });
+      return result;
+    };
+    wrapped.__fireSDataManagementV12 = true;
+    showInspectionOpenGate = wrapped;
+    window.showInspectionOpenGate = wrapped;
+  }
+
+  function wrapProjectRenderer(){
+    const previous =
+      window.renderProjectsList ||
+      (typeof renderProjectsList === 'function' ? renderProjectsList : null);
+    if (!previous || previous.__fireSDataManagementV12) return;
+    const wrapped = function fireSDataManagementV12Projects(){
+      const result = previous.apply(this, arguments);
+      window.setTimeout(ensureRecycleBinButton, 0);
+      return result;
+    };
+    wrapped.__fireSDataManagementV12 = true;
+    window.renderProjectsList = wrapped;
+    try { renderProjectsList = wrapped; } catch (_) {}
+  }
+
+  ensureStyles();
+  wrapCommandCentre();
+  wrapProjectRenderer();
+  ensureRecycleBinButton();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureRecycleBinButton, {
+      once: true
+    });
+  }
+  window.addEventListener('pageshow', ensureRecycleBinButton);
+  window.fireSOpenDataManagementV12 = showDataManagement;
+  window.fireSOpenRecycleBinV12 = showRecycleBin;
+  window.FireSDataManagementV12 = {
+    version: VERSION,
+    retentionDays: RETENTION_DAYS,
+    deleteCurrentInspection,
+    deleteHistoryInspection,
+    deleteEntirePremises,
+    restoreCurrentInspection,
+    restoreHistoryInspection,
+    restorePremises,
+    recycleEntries
+  };
 })();
