@@ -17945,6 +17945,271 @@ function handleAnswerChange(selectEl, options = {}) {
   }
 })();
 
+// Fire-S v11: require an explicit confirmation before resuming an unfinished
+// inspection from the Premises Command Centre.
+(function installContinueInspectionConfirmationV11(){
+  const VERSION = 'continue-inspection-confirmation-v11';
+  const STYLE_ID = 'fireSContinueInspectionConfirmationV11Styles';
+  const DIALOG_ID = 'fireSContinueInspectionConfirmationV11';
+
+  function text(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function safeHtml(value){
+    if (typeof escapeHtml === 'function') return escapeHtml(text(value));
+    return text(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function resolveProject(projectIdentifier){
+    if (typeof resolveProjectOpenIdentifier === 'function') {
+      const resolved = resolveProjectOpenIdentifier(projectIdentifier);
+      if (resolved) return resolved;
+    }
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    const identifier = typeof projectIdentifier === 'object'
+      ? projectIdentifier?.id
+      : projectIdentifier;
+    return projects.find(project => String(project?.id) === String(identifier)) ||
+      (typeof projectIdentifier === 'object' ? projectIdentifier : null);
+  }
+
+  function currentProject(project){
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    return projects.find(item => String(item?.id) === String(project?.id)) || project;
+  }
+
+  function formatStartedDate(project){
+    const value =
+      project?.inspectionStartedAt ||
+      project?.inspectionCreatedAt ||
+      project?.workspaceCreatedAt ||
+      project?.inspectionDate ||
+      project?.scheduledDate;
+    if (!value) return 'date not recorded';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return text(value) || 'date not recorded';
+    try {
+      return new Intl.DateTimeFormat('en-ZA', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }).format(date);
+    } catch {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  function premisesDetails(project){
+    const name = text(
+      typeof getProjectPremisesName === 'function'
+        ? getProjectPremisesName(project)
+        : (
+            project?.organisationName ||
+            project?.organizationName ||
+            project?.premisesName ||
+            project?.projectName ||
+            project?.name
+          )
+    ) || 'Selected premises';
+    const site = text(
+      typeof getProjectPremisesSite === 'function'
+        ? getProjectPremisesSite(project)
+        : (
+            project?.siteName ||
+            project?.site ||
+            project?.branchName ||
+            project?.locationName ||
+            project?.location
+          )
+    );
+    return {
+      label: site && site.toLowerCase() !== name.toLowerCase()
+        ? `${name} – ${site}`
+        : name,
+      started: formatStartedDate(project)
+    };
+  }
+
+  function ensureStyles(){
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      .fire-s-continue-confirm-v11 {
+        position:fixed;
+        inset:0;
+        z-index:10050;
+        display:grid;
+        place-items:center;
+        padding:18px;
+        background:rgba(9,24,36,.64);
+      }
+      .fire-s-continue-confirm-v11__dialog {
+        width:min(100%,480px);
+        overflow:hidden;
+        border:1px solid #cfdae2;
+        border-radius:17px;
+        background:#fff;
+        box-shadow:0 24px 70px rgba(4,18,29,.32);
+      }
+      .fire-s-continue-confirm-v11__body {
+        padding:22px;
+      }
+      .fire-s-continue-confirm-v11__eyebrow {
+        display:block;
+        margin-bottom:7px;
+        color:#176fae;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.1em;
+        text-transform:uppercase;
+      }
+      .fire-s-continue-confirm-v11 h3 {
+        margin:0;
+        color:#172e42;
+        font-size:20px;
+        line-height:1.25;
+      }
+      .fire-s-continue-confirm-v11 p {
+        margin:10px 0 0;
+        color:#526878;
+        font-size:13px;
+        line-height:1.55;
+      }
+      .fire-s-continue-confirm-v11__premises {
+        margin-top:14px;
+        padding:12px 13px;
+        border:1px solid #dce7ee;
+        border-radius:11px;
+        background:#f5f9fb;
+        color:#203c51;
+        font-size:13px;
+      }
+      .fire-s-continue-confirm-v11__premises strong {
+        display:block;
+        margin-bottom:3px;
+        font-size:14px;
+      }
+      .fire-s-continue-confirm-v11__actions {
+        display:flex;
+        justify-content:flex-end;
+        gap:9px;
+        padding:14px 18px;
+        border-top:1px solid #e1e8ed;
+        background:#f8fafb;
+      }
+      .fire-s-continue-confirm-v11__actions button {
+        min-height:42px;
+        padding:9px 15px;
+        border-radius:10px;
+        font-weight:900;
+        cursor:pointer;
+      }
+      .fire-s-continue-confirm-v11__cancel {
+        border:1px solid #c7d3dc;
+        background:#fff;
+        color:#3e5668;
+      }
+      .fire-s-continue-confirm-v11__continue {
+        border:1px solid #176fae;
+        background:#176fae;
+        color:#fff;
+      }
+      @media (max-width:480px) {
+        .fire-s-continue-confirm-v11__actions {
+          display:grid;
+          grid-template-columns:1fr;
+        }
+        .fire-s-continue-confirm-v11__continue {
+          grid-row:1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function closeDialog(){
+    document.getElementById(DIALOG_ID)?.remove();
+  }
+
+  function showConfirmation(project, focusMode){
+    closeDialog();
+    ensureStyles();
+    const details = premisesDetails(project);
+    const backdrop = document.createElement('div');
+    backdrop.id = DIALOG_ID;
+    backdrop.className = 'fire-s-continue-confirm-v11';
+    backdrop.setAttribute('role', 'presentation');
+    backdrop.innerHTML = `
+      <div class="fire-s-continue-confirm-v11__dialog" role="dialog" aria-modal="true" aria-labelledby="fireSContinueInspectionTitleV11">
+        <div class="fire-s-continue-confirm-v11__body">
+          <span class="fire-s-continue-confirm-v11__eyebrow">Current inspection in progress</span>
+          <h3 id="fireSContinueInspectionTitleV11">Continue this inspection?</h3>
+          <p>An unfinished inspection already exists for:</p>
+          <div class="fire-s-continue-confirm-v11__premises">
+            <strong>${safeHtml(details.label)}</strong>
+            <span>Started on ${safeHtml(details.started)}</span>
+          </div>
+          <p>Do you want to continue this inspection?</p>
+        </div>
+        <div class="fire-s-continue-confirm-v11__actions">
+          <button type="button" class="fire-s-continue-confirm-v11__cancel">Cancel</button>
+          <button type="button" class="fire-s-continue-confirm-v11__continue">Continue Inspection</button>
+        </div>
+      </div>
+    `;
+
+    const cancel = backdrop.querySelector('.fire-s-continue-confirm-v11__cancel');
+    const continueButton = backdrop.querySelector('.fire-s-continue-confirm-v11__continue');
+    cancel?.addEventListener('click', closeDialog);
+    continueButton?.addEventListener('click', () => {
+      closeDialog();
+      if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+      openProject(project.id, focusMode, { bypassOpenGate: true });
+    });
+    backdrop.addEventListener('click', event => {
+      if (event.target === backdrop) closeDialog();
+    });
+    backdrop.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeDialog();
+    });
+    document.body.appendChild(backdrop);
+    window.setTimeout(() => continueButton?.focus(), 0);
+  }
+
+  function protectContinueButton(project, focusMode){
+    const button = document.getElementById('phase5StartNewBtn');
+    const gate = button?.closest?.('#inspectionOpenGateBackdrop');
+    if (!button || !gate || gate.dataset.fireSContinueConfirmation === VERSION) return;
+    gate.dataset.fireSContinueConfirmation = VERSION;
+    gate.addEventListener('click', event => {
+      const continueButton = event.target?.closest?.('#phase5StartNewBtn');
+      if (!continueButton || !gate.contains(continueButton)) return;
+      const latest = currentProject(project);
+      if (
+        typeof hasCurrentIncompleteInspection !== 'function' ||
+        !hasCurrentIncompleteInspection(latest)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      showConfirmation(latest, focusMode);
+    }, true);
+  }
+
+  window.fireSProtectContinueInspectionV11 = function(projectIdentifier, focusMode){
+    const project = currentProject(resolveProject(projectIdentifier));
+    protectContinueButton(project, focusMode);
+  };
+})();
+
 function updateChecklistSectionLabels() {
   document.querySelectorAll('.checklist-section-label').forEach(label => {
     const sectionIndex = Number(label.dataset.sectionIndex);
@@ -35109,10 +35374,19 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
     inspectionStartedAt: null,
     workspaceCreatedAt: nowIso,
     completedAt: null,
+    finalisedAt: null,
+    finalizedAt: null,
     archivedAt: null,
     archiveStatus: '',
+    status: 'active',
+    inspectionLifecycleStatus: 'created',
     inspectionStatus: 'created',
     scheduledStatus: 'created',
+    inspectionFinalisedAt: null,
+    inspectionFinalizedAt: null,
+    inspectionReviewCompletedAt: null,
+    checklistCompletedAt: null,
+    scheduleCompletedAt: null,
     scheduleFreshInspection: false,
     locked: false,
     isReadOnly: false,
@@ -37642,6 +37916,26 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return result;
   };
 
+  showInspectionOpenGate = wrapped;
+  window.showInspectionOpenGate = wrapped;
+})();
+
+(function activateContinueInspectionConfirmationV11(){
+  if (
+    typeof showInspectionOpenGate !== 'function' ||
+    typeof window.fireSProtectContinueInspectionV11 !== 'function'
+  ) {
+    return;
+  }
+  const previousShowInspectionOpenGate = showInspectionOpenGate;
+  const wrapped = function fireSContinueInspectionConfirmationV11Gate(projectIdentifier, focusMode){
+    const result = previousShowInspectionOpenGate.apply(this, arguments);
+    window.fireSProtectContinueInspectionV11(projectIdentifier, focusMode);
+    window.setTimeout(() => {
+      window.fireSProtectContinueInspectionV11(projectIdentifier, focusMode);
+    }, 80);
+    return result;
+  };
   showInspectionOpenGate = wrapped;
   window.showInspectionOpenGate = wrapped;
 })();
