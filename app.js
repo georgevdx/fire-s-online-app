@@ -17952,6 +17952,340 @@ function handleAnswerChange(selectEl, options = {}) {
   }
 })();
 
+// =====================================================
+// FIRE-S V15 - DATA MANAGEMENT AUDIT TRAIL
+// Gives Company Admin and Super Admin a read-only view of delete, restore and
+// permanent-delete events already recorded against each premises.
+// =====================================================
+(function installFireSDataManagementAuditV15(){
+  'use strict';
+
+  const VERSION = 'data-management-audit-v15';
+  const MODAL_ID = 'fireSDataManagementAuditV15';
+  const STYLE_ID = 'fireSDataManagementAuditV15Styles';
+
+  function text(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function safeHtml(value){
+    if (typeof escapeHtml === 'function') return escapeHtml(text(value));
+    return text(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function currentRole(){
+    try {
+      if (typeof getCurrentUserRole === 'function') {
+        return text(getCurrentUserRole()).toLowerCase();
+      }
+    } catch (_) {}
+    return text(window.currentUserProfile?.role).toLowerCase();
+  }
+
+  function canViewAudit(){
+    return new Set([
+      'super_admin',
+      'company_owner',
+      'company_admin',
+      'owner',
+      'admin',
+      'local'
+    ]).has(currentRole());
+  }
+
+  function readProjects(){
+    try {
+      if (typeof getProjects === 'function') {
+        const projects = getProjects();
+        if (Array.isArray(projects)) return projects;
+      }
+    } catch (_) {}
+    try {
+      const projects = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return Array.isArray(projects) ? projects : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function findProject(projectId){
+    return readProjects().find(project =>
+      String(project?.id) === String(projectId)
+    ) || null;
+  }
+
+  function auditEntries(projectId){
+    const project = findProject(projectId);
+    const entries = Array.isArray(project?.dataManagementAudit)
+      ? project.dataManagementAudit
+      : [];
+    return entries
+      .map(entry => ({ ...entry }))
+      .sort((a, b) =>
+        new Date(b?.recordedAt || 0).getTime() -
+        new Date(a?.recordedAt || 0).getTime()
+      );
+  }
+
+  function actionLabel(action){
+    const labels = {
+      delete_current_inspection: 'Incomplete inspection moved to Recycle Bin',
+      restore_current_inspection: 'Incomplete inspection restored',
+      permanent_delete_current_inspection: 'Incomplete inspection permanently deleted',
+      delete_history_inspection: 'History inspection moved to Recycle Bin',
+      restore_history_inspection: 'History inspection restored',
+      permanent_delete_history_inspection: 'History inspection permanently deleted',
+      delete_entire_premises: 'Entire premises moved to Recycle Bin',
+      restore_entire_premises: 'Entire premises restored',
+      permanent_delete_entire_premises: 'Entire premises permanently deleted'
+    };
+    return labels[text(action)] || text(action).replace(/_/g, ' ') || 'Data Management action';
+  }
+
+  function actionTone(action){
+    const value = text(action);
+    if (value.startsWith('restore_')) return 'restore';
+    if (value.startsWith('permanent_delete_')) return 'permanent';
+    return 'delete';
+  }
+
+  function dateLabel(value){
+    const date = new Date(value || 0);
+    if (Number.isNaN(date.getTime())) return 'Date not recorded';
+    try {
+      return date.toLocaleString('en-ZA', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (_) {
+      return date.toISOString();
+    }
+  }
+
+  function actorLabel(entry){
+    const actor = entry?.actor || {};
+    return text(actor.name) ||
+      text(actor.email) ||
+      text(actor.id) ||
+      'User not recorded';
+  }
+
+  function roleLabel(entry){
+    const role = text(entry?.actor?.role);
+    return role ? role.replace(/_/g, ' ') : 'Role not recorded';
+  }
+
+  function detailLabel(entry){
+    const details = entry?.details || {};
+    const parts = [];
+    if (details.inspectionNumber) {
+      parts.push(`Inspection ${text(details.inspectionNumber)}`);
+    }
+    if (details.inspectionDate) {
+      parts.push(`Inspection date ${text(details.inspectionDate)}`);
+    }
+    if (details.retentionDays) {
+      parts.push(`${text(details.retentionDays)}-day recovery period`);
+    }
+    if (details.recoveryExpired === true) {
+      parts.push('Recovery period expired');
+    }
+    return parts.join(' · ');
+  }
+
+  function premisesLabel(project){
+    const name = text(
+      project?.organisationName ||
+      project?.premisesName ||
+      project?.projectName
+    ) || 'Premises';
+    const site = text(project?.siteName || project?.site);
+    return site ? `${name} — ${site}` : name;
+  }
+
+  function ensureStyles(){
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      .fire-s-cc-audit-section-v15{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 15px;border:1px solid #d8e2ea;border-radius:14px;background:#f8fafc}
+      .fire-s-cc-audit-section-v15 strong{display:block;color:#243c50;font-size:13px}
+      .fire-s-cc-audit-section-v15 span{display:block;margin-top:4px;color:#667986;font-size:11px;line-height:1.4}
+      .fire-s-cc-audit-section-v15 button{min-height:43px;padding:9px 13px;border:1px solid #7b8e9d;border-radius:10px;background:#fff;color:#29465c;font-weight:900;cursor:pointer;white-space:nowrap}
+      .fire-s-audit-v15-backdrop{position:fixed;inset:0;z-index:10140;display:grid;place-items:center;padding:16px;background:rgba(8,22,33,.68)}
+      .fire-s-audit-v15-dialog{width:min(100%,780px);max-height:calc(100vh - 28px);overflow:auto;border:1px solid #d4dde4;border-radius:18px;background:#fff;box-shadow:0 28px 80px rgba(3,16,26,.35)}
+      .fire-s-audit-v15-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px;border-bottom:1px solid #e3e9ed;background:#f8fafb}
+      .fire-s-audit-v15-head h3{margin:3px 0 0;color:#172e42;font-size:21px}
+      .fire-s-audit-v15-eyebrow{display:block;color:#476276;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+      .fire-s-audit-v15-close{width:38px;height:38px;border:1px solid #cbd6de;border-radius:10px;background:#fff;color:#3f5667;font-size:20px;cursor:pointer}
+      .fire-s-audit-v15-body{display:grid;gap:11px;padding:18px 20px 21px}
+      .fire-s-audit-v15-note{padding:12px 13px;border:1px solid #cfdae2;border-radius:12px;background:#f7fafc;color:#526b7c;font-size:12px;line-height:1.45}
+      .fire-s-audit-v15-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:14px;border:1px solid #dbe4ea;border-radius:13px;background:#fff}
+      .fire-s-audit-v15-marker{width:10px;height:10px;margin-top:4px;border-radius:50%;background:#b42323}
+      .fire-s-audit-v15-item.restore .fire-s-audit-v15-marker{background:#1b7a43}
+      .fire-s-audit-v15-item.permanent .fire-s-audit-v15-marker{background:#6f1d1d}
+      .fire-s-audit-v15-item strong{display:block;color:#1e374a;font-size:13px;line-height:1.35}
+      .fire-s-audit-v15-item span{display:block;margin-top:4px;color:#687b89;font-size:11px;line-height:1.4}
+      .fire-s-audit-v15-empty{padding:18px;border:1px dashed #c9d5dd;border-radius:13px;color:#647684;text-align:center}
+      @media(max-width:560px){
+        .fire-s-cc-audit-section-v15{grid-template-columns:1fr}
+        .fire-s-cc-audit-section-v15 button{width:100%;white-space:normal}
+        .fire-s-audit-v15-backdrop{padding:7px;place-items:start center}
+        .fire-s-audit-v15-dialog{max-height:calc(100vh - 14px);border-radius:14px}
+        .fire-s-audit-v15-head,.fire-s-audit-v15-body{padding-left:13px;padding-right:13px}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function closeAudit(){
+    document.getElementById(MODAL_ID)?.remove();
+  }
+
+  function showAudit(projectId){
+    if (!canViewAudit()) {
+      alert('Only a Company Admin or Super Admin may view the Data Management Audit Trail.');
+      return false;
+    }
+    const project = findProject(projectId);
+    if (!project) {
+      alert('The premises audit record could not be found.');
+      return false;
+    }
+
+    ensureStyles();
+    closeAudit();
+    const entries = auditEntries(projectId);
+    const rows = entries.length
+      ? entries.map(entry => {
+          const details = detailLabel(entry);
+          return `
+            <article class="fire-s-audit-v15-item ${safeHtml(actionTone(entry.action))}">
+              <span class="fire-s-audit-v15-marker" aria-hidden="true"></span>
+              <div>
+                <strong>${safeHtml(actionLabel(entry.action))}</strong>
+                <span>${safeHtml(dateLabel(entry.recordedAt))} · ${safeHtml(actorLabel(entry))} · ${safeHtml(roleLabel(entry))}</span>
+                ${details ? `<span>${safeHtml(details)}</span>` : ''}
+              </div>
+            </article>
+          `;
+        }).join('')
+      : '<div class="fire-s-audit-v15-empty">No Data Management activity has been recorded for this premises.</div>';
+
+    const backdrop = document.createElement('div');
+    backdrop.id = MODAL_ID;
+    backdrop.className = 'fire-s-audit-v15-backdrop';
+    backdrop.innerHTML = `
+      <div class="fire-s-audit-v15-dialog" role="dialog" aria-modal="true" aria-labelledby="fireSAuditTitleV15">
+        <div class="fire-s-audit-v15-head">
+          <div>
+            <span class="fire-s-audit-v15-eyebrow">Read-only record</span>
+            <h3 id="fireSAuditTitleV15">${safeHtml(premisesLabel(project))}</h3>
+          </div>
+          <button type="button" class="fire-s-audit-v15-close" aria-label="Close">×</button>
+        </div>
+        <div class="fire-s-audit-v15-body">
+          <div class="fire-s-audit-v15-note">
+            Data Management Audit Trail · ${entries.length} recorded event${entries.length === 1 ? '' : 's'}. Newest activity appears first.
+          </div>
+          ${rows}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('.fire-s-audit-v15-close')?.addEventListener('click', closeAudit);
+    backdrop.addEventListener('click', event => {
+      if (event.target === backdrop) closeAudit();
+    });
+    return true;
+  }
+
+  function decorateCommandCentre(){
+    if (!canViewAudit()) return;
+    const backdrop = document.getElementById('inspectionOpenGateBackdrop');
+    const shell = backdrop?.querySelector('.fire-s-cc-shell');
+    const projectId = backdrop?.dataset?.fireSDataProjectIdV13;
+    if (!shell || !projectId || shell.querySelector('.fire-s-cc-audit-section-v15')) {
+      return;
+    }
+
+    const project = findProject(projectId);
+    if (!project) return;
+    const count = auditEntries(projectId).length;
+    const section = document.createElement('section');
+    section.className = 'fire-s-cc-audit-section-v15';
+    section.setAttribute('aria-label', 'Data Management Audit Trail');
+    section.innerHTML = `
+      <div>
+        <strong>Data Management Audit Trail</strong>
+        <span>${count} recorded delete, restore or permanent-delete event${count === 1 ? '' : 's'} for this premises.</span>
+      </div>
+      <button type="button">View Audit Trail</button>
+    `;
+    section.querySelector('button')?.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      showAudit(projectId);
+    });
+
+    const dataSection = shell.querySelector('.fire-s-cc-data-section-v13');
+    if (dataSection?.parentNode === shell) {
+      dataSection.insertAdjacentElement('afterend', section);
+    } else {
+      shell.appendChild(section);
+    }
+  }
+
+  function scheduleDecorate(){
+    [0, 80, 220, 420].forEach(delay => {
+      window.setTimeout(decorateCommandCentre, delay);
+    });
+  }
+
+  function observeCommandCentre(){
+    if (
+      window.__fireSDataManagementAuditObserverV15 ||
+      typeof MutationObserver === 'undefined'
+    ) return;
+    const observer = new MutationObserver(mutations => {
+      const relevant = mutations.some(mutation =>
+        Array.from(mutation.addedNodes || []).some(node =>
+          node?.id === 'inspectionOpenGateBackdrop' ||
+          node?.classList?.contains?.('fire-s-cc-data-section-v13') ||
+          node?.querySelector?.('#inspectionOpenGateBackdrop, .fire-s-cc-data-section-v13')
+        )
+      );
+      if (relevant) scheduleDecorate();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    window.__fireSDataManagementAuditObserverV15 = observer;
+  }
+
+  ensureStyles();
+  observeCommandCentre();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scheduleDecorate, { once: true });
+  } else {
+    scheduleDecorate();
+  }
+  window.addEventListener('pageshow', scheduleDecorate);
+  window.fireSOpenDataManagementAuditV15 = showAudit;
+  window.FireSDataManagementAuditV15 = {
+    version: VERSION,
+    canViewAudit,
+    auditEntries,
+    actionLabel
+  };
+})();
+
 // Fire-S v11: require an explicit confirmation before resuming an unfinished
 // inspection from the Premises Command Centre.
 (function installContinueInspectionConfirmationV11(){
