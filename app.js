@@ -35703,7 +35703,21 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory : [];
       const hasHistory = history.length > 0;
-      const latestHistoryIndex = hasHistory ? history.length - 1 : -1;
+      // "Latest" must follow the recorded Inspection Date, not the array
+      // position. Imported, merged and legacy history can be out of order.
+      const latestHistoryIndex = hasHistory
+        ? history
+            .map((inspection, historyIndex) => ({ inspection, historyIndex }))
+            .sort((a, b) => {
+              const dateDifference =
+                getInspectionHistoryTimestamp(b.inspection) -
+                getInspectionHistoryTimestamp(a.inspection);
+
+              // When dates are equal or missing, prefer the most recently
+              // appended record as the deterministic fallback.
+              return dateDifference || b.historyIndex - a.historyIndex;
+            })[0].historyIndex
+        : -1;
       const backdrop = document.createElement('div');
       backdrop.id = 'inspectionOpenGateBackdrop';
       backdrop.className = 'inspection-open-gate-backdrop';
