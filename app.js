@@ -13231,6 +13231,8 @@ function archiveProjectCurrentInspectionAndStartBlank(projectId) {
   );
 
   const today = new Date().toISOString().slice(0, 10);
+  const workspaceCreatedAt = new Date().toISOString();
+  const inspectionNumber = generateInspectionNumber();
 
   projects[index] = {
     ...original,
@@ -13249,16 +13251,26 @@ function archiveProjectCurrentInspectionAndStartBlank(projectId) {
     recurringCycleUnit: '',
     recurringCycleNotes: '',
     completedAt: null,
+    finalisedAt: null,
     archiveStatus: '',
     archivedAt: null,
+    status: 'active',
+    inspectionLifecycleStatus: 'created',
     inspectionStatus: 'created',
     scheduledStatus: 'created',
+    inspectionFinalisedAt: null,
+    inspectionReviewCompletedAt: null,
+    scheduleCompletedAt: null,
+    currentInspectionId: inspectionNumber,
+    inspectionCreatedAt: workspaceCreatedAt,
+    workspaceCreatedAt,
+    inspectionStartedAt: null,
     scheduleFreshInspection: false,
-    inspectionNumber: generateInspectionNumber(),
+    inspectionNumber,
     inspectionDate: today,
     syncPending: true,
     syncError: false,
-    lastSaved: new Date().toISOString()
+    lastSaved: workspaceCreatedAt
   };
 
   setProjects(projects);
@@ -37228,6 +37240,22 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const total = answers.length;
     const percentage = total ? Math.round((answered / total) * 100) : 0;
     const explicit = lower(project?.inspectionStatus || project?.status || project?.scheduledStatus);
+    const terminalStatuses = [
+      project?.inspectionLifecycleStatus,
+      project?.inspectionStatus,
+      project?.status,
+      project?.archiveStatus,
+      project?.scheduledStatus
+    ].map(lower);
+    const isFinalisedRecord = Boolean(
+      project?.completedAt ||
+      project?.finalisedAt ||
+      project?.archivedAt ||
+      project?.inspectionFinalisedAt ||
+      terminalStatuses.some(status =>
+        ['finalised', 'finalized', 'complete', 'completed', 'closed', 'archived'].includes(status)
+      )
+    );
     const hasAnsweredQuestions = answered > 0;
     const hasCurrentFlag = Boolean(
       project?.currentInspectionId ||
@@ -37238,6 +37266,11 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       ['created', 'draft', 'in_progress', 'in progress', 'active', 'ready_for_review', 'ready for review', 'review'].includes(explicit)
     );
 
+    // A completed cycle may still retain its answers for reporting. Those
+    // historical answers must never make the record look like current work.
+    if (isFinalisedRecord) {
+      return { lifecycle:'NONE', label:'No Current Inspection', percentage:0, hasCurrent:false, photos:0, answered:0, total:0 };
+    }
     if (['ready_for_review', 'ready for review', 'review'].includes(explicit) || (total > 0 && answered >= total)) {
       return { lifecycle:'READY_FOR_REVIEW', label:'Ready for Review', percentage:100, hasCurrent:true, photos:photos.length, answered, total };
     }
@@ -37371,6 +37404,9 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       return { label:'Review & Finalise Inspection', reason:'All inspection questions are complete and ready for review.', target:'start' };
     }
     if (workspace.lifecycle === 'CREATED') {
+      if (inspectionHistory(project).length > 0) {
+        return { label:'Continue Inspection', reason:'A clean new inspection cycle is ready to continue.', target:'start' };
+      }
       return { label:'Start Inspection', reason:'A clean new inspection has been created and has not yet been started.', target:'start' };
     }
     if (workspace.lifecycle === 'IN_PROGRESS') {
@@ -37487,7 +37523,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
     const quick = shell.querySelector('.fire-s-cc-quick');
     const quickInspectionLabel = workspace.lifecycle === 'CREATED'
-      ? 'Start Inspection'
+      ? (history.length > 0 ? 'Continue Inspection' : 'Start Inspection')
       : workspace.lifecycle === 'IN_PROGRESS'
         ? 'Continue Inspection'
         : workspace.lifecycle === 'READY_FOR_REVIEW'
