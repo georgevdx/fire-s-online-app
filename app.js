@@ -38541,6 +38541,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-recycle-v12-item button{min-height:38px;padding:8px 12px;border:1px solid #268150;border-radius:9px;background:#effaf3;color:#17653c;font-weight:900;cursor:pointer}
       .fire-s-recycle-v12-item button:disabled{opacity:.45;cursor:not-allowed}
       .fire-s-cc-data-v12{border-color:#e0b0b0!important;background:#fff8f8!important;color:#952525!important}
+      .fire-s-cc-data-section-v13{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 15px;border:1px solid #e2b5b5;border-radius:14px;background:#fff8f8}
+      .fire-s-cc-data-section-v13 strong{display:block;color:#7f1d1d;font-size:13px}
+      .fire-s-cc-data-section-v13 span{display:block;margin-top:4px;color:#765b5b;font-size:11px;line-height:1.4}
+      .fire-s-cc-data-section-v13 button{min-height:43px;padding:9px 13px;border:1px solid #b42323;border-radius:10px;background:#fff;color:#a11d1d;font-weight:900;cursor:pointer;white-space:nowrap}
       @media(max-width:560px){
         .fire-s-data-v12-backdrop{padding:7px;place-items:start center}
         .fire-s-data-v12-dialog{max-height:calc(100vh - 14px);border-radius:14px}
@@ -38548,6 +38552,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         .fire-s-recycle-v12-item{grid-template-columns:1fr}
         .fire-s-recycle-v12-item button{width:100%}
         .fire-s-data-v12-confirm-actions{display:grid;grid-template-columns:1fr}
+        .fire-s-cc-data-section-v13{grid-template-columns:1fr}
+        .fire-s-cc-data-section-v13 button{width:100%;white-space:normal}
       }
     `;
     document.head.appendChild(style);
@@ -38908,20 +38914,48 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         ? projectIdentifier?.id
         : projectIdentifier
     );
-    const quick = document.querySelector(
-      '#inspectionOpenGateBackdrop .fire-s-cc-quick'
-    );
-    if (!project || !quick || quick.querySelector('.fire-s-cc-data-v12')) return;
+    const backdrop = document.getElementById('inspectionOpenGateBackdrop');
+    const shell = backdrop?.querySelector('.fire-s-cc-shell');
+    const quick = backdrop?.querySelector('.fire-s-cc-quick');
+    const moreActions = backdrop?.querySelector('.fire-s-command-more-actions');
+    if (!project || !backdrop) return;
+
+    backdrop.dataset.fireSDataProjectIdV13 = String(project.id);
+
+    if (shell && !shell.querySelector('.fire-s-cc-data-section-v13')) {
+      const section = document.createElement('section');
+      section.className = 'fire-s-cc-data-section-v13';
+      section.setAttribute('aria-label', 'Delete and Data Management');
+      section.innerHTML = `
+        <div>
+          <strong>Delete / Data Management</strong>
+          <span>Delete an incomplete inspection, one History record, or the entire premises. Deleted data remains recoverable for 30 days.</span>
+        </div>
+        <button type="button">Open Data Management</button>
+      `;
+      section.querySelector('button')?.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        showDataManagement(project.id);
+      });
+      shell.appendChild(section);
+      return;
+    }
+
+    const host = quick || moreActions;
+    if (!host || host.querySelector('.fire-s-cc-data-v12')) return;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'fire-s-cc-data-v12';
+    button.className = quick
+      ? 'fire-s-cc-data-v12'
+      : 'fire-s-command-more-action fire-s-cc-data-v12';
     button.textContent = 'Delete / Data Management';
     button.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
       showDataManagement(project.id);
     });
-    quick.appendChild(button);
+    host.appendChild(button);
   }
 
   function wrapCommandCentre(){
@@ -38932,7 +38966,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const previous = showInspectionOpenGate;
     const wrapped = function fireSDataManagementV12Gate(projectIdentifier){
       const result = previous.apply(this, arguments);
-      [50, 140].forEach(delay => {
+      [50, 140, 320].forEach(delay => {
         window.setTimeout(() => decorateCommandCentre(projectIdentifier), delay);
       });
       return result;
@@ -38957,16 +38991,97 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     try { renderProjectsList = wrapped; } catch (_) {}
   }
 
-  ensureStyles();
-  wrapCommandCentre();
-  wrapProjectRenderer();
-  ensureRecycleBinButton();
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', ensureRecycleBinButton, {
-      once: true
+  function wireInspectionMoreDelete(){
+    const currentButton = document.getElementById('deleteBtn');
+    if (!currentButton || currentButton.dataset.fireSDataManagementV13 === 'true') {
+      return;
+    }
+
+    // Replace the legacy button node to remove its direct permanent-delete
+    // listener. All delete routes must now pass through the recoverable,
+    // role-controlled Data Management panel.
+    const button = currentButton.cloneNode(true);
+    button.dataset.fireSDataManagementV13 = 'true';
+    button.textContent = 'Delete / Data Management';
+    button.title = 'Open the recoverable Delete / Data Management options';
+    currentButton.replaceWith(button);
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const project = findProject(
+        typeof currentProjectId !== 'undefined'
+          ? currentProjectId
+          : window.currentProjectId
+      );
+      if (!project) {
+        alert('Save this inspection before opening Delete / Data Management.');
+        return;
+      }
+      const dropdown = document.getElementById('actionDropdown');
+      if (dropdown) dropdown.style.display = 'none';
+      showDataManagement(project.id);
     });
   }
-  window.addEventListener('pageshow', ensureRecycleBinButton);
+
+  function reinstallEntryPoints(){
+    wrapCommandCentre();
+    wrapProjectRenderer();
+    wireInspectionMoreDelete();
+    ensureRecycleBinButton();
+  }
+
+  function observeCommandCentre(){
+    if (
+      window.__fireSDataManagementObserverV13 ||
+      typeof MutationObserver === 'undefined'
+    ) return;
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (
+            !node ||
+            (typeof Element !== 'undefined' && !(node instanceof Element))
+          ) return;
+          const backdrop = node.id === 'inspectionOpenGateBackdrop'
+            ? node
+            : node.querySelector?.('#inspectionOpenGateBackdrop');
+          if (!backdrop) return;
+          const projectId =
+            backdrop.dataset.fireSDataProjectIdV13 ||
+            (typeof currentProjectId !== 'undefined'
+              ? currentProjectId
+              : window.currentProjectId);
+          if (projectId) {
+            [60, 180, 360].forEach(delay => {
+              window.setTimeout(() => decorateCommandCentre(projectId), delay);
+            });
+          }
+        });
+      });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    window.__fireSDataManagementObserverV13 = observer;
+  }
+
+  ensureStyles();
+  reinstallEntryPoints();
+  observeCommandCentre();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      // inspection-lifecycle-engine.js loads after app.js and may replace the
+      // Command Centre entry point. Reinstall only after all deferred page
+      // scripts have initialised.
+      reinstallEntryPoints();
+      [250, 800].forEach(delay => {
+        window.setTimeout(reinstallEntryPoints, delay);
+      });
+    }, {
+      once: true
+    });
+  } else {
+    [0, 250].forEach(delay => window.setTimeout(reinstallEntryPoints, delay));
+  }
+  window.addEventListener('pageshow', reinstallEntryPoints);
   window.fireSOpenDataManagementV12 = showDataManagement;
   window.fireSOpenRecycleBinV12 = showRecycleBin;
   window.FireSDataManagementV12 = {
