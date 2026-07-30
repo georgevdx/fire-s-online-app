@@ -714,6 +714,8 @@ function resetInspectionSessionState(options = {}) {
   currentPhotos = [];
   archivedReportContext = null;
   inspectionHistoryViewMode = false;
+  window.__fireSHistoryViewActive = false;
+  window.fireSHistoryViewMode = false;
   selectedHistoryInspectionContext = null;
   archivedReportContext = null;
   document.body.classList.remove('fire-s-history-view-mode');
@@ -749,13 +751,27 @@ function resetInspectionSessionState(options = {}) {
 let autoSaveTimer = null;
 let workflowGateNoWriteLock = false;
 
+function isInspectionHistoryWriteProtected() {
+  return Boolean(
+    inspectionHistoryViewMode ||
+    document.body?.classList?.contains('fire-s-history-view-mode') ||
+    window.__fireSHistoryViewActive ||
+    window.fireSHistoryViewMode
+  );
+}
+
 function setWorkflowGateNoWriteLock(isLocked) {
-  workflowGateNoWriteLock = Boolean(isLocked);
+  // A delayed workflow callback may release its temporary lock after History
+  // has already opened. History itself remains the authoritative write lock.
+  workflowGateNoWriteLock = Boolean(
+    isLocked ||
+    isInspectionHistoryWriteProtected()
+  );
   window.workflowGateNoWriteLock = workflowGateNoWriteLock;
 }
 
 function scheduleAutoSave() {
-  if (workflowGateNoWriteLock) {
+  if (workflowGateNoWriteLock || isInspectionHistoryWriteProtected()) {
     clearTimeout(autoSaveTimer);
     return;
   }
@@ -813,7 +829,8 @@ function handleExpiryDateChange(field) {
 }
 
 function autoSaveProject() {
-  if (workflowGateNoWriteLock) {
+  if (workflowGateNoWriteLock || isInspectionHistoryWriteProtected()) {
+    clearTimeout(autoSaveTimer);
     return;
   }
   
@@ -14068,6 +14085,10 @@ function markInspectionSynced(projectId) {
 }
 
 function saveProject() {
+  if (isInspectionHistoryWriteProtected()) {
+    clearTimeout(autoSaveTimer);
+    return false;
+  }
   
   if (!canEditInspection()) {
     alert(
@@ -18977,6 +18998,8 @@ function fireSReturnFromHistoricalViewToPremisesWorkflow(projectId, focusMode = 
   archivedReportContext = null;
   liveReportContext = null;
   inspectionHistoryViewMode = false;
+  window.__fireSHistoryViewActive = false;
+  window.fireSHistoryViewMode = false;
   document.body.classList.remove('fire-s-history-view-mode');
 
   // Remove all archived runtime content before leaving the protected view.
@@ -19177,6 +19200,8 @@ function ensureInspectionHistoryIsolationStyles() {
 function enterInspectionHistoryViewMode() {
   ensureInspectionHistoryIsolationStyles();
   inspectionHistoryViewMode = true;
+  window.__fireSHistoryViewActive = true;
+  window.fireSHistoryViewMode = true;
   selectedHistoryInspectionContext = null;
   archivedReportContext = null;
   document.body.classList.add('fire-s-history-view-mode');
@@ -19194,6 +19219,8 @@ function enterInspectionHistoryViewMode() {
 
 function exitInspectionHistoryViewMode() {
   inspectionHistoryViewMode = false;
+  window.__fireSHistoryViewActive = false;
+  window.fireSHistoryViewMode = false;
   document.body.classList.remove('fire-s-history-view-mode');
   setWorkflowGateNoWriteLock(false);
 
@@ -35215,7 +35242,11 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
   function isHistoryView() {
     return Boolean(
+      (typeof isInspectionHistoryWriteProtected === 'function' &&
+        isInspectionHistoryWriteProtected()) ||
       window.__fireSHistoryViewActive ||
+      window.fireSHistoryViewMode ||
+      document.body.classList.contains('fire-s-history-view-mode') ||
       document.body.classList.contains('fire-s-history-view-active') ||
       document.getElementById('inspectionHistoryReadOnlyView')
     );
@@ -35249,6 +35280,8 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
   }
 
   function persistLifecycle(complete, extra) {
+    if (isHistoryView()) return null;
+
     const id = currentId();
     if (!id) return null;
     const projects = readProjects();
@@ -35433,8 +35466,15 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
   }
 
   function evaluateInspection(showPopup) {
+    if (isHistoryView()) {
+      clearTimeout(evaluationTimer);
+      return;
+    }
+
     clearTimeout(evaluationTimer);
     evaluationTimer = setTimeout(() => {
+      if (isHistoryView()) return;
+
       const counts = uiCompletion();
       const complete = isComplete(counts);
 
@@ -35451,6 +35491,8 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       } catch (_) {}
 
       setTimeout(() => {
+        if (isHistoryView()) return;
+
         try {
           if (window.FireSSmartActionEngine?.syncCurrent) {
             window.FireSSmartActionEngine.syncCurrent();
@@ -35558,7 +35600,9 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
   }
 
   function isHistoryMode(){
-    return document.body?.classList?.contains('fire-s-history-view-mode') ||
+    return (typeof isInspectionHistoryWriteProtected === 'function' &&
+      isInspectionHistoryWriteProtected()) ||
+      document.body?.classList?.contains('fire-s-history-view-mode') ||
       Boolean(window.fireSHistoryViewMode);
   }
 
@@ -35636,6 +35680,8 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
   if (originalFinishInspection) {
     finishInspection = function fireSPhase5FinishInspection(){
+      if (isHistoryMode()) return;
+
       let project = currentProjectRecord();
 
       // A fully completed first inspection may be finalised directly without
@@ -35902,6 +35948,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       archivedReportContext = null;
       liveReportContext = null;
       inspectionHistoryViewMode = false;
+      window.__fireSHistoryViewActive = false;
+      window.fireSHistoryViewMode = false;
     } catch (_) {}
 
     document.body.classList.remove('fire-s-history-view-mode');
