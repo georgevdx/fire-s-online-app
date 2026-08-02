@@ -1782,7 +1782,7 @@ body {
   background: #fff8e1;
   border-left: 5px solid #f57c00;
   padding: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   border-radius: 8px;
 }
 
@@ -3168,7 +3168,7 @@ button.readiness-chip:focus {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .home-hero h2 {
@@ -13569,3 +13569,5 @@ body.camera-workspace-open {
   outline: 3px solid rgba(29, 78, 216, .35) !important;
   outline-offset: 2px !important;
 }
+
+.home-hero{padding:4px 0}.home-hero h2{font-size:1.5rem}.home-hero p{color:#666;font-size:.95rem}
