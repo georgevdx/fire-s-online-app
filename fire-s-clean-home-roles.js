@@ -19,6 +19,8 @@
     admin: 'company_owner',
     company_admin: 'company_owner',
     executive: 'company_owner',
+    new_company: 'new_company',
+    'new-company': 'new_company',
     management: 'manager',
     'field-inspector': 'inspector',
     'field inspector': 'inspector',
@@ -57,24 +59,35 @@
     return ROLE_ALIASES[raw] || raw;
   }
 
+  function hasLinkedCompany() {
+    try {
+      if (window.currentUserProfile?.companyId) return true;
+    } catch (_) {}
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.companyId) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function isSignedInUser() {
+    try {
+      const id = window.currentUserProfile?.id ||
+        (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.id : '');
+      return !!(id && id !== 'local-user');
+    } catch (_) {}
+    return false;
+  }
+
   function readRole() {
-    // Role Test Mode (super_admin "View as …") must win over the real profile role.
+    // Logged out: always guest. Never keep Role Test / Super Admin chrome.
     try {
-      if (typeof window.fireSViewAsRole131 === 'function') {
-        const viewed = normaliseRole(window.fireSViewAsRole131());
-        if (viewed) return viewed;
-      }
+      if (!isSignedInUser()) return 'guest';
     } catch (_) {}
 
+    // Super Admin Role Test Mode wins (View as Inspector / New Company / etc.).
     try {
-      if (typeof window.getCurrentUserRole === 'function') {
-        const current = normaliseRole(window.getCurrentUserRole());
-        if (current) return current;
-      }
-    } catch (_) {}
-
-    try {
-      const pref = normaliseRole(localStorage.getItem('fireS.viewAsRole.v131'));
       let actual = '';
       try {
         actual = normaliseRole(
@@ -82,7 +95,39 @@
             (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.role : '')
         );
       } catch (_) {}
-      if (actual === 'super_admin' && pref) return pref;
+
+      if (actual === 'super_admin') {
+        try {
+          if (typeof window.fireSViewAsRole131 === 'function') {
+            const viewed = normaliseRole(window.fireSViewAsRole131());
+            if (viewed) return viewed;
+          }
+        } catch (_) {}
+        try {
+          const pref = normaliseRole(localStorage.getItem('fireS.viewAsRole.v131'));
+          if (pref) return pref;
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    // Real first-day customer: own login exists, but no company yet.
+    // Never send them to Inspector home before Create company.
+    try {
+      if (isSignedInUser() && !hasLinkedCompany()) return 'new_company';
+    } catch (_) {}
+
+    try {
+      if (typeof window.fireSViewAsRole131 === 'function') {
+        const viewed = normaliseRole(window.fireSViewAsRole131());
+        if (viewed && viewed !== 'new_company') return viewed;
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof window.getCurrentUserRole === 'function') {
+        const current = normaliseRole(window.getCurrentUserRole());
+        if (current && current !== 'new_company') return current;
+      }
     } catch (_) {}
 
     try {
@@ -179,6 +224,7 @@
       'fire-s-role-owner',
       'fire-s-role-management',
       'fire-s-role-guest',
+      'fire-s-role-new-company',
       'fire-s-clean-home'
     );
     document.body.classList.add('fire-s-clean-home', roleClass);
@@ -195,7 +241,8 @@
     [
       'complianceHeroCard',
       'executiveSnapshotCard',
-      'executiveSnapshotPanel'
+      'executiveSnapshotPanel',
+      'fireSExecutiveDashboard1115'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -231,6 +278,22 @@
 
     ALL_CMD_IDS.forEach(hide);
 
+    // First-time signed-in users (no company yet) need a path to create one.
+    try {
+      const hasCompany = !!(
+        window.currentUserProfile?.companyId ||
+        (typeof currentUserProfile !== 'undefined' && currentUserProfile?.companyId)
+      );
+      if (!hasCompany) {
+        show('cmdCompanyBtn');
+        cardText(
+          'cmdCompanyBtn',
+          'Set up company',
+          'Create your company to add Inspectors and Managers.'
+        );
+      }
+    } catch (_) {}
+
     try {
       if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
     } catch (_) {}
@@ -244,7 +307,19 @@
     if (homeHero) homeHero.style.removeProperty('display');
     document.body.classList.remove('fire-s-inspector-v4');
     const shell = byId('inspectorV4Shell');
-    if (shell) shell.style.setProperty('display', 'none', 'important');
+    if (shell) {
+      shell.style.setProperty('display', 'none', 'important');
+      shell.setAttribute('hidden', 'true');
+      shell.setAttribute('aria-hidden', 'true');
+    }
+    // Ensure management chrome is not left hidden by stale inspector CSS.
+    const centre = byId('mainCommandCentre');
+    if (centre) {
+      centre.querySelectorAll('.main-command-top, .main-command-stats, .main-command-grid').forEach(el => {
+        el.style.removeProperty('display');
+        el.removeAttribute('hidden');
+      });
+    }
   }
 
   function applyManagerHome() {
@@ -330,7 +405,7 @@
     cardText(
       'cmdCompanyBtn',
       'Company',
-      'Account, subscription, users and cloud sync.'
+      'Team roles, account, subscription and cloud sync.'
     );
     cardText(
       'cmdServicesBtn',
@@ -352,6 +427,7 @@
     setText('#mainCommandAccessStatus', 'Local / guest');
     setStatsVisible(false);
     setBetaPanelsVisible(false);
+    hideManagementOverlays();
 
     show('cmdInspectionsBtn');
     show('cmdScheduleBtn');
@@ -400,13 +476,45 @@
     hide('cmdServicesBtn');
   }
 
+  function applyNewCompanyHome() {
+    showHomeHero();
+    setBodyRole('fire-s-role-new-company');
+    document.body.dataset.fireSCleanHomeRole = 'new_company';
+    setHero('Fire-S · New Company', 'START', 'Create your company, then appoint your team.');
+    setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
+    setText('#mainCommandCentre .main-command-top h3', 'Start your company');
+    setText(
+      '#mainCommandSubtitle',
+      'Create the company once, then add Inspectors and Managers.'
+    );
+    setText('#mainCommandAccessStatus', 'New company setup');
+    setStatsVisible(false);
+    setBetaPanelsVisible(false);
+    hideManagementOverlays();
+
+    ALL_CMD_IDS.forEach(hide);
+    show('cmdCompanyBtn');
+    cardText(
+      'cmdCompanyBtn',
+      'Create company',
+      'Day 1: set up your company and appoint members.'
+    );
+    show('cmdInspectionsBtn');
+    cardText(
+      'cmdInspectionsBtn',
+      'Inspection Gateway',
+      'Available after your company is set up.'
+    );
+  }
+
   function applyCleanHome() {
     const centre = byId('mainCommandCentre');
     if (!centre || !document.body) return;
 
     const role = resolveHomeRole();
 
-    if (role === 'inspector') applyInspectorHome();
+    if (role === 'new_company') applyNewCompanyHome();
+    else if (role === 'inspector') applyInspectorHome();
     else if (role === 'manager') applyManagerHome();
     else if (role === 'company_owner' || role === 'super_admin') applyOwnerHome(role);
     else if (role === 'viewer') applyViewerHome();
@@ -418,10 +526,31 @@
     applyTimer = setTimeout(applyCleanHome, delay);
   }
 
+  function bindRoleTestRefresh() {
+    const select = byId('fireSRoleTestSelect');
+    if (!select || select.__fireSCleanHomeBound) return;
+    select.__fireSCleanHomeBound = true;
+    select.addEventListener('change', () => {
+      setTimeout(() => {
+        try { applyCleanHome(); } catch (_) {}
+        try {
+          if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+        } catch (_) {}
+      }, 0);
+      setTimeout(applyCleanHome, 120);
+      setTimeout(() => {
+        try {
+          if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+        } catch (_) {}
+      }, 160);
+    });
+  }
+
   window.fireSApplyCleanHomeRoles = function fireSApplyCleanHomeRoles() {
     scheduleApply(0);
     setTimeout(applyCleanHome, 120);
     setTimeout(applyCleanHome, 600);
+    setTimeout(bindRoleTestRefresh, 50);
   };
 
   // Run after existing home controller, then refine by role.
@@ -470,7 +599,11 @@
     scheduleApply(0);
   }
 
-  [200, 800, 2000, 4000].forEach(ms => setTimeout(applyCleanHome, ms));
+  [200, 800].forEach(ms => {
+    setTimeout(applyCleanHome, ms);
+    setTimeout(bindRoleTestRefresh, ms);
+  });
+  bindRoleTestRefresh();
 
   try {
     const client = window.supabaseClient;

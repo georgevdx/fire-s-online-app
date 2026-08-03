@@ -3379,12 +3379,40 @@ function importPastedBackup() {
 async function signupUser() {
   const email = getEl('loginEmail').value.trim();
   const password = getEl('loginPassword').value;
+  const syncStatus = getEl('syncStatus');
 
-  const { error } = await supabaseClient.auth.signUp({ email, password });
+  if (!email || !password) {
+    if (syncStatus) syncStatus.textContent = 'Enter your own email and password to Sign Up.';
+    return;
+  }
 
-  getEl('syncStatus').textContent = error
-    ? `Sign up failed: ${error.message}`
-    : 'Sign up successful. Check email if confirmation is enabled.';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+
+  if (error) {
+    if (syncStatus) syncStatus.textContent = `Sign up failed: ${error.message}`;
+    return;
+  }
+
+  if (syncStatus) {
+    syncStatus.textContent =
+      'Your own Fire-S account is created. Next: Create company (you never enter someone else’s email for your own signup).';
+  }
+
+  // If email confirmation is off, session may already exist — load profile and
+  // take them to first-day company setup.
+  try {
+    if (data?.session || data?.user) {
+      await loadUserAccessProfile();
+      try {
+        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+          window.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
+      if (!currentUserProfile?.companyId && typeof window.fireSOpenCompanyTeam === 'function') {
+        window.fireSOpenCompanyTeam();
+      }
+    }
+  } catch (_) {}
 }
 
 async function loginUser() {
@@ -4078,7 +4106,18 @@ async function restoreCloudSession() {
       });
 
     if (data && data.session) {
-      refreshSyncData();
+      // Defer heavy sync so Home can paint first (startup stability).
+      setTimeout(() => {
+        try {
+          if (typeof refreshSyncData === 'function') {
+            Promise.resolve(refreshSyncData()).catch(error => {
+              console.warn('Deferred startup sync failed:', error);
+            });
+          }
+        } catch (error) {
+          console.warn('Deferred startup sync failed:', error);
+        }
+      }, 2000);
     }
 
   } catch (error) {
@@ -5520,32 +5559,51 @@ async function loadUserAccessProfile() {
 
     const user = userData.user;
 
-    const { data: profile, error: profileError } =
-      await withTimeout(
+    const [profileResult, membershipResult] = await Promise.all([
+      withTimeout(
         supabaseClient
           .from('profiles')
           .select('id, email, full_name, role')
           .eq('id', user.id)
-          .single(),
-        5000
-      );
+          .maybeSingle(),
+        3000
+      ).catch(error => ({ data: null, error })),
+      withTimeout(
+        supabaseClient
+          .from('company_members')
+          .select('company_id, role, status')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle(),
+        3000
+      ).catch(error => ({ data: null, error }))
+    ]);
+
+    const profile = profileResult?.data || null;
+    const profileError = profileResult?.error || null;
+    const membership = membershipResult?.data || null;
+    const membershipError = membershipResult?.error || null;
 
     if (profileError) {
       console.error('Profile load failed:', profileError);
+    }
 
+    if (!profile) {
       currentUserProfile = {
         id: user.id,
         email: user.email,
         fullName: user.email,
-        role: 'inspector',
-        companyId: null,
-        companyName: 'Local / Personal Workspace'
+        role: membership?.role || 'inspector',
+        companyId: membership?.company_id || null,
+        companyName: 'Your company'
       };
 
       currentCompanyAccess = {
         status: 'active',
         plan: 'development',
-        source: 'fallback'
+        membershipStatus: membership?.status || 'active',
+        source: membership ? 'supabase' : 'fallback'
       };
 
       updateAccessUI();
@@ -5553,58 +5611,78 @@ async function loadUserAccessProfile() {
       updateHomeAccessCards();
       renderProjectsList();
       refreshRcHomePanels();
+
+      // Lazy company name — never block startup/login on this.
+      if (membership?.company_id) {
+        supabaseClient
+          .from('companies')
+          .select('name, status, plan')
+          .eq('id', membership.company_id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (!data || !currentUserProfile) return;
+            currentUserProfile.companyName = data.name || currentUserProfile.companyName;
+            currentCompanyAccess = {
+              ...(currentCompanyAccess || {}),
+              status: data.status || 'active',
+              plan: data.plan || 'development',
+              source: 'supabase'
+            };
+            window.currentUserProfile = currentUserProfile;
+            window.currentCompanyAccess = currentCompanyAccess;
+            try { updateAccessUI(); } catch (_) {}
+          })
+          .catch(() => {});
+      }
       return;
     }
-
-    const { data: membership, error: membershipError } =
-      await withTimeout(
-        supabaseClient
-          .from('company_members')
-          .select(`
-            company_id,
-            role,
-            status,
-            companies (
-              id,
-              name,
-              status,
-              plan
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .limit(1)
-          .maybeSingle(),
-        5000
-      );
 
     if (membershipError) {
       console.error('Membership load failed:', membershipError);
     }
-
-    const company =
-      membership?.companies || null;
 
     currentUserProfile = {
       id: profile.id,
       email: profile.email || user.email,
       fullName: profile.full_name || profile.email || user.email,
       role: membership?.role || profile.role || 'inspector',
-      companyId: company?.id || membership?.company_id || null,
-      companyName: company?.name || 'Local / Personal Workspace'
+      companyId: membership?.company_id || null,
+      companyName: 'Your company'
     };
 
     currentCompanyAccess = {
-      status: company?.status || 'active',
-      plan: company?.plan || 'development',
+      status: 'active',
+      plan: 'development',
       membershipStatus: membership?.status || 'active',
-      source: company ? 'supabase' : 'fallback'
+      source: membership?.company_id ? 'supabase' : 'fallback'
     };
 
     updateAccessUI();
     updateSyncUI();
     updateHomeAccessCards();
     refreshRcHomePanels();
+
+    if (membership?.company_id) {
+      supabaseClient
+        .from('companies')
+        .select('name, status, plan')
+        .eq('id', membership.company_id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!data || !currentUserProfile) return;
+          currentUserProfile.companyName = data.name || 'Your company';
+          currentCompanyAccess = {
+            ...(currentCompanyAccess || {}),
+            status: data.status || 'active',
+            plan: data.plan || 'development',
+            source: 'supabase'
+          };
+          window.currentUserProfile = currentUserProfile;
+          window.currentCompanyAccess = currentCompanyAccess;
+          try { updateAccessUI(); } catch (_) {}
+        })
+        .catch(() => {});
+    }
 
   } catch (error) {
     console.error('Access profile load failed:', error);
@@ -27229,6 +27307,20 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
   function avgHealth(list){ const scored=list.map(healthFor).filter(Boolean); return scored.length ? Math.round(scored.reduce((a,b)=>a+b,0)/scored.length) : 0; }
   function monthCount(list){ const ym=new Date().toISOString().slice(0,7); return list.filter(p=>String(p.inspectionDate||p.completedAt||p.lastSaved||'').slice(0,7)===ym).length; }
+  function canShowExecutiveDashboard(){
+    try {
+      if (document.body?.classList?.contains('fire-s-role-guest')) return false;
+      if (document.body?.classList?.contains('fire-s-role-new-company')) return false;
+      if (document.body?.classList?.contains('fire-s-role-inspector')) return false;
+      if (document.body?.dataset?.fireSCleanHomeRole === 'new_company') return false;
+      const profile = window.currentUserProfile || (typeof currentUserProfile !== 'undefined' ? currentUserProfile : null);
+      if (!profile?.id || profile.id === 'local-user') return false;
+      if (!profile.companyId) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
   function ensure(){
     const host=document.getElementById('mainCommandCentre') || document.getElementById('projectListSection');
     if(!host || document.getElementById('fireSExecutiveDashboard1115')) return;
@@ -27238,9 +27330,15 @@ if (!window.fireSMobileSmartCardsApplied) {
     host.insertAdjacentElement('afterend', section);
   }
   function render(){
+    if (!canShowExecutiveDashboard()) {
+      const existing = document.getElementById('fireSExecutiveDashboard1115');
+      if (existing) existing.style.setProperty('display', 'none', 'important');
+      return;
+    }
     ensure();
     const el=document.getElementById('fireSExecutiveDashboard1115');
     if(!el) return;
+    el.style.removeProperty('display');
     const list=projects();
     const premises=list.length;
     const open=list.reduce((s,p)=>s+noCount(p),0);
@@ -30980,6 +31078,7 @@ function fireSApplyLifecycleUxLabels() {
       inspector: 'Inspector',
       manager: 'Management',
       company_owner: 'Company Owner',
+      new_company: 'New Company',
       super_admin: 'Super Admin'
     };
     return map[role] || role || 'User';
@@ -31150,6 +31249,7 @@ function fireSApplyLifecycleUxLabels() {
             <option value="inspector">View as Inspector</option>
             <option value="manager">View as Management</option>
             <option value="company_owner">View as Company Owner</option>
+            <option value="new_company">Begin as New Company</option>
             <option value="super_admin">View as Super Admin</option>
           </select>
         </label>
@@ -31168,6 +31268,10 @@ function fireSApplyLifecycleUxLabels() {
       select.value = viewAsRole();
       select.onchange = function(){
         try { localStorage.setItem(ROLE_PREF_KEY, this.value); } catch (_) {}
+        try {
+          if (this.value === 'new_company') localStorage.setItem('fireS.forceNewCompanySetup', '1');
+          else localStorage.removeItem('fireS.forceNewCompanySetup');
+        } catch (_) {}
 
         // Role Test Mode is a Home workspace selector. Return to Home first,
         // then render the selected role immediately in the same interaction.
@@ -31180,9 +31284,21 @@ function fireSApplyLifecycleUxLabels() {
             window.fireSRenderHomeController130();
           }
         } catch (_) {}
+        try {
+          if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+            window.fireSApplyCleanHomeRoles();
+          }
+        } catch (_) {}
         ensureRoleTestMode();
         updateManagementCards();
         updateAccessLabel();
+
+        if (this.value === 'new_company' && typeof window.fireSBeginFreshCompany === 'function') {
+          try { window.fireSBeginFreshCompany(); } catch (_) {}
+          if (typeof window.fireSOpenCompanyTeam === 'function') {
+            try { window.fireSOpenCompanyTeam(); } catch (_) {}
+          }
+        }
       };
     }
 

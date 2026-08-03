@@ -70,7 +70,16 @@
     return `<button type="button" class="${cls}" data-v4-open="${esc(p.id)}">${head}<div class="inspector-v4-title">${esc(name(p))}</div><div class="inspector-v4-meta">${esc(site(p))}${site(p)?' · ':''}${esc(label(p))}</div><span class="inspector-v4-action">${esc(action(p))}</span></button>`;
   }
   function build(){
-    if(!isInspector()) { document.body.classList.remove('fire-s-inspector-v4'); return; }
+    if(!isInspector()) {
+      document.body.classList.remove('fire-s-inspector-v4');
+      const shell=document.getElementById('inspectorV4Shell');
+      if(shell){
+        shell.style.setProperty('display','none','important');
+        shell.setAttribute('hidden','true');
+        shell.setAttribute('aria-hidden','true');
+      }
+      return;
+    }
     const centre=document.getElementById('mainCommandCentre'); if(!centre) return;
     document.body.classList.add('fire-s-inspector-v4');
     let shell=document.getElementById('inspectorV4Shell');
@@ -85,6 +94,8 @@
       shell.querySelector('#inspectorV4Search').addEventListener('input',render);
       shell.querySelector('#inspectorV4New').addEventListener('click',newPremises);
     }
+    shell.removeAttribute('hidden');
+    shell.removeAttribute('aria-hidden');
     shell.style.setProperty('display','flex','important');
     render();
   }

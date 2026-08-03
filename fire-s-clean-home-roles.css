@@ -8,12 +8,53 @@ body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .fs-prod-kpi-row
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .fs-kpi-row,
 body.fire-s-clean-home.fire-s-role-inspector #complianceHeroCard,
 body.fire-s-clean-home.fire-s-role-inspector .fire-s-exec-mini-dashboard,
-body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-stats {
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-guest #complianceHeroCard,
+body.fire-s-clean-home.fire-s-role-guest #fireSExecutiveDashboard1115,
+body.fire-s-clean-home.fire-s-role-guest .fire-s-exec-dashboard-v1115,
+body.fire-s-clean-home.fire-s-role-guest .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-new-company #complianceHeroCard,
+body.fire-s-clean-home.fire-s-role-new-company #fireSExecutiveDashboard1115,
+body.fire-s-clean-home.fire-s-role-new-company .fire-s-exec-dashboard-v1115,
+body.fire-s-clean-home.fire-s-role-new-company .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-inspector #fireSExecutiveDashboard1115,
+body.fire-s-clean-home.fire-s-role-inspector .fire-s-exec-dashboard-v1115 {
   display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-new-company #inspectorV4Shell,
+body.fire-s-clean-home.fire-s-role-guest #inspectorV4Shell {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-new-company #cmdCompanyBtn {
+  display: block !important;
 }
 
 body.fire-s-clean-home.fire-s-role-inspector #inspectorV4Shell {
   display: flex !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #inspectorV4Shell,
+body.fire-s-clean-home.fire-s-role-manager #inspectorV4Shell,
+body.fire-s-clean-home.fire-s-role-guest #inspectorV4Shell,
+body.fire-s-clean-home:not(.fire-s-role-inspector) #inspectorV4Shell {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-grid {
+  display: revert !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats {
+  display: grid !important;
 }
 
 body.fire-s-clean-home.fire-s-role-inspector #cmdReportsBtn,
