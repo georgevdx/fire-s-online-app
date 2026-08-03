@@ -3379,40 +3379,79 @@ function importPastedBackup() {
 async function signupUser() {
   const email = getEl('loginEmail').value.trim();
   const password = getEl('loginPassword').value;
+  const companyName =
+    (getEl('signupCompanyName') && getEl('signupCompanyName').value.trim()) ||
+    'My Fire-S Company';
   const syncStatus = getEl('syncStatus');
 
   if (!email || !password) {
-    if (syncStatus) syncStatus.textContent = 'Enter your own email and password to Sign Up.';
+    if (syncStatus) syncStatus.textContent = 'Enter your email and password.';
     return;
   }
+
+  if (syncStatus) syncStatus.textContent = 'Creating your account…';
 
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
   if (error) {
-    if (syncStatus) syncStatus.textContent = `Sign up failed: ${error.message}`;
+    if (syncStatus) syncStatus.textContent = `Could not create account: ${error.message}`;
     return;
   }
 
-  if (syncStatus) {
-    syncStatus.textContent =
-      'Your own Fire-S account is created. Next: Create company (you never enter someone else’s email for your own signup).';
-  }
-
-  // If email confirmation is off, session may already exist — load profile and
-  // take them to first-day company setup.
   try {
-    if (data?.session || data?.user) {
-      await loadUserAccessProfile();
-      try {
-        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
-          window.fireSApplyCleanHomeRoles();
+    if (!data?.session && data?.user) {
+      const login = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (login.error) {
+        if (syncStatus) {
+          syncStatus.textContent =
+            'Account created. Confirm your email if asked, then login.';
         }
-      } catch (_) {}
-      if (!currentUserProfile?.companyId && typeof window.fireSOpenCompanyTeam === 'function') {
-        window.fireSOpenCompanyTeam();
+        return;
       }
     }
-  } catch (_) {}
+
+    await loadUserAccessProfile();
+
+    if (!currentUserProfile?.companyId) {
+      if (syncStatus) syncStatus.textContent = 'Setting up your company…';
+      const rpc = await supabaseClient.rpc('fire_s_create_company', {
+        p_name: companyName
+      });
+      if (rpc.error) {
+        if (syncStatus) {
+          syncStatus.textContent =
+            'Account ready. Open Company and save your company name.';
+        }
+      } else {
+        await loadUserAccessProfile();
+        if (syncStatus) {
+          syncStatus.textContent = `“${companyName}” is ready. You can add your team next.`;
+        }
+      }
+    } else if (syncStatus) {
+      syncStatus.textContent = 'Welcome back. You are signed in.';
+    }
+
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+      if (typeof window.fireSSyncGetStarted === 'function') {
+        window.fireSSyncGetStarted();
+      }
+    } catch (_) {}
+
+    if (typeof window.fireSOpenCompanyTeam === 'function') {
+      window.fireSOpenCompanyTeam();
+    }
+  } catch (setupError) {
+    console.error('Signup setup failed:', setupError);
+    if (syncStatus) {
+      syncStatus.textContent =
+        setupError.message ||
+        'Account created. Open Company to finish setup.';
+    }
+  }
 }
 
 async function loginUser() {

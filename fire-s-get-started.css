@@ -1,0 +1,70 @@
+/* Fire-S Get Started — simple first-day setup */
+
+.fire-s-get-started {
+  margin: 0 0 18px;
+  padding: 18px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.fire-s-get-started-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.fire-s-get-started h3 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.fire-s-get-started p {
+  margin: 0 0 14px;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.fire-s-get-started-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.fire-s-get-started-fields input,
+.fire-s-get-started-fields button {
+  width: 100%;
+  margin: 0;
+}
+
+.fire-s-get-started-status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.9rem;
+}
+
+.fire-s-get-started-status.is-error {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-manager #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-inspector #fireSGetStarted {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-new-company #fireSGetStarted {
+  display: block !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-grid {
+  display: none !important;
+}

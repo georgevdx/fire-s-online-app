@@ -36,6 +36,7 @@
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-3">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-2">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=1-0">
 </head>
 <body>
   <div id="fireSBootScreen" aria-live="polite">
@@ -96,14 +97,15 @@
         <div id="loginToolsPanel">
           <div class="cloud-section-title">Sign in</div>
           <p class="cloud-simple-help">
-            Use your own email and password. A new company never enters someone else’s login to register.
+            Use your own email and password.
           </p>
 
           <input id="loginEmail" type="email" placeholder="Your email" autocomplete="username">
           <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password">
+          <input id="signupCompanyName" type="text" placeholder="Company name (for new accounts)" autocomplete="organization">
 
           <button id="loginBtn" type="button" class="cloud-primary-btn">Login</button>
-          <button id="signupBtn" type="button" class="secondary-btn">Sign Up</button>
+          <button id="signupBtn" type="button" class="secondary-btn">Create my company</button>
         </div>
 
         <div id="syncButtonsSection" class="cloud-section-title" style="display:none;">
@@ -174,6 +176,35 @@
   <div id="rcBackupReminderPanel" class="rc-backup-reminder-panel"></div>
   <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
   <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
+  <div id="fireSGetStarted" class="fire-s-get-started" style="display:none;">
+    <div class="fire-s-get-started-kicker">Get started · about 1 minute</div>
+    <h3 id="fireSGetStartedTitle">Start your Fire-S company</h3>
+    <p id="fireSGetStartedHelp">
+      Enter your company name and your own login. That is all.
+    </p>
+
+    <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields">
+      <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
+      <input id="fireSGetStartedEmail" type="email" placeholder="Your email" autocomplete="username">
+      <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
+        Create my company
+      </button>
+      <button id="fireSGetStartedLoginBtn" type="button" class="secondary-btn">
+        I already have a login
+      </button>
+    </div>
+
+    <div id="fireSGetStartedCompanyOnly" class="fire-s-get-started-fields" style="display:none;">
+      <input id="fireSGetStartedCompanyOnlyName" type="text" placeholder="Company name" autocomplete="organization">
+      <button id="fireSGetStartedFinishBtn" type="button" class="cloud-primary-btn">
+        Finish setup
+      </button>
+    </div>
+
+    <div id="fireSGetStartedStatus" class="fire-s-get-started-status" style="display:none;"></div>
+  </div>
+
   <section id="mainCommandCentre" class="main-command-centre">
     <div class="main-command-top">
       <div>
@@ -314,10 +345,10 @@
   </div>
 
   <div class="company-team-intro">
-    <div class="company-team-kicker">Fire-S · Company</div>
-    <h3 id="companyTeamTitle">Manage your team</h3>
+    <div class="company-team-kicker">Your company</div>
+    <h3 id="companyTeamTitle">Team</h3>
     <p id="companyTeamSubtitle">
-      Add people who already have a Fire-S login, then assign Inspector, Manager or Owner.
+      Add your Inspectors and Managers here.
     </p>
     <div id="companyTeamMeta" class="company-team-meta">Loading company…</div>
   </div>
@@ -325,26 +356,26 @@
   <div id="companyTeamMessage" class="company-team-message" style="display:none;"></div>
 
   <div id="companyTeamFreshBanner" class="company-team-fresh-banner" style="display:none;">
-    <strong>Brand-new company mode</strong>
-    <span>Create your company first, then appoint Inspectors and Managers.</span>
-    <button id="companyTeamExitFreshBtn" type="button" class="secondary-btn">Exit this mode</button>
+    <strong>Test mode</strong>
+    <span>Create a practice company, then add team members.</span>
+    <button id="companyTeamExitFreshBtn" type="button" class="secondary-btn">Exit</button>
   </div>
 
   <div id="companyTeamSetupPanel" class="company-team-add" style="display:none;">
-    <div class="cloud-section-title">Set up your company</div>
+    <div class="cloud-section-title">Name your company</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Day 1: give your company a name. After that you can appoint Inspectors and Managers.
+      One step left. Then you can add your team.
     </p>
     <div class="company-team-add-row company-team-setup-row">
       <input id="companyTeamCompanyName" type="text" placeholder="Company name" autocomplete="organization">
-      <button id="companyTeamCreateBtn" type="button" class="cloud-primary-btn">Create company</button>
+      <button id="companyTeamCreateBtn" type="button" class="cloud-primary-btn">Save company</button>
     </div>
   </div>
 
   <div id="companyTeamAddPanel" class="company-team-add">
-    <div class="cloud-section-title">Add team member</div>
+    <div class="cloud-section-title">Add a person</div>
     <div class="company-team-add-row">
-      <input id="companyTeamEmail" type="email" placeholder="Email address" autocomplete="off">
+      <input id="companyTeamEmail" type="email" placeholder="Their email" autocomplete="off">
       <select id="companyTeamRole">
         <option value="inspector">Inspector</option>
         <option value="manager">Manager</option>
@@ -353,15 +384,12 @@
       <button id="companyTeamAddBtn" type="button" class="cloud-primary-btn">Add</button>
     </div>
     <p class="company-team-hint">
-      The person must Sign Up / Login once first. Then you can add their email here.
+      Ask them to open Fire-S once and create their own login with that email. Then add them here.
     </p>
     <div id="companyTeamStartFreshWrap" style="display:none; margin-top:12px;">
       <button id="companyTeamStartFreshBtn" type="button" class="secondary-btn">
-        Begin as brand-new company
+        Test: start another company
       </button>
-      <p class="company-team-hint">
-        Test the first-day setup: create a new company, then appoint members.
-      </p>
     </div>
   </div>
 
@@ -1073,9 +1101,10 @@
   <script src="app.js?v=company-data-audit-v18-startup"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-2-role-switch"></script>
-  <script src="fire-s-clean-home-roles.js?v=1-8"></script>
+  <script src="fire-s-clean-home-roles.js?v=1-9"></script>
   <script src="fire-s-simple-cloud-sync.js?v=1-0"></script>
-  <script src="fire-s-company-team.js?v=1-9"></script>
+  <script src="fire-s-company-team.js?v=1-10"></script>
+  <script src="fire-s-get-started.js?v=1-0"></script>
   <script src="fire-s-startup-stability.js?v=1-0"></script>
   <script>
     if ('serviceWorker' in navigator) {

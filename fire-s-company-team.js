@@ -90,12 +90,9 @@
     const wrap = byId('companyTeamStartFreshWrap');
     if (!wrap) return;
     const realRole = text(window.currentUserProfile?.role).toLowerCase();
-    const canStart =
-      !!hasCompany &&
-      (realRole === 'super_admin' ||
-        realRole === 'company_owner' ||
-        canAssignOwner());
-    wrap.style.display = canStart && !isFreshCompanyMode() ? '' : 'none';
+    // Keep this test-only control away from normal subscribers.
+    const canStart = !!hasCompany && realRole === 'super_admin' && !isFreshCompanyMode();
+    wrap.style.display = canStart ? '' : 'none';
   }
 
   function currentRole() {
@@ -483,7 +480,7 @@
       const profile = await findProfileByEmail(email);
       if (!profile?.id) {
         throw new Error(
-          'No Fire-S login found for that email. Ask them to Sign Up first, then add them here.'
+          'No login found for that email yet. Ask them to open Fire-S and create their own login first, then add them here.'
         );
       }
 

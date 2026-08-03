@@ -417,12 +417,12 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest');
-    setHero('Fire-S', 'INSPECT', 'Sign in for cloud sync, or continue local inspection work.');
-    setText('#mainCommandCentre .main-command-kicker', 'Fire-S Workspace');
-    setText('#mainCommandCentre .main-command-top h3', 'Get Started');
+    setHero('Fire-S', 'WELCOME', 'Start your company in one minute.');
+    setText('#mainCommandCentre .main-command-kicker', 'Welcome');
+    setText('#mainCommandCentre .main-command-top h3', 'Fire-S for your company');
     setText(
       '#mainCommandSubtitle',
-      'Login for company access, or use Inspection Gateway locally.'
+      'Create your account below. Then add Inspectors when you are ready.'
     );
     setText('#mainCommandAccessStatus', 'Local / guest');
     setStatsVisible(false);
@@ -493,18 +493,7 @@
     hideManagementOverlays();
 
     ALL_CMD_IDS.forEach(hide);
-    show('cmdCompanyBtn');
-    cardText(
-      'cmdCompanyBtn',
-      'Create company',
-      'Day 1: set up your company and appoint members.'
-    );
-    show('cmdInspectionsBtn');
-    cardText(
-      'cmdInspectionsBtn',
-      'Inspection Gateway',
-      'Available after your company is set up.'
-    );
+    // Get Started form is the main action — keep the old Company card hidden.
   }
 
   function applyCleanHome() {
@@ -519,6 +508,12 @@
     else if (role === 'company_owner' || role === 'super_admin') applyOwnerHome(role);
     else if (role === 'viewer') applyViewerHome();
     else applyGuestHome();
+
+    try {
+      if (typeof window.fireSSyncGetStarted === 'function') {
+        window.fireSSyncGetStarted();
+      }
+    } catch (_) {}
   }
 
   function scheduleApply(delay) {
