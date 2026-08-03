@@ -1,4 +1,4 @@
-/* Fire-S simple Get Started — one screen for new companies */
+/* Fire-S Get Started — clear Login / Join / Start company */
 (function fireSGetStarted() {
   'use strict';
 
@@ -41,34 +41,72 @@
     }
   }
 
-  function showPanel(mode) {
+  function hideAllForms() {
+    [
+      'fireSGetStartedChoices',
+      'fireSGetStartedLoginFields',
+      'fireSGetStartedJoinFields',
+      'fireSGetStartedGuestFields',
+      'fireSGetStartedCompanyOnly'
+    ].forEach(id => {
+      const el = byId(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  function showStep(step) {
     const root = byId('fireSGetStarted');
-    const guest = byId('fireSGetStartedGuestFields');
-    const only = byId('fireSGetStartedCompanyOnly');
     const title = byId('fireSGetStartedTitle');
     const help = byId('fireSGetStartedHelp');
     if (!root) return;
 
-    if (!mode) {
+    hideAllForms();
+    setStatus('');
+
+    if (!step) {
       root.style.display = 'none';
       return;
     }
 
     root.style.display = 'block';
-    if (guest) guest.style.display = mode === 'guest' ? 'grid' : 'none';
-    if (only) only.style.display = mode === 'company' ? 'grid' : 'none';
 
-    if (mode === 'guest') {
-      if (title) title.textContent = 'Start your Fire-S company';
-      if (help) {
-        help.textContent =
-          'Company name + your email + password. Nothing else.';
-      }
-    } else {
+    if (step === 'choices') {
+      const choices = byId('fireSGetStartedChoices');
+      if (choices) choices.style.display = 'grid';
+      if (title) title.textContent = 'How do you want to start?';
+      if (help) help.textContent = 'Choose one option below.';
+      return;
+    }
+
+    if (step === 'login') {
+      const box = byId('fireSGetStartedLoginFields');
+      if (box) box.style.display = 'grid';
+      if (title) title.textContent = 'Login';
+      if (help) help.textContent = 'Use your own email and password.';
+      return;
+    }
+
+    if (step === 'join') {
+      const box = byId('fireSGetStartedJoinFields');
+      if (box) box.style.display = 'grid';
+      if (title) title.textContent = 'Create your login';
+      if (help) help.textContent = 'For Inspectors and Managers joining a company.';
+      return;
+    }
+
+    if (step === 'company') {
+      const box = byId('fireSGetStartedGuestFields');
+      if (box) box.style.display = 'grid';
+      if (title) title.textContent = 'Start your company';
+      if (help) help.textContent = 'Company name + your email + password.';
+      return;
+    }
+
+    if (step === 'company-only') {
+      const box = byId('fireSGetStartedCompanyOnly');
+      if (box) box.style.display = 'grid';
       if (title) title.textContent = 'Name your company';
-      if (help) {
-        help.textContent = 'You are signed in. One step left.';
-      }
+      if (help) help.textContent = 'One step left.';
     }
   }
 
@@ -83,16 +121,18 @@
         bodyRole === 'new_company';
 
       if (guestLike && !isSignedIn()) {
-        showPanel('guest');
+        byId('fireSGetStarted').style.display = 'block';
+        showStep('choices');
         return;
       }
       if ((newCompany || (isSignedIn() && !hasCompany())) && isSignedIn()) {
-        showPanel('company');
+        byId('fireSGetStarted').style.display = 'block';
+        showStep('company-only');
         return;
       }
-      showPanel(null);
+      showStep(null);
     } catch (_) {
-      showPanel(null);
+      showStep(null);
     }
   }
 
@@ -108,88 +148,68 @@
     ]);
   }
 
-  async function createCompanyForCurrentUser(companyName) {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-      throw new Error('Cloud is not ready. Check your internet and try again.');
-    }
-
-    const name = text(companyName) || 'My Fire-S Company';
-    let company = null;
-
-    const rpc = await waitFor(
-      supabaseClient.rpc('fire_s_create_company', { p_name: name }),
-      8000,
-      'Create company'
-    );
-
-    if (!rpc.error && rpc.data) {
-      const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
-      const id = row?.company_id || row?.out_company_id || row?.id;
-      if (id) {
-        company = {
-          id,
-          name: row.company_name || row.out_company_name || row.name || name
-        };
-      }
-    }
-
-    if (!company?.id) {
-      throw new Error(
-        (rpc.error && rpc.error.message) ||
-          'Could not create company. Please try again.'
-      );
-    }
-
+  async function afterAuthSuccess(message) {
     try {
       if (typeof window.loadUserAccessProfile === 'function') {
         await window.loadUserAccessProfile();
       }
     } catch (_) {}
-
-    window.currentUserProfile = {
-      ...(window.currentUserProfile || {}),
-      role: 'company_owner',
-      companyId: company.id,
-      companyName: company.name
-    };
-
-    return company;
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSSyncGetStarted === 'function') {
+        window.fireSSyncGetStarted();
+      }
+    } catch (_) {}
+    if (message) setStatus(message, false);
   }
 
-  async function createMyCompany() {
-    const companyInput = byId('fireSGetStartedCompany');
-    const emailInput = byId('fireSGetStartedEmail');
-    const passwordInput = byId('fireSGetStartedPassword');
-    const btn = byId('fireSGetStartedCreateBtn');
-
-    const companyName = text(companyInput?.value);
-    const email = text(emailInput?.value).toLowerCase();
-    const password = String(passwordInput?.value || '');
-
-    if (!companyName) {
-      setStatus('Please enter your company name.', true);
-      companyInput?.focus();
+  async function doLogin() {
+    const email = text(byId('fireSLoginEmail')?.value).toLowerCase();
+    const password = String(byId('fireSLoginPassword')?.value || '');
+    const btn = byId('fireSDoLoginBtn');
+    if (!email || !password) {
+      setStatus('Enter your email and password.', true);
       return;
     }
+    if (btn) btn.disabled = true;
+    setStatus('Signing in…');
+    try {
+      const { error } = await waitFor(
+        supabaseClient.auth.signInWithPassword({ email, password }),
+        10000,
+        'Login'
+      );
+      if (error) throw error;
+      await afterAuthSuccess('Signed in.');
+      try {
+        if (typeof window.showHome === 'function') window.showHome();
+      } catch (_) {}
+    } catch (error) {
+      setStatus(error.message || 'Login failed. Check email and password.', true);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function doJoinSignup() {
+    const email = text(byId('fireSJoinEmail')?.value).toLowerCase();
+    const password = String(byId('fireSJoinPassword')?.value || '');
+    const btn = byId('fireSDoJoinBtn');
     if (!email || !email.includes('@')) {
-      setStatus('Please enter your own email.', true);
-      emailInput?.focus();
+      setStatus('Enter your own email.', true);
       return;
     }
     if (password.length < 6) {
       setStatus('Password must be at least 6 characters.', true);
-      passwordInput?.focus();
       return;
     }
-
     if (btn) btn.disabled = true;
-    setStatus('Creating your account…');
-
+    setStatus('Creating your login…');
     try {
-      if (typeof supabaseClient === 'undefined' || !supabaseClient?.auth) {
-        throw new Error('Cloud is not ready. Check your internet and try again.');
-      }
-
       const { data, error } = await waitFor(
         supabaseClient.auth.signUp({ email, password }),
         10000,
@@ -197,16 +217,7 @@
       );
       if (error) throw error;
 
-      if (!data?.session && !data?.user) {
-        setStatus(
-          'Account created. Check your email to confirm, then login and finish setup.',
-          false
-        );
-        return;
-      }
-
-      // Prefer immediate session; otherwise try login.
-      if (!data.session) {
+      if (!data?.session) {
         const login = await waitFor(
           supabaseClient.auth.signInWithPassword({ email, password }),
           8000,
@@ -214,7 +225,93 @@
         );
         if (login.error) {
           setStatus(
-            'Account created. Please confirm your email, then login to finish.',
+            'Login created. If asked, confirm your email, then use Login.',
+            false
+          );
+          return;
+        }
+      }
+
+      await afterAuthSuccess(
+        'Your login is ready. Ask your owner to add your email in Company → Team.'
+      );
+      try {
+        if (typeof window.showHome === 'function') window.showHome();
+      } catch (_) {}
+    } catch (error) {
+      setStatus(error.message || 'Could not create login. Try again.', true);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function createCompanyForCurrentUser(companyName) {
+    const name = text(companyName) || 'My Fire-S Company';
+    const rpc = await waitFor(
+      supabaseClient.rpc('fire_s_create_company', { p_name: name }),
+      8000,
+      'Create company'
+    );
+    if (rpc.error) throw rpc.error;
+    const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+    const id = row?.company_id || row?.out_company_id || row?.id;
+    if (!id) throw new Error('Could not create company. Please try again.');
+    const company = {
+      id,
+      name: row.company_name || row.out_company_name || row.name || name
+    };
+    try {
+      if (typeof window.loadUserAccessProfile === 'function') {
+        await window.loadUserAccessProfile();
+      }
+    } catch (_) {}
+    window.currentUserProfile = {
+      ...(window.currentUserProfile || {}),
+      role: 'company_owner',
+      companyId: company.id,
+      companyName: company.name
+    };
+    return company;
+  }
+
+  async function createMyCompany() {
+    const companyName = text(byId('fireSGetStartedCompany')?.value);
+    const email = text(byId('fireSGetStartedEmail')?.value).toLowerCase();
+    const password = String(byId('fireSGetStartedPassword')?.value || '');
+    const btn = byId('fireSGetStartedCreateBtn');
+
+    if (!companyName) {
+      setStatus('Please enter your company name.', true);
+      return;
+    }
+    if (!email || !email.includes('@')) {
+      setStatus('Please enter your own email.', true);
+      return;
+    }
+    if (password.length < 6) {
+      setStatus('Password must be at least 6 characters.', true);
+      return;
+    }
+
+    if (btn) btn.disabled = true;
+    setStatus('Creating your account…');
+    try {
+      const { data, error } = await waitFor(
+        supabaseClient.auth.signUp({ email, password }),
+        10000,
+        'Sign up'
+      );
+      if (error) throw error;
+
+      if (!data?.session) {
+        const login = await waitFor(
+          supabaseClient.auth.signInWithPassword({ email, password }),
+          8000,
+          'Login'
+        );
+        if (login.error) {
+          setStatus(
+            'Account created. Confirm email if asked, then Login and finish setup.',
             false
           );
           return;
@@ -229,45 +326,31 @@
 
       setStatus('Setting up your company…');
       const company = await createCompanyForCurrentUser(companyName);
-
-      setStatus(`“${company.name}” is ready. You can add your team next.`);
-      try {
-        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
-          window.fireSApplyCleanHomeRoles();
-        }
-      } catch (_) {}
+      await afterAuthSuccess(`“${company.name}” is ready.`);
       try {
         if (typeof window.fireSOpenCompanyTeam === 'function') {
           window.fireSOpenCompanyTeam();
         }
       } catch (_) {}
     } catch (error) {
-      console.error('Get started failed:', error);
-      setStatus(error.message || 'Could not create your company. Please try again.', true);
+      setStatus(error.message || 'Could not create your company.', true);
     } finally {
       if (btn) btn.disabled = false;
     }
   }
 
   async function finishCompanyOnly() {
-    const input = byId('fireSGetStartedCompanyOnlyName');
+    const companyName = text(byId('fireSGetStartedCompanyOnlyName')?.value);
     const btn = byId('fireSGetStartedFinishBtn');
-    const companyName = text(input?.value);
     if (!companyName) {
       setStatus('Please enter your company name.', true);
-      input?.focus();
       return;
     }
     if (btn) btn.disabled = true;
     setStatus('Saving your company…');
     try {
       const company = await createCompanyForCurrentUser(companyName);
-      setStatus(`“${company.name}” is ready.`);
-      try {
-        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
-          window.fireSApplyCleanHomeRoles();
-        }
-      } catch (_) {}
+      await afterAuthSuccess(`“${company.name}” is ready.`);
       try {
         if (typeof window.fireSOpenCompanyTeam === 'function') {
           window.fireSOpenCompanyTeam();
@@ -280,30 +363,29 @@
     }
   }
 
-  function openLogin() {
-    const cloud = byId('cloudMenuBtn');
-    if (cloud) cloud.click();
-    setTimeout(() => {
-      byId('loginEmail')?.focus();
-    }, 200);
-  }
-
   function bind() {
-    const createBtn = byId('fireSGetStartedCreateBtn');
-    if (createBtn && !createBtn.__fireSBound) {
-      createBtn.__fireSBound = true;
-      createBtn.addEventListener('click', createMyCompany);
-    }
-    const finishBtn = byId('fireSGetStartedFinishBtn');
-    if (finishBtn && !finishBtn.__fireSBound) {
-      finishBtn.__fireSBound = true;
-      finishBtn.addEventListener('click', finishCompanyOnly);
-    }
-    const loginBtn = byId('fireSGetStartedLoginBtn');
-    if (loginBtn && !loginBtn.__fireSBound) {
-      loginBtn.__fireSBound = true;
-      loginBtn.addEventListener('click', openLogin);
-    }
+    const map = [
+      ['fireSChoiceLogin', () => showStep('login')],
+      ['fireSChoiceJoin', () => showStep('join')],
+      ['fireSChoiceCompany', () => showStep('company')],
+      ['fireSDoLoginBtn', doLogin],
+      ['fireSDoJoinBtn', doJoinSignup],
+      ['fireSGetStartedCreateBtn', createMyCompany],
+      ['fireSGetStartedFinishBtn', finishCompanyOnly]
+    ];
+    map.forEach(([id, fn]) => {
+      const el = byId(id);
+      if (el && !el.__fireSBound) {
+        el.__fireSBound = true;
+        el.addEventListener('click', fn);
+      }
+    });
+
+    document.querySelectorAll('[data-fire-s-back]').forEach(btn => {
+      if (btn.__fireSBound) return;
+      btn.__fireSBound = true;
+      btn.addEventListener('click', () => showStep('choices'));
+    });
   }
 
   function init() {
@@ -318,6 +400,6 @@
   } else {
     init();
   }
-  setTimeout(init, 500);
-  setTimeout(syncVisibility, 1200);
+  setTimeout(init, 400);
+  setTimeout(syncVisibility, 1000);
 })();

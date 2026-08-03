@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-3">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-2">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=1-1">
 </head>
 <body>
   <div id="fireSBootScreen" aria-live="polite">
@@ -177,21 +177,49 @@
   <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
   <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
   <div id="fireSGetStarted" class="fire-s-get-started" style="display:none;">
-    <div class="fire-s-get-started-kicker">Get started · about 1 minute</div>
-    <h3 id="fireSGetStartedTitle">Start your Fire-S company</h3>
+    <div class="fire-s-get-started-kicker">Welcome to Fire-S</div>
+    <h3 id="fireSGetStartedTitle">How do you want to start?</h3>
     <p id="fireSGetStartedHelp">
-      Enter your company name and your own login. That is all.
+      Choose one option below.
     </p>
 
-    <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields">
+    <div id="fireSGetStartedChoices" class="fire-s-get-started-choices">
+      <button id="fireSChoiceLogin" type="button" class="fire-s-get-started-choice">
+        <strong>Login</strong>
+        <span>I already have a Fire-S account</span>
+      </button>
+      <button id="fireSChoiceJoin" type="button" class="fire-s-get-started-choice">
+        <strong>Join a company</strong>
+        <span>My boss invited me · create my login</span>
+      </button>
+      <button id="fireSChoiceCompany" type="button" class="fire-s-get-started-choice primary">
+        <strong>Start a new company</strong>
+        <span>I am the owner · set up Fire-S for my business</span>
+      </button>
+    </div>
+
+    <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>Back</button>
+      <input id="fireSLoginEmail" type="email" placeholder="Your email" autocomplete="username">
+      <input id="fireSLoginPassword" type="password" placeholder="Your password" autocomplete="current-password">
+      <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
+    </div>
+
+    <div id="fireSGetStartedJoinFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>Back</button>
+      <p class="fire-s-get-started-note">Create your own login. Your owner can add you after this.</p>
+      <input id="fireSJoinEmail" type="email" placeholder="Your email" autocomplete="username">
+      <input id="fireSJoinPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <button id="fireSDoJoinBtn" type="button" class="cloud-primary-btn">Create my login</button>
+    </div>
+
+    <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>Back</button>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
       <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
         Create my company
-      </button>
-      <button id="fireSGetStartedLoginBtn" type="button" class="secondary-btn">
-        I already have a login
       </button>
     </div>
 
@@ -1101,10 +1129,10 @@
   <script src="app.js?v=company-data-audit-v18-startup"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-2-role-switch"></script>
-  <script src="fire-s-clean-home-roles.js?v=1-9"></script>
+  <script src="fire-s-clean-home-roles.js?v=1-10"></script>
   <script src="fire-s-simple-cloud-sync.js?v=1-0"></script>
   <script src="fire-s-company-team.js?v=1-10"></script>
-  <script src="fire-s-get-started.js?v=1-0"></script>
+  <script src="fire-s-get-started.js?v=1-1"></script>
   <script src="fire-s-startup-stability.js?v=1-0"></script>
   <script>
     if ('serviceWorker' in navigator) {

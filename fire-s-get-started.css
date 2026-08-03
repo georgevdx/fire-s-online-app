@@ -1,4 +1,4 @@
-/* Fire-S Get Started — simple first-day setup */
+/* Fire-S Get Started — clear first screen */
 
 .fire-s-get-started {
   margin: 0 0 18px;
@@ -22,10 +22,42 @@
   color: #0f172a;
 }
 
-.fire-s-get-started p {
+.fire-s-get-started > p {
   margin: 0 0 14px;
   color: #475569;
   font-size: 0.95rem;
+}
+
+.fire-s-get-started-choices {
+  display: grid;
+  gap: 10px;
+}
+
+.fire-s-get-started-choice {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.fire-s-get-started-choice strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.fire-s-get-started-choice span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.fire-s-get-started-choice.primary {
+  border-color: #991b1b;
+  background: #fff7f7;
 }
 
 .fire-s-get-started-fields {
@@ -37,6 +69,23 @@
 .fire-s-get-started-fields button {
   width: 100%;
   margin: 0;
+}
+
+.fire-s-get-started-back {
+  justify-self: start;
+  width: auto !important;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.fire-s-get-started-note {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
 }
 
 .fire-s-get-started-status {

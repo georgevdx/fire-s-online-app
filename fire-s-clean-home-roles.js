@@ -417,12 +417,12 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest');
-    setHero('Fire-S', 'WELCOME', 'Start your company in one minute.');
+    setHero('Fire-S', 'WELCOME', 'Login, join a company, or start a new one.');
     setText('#mainCommandCentre .main-command-kicker', 'Welcome');
-    setText('#mainCommandCentre .main-command-top h3', 'Fire-S for your company');
+    setText('#mainCommandCentre .main-command-top h3', 'Fire-S');
     setText(
       '#mainCommandSubtitle',
-      'Create your account below. Then add Inspectors when you are ready.'
+      'Choose Login, Join a company, or Start a new company below.'
     );
     setText('#mainCommandAccessStatus', 'Local / guest');
     setStatsVisible(false);
