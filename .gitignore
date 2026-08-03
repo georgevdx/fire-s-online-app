@@ -1,0 +1,19 @@
+# Fire-S local / repo hygiene
+
+# Patch archives (never commit these again)
+*.zip
+
+# Rollback / backup copies
+**/v1.10 rollback*/
+**/*rollback*/
+
+# Logs and temp
+*.log
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini
+
+# Editor / OS
+.DS_Store
+*.swp

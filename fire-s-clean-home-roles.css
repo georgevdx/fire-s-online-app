@@ -1,0 +1,78 @@
+/* Fire-S Clean Home Roles — load after styles.css */
+
+body.fire-s-clean-home.fire-s-role-inspector #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .fs-prod-kpi-row,
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .fs-kpi-row,
+body.fire-s-clean-home.fire-s-role-inspector #complianceHeroCard,
+body.fire-s-clean-home.fire-s-role-inspector .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-stats {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector #inspectorV4Shell {
+  display: flex !important;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector #cmdReportsBtn,
+body.fire-s-clean-home.fire-s-role-inspector #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-inspector #cmdServicesBtn,
+body.fire-s-clean-home.fire-s-role-inspector #cmdDashboardBtn,
+body.fire-s-clean-home.fire-s-role-inspector #cmdFindingsBtn,
+body.fire-s-clean-home.fire-s-role-inspector #cmdOverdueBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdReportsBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdServicesBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdDashboardBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdFindingsBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdOverdueBtn {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats {
+  display: grid !important;
+}
+
+body.fire-s-clean-home #betaNotesPanel,
+body.fire-s-clean-home #betaQuickTestPanel,
+body.fire-s-clean-home #releaseCandidatePanel,
+body.fire-s-clean-home #rcBackupReminderPanel,
+body.fire-s-clean-home #rcFinalPreflightPanel,
+body.fire-s-clean-home #rcTesterInstructionPanel {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner[data-fire-s-clean-home-role="owner"] #betaNotesPanel,
+body.fire-s-clean-home.fire-s-role-owner[data-fire-s-clean-home-role="owner"] #betaQuickTestPanel,
+body.fire-s-clean-home.fire-s-role-owner[data-fire-s-clean-home-role="owner"] #releaseCandidatePanel,
+body.fire-s-clean-home.fire-s-role-owner[data-fire-s-clean-home-role="owner"] #rcBackupReminderPanel,
+body.fire-s-clean-home.fire-s-role-owner[data-fire-s-clean-home-role="owner"] #rcFinalPreflightPanel,
+body.fire-s-clean-home.fire-s-role-owner[data-fire-s-clean-home-role="owner"] #rcTesterInstructionPanel {
+  display: none !important;
+}
+
+/* Super-admin may still use tester panels when JS enables them */
+body.fire-s-clean-home[data-fire-s-clean-home-role="super_admin"] #betaNotesPanel,
+body.fire-s-clean-home[data-fire-s-clean-home-role="super_admin"] #betaQuickTestPanel,
+body.fire-s-clean-home[data-fire-s-clean-home-role="super_admin"] #releaseCandidatePanel,
+body.fire-s-clean-home[data-fire-s-clean-home-role="super_admin"] #rcBackupReminderPanel,
+body.fire-s-clean-home[data-fire-s-clean-home-role="super_admin"] #rcFinalPreflightPanel,
+body.fire-s-clean-home[data-fire-s-clean-home-role="super_admin"] #rcTesterInstructionPanel {
+  display: block !important;
+}
+
+body.fire-s-clean-home #homeSection .home-hero h2 {
+  letter-spacing: 0.04em;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
