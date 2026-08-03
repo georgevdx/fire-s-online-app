@@ -349,6 +349,81 @@
     }).join('');
   }
 
+  async function loadPendingInvites(companyId) {
+    try {
+      const result = await waitFor(
+        supabaseClient
+          .from('company_invites')
+          .select('id, email, role, status, created_at')
+          .eq('company_id', companyId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false }),
+        3000,
+        'Pending invites'
+      );
+      if (result?.error) throw result.error;
+      return Array.isArray(result?.data) ? result.data : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function renderPendingInvites(invites) {
+    const list = byId('companyTeamPendingList');
+    if (!list) return;
+    if (!invites.length) {
+      list.innerHTML = '';
+      return;
+    }
+    list.innerHTML =
+      '<div class="cloud-section-title" style="margin:0 0 8px;">Waiting to install / login</div>' +
+      invites
+        .map(invite => {
+          const email = text(invite.email);
+          const role = text(invite.role) || 'inspector';
+          const id = text(invite.id);
+          return `
+          <article class="company-team-card" data-invite-id="${esc(id)}">
+            <div class="company-team-card-main">
+              <strong>${esc(email)}</strong>
+              <span>Invited as ${esc(roleLabel(role))} · not logged in yet</span>
+            </div>
+            <div class="company-team-card-actions">
+              <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}">
+                Cancel
+              </button>
+            </div>
+          </article>`;
+        })
+        .join('');
+
+    list.querySelectorAll('[data-cancel-invite]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await cancelInvite(btn.getAttribute('data-cancel-invite'));
+      });
+    });
+  }
+
+  async function cancelInvite(inviteId) {
+    try {
+      if (!inviteId) return;
+      setMessage('Cancelling invite…');
+      const { error } = await waitFor(
+        supabaseClient
+          .from('company_invites')
+          .update({ status: 'cancelled' })
+          .eq('id', inviteId),
+        3000,
+        'Cancel invite'
+      );
+      if (error) throw error;
+      setMessage('Invite cancelled.');
+      await refreshTeam();
+    } catch (error) {
+      setMessage(error.message || 'Could not cancel invite.', true);
+    }
+  }
+
   function renderMembers(members) {
     const list = byId('companyTeamList');
     if (!list) return;
@@ -356,7 +431,7 @@
     const active = members.filter(m => text(m.status || 'active').toLowerCase() !== 'inactive');
     if (!active.length) {
       list.innerHTML =
-        '<div class="company-team-empty">No team members found for this company yet.</div>';
+        '<div class="company-team-empty">No active team members yet. Add emails above.</div>';
       return;
     }
 
@@ -382,6 +457,11 @@
               <button type="button" class="secondary-btn" data-save-role="${esc(memberKey)}" data-user-id="${esc(member.user_id)}">
                 Save role
               </button>
+              ${
+                isMe
+                  ? ''
+                  : `<button type="button" class="secondary-btn" data-remove-member="${esc(member.user_id)}">Remove</button>`
+              }
             </div>
           </article>
         `;
@@ -397,6 +477,40 @@
         await saveMemberRole(memberId, userId, nextRole);
       });
     });
+
+    list.querySelectorAll('[data-remove-member]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.getAttribute('data-remove-member');
+        if (!window.confirm('Remove this person from the company team?')) return;
+        await removeMember(userId);
+      });
+    });
+  }
+
+  async function removeMember(userId) {
+    try {
+      if (!canManageTeam()) {
+        throw new Error('Only Manager or Owner can remove team members.');
+      }
+      const ctx = companyContext();
+      if (!ctx.companyId || !userId) throw new Error('Missing company or person.');
+
+      setMessage('Removing…');
+      const rpc = await waitFor(
+        supabaseClient.rpc('fire_s_remove_member', {
+          p_company_id: ctx.companyId,
+          p_user_id: userId
+        }),
+        4000,
+        'Remove member'
+      );
+      if (rpc.error) throw rpc.error;
+      setMessage('Person removed from the team.');
+      await refreshTeam();
+    } catch (error) {
+      console.error('Remove member failed:', error);
+      setMessage(error.message || 'Could not remove person.', true);
+    }
   }
 
   async function saveMemberRole(memberId, userId, role) {
@@ -488,9 +602,17 @@
       );
 
       if (!rpc.error && rpc.data) {
+        const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+        const status = text(row?.out_status || row?.status).toLowerCase();
         if (emailInput) emailInput.value = '';
         if (roleSelect) roleSelect.value = 'inspector';
-        setMessage(`${email} added as ${roleLabel(role)}.`);
+        if (status === 'invited') {
+          setMessage(
+            `${email} saved as ${roleLabel(role)}. They only need to install Fire-S and login with this email.`
+          );
+        } else {
+          setMessage(`${email} added as ${roleLabel(role)}.`);
+        }
         await refreshTeam();
         return;
       }
@@ -504,7 +626,7 @@
       if (!profile?.id) {
         throw new Error(
           (rpc.error && rpc.error.message) ||
-            'No login found for that email yet. Ask them to open Fire-S → Join a company first, then add them here.'
+            'Could not add that email. Run SUPABASE_smooth_onboarding.sql in Supabase, then try again.'
         );
       }
 
@@ -751,6 +873,8 @@
       list.innerHTML =
         '<div class="company-team-empty">Create your company above, then appoint Inspectors and Managers.</div>';
     }
+    const pending = byId('companyTeamPendingList');
+    if (pending) pending.innerHTML = '';
     const nameInput = byId('companyTeamCompanyName');
     if (nameInput) {
       const email = text(window.currentUserProfile?.email);
@@ -846,9 +970,22 @@
 
       setMessage('Loading team members…');
       const members = await loadMembers(ctx.companyId);
+      const invites = await loadPendingInvites(ctx.companyId);
       renderMeta(ctx, members);
+      renderPendingInvites(invites);
       renderMembers(members);
-      setMessage(members.length ? '' : 'Company linked. Add your first team member below.');
+      if (window.__fireSTeamAfterCreate) {
+        window.__fireSTeamAfterCreate = false;
+        setMessage(
+          'Company ready. Add Inspectors and Managers now — or tap “Do this later”.'
+        );
+      } else {
+        setMessage(
+          members.length || invites.length
+            ? ''
+            : 'Add Inspectors and Managers below, or do it later from Team.'
+        );
+      }
     } catch (error) {
       console.error('Refresh team failed:', error);
       const ctx = companyContext();
@@ -884,7 +1021,10 @@
     refreshTeam().catch(() => {});
   }
 
-  async function openCompanyTeam() {
+  async function openCompanyTeam(options) {
+    if (options && options.afterCreate) {
+      window.__fireSTeamAfterCreate = true;
+    }
     showCompanyTeamSection();
     updateFreshBanner();
     // Paint something immediately so the screen never looks frozen.
@@ -898,7 +1038,11 @@
       );
     } else {
       renderMeta(ctx, []);
-      setMessage('Loading company team…');
+      setMessage(
+        window.__fireSTeamAfterCreate
+          ? 'Company ready. Add your team below — or do it later.'
+          : 'Loading company team…'
+      );
     }
     await refreshTeam();
   }
@@ -959,6 +1103,15 @@
       addBtn.addEventListener('click', addMember);
     }
 
+    const laterBtn = byId('companyTeamLaterBtn');
+    if (laterBtn && !laterBtn.__fireSCompanyBound) {
+      laterBtn.__fireSCompanyBound = true;
+      laterBtn.addEventListener('click', () => {
+        window.__fireSTeamAfterCreate = false;
+        goHome();
+      });
+    }
+
     const createBtn = byId('companyTeamCreateBtn');
     if (createBtn && !createBtn.__fireSCompanyBound) {
       createBtn.__fireSCompanyBound = true;
@@ -995,6 +1148,7 @@
   }
 
   window.fireSOpenCompanyTeam = openCompanyTeam;
+  window.openCompanyTeamOverlay = openCompanyTeam;
   window.fireSRefreshCompanyTeam = refreshTeam;
   window.fireSBeginFreshCompany = beginFreshCompany;
 

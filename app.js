@@ -5598,6 +5598,14 @@ async function loadUserAccessProfile() {
 
     const user = userData.user;
 
+    // Claim any pending company invites for this email (owner added them earlier).
+    try {
+      await withTimeout(
+        supabaseClient.rpc('fire_s_claim_my_invites'),
+        2500
+      );
+    } catch (_) {}
+
     const [profileResult, membershipResult] = await Promise.all([
       withTimeout(
         supabaseClient
