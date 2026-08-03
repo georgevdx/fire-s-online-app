@@ -113,7 +113,11 @@ body.fire-s-clean-home.fire-s-role-new-company #fireSGetStarted {
   display: block !important;
 }
 
-body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-grid,
-body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-grid {
+body.fire-s-clean-home[data-fire-s-clean-home-role="pending_member"] #fireSGetStarted,
+body.fire-s-clean-home[data-fire-s-clean-home-role="pending_member"] #mainCommandCentre .main-command-grid {
   display: none !important;
+}
+
+body.fire-s-clean-home[data-fire-s-clean-home-role="pending_member"] #mainCommandCentre .main-command-top {
+  display: block !important;
 }

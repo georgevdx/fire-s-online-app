@@ -110,10 +110,22 @@
       }
     } catch (_) {}
 
-    // Real first-day customer: own login exists, but no company yet.
-    // Never send them to Inspector home before Create company.
+    // Signed in but not linked to a company yet.
+    // Owners → finish company setup. Inspectors → wait to be added.
     try {
-      if (isSignedInUser() && !hasLinkedCompany()) return 'new_company';
+      if (isSignedInUser() && !hasLinkedCompany()) {
+        let role = '';
+        try {
+          role = normaliseRole(
+            window.currentUserProfile?.role ||
+              (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.role : '')
+          );
+        } catch (_) {}
+        if (role === 'company_owner' || role === 'super_admin' || role === 'owner') {
+          return 'new_company';
+        }
+        return 'pending_member';
+      }
     } catch (_) {}
 
     try {
@@ -496,6 +508,24 @@
     // Get Started form is the main action — keep the old Company card hidden.
   }
 
+  function applyPendingMemberHome() {
+    showHomeHero();
+    setBodyRole('fire-s-role-guest');
+    document.body.dataset.fireSCleanHomeRole = 'pending_member';
+    setHero('Fire-S', 'ALMOST READY', 'Your login works. Wait for your owner to add you.');
+    setText('#mainCommandCentre .main-command-kicker', 'Waiting');
+    setText('#mainCommandCentre .main-command-top h3', 'Ask your owner to add you');
+    setText(
+      '#mainCommandSubtitle',
+      'Tell them your email. They add you in Company → Team as Inspector or Manager.'
+    );
+    setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
+    setStatsVisible(false);
+    setBetaPanelsVisible(false);
+    hideManagementOverlays();
+    ALL_CMD_IDS.forEach(hide);
+  }
+
   function applyCleanHome() {
     const centre = byId('mainCommandCentre');
     if (!centre || !document.body) return;
@@ -503,6 +533,7 @@
     const role = resolveHomeRole();
 
     if (role === 'new_company') applyNewCompanyHome();
+    else if (role === 'pending_member') applyPendingMemberHome();
     else if (role === 'inspector') applyInspectorHome();
     else if (role === 'manager') applyManagerHome();
     else if (role === 'company_owner' || role === 'super_admin') applyOwnerHome(role);

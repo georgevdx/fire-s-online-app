@@ -116,9 +116,16 @@
       const guestLike =
         document.body?.classList?.contains('fire-s-role-guest') ||
         bodyRole === 'guest';
+      const pending = bodyRole === 'pending_member';
       const newCompany =
         document.body?.classList?.contains('fire-s-role-new-company') ||
         bodyRole === 'new_company';
+
+      // Pending inspectors: hide the Start-company form.
+      if (pending) {
+        showStep(null);
+        return;
+      }
 
       if (guestLike && !isSignedIn()) {
         byId('fireSGetStarted').style.display = 'block';
@@ -126,6 +133,11 @@
         return;
       }
       if ((newCompany || (isSignedIn() && !hasCompany())) && isSignedIn()) {
+        const role = text(window.currentUserProfile?.role).toLowerCase();
+        if (role === 'inspector' || role === 'manager' || role === 'viewer') {
+          showStep(null);
+          return;
+        }
         byId('fireSGetStarted').style.display = 'block';
         showStep('company-only');
         return;
@@ -148,7 +160,36 @@
     ]);
   }
 
-  async function afterAuthSuccess(message) {
+  async function ensureProfile(user, role) {
+    if (!user?.id) return;
+    try {
+      await supabaseClient.rpc('fire_s_ensure_profile', {
+        p_user_id: user.id,
+        p_email: user.email || '',
+        p_role: role || 'inspector'
+      });
+    } catch (_) {}
+    try {
+      await supabaseClient.from('profiles').upsert(
+        {
+          id: user.id,
+          email: String(user.email || '').toLowerCase(),
+          full_name: String(user.email || '').split('@')[0] || 'User',
+          role: role || 'inspector'
+        },
+        { onConflict: 'id' }
+      );
+    } catch (_) {}
+  }
+
+  async function afterAuthSuccess(message, roleHint) {
+    try {
+      const { data } = await supabaseClient.auth.getUser();
+      const user = data?.user;
+      if (user) {
+        await ensureProfile(user, roleHint || 'inspector');
+      }
+    } catch (_) {}
     try {
       if (typeof window.loadUserAccessProfile === 'function') {
         await window.loadUserAccessProfile();
@@ -184,7 +225,7 @@
         'Login'
       );
       if (error) throw error;
-      await afterAuthSuccess('Signed in.');
+      await afterAuthSuccess('Signed in.', 'inspector');
       try {
         if (typeof window.showHome === 'function') window.showHome();
       } catch (_) {}
@@ -233,7 +274,8 @@
       }
 
       await afterAuthSuccess(
-        'Your login is ready. Ask your owner to add your email in Company → Team.'
+        'Your login is ready. Ask your owner to add your email in Company → Team.',
+        'inspector'
       );
       try {
         if (typeof window.showHome === 'function') window.showHome();
@@ -325,8 +367,10 @@
       } catch (_) {}
 
       setStatus('Setting up your company…');
+      const { data: userData } = await supabaseClient.auth.getUser();
+      await ensureProfile(userData?.user, 'company_owner');
       const company = await createCompanyForCurrentUser(companyName);
-      await afterAuthSuccess(`“${company.name}” is ready.`);
+      await afterAuthSuccess(`“${company.name}” is ready.`, 'company_owner');
       try {
         if (typeof window.fireSOpenCompanyTeam === 'function') {
           window.fireSOpenCompanyTeam();
@@ -350,7 +394,7 @@
     setStatus('Saving your company…');
     try {
       const company = await createCompanyForCurrentUser(companyName);
-      await afterAuthSuccess(`“${company.name}” is ready.`);
+      await afterAuthSuccess(`“${company.name}” is ready.`, 'company_owner');
       try {
         if (typeof window.fireSOpenCompanyTeam === 'function') {
           window.fireSOpenCompanyTeam();

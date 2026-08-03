@@ -468,19 +468,43 @@
         throw new Error('Enter a valid email address.');
       }
       if (!ctx.companyId) {
-        throw new Error(
-          'No company is linked to your login yet. Ask Fire-S support to link your company first.'
-        );
+        throw new Error('Save your company first, then add people.');
       }
       if (role === 'company_owner' && !canAssignOwner()) {
         throw new Error('Only an Owner can add another Owner.');
       }
 
-      setMessage('Looking up Fire-S user…');
+      setMessage('Adding person…');
+
+      // Preferred: SECURITY DEFINER RPC (finds auth login even without profiles row)
+      const rpc = await waitFor(
+        supabaseClient.rpc('fire_s_add_member_by_email', {
+          p_company_id: ctx.companyId,
+          p_email: email,
+          p_role: role
+        }),
+        6000,
+        'Add member'
+      );
+
+      if (!rpc.error && rpc.data) {
+        if (emailInput) emailInput.value = '';
+        if (roleSelect) roleSelect.value = 'inspector';
+        setMessage(`${email} added as ${roleLabel(role)}.`);
+        await refreshTeam();
+        return;
+      }
+
+      // Fallback: old profile lookup path
+      if (rpc.error) {
+        console.warn('Add member RPC failed, trying profile lookup:', rpc.error);
+      }
+
       const profile = await findProfileByEmail(email);
       if (!profile?.id) {
         throw new Error(
-          'No login found for that email yet. Ask them to open Fire-S and create their own login first, then add them here.'
+          (rpc.error && rpc.error.message) ||
+            'No login found for that email yet. Ask them to open Fire-S → Join a company first, then add them here.'
         );
       }
 
@@ -493,7 +517,6 @@
         status: 'active'
       };
 
-      // Try upsert on (company_id, user_id). If constraint name differs, fallback to insert/update.
       let error = null;
       const upsert = await supabaseClient
         .from('company_members')
