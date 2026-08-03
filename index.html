@@ -10,6 +10,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-1">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-1">
+  <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
 </head>
 <body>
   <div class="app">
@@ -35,58 +36,69 @@
       Cloud
     </button>
 
-    <div id="cloudDropdown" class="cloud-dropdown" style="display:none;">
+    <div id="cloudDropdown" class="cloud-dropdown fire-s-simple-cloud" style="display:none;">
       <div id="cloudConnectedView" style="display:none;">
-      <div class="sync-connected">Cloud Sync: Connected</div>
+        <div id="cloudConnectedLabel" class="sync-connected">Cloud: Connected</div>
+        <p id="cloudSimpleHelp" class="cloud-simple-help">
+          Sync keeps your inspections up to date between this device and the cloud.
+        </p>
 
-      <button id="refreshSyncBtn" type="button">
-        Sync / Refresh
-      </button>
+        <button id="refreshSyncBtn" type="button" class="cloud-primary-btn">
+          Sync Now
+        </button>
 
-      <button id="showSyncToolsBtn" type="button">
-        Admin / Sync Tools
-      </button>
+        <button id="cloudExportBackupBtn" type="button" class="secondary-btn" style="display:none;">
+          Export Backup
+        </button>
 
-      <button id="logoutBtn" type="button" class="secondary-btn">
-        Logout
-      </button>
-    </div>
+        <button id="showSyncToolsBtn" type="button" class="secondary-btn" style="display:none;">
+          Advanced tools
+        </button>
+
+        <button id="logoutBtn" type="button" class="secondary-btn">
+          Logout
+        </button>
+      </div>
 
       <div id="syncTools">
-      <div id="loginToolsPanel">
-        <div class="cloud-section-title">Account</div>
+        <div id="loginToolsPanel">
+          <div class="cloud-section-title">Sign in</div>
+          <p class="cloud-simple-help">
+            Login to sync inspections with your Fire-S company account.
+          </p>
 
-        <input id="loginEmail" type="email" placeholder="Email">
-        <input id="loginPassword" type="password" placeholder="Password">
+          <input id="loginEmail" type="email" placeholder="Email" autocomplete="username">
+          <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
 
-        <button id="loginBtn" type="button">Login</button>
-        <button id="signupBtn" type="button">Sign Up</button>
+          <button id="loginBtn" type="button" class="cloud-primary-btn">Login</button>
+          <button id="signupBtn" type="button" class="secondary-btn">Sign Up</button>
+        </div>
+
+        <div id="syncButtonsSection" class="cloud-section-title" style="display:none;">
+          Advanced sync
+        </div>
+
+        <div id="syncButtonsPanel" style="display:none;">
+          <p class="cloud-simple-help">
+            Use these only if Sync Now is not enough. Prefer Sync Now for normal work.
+          </p>
+          <button id="syncUploadBtn" type="button">Upload only</button>
+          <button id="syncDownloadBtn" type="button">Download only</button>
+          <button id="syncMergeBtn" type="button">Merge sync</button>
+        </div>
       </div>
 
-      <div id="syncButtonsSection" class="cloud-section-title" style="display:none;">
-        Sync
-      </div>
+      <div id="syncStatus" class="note cloud-sync-status"></div>
 
-      <div id="syncButtonsPanel" style="display:none;">
-        <button id="syncUploadBtn" type="button">Upload Sync</button>
-        <button id="syncDownloadBtn" type="button">Download Sync</button>
-        <button id="syncMergeBtn" type="button">Merge Sync</button>
-      </div>
-    </div>
-
-      <div id="syncStatus" class="note"></div>
-
-      <div id="cloudAdminPanel" class="-info" style="display:none;">
-        <div class="cloud-section-title"> Info</div>
-        <div><strong>:</strong> Fire-S</div>
+      <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
+        <div class="cloud-section-title">Workspace info</div>
+        <div><strong>App:</strong> Fire-S</div>
         <div><strong>Version:</strong> <span id="cloudVersion">Loading...</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
         <div><strong>Storage:</strong> Local + Cloud Sync</div>
-        <div><strong>Backups:</strong> Export before major changes</div>
-        <div><strong>Beta Note:</strong> Open and sync online before site inspections.</div>
-        <div class="cloud-section-title">Admin</div>
+        <div class="cloud-section-title">Backup tools</div>
         <button id="adminExportBackupBtn" type="button">Export Backup</button>
         <button id="createBackupTextBtn" type="button">Create Backup Text</button>
         <button id="copyLastBackupBtn" type="button">Copy Last Backup</button>
@@ -98,7 +110,7 @@
         <input
           id="importBackupInput"
           type="file"
-          accept=".json,lication/json"
+          accept=".json,application/json"
           style="display:none;"
         >
         <div id="manualBackupPanel" class="manual-backup-panel" style="display:none;">
@@ -965,6 +977,7 @@
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-1-search-fix"></script>
   <script src="fire-s-clean-home-roles.js?v=1-1"></script>
+  <script src="fire-s-simple-cloud-sync.js?v=1-0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
