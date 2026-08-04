@@ -443,7 +443,7 @@
               <strong>${esc(email)}</strong>
               <span>Invited as ${esc(roleLabel(role))} · not logged in yet</span>
             </div>
-            <div class="company-team-card-actions is-self">
+            <div class="company-team-card-actions is-invite">
               <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}">
                 Cancel invite
               </button>
