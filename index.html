@@ -277,8 +277,8 @@
 
       <button type="button" class="main-command-card" id="cmdCompanyBtn">
         <span class="command-icon">🏢</span>
-        <span class="command-title">Company</span>
-        <span class="command-copy">Account, subscription, cloud sync and admin tools.</span>
+        <span class="command-title">Personnel</span>
+        <span class="command-copy">Add people, change roles, or remove staff.</span>
       </button>
 
       <button type="button" class="main-command-card" id="cmdServicesBtn">
@@ -360,17 +360,17 @@
 </section>
 <section id="companyTeamSection" class="card company-team-section" style="display:none;">
   <div class="toolbar">
-    <h2>Company Team</h2>
+    <h2 id="companyTeamHeading">Personnel</h2>
     <button id="companyTeamBackBtn" type="button" class="back-home-btn">
       Back Home
     </button>
   </div>
 
   <div class="company-team-intro">
-    <div class="company-team-kicker">Your company</div>
-    <h3 id="companyTeamTitle">Team</h3>
+    <div class="company-team-kicker" id="companyTeamKicker">Company</div>
+    <h3 id="companyTeamTitle">Your company</h3>
     <p id="companyTeamSubtitle">
-      Add your Inspectors and Managers here.
+      Add people, change roles, or remove staff.
     </p>
     <div id="companyTeamMeta" class="company-team-meta">Loading company…</div>
   </div>
@@ -379,14 +379,14 @@
 
   <div id="companyTeamFreshBanner" class="company-team-fresh-banner" style="display:none;">
     <strong>Test mode</strong>
-    <span>Create a practice company, then add team members.</span>
+    <span>Create a practice company, then manage personnel.</span>
     <button id="companyTeamExitFreshBtn" type="button" class="secondary-btn">Exit</button>
   </div>
 
   <div id="companyTeamSetupPanel" class="company-team-add" style="display:none;">
     <div class="cloud-section-title">Name your company</div>
     <p class="company-team-hint" style="margin-top:0;">
-      One step left. Then you can add your team.
+      Save once. After that this screen is for managing personnel.
     </p>
     <div class="company-team-add-row company-team-setup-row">
       <input id="companyTeamCompanyName" type="text" placeholder="Company name" autocomplete="organization">
@@ -395,9 +395,9 @@
   </div>
 
   <div id="companyTeamAddPanel" class="company-team-add">
-    <div class="cloud-section-title">Add Inspectors & Managers</div>
+    <div class="cloud-section-title">Add personnel</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Add them now, or skip and do it later. They only need to install Fire-S and login with this email.
+      Enter their email and role. They install Fire-S and login with that email.
     </p>
     <div class="company-team-add-row">
       <input id="companyTeamEmail" type="email" placeholder="Their email" autocomplete="off">
@@ -408,7 +408,7 @@
       </select>
       <button id="companyTeamAddBtn" type="button" class="cloud-primary-btn">Add</button>
     </div>
-    <button id="companyTeamLaterBtn" type="button" class="secondary-btn" style="margin-top:10px; width:100%;">
+    <button id="companyTeamLaterBtn" type="button" class="secondary-btn" style="display:none; margin-top:10px; width:100%;">
       Do this later · go to Home
     </button>
     <div id="companyTeamStartFreshWrap" style="display:none; margin-top:12px;">
@@ -418,10 +418,10 @@
     </div>
   </div>
 
-  <div class="cloud-section-title">Team members</div>
+  <div class="cloud-section-title">People in this company</div>
   <div id="companyTeamPendingList" class="company-team-list" style="margin-bottom:12px;"></div>
   <div id="companyTeamList" class="company-team-list">
-    <div class="company-team-empty">Loading team…</div>
+    <div class="company-team-empty">Loading personnel…</div>
   </div>
 </section>
 <section id="servicesSection" class="card services-section" style="display:none;">

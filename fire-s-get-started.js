@@ -75,7 +75,7 @@
     hideAllPanels();
     if (guestFields) guestFields.style.display = '';
     if (titleEl) titleEl.textContent = 'Register your company';
-    if (helpEl) helpEl.textContent = 'You become the Owner. You can add staff next.';
+    if (helpEl) helpEl.textContent = 'You become the Owner. Next you manage personnel.';
     setStatus('');
   }
 
@@ -311,7 +311,7 @@
       var rpc = await sb.rpc('fire_s_create_company', { p_name: company });
       if (rpc.error) throw rpc.error;
       await refreshMembership();
-      setStatus('Company ready — add your team next.');
+      setStatus('Company ready — manage personnel next.');
       mode = 'choices';
       refreshHome();
       render();
@@ -337,7 +337,7 @@
       var rpc = await sb.rpc('fire_s_create_company', { p_name: company });
       if (rpc.error) throw rpc.error;
       await refreshMembership();
-      setStatus('Company ready — add your team next.');
+      setStatus('Company ready — manage personnel next.');
       mode = 'choices';
       refreshHome();
       render();

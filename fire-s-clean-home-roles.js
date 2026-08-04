@@ -349,7 +349,6 @@
     setBetaPanelsVisible(false);
 
     ALL_CMD_IDS.forEach(show);
-    hide('cmdCompanyBtn');
 
     cardText(
       'cmdInspectionsBtn',
@@ -365,6 +364,11 @@
       'cmdReportsBtn',
       'Reports',
       'Completed inspections and export-ready reports.'
+    );
+    cardText(
+      'cmdCompanyBtn',
+      'Personnel',
+      'Add people, change roles, or remove staff.'
     );
     cardText(
       'cmdServicesBtn',
@@ -416,8 +420,8 @@
     );
     cardText(
       'cmdCompanyBtn',
-      'Company',
-      'Team roles, account, subscription and cloud sync.'
+      'Personnel',
+      'Add people, change roles, or remove staff.'
     );
     cardText(
       'cmdServicesBtn',
