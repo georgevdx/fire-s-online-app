@@ -936,9 +936,26 @@
     updateFreshBanner();
     updateStartFreshButton(!!(window.currentUserProfile?.companyId) && !isFreshCompanyMode());
     setLaterButtonVisible(false);
-    setPersonnelChrome('setup');
+    // Keep the Personnel framing — create name is only the first step.
+    const heading = byId('companyTeamHeading');
+    const kicker = byId('companyTeamKicker');
+    const title = byId('companyTeamTitle');
+    const subtitle = byId('companyTeamSubtitle');
+    const intro = document.querySelector('#companyTeamSection .company-team-intro');
+    if (intro) intro.classList.add('is-setup');
+    if (heading) heading.textContent = 'Personnel';
+    if (kicker) kicker.textContent = 'Get started';
+    if (title) title.textContent = 'Name your company';
+    if (subtitle) {
+      subtitle.textContent =
+        'Save the company name once. Then you add people, change roles, or remove staff.';
+    }
     const meta = byId('companyTeamMeta');
-    if (meta) meta.textContent = 'No company linked yet';
+    if (meta) {
+      meta.textContent = isRoleTestManagementView()
+        ? 'Role Test · no company linked yet'
+        : 'No company linked yet';
+    }
     if (setupPanel) setupPanel.style.display = '';
     if (addPanel) addPanel.style.display = 'none';
     if (list) {
