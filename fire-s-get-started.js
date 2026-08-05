@@ -83,10 +83,26 @@
     mode = 'company_only';
     hideAllPanels();
     if (companyOnly) companyOnly.style.display = '';
-    if (titleEl) titleEl.textContent = 'Almost ready';
-    if (helpEl) {
-      helpEl.textContent =
-        'Owners register the company here. Staff wait until the owner adds their email.';
+    var homeRole = '';
+    try {
+      homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+    } catch (e) {}
+    if (homeRole === 'new_company') {
+      if (titleEl) titleEl.textContent = 'Register your company';
+      if (helpEl) {
+        helpEl.textContent =
+          'You become the Owner. Next you manage personnel (add, roles, remove).';
+      }
+    } else {
+      if (titleEl) titleEl.textContent = 'Almost ready';
+      if (helpEl) {
+        helpEl.textContent =
+          'Owners register the company here. Staff wait until the owner adds their email.';
+      }
     }
     setStatus('');
   }
