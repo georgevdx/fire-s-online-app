@@ -104,7 +104,8 @@
 
 body.fire-s-clean-home.fire-s-role-owner #fireSGetStarted,
 body.fire-s-clean-home.fire-s-role-manager #fireSGetStarted,
-body.fire-s-clean-home.fire-s-role-inspector #fireSGetStarted {
+body.fire-s-clean-home.fire-s-role-inspector #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-pending-member #fireSGetStarted {
   display: none !important;
 }
 

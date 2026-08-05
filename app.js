@@ -31019,6 +31019,8 @@ function fireSApplyLifecycleUxLabels() {
     removeDuplicatePanels();
     clarifyNewButton();
     bindHomeCards();
+    // fire-s-clean-home-roles.js owns hero / cards / role pages.
+    if (window.__fireSCleanHomeOwnsRoleUi) return;
     if (isManagement()) setManagementHome();
     else setInspectorHome();
   }
@@ -31151,7 +31153,10 @@ function fireSApplyLifecycleUxLabels() {
 
   function viewAsRole(){
     const real = actualRole();
-    if (real !== 'super_admin') return real;
+    // Honour Role Test even if profile.role briefly flickers away from super_admin.
+    const stickySuper =
+      real === 'super_admin' || confirmedActualRole131 === 'super_admin';
+    if (!stickySuper) return real;
     try {
       return String(localStorage.getItem(ROLE_PREF_KEY) || real).toLowerCase().trim();
     } catch (_) {
@@ -31319,7 +31324,10 @@ function fireSApplyLifecycleUxLabels() {
     if (!centre) return;
 
     let panel = document.getElementById('fireSRoleTestModePanel');
-    if (actualRole() !== 'super_admin') {
+    const actual = actualRole();
+    const stickySuper =
+      actual === 'super_admin' || confirmedActualRole131 === 'super_admin';
+    if (!stickySuper) {
       if (panel) panel.remove();
       return;
     }

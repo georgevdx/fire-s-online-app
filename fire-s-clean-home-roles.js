@@ -49,6 +49,10 @@
 
   let applyTimer = null;
   let lastRole = '';
+  let stickySuperAdmin = false;
+
+  // This module owns Home hero / cards / role pages.
+  window.__fireSCleanHomeOwnsRoleUi = true;
 
   function byId(id) {
     return document.getElementById(id);
@@ -77,9 +81,8 @@
         (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.id : '');
       if (id && id !== 'local-user') return true;
     } catch (_) {}
-    // Role Test / Cloud can briefly lose profile.id while still logged in.
     try {
-      if (readActualLoginRole() === 'super_admin') return true;
+      if (stickySuperAdmin || readActualLoginRole() === 'super_admin') return true;
     } catch (_) {}
     try {
       const email =
@@ -94,20 +97,31 @@
     try {
       if (typeof window.fireSActualUserRole131 === 'function') {
         const remembered = normaliseRole(window.fireSActualUserRole131());
-        if (remembered) return remembered;
+        if (remembered === 'super_admin') stickySuperAdmin = true;
+        if (remembered) return stickySuperAdmin && remembered !== 'super_admin'
+          ? 'super_admin'
+          : remembered;
       }
     } catch (_) {}
     try {
       const fromWindow = normaliseRole(window.currentUserProfile?.role);
-      if (fromWindow) return fromWindow;
+      if (fromWindow === 'super_admin') stickySuperAdmin = true;
+      if (fromWindow) {
+        if (stickySuperAdmin && fromWindow !== 'super_admin') return 'super_admin';
+        return fromWindow;
+      }
     } catch (_) {}
     try {
       if (typeof currentUserProfile !== 'undefined') {
         const fromGlobal = normaliseRole(currentUserProfile?.role);
-        if (fromGlobal) return fromGlobal;
+        if (fromGlobal === 'super_admin') stickySuperAdmin = true;
+        if (fromGlobal) {
+          if (stickySuperAdmin && fromGlobal !== 'super_admin') return 'super_admin';
+          return fromGlobal;
+        }
       }
     } catch (_) {}
-    return '';
+    return stickySuperAdmin ? 'super_admin' : '';
   }
 
   function readViewedRole() {
@@ -124,59 +138,64 @@
     return '';
   }
 
-  function readRole() {
-    const viewed = readViewedRole();
-    const actual = readActualLoginRole();
-
-    // Role Test preference must win before any "no company" fallback.
-    // After Inspection Gateway → Back Home the profile can briefly stop
-    // looking like super_admin; without this, Home becomes Almost Ready.
+  function roleTestActive() {
     try {
-      const prefRaw = localStorage.getItem('fireS.viewAsRole.v131');
-      const pref = normaliseRole(prefRaw);
-      const roleTestUi =
-        !!byId('fireSRoleTestModePanel') || !!byId('fireSRoleTestSelect');
-      if (pref && (actual === 'super_admin' || roleTestUi || !!prefRaw)) {
-        // Only honour the stored view-as when Role Test UI is present or the
-        // actual login is Super Admin. Pref alone is not enough for normal users.
-        if (actual === 'super_admin' || roleTestUi) {
-          return pref;
-        }
-      }
+      if (stickySuperAdmin || readActualLoginRole() === 'super_admin') return true;
     } catch (_) {}
+    try {
+      if (byId('fireSRoleTestModePanel') || byId('fireSRoleTestSelect')) return true;
+    } catch (_) {}
+    return false;
+  }
 
-    if (actual === 'super_admin') {
+  /**
+   * Single Home role resolver.
+   * Mapping:
+   *  guest            → welcome
+   *  pending_member   → Almost Ready (signed in, no company, not owner)
+   *  new_company      → first-day company setup
+   *  inspector        → Inspector Work Area / V4
+   *  manager          → Operations Centre
+   *  company_owner    → Owner Overview
+   *  super_admin      → Control Overview
+   * Role Test view-as overrides when Super Admin (sticky).
+   */
+  function readRole() {
+    const actual = readActualLoginRole();
+    const viewed = readViewedRole();
+
+    // 1) Role Test wins for sticky Super Admin.
+    if (roleTestActive()) {
+      try {
+        const pref = normaliseRole(localStorage.getItem('fireS.viewAsRole.v131'));
+        if (pref) return pref;
+      } catch (_) {}
       if (viewed) return viewed;
-      return 'super_admin';
+      if (actual === 'super_admin') return 'super_admin';
     }
 
-    // Logged out: always guest.
-    try {
-      if (!isSignedInUser()) return 'guest';
-    } catch (_) {}
+    if (actual === 'super_admin') {
+      return viewed || 'super_admin';
+    }
 
-    // Signed in but not linked to a company yet.
-    // Owners → finish company setup. Inspectors → wait to be added.
-    try {
-      if (isSignedInUser() && !hasLinkedCompany()) {
-        // Never trap Role Test Owner/Manager in Almost Ready.
-        if (
-          viewed === 'company_owner' ||
-          viewed === 'manager' ||
-          viewed === 'super_admin' ||
-          viewed === 'new_company'
-        ) {
-          return viewed;
-        }
-        const role = actual;
-        if (role === 'company_owner' || role === 'super_admin' || role === 'owner') {
-          return 'new_company';
-        }
-        return 'pending_member';
+    // 2) Logged out.
+    if (!isSignedInUser()) return 'guest';
+
+    // 3) Signed in, no company yet.
+    if (!hasLinkedCompany()) {
+      if (
+        actual === 'company_owner' ||
+        actual === 'owner' ||
+        actual === 'super_admin'
+      ) {
+        return 'new_company';
       }
-    } catch (_) {}
+      // Managers without a company are unusual — treat as pending.
+      return 'pending_member';
+    }
 
-    if (viewed && viewed !== 'new_company') return viewed;
+    // 4) Linked company — use profile / getCurrentUserRole.
+    if (viewed && viewed !== 'new_company' && roleTestActive()) return viewed;
 
     try {
       if (typeof window.getCurrentUserRole === 'function') {
@@ -185,19 +204,8 @@
       }
     } catch (_) {}
 
-    try {
-      if (window.currentUserProfile?.role) {
-        return normaliseRole(window.currentUserProfile.role);
-      }
-    } catch (_) {}
-
-    try {
-      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) {
-        return normaliseRole(currentUserProfile.role);
-      }
-    } catch (_) {}
-
-    return '';
+    if (actual) return actual;
+    return 'guest';
   }
 
   function resolveHomeRole() {
@@ -205,6 +213,9 @@
     if (role) lastRole = role;
     return role;
   }
+
+  window.resolveFireSHomeRole = resolveHomeRole;
+  window.fireSResolveHomeRole = resolveHomeRole;
 
   function setText(selector, text) {
     const el =
@@ -271,7 +282,7 @@
     card.title = title;
   }
 
-  function setBodyRole(roleClass) {
+  function setBodyRole(roleClass, cleanRoleKey) {
     if (!document.body) return;
     document.body.classList.remove(
       'fire-s-role-inspector',
@@ -280,10 +291,13 @@
       'fire-s-role-management',
       'fire-s-role-guest',
       'fire-s-role-new-company',
+      'fire-s-role-pending-member',
       'fire-s-clean-home'
     );
+    document.body.classList.remove('fire-s-inspector-v4');
     document.body.classList.add('fire-s-clean-home', roleClass);
-    document.body.dataset.fireSCleanHomeRole = roleClass.replace('fire-s-role-', '');
+    document.body.dataset.fireSCleanHomeRole =
+      cleanRoleKey || roleClass.replace(/^fire-s-role-/, '').replace(/-/g, '_');
   }
 
   function setHero(kicker, title, subtitle) {
@@ -312,8 +326,7 @@
   }
 
   function applyInspectorHome() {
-    setBodyRole('fire-s-role-inspector');
-    document.body.classList.remove('fire-s-role-owner', 'fire-s-role-manager', 'fire-s-role-management');
+    setBodyRole('fire-s-role-inspector', 'inspector');
     document.body.classList.add('fire-s-inspector-v4');
 
     // Inspector V4 owns the main visual; keep outer hero quiet.
@@ -379,7 +392,7 @@
 
   function applyManagerHome() {
     showHomeHero();
-    setBodyRole('fire-s-role-manager');
+    setBodyRole('fire-s-role-manager', 'manager');
     setHero('Fire-S · Manager', 'OPERATE', 'Track actions, overdue work and inspection progress.');
     setText('#mainCommandCentre .main-command-kicker', 'Operations Centre');
     setText('#mainCommandCentre .main-command-top h3', 'Today’s Operations');
@@ -422,10 +435,8 @@
 
   function applyOwnerHome(role) {
     showHomeHero();
-    setBodyRole('fire-s-role-owner');
+    setBodyRole('fire-s-role-owner', role === 'super_admin' ? 'super_admin' : 'owner');
     document.body.classList.add('fire-s-role-management');
-    document.body.dataset.fireSCleanHomeRole =
-      role === 'super_admin' ? 'super_admin' : 'owner';
     setHero(
       role === 'super_admin' ? 'Fire-S · Control' : 'Fire-S · Owner',
       'OVERVIEW',
@@ -475,7 +486,7 @@
 
   function applyGuestHome() {
     showHomeHero();
-    setBodyRole('fire-s-role-guest');
+    setBodyRole('fire-s-role-guest', 'guest');
     setHero('Fire-S', 'WELCOME', 'Login, join a company, or start a new one.');
     setText('#mainCommandCentre .main-command-kicker', 'Welcome');
     setText('#mainCommandCentre .main-command-top h3', 'Fire-S');
@@ -513,7 +524,7 @@
 
   function applyViewerHome() {
     showHomeHero();
-    setBodyRole('fire-s-role-manager');
+    setBodyRole('fire-s-role-guest', 'viewer');
     setHero('Fire-S · Viewer', 'REVIEW', 'Read-only view of reports and compliance status.');
     setText('#mainCommandCentre .main-command-kicker', 'Review Workspace');
     setText('#mainCommandCentre .main-command-top h3', 'Reports & Status');
@@ -535,10 +546,26 @@
     hide('cmdServicesBtn');
   }
 
+  function applyPendingMemberHome() {
+    showHomeHero();
+    setBodyRole('fire-s-role-pending-member', 'pending_member');
+    setHero('Fire-S', 'ALMOST READY', 'Your login works. Wait for your owner to add you.');
+    setText('#mainCommandCentre .main-command-kicker', 'Waiting');
+    setText('#mainCommandCentre .main-command-top h3', 'Ask your owner to add you');
+    setText(
+      '#mainCommandSubtitle',
+      'Tell them your email. They add you in Company → Team as Inspector or Manager.'
+    );
+    setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
+    setStatsVisible(false);
+    setBetaPanelsVisible(false);
+    hideManagementOverlays();
+    ALL_CMD_IDS.forEach(hide);
+  }
+
   function applyNewCompanyHome() {
     showHomeHero();
-    setBodyRole('fire-s-role-new-company');
-    document.body.dataset.fireSCleanHomeRole = 'new_company';
+    setBodyRole('fire-s-role-new-company', 'new_company');
     setHero('Fire-S · New Company', 'START', 'Create your company, then appoint your team.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
     setText('#mainCommandCentre .main-command-top h3', 'Start your company');
@@ -553,24 +580,6 @@
 
     ALL_CMD_IDS.forEach(hide);
     // Get Started form is the main action — keep the old Company card hidden.
-  }
-
-  function applyPendingMemberHome() {
-    showHomeHero();
-    setBodyRole('fire-s-role-guest');
-    document.body.dataset.fireSCleanHomeRole = 'pending_member';
-    setHero('Fire-S', 'ALMOST READY', 'Your login works. Wait for your owner to add you.');
-    setText('#mainCommandCentre .main-command-kicker', 'Waiting');
-    setText('#mainCommandCentre .main-command-top h3', 'Ask your owner to add you');
-    setText(
-      '#mainCommandSubtitle',
-      'Tell them your email. They add you in Company → Team as Inspector or Manager.'
-    );
-    setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
-    setStatsVisible(false);
-    setBetaPanelsVisible(false);
-    hideManagementOverlays();
-    ALL_CMD_IDS.forEach(hide);
   }
 
   function applyCleanHome() {

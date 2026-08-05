@@ -129,9 +129,55 @@
   }
 
   function shouldShow() {
+    // Clean Home owns role pages — only show Get Started for guest / new company.
+    try {
+      var homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+      if (homeRole === 'pending_member') return false;
+      if (
+        homeRole === 'inspector' ||
+        homeRole === 'manager' ||
+        homeRole === 'owner' ||
+        homeRole === 'company_owner' ||
+        homeRole === 'super_admin' ||
+        homeRole === 'viewer'
+      ) {
+        return false;
+      }
+      if (homeRole === 'guest' || homeRole === 'new_company') return true;
+    } catch (e) {}
     var user = getSessionUser();
     if (!user) return true;
     return !hasCompany();
+  }
+
+  function render() {
+    if (!ensureEls()) return;
+    if (!shouldShow()) {
+      root.style.display = 'none';
+      return;
+    }
+    root.style.display = '';
+    var homeRole = '';
+    try {
+      homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+    } catch (e) {}
+    var user = getSessionUser();
+    if (homeRole === 'new_company' || (user && !hasCompany() && homeRole !== 'pending_member')) {
+      showCompanyOnly();
+      return;
+    }
+    if (mode === 'login') showLogin();
+    else if (mode === 'register') showRegisterCompany();
+    else if (mode === 'company_only') showCompanyOnly();
+    else showChoices();
   }
 
   async function claimInvitesQuiet() {
@@ -194,24 +240,6 @@
     try {
       document.dispatchEvent(new CustomEvent('fire-s:auth-changed'));
     } catch (e3) {}
-  }
-
-  function render() {
-    if (!ensureEls()) return;
-    if (!shouldShow()) {
-      root.style.display = 'none';
-      return;
-    }
-    root.style.display = '';
-    var user = getSessionUser();
-    if (user && !hasCompany()) {
-      showCompanyOnly();
-      return;
-    }
-    if (mode === 'login') showLogin();
-    else if (mode === 'register') showRegisterCompany();
-    else if (mode === 'company_only') showCompanyOnly();
-    else showChoices();
   }
 
   async function doLogin() {
