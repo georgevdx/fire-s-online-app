@@ -921,6 +921,14 @@
       }, 50);
     } catch (error) {
       console.error('Create company failed:', error);
+      const msg = String(error.message || '');
+      if (/company_id.*ambiguous/i.test(msg)) {
+        setMessage(
+          'Database fix needed: run SUPABASE_fix_create_company_ambiguous.sql in Supabase SQL Editor, then Save company again.',
+          true
+        );
+        return;
+      }
       setMessage(
         error.message ||
           'Could not create company. Run SUPABASE_company_team.sql in Supabase SQL Editor, then try again.',
