@@ -125,17 +125,30 @@
   }
 
   function readRole() {
-    // Super Admin Role Test Mode wins first — even if profile id is briefly missing.
-    // Otherwise Home falls back to Guest and hides Personnel while the Role Test
-    // panel still says “View as Company Owner”.
+    const viewed = readViewedRole();
+    const actual = readActualLoginRole();
+
+    // Role Test preference must win before any "no company" fallback.
+    // After Inspection Gateway → Back Home the profile can briefly stop
+    // looking like super_admin; without this, Home becomes Almost Ready.
     try {
-      const actual = readActualLoginRole();
-      if (actual === 'super_admin') {
-        const viewed = readViewedRole();
-        if (viewed) return viewed;
-        return 'super_admin';
+      const prefRaw = localStorage.getItem('fireS.viewAsRole.v131');
+      const pref = normaliseRole(prefRaw);
+      const roleTestUi =
+        !!byId('fireSRoleTestModePanel') || !!byId('fireSRoleTestSelect');
+      if (pref && (actual === 'super_admin' || roleTestUi || !!prefRaw)) {
+        // Only honour the stored view-as when Role Test UI is present or the
+        // actual login is Super Admin. Pref alone is not enough for normal users.
+        if (actual === 'super_admin' || roleTestUi) {
+          return pref;
+        }
       }
     } catch (_) {}
+
+    if (actual === 'super_admin') {
+      if (viewed) return viewed;
+      return 'super_admin';
+    }
 
     // Logged out: always guest.
     try {
@@ -144,10 +157,18 @@
 
     // Signed in but not linked to a company yet.
     // Owners → finish company setup. Inspectors → wait to be added.
-    // Skip this when Role Test is actively viewing another workspace.
     try {
       if (isSignedInUser() && !hasLinkedCompany()) {
-        const role = readActualLoginRole();
+        // Never trap Role Test Owner/Manager in Almost Ready.
+        if (
+          viewed === 'company_owner' ||
+          viewed === 'manager' ||
+          viewed === 'super_admin' ||
+          viewed === 'new_company'
+        ) {
+          return viewed;
+        }
+        const role = actual;
         if (role === 'company_owner' || role === 'super_admin' || role === 'owner') {
           return 'new_company';
         }
@@ -155,10 +176,7 @@
       }
     } catch (_) {}
 
-    try {
-      const viewed = readViewedRole();
-      if (viewed && viewed !== 'new_company') return viewed;
-    } catch (_) {}
+    if (viewed && viewed !== 'new_company') return viewed;
 
     try {
       if (typeof window.getCurrentUserRole === 'function') {
@@ -654,6 +672,16 @@
         previousShowHome();
       } catch (_) {}
     }
+    // Re-assert Role Test selection before applying Home, so Back Home from
+    // Inspection Gateway cannot fall into Almost Ready / pending_member.
+    try {
+      const select = byId('fireSRoleTestSelect');
+      const pref = localStorage.getItem('fireS.viewAsRole.v131');
+      if (select && pref) select.value = pref;
+      if (typeof window.fireSApplyRoleAndManagementCards131 === 'function') {
+        window.fireSApplyRoleAndManagementCards131();
+      }
+    } catch (_) {}
     applyCleanHome();
   }
   cleanShowHome.__fireSCleanHome = true;

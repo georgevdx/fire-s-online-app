@@ -31113,7 +31113,14 @@ function fireSApplyLifecycleUxLabels() {
 
   function rememberActualRole131(value){
     const role = String(value || '').toLowerCase().trim();
-    if (role) confirmedActualRole131 = role;
+    if (!role) return confirmedActualRole131 || '';
+    // Never downgrade a confirmed Super Admin because a transient profile
+    // flicker (e.g. after Inspection Gateway → Back Home) would otherwise
+    // force the Almost Ready / pending_member home.
+    if (confirmedActualRole131 === 'super_admin' && role !== 'super_admin') {
+      return confirmedActualRole131;
+    }
+    confirmedActualRole131 = role;
     return role;
   }
 
