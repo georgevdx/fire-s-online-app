@@ -569,6 +569,22 @@
     else if (role === 'viewer') applyViewerHome();
     else applyGuestHome();
 
+    // Keep Personnel card wired after other Home controllers rebind clicks.
+    try {
+      if (
+        (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
+        typeof window.fireSOpenCompanyTeam === 'function'
+      ) {
+        const btn = byId('cmdCompanyBtn');
+        if (btn) {
+          btn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenCompanyTeam();
+          };
+        }
+      }
+    } catch (_) {}
+
     try {
       if (typeof window.fireSSyncGetStarted === 'function') {
         window.fireSSyncGetStarted();

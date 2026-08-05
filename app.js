@@ -30831,6 +30831,12 @@ function fireSApplyLifecycleUxLabels() {
 
   function role(){
     try {
+      if (typeof window.fireSViewAsRole131 === 'function') {
+        const viewed = String(window.fireSViewAsRole131() || '').toLowerCase().trim();
+        if (viewed) return viewed;
+      }
+    } catch (error) {}
+    try {
       if (typeof window.getCurrentUserRole === 'function') {
         return String(window.getCurrentUserRole() || '').toLowerCase().trim();
       }
@@ -30849,12 +30855,15 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function isManagement(){
-    return MANAGEMENT_ROLES.has(role());
+    const r = role();
+    return MANAGEMENT_ROLES.has(r) || r === 'company_owner' || r === 'owner';
   }
 
   function isInspector(){
+    // Only real inspector/guest workspaces — never Owner/Manager Role Test views.
+    if (isManagement()) return false;
     const r = role();
-    return INSPECTOR_ROLES.has(r) || !isManagement();
+    return INSPECTOR_ROLES.has(r) || !r;
   }
 
   function qs(sel){ return document.querySelector(sel); }
@@ -30935,6 +30944,10 @@ function fireSApplyLifecycleUxLabels() {
         if (typeof openReportsCommand === 'function') return openReportsCommand();
       },
       cmdCompanyBtn: () => {
+        // Personnel management for Owner/Manager — never treat as inspector no-op.
+        if (typeof window.fireSOpenCompanyTeam === 'function') {
+          return window.fireSOpenCompanyTeam();
+        }
         if (isInspector()) { closeCloud(); return; }
         if (typeof openCompanyCommand === 'function') return openCompanyCommand();
       },
@@ -31044,6 +31057,25 @@ function fireSApplyLifecycleUxLabels() {
 
   document.addEventListener('click', function(event){
     const blocked = event.target && event.target.closest && event.target.closest('#cmdReportsBtn, #cmdCompanyBtn, #cmdServicesBtn, #cmdDashboardBtn, #cmdFindingsBtn, #cmdOverdueBtn');
+    if (!blocked) return;
+
+    // Personnel must open for Owner/Manager (including Role Test views).
+    // A previous bug treated some Owner clicks as inspector and forced
+    // Inspector Work Area instead of the Personnel screen.
+    if (blocked.id === 'cmdCompanyBtn' || (blocked.closest && blocked.closest('#cmdCompanyBtn'))) {
+      if (!isInspector()) return;
+      try {
+        const viewed = String(
+          (typeof window.fireSViewAsRole131 === 'function' && window.fireSViewAsRole131()) ||
+            localStorage.getItem('fireS.viewAsRole.v131') ||
+            ''
+        ).toLowerCase().trim();
+        if (['company_owner', 'owner', 'manager', 'super_admin', 'management'].includes(viewed)) {
+          return;
+        }
+      } catch (_) {}
+    }
+
     if (blocked && isInspector()) {
       event.preventDefault();
       event.stopPropagation();

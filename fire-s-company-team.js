@@ -1141,8 +1141,23 @@
       openCompanyCommand = wrapped;
     } catch (_) {}
 
-    // Re-bind home card if present.
+    // Re-bind home card if present — capture phase so Personnel always opens
+    // even if older Home controllers rewrote onclick.
     const btn = byId('cmdCompanyBtn');
+    if (btn && !btn.__fireSPersonnelBound) {
+      btn.__fireSPersonnelBound = true;
+      btn.addEventListener(
+        'click',
+        function fireSPersonnelCardClick(event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          wrapped();
+        },
+        true
+      );
+    }
     if (btn) {
       btn.onclick = function (event) {
         if (event) event.preventDefault();
