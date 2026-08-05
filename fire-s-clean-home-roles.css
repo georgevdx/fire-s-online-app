@@ -72,8 +72,9 @@ body.fire-s-clean-home.fire-s-role-guest #cmdOverdueBtn {
   display: none !important;
 }
 
-body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn {
-  display: none !important;
+body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn {
+  display: block !important;
 }
 
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,

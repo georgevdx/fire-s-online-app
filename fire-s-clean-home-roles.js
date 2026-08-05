@@ -75,52 +75,79 @@
     try {
       const id = window.currentUserProfile?.id ||
         (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.id : '');
-      return !!(id && id !== 'local-user');
+      if (id && id !== 'local-user') return true;
+    } catch (_) {}
+    // Role Test / Cloud can briefly lose profile.id while still logged in.
+    try {
+      if (readActualLoginRole() === 'super_admin') return true;
+    } catch (_) {}
+    try {
+      const email =
+        window.currentUserProfile?.email ||
+        (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.email : '');
+      if (email && email.includes('@')) return true;
     } catch (_) {}
     return false;
   }
 
+  function readActualLoginRole() {
+    try {
+      if (typeof window.fireSActualUserRole131 === 'function') {
+        const remembered = normaliseRole(window.fireSActualUserRole131());
+        if (remembered) return remembered;
+      }
+    } catch (_) {}
+    try {
+      const fromWindow = normaliseRole(window.currentUserProfile?.role);
+      if (fromWindow) return fromWindow;
+    } catch (_) {}
+    try {
+      if (typeof currentUserProfile !== 'undefined') {
+        const fromGlobal = normaliseRole(currentUserProfile?.role);
+        if (fromGlobal) return fromGlobal;
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  function readViewedRole() {
+    try {
+      if (typeof window.fireSViewAsRole131 === 'function') {
+        const viewed = normaliseRole(window.fireSViewAsRole131());
+        if (viewed) return viewed;
+      }
+    } catch (_) {}
+    try {
+      const pref = normaliseRole(localStorage.getItem('fireS.viewAsRole.v131'));
+      if (pref) return pref;
+    } catch (_) {}
+    return '';
+  }
+
   function readRole() {
-    // Logged out: always guest. Never keep Role Test / Super Admin chrome.
+    // Super Admin Role Test Mode wins first — even if profile id is briefly missing.
+    // Otherwise Home falls back to Guest and hides Personnel while the Role Test
+    // panel still says “View as Company Owner”.
+    try {
+      const actual = readActualLoginRole();
+      if (actual === 'super_admin') {
+        const viewed = readViewedRole();
+        if (viewed) return viewed;
+        return 'super_admin';
+      }
+    } catch (_) {}
+
+    // Logged out: always guest.
     try {
       if (!isSignedInUser()) return 'guest';
     } catch (_) {}
 
-    // Super Admin Role Test Mode wins (View as Inspector / New Company / etc.).
-    try {
-      let actual = '';
-      try {
-        actual = normaliseRole(
-          window.currentUserProfile?.role ||
-            (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.role : '')
-        );
-      } catch (_) {}
-
-      if (actual === 'super_admin') {
-        try {
-          if (typeof window.fireSViewAsRole131 === 'function') {
-            const viewed = normaliseRole(window.fireSViewAsRole131());
-            if (viewed) return viewed;
-          }
-        } catch (_) {}
-        try {
-          const pref = normaliseRole(localStorage.getItem('fireS.viewAsRole.v131'));
-          if (pref) return pref;
-        } catch (_) {}
-      }
-    } catch (_) {}
-
     // Signed in but not linked to a company yet.
     // Owners → finish company setup. Inspectors → wait to be added.
+    // Skip this when Role Test is actively viewing another workspace.
     try {
       if (isSignedInUser() && !hasLinkedCompany()) {
-        let role = '';
-        try {
-          role = normaliseRole(
-            window.currentUserProfile?.role ||
-              (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.role : '')
-          );
-        } catch (_) {}
+        const role = readActualLoginRole();
         if (role === 'company_owner' || role === 'super_admin' || role === 'owner') {
           return 'new_company';
         }
@@ -129,10 +156,8 @@
     } catch (_) {}
 
     try {
-      if (typeof window.fireSViewAsRole131 === 'function') {
-        const viewed = normaliseRole(window.fireSViewAsRole131());
-        if (viewed && viewed !== 'new_company') return viewed;
-      }
+      const viewed = readViewedRole();
+      if (viewed && viewed !== 'new_company') return viewed;
     } catch (_) {}
 
     try {
