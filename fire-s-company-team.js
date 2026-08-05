@@ -220,6 +220,26 @@
     throw new Error('Please login first (Cloud → Login), then open Company Team.');
   }
 
+  function isRoleTestManagementView() {
+    try {
+      const actual =
+        typeof window.fireSActualUserRole131 === 'function'
+          ? text(window.fireSActualUserRole131()).toLowerCase()
+          : '';
+      if (actual !== 'super_admin') return false;
+      const viewed = text(
+        typeof window.fireSViewAsRole131 === 'function'
+          ? window.fireSViewAsRole131()
+          : localStorage.getItem('fireS.viewAsRole.v131')
+      ).toLowerCase();
+      return ['company_owner', 'owner', 'manager', 'management', 'super_admin'].includes(
+        viewed
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function companyContext() {
     const profile = window.currentUserProfile || {};
     if (isFreshCompanyMode()) {
@@ -230,11 +250,15 @@
         role: 'company_owner'
       };
     }
+    const viewed = currentRole();
     return {
       companyId: profile.companyId || null,
       companyName: profile.companyName || 'Your company',
       email: profile.email || '',
-      role: profile.role || currentRole()
+      role:
+        viewed === 'company_owner' || viewed === 'manager' || viewed === 'super_admin'
+          ? viewed
+          : profile.role || viewed
     };
   }
 
