@@ -483,6 +483,66 @@
     });
   }
 
+  async function clearOtherPersonnel() {
+    try {
+      if (!canManageTeam()) {
+        throw new Error('Only Manager or Owner can clear personnel.');
+      }
+      const ctx = companyContext();
+      if (!ctx.companyId) throw new Error('No company linked yet.');
+
+      const ok = window.confirm(
+        'Remove all other people and pending invites?\n\nOnly your login stays. Then you can add fresh employees.'
+      );
+      if (!ok) return;
+
+      setMessage('Clearing other people…');
+      const me = text(window.currentUserProfile?.id);
+      const members = await loadMembers(ctx.companyId);
+      const invites = await loadPendingInvites(ctx.companyId);
+
+      let removed = 0;
+      let cancelled = 0;
+
+      for (const invite of invites) {
+        const id = text(invite.id);
+        if (!id) continue;
+        const { error } = await waitFor(
+          supabaseClient
+            .from('company_invites')
+            .update({ status: 'cancelled' })
+            .eq('id', id),
+          3000,
+          'Cancel invite'
+        );
+        if (!error) cancelled += 1;
+      }
+
+      for (const member of members) {
+        const userId = text(member.user_id);
+        const status = text(member.status || 'active').toLowerCase();
+        if (!userId || userId === me || status === 'inactive') continue;
+        const rpc = await waitFor(
+          supabaseClient.rpc('fire_s_remove_member', {
+            p_company_id: ctx.companyId,
+            p_user_id: userId
+          }),
+          4000,
+          'Remove member'
+        );
+        if (!rpc.error) removed += 1;
+      }
+
+      setMessage(
+        `Cleared. Removed ${removed} member(s), cancelled ${cancelled} invite(s). You can add fresh employees now.`
+      );
+      await refreshTeam();
+    } catch (error) {
+      console.error('Clear other personnel failed:', error);
+      setMessage(error.message || 'Could not clear other people.', true);
+    }
+  }
+
   async function cancelInvite(inviteId) {
     try {
       if (!inviteId) return;
@@ -1236,6 +1296,12 @@
         setLaterButtonVisible(false);
         goHome();
       });
+    }
+
+    const clearOthersBtn = byId('companyTeamClearOthersBtn');
+    if (clearOthersBtn && !clearOthersBtn.__fireSCompanyBound) {
+      clearOthersBtn.__fireSCompanyBound = true;
+      clearOthersBtn.addEventListener('click', clearOtherPersonnel);
     }
 
     const createBtn = byId('companyTeamCreateBtn');
