@@ -248,14 +248,68 @@
 
   function refreshHome() {
     try {
-      if (typeof window.refreshCleanHomeRoles === 'function') window.refreshCleanHomeRoles();
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
     } catch (e) {}
+    try {
+      if (typeof window.refreshCleanHomeRoles === 'function') window.refreshCleanHomeRoles();
+    } catch (e0) {}
     try {
       if (typeof window.refreshCloudStatus === 'function') window.refreshCloudStatus();
     } catch (e2) {}
     try {
       document.dispatchEvent(new CustomEvent('fire-s:auth-changed'));
     } catch (e3) {}
+  }
+
+  function hideGetStarted() {
+    try {
+      if (root) root.style.display = 'none';
+    } catch (e) {}
+  }
+
+  function closeCloudPanels() {
+    try {
+      ['cloudDropdown', 'cloudMenu', 'cloudPanel'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    } catch (e) {}
+  }
+
+  /** After login / create password / claim invite — leave Get Started and open Home. */
+  function enterAppHome(statusMsg) {
+    if (statusMsg) setStatus(statusMsg);
+    hideGetStarted();
+    closeCloudPanels();
+    try {
+      if (typeof window.showHome === 'function') window.showHome();
+      else if (typeof showHome === 'function') showHome();
+    } catch (e) {}
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+    } catch (e2) {}
+    try {
+      if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+    } catch (e3) {}
+    // Second pass after membership profile settles.
+    setTimeout(function () {
+      hideGetStarted();
+      try {
+        if (typeof window.showHome === 'function') window.showHome();
+      } catch (e4) {}
+      try {
+        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+          window.fireSApplyCleanHomeRoles();
+        }
+      } catch (e5) {}
+      try {
+        if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+      } catch (e6) {}
+    }, 350);
   }
 
   async function doLogin() {
@@ -276,10 +330,17 @@
       if (res.error) throw res.error;
       var claimed = await claimInvitesQuiet();
       await refreshMembership();
-      if (claimed > 0) setStatus('Welcome — you are on the company team.');
-      else setStatus('Signed in.');
       mode = 'choices';
       refreshHome();
+      if (claimed > 0 || hasCompany()) {
+        enterAppHome(
+          claimed > 0
+            ? 'You are on the team. Opening Home…'
+            : 'Signed in. Opening Home…'
+        );
+        return;
+      }
+      setStatus('Signed in. Ask your owner to add your email if Home is still locked.');
       render();
     } catch (e) {
       setStatus((e && e.message) || 'Login failed.', true);
@@ -312,10 +373,17 @@
       }
       var claimed = await claimInvitesQuiet();
       await refreshMembership();
-      if (claimed > 0) setStatus('You are on the team. Opening Home…');
-      else setStatus('Login created. Ask your owner to add your email if needed.');
       mode = 'choices';
       refreshHome();
+      if (claimed > 0 || hasCompany()) {
+        enterAppHome(
+          claimed > 0
+            ? 'You are on the team. Opening Home…'
+            : 'Login created. Opening Home…'
+        );
+        return;
+      }
+      setStatus('Login created. Ask your owner to add your email if needed.');
       render();
     } catch (e) {
       setStatus((e && e.message) || 'Could not create login.', true);
