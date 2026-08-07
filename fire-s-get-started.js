@@ -52,45 +52,6 @@
     if (companyOnly) companyOnly.style.display = 'none';
   }
 
-  function showChoices() {
-    mode = 'choices';
-    hideAllPanels();
-    if (choicesEl) choicesEl.style.display = '';
-    if (titleEl) titleEl.textContent = 'How do you want to start?';
-    if (helpEl) helpEl.textContent = 'Choose one option below.';
-    setStatus('');
-  }
-
-  function showLogin() {
-    mode = 'login';
-    hideAllPanels();
-    if (loginFields) loginFields.style.display = '';
-    if (titleEl) titleEl.textContent = 'Login';
-    if (helpEl) helpEl.textContent = 'Owners and staff use the same login screen.';
-    setStatus('');
-  }
-
-  function showRegisterCompany() {
-    mode = 'register';
-    hideAllPanels();
-    if (guestFields) guestFields.style.display = '';
-    if (titleEl) titleEl.textContent = 'Register your company';
-    if (helpEl) helpEl.textContent = 'You become the Owner. You can add staff next.';
-    setStatus('');
-  }
-
-  function showCompanyOnly() {
-    mode = 'company_only';
-    hideAllPanels();
-    if (companyOnly) companyOnly.style.display = '';
-    if (titleEl) titleEl.textContent = 'Almost ready';
-    if (helpEl) {
-      helpEl.textContent =
-        'Owners register the company here. Staff wait until the owner adds their email.';
-    }
-    setStatus('');
-  }
-
   function getSb() {
     try {
       if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
@@ -128,10 +89,205 @@
     }
   }
 
+  function isFreshCompanyStart() {
+    try {
+      if (localStorage.getItem('fireS.forceNewCompanySetup') === '1') return true;
+    } catch (e) {}
+    try {
+      var homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      return String(homeRole || '').toLowerCase() === 'new_company';
+    } catch (e2) {}
+    return false;
+  }
+
+  /** Register my company only before a business is linked, or when starting fresh. */
+  function canRegisterNewCompany() {
+    if (isFreshCompanyStart()) return true;
+    if (hasCompany()) return false;
+    try {
+      var homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+      if (
+        homeRole === 'owner' ||
+        homeRole === 'company_owner' ||
+        homeRole === 'manager' ||
+        homeRole === 'inspector' ||
+        homeRole === 'super_admin' ||
+        homeRole === 'viewer' ||
+        homeRole === 'pending_member'
+      ) {
+        return false;
+      }
+    } catch (e) {}
+    return true;
+  }
+
+  function syncRegisterCompanyVisibility() {
+    var allow = canRegisterNewCompany();
+    var companyBtn = qs('fireSChoiceCompany');
+    if (companyBtn) {
+      companyBtn.style.display = allow ? '' : 'none';
+      companyBtn.hidden = !allow;
+      companyBtn.setAttribute('aria-hidden', allow ? 'false' : 'true');
+    }
+    var signupBtn = qs('signupBtn');
+    if (signupBtn) {
+      signupBtn.style.display = allow ? '' : 'none';
+      signupBtn.hidden = !allow;
+    }
+    var signupCompanyName = qs('signupCompanyName');
+    if (signupCompanyName) {
+      signupCompanyName.style.display = allow ? '' : 'none';
+      signupCompanyName.hidden = !allow;
+    }
+    if (!allow && (mode === 'register' || mode === 'company_only')) {
+      mode = 'choices';
+    }
+  }
+
+  function showChoices() {
+    mode = 'choices';
+    hideAllPanels();
+    syncRegisterCompanyVisibility();
+    if (choicesEl) choicesEl.style.display = '';
+    if (titleEl) {
+      titleEl.textContent = canRegisterNewCompany()
+        ? 'How do you want to start?'
+        : 'Login';
+    }
+    if (helpEl) {
+      helpEl.textContent = canRegisterNewCompany()
+        ? 'Choose one option below.'
+        : 'Your company is already registered. Login to continue.';
+    }
+    setStatus('');
+  }
+
+  function showLogin() {
+    mode = 'login';
+    hideAllPanels();
+    syncRegisterCompanyVisibility();
+    if (loginFields) loginFields.style.display = '';
+    if (titleEl) titleEl.textContent = 'Login';
+    if (helpEl) helpEl.textContent = 'Owners and staff use the same login screen.';
+    setStatus('');
+  }
+
+  function showRegisterCompany() {
+    if (!canRegisterNewCompany()) {
+      setStatus('Your company is already registered. Use Login.', true);
+      showLogin();
+      return;
+    }
+    mode = 'register';
+    hideAllPanels();
+    if (guestFields) guestFields.style.display = '';
+    if (titleEl) titleEl.textContent = 'Register your company';
+    if (helpEl) helpEl.textContent = 'You become the Owner. Next you manage personnel.';
+    setStatus('');
+  }
+
+  function showCompanyOnly() {
+    if (!canRegisterNewCompany()) {
+      hideGetStarted();
+      try {
+        if (typeof window.showHome === 'function') window.showHome();
+      } catch (e) {}
+      return;
+    }
+    mode = 'company_only';
+    hideAllPanels();
+    if (companyOnly) companyOnly.style.display = '';
+    var homeRole = '';
+    try {
+      homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+    } catch (e) {}
+    if (homeRole === 'new_company') {
+      if (titleEl) titleEl.textContent = 'Register your company';
+      if (helpEl) {
+        helpEl.textContent =
+          'You become the Owner. Next you manage personnel (add, roles, remove).';
+      }
+    } else {
+      if (titleEl) titleEl.textContent = 'Almost ready';
+      if (helpEl) {
+        helpEl.textContent =
+          'Owners register the company here. Staff wait until the owner adds their email.';
+      }
+    }
+    setStatus('');
+  }
+
   function shouldShow() {
+    // Clean Home owns role pages — only show Get Started for guest / new company.
+    try {
+      var homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+      if (homeRole === 'pending_member') return false;
+      if (
+        homeRole === 'inspector' ||
+        homeRole === 'manager' ||
+        homeRole === 'owner' ||
+        homeRole === 'company_owner' ||
+        homeRole === 'super_admin' ||
+        homeRole === 'viewer'
+      ) {
+        return false;
+      }
+      if (homeRole === 'guest' || homeRole === 'new_company') return true;
+    } catch (e) {}
     var user = getSessionUser();
     if (!user) return true;
     return !hasCompany();
+  }
+
+  function render() {
+    if (!ensureEls()) return;
+    syncRegisterCompanyVisibility();
+    if (!shouldShow()) {
+      root.style.display = 'none';
+      return;
+    }
+    root.style.display = '';
+    var homeRole = '';
+    try {
+      homeRole =
+        (typeof window.resolveFireSHomeRole === 'function' && window.resolveFireSHomeRole()) ||
+        (document.body && document.body.dataset && document.body.dataset.fireSCleanHomeRole) ||
+        '';
+      homeRole = String(homeRole || '').toLowerCase();
+    } catch (e) {}
+    var user = getSessionUser();
+    if (
+      canRegisterNewCompany() &&
+      (homeRole === 'new_company' || (user && !hasCompany() && homeRole !== 'pending_member'))
+    ) {
+      showCompanyOnly();
+      return;
+    }
+    if (mode === 'register' && !canRegisterNewCompany()) {
+      mode = 'login';
+    }
+    if (mode === 'company_only' && !canRegisterNewCompany()) {
+      mode = 'login';
+    }
+    if (mode === 'login') showLogin();
+    else if (mode === 'register') showRegisterCompany();
+    else if (mode === 'company_only') showCompanyOnly();
+    else showChoices();
   }
 
   async function claimInvitesQuiet() {
@@ -186,8 +342,13 @@
 
   function refreshHome() {
     try {
-      if (typeof window.refreshCleanHomeRoles === 'function') window.refreshCleanHomeRoles();
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
     } catch (e) {}
+    try {
+      if (typeof window.refreshCleanHomeRoles === 'function') window.refreshCleanHomeRoles();
+    } catch (e0) {}
     try {
       if (typeof window.refreshCloudStatus === 'function') window.refreshCloudStatus();
     } catch (e2) {}
@@ -196,22 +357,53 @@
     } catch (e3) {}
   }
 
-  function render() {
-    if (!ensureEls()) return;
-    if (!shouldShow()) {
-      root.style.display = 'none';
-      return;
-    }
-    root.style.display = '';
-    var user = getSessionUser();
-    if (user && !hasCompany()) {
-      showCompanyOnly();
-      return;
-    }
-    if (mode === 'login') showLogin();
-    else if (mode === 'register') showRegisterCompany();
-    else if (mode === 'company_only') showCompanyOnly();
-    else showChoices();
+  function hideGetStarted() {
+    try {
+      if (root) root.style.display = 'none';
+    } catch (e) {}
+  }
+
+  function closeCloudPanels() {
+    try {
+      ['cloudDropdown', 'cloudMenu', 'cloudPanel'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    } catch (e) {}
+  }
+
+  /** After login / create password / claim invite — leave Get Started and open Home. */
+  function enterAppHome(statusMsg) {
+    if (statusMsg) setStatus(statusMsg);
+    hideGetStarted();
+    closeCloudPanels();
+    try {
+      if (typeof window.showHome === 'function') window.showHome();
+      else if (typeof showHome === 'function') showHome();
+    } catch (e) {}
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+    } catch (e2) {}
+    try {
+      if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+    } catch (e3) {}
+    // Second pass after membership profile settles.
+    setTimeout(function () {
+      hideGetStarted();
+      try {
+        if (typeof window.showHome === 'function') window.showHome();
+      } catch (e4) {}
+      try {
+        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+          window.fireSApplyCleanHomeRoles();
+        }
+      } catch (e5) {}
+      try {
+        if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+      } catch (e6) {}
+    }, 350);
   }
 
   async function doLogin() {
@@ -232,10 +424,17 @@
       if (res.error) throw res.error;
       var claimed = await claimInvitesQuiet();
       await refreshMembership();
-      if (claimed > 0) setStatus('Welcome — you are on the company team.');
-      else setStatus('Signed in.');
       mode = 'choices';
       refreshHome();
+      if (claimed > 0 || hasCompany()) {
+        enterAppHome(
+          claimed > 0
+            ? 'You are on the team. Opening Home…'
+            : 'Signed in. Opening Home…'
+        );
+        return;
+      }
+      setStatus('Signed in. Ask your owner to add your email if Home is still locked.');
       render();
     } catch (e) {
       setStatus((e && e.message) || 'Login failed.', true);
@@ -268,10 +467,17 @@
       }
       var claimed = await claimInvitesQuiet();
       await refreshMembership();
-      if (claimed > 0) setStatus('You are on the team. Opening Home…');
-      else setStatus('Login created. Ask your owner to add your email if needed.');
       mode = 'choices';
       refreshHome();
+      if (claimed > 0 || hasCompany()) {
+        enterAppHome(
+          claimed > 0
+            ? 'You are on the team. Opening Home…'
+            : 'Login created. Opening Home…'
+        );
+        return;
+      }
+      setStatus('Login created. Ask your owner to add your email if needed.');
       render();
     } catch (e) {
       setStatus((e && e.message) || 'Could not create login.', true);
@@ -311,7 +517,7 @@
       var rpc = await sb.rpc('fire_s_create_company', { p_name: company });
       if (rpc.error) throw rpc.error;
       await refreshMembership();
-      setStatus('Company ready — add your team next.');
+      setStatus('Company ready — manage personnel next.');
       mode = 'choices';
       refreshHome();
       render();
@@ -337,7 +543,7 @@
       var rpc = await sb.rpc('fire_s_create_company', { p_name: company });
       if (rpc.error) throw rpc.error;
       await refreshMembership();
-      setStatus('Company ready — add your team next.');
+      setStatus('Company ready — manage personnel next.');
       mode = 'choices';
       refreshHome();
       render();

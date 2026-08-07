@@ -18,18 +18,20 @@ body.fire-s-clean-home.fire-s-role-new-company #complianceHeroCard,
 body.fire-s-clean-home.fire-s-role-new-company #fireSExecutiveDashboard1115,
 body.fire-s-clean-home.fire-s-role-new-company .fire-s-exec-dashboard-v1115,
 body.fire-s-clean-home.fire-s-role-new-company .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-pending-member #complianceHeroCard,
+body.fire-s-clean-home.fire-s-role-pending-member #fireSExecutiveDashboard1115,
+body.fire-s-clean-home.fire-s-role-pending-member .fire-s-exec-dashboard-v1115,
+body.fire-s-clean-home.fire-s-role-pending-member .fire-s-exec-mini-dashboard,
 body.fire-s-clean-home.fire-s-role-inspector #fireSExecutiveDashboard1115,
 body.fire-s-clean-home.fire-s-role-inspector .fire-s-exec-dashboard-v1115 {
   display: none !important;
 }
 
 body.fire-s-clean-home.fire-s-role-new-company #inspectorV4Shell,
-body.fire-s-clean-home.fire-s-role-guest #inspectorV4Shell {
+body.fire-s-clean-home.fire-s-role-guest #inspectorV4Shell,
+body.fire-s-clean-home.fire-s-role-pending-member #inspectorV4Shell {
   display: none !important;
-}
-
-body.fire-s-clean-home.fire-s-role-new-company #cmdCompanyBtn {
-  display: block !important;
 }
 
 body.fire-s-clean-home.fire-s-role-inspector #inspectorV4Shell {
@@ -39,6 +41,7 @@ body.fire-s-clean-home.fire-s-role-inspector #inspectorV4Shell {
 body.fire-s-clean-home.fire-s-role-owner #inspectorV4Shell,
 body.fire-s-clean-home.fire-s-role-manager #inspectorV4Shell,
 body.fire-s-clean-home.fire-s-role-guest #inspectorV4Shell,
+body.fire-s-clean-home.fire-s-role-pending-member #inspectorV4Shell,
 body.fire-s-clean-home:not(.fire-s-role-inspector) #inspectorV4Shell {
   display: none !important;
 }
@@ -57,6 +60,20 @@ body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stat
   display: grid !important;
 }
 
+/* Company name is the Home hero signal for Owner / Manager */
+body.fire-s-clean-home.fire-s-role-owner #homeSection .home-hero.has-company-name h2,
+body.fire-s-clean-home.fire-s-role-manager #homeSection .home-hero.has-company-name h2 {
+  font-size: clamp(1.65rem, 4.5vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #mainCommandAccessStatus,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandAccessStatus {
+  font-weight: 700;
+}
+
 body.fire-s-clean-home.fire-s-role-inspector #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdServicesBtn,
@@ -68,12 +85,29 @@ body.fire-s-clean-home.fire-s-role-guest #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdServicesBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdDashboardBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdFindingsBtn,
-body.fire-s-clean-home.fire-s-role-guest #cmdOverdueBtn {
+body.fire-s-clean-home.fire-s-role-guest #cmdOverdueBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdInspectionsBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdScheduleBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdReportsBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdServicesBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdDashboardBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdFindingsBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdOverdueBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdInspectionsBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdScheduleBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdReportsBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdServicesBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdDashboardBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdFindingsBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdOverdueBtn {
   display: none !important;
 }
 
-body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn {
-  display: none !important;
+body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn {
+  display: block !important;
 }
 
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,

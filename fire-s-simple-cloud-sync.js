@@ -171,9 +171,37 @@
       exportBtn.style.display = exportOk ? 'block' : 'none';
     }
 
-    // Inspectors should not focus on Sign Up from the field menu.
+    // Create my company only before a business exists, or Role Test “New Company”.
     if (signupBtn) {
-      signupBtn.style.display = isInspectorLike(role) && !isLoggedIn ? 'none' : '';
+      var allowRegister = true;
+      try {
+        if (typeof window.currentUserProfile?.companyId === 'string' && window.currentUserProfile.companyId) {
+          allowRegister = false;
+        }
+      } catch (_) {}
+      try {
+        if (localStorage.getItem('fireS.forceNewCompanySetup') === '1') allowRegister = true;
+      } catch (_) {}
+      try {
+        const homeRole = String(document.body?.dataset?.fireSCleanHomeRole || '').toLowerCase();
+        if (homeRole === 'new_company') allowRegister = true;
+        if (
+          ['owner', 'company_owner', 'manager', 'inspector', 'super_admin', 'viewer', 'pending_member'].includes(
+            homeRole
+          )
+        ) {
+          allowRegister = false;
+        }
+      } catch (_) {}
+      if (isInspectorLike(role) && !isLoggedIn) allowRegister = false;
+      signupBtn.style.display = allowRegister ? '' : 'none';
+      signupBtn.hidden = !allowRegister;
+    }
+    const signupCompanyName = byId('signupCompanyName');
+    if (signupCompanyName) {
+      const showCompanyField = signupBtn && signupBtn.style.display !== 'none' && !signupBtn.hidden;
+      signupCompanyName.style.display = showCompanyField ? '' : 'none';
+      signupCompanyName.hidden = !showCompanyField;
     }
 
     if (!isLoggedIn) {

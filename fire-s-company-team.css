@@ -1,4 +1,4 @@
-/* Fire-S Company Team */
+/* Fire-S Company Team / Personnel */
 
 .company-team-section {
   max-width: 920px;
@@ -18,6 +18,19 @@
 
 .company-team-intro h3 {
   margin: 6px 0 8px;
+  font-size: clamp(1.55rem, 4vw, 2.1rem);
+  line-height: 1.15;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.company-team-intro.has-company-name h3 {
+  font-size: clamp(1.85rem, 5vw, 2.55rem);
+  letter-spacing: -0.02em;
+}
+
+.company-team-intro.is-setup h3 {
+  font-size: 1.35rem;
 }
 
 .company-team-intro p {
@@ -76,9 +89,16 @@
   background: #fafafa;
 }
 
-  .company-team-setup-row {
-    grid-template-columns: 1fr auto;
-  }
+.company-team-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.7fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.company-team-setup-row {
+  grid-template-columns: 1fr auto;
+}
 
 .company-team-add-row input,
 .company-team-add-row select,
@@ -100,7 +120,7 @@
 
 .company-team-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
@@ -112,6 +132,7 @@
 .company-team-card-main {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .company-team-card-main strong {
@@ -121,19 +142,34 @@
 .company-team-card-main span {
   color: #6b7280;
   font-size: 0.88rem;
+  word-break: break-word;
 }
 
 .company-team-card-actions {
   display: grid;
-  grid-template-columns: 140px auto;
+  grid-template-columns: minmax(120px, 140px) auto auto;
   gap: 8px;
   align-items: center;
+}
+
+.company-team-card-actions.is-self {
+  grid-template-columns: minmax(120px, 140px) auto;
+}
+
+.company-team-card-actions.is-invite {
+  grid-template-columns: auto;
 }
 
 .company-team-card-actions select,
 .company-team-card-actions button {
   width: 100%;
   margin: 0;
+  white-space: nowrap;
+}
+
+.company-team-card-actions [data-remove-member] {
+  color: #9f1239;
+  border-color: #fecdd3;
 }
 
 .company-team-empty {
@@ -147,7 +183,8 @@
 @media (max-width: 720px) {
   .company-team-add-row,
   .company-team-card,
-  .company-team-card-actions {
+  .company-team-card-actions,
+  .company-team-card-actions.is-self {
     grid-template-columns: 1fr;
   }
 }
