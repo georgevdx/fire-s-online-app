@@ -432,9 +432,7 @@
     setHero(
       'Fire-S · Manager',
       companyName || 'OPERATE',
-      companyName
-        ? 'Track actions, overdue work and inspection progress.'
-        : 'Track actions, overdue work and inspection progress.'
+      'Track actions, overdue work and inspection progress.'
     );
     const homeHero = document.querySelector('#homeSection .home-hero');
     if (homeHero) homeHero.classList.toggle('has-company-name', !!companyName);
@@ -492,9 +490,7 @@
     setHero(
       isControl ? 'Fire-S · Control' : 'Fire-S · Owner',
       companyName || 'OVERVIEW',
-      companyName
-        ? 'Company compliance, trends and strategic control.'
-        : 'Company compliance, trends and strategic control.'
+      'Company compliance, trends and strategic control.'
     );
     const homeHero = document.querySelector('#homeSection .home-hero');
     if (homeHero) homeHero.classList.toggle('has-company-name', !!companyName);
