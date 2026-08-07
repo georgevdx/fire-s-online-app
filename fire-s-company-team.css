@@ -24,6 +24,11 @@
   word-break: break-word;
 }
 
+.company-team-intro.has-company-name h3 {
+  font-size: clamp(1.85rem, 5vw, 2.55rem);
+  letter-spacing: -0.02em;
+}
+
 .company-team-intro.is-setup h3 {
   font-size: 1.35rem;
 }

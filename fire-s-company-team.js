@@ -16,6 +16,7 @@
   ];
   const FRESH_MODE_KEY = 'fireS.forceNewCompanySetup';
   const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
+  const COMPANY_CACHE_KEY = 'fireS.cachedCompany';
 
   function byId(id) {
     return document.getElementById(id);
@@ -23,6 +24,54 @@
 
   function text(value) {
     return String(value || '').trim();
+  }
+
+  function isGenericCompanyName(name) {
+    const n = text(name).toLowerCase();
+    return (
+      !n ||
+      n === 'your company' ||
+      n === 'your new company' ||
+      n === 'local workspace' ||
+      n === 'local / personal workspace'
+    );
+  }
+
+  function rememberCompanyName(companyId, companyName) {
+    const id = text(companyId);
+    const name = text(companyName);
+    if (!id || isGenericCompanyName(name)) return;
+    try {
+      localStorage.setItem(
+        COMPANY_CACHE_KEY,
+        JSON.stringify({ id, name })
+      );
+    } catch (_) {}
+    try {
+      if (window.currentUserProfile) {
+        window.currentUserProfile.companyId = id;
+        window.currentUserProfile.companyName = name;
+      }
+      if (window.currentCompanyAccess) {
+        window.currentCompanyAccess.companyName = name;
+      }
+    } catch (_) {}
+  }
+
+  function recalledCompanyName(companyId) {
+    try {
+      const raw = localStorage.getItem(COMPANY_CACHE_KEY);
+      const cached = raw ? JSON.parse(raw) : null;
+      const name = text(cached?.name);
+      if (
+        name &&
+        !isGenericCompanyName(name) &&
+        (!companyId || text(cached?.id) === text(companyId))
+      ) {
+        return name;
+      }
+    } catch (_) {}
+    return '';
   }
 
   function esc(value) {
@@ -251,9 +300,17 @@
       };
     }
     const viewed = currentRole();
+    const companyId = profile.companyId || null;
+    const fromProfile = text(profile.companyName);
+    const fromCache = recalledCompanyName(companyId);
+    const companyName =
+      (!isGenericCompanyName(fromProfile) ? fromProfile : '') ||
+      fromCache ||
+      fromProfile ||
+      'Your company';
     return {
-      companyId: profile.companyId || null,
-      companyName: profile.companyName || 'Your company',
+      companyId,
+      companyName,
       email: profile.email || '',
       role:
         viewed === 'company_owner' || viewed === 'manager' || viewed === 'super_admin'
@@ -263,8 +320,31 @@
   }
 
   async function fetchCompanyName(companyId) {
-    if (!companyId) return '';
+    if (!companyId) return recalledCompanyName(companyId);
+    const cached = recalledCompanyName(companyId);
     try {
+      // Prefer SECURITY DEFINER RPC when available (avoids companies RLS misses).
+      try {
+        const rpc = await waitFor(
+          supabaseClient.rpc('fire_s_my_company'),
+          2500,
+          'My company'
+        );
+        if (!rpc?.error && rpc?.data) {
+          const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+          const name = text(
+            row?.out_company_name || row?.company_name || row?.name
+          );
+          const id = text(
+            row?.out_company_id || row?.company_id || row?.id || companyId
+          );
+          if (name && (!companyId || id === text(companyId) || !id)) {
+            rememberCompanyName(companyId || id, name);
+            return name;
+          }
+        }
+      } catch (_) {}
+
       const result = await waitFor(
         supabaseClient
           .from('companies')
@@ -274,11 +354,39 @@
         2500,
         'Company name'
       );
-      if (result?.error) return '';
-      return text(result?.data?.name);
-    } catch (_) {
-      return '';
-    }
+      if (!result?.error) {
+        const name = text(result?.data?.name);
+        if (name) {
+          rememberCompanyName(companyId, name);
+          return name;
+        }
+      }
+
+      // Fallback: membership embed
+      const embed = await waitFor(
+        supabaseClient
+          .from('company_members')
+          .select('company_id, companies(name)')
+          .eq('company_id', companyId)
+          .eq('user_id', window.currentUserProfile?.id || '')
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle(),
+        2500,
+        'Company embed'
+      );
+      const embedName = text(
+        embed?.data?.companies?.name ||
+          (Array.isArray(embed?.data?.companies)
+            ? embed.data.companies[0]?.name
+            : '')
+      );
+      if (embedName) {
+        rememberCompanyName(companyId, embedName);
+        return embedName;
+      }
+    } catch (_) {}
+    return cached;
   }
 
   async function discoverCompanyForUser(userId) {
@@ -388,14 +496,27 @@
     const title = byId('companyTeamTitle');
     const subtitle = byId('companyTeamSubtitle');
     const isSetup = mode === 'setup';
+    const displayName = text(companyName);
 
-    if (intro) intro.classList.toggle('is-setup', isSetup);
+    if (intro) {
+      intro.classList.toggle('is-setup', isSetup);
+      intro.classList.toggle(
+        'has-company-name',
+        !isSetup && !isGenericCompanyName(displayName)
+      );
+    }
     if (heading) heading.textContent = isSetup ? 'Company' : 'Personnel';
-    if (kicker) kicker.textContent = isSetup ? 'Get started' : 'Company';
+    if (kicker) {
+      kicker.textContent = isSetup
+        ? 'Get started'
+        : isGenericCompanyName(displayName)
+          ? 'Company'
+          : 'Your company';
+    }
     if (title) {
       title.textContent = isSetup
         ? 'Name your company'
-        : companyName || 'Your company';
+        : displayName || 'Your company';
     }
     if (subtitle) {
       subtitle.textContent = isSetup
@@ -414,7 +535,20 @@
       return;
     }
     const active = members.filter(m => text(m.status).toLowerCase() !== 'inactive').length;
-    meta.textContent = `${active} person(s) · Your role: ${roleLabel(ctx.role)}`;
+    const nameBit = !isGenericCompanyName(ctx.companyName)
+      ? `${ctx.companyName} · `
+      : '';
+    meta.textContent = `${nameBit}${active} person(s) · Your role: ${roleLabel(ctx.role)}`;
+  }
+
+  function refreshPersonnelChrome() {
+    try {
+      const section = byId('companyTeamSection');
+      if (!section || section.style.display === 'none') return;
+      const ctx = companyContext();
+      const hasCompany = !!text(ctx.companyId) && !isFreshCompanyMode();
+      setPersonnelChrome(hasCompany ? 'manage' : 'setup', ctx.companyName);
+    } catch (_) {}
   }
 
   function roleOptionsHtml(selected, disabledOwner) {
@@ -947,6 +1081,12 @@
         companyId: company.id,
         companyName: company.name
       };
+      rememberCompanyName(company.id, company.name || companyName);
+      try {
+        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+          window.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
 
       if (nameInput) nameInput.value = company.name || companyName;
       updateFreshBanner();
@@ -1128,15 +1268,19 @@
 
       setMessage('Loading personnel…');
       // Company name is the page hero — resolve it if still generic.
-      if (!text(ctx.companyName) || ctx.companyName === 'Your company') {
+      if (isGenericCompanyName(ctx.companyName)) {
         const realName = await fetchCompanyName(ctx.companyId);
         if (realName) {
-          window.currentUserProfile = {
-            ...(window.currentUserProfile || {}),
-            companyName: realName
-          };
+          rememberCompanyName(ctx.companyId, realName);
           ctx = companyContext();
+          try {
+            if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+              window.fireSApplyCleanHomeRoles();
+            }
+          } catch (_) {}
         }
+      } else {
+        rememberCompanyName(ctx.companyId, ctx.companyName);
       }
       const members = await loadMembers(ctx.companyId);
       const invites = await loadPendingInvites(ctx.companyId);
@@ -1342,6 +1486,8 @@
   window.fireSOpenCompanyTeam = openCompanyTeam;
   window.openCompanyTeamOverlay = openCompanyTeam;
   window.fireSRefreshCompanyTeam = refreshTeam;
+  window.fireSRefreshCompanyTeamChrome = refreshPersonnelChrome;
+  window.fireSRememberCompanyName = rememberCompanyName;
   window.fireSBeginFreshCompany = beginFreshCompany;
 
   if (document.readyState === 'loading') {

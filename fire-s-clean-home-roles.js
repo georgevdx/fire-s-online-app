@@ -306,6 +306,41 @@
     setText('#homeSection .home-hero p', subtitle);
   }
 
+  function isGenericCompanyName(name) {
+    const n = String(name || '').trim().toLowerCase();
+    return (
+      !n ||
+      n === 'your company' ||
+      n === 'your new company' ||
+      n === 'local workspace' ||
+      n === 'local / personal workspace'
+    );
+  }
+
+  function getCompanyDisplayName() {
+    try {
+      const profile = window.currentUserProfile || {};
+      const fromProfile = String(profile.companyName || '').trim();
+      if (!isGenericCompanyName(fromProfile)) return fromProfile;
+      const fromAccess = String(window.currentCompanyAccess?.companyName || '').trim();
+      if (!isGenericCompanyName(fromAccess)) return fromAccess;
+      const companyId = String(profile.companyId || '').trim();
+      try {
+        const raw = localStorage.getItem('fireS.cachedCompany');
+        const cached = raw ? JSON.parse(raw) : null;
+        const cachedName = String(cached?.name || '').trim();
+        if (
+          cachedName &&
+          !isGenericCompanyName(cachedName) &&
+          (!companyId || String(cached?.id || '') === companyId)
+        ) {
+          return cachedName;
+        }
+      } catch (_) {}
+    } catch (_) {}
+    return '';
+  }
+
   function hideManagementOverlays() {
     [
       'complianceHeroCard',
@@ -393,14 +428,29 @@
   function applyManagerHome() {
     showHomeHero();
     setBodyRole('fire-s-role-manager', 'manager');
-    setHero('Fire-S · Manager', 'OPERATE', 'Track actions, overdue work and inspection progress.');
+    const companyName = getCompanyDisplayName();
+    setHero(
+      'Fire-S · Manager',
+      companyName || 'OPERATE',
+      companyName
+        ? 'Track actions, overdue work and inspection progress.'
+        : 'Track actions, overdue work and inspection progress.'
+    );
+    const homeHero = document.querySelector('#homeSection .home-hero');
+    if (homeHero) homeHero.classList.toggle('has-company-name', !!companyName);
     setText('#mainCommandCentre .main-command-kicker', 'Operations Centre');
-    setText('#mainCommandCentre .main-command-top h3', 'Today’s Operations');
+    setText(
+      '#mainCommandCentre .main-command-top h3',
+      companyName || 'Today’s Operations'
+    );
     setText(
       '#mainCommandSubtitle',
       'Operational view: actions required, overdue inspections and field activity.'
     );
-    setText('#mainCommandAccessStatus', 'Manager access');
+    setText(
+      '#mainCommandAccessStatus',
+      companyName ? `${companyName} · Manager` : 'Manager access'
+    );
     setStatsVisible(true);
     setBetaPanelsVisible(false);
 
@@ -437,20 +487,33 @@
     showHomeHero();
     setBodyRole('fire-s-role-owner', role === 'super_admin' ? 'super_admin' : 'owner');
     document.body.classList.add('fire-s-role-management');
+    const companyName = getCompanyDisplayName();
+    const isControl = role === 'super_admin';
     setHero(
-      role === 'super_admin' ? 'Fire-S · Control' : 'Fire-S · Owner',
-      'OVERVIEW',
-      'Company compliance, trends and strategic control.'
+      isControl ? 'Fire-S · Control' : 'Fire-S · Owner',
+      companyName || 'OVERVIEW',
+      companyName
+        ? 'Company compliance, trends and strategic control.'
+        : 'Company compliance, trends and strategic control.'
     );
+    const homeHero = document.querySelector('#homeSection .home-hero');
+    if (homeHero) homeHero.classList.toggle('has-company-name', !!companyName);
     setText('#mainCommandCentre .main-command-kicker', 'Executive Command Centre');
-    setText('#mainCommandCentre .main-command-top h3', 'Company Overview');
+    setText(
+      '#mainCommandCentre .main-command-top h3',
+      companyName || 'Company Overview'
+    );
     setText(
       '#mainCommandSubtitle',
       'Strategic view: compliance posture, overdue risk and company activity.'
     );
     setText(
       '#mainCommandAccessStatus',
-      role === 'super_admin' ? 'Fire-S Control access' : 'Owner access'
+      companyName
+        ? `${companyName} · ${isControl ? 'Control' : 'Owner'}`
+        : isControl
+          ? 'Fire-S Control access'
+          : 'Owner access'
     );
     setStatsVisible(true);
     setBetaPanelsVisible(role === 'super_admin');
@@ -650,6 +713,8 @@
     setTimeout(applyCleanHome, 600);
     setTimeout(bindRoleTestRefresh, 50);
   };
+  window.refreshCleanHomeRoles = window.fireSApplyCleanHomeRoles;
+  window.fireSGetCompanyDisplayName = getCompanyDisplayName;
 
   // Run after existing home controller, then refine by role.
   const previousRender =
