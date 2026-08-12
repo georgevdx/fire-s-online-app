@@ -79,16 +79,29 @@
     try {
       const id = window.currentUserProfile?.id ||
         (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.id : '');
-      if (id && id !== 'local-user') return true;
+      if (!id || id === 'local-user') return false;
     } catch (_) {}
     try {
-      if (stickySuperAdmin || readActualLoginRole() === 'super_admin') return true;
-    } catch (_) {}
-    try {
-      const email =
+      const email = String(
         window.currentUserProfile?.email ||
-        (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.email : '');
-      if (email && email.includes('@')) return true;
+          (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.email : '') ||
+          ''
+      )
+        .trim()
+        .toLowerCase();
+      if (!email || email === 'local@fire-s.app') return false;
+    } catch (_) {}
+    try {
+      if (stickySuperAdmin || readActualLoginRole() === 'super_admin') {
+        // Only treat as signed-in super admin when we have a real profile id.
+        const id = window.currentUserProfile?.id || '';
+        if (id && id !== 'local-user') return true;
+      }
+    } catch (_) {}
+    try {
+      const id = window.currentUserProfile?.id ||
+        (typeof currentUserProfile !== 'undefined' ? currentUserProfile?.id : '');
+      if (id && id !== 'local-user') return true;
     } catch (_) {}
     return false;
   }
@@ -546,39 +559,18 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest', 'guest');
-    setHero('Fire-S', 'WELCOME', 'Login, join a company, or start a new one.');
-    setText('#mainCommandCentre .main-command-kicker', 'Welcome');
-    setText('#mainCommandCentre .main-command-top h3', 'Fire-S');
+    setHero('Fire-S', 'ACCESS', 'Login, create a password, or register your company.');
+    setText('#mainCommandCentre .main-command-kicker', 'Access');
+    setText('#mainCommandCentre .main-command-top h3', 'Start here');
     setText(
       '#mainCommandSubtitle',
-      'Choose Login, Join a company, or Start a new company below.'
+      'Use the Access panel below. Cloud is only for sync after you are signed in.'
     );
-    setText('#mainCommandAccessStatus', 'Local / guest');
+    setText('#mainCommandAccessStatus', 'Not signed in');
     setStatsVisible(false);
     setBetaPanelsVisible(false);
     hideManagementOverlays();
-
-    show('cmdInspectionsBtn');
-    show('cmdScheduleBtn');
-    [
-      'cmdReportsBtn',
-      'cmdCompanyBtn',
-      'cmdServicesBtn',
-      'cmdDashboardBtn',
-      'cmdFindingsBtn',
-      'cmdOverdueBtn'
-    ].forEach(hide);
-
-    cardText(
-      'cmdInspectionsBtn',
-      'Inspection Gateway',
-      'Open or continue local inspection work.'
-    );
-    cardText(
-      'cmdScheduleBtn',
-      'Schedule / New Site',
-      'Start a new inspection at a new site.'
-    );
+    ALL_CMD_IDS.forEach(hide);
   }
 
   function applyViewerHome() {
@@ -613,7 +605,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Ask your owner to add you');
     setText(
       '#mainCommandSubtitle',
-      'Tell them your email. They add you in Company → Team as Inspector or Manager.'
+      'They add your email in Personnel. Then tap Check again in Access.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);
@@ -625,20 +617,18 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'START', 'Create your company, then appoint your team.');
+    setHero('Fire-S · New Company', 'REGISTER', 'Save your company name, then manage personnel.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
-    setText('#mainCommandCentre .main-command-top h3', 'Start your company');
+    setText('#mainCommandCentre .main-command-top h3', 'Register your company');
     setText(
       '#mainCommandSubtitle',
-      'Create the company once, then add Inspectors and Managers.'
+      'Use Access below to save the company name once.'
     );
     setText('#mainCommandAccessStatus', 'New company setup');
     setStatsVisible(false);
     setBetaPanelsVisible(false);
     hideManagementOverlays();
-
     ALL_CMD_IDS.forEach(hide);
-    // Get Started form is the main action — keep the old Company card hidden.
   }
 
   function applyCleanHome() {

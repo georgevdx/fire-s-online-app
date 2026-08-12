@@ -171,47 +171,35 @@
       exportBtn.style.display = exportOk ? 'block' : 'none';
     }
 
-    // Create my company only before a business exists, or Role Test “New Company”.
+    // Auth lives on Home Access — never re-show Cloud Login/Register fields.
+    const legacyAuth = byId('fireSLegacyCloudAuth');
+    if (legacyAuth) {
+      legacyAuth.style.display = 'none';
+      legacyAuth.setAttribute('aria-hidden', 'true');
+    }
+    const openAccessBtn = byId('cloudOpenAccessBtn');
+    if (openAccessBtn) {
+      openAccessBtn.style.display = isLoggedIn ? 'none' : '';
+      openAccessBtn.hidden = !!isLoggedIn;
+    }
     if (signupBtn) {
-      var allowRegister = true;
-      try {
-        if (typeof window.currentUserProfile?.companyId === 'string' && window.currentUserProfile.companyId) {
-          allowRegister = false;
-        }
-      } catch (_) {}
-      try {
-        if (localStorage.getItem('fireS.forceNewCompanySetup') === '1') allowRegister = true;
-      } catch (_) {}
-      try {
-        const homeRole = String(document.body?.dataset?.fireSCleanHomeRole || '').toLowerCase();
-        if (homeRole === 'new_company') allowRegister = true;
-        if (
-          ['owner', 'company_owner', 'manager', 'inspector', 'super_admin', 'viewer', 'pending_member'].includes(
-            homeRole
-          )
-        ) {
-          allowRegister = false;
-        }
-      } catch (_) {}
-      if (isInspectorLike(role) && !isLoggedIn) allowRegister = false;
-      signupBtn.style.display = allowRegister ? '' : 'none';
-      signupBtn.hidden = !allowRegister;
+      signupBtn.style.display = 'none';
+      signupBtn.hidden = true;
     }
     const signupCompanyName = byId('signupCompanyName');
     if (signupCompanyName) {
-      const showCompanyField = signupBtn && signupBtn.style.display !== 'none' && !signupBtn.hidden;
-      signupCompanyName.style.display = showCompanyField ? '' : 'none';
-      signupCompanyName.hidden = !showCompanyField;
+      signupCompanyName.style.display = 'none';
+      signupCompanyName.hidden = true;
     }
 
     if (!isLoggedIn) {
       hideAdvancedPanels();
-      setStatus('Not signed in. Login to sync.');
+      setStatus('Not signed in. Use Access on Home.');
     } else {
       const current = text(byId('syncStatus')?.textContent);
       if (
         !current ||
-        /connected\. auto sync|not connected|admin \/ sync/i.test(current)
+        /connected\. auto sync|not connected|admin \/ sync|not signed in/i.test(current)
       ) {
         setStatus('Ready. Use Sync Now to update this device.');
       }

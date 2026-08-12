@@ -3377,154 +3377,36 @@ function importPastedBackup() {
 }
 
 async function signupUser() {
-  const email = getEl('loginEmail').value.trim();
-  const password = getEl('loginPassword').value;
-  const companyName =
-    (getEl('signupCompanyName') && getEl('signupCompanyName').value.trim()) ||
-    'My Fire-S Company';
-  const syncStatus = getEl('syncStatus');
-
-  if (!email || !password) {
-    if (syncStatus) syncStatus.textContent = 'Enter your email and password.';
-    return;
-  }
-
-  if (syncStatus) syncStatus.textContent = 'Creating your account…';
-
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-
-  if (error) {
-    if (syncStatus) syncStatus.textContent = `Could not create account: ${error.message}`;
-    return;
-  }
-
+  // Cloud Create-company is retired — send users to Access Register.
   try {
-    if (!data?.session && data?.user) {
-      const login = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (login.error) {
-        if (syncStatus) {
-          syncStatus.textContent =
-            'Account created. Confirm your email if asked, then login.';
-        }
-        return;
-      }
+    closeCloudDropdown();
+  } catch (_) {}
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('register');
+      return;
     }
-
-    await loadUserAccessProfile();
-
-    if (!currentUserProfile?.companyId) {
-      if (syncStatus) syncStatus.textContent = 'Setting up your company…';
-      const rpc = await supabaseClient.rpc('fire_s_create_company', {
-        p_name: companyName
-      });
-      if (rpc.error) {
-        if (syncStatus) {
-          syncStatus.textContent =
-            'Account ready. Open Company and save your company name.';
-        }
-      } else {
-        await loadUserAccessProfile();
-        if (syncStatus) {
-          syncStatus.textContent = `“${companyName}” is ready. You can add your team next.`;
-        }
-      }
-    } else if (syncStatus) {
-      syncStatus.textContent = 'Welcome back. You are signed in.';
-    }
-
-    try {
-      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
-        window.fireSApplyCleanHomeRoles();
-      }
-      if (typeof window.fireSSyncGetStarted === 'function') {
-        window.fireSSyncGetStarted();
-      }
-    } catch (_) {}
-
-    if (typeof window.fireSOpenCompanyTeam === 'function') {
-      window.fireSOpenCompanyTeam();
-    }
-  } catch (setupError) {
-    console.error('Signup setup failed:', setupError);
-    if (syncStatus) {
-      syncStatus.textContent =
-        setupError.message ||
-        'Account created. Open Company to finish setup.';
-    }
+  } catch (_) {}
+  const syncStatus = getEl('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent = 'Use Access on Home → Register company.';
   }
 }
 
 async function loginUser() {
-  const email = getEl('loginEmail').value.trim();
-  const password = getEl('loginPassword').value;
-
-  const syncStatus = document.getElementById('syncStatus');
-
-  if (syncStatus) {
-    syncStatus.textContent = 'Logging in...';
-  }
-
+  // Cloud Login is retired — send users to Access Login.
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    console.log('Login result:', { data, error });
-
-    if (error) {
-    const loginPasswordField = document.getElementById('loginPassword');
-
-    if (loginPasswordField) {
-      loginPasswordField.value = '';
-    }
-
-    alert(`Login failed: ${error.message}`);
-
-    if (syncStatus) {
-      syncStatus.textContent = `Login failed: ${error.message}`;
-    }
-
-    return;
-  }
-
-    if (syncStatus) {
-      syncStatus.textContent = 'Logged in successfully.';
-    }
-
-    const loginEmailField = document.getElementById('loginEmail');
-    const loginPasswordField = document.getElementById('loginPassword');
-
-    if (loginEmailField) {
-      loginEmailField.value = '';
-    }
-
-    if (loginPasswordField) {
-      loginPasswordField.value = '';
-    }
-
     closeCloudDropdown();
-    updateHomeAccessCards();
-
-    updateSyncUI();
-
-    loadUserAccessProfile()
-    .then(async () => {
-      await refreshSyncData();
-      renderProjectsList();
-    })
-    .catch(error => {
-      console.error('Access profile load failed after login:', error);
-    });
-
-  } catch (error) {
-    console.error('Login crashed:', error);
-
-    if (syncStatus) {
-      syncStatus.textContent = `Login crashed: ${error.message}`;
+  } catch (_) {}
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('login');
+      return;
     }
-
-    alert(`Login crashed: ${error.message}`);
+  } catch (_) {}
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent = 'Use Access on Home → Login.';
   }
 }
 
@@ -3551,6 +3433,11 @@ async function logoutUser() {
 
     currentUserProfile = null;
     currentCompanyAccess = null;
+    window.currentUserProfile = null;
+    window.currentCompanyAccess = null;
+    try {
+      localStorage.removeItem('fireS.forceNewCompanySetup');
+    } catch (_) {}
 
     updateHomeAccessCards();
     updateAccessUI();
@@ -3566,6 +3453,18 @@ async function logoutUser() {
     if (projectPagingControls) projectPagingControls.innerHTML = '';
 
     showHome();
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSOpenAccess === 'function') {
+        window.fireSOpenAccess('choices');
+      } else if (typeof window.fireSSyncGetStarted === 'function') {
+        window.fireSSyncGetStarted();
+      }
+    } catch (_) {}
 
     const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -3574,7 +3473,7 @@ async function logoutUser() {
     }
 
     if (syncStatus) {
-      syncStatus.textContent = 'Logged out.';
+      syncStatus.textContent = 'Logged out. Use Access to sign in again.';
     }
   } catch (error) {
     console.error('Logout crashed:', error);
@@ -5388,13 +5287,13 @@ if (adminExportBackupBtn) {
     id: 'local-user',
     email: 'local@fire-s.app',
     fullName: 'Local User',
-    role: 'super_admin',
+    role: 'guest',
     companyId: null,
     companyName: 'Local / Personal Workspace'
   };
 
   currentCompanyAccess = {
-    status: 'active',
+    status: 'local',
     plan: 'local',
     source: 'local-fallback'
   };
@@ -7165,7 +7064,7 @@ function showProjectList() {
     id: 'local-user',
     email: 'local@fire-s.app',
     fullName: 'Local User',
-    role: 'super_admin',
+    role: 'guest',
     companyId: null,
     companyName: 'Local / Personal Workspace'
   };
@@ -8581,38 +8480,34 @@ if (betaFeedbackList && !canViewAdminSupport) {
 }
 
 function openLoginRoute() {
-  if (currentUserProfile) {
+  // Single Access gate on Home — do not open Cloud login fields.
+  try {
     closeCloudDropdown();
-    updateHomeAccessCards();
+  } catch (_) {}
 
+  if (currentUserProfile && currentUserProfile.id && currentUserProfile.id !== 'local-user') {
+    try {
+      if (typeof window.showHome === 'function') window.showHome();
+    } catch (_) {}
     const syncStatus = document.getElementById('syncStatus');
-
-    if (syncStatus) {
-      syncStatus.textContent = 'You are already logged in.';
-    }
-
+    if (syncStatus) syncStatus.textContent = 'You are already logged in.';
     return;
   }
 
-  const cloudDropdown = document.getElementById('cloudDropdown');
-  const loginToolsPanel = document.getElementById('loginToolsPanel');
-  const loginEmail = document.getElementById('loginEmail');
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('choices');
+      return;
+    }
+  } catch (_) {}
 
-  if (cloudDropdown) {
-    cloudDropdown.style.display = 'block';
-  }
-
-  if (loginToolsPanel) {
-    loginToolsPanel.style.display = 'block';
-  }
-
-  if (loginEmail) {
-    loginEmail.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
-
-    loginEmail.focus();
+  try {
+    if (typeof window.showHome === 'function') window.showHome();
+  } catch (_) {}
+  const access = document.getElementById('fireSGetStarted');
+  if (access) {
+    access.style.display = '';
+    access.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -11903,7 +11798,7 @@ function renderProjectsList() {
     id: 'local-user',
     email: 'local@fire-s.app',
     fullName: 'Local User',
-    role: 'super_admin',
+    role: 'guest',
     companyId: null,
     companyName: 'Local / Personal Workspace'
   };
@@ -24310,7 +24205,7 @@ function renderProjectsList() {
       id: 'local-user',
       email: 'local@fire-s.app',
       fullName: 'Local User',
-      role: 'super_admin',
+      role: 'guest',
       companyId: null,
       companyName: 'Local / Personal Workspace'
     };
@@ -24454,7 +24349,7 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -24668,7 +24563,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -24944,7 +24839,7 @@ if (!window.fireSMobileSmartCardsApplied) {
       id: 'local-user',
       email: 'local@fire-s.app',
       fullName: 'Local User',
-      role: 'super_admin',
+      role: 'guest',
       companyId: null,
       companyName: 'Local / Personal Workspace'
     };
@@ -26358,7 +26253,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -30354,7 +30249,7 @@ function fireSApplyLifecycleUxLabels() {
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };

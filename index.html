@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-6">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-5">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=1-4">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-0">
 </head>
 <body>
   <div id="fireSBootScreen" aria-live="polite">
@@ -95,17 +95,21 @@
 
       <div id="syncTools">
         <div id="loginToolsPanel">
-          <div class="cloud-section-title">Sign in</div>
+          <div class="cloud-section-title">Access</div>
           <p class="cloud-simple-help">
-            Use your own email and password.
+            Login, create password, and register company live on the Home Access screen — not here.
           </p>
-
-          <input id="loginEmail" type="email" placeholder="Your email" autocomplete="username">
-          <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password">
-          <input id="signupCompanyName" type="text" placeholder="Company name (for new accounts)" autocomplete="organization">
-
-          <button id="loginBtn" type="button" class="cloud-primary-btn">Login</button>
-          <button id="signupBtn" type="button" class="secondary-btn">Create my company</button>
+          <button id="cloudOpenAccessBtn" type="button" class="cloud-primary-btn">
+            Open Access
+          </button>
+          <!-- Legacy fields kept hidden so old app.js bindings do not crash -->
+          <div id="fireSLegacyCloudAuth" style="display:none;" aria-hidden="true">
+            <input id="loginEmail" type="email" tabindex="-1">
+            <input id="loginPassword" type="password" tabindex="-1">
+            <input id="signupCompanyName" type="text" tabindex="-1">
+            <button id="loginBtn" type="button" tabindex="-1">Login</button>
+            <button id="signupBtn" type="button" tabindex="-1">Create my company</button>
+          </div>
         </div>
 
         <div id="syncButtonsSection" class="cloud-section-title" style="display:none;">
@@ -177,34 +181,52 @@
   <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
   <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
   <div id="fireSGetStarted" class="fire-s-get-started" style="display:none;">
-    <div class="fire-s-get-started-kicker">Welcome to Fire-S</div>
-    <h3 id="fireSGetStartedTitle">How do you want to start?</h3>
+    <div class="fire-s-get-started-kicker">Fire-S Access</div>
+    <h3 id="fireSGetStartedTitle">Access</h3>
     <p id="fireSGetStartedHelp">
-      Choose one option below.
+      Choose one path. Staff and owners use the same Access screen.
     </p>
 
     <div id="fireSGetStartedChoices" class="fire-s-get-started-choices">
       <button id="fireSChoiceLogin" type="button" class="fire-s-get-started-choice">
-        <strong>Login</strong>
-        <span>I already have a Fire-S account</span>
+        <strong>1. Login</strong>
+        <span>I already have an email + password</span>
+      </button>
+      <button id="fireSChoiceCreate" type="button" class="fire-s-get-started-choice">
+        <strong>2. Create password</strong>
+        <span>My owner already added my email · first time only</span>
       </button>
       <button id="fireSChoiceCompany" type="button" class="fire-s-get-started-choice primary">
-        <strong>Register my company</strong>
-        <span>New business · then add Inspectors and Managers</span>
+        <strong>3. Register company</strong>
+        <span>New business · I become the Owner</span>
       </button>
     </div>
 
     <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields" style="display:none;">
-      <button type="button" class="fire-s-get-started-back" data-fire-s-back>Back</button>
-      <p class="fire-s-get-started-note">Inspectors / Managers: use the email your owner added.</p>
-      <input id="fireSLoginEmail" type="email" placeholder="Your email" autocomplete="username">
-      <input id="fireSLoginPassword" type="password" placeholder="Your password" autocomplete="current-password">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+      <p class="fire-s-get-started-note">Use the same email for owners and staff.</p>
+      <input id="fireSLoginEmail" type="email" placeholder="Email" autocomplete="username">
+      <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
-      <button id="fireSDoJoinBtn" type="button" class="secondary-btn">First time? Create password</button>
+      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
+    </div>
+
+    <div id="fireSGetStartedCreateFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+      <p class="fire-s-get-started-note">
+        Use the exact email your owner added under Personnel.
+      </p>
+      <input id="fireSCreateEmail" type="email" placeholder="Email from your owner" autocomplete="username">
+      <input id="fireSCreatePassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <button id="fireSDoCreateBtn" type="button" class="cloud-primary-btn">Create password</button>
+      <button id="fireSSwitchToLoginBtn" type="button" class="secondary-btn">Already have a password? Login</button>
     </div>
 
     <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
-      <button type="button" class="fire-s-get-started-back" data-fire-s-back>Back</button>
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+      <p class="fire-s-get-started-note">
+        Creates your owner login and the company in one step.
+      </p>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner)" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
@@ -215,13 +237,22 @@
 
     <div id="fireSGetStartedCompanyOnly" class="fire-s-get-started-fields" style="display:none;">
       <p class="fire-s-get-started-note">
-        If you are an Inspector / Manager, ask your owner to add your email under Team, then login again.
+        You are signed in. Save the company name once.
       </p>
-      <div class="cloud-section-title" style="margin:12px 0 8px;">I own the company</div>
       <input id="fireSGetStartedCompanyOnlyName" type="text" placeholder="Company name" autocomplete="organization">
       <button id="fireSGetStartedFinishBtn" type="button" class="cloud-primary-btn">
-        Register company
+        Save company
       </button>
+    </div>
+
+    <div id="fireSGetStartedWaiting" class="fire-s-get-started-fields" style="display:none;">
+      <p class="fire-s-get-started-note">
+        Tell your owner your email. They add you in Personnel as Inspector or Manager.
+      </p>
+      <button id="fireSWaitingCheckBtn" type="button" class="cloud-primary-btn">
+        Check again
+      </button>
+      <button type="button" class="secondary-btn" data-fire-s-back>Back to Access</button>
     </div>
 
     <div id="fireSGetStartedStatus" class="fire-s-get-started-status" style="display:none;"></div>
@@ -343,8 +374,8 @@
 
   <div class="startup-route-grid">
     <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
-      <span class="route-title">Login / Register</span>
-      <span class="route-copy">Access cloud sync, account tools and backups.</span>
+      <span class="route-title">Access</span>
+      <span class="route-copy">Login, create password, or register a company.</span>
     </button>
 
     <button
@@ -1127,13 +1158,13 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-0-new-inspection-flow"></script>
-  <script src="app.js?v=company-personnel-v23"></script>
+  <script src="app.js?v=access-gate-v1"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-3-role-lock"></script>
-  <script src="fire-s-clean-home-roles.js?v=1-15"></script>
-  <script src="fire-s-simple-cloud-sync.js?v=1-1"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-0"></script>
+  <script src="fire-s-simple-cloud-sync.js?v=2-0"></script>
   <script src="fire-s-company-team.js?v=1-17"></script>
-  <script src="fire-s-get-started.js?v=1-7"></script>
+  <script src="fire-s-get-started.js?v=2-0"></script>
   <script src="fire-s-startup-stability.js?v=1-0"></script>
   <script>
     if ('serviceWorker' in navigator) {
