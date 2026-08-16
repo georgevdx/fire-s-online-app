@@ -14161,6 +14161,11 @@ async function uploadSingleInspection(project) {
   const syncStatus = document.getElementById('syncStatus');
   const quiet = !!window.__fireSQuietCloudUpload;
 
+  const isRlsError = err =>
+    /row-level security|rls|USING expression/i.test(
+      String(err?.message || err || '')
+    );
+
   try {
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
@@ -14173,18 +14178,39 @@ async function uploadSingleInspection(project) {
     }
 
     const myId = userData.user.id;
-    const myCompanyId = String(currentUserProfile?.companyId || '').trim() || null;
+    let myCompanyId = String(currentUserProfile?.companyId || '').trim() || null;
+
+    // Confirm membership before attaching company_id (prevents INSERT RLS failures).
+    if (myCompanyId) {
+      try {
+        const { data: memberRow, error: memberError } = await supabaseClient
+          .from('company_members')
+          .select('company_id, status')
+          .eq('company_id', myCompanyId)
+          .eq('user_id', myId)
+          .eq('status', 'active')
+          .maybeSingle();
+        if (memberError || !memberRow?.company_id) {
+          myCompanyId = null;
+        }
+      } catch (_) {
+        myCompanyId = null;
+      }
+    }
 
     if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Uploading saved inspection...';
     }
 
-    const cloudMetadata = getProjectCloudMetadata(project, myId);
+    const cloudMetadata = {
+      ...getProjectCloudMetadata(project, myId),
+      company_id: myCompanyId
+    };
 
     let projectToUpload = {
       ...project,
-      companyId: cloudMetadata.company_id || project.companyId || null,
-      company_id: cloudMetadata.company_id || project.company_id || null,
+      companyId: myCompanyId || project.companyId || null,
+      company_id: myCompanyId || project.company_id || null,
       createdByUserId: project.createdByUserId || myId,
       syncPending: false,
       syncError: false,
@@ -14214,7 +14240,6 @@ async function uploadSingleInspection(project) {
       }
     }
 
-    // Read existing cloud row so we do not violate RLS by changing owner/company.
     const { data: existingRows } = await supabaseClient
       .from('inspections')
       .select('id, user_id, company_id')
@@ -14225,12 +14250,6 @@ async function uploadSingleInspection(project) {
     const existingOwnerId = existing?.user_id || null;
     const existingCompanyId = String(existing?.company_id || '').trim() || null;
 
-    // Payload rules that satisfy typical inspections RLS:
-    // - INSERT: user_id must be auth.uid()
-    // - UPDATE: keep existing user_id; keep/align company_id with membership
-    const rowCompanyId = myCompanyId || existingCompanyId || cloudMetadata.company_id || null;
-    const rowUserId = existingOwnerId || myId;
-
     if (
       existing &&
       existingOwnerId &&
@@ -14239,45 +14258,78 @@ async function uploadSingleInspection(project) {
       myCompanyId &&
       existingCompanyId !== myCompanyId
     ) {
-      // Someone else's inspection in another company — do not keep retrying.
       removeInspectionFromUploadQueue(project.id);
       return;
     }
 
+    const buildPayload = (companyId, userId) => ({
+      id: project.id,
+      user_id: userId,
+      company_id: companyId,
+      created_by_user_id: cloudMetadata.created_by_user_id || myId,
+      last_edited_by_user_id: myId,
+      company_access_status: cloudMetadata.company_access_status,
+      created_by_email: cloudMetadata.created_by_email,
+      last_edited_by_email: cloudMetadata.last_edited_by_email,
+      inspection_data: {
+        ...projectToUpload,
+        companyId: companyId,
+        company_id: companyId
+      },
+      updated_at: new Date().toISOString()
+    });
+
     let error = null;
 
     if (existing) {
+      // Keep original owner; attach our company only when we are a confirmed member.
+      const updateCompanyId = myCompanyId || existingCompanyId || null;
       const { error: updateError } = await supabaseClient
         .from('inspections')
-        .update({
-          user_id: rowUserId,
-          company_id: rowCompanyId,
-          created_by_user_id: cloudMetadata.created_by_user_id,
-          last_edited_by_user_id: myId,
-          company_access_status: cloudMetadata.company_access_status,
-          created_by_email: cloudMetadata.created_by_email,
-          last_edited_by_email: cloudMetadata.last_edited_by_email,
-          inspection_data: projectToUpload,
-          updated_at: new Date().toISOString()
-        })
+        .update(buildPayload(updateCompanyId, existingOwnerId || myId))
         .eq('id', project.id);
       error = updateError;
+
+      // If update blocked, try a minimal own-row update.
+      if (error && isRlsError(error) && (!existingOwnerId || existingOwnerId === myId)) {
+        const { error: retryUpdateError } = await supabaseClient
+          .from('inspections')
+          .update({
+            inspection_data: projectToUpload,
+            updated_at: new Date().toISOString(),
+            last_edited_by_user_id: myId
+          })
+          .eq('id', project.id)
+          .eq('user_id', myId);
+        error = retryUpdateError;
+      }
     } else {
-      const { error: insertError } = await supabaseClient
+      // INSERT must always use auth user id.
+      let insertPayload = buildPayload(myCompanyId, myId);
+      let insertResult = await supabaseClient
         .from('inspections')
-        .insert({
+        .insert(insertPayload);
+      error = insertResult.error;
+
+      // Retry without company_id — works with the simplest "own row" insert policy.
+      if (error && isRlsError(error) && myCompanyId) {
+        insertPayload = buildPayload(null, myId);
+        insertResult = await supabaseClient
+          .from('inspections')
+          .insert(insertPayload);
+        error = insertResult.error;
+      }
+
+      // Last resort: only core columns (in case optional columns trip policies/triggers).
+      if (error && isRlsError(error)) {
+        insertResult = await supabaseClient.from('inspections').insert({
           id: project.id,
           user_id: myId,
-          company_id: rowCompanyId,
-          created_by_user_id: cloudMetadata.created_by_user_id,
-          last_edited_by_user_id: myId,
-          company_access_status: cloudMetadata.company_access_status,
-          created_by_email: cloudMetadata.created_by_email,
-          last_edited_by_email: cloudMetadata.last_edited_by_email,
           inspection_data: projectToUpload,
           updated_at: new Date().toISOString()
         });
-      error = insertError;
+        error = insertResult.error;
+      }
     }
 
     if (error) {
@@ -14294,15 +14346,12 @@ async function uploadSingleInspection(project) {
         ].some(indexName =>
           String(error.message || '').includes(indexName)
         );
-      const isRlsError = /row-level security|rls|USING expression/i.test(
-        String(error.message || '')
-      );
 
       if (syncStatus) {
         syncStatus.textContent = isDuplicatePremisesError
           ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
-          : isRlsError
-            ? 'Cloud save blocked by company access rules. Work is saved on this device. Ask admin to run SUPABASE_inspections_rls.sql.'
+          : isRlsError(error)
+            ? 'Cloud save blocked. Work is saved on this device. In Supabase SQL Editor run SUPABASE_inspections_rls.sql (full reset), then Sync Now.'
             : `Cloud upload failed: ${error.message}`;
       }
       return;
