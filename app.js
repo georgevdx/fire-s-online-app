@@ -3414,11 +3414,39 @@ async function logoutUser() {
   const syncStatus = document.getElementById('syncStatus');
 
   if (syncStatus) {
-    syncStatus.textContent = 'Logging out...';
+    syncStatus.textContent = 'Logging out…';
   }
 
   try {
-  await refreshSyncData();
+    // Best-effort save only — never block or scare the user with RLS errors on logout.
+    try {
+      window.__fireSQuietCloudUpload = true;
+      const myId = currentUserProfile?.id || null;
+      const myCompanyId = String(currentUserProfile?.companyId || '').trim();
+      const pending =
+        typeof getQueuedProjects === 'function' ? getQueuedProjects() : [];
+      const ownPending = pending.filter(project => {
+        if (!project || !project.id) return false;
+        const createdBy = project.createdByUserId || project.user_id || null;
+        if (myId && createdBy && createdBy !== myId) return false;
+        const projectCompany = String(
+          project.companyId || project.company_id || ''
+        ).trim();
+        if (myCompanyId && projectCompany && projectCompany !== myCompanyId) {
+          return false;
+        }
+        return true;
+      });
+      for (const project of ownPending.slice(0, 25)) {
+        try {
+          await uploadSingleInspection(project);
+        } catch (_) {}
+      }
+    } catch (preLogoutSyncError) {
+      console.warn('Pre-logout sync skipped:', preLogoutSyncError);
+    } finally {
+      window.__fireSQuietCloudUpload = false;
+    }
 
   const { error } = await supabaseClient.auth.signOut();
 
@@ -3465,6 +3493,11 @@ async function logoutUser() {
         window.fireSSyncGetStarted();
       }
     } catch (_) {}
+    try {
+      if (typeof window.fireSApplySimpleCloudSync === 'function') {
+        window.fireSApplySimpleCloudSync();
+      }
+    } catch (_) {}
 
     const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -3477,12 +3510,16 @@ async function logoutUser() {
     }
   } catch (error) {
     console.error('Logout crashed:', error);
+    window.__fireSQuietCloudUpload = false;
+
+    // Still try to leave the session so the user is not stuck.
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (_) {}
 
     if (syncStatus) {
-      syncStatus.textContent = `Logout crashed: ${error.message}`;
+      syncStatus.textContent = 'Logged out. Use Access to sign in again.';
     }
-
-    alert(`Logout crashed: ${error.message}`);
   }
 }
 
@@ -14176,6 +14213,9 @@ const { error } = await supabaseClient
     if (error) {
       console.error('Single upload failed:', error);
       markUploadQueueFailure(project.id, error);
+      if (window.__fireSQuietCloudUpload) {
+        return;
+      }
       const isDuplicatePremisesError =
         String(error.code || '') === '23505' &&
         [
@@ -14185,11 +14225,16 @@ const { error } = await supabaseClient
         ].some(indexName =>
           String(error.message || '').includes(indexName)
         );
+      const isRlsError = /row-level security|rls/i.test(
+        String(error.message || '')
+      );
 
       if (syncStatus) {
         syncStatus.textContent = isDuplicatePremisesError
           ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
-          : `Cloud upload failed: ${error.message}`;
+          : isRlsError
+            ? 'Cloud save blocked by company access rules. Your work is still saved on this device.'
+            : `Cloud upload failed: ${error.message}`;
       }
       return;
     }
