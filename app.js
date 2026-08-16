@@ -943,11 +943,17 @@ function autoSaveProject() {
     const index = projects.findIndex(p => p.id === currentProjectId);
 
     if (index !== -1) {
+      const companyStamp = resolveProjectCompanyFields(
+        projects[index],
+        accessMetadata
+      );
       projects[index] = {
         ...projects[index],
 
-        companyId: accessMetadata.companyId,
-        companyName: accessMetadata.companyName,
+        companyId: companyStamp.companyId,
+        company_id: companyStamp.company_id,
+        companyName:
+          companyStamp.companyName || accessMetadata.companyName,
 
         createdByUserId:
           projects[index].createdByUserId ||
@@ -5656,16 +5662,19 @@ function fireSResolveCompanyNameLazy(companyId) {
 }
 
 async function loadUserAccessProfile() {
-  const previousCompanyId = currentUserProfile?.companyId || null;
-  const previousCompanyName = currentUserProfile?.companyName || '';
-  currentUserProfile = null;
-  currentCompanyAccess = null;
+  const previousProfile = currentUserProfile;
+  const previousCompanyId = previousProfile?.companyId || null;
+  const previousCompanyName = previousProfile?.companyName || '';
+  // Keep previous profile until the new one is ready so autosave cannot
+  // stamp companyId: null while membership is still loading.
 
   try {
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
+      currentUserProfile = null;
+      currentCompanyAccess = null;
       updateAccessUI();
       updateSyncUI();
       updateHomeAccessCards();
@@ -5779,6 +5788,9 @@ async function loadUserAccessProfile() {
       } else if (companyId && !embeddedName) {
         fireSResolveCompanyNameLazy(companyId);
       }
+      if (companyId) {
+        restampLocalInspectionsWithCompany(companyId, immediateName);
+      }
       return;
     }
 
@@ -5821,11 +5833,18 @@ async function loadUserAccessProfile() {
       fireSResolveCompanyNameLazy(companyId);
     }
 
+    if (companyId) {
+      restampLocalInspectionsWithCompany(companyId, immediateName);
+    }
+
   } catch (error) {
     console.error('Access profile load failed:', error);
 
-    currentUserProfile = null;
-    currentCompanyAccess = null;
+    // Keep previous signed-in profile if refresh failed mid-session.
+    if (!previousProfile) {
+      currentUserProfile = null;
+      currentCompanyAccess = null;
+    }
 
     updateAccessUI();
     updateSyncUI();
@@ -5884,6 +5903,87 @@ function getAccessMetadata() {
     companyAccessStatus:
       currentCompanyAccess?.status || 'unknown'
   };
+}
+
+/** Prefer live membership company; never wipe an existing project company with null. */
+function resolveProjectCompanyFields(project, accessMetadata) {
+  const meta = accessMetadata || getAccessMetadata();
+  const companyId =
+    String(
+      meta.companyId ||
+        currentUserProfile?.companyId ||
+        (project && project.companyId) ||
+        (project && project.company_id) ||
+        ''
+    ).trim() || null;
+  const rawName = String(
+    (meta.companyId && meta.companyName) ||
+      (companyId && currentUserProfile?.companyName) ||
+      (project && project.companyName) ||
+      ''
+  ).trim();
+  const companyName =
+    companyId && rawName && typeof fireSIsGenericCompanyName === 'function'
+      ? fireSIsGenericCompanyName(rawName)
+        ? project?.companyName || rawName
+        : rawName
+      : rawName || project?.companyName || null;
+  return {
+    companyId,
+    company_id: companyId,
+    companyName: companyName || undefined
+  };
+}
+
+/**
+ * After membership is known, stamp local inspections that have no company
+ * and re-queue them so owners can see them in the company cloud.
+ */
+function restampLocalInspectionsWithCompany(companyId, companyName) {
+  const cid = String(companyId || '').trim();
+  if (!cid) return 0;
+
+  const projects = getProjects();
+  let changed = 0;
+  const next = projects.map(project => {
+    if (!project || !project.id) return project;
+    if (project.deletedAt || project.dataManagementDeletedAt) return project;
+    const existing = String(project.companyId || project.company_id || '').trim();
+    if (existing === cid) {
+      if (!project.company_id || !project.companyId || project.syncPending) {
+        changed += 1;
+        queueInspectionForUpload(project.id);
+        return {
+          ...project,
+          companyId: cid,
+          company_id: cid,
+          companyName: companyName || project.companyName,
+          syncPending: true,
+          syncError: false
+        };
+      }
+      return project;
+    }
+    if (existing) return project;
+    changed += 1;
+    queueInspectionForUpload(project.id);
+    return {
+      ...project,
+      companyId: cid,
+      company_id: cid,
+      companyName: companyName || project.companyName,
+      syncPending: true,
+      syncError: false
+    };
+  });
+
+  if (changed) {
+    setProjects(next);
+    try {
+      uploadPendingInspections();
+    } catch (_) {}
+  }
+  return changed;
 }
 
 function getVisibleProjectsForCurrentUser(projects) {
@@ -6538,11 +6638,13 @@ function saveScheduledNewInspection() {
       .join('|') ||
     `scheduled-new-site-${Date.now()}`;
 
+  const companyStamp = resolveProjectCompanyFields({}, accessMetadata);
   const newProject = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
 
-    companyId: accessMetadata.companyId,
-    companyName: accessMetadata.companyName,
+    companyId: companyStamp.companyId,
+    company_id: companyStamp.company_id,
+    companyName: companyStamp.companyName || accessMetadata.companyName,
 
     createdByUserId: accessMetadata.createdByUserId,
     createdByEmail: accessMetadata.createdByEmail,
@@ -14184,8 +14286,14 @@ async function uploadSingleInspection(project) {
     }
 
     const myId = userData.user.id;
-    let myCompanyId = String(currentUserProfile?.companyId || '').trim() || null;
+    let myCompanyId =
+      String(currentUserProfile?.companyId || '').trim() ||
+      String(project.companyId || project.company_id || '').trim() ||
+      null;
 
+    // Confirm membership when we already have a candidate company.
+    // Do NOT clear company on lookup errors — that left inspections with
+    // company_id NULL so owners could not see them.
     if (myCompanyId) {
       try {
         const { data: memberRow, error: memberError } = await supabaseClient
@@ -14195,22 +14303,48 @@ async function uploadSingleInspection(project) {
           .eq('user_id', myId)
           .eq('status', 'active')
           .maybeSingle();
-        if (memberError || !memberRow?.company_id) {
-          myCompanyId = null;
+        if (!memberError && memberRow && !memberRow.company_id) {
+          myCompanyId =
+            String(currentUserProfile?.companyId || '').trim() ||
+            String(project.companyId || project.company_id || '').trim() ||
+            null;
         }
       } catch (_) {
-        myCompanyId = null;
+        /* keep myCompanyId */
       }
+    }
+
+    if (!myCompanyId) {
+      try {
+        const { data: anyMember } = await supabaseClient
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', myId)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+        if (anyMember?.company_id) {
+          myCompanyId = String(anyMember.company_id).trim();
+          if (currentUserProfile && !currentUserProfile.companyId) {
+            currentUserProfile.companyId = myCompanyId;
+          }
+        }
+      } catch (_) {}
     }
 
     if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Uploading saved inspection...';
     }
 
+    const companyFields = resolveProjectCompanyFields(project, {
+      companyId: myCompanyId,
+      companyName:
+        currentUserProfile?.companyName || project.companyName || null
+    });
+
     let projectToUpload = {
       ...project,
-      companyId: myCompanyId || project.companyId || null,
-      company_id: myCompanyId || project.company_id || null,
+      ...companyFields,
       createdByUserId: project.createdByUserId || myId,
       syncPending: false,
       syncError: false,
@@ -14241,7 +14375,9 @@ async function uploadSingleInspection(project) {
     const rpc = await supabaseClient.rpc('fire_s_upsert_inspection', {
       p_id: String(project.id),
       p_inspection_data: projectToUpload,
-      p_company_id: myCompanyId ? String(myCompanyId) : null
+      p_company_id: companyFields.companyId
+        ? String(companyFields.companyId)
+        : null
     });
 
     if (rpc.error) {
@@ -14260,8 +14396,12 @@ async function uploadSingleInspection(project) {
       return;
     }
 
+    const rpcCompany =
+      (rpc.data && (rpc.data.company_id || rpc.data.companyId)) ||
+      companyFields.companyId ||
+      null;
     removeInspectionFromUploadQueue(project.id);
-    markInspectionSynced(project.id);
+    markInspectionSynced(project.id, rpcCompany);
 
     if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Saved locally and uploaded to cloud.';
@@ -14300,7 +14440,7 @@ async function uploadAllLocalInspections() {
   }
 }
 
-function markInspectionSynced(projectId) {
+function markInspectionSynced(projectId, companyIdFromCloud) {
   removeInspectionFromUploadQueue(projectId);
   const projects = getProjects();
 
@@ -14310,12 +14450,25 @@ function markInspectionSynced(projectId) {
 
   if (index === -1) return;
 
+  const companyId =
+    String(
+      companyIdFromCloud ||
+        currentUserProfile?.companyId ||
+        projects[index].companyId ||
+        projects[index].company_id ||
+        ''
+    ).trim() || null;
+
   projects[index] = {
     ...projects[index],
-
+    ...(companyId
+      ? {
+          companyId,
+          company_id: companyId
+        }
+      : {}),
     syncPending: false,
     syncError: false,
-
     syncedAt: new Date().toISOString()
   };
 
@@ -14448,11 +14601,17 @@ const finalComments = getEl('finalComments').value.trim();
   const index = projects.findIndex(p => p.id === currentProjectId);
 
   if (index !== -1) {
+    const companyStamp = resolveProjectCompanyFields(
+      projects[index],
+      accessMetadata
+    );
     projects[index] = {
       ...projects[index],
 
-      companyId: accessMetadata.companyId,
-      companyName: accessMetadata.companyName,
+      companyId: companyStamp.companyId,
+      company_id: companyStamp.company_id,
+      companyName:
+        companyStamp.companyName || accessMetadata.companyName,
 
       createdByUserId:
         projects[index].createdByUserId ||
@@ -14524,11 +14683,13 @@ lastSaved: new Date().toISOString()
     };
   }
 } else {
+    const companyStamp = resolveProjectCompanyFields({}, accessMetadata);
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       
-      companyId: accessMetadata.companyId,
-      companyName: accessMetadata.companyName,
+      companyId: companyStamp.companyId,
+      company_id: companyStamp.company_id,
+      companyName: companyStamp.companyName || accessMetadata.companyName,
 
       createdByUserId:
         accessMetadata.createdByUserId,
