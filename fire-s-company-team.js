@@ -91,6 +91,13 @@
   }
 
   function isFreshCompanyMode() {
+    // Fresh/test company mode is Super Admin only — never for real owners.
+    if (actualMembershipRole() !== 'super_admin') {
+      try {
+        localStorage.removeItem(FRESH_MODE_KEY);
+      } catch (_) {}
+      return false;
+    }
     try {
       if (localStorage.getItem(FRESH_MODE_KEY) === '1') return true;
     } catch (_) {}
@@ -143,34 +150,45 @@
     wrap.style.display = canStart ? '' : 'none';
   }
 
-  function currentRole() {
-    try {
-      if (typeof window.fireSViewAsRole131 === 'function') {
-        const viewed = text(window.fireSViewAsRole131()).toLowerCase();
-        if (viewed === 'new_company') return 'company_owner';
-        if (viewed) return viewed;
-      }
-    } catch (_) {}
-    try {
-      if (typeof window.getCurrentUserRole === 'function') {
-        const role = text(window.getCurrentUserRole()).toLowerCase();
-        if (role === 'new_company') return 'company_owner';
-        return role;
-      }
-    } catch (_) {}
+  function updateDangerControls() {
+    const clearBtn = byId('companyTeamClearOthersBtn');
+    const realRole = text(window.currentUserProfile?.role).toLowerCase();
+    const allowDanger = realRole === 'super_admin';
+    if (clearBtn) {
+      clearBtn.style.display = allowDanger ? '' : 'none';
+      clearBtn.hidden = !allowDanger;
+    }
+  }
+
+  function actualMembershipRole() {
     return text(window.currentUserProfile?.role).toLowerCase();
   }
 
+  function currentRole() {
+    const actual = actualMembershipRole();
+    // Role Test view-as only for real super admins — never for owners/managers.
+    if (actual === 'super_admin') {
+      try {
+        if (typeof window.fireSViewAsRole131 === 'function') {
+          const viewed = text(window.fireSViewAsRole131()).toLowerCase();
+          if (viewed === 'new_company') return 'company_owner';
+          if (viewed) return viewed;
+        }
+      } catch (_) {}
+    }
+    if (actual === 'new_company') return 'company_owner';
+    return actual || 'inspector';
+  }
+
   function canManageTeam() {
-    if (isFreshCompanyMode()) return true;
+    if (isFreshCompanyMode() && actualMembershipRole() === 'super_admin') return true;
     const role = currentRole();
     return ['company_owner', 'super_admin', 'manager'].includes(role);
   }
 
   function canAssignOwner() {
-    if (isFreshCompanyMode()) return true;
-    const role = currentRole();
-    return role === 'company_owner' || role === 'super_admin';
+    // Everyday Personnel: Inspector + Manager only. Owner assignment is rare/admin.
+    return actualMembershipRole() === 'super_admin';
   }
 
   function setMessage(message, isError) {
@@ -505,12 +523,12 @@
         !isSetup && !isGenericCompanyName(displayName)
       );
     }
-    if (heading) heading.textContent = isSetup ? 'Company' : 'Personnel';
+    if (heading) heading.textContent = isSetup ? 'Company' : 'People';
     if (kicker) {
       kicker.textContent = isSetup
-        ? 'Get started'
+        ? 'First step'
         : isGenericCompanyName(displayName)
-          ? 'Company'
+          ? 'Your company'
           : 'Your company';
     }
     if (title) {
@@ -520,9 +538,10 @@
     }
     if (subtitle) {
       subtitle.textContent = isSetup
-        ? 'Save the company name once. Next you manage personnel.'
-        : 'Add people, change roles, or remove staff.';
+        ? 'Save once. After that you only add people here.'
+        : 'Add Inspectors and Managers. Change roles or remove people when needed.';
     }
+    updateDangerControls();
   }
 
   function renderMeta(ctx, members) {

@@ -78,6 +78,15 @@
 
   function isFreshCompanyStart() {
     try {
+      var role = text(window.currentUserProfile && window.currentUserProfile.role).toLowerCase();
+      if (role !== 'super_admin') {
+        try {
+          localStorage.removeItem('fireS.forceNewCompanySetup');
+        } catch (_) {}
+        return homeRole() === 'new_company';
+      }
+    } catch (_) {}
+    try {
       if (localStorage.getItem('fireS.forceNewCompanySetup') === '1') return true;
     } catch (_) {}
     return homeRole() === 'new_company';
@@ -173,6 +182,22 @@
     } catch (_) {}
   }
 
+  async function syncCloudAfterAuth() {
+    try {
+      if (typeof window.refreshSyncData === 'function') {
+        setStatus('Loading your inspections from cloud…');
+        await window.refreshSyncData();
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (typeof refreshSyncData === 'function') {
+        setStatus('Loading your inspections from cloud…');
+        await refreshSyncData();
+      }
+    } catch (_) {}
+  }
+
   function enterAppHome(msg) {
     if (msg) setStatus(msg);
     hideAccess();
@@ -189,6 +214,11 @@
       refreshHomeChrome();
       try {
         if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+      } catch (_) {}
+      try {
+        if (typeof window.renderHomeCommandCentre === 'function') {
+          window.renderHomeCommandCentre();
+        }
       } catch (_) {}
     }, 300);
   }
@@ -413,6 +443,7 @@
       mode = 'choices';
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
+        await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Signed in.');
         return;
       }
@@ -459,6 +490,7 @@
       mode = 'choices';
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
+        await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Login created.');
         return;
       }
@@ -551,6 +583,7 @@
       await refreshMembership();
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
+        await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Access updated.');
         return;
       }

@@ -3720,8 +3720,16 @@ Cloud error: ${cloudError || 'none'}`;
 
 function normaliseCloudSyncedProject(row) {
   const project = normaliseProjectPhotoSources(row?.inspection_data || {});
+  const companyId =
+    project.companyId ||
+    project.company_id ||
+    row?.company_id ||
+    currentUserProfile?.companyId ||
+    null;
   return {
     ...project,
+    companyId,
+    company_id: companyId,
     syncPending: false,
     syncError: false,
     syncedAt: row?.updated_at || project.syncedAt || new Date().toISOString()
@@ -3747,7 +3755,7 @@ if (!confirmed) return;
 
   let query = supabaseClient
   .from('inspections')
-  .select('inspection_data, updated_at')
+  .select('inspection_data, updated_at, company_id')
   .order('updated_at', { ascending: false });
 
   query = applyInspectionAccessFilter(
@@ -3795,7 +3803,7 @@ if (!confirmed) return;
 
   let query = supabaseClient
   .from('inspections')
-  .select('inspection_data, updated_at');
+  .select('inspection_data, updated_at, company_id');
 
   query = applyInspectionAccessFilter(
     query,
@@ -4108,7 +4116,7 @@ async function safeDownloadNewerCloudInspections() {
 
     let query = supabaseClient
       .from('inspections')
-      .select('inspection_data, updated_at');
+      .select('inspection_data, updated_at, company_id');
 
     query = applyInspectionAccessFilter(
       query,
@@ -4131,8 +4139,8 @@ async function safeDownloadNewerCloudInspections() {
     });
 
     data.forEach(row => {
-      const cloudProject = row.inspection_data;
-      if (isProjectDeleted(cloudProject?.id)) return;
+      const cloudProject = normaliseCloudSyncedProject(row);
+      if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
       const localProject = mergedMap.get(cloudProject.id);
 
       if (!localProject) {
@@ -5846,10 +5854,14 @@ function getVisibleProjectsForCurrentUser(projects) {
     return activeProjects;
   }
 
-  if (currentUserProfile.companyId) {
-    return activeProjects.filter(project =>
-      project.companyId === currentUserProfile.companyId
-    );
+  const profileCompanyId = String(currentUserProfile.companyId || '').trim();
+  if (profileCompanyId) {
+    return activeProjects.filter(project => {
+      const projectCompanyId = String(
+        project.companyId || project.company_id || ''
+      ).trim();
+      return projectCompanyId === profileCompanyId;
+    });
   }
 
   const currentEmail =

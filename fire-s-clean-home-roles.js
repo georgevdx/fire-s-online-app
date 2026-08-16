@@ -394,22 +394,7 @@
 
     ALL_CMD_IDS.forEach(hide);
 
-    // First-time signed-in users (no company yet) need a path to create one.
-    try {
-      const hasCompany = !!(
-        window.currentUserProfile?.companyId ||
-        (typeof currentUserProfile !== 'undefined' && currentUserProfile?.companyId)
-      );
-      if (!hasCompany) {
-        show('cmdCompanyBtn');
-        cardText(
-          'cmdCompanyBtn',
-          'Set up company',
-          'Create your company to add Inspectors and Managers.'
-        );
-      }
-    } catch (_) {}
-
+    // Inspectors never set up a company — owner does that via Access.
     try {
       if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
     } catch (_) {}
@@ -484,8 +469,8 @@
     );
     cardText(
       'cmdCompanyBtn',
-      'Personnel',
-      'Add people, change roles, or remove staff.'
+      'People',
+      'Add Inspectors and Managers, or change roles.'
     );
     cardText(
       'cmdServicesBtn',
@@ -546,8 +531,8 @@
     );
     cardText(
       'cmdCompanyBtn',
-      'Personnel',
-      'Add people, change roles, or remove staff.'
+      'People',
+      'Add Inspectors and Managers, or change roles.'
     );
     cardText(
       'cmdServicesBtn',
