@@ -171,19 +171,35 @@
       exportBtn.style.display = exportOk ? 'block' : 'none';
     }
 
-    // Inspectors should not focus on Sign Up from the field menu.
+    // Auth lives on Home Access — never re-show Cloud Login/Register fields.
+    const legacyAuth = byId('fireSLegacyCloudAuth');
+    if (legacyAuth) {
+      legacyAuth.style.display = 'none';
+      legacyAuth.setAttribute('aria-hidden', 'true');
+    }
+    const openAccessBtn = byId('cloudOpenAccessBtn');
+    if (openAccessBtn) {
+      openAccessBtn.style.display = isLoggedIn ? 'none' : '';
+      openAccessBtn.hidden = !!isLoggedIn;
+    }
     if (signupBtn) {
-      signupBtn.style.display = isInspectorLike(role) && !isLoggedIn ? 'none' : '';
+      signupBtn.style.display = 'none';
+      signupBtn.hidden = true;
+    }
+    const signupCompanyName = byId('signupCompanyName');
+    if (signupCompanyName) {
+      signupCompanyName.style.display = 'none';
+      signupCompanyName.hidden = true;
     }
 
     if (!isLoggedIn) {
       hideAdvancedPanels();
-      setStatus('Not signed in. Login to sync.');
+      setStatus('Not signed in. Use Access on Home.');
     } else {
       const current = text(byId('syncStatus')?.textContent);
       if (
         !current ||
-        /connected\. auto sync|not connected|admin \/ sync/i.test(current)
+        /connected\. auto sync|not connected|admin \/ sync|not signed in/i.test(current)
       ) {
         setStatus('Ready. Use Sync Now to update this device.');
       }

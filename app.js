@@ -3377,154 +3377,36 @@ function importPastedBackup() {
 }
 
 async function signupUser() {
-  const email = getEl('loginEmail').value.trim();
-  const password = getEl('loginPassword').value;
-  const companyName =
-    (getEl('signupCompanyName') && getEl('signupCompanyName').value.trim()) ||
-    'My Fire-S Company';
-  const syncStatus = getEl('syncStatus');
-
-  if (!email || !password) {
-    if (syncStatus) syncStatus.textContent = 'Enter your email and password.';
-    return;
-  }
-
-  if (syncStatus) syncStatus.textContent = 'Creating your account…';
-
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-
-  if (error) {
-    if (syncStatus) syncStatus.textContent = `Could not create account: ${error.message}`;
-    return;
-  }
-
+  // Cloud Create-company is retired — send users to Access Register.
   try {
-    if (!data?.session && data?.user) {
-      const login = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (login.error) {
-        if (syncStatus) {
-          syncStatus.textContent =
-            'Account created. Confirm your email if asked, then login.';
-        }
-        return;
-      }
+    closeCloudDropdown();
+  } catch (_) {}
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('register');
+      return;
     }
-
-    await loadUserAccessProfile();
-
-    if (!currentUserProfile?.companyId) {
-      if (syncStatus) syncStatus.textContent = 'Setting up your company…';
-      const rpc = await supabaseClient.rpc('fire_s_create_company', {
-        p_name: companyName
-      });
-      if (rpc.error) {
-        if (syncStatus) {
-          syncStatus.textContent =
-            'Account ready. Open Company and save your company name.';
-        }
-      } else {
-        await loadUserAccessProfile();
-        if (syncStatus) {
-          syncStatus.textContent = `“${companyName}” is ready. You can add your team next.`;
-        }
-      }
-    } else if (syncStatus) {
-      syncStatus.textContent = 'Welcome back. You are signed in.';
-    }
-
-    try {
-      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
-        window.fireSApplyCleanHomeRoles();
-      }
-      if (typeof window.fireSSyncGetStarted === 'function') {
-        window.fireSSyncGetStarted();
-      }
-    } catch (_) {}
-
-    if (typeof window.fireSOpenCompanyTeam === 'function') {
-      window.fireSOpenCompanyTeam();
-    }
-  } catch (setupError) {
-    console.error('Signup setup failed:', setupError);
-    if (syncStatus) {
-      syncStatus.textContent =
-        setupError.message ||
-        'Account created. Open Company to finish setup.';
-    }
+  } catch (_) {}
+  const syncStatus = getEl('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent = 'Use Access on Home → Register company.';
   }
 }
 
 async function loginUser() {
-  const email = getEl('loginEmail').value.trim();
-  const password = getEl('loginPassword').value;
-
-  const syncStatus = document.getElementById('syncStatus');
-
-  if (syncStatus) {
-    syncStatus.textContent = 'Logging in...';
-  }
-
+  // Cloud Login is retired — send users to Access Login.
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    console.log('Login result:', { data, error });
-
-    if (error) {
-    const loginPasswordField = document.getElementById('loginPassword');
-
-    if (loginPasswordField) {
-      loginPasswordField.value = '';
-    }
-
-    alert(`Login failed: ${error.message}`);
-
-    if (syncStatus) {
-      syncStatus.textContent = `Login failed: ${error.message}`;
-    }
-
-    return;
-  }
-
-    if (syncStatus) {
-      syncStatus.textContent = 'Logged in successfully.';
-    }
-
-    const loginEmailField = document.getElementById('loginEmail');
-    const loginPasswordField = document.getElementById('loginPassword');
-
-    if (loginEmailField) {
-      loginEmailField.value = '';
-    }
-
-    if (loginPasswordField) {
-      loginPasswordField.value = '';
-    }
-
     closeCloudDropdown();
-    updateHomeAccessCards();
-
-    updateSyncUI();
-
-    loadUserAccessProfile()
-    .then(async () => {
-      await refreshSyncData();
-      renderProjectsList();
-    })
-    .catch(error => {
-      console.error('Access profile load failed after login:', error);
-    });
-
-  } catch (error) {
-    console.error('Login crashed:', error);
-
-    if (syncStatus) {
-      syncStatus.textContent = `Login crashed: ${error.message}`;
+  } catch (_) {}
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('login');
+      return;
     }
-
-    alert(`Login crashed: ${error.message}`);
+  } catch (_) {}
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent = 'Use Access on Home → Login.';
   }
 }
 
@@ -3532,11 +3414,39 @@ async function logoutUser() {
   const syncStatus = document.getElementById('syncStatus');
 
   if (syncStatus) {
-    syncStatus.textContent = 'Logging out...';
+    syncStatus.textContent = 'Logging out…';
   }
 
   try {
-  await refreshSyncData();
+    // Best-effort save only — never block or scare the user with RLS errors on logout.
+    try {
+      window.__fireSQuietCloudUpload = true;
+      const myId = currentUserProfile?.id || null;
+      const myCompanyId = String(currentUserProfile?.companyId || '').trim();
+      const pending =
+        typeof getQueuedProjects === 'function' ? getQueuedProjects() : [];
+      const ownPending = pending.filter(project => {
+        if (!project || !project.id) return false;
+        const createdBy = project.createdByUserId || project.user_id || null;
+        if (myId && createdBy && createdBy !== myId) return false;
+        const projectCompany = String(
+          project.companyId || project.company_id || ''
+        ).trim();
+        if (myCompanyId && projectCompany && projectCompany !== myCompanyId) {
+          return false;
+        }
+        return true;
+      });
+      for (const project of ownPending.slice(0, 25)) {
+        try {
+          await uploadSingleInspection(project);
+        } catch (_) {}
+      }
+    } catch (preLogoutSyncError) {
+      console.warn('Pre-logout sync skipped:', preLogoutSyncError);
+    } finally {
+      window.__fireSQuietCloudUpload = false;
+    }
 
   const { error } = await supabaseClient.auth.signOut();
 
@@ -3551,6 +3461,11 @@ async function logoutUser() {
 
     currentUserProfile = null;
     currentCompanyAccess = null;
+    window.currentUserProfile = null;
+    window.currentCompanyAccess = null;
+    try {
+      localStorage.removeItem('fireS.forceNewCompanySetup');
+    } catch (_) {}
 
     updateHomeAccessCards();
     updateAccessUI();
@@ -3566,6 +3481,23 @@ async function logoutUser() {
     if (projectPagingControls) projectPagingControls.innerHTML = '';
 
     showHome();
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSOpenAccess === 'function') {
+        window.fireSOpenAccess('choices');
+      } else if (typeof window.fireSSyncGetStarted === 'function') {
+        window.fireSSyncGetStarted();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSApplySimpleCloudSync === 'function') {
+        window.fireSApplySimpleCloudSync();
+      }
+    } catch (_) {}
 
     const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -3574,16 +3506,20 @@ async function logoutUser() {
     }
 
     if (syncStatus) {
-      syncStatus.textContent = 'Logged out.';
+      syncStatus.textContent = 'Logged out. Use Access to sign in again.';
     }
   } catch (error) {
     console.error('Logout crashed:', error);
+    window.__fireSQuietCloudUpload = false;
+
+    // Still try to leave the session so the user is not stuck.
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (_) {}
 
     if (syncStatus) {
-      syncStatus.textContent = `Logout crashed: ${error.message}`;
+      syncStatus.textContent = 'Logged out. Use Access to sign in again.';
     }
-
-    alert(`Logout crashed: ${error.message}`);
   }
 }
 
@@ -3821,8 +3757,16 @@ Cloud error: ${cloudError || 'none'}`;
 
 function normaliseCloudSyncedProject(row) {
   const project = normaliseProjectPhotoSources(row?.inspection_data || {});
+  const companyId =
+    project.companyId ||
+    project.company_id ||
+    row?.company_id ||
+    currentUserProfile?.companyId ||
+    null;
   return {
     ...project,
+    companyId,
+    company_id: companyId,
     syncPending: false,
     syncError: false,
     syncedAt: row?.updated_at || project.syncedAt || new Date().toISOString()
@@ -3848,7 +3792,7 @@ if (!confirmed) return;
 
   let query = supabaseClient
   .from('inspections')
-  .select('inspection_data, updated_at')
+  .select('inspection_data, updated_at, company_id')
   .order('updated_at', { ascending: false });
 
   query = applyInspectionAccessFilter(
@@ -3896,7 +3840,7 @@ if (!confirmed) return;
 
   let query = supabaseClient
   .from('inspections')
-  .select('inspection_data, updated_at');
+  .select('inspection_data, updated_at, company_id');
 
   query = applyInspectionAccessFilter(
     query,
@@ -3981,12 +3925,23 @@ if (cloudTime > localTime) {
     };
   });
 
-  const { error: uploadError } = await supabaseClient
-    .from('inspections')
-    .upsert(rows, { onConflict: 'id' });
+  // Never bulk-upsert: rewriting user_id on shared company rows trips RLS USING.
+  let uploadFailures = 0;
+  for (const project of mergedProjects) {
+    try {
+      await uploadSingleInspection({
+        ...project,
+        syncPending: true,
+        syncError: false
+      });
+    } catch (_) {
+      uploadFailures += 1;
+    }
+  }
 
-  if (uploadError) {
-    getEl('syncStatus').textContent = `Merged locally, but upload failed: ${uploadError.message}`;
+  if (uploadFailures) {
+    getEl('syncStatus').textContent =
+      `Merged locally. ${uploadFailures} cloud upload(s) still blocked.`;
     return;
   }
 
@@ -4209,7 +4164,7 @@ async function safeDownloadNewerCloudInspections() {
 
     let query = supabaseClient
       .from('inspections')
-      .select('inspection_data, updated_at');
+      .select('inspection_data, updated_at, company_id');
 
     query = applyInspectionAccessFilter(
       query,
@@ -4232,8 +4187,8 @@ async function safeDownloadNewerCloudInspections() {
     });
 
     data.forEach(row => {
-      const cloudProject = row.inspection_data;
-      if (isProjectDeleted(cloudProject?.id)) return;
+      const cloudProject = normaliseCloudSyncedProject(row);
+      if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
       const localProject = mergedMap.get(cloudProject.id);
 
       if (!localProject) {
@@ -5388,13 +5343,13 @@ if (adminExportBackupBtn) {
     id: 'local-user',
     email: 'local@fire-s.app',
     fullName: 'Local User',
-    role: 'super_admin',
+    role: 'guest',
     companyId: null,
     companyName: 'Local / Personal Workspace'
   };
 
   currentCompanyAccess = {
-    status: 'active',
+    status: 'local',
     plan: 'local',
     source: 'local-fallback'
   };
@@ -5580,7 +5535,129 @@ function withTimeout(promise, timeoutMs = 5000) {
   ]);
 }
 
+function fireSIsGenericCompanyName(name) {
+  const n = String(name || '').trim().toLowerCase();
+  return (
+    !n ||
+    n === 'your company' ||
+    n === 'your new company' ||
+    n === 'local workspace' ||
+    n === 'local / personal workspace'
+  );
+}
+
+function fireSRememberCompanyName(companyId, companyName) {
+  const id = String(companyId || '').trim();
+  const name = String(companyName || '').trim();
+  if (!id || fireSIsGenericCompanyName(name)) return;
+  try {
+    localStorage.setItem(
+      'fireS.cachedCompany',
+      JSON.stringify({ id, name })
+    );
+  } catch (_) {}
+}
+
+function fireSRecalledCompanyName(companyId) {
+  try {
+    const raw = localStorage.getItem('fireS.cachedCompany');
+    const cached = raw ? JSON.parse(raw) : null;
+    const name = String(cached?.name || '').trim();
+    if (
+      name &&
+      !fireSIsGenericCompanyName(name) &&
+      (!companyId || String(cached?.id || '') === String(companyId))
+    ) {
+      return name;
+    }
+  } catch (_) {}
+  return '';
+}
+
+function fireSApplyCompanyNameToUi(companyId, companyName, extra) {
+  if (!currentUserProfile) return;
+  const name = String(companyName || '').trim();
+  if (!name) return;
+  currentUserProfile.companyName = name;
+  if (companyId) currentUserProfile.companyId = companyId;
+  currentCompanyAccess = {
+    ...(currentCompanyAccess || {}),
+    ...(extra || {}),
+    companyName: name,
+    source: (extra && extra.source) || currentCompanyAccess?.source || 'supabase'
+  };
+  fireSRememberCompanyName(companyId || currentUserProfile.companyId, name);
+  window.currentUserProfile = currentUserProfile;
+  window.currentCompanyAccess = currentCompanyAccess;
+  try { updateAccessUI(); } catch (_) {}
+  try {
+    if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+      window.fireSApplyCleanHomeRoles();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSRefreshCompanyTeamChrome === 'function') {
+      window.fireSRefreshCompanyTeamChrome();
+    }
+  } catch (_) {}
+}
+
+function fireSResolveCompanyNameLazy(companyId) {
+  if (!companyId || !supabaseClient) return;
+
+  const applyRow = (name, status, plan) => {
+    if (!name || !currentUserProfile) return;
+    fireSApplyCompanyNameToUi(companyId, name, {
+      status: status || 'active',
+      plan: plan || 'development',
+      source: 'supabase'
+    });
+  };
+
+  // 1) SECURITY DEFINER RPC (best when companies RLS is strict)
+  Promise.resolve(
+    withTimeout(supabaseClient.rpc('fire_s_my_company'), 2500)
+  )
+    .then(rpc => {
+      if (rpc?.error || !rpc?.data) throw rpc?.error || new Error('no rpc');
+      const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+      const name = String(
+        row?.out_company_name || row?.company_name || row?.name || ''
+      ).trim();
+      if (!name) throw new Error('empty name');
+      applyRow(name, row?.status, row?.plan);
+    })
+    .catch(() =>
+      supabaseClient
+        .from('companies')
+        .select('name, status, plan')
+        .eq('id', companyId)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error || !data?.name) throw error || new Error('no company');
+          applyRow(data.name, data.status, data.plan);
+        })
+    )
+    .catch(() =>
+      supabaseClient
+        .from('company_members')
+        .select('company_id, companies(name, status, plan)')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          const company = data?.companies;
+          const row = Array.isArray(company) ? company[0] : company;
+          if (row?.name) applyRow(row.name, row.status, row.plan);
+        })
+    )
+    .catch(() => {});
+}
+
 async function loadUserAccessProfile() {
+  const previousCompanyId = currentUserProfile?.companyId || null;
+  const previousCompanyName = currentUserProfile?.companyName || '';
   currentUserProfile = null;
   currentCompanyAccess = null;
 
@@ -5618,23 +5695,51 @@ async function loadUserAccessProfile() {
       withTimeout(
         supabaseClient
           .from('company_members')
-          .select('company_id, role, status')
+          .select('company_id, role, status, companies(name, status, plan)')
           .eq('user_id', user.id)
           .eq('status', 'active')
           .limit(1)
           .maybeSingle(),
         3000
-      ).catch(error => ({ data: null, error }))
+      ).catch(() =>
+        withTimeout(
+          supabaseClient
+            .from('company_members')
+            .select('company_id, role, status')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .limit(1)
+            .maybeSingle(),
+          3000
+        ).catch(error => ({ data: null, error }))
+      )
     ]);
 
     const profile = profileResult?.data || null;
     const profileError = profileResult?.error || null;
-    const membership = membershipResult?.data || null;
+    let membership = membershipResult?.data || null;
     const membershipError = membershipResult?.error || null;
 
     if (profileError) {
       console.error('Profile load failed:', profileError);
     }
+
+    const companyId = membership?.company_id || null;
+    const embeddedCompany = membership?.companies;
+    const embeddedRow = Array.isArray(embeddedCompany)
+      ? embeddedCompany[0]
+      : embeddedCompany;
+    const embeddedName = String(embeddedRow?.name || '').trim();
+    const cachedName = fireSRecalledCompanyName(companyId);
+    const immediateName =
+      (!fireSIsGenericCompanyName(embeddedName) ? embeddedName : '') ||
+      cachedName ||
+      (companyId &&
+      previousCompanyId === companyId &&
+      !fireSIsGenericCompanyName(previousCompanyName)
+        ? previousCompanyName
+        : '') ||
+      (companyId ? 'Your company' : 'Your company');
 
     if (!profile) {
       currentUserProfile = {
@@ -5642,44 +5747,37 @@ async function loadUserAccessProfile() {
         email: user.email,
         fullName: user.email,
         role: membership?.role || 'inspector',
-        companyId: membership?.company_id || null,
-        companyName: 'Your company'
+        companyId,
+        companyName: immediateName
       };
 
       currentCompanyAccess = {
-        status: 'active',
-        plan: 'development',
+        status: embeddedRow?.status || 'active',
+        plan: embeddedRow?.plan || 'development',
         membershipStatus: membership?.status || 'active',
+        companyName: immediateName,
         source: membership ? 'supabase' : 'fallback'
       };
+
+      if (!fireSIsGenericCompanyName(immediateName) && companyId) {
+        fireSRememberCompanyName(companyId, immediateName);
+      }
 
       updateAccessUI();
       updateSyncUI();
       updateHomeAccessCards();
       renderProjectsList();
       refreshRcHomePanels();
+      try {
+        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+          window.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
 
-      // Lazy company name — never block startup/login on this.
-      if (membership?.company_id) {
-        supabaseClient
-          .from('companies')
-          .select('name, status, plan')
-          .eq('id', membership.company_id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (!data || !currentUserProfile) return;
-            currentUserProfile.companyName = data.name || currentUserProfile.companyName;
-            currentCompanyAccess = {
-              ...(currentCompanyAccess || {}),
-              status: data.status || 'active',
-              plan: data.plan || 'development',
-              source: 'supabase'
-            };
-            window.currentUserProfile = currentUserProfile;
-            window.currentCompanyAccess = currentCompanyAccess;
-            try { updateAccessUI(); } catch (_) {}
-          })
-          .catch(() => {});
+      if (companyId && fireSIsGenericCompanyName(immediateName)) {
+        fireSResolveCompanyNameLazy(companyId);
+      } else if (companyId && !embeddedName) {
+        fireSResolveCompanyNameLazy(companyId);
       }
       return;
     }
@@ -5693,42 +5791,34 @@ async function loadUserAccessProfile() {
       email: profile.email || user.email,
       fullName: profile.full_name || profile.email || user.email,
       role: membership?.role || profile.role || 'inspector',
-      companyId: membership?.company_id || null,
-      companyName: 'Your company'
+      companyId,
+      companyName: immediateName
     };
 
     currentCompanyAccess = {
-      status: 'active',
-      plan: 'development',
+      status: embeddedRow?.status || 'active',
+      plan: embeddedRow?.plan || 'development',
       membershipStatus: membership?.status || 'active',
-      source: membership?.company_id ? 'supabase' : 'fallback'
+      companyName: immediateName,
+      source: companyId ? 'supabase' : 'fallback'
     };
+
+    if (!fireSIsGenericCompanyName(immediateName) && companyId) {
+      fireSRememberCompanyName(companyId, immediateName);
+    }
 
     updateAccessUI();
     updateSyncUI();
     updateHomeAccessCards();
     refreshRcHomePanels();
+    try {
+      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+        window.fireSApplyCleanHomeRoles();
+      }
+    } catch (_) {}
 
-    if (membership?.company_id) {
-      supabaseClient
-        .from('companies')
-        .select('name, status, plan')
-        .eq('id', membership.company_id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (!data || !currentUserProfile) return;
-          currentUserProfile.companyName = data.name || 'Your company';
-          currentCompanyAccess = {
-            ...(currentCompanyAccess || {}),
-            status: data.status || 'active',
-            plan: data.plan || 'development',
-            source: 'supabase'
-          };
-          window.currentUserProfile = currentUserProfile;
-          window.currentCompanyAccess = currentCompanyAccess;
-          try { updateAccessUI(); } catch (_) {}
-        })
-        .catch(() => {});
+    if (companyId && (fireSIsGenericCompanyName(immediateName) || !embeddedName)) {
+      fireSResolveCompanyNameLazy(companyId);
     }
 
   } catch (error) {
@@ -5812,10 +5902,14 @@ function getVisibleProjectsForCurrentUser(projects) {
     return activeProjects;
   }
 
-  if (currentUserProfile.companyId) {
-    return activeProjects.filter(project =>
-      project.companyId === currentUserProfile.companyId
-    );
+  const profileCompanyId = String(currentUserProfile.companyId || '').trim();
+  if (profileCompanyId) {
+    return activeProjects.filter(project => {
+      const projectCompanyId = String(
+        project.companyId || project.company_id || ''
+      ).trim();
+      return projectCompanyId === profileCompanyId;
+    });
   }
 
   const currentEmail =
@@ -5828,11 +5922,15 @@ function getVisibleProjectsForCurrentUser(projects) {
 }
 
 function getProjectCloudMetadata(project, userId) {
+  // Prefer the signed-in membership company — stale local companyId causes RLS failures.
+  const companyId =
+    currentUserProfile?.companyId ||
+    project.companyId ||
+    project.company_id ||
+    null;
+
   return {
-    company_id:
-      project.companyId ||
-      currentUserProfile?.companyId ||
-      null,
+    company_id: companyId,
 
     created_by_user_id:
       project.createdByUserId ||
@@ -5840,7 +5938,6 @@ function getProjectCloudMetadata(project, userId) {
       userId,
 
     last_edited_by_user_id:
-      project.lastEditedByUserId ||
       currentUserProfile?.id ||
       userId,
 
@@ -5855,7 +5952,6 @@ function getProjectCloudMetadata(project, userId) {
       '',
 
     last_edited_by_email:
-      project.lastEditedByEmail ||
       currentUserProfile?.email ||
       ''
   };
@@ -7030,7 +7126,7 @@ function showProjectList() {
     id: 'local-user',
     email: 'local@fire-s.app',
     fullName: 'Local User',
-    role: 'super_admin',
+    role: 'guest',
     companyId: null,
     companyName: 'Local / Personal Workspace'
   };
@@ -8446,38 +8542,34 @@ if (betaFeedbackList && !canViewAdminSupport) {
 }
 
 function openLoginRoute() {
-  if (currentUserProfile) {
+  // Single Access gate on Home — do not open Cloud login fields.
+  try {
     closeCloudDropdown();
-    updateHomeAccessCards();
+  } catch (_) {}
 
+  if (currentUserProfile && currentUserProfile.id && currentUserProfile.id !== 'local-user') {
+    try {
+      if (typeof window.showHome === 'function') window.showHome();
+    } catch (_) {}
     const syncStatus = document.getElementById('syncStatus');
-
-    if (syncStatus) {
-      syncStatus.textContent = 'You are already logged in.';
-    }
-
+    if (syncStatus) syncStatus.textContent = 'You are already logged in.';
     return;
   }
 
-  const cloudDropdown = document.getElementById('cloudDropdown');
-  const loginToolsPanel = document.getElementById('loginToolsPanel');
-  const loginEmail = document.getElementById('loginEmail');
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('choices');
+      return;
+    }
+  } catch (_) {}
 
-  if (cloudDropdown) {
-    cloudDropdown.style.display = 'block';
-  }
-
-  if (loginToolsPanel) {
-    loginToolsPanel.style.display = 'block';
-  }
-
-  if (loginEmail) {
-    loginEmail.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
-
-    loginEmail.focus();
+  try {
+    if (typeof window.showHome === 'function') window.showHome();
+  } catch (_) {}
+  const access = document.getElementById('fireSGetStarted');
+  if (access) {
+    access.style.display = '';
+    access.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -11768,7 +11860,7 @@ function renderProjectsList() {
     id: 'local-user',
     email: 'local@fire-s.app',
     fullName: 'Local User',
-    role: 'super_admin',
+    role: 'guest',
     companyId: null,
     companyName: 'Local / Personal Workspace'
   };
@@ -14078,76 +14170,92 @@ async function uploadSingleInspection(project) {
   if (!project || !project.id) return;
 
   const syncStatus = document.getElementById('syncStatus');
+  const quiet = !!window.__fireSQuietCloudUpload;
 
   try {
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
-      if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud not connected.';
+      if (syncStatus && !quiet) {
+        syncStatus.textContent = 'Saved locally. Cloud not connected.';
+      }
       return;
     }
 
-   if (syncStatus && project.syncPending === false) {
+    const myId = userData.user.id;
+    let myCompanyId = String(currentUserProfile?.companyId || '').trim() || null;
+
+    if (myCompanyId) {
+      try {
+        const { data: memberRow, error: memberError } = await supabaseClient
+          .from('company_members')
+          .select('company_id, status')
+          .eq('company_id', myCompanyId)
+          .eq('user_id', myId)
+          .eq('status', 'active')
+          .maybeSingle();
+        if (memberError || !memberRow?.company_id) {
+          myCompanyId = null;
+        }
+      } catch (_) {
+        myCompanyId = null;
+      }
+    }
+
+    if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Uploading saved inspection...';
     }
 
-const cloudMetadata =
-  getProjectCloudMetadata(project, userData.user.id);
-
-let projectToUpload = {
-  ...project,
-  syncPending: false,
-  syncError: false,
-  syncedAt: new Date().toISOString()
-};
-
-const hasStrippedPhotos =
-  (project.photos || []).some(photo => !photo.src);
-
-if (hasStrippedPhotos) {
-  const { data: existingRows, error: existingError } = await supabaseClient
-    .from('inspections')
-    .select('inspection_data')
-    .eq('id', project.id)
-    .limit(1);
-
-  if (!existingError && existingRows && existingRows[0]?.inspection_data?.photos) {
-    projectToUpload = {
-      ...projectToUpload,
-      photos: existingRows[0].inspection_data.photos
+    let projectToUpload = {
+      ...project,
+      companyId: myCompanyId || project.companyId || null,
+      company_id: myCompanyId || project.company_id || null,
+      createdByUserId: project.createdByUserId || myId,
+      syncPending: false,
+      syncError: false,
+      syncedAt: new Date().toISOString()
     };
-  }
-}
 
-const { error } = await supabaseClient
-  .from('inspections')
-  .upsert({
-    id: project.id,
-    user_id: userData.user.id,
+    const hasStrippedPhotos =
+      (project.photos || []).some(photo => !photo.src);
 
-    ...cloudMetadata,
+    if (hasStrippedPhotos) {
+      try {
+        const { data: existingPhotoRows } = await supabaseClient
+          .from('inspections')
+          .select('inspection_data')
+          .eq('id', project.id)
+          .limit(1);
+        if (existingPhotoRows?.[0]?.inspection_data?.photos) {
+          projectToUpload = {
+            ...projectToUpload,
+            photos: existingPhotoRows[0].inspection_data.photos
+          };
+        }
+      } catch (_) {}
+    }
 
-    inspection_data: projectToUpload,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'id' });
-    if (error) {
-      console.error('Single upload failed:', error);
-      markUploadQueueFailure(project.id, error);
-      const isDuplicatePremisesError =
-        String(error.code || '') === '23505' &&
-        [
-          'inspections_company_premises_name_unique',
-          'inspections_company_organisation_name_unique',
-          'inspections_company_organisation_site_unique'
-        ].some(indexName =>
-          String(error.message || '').includes(indexName)
-        );
+    // ONLY path: security-definer RPC. No direct table insert/update fallback
+    // (direct writes are what show the USING expression RLS error).
+    const rpc = await supabaseClient.rpc('fire_s_upsert_inspection', {
+      p_id: String(project.id),
+      p_inspection_data: projectToUpload,
+      p_company_id: myCompanyId ? String(myCompanyId) : null
+    });
+
+    if (rpc.error) {
+      console.error('fire_s_upsert_inspection failed:', rpc.error);
+      markUploadQueueFailure(project.id, rpc.error);
+      if (quiet) return;
+
+      const msg = String(rpc.error.message || rpc.error);
+      const missingFn = /could not find the function|schema cache|PGRST202|404/i.test(msg);
 
       if (syncStatus) {
-        syncStatus.textContent = isDuplicatePremisesError
-          ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
-          : `Cloud upload failed: ${error.message}`;
+        syncStatus.textContent = missingFn
+          ? 'Cloud save needs SQL setup. In Supabase run SUPABASE_inspections_rls.sql, then Sync Now.'
+          : `Cloud upload failed: ${msg}`;
       }
       return;
     }
@@ -14155,13 +14263,15 @@ const { error } = await supabaseClient
     removeInspectionFromUploadQueue(project.id);
     markInspectionSynced(project.id);
 
-    if (syncStatus && project.syncPending === false) {
+    if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Saved locally and uploaded to cloud.';
     }
   } catch (err) {
     console.error('Single upload failed:', err);
     markUploadQueueFailure(project.id, err);
-    if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
+    if (syncStatus && !quiet) {
+      syncStatus.textContent = `Saved locally. Cloud upload failed: ${err?.message || err}`;
+    }
   }
 }
 
@@ -24175,7 +24285,7 @@ function renderProjectsList() {
       id: 'local-user',
       email: 'local@fire-s.app',
       fullName: 'Local User',
-      role: 'super_admin',
+      role: 'guest',
       companyId: null,
       companyName: 'Local / Personal Workspace'
     };
@@ -24319,7 +24429,7 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -24533,7 +24643,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -24809,7 +24919,7 @@ if (!window.fireSMobileSmartCardsApplied) {
       id: 'local-user',
       email: 'local@fire-s.app',
       fullName: 'Local User',
-      role: 'super_admin',
+      role: 'guest',
       companyId: null,
       companyName: 'Local / Personal Workspace'
     };
@@ -26223,7 +26333,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -30219,7 +30329,7 @@ function fireSApplyLifecycleUxLabels() {
         id: 'local-user',
         email: 'local@fire-s.app',
         fullName: 'Local User',
-        role: 'super_admin',
+        role: 'guest',
         companyId: null,
         companyName: 'Local / Personal Workspace'
       };
@@ -30831,6 +30941,12 @@ function fireSApplyLifecycleUxLabels() {
 
   function role(){
     try {
+      if (typeof window.fireSViewAsRole131 === 'function') {
+        const viewed = String(window.fireSViewAsRole131() || '').toLowerCase().trim();
+        if (viewed) return viewed;
+      }
+    } catch (error) {}
+    try {
       if (typeof window.getCurrentUserRole === 'function') {
         return String(window.getCurrentUserRole() || '').toLowerCase().trim();
       }
@@ -30849,12 +30965,15 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function isManagement(){
-    return MANAGEMENT_ROLES.has(role());
+    const r = role();
+    return MANAGEMENT_ROLES.has(r) || r === 'company_owner' || r === 'owner';
   }
 
   function isInspector(){
+    // Only real inspector/guest workspaces — never Owner/Manager Role Test views.
+    if (isManagement()) return false;
     const r = role();
-    return INSPECTOR_ROLES.has(r) || !isManagement();
+    return INSPECTOR_ROLES.has(r) || !r;
   }
 
   function qs(sel){ return document.querySelector(sel); }
@@ -30935,6 +31054,10 @@ function fireSApplyLifecycleUxLabels() {
         if (typeof openReportsCommand === 'function') return openReportsCommand();
       },
       cmdCompanyBtn: () => {
+        // Personnel management for Owner/Manager — never treat as inspector no-op.
+        if (typeof window.fireSOpenCompanyTeam === 'function') {
+          return window.fireSOpenCompanyTeam();
+        }
         if (isInspector()) { closeCloud(); return; }
         if (typeof openCompanyCommand === 'function') return openCompanyCommand();
       },
@@ -31006,6 +31129,8 @@ function fireSApplyLifecycleUxLabels() {
     removeDuplicatePanels();
     clarifyNewButton();
     bindHomeCards();
+    // fire-s-clean-home-roles.js owns hero / cards / role pages.
+    if (window.__fireSCleanHomeOwnsRoleUi) return;
     if (isManagement()) setManagementHome();
     else setInspectorHome();
   }
@@ -31044,6 +31169,25 @@ function fireSApplyLifecycleUxLabels() {
 
   document.addEventListener('click', function(event){
     const blocked = event.target && event.target.closest && event.target.closest('#cmdReportsBtn, #cmdCompanyBtn, #cmdServicesBtn, #cmdDashboardBtn, #cmdFindingsBtn, #cmdOverdueBtn');
+    if (!blocked) return;
+
+    // Personnel must open for Owner/Manager (including Role Test views).
+    // A previous bug treated some Owner clicks as inspector and forced
+    // Inspector Work Area instead of the Personnel screen.
+    if (blocked.id === 'cmdCompanyBtn' || (blocked.closest && blocked.closest('#cmdCompanyBtn'))) {
+      if (!isInspector()) return;
+      try {
+        const viewed = String(
+          (typeof window.fireSViewAsRole131 === 'function' && window.fireSViewAsRole131()) ||
+            localStorage.getItem('fireS.viewAsRole.v131') ||
+            ''
+        ).toLowerCase().trim();
+        if (['company_owner', 'owner', 'manager', 'super_admin', 'management'].includes(viewed)) {
+          return;
+        }
+      } catch (_) {}
+    }
+
     if (blocked && isInspector()) {
       event.preventDefault();
       event.stopPropagation();
@@ -31081,7 +31225,14 @@ function fireSApplyLifecycleUxLabels() {
 
   function rememberActualRole131(value){
     const role = String(value || '').toLowerCase().trim();
-    if (role) confirmedActualRole131 = role;
+    if (!role) return confirmedActualRole131 || '';
+    // Never downgrade a confirmed Super Admin because a transient profile
+    // flicker (e.g. after Inspection Gateway → Back Home) would otherwise
+    // force the Almost Ready / pending_member home.
+    if (confirmedActualRole131 === 'super_admin' && role !== 'super_admin') {
+      return confirmedActualRole131;
+    }
+    confirmedActualRole131 = role;
     return role;
   }
 
@@ -31112,7 +31263,10 @@ function fireSApplyLifecycleUxLabels() {
 
   function viewAsRole(){
     const real = actualRole();
-    if (real !== 'super_admin') return real;
+    // Honour Role Test even if profile.role briefly flickers away from super_admin.
+    const stickySuper =
+      real === 'super_admin' || confirmedActualRole131 === 'super_admin';
+    if (!stickySuper) return real;
     try {
       return String(localStorage.getItem(ROLE_PREF_KEY) || real).toLowerCase().trim();
     } catch (_) {
@@ -31280,7 +31434,10 @@ function fireSApplyLifecycleUxLabels() {
     if (!centre) return;
 
     let panel = document.getElementById('fireSRoleTestModePanel');
-    if (actualRole() !== 'super_admin') {
+    const actual = actualRole();
+    const stickySuper =
+      actual === 'super_admin' || confirmedActualRole131 === 'super_admin';
+    if (!stickySuper) {
       if (panel) panel.remove();
       return;
     }

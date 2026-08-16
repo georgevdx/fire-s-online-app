@@ -10,7 +10,20 @@
     if(real==='super_admin') { try { return String(localStorage.getItem(ROLE_PREF_KEY)||real).toLowerCase().trim(); } catch(e){} }
     return real;
   }
-  function isInspector(){ return ['inspector','field_inspector','field-inspector','field inspector','guest','local',''].includes(role()); }
+  function isInspector(){ 
+    try {
+      const clean = String(document.body?.dataset?.fireSCleanHomeRole || '').toLowerCase();
+      if (clean) return clean === 'inspector';
+    } catch(e){}
+    try {
+      if (document.body?.classList?.contains('fire-s-role-owner')) return false;
+      if (document.body?.classList?.contains('fire-s-role-manager')) return false;
+      if (document.body?.classList?.contains('fire-s-role-new-company')) return false;
+      if (document.body?.classList?.contains('fire-s-role-pending-member')) return false;
+      if (document.body?.classList?.contains('fire-s-role-guest')) return false;
+    } catch(e){}
+    return ['inspector','field_inspector','field-inspector','field inspector'].includes(role());
+  }
   function projects(){
     let all=[]; try { all=Array.isArray(getProjects())?getProjects():[]; } catch(e){}
     try { if(typeof getVisibleProjectsForCurrentUser==='function' && currentUserProfile) return getVisibleProjectsForCurrentUser(all)||[]; } catch(e){}

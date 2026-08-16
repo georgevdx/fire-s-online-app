@@ -1,8 +1,17 @@
 /* Fire-S Inspector Simplification V4 — inspector scope only */
+/* Keep Inspection Gateway (command grid) visible; hide chrome around it. */
 body.fire-s-inspector-v4 #mainCommandCentre .main-command-top,
 body.fire-s-inspector-v4 #mainCommandCentre .main-command-stats,
-body.fire-s-inspector-v4 #mainCommandCentre .main-command-grid,
 body.fire-s-inspector-v4 #mainCommandCentre #mainCommandMessage { display:none !important; }
+body.fire-s-inspector-v4 #mainCommandCentre .main-command-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0 0 12px;
+}
+body.fire-s-inspector-v4 #cmdInspectionsBtn {
+  display: flex !important;
+  min-height: 88px;
+}
 body.fire-s-inspector-v4 #mainCommandCentre { max-width:760px; margin:0 auto; padding:18px; }
 .inspector-v4-shell { display:flex; flex-direction:column; gap:16px; }
 .inspector-v4-brand { text-align:center; padding:8px 0 2px; }

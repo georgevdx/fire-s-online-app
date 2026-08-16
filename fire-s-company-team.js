@@ -1,11 +1,10 @@
 /* ============================================================
-   Fire-S Company Team (#5)
+   Fire-S Company Team / Personnel
    Load AFTER app.js.
    Purpose:
-   - Owner/Manager/Super Admin can open a Company Team workspace
-   - List company_members
-   - Add existing Fire-S users by email
-   - Assign Inspector / Manager / Owner roles
+   - After a company exists, show its name prominently
+   - Manage personnel: add, change roles, remove
+   - Create-company UI only when no company is linked yet
    ============================================================ */
 (function fireSCompanyTeamModule() {
   'use strict';
@@ -17,6 +16,7 @@
   ];
   const FRESH_MODE_KEY = 'fireS.forceNewCompanySetup';
   const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
+  const COMPANY_CACHE_KEY = 'fireS.cachedCompany';
 
   function byId(id) {
     return document.getElementById(id);
@@ -24,6 +24,54 @@
 
   function text(value) {
     return String(value || '').trim();
+  }
+
+  function isGenericCompanyName(name) {
+    const n = text(name).toLowerCase();
+    return (
+      !n ||
+      n === 'your company' ||
+      n === 'your new company' ||
+      n === 'local workspace' ||
+      n === 'local / personal workspace'
+    );
+  }
+
+  function rememberCompanyName(companyId, companyName) {
+    const id = text(companyId);
+    const name = text(companyName);
+    if (!id || isGenericCompanyName(name)) return;
+    try {
+      localStorage.setItem(
+        COMPANY_CACHE_KEY,
+        JSON.stringify({ id, name })
+      );
+    } catch (_) {}
+    try {
+      if (window.currentUserProfile) {
+        window.currentUserProfile.companyId = id;
+        window.currentUserProfile.companyName = name;
+      }
+      if (window.currentCompanyAccess) {
+        window.currentCompanyAccess.companyName = name;
+      }
+    } catch (_) {}
+  }
+
+  function recalledCompanyName(companyId) {
+    try {
+      const raw = localStorage.getItem(COMPANY_CACHE_KEY);
+      const cached = raw ? JSON.parse(raw) : null;
+      const name = text(cached?.name);
+      if (
+        name &&
+        !isGenericCompanyName(name) &&
+        (!companyId || text(cached?.id) === text(companyId))
+      ) {
+        return name;
+      }
+    } catch (_) {}
+    return '';
   }
 
   function esc(value) {
@@ -43,6 +91,13 @@
   }
 
   function isFreshCompanyMode() {
+    // Fresh/test company mode is Super Admin only — never for real owners.
+    if (actualMembershipRole() !== 'super_admin') {
+      try {
+        localStorage.removeItem(FRESH_MODE_KEY);
+      } catch (_) {}
+      return false;
+    }
     try {
       if (localStorage.getItem(FRESH_MODE_KEY) === '1') return true;
     } catch (_) {}
@@ -95,34 +150,45 @@
     wrap.style.display = canStart ? '' : 'none';
   }
 
-  function currentRole() {
-    try {
-      if (typeof window.fireSViewAsRole131 === 'function') {
-        const viewed = text(window.fireSViewAsRole131()).toLowerCase();
-        if (viewed === 'new_company') return 'company_owner';
-        if (viewed) return viewed;
-      }
-    } catch (_) {}
-    try {
-      if (typeof window.getCurrentUserRole === 'function') {
-        const role = text(window.getCurrentUserRole()).toLowerCase();
-        if (role === 'new_company') return 'company_owner';
-        return role;
-      }
-    } catch (_) {}
+  function updateDangerControls() {
+    const clearBtn = byId('companyTeamClearOthersBtn');
+    const realRole = text(window.currentUserProfile?.role).toLowerCase();
+    const allowDanger = realRole === 'super_admin';
+    if (clearBtn) {
+      clearBtn.style.display = allowDanger ? '' : 'none';
+      clearBtn.hidden = !allowDanger;
+    }
+  }
+
+  function actualMembershipRole() {
     return text(window.currentUserProfile?.role).toLowerCase();
   }
 
+  function currentRole() {
+    const actual = actualMembershipRole();
+    // Role Test view-as only for real super admins — never for owners/managers.
+    if (actual === 'super_admin') {
+      try {
+        if (typeof window.fireSViewAsRole131 === 'function') {
+          const viewed = text(window.fireSViewAsRole131()).toLowerCase();
+          if (viewed === 'new_company') return 'company_owner';
+          if (viewed) return viewed;
+        }
+      } catch (_) {}
+    }
+    if (actual === 'new_company') return 'company_owner';
+    return actual || 'inspector';
+  }
+
   function canManageTeam() {
-    if (isFreshCompanyMode()) return true;
+    if (isFreshCompanyMode() && actualMembershipRole() === 'super_admin') return true;
     const role = currentRole();
     return ['company_owner', 'super_admin', 'manager'].includes(role);
   }
 
   function canAssignOwner() {
-    if (isFreshCompanyMode()) return true;
-    const role = currentRole();
-    return role === 'company_owner' || role === 'super_admin';
+    // Everyday Personnel: Inspector + Manager only. Owner assignment is rare/admin.
+    return actualMembershipRole() === 'super_admin';
   }
 
   function setMessage(message, isError) {
@@ -221,6 +287,26 @@
     throw new Error('Please login first (Cloud → Login), then open Company Team.');
   }
 
+  function isRoleTestManagementView() {
+    try {
+      const actual =
+        typeof window.fireSActualUserRole131 === 'function'
+          ? text(window.fireSActualUserRole131()).toLowerCase()
+          : '';
+      if (actual !== 'super_admin') return false;
+      const viewed = text(
+        typeof window.fireSViewAsRole131 === 'function'
+          ? window.fireSViewAsRole131()
+          : localStorage.getItem('fireS.viewAsRole.v131')
+      ).toLowerCase();
+      return ['company_owner', 'owner', 'manager', 'management', 'super_admin'].includes(
+        viewed
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function companyContext() {
     const profile = window.currentUserProfile || {};
     if (isFreshCompanyMode()) {
@@ -231,16 +317,97 @@
         role: 'company_owner'
       };
     }
+    const viewed = currentRole();
+    const companyId = profile.companyId || null;
+    const fromProfile = text(profile.companyName);
+    const fromCache = recalledCompanyName(companyId);
+    const companyName =
+      (!isGenericCompanyName(fromProfile) ? fromProfile : '') ||
+      fromCache ||
+      fromProfile ||
+      'Your company';
     return {
-      companyId: profile.companyId || null,
-      companyName: profile.companyName || 'Your company',
+      companyId,
+      companyName,
       email: profile.email || '',
-      role: profile.role || currentRole()
+      role:
+        viewed === 'company_owner' || viewed === 'manager' || viewed === 'super_admin'
+          ? viewed
+          : profile.role || viewed
     };
   }
 
+  async function fetchCompanyName(companyId) {
+    if (!companyId) return recalledCompanyName(companyId);
+    const cached = recalledCompanyName(companyId);
+    try {
+      // Prefer SECURITY DEFINER RPC when available (avoids companies RLS misses).
+      try {
+        const rpc = await waitFor(
+          supabaseClient.rpc('fire_s_my_company'),
+          2500,
+          'My company'
+        );
+        if (!rpc?.error && rpc?.data) {
+          const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+          const name = text(
+            row?.out_company_name || row?.company_name || row?.name
+          );
+          const id = text(
+            row?.out_company_id || row?.company_id || row?.id || companyId
+          );
+          if (name && (!companyId || id === text(companyId) || !id)) {
+            rememberCompanyName(companyId || id, name);
+            return name;
+          }
+        }
+      } catch (_) {}
+
+      const result = await waitFor(
+        supabaseClient
+          .from('companies')
+          .select('id, name')
+          .eq('id', companyId)
+          .maybeSingle(),
+        2500,
+        'Company name'
+      );
+      if (!result?.error) {
+        const name = text(result?.data?.name);
+        if (name) {
+          rememberCompanyName(companyId, name);
+          return name;
+        }
+      }
+
+      // Fallback: membership embed
+      const embed = await waitFor(
+        supabaseClient
+          .from('company_members')
+          .select('company_id, companies(name)')
+          .eq('company_id', companyId)
+          .eq('user_id', window.currentUserProfile?.id || '')
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle(),
+        2500,
+        'Company embed'
+      );
+      const embedName = text(
+        embed?.data?.companies?.name ||
+          (Array.isArray(embed?.data?.companies)
+            ? embed.data.companies[0]?.name
+            : '')
+      );
+      if (embedName) {
+        rememberCompanyName(companyId, embedName);
+        return embedName;
+      }
+    } catch (_) {}
+    return cached;
+  }
+
   async function discoverCompanyForUser(userId) {
-    // One lightweight query only — company name can stay generic for speed.
     const basic = await waitFor(
       supabaseClient
         .from('company_members')
@@ -257,9 +424,15 @@
     const row = basic?.data;
     if (!row?.company_id) return null;
 
+    const knownName = text(window.currentUserProfile?.companyName);
+    const companyName =
+      (knownName && knownName !== 'Your company' ? knownName : '') ||
+      (await fetchCompanyName(row.company_id)) ||
+      'Your company';
+
     return {
       companyId: row.company_id,
-      companyName: window.currentUserProfile?.companyName || 'Your company',
+      companyName,
       role: row.role || 'company_owner'
     };
   }
@@ -329,13 +502,72 @@
     } catch (_) {}
   }
 
+  function setLaterButtonVisible(visible) {
+    const laterBtn = byId('companyTeamLaterBtn');
+    if (laterBtn) laterBtn.style.display = visible ? '' : 'none';
+  }
+
+  function setPersonnelChrome(mode, companyName) {
+    const intro = document.querySelector('#companyTeamSection .company-team-intro');
+    const heading = byId('companyTeamHeading');
+    const kicker = byId('companyTeamKicker');
+    const title = byId('companyTeamTitle');
+    const subtitle = byId('companyTeamSubtitle');
+    const isSetup = mode === 'setup';
+    const displayName = text(companyName);
+
+    if (intro) {
+      intro.classList.toggle('is-setup', isSetup);
+      intro.classList.toggle(
+        'has-company-name',
+        !isSetup && !isGenericCompanyName(displayName)
+      );
+    }
+    if (heading) heading.textContent = isSetup ? 'Company' : 'People';
+    if (kicker) {
+      kicker.textContent = isSetup
+        ? 'First step'
+        : isGenericCompanyName(displayName)
+          ? 'Your company'
+          : 'Your company';
+    }
+    if (title) {
+      title.textContent = isSetup
+        ? 'Name your company'
+        : displayName || 'Your company';
+    }
+    if (subtitle) {
+      subtitle.textContent = isSetup
+        ? 'Save once. After that you only add people here.'
+        : 'Add Inspectors and Managers. Change roles or remove people when needed.';
+    }
+    updateDangerControls();
+  }
+
   function renderMeta(ctx, members) {
     const meta = byId('companyTeamMeta');
-    const title = byId('companyTeamTitle');
-    if (title) title.textContent = ctx.companyName || 'Manage your team';
+    const hasCompany = !!text(ctx.companyId) && !isFreshCompanyMode();
+    setPersonnelChrome(hasCompany ? 'manage' : 'setup', ctx.companyName);
     if (!meta) return;
+    if (!hasCompany) {
+      meta.textContent = 'No company linked yet';
+      return;
+    }
     const active = members.filter(m => text(m.status).toLowerCase() !== 'inactive').length;
-    meta.textContent = `${ctx.companyName} · ${active} member(s) · Your role: ${roleLabel(ctx.role)}`;
+    const nameBit = !isGenericCompanyName(ctx.companyName)
+      ? `${ctx.companyName} · `
+      : '';
+    meta.textContent = `${nameBit}${active} person(s) · Your role: ${roleLabel(ctx.role)}`;
+  }
+
+  function refreshPersonnelChrome() {
+    try {
+      const section = byId('companyTeamSection');
+      if (!section || section.style.display === 'none') return;
+      const ctx = companyContext();
+      const hasCompany = !!text(ctx.companyId) && !isFreshCompanyMode();
+      setPersonnelChrome(hasCompany ? 'manage' : 'setup', ctx.companyName);
+    } catch (_) {}
   }
 
   function roleOptionsHtml(selected, disabledOwner) {
@@ -388,9 +620,9 @@
               <strong>${esc(email)}</strong>
               <span>Invited as ${esc(roleLabel(role))} · not logged in yet</span>
             </div>
-            <div class="company-team-card-actions">
+            <div class="company-team-card-actions is-invite">
               <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}">
-                Cancel
+                Cancel invite
               </button>
             </div>
           </article>`;
@@ -402,6 +634,66 @@
         await cancelInvite(btn.getAttribute('data-cancel-invite'));
       });
     });
+  }
+
+  async function clearOtherPersonnel() {
+    try {
+      if (!canManageTeam()) {
+        throw new Error('Only Manager or Owner can clear personnel.');
+      }
+      const ctx = companyContext();
+      if (!ctx.companyId) throw new Error('No company linked yet.');
+
+      const ok = window.confirm(
+        'Remove all other people and pending invites?\n\nOnly your login stays. Then you can add fresh employees.'
+      );
+      if (!ok) return;
+
+      setMessage('Clearing other people…');
+      const me = text(window.currentUserProfile?.id);
+      const members = await loadMembers(ctx.companyId);
+      const invites = await loadPendingInvites(ctx.companyId);
+
+      let removed = 0;
+      let cancelled = 0;
+
+      for (const invite of invites) {
+        const id = text(invite.id);
+        if (!id) continue;
+        const { error } = await waitFor(
+          supabaseClient
+            .from('company_invites')
+            .update({ status: 'cancelled' })
+            .eq('id', id),
+          3000,
+          'Cancel invite'
+        );
+        if (!error) cancelled += 1;
+      }
+
+      for (const member of members) {
+        const userId = text(member.user_id);
+        const status = text(member.status || 'active').toLowerCase();
+        if (!userId || userId === me || status === 'inactive') continue;
+        const rpc = await waitFor(
+          supabaseClient.rpc('fire_s_remove_member', {
+            p_company_id: ctx.companyId,
+            p_user_id: userId
+          }),
+          4000,
+          'Remove member'
+        );
+        if (!rpc.error) removed += 1;
+      }
+
+      setMessage(
+        `Cleared. Removed ${removed} member(s), cancelled ${cancelled} invite(s). You can add fresh employees now.`
+      );
+      await refreshTeam();
+    } catch (error) {
+      console.error('Clear other personnel failed:', error);
+      setMessage(error.message || 'Could not clear other people.', true);
+    }
   }
 
   async function cancelInvite(inviteId) {
@@ -431,7 +723,7 @@
     const active = members.filter(m => text(m.status || 'active').toLowerCase() !== 'inactive');
     if (!active.length) {
       list.innerHTML =
-        '<div class="company-team-empty">No active team members yet. Add emails above.</div>';
+        '<div class="company-team-empty">No personnel yet. Add someone by email above.</div>';
       return;
     }
 
@@ -448,14 +740,14 @@
           <article class="company-team-card" data-member-id="${esc(memberKey)}">
             <div class="company-team-card-main">
               <strong>${esc(name)}</strong>
-              <span>${esc(email)}${isMe ? ' · you' : ''}</span>
+              <span>${esc(email)}${isMe ? ' · you' : ''} · ${esc(roleLabel(role))}</span>
             </div>
-            <div class="company-team-card-actions">
+            <div class="company-team-card-actions${isMe ? ' is-self' : ''}">
               <select data-role-select="${esc(memberKey)}" aria-label="Role for ${esc(email)}">
                 ${roleOptionsHtml(role, !canAssignOwner())}
               </select>
               <button type="button" class="secondary-btn" data-save-role="${esc(memberKey)}" data-user-id="${esc(member.user_id)}">
-                Save role
+                Change role
               </button>
               ${
                 isMe
@@ -481,7 +773,7 @@
     list.querySelectorAll('[data-remove-member]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const userId = btn.getAttribute('data-remove-member');
-        if (!window.confirm('Remove this person from the company team?')) return;
+        if (!window.confirm('Remove this person from the company?')) return;
         await removeMember(userId);
       });
     });
@@ -608,10 +900,12 @@
         if (roleSelect) roleSelect.value = 'inspector';
         if (status === 'invited') {
           setMessage(
-            `${email} saved as ${roleLabel(role)}. They only need to install Fire-S and login with this email.`
+            `${email} saved as ${roleLabel(role)}. They open Access → Create password (first time only). If that email already exists, they use Login or Forgot password — not Create password again.`
           );
         } else {
-          setMessage(`${email} added as ${roleLabel(role)}.`);
+          setMessage(
+            `${email} added as ${roleLabel(role)}. They Login with that email. If the password is unknown, use Forgot password on Access.`
+          );
         }
         await refreshTeam();
         return;
@@ -808,6 +1102,12 @@
         companyId: company.id,
         companyName: company.name
       };
+      rememberCompanyName(company.id, company.name || companyName);
+      try {
+        if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+          window.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
 
       if (nameInput) nameInput.value = company.name || companyName;
       updateFreshBanner();
@@ -818,32 +1118,22 @@
       const addPanel = byId('companyTeamAddPanel');
       if (setupPanel) setupPanel.style.display = 'none';
       if (addPanel) addPanel.style.display = '';
-      renderMeta(companyContext(), [
-        {
-          user_id: user.id,
-          role: 'company_owner',
-          status: 'active',
-          profiles: {
-            id: user.id,
-            email: user.email,
-            full_name: window.currentUserProfile?.fullName || user.email
-          }
+      window.__fireSTeamAfterCreate = true;
+      setLaterButtonVisible(true);
+      const ownerRow = {
+        user_id: user.id,
+        role: 'company_owner',
+        status: 'active',
+        profiles: {
+          id: user.id,
+          email: user.email,
+          full_name: window.currentUserProfile?.fullName || user.email
         }
-      ]);
-      renderMembers([
-        {
-          user_id: user.id,
-          role: 'company_owner',
-          status: 'active',
-          profiles: {
-            id: user.id,
-            email: user.email,
-            full_name: window.currentUserProfile?.fullName || user.email
-          }
-        }
-      ]);
+      };
+      renderMeta(companyContext(), [ownerRow]);
+      renderMembers([ownerRow]);
       setMessage(
-        `Company “${company.name}” is ready. Add Inspectors and Managers below.`
+        `“${company.name}” is ready. Manage personnel below — add, change roles, or remove.`
       );
 
       // Soft refresh in background (ignore failures).
@@ -852,6 +1142,14 @@
       }, 50);
     } catch (error) {
       console.error('Create company failed:', error);
+      const msg = String(error.message || '');
+      if (/company_id.*ambiguous/i.test(msg)) {
+        setMessage(
+          'Database fix needed: run SUPABASE_fix_create_company_ambiguous.sql in Supabase SQL Editor, then Save company again.',
+          true
+        );
+        return;
+      }
       setMessage(
         error.message ||
           'Could not create company. Run SUPABASE_company_team.sql in Supabase SQL Editor, then try again.',
@@ -866,12 +1164,32 @@
     const list = byId('companyTeamList');
     updateFreshBanner();
     updateStartFreshButton(!!(window.currentUserProfile?.companyId) && !isFreshCompanyMode());
-    renderMeta(ctx || companyContext(), []);
+    setLaterButtonVisible(false);
+    // Keep the Personnel framing — create name is only the first step.
+    const heading = byId('companyTeamHeading');
+    const kicker = byId('companyTeamKicker');
+    const title = byId('companyTeamTitle');
+    const subtitle = byId('companyTeamSubtitle');
+    const intro = document.querySelector('#companyTeamSection .company-team-intro');
+    if (intro) intro.classList.add('is-setup');
+    if (heading) heading.textContent = 'Personnel';
+    if (kicker) kicker.textContent = 'Get started';
+    if (title) title.textContent = 'Name your company';
+    if (subtitle) {
+      subtitle.textContent =
+        'Save the company name once. Then you add people, change roles, or remove staff.';
+    }
+    const meta = byId('companyTeamMeta');
+    if (meta) {
+      meta.textContent = isRoleTestManagementView()
+        ? 'Role Test · no company linked yet'
+        : 'No company linked yet';
+    }
     if (setupPanel) setupPanel.style.display = '';
     if (addPanel) addPanel.style.display = 'none';
     if (list) {
       list.innerHTML =
-        '<div class="company-team-empty">Create your company above, then appoint Inspectors and Managers.</div>';
+        '<div class="company-team-empty">Save the company name above, then manage personnel here.</div>';
     }
     const pending = byId('companyTeamPendingList');
     if (pending) pending.innerHTML = '';
@@ -886,7 +1204,7 @@
     }
     setMessage(
       message ||
-        'Day 1: create your company, then add your first team members.',
+        'Name your company once. After that you manage personnel here.',
       false
     );
   }
@@ -915,7 +1233,7 @@
       if (isFreshCompanyMode()) {
         showSetupState(
           companyContext(),
-          'Brand-new company mode: create your company, then appoint members.'
+          'Brand-new company mode: name the company, then manage personnel.'
         );
         return;
       }
@@ -946,7 +1264,7 @@
       if (!ctx.companyId) {
         showSetupState(
           ctx,
-          'No company linked yet. Enter a name and click Create company.'
+          'No company linked yet. Enter a name and click Save company.'
         );
         return;
       }
@@ -954,13 +1272,14 @@
       if (!canManageTeam()) {
         if (addPanel) addPanel.style.display = 'none';
         if (setupPanel) setupPanel.style.display = 'none';
+        setLaterButtonVisible(false);
         if (list) {
           list.innerHTML =
-            '<div class="company-team-empty">Company Team is available to Managers and Owners.</div>';
+            '<div class="company-team-empty">Personnel management is available to Managers and Owners.</div>';
         }
         renderMeta(ctx, []);
         updateStartFreshButton(false);
-        setMessage('You can view company info, but only Managers/Owners can edit the team.', true);
+        setMessage('You can view the company, but only Managers/Owners can manage personnel.', true);
         return;
       }
 
@@ -968,22 +1287,38 @@
       if (addPanel) addPanel.style.display = '';
       updateStartFreshButton(true);
 
-      setMessage('Loading team members…');
+      setMessage('Loading personnel…');
+      // Company name is the page hero — resolve it if still generic.
+      if (isGenericCompanyName(ctx.companyName)) {
+        const realName = await fetchCompanyName(ctx.companyId);
+        if (realName) {
+          rememberCompanyName(ctx.companyId, realName);
+          ctx = companyContext();
+          try {
+            if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+              window.fireSApplyCleanHomeRoles();
+            }
+          } catch (_) {}
+        }
+      } else {
+        rememberCompanyName(ctx.companyId, ctx.companyName);
+      }
       const members = await loadMembers(ctx.companyId);
       const invites = await loadPendingInvites(ctx.companyId);
       renderMeta(ctx, members);
       renderPendingInvites(invites);
       renderMembers(members);
       if (window.__fireSTeamAfterCreate) {
-        window.__fireSTeamAfterCreate = false;
+        setLaterButtonVisible(true);
         setMessage(
-          'Company ready. Add Inspectors and Managers now — or tap “Do this later”.'
+          `“${ctx.companyName || 'Your company'}” is ready. Add personnel now — or do it later.`
         );
       } else {
+        setLaterButtonVisible(false);
         setMessage(
           members.length || invites.length
             ? ''
-            : 'Add Inspectors and Managers below, or do it later from Team.'
+            : 'Add your first Inspector or Manager below.'
         );
       }
     } catch (error) {
@@ -1006,24 +1341,23 @@
 
   function beginFreshCompany() {
     setFreshCompanyMode(true);
-    const title = byId('companyTeamTitle');
-    if (title) title.textContent = 'Your new company';
     showSetupState(
       companyContext(),
-      'Brand-new company mode: create your company, then appoint members.'
+      'Brand-new company mode: name the company, then manage personnel.'
     );
   }
 
   function exitFreshCompany() {
     setFreshCompanyMode(false);
-    const title = byId('companyTeamTitle');
-    if (title) title.textContent = 'Manage your team';
     refreshTeam().catch(() => {});
   }
 
   async function openCompanyTeam(options) {
     if (options && options.afterCreate) {
       window.__fireSTeamAfterCreate = true;
+    } else if (!(options && options.keepAfterCreate)) {
+      // Re-open from Home is ongoing management, not first-day create.
+      window.__fireSTeamAfterCreate = false;
     }
     showCompanyTeamSection();
     updateFreshBanner();
@@ -1033,15 +1367,16 @@
       showSetupState(
         ctx,
         isFreshCompanyMode()
-          ? 'Brand-new company mode: create your company, then appoint members.'
+          ? 'Brand-new company mode: name the company, then manage personnel.'
           : 'Checking your company link…'
       );
     } else {
+      setLaterButtonVisible(!!window.__fireSTeamAfterCreate);
       renderMeta(ctx, []);
       setMessage(
         window.__fireSTeamAfterCreate
-          ? 'Company ready. Add your team below — or do it later.'
-          : 'Loading company team…'
+          ? `“${ctx.companyName || 'Your company'}” is ready. Manage personnel below.`
+          : 'Loading personnel…'
       );
     }
     await refreshTeam();
@@ -1080,8 +1415,23 @@
       openCompanyCommand = wrapped;
     } catch (_) {}
 
-    // Re-bind home card if present.
+    // Re-bind home card if present — capture phase so Personnel always opens
+    // even if older Home controllers rewrote onclick.
     const btn = byId('cmdCompanyBtn');
+    if (btn && !btn.__fireSPersonnelBound) {
+      btn.__fireSPersonnelBound = true;
+      btn.addEventListener(
+        'click',
+        function fireSPersonnelCardClick(event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          wrapped();
+        },
+        true
+      );
+    }
     if (btn) {
       btn.onclick = function (event) {
         if (event) event.preventDefault();
@@ -1108,8 +1458,15 @@
       laterBtn.__fireSCompanyBound = true;
       laterBtn.addEventListener('click', () => {
         window.__fireSTeamAfterCreate = false;
+        setLaterButtonVisible(false);
         goHome();
       });
+    }
+
+    const clearOthersBtn = byId('companyTeamClearOthersBtn');
+    if (clearOthersBtn && !clearOthersBtn.__fireSCompanyBound) {
+      clearOthersBtn.__fireSCompanyBound = true;
+      clearOthersBtn.addEventListener('click', clearOtherPersonnel);
     }
 
     const createBtn = byId('companyTeamCreateBtn');
@@ -1150,6 +1507,8 @@
   window.fireSOpenCompanyTeam = openCompanyTeam;
   window.openCompanyTeamOverlay = openCompanyTeam;
   window.fireSRefreshCompanyTeam = refreshTeam;
+  window.fireSRefreshCompanyTeamChrome = refreshPersonnelChrome;
+  window.fireSRememberCompanyName = rememberCompanyName;
   window.fireSBeginFreshCompany = beginFreshCompany;
 
   if (document.readyState === 'loading') {
