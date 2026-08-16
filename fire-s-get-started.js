@@ -616,7 +616,7 @@
       refreshHomeChrome();
       setTimeout(openPersonnelAfterCreate, 200);
     } catch (e) {
-      setStatus((e && e.message) || 'Could not register company.', true);
+      setStatus(authErrorMessage(e), true);
     }
   }
 
