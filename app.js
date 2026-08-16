@@ -14251,6 +14251,33 @@ async function uploadSingleInspection(project) {
       }
     }
 
+    // Preferred path: SECURITY DEFINER RPC (bypasses inspections RLS safely).
+    try {
+      const rpc = await supabaseClient.rpc('fire_s_upsert_inspection', {
+        p_id: project.id,
+        p_inspection_data: projectToUpload,
+        p_company_id: myCompanyId
+      });
+      if (!rpc.error) {
+        removeInspectionFromUploadQueue(project.id);
+        markInspectionSynced(project.id);
+        if (syncStatus && project.syncPending === false && !quiet) {
+          syncStatus.textContent = 'Saved locally and uploaded to cloud.';
+        }
+        return;
+      }
+      // Function missing / not deployed yet → fall through to direct write.
+      if (
+        !/could not find the function|schema cache|PGRST202|404/i.test(
+          String(rpc.error?.message || '')
+        )
+      ) {
+        console.warn('fire_s_upsert_inspection failed, trying direct write:', rpc.error);
+      }
+    } catch (rpcErr) {
+      console.warn('fire_s_upsert_inspection unavailable:', rpcErr);
+    }
+
     const { data: existingRows } = await supabaseClient
       .from('inspections')
       .select('id, user_id, company_id')
@@ -14374,7 +14401,7 @@ async function uploadSingleInspection(project) {
         syncStatus.textContent = isDuplicatePremisesError
           ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
           : isRlsError(error)
-            ? 'Cloud save blocked. Work is saved on this device. In Supabase SQL Editor run SUPABASE_inspections_rls.sql (full reset), then Sync Now.'
+            ? 'Cloud save blocked. Run the inspections SQL in Supabase (fire_s_upsert_inspection), then Sync Now.'
             : `Cloud upload failed: ${error.message}`;
       }
       return;
