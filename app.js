@@ -5911,11 +5911,15 @@ function getVisibleProjectsForCurrentUser(projects) {
 }
 
 function getProjectCloudMetadata(project, userId) {
+  // Prefer the signed-in membership company — stale local companyId causes RLS failures.
+  const companyId =
+    currentUserProfile?.companyId ||
+    project.companyId ||
+    project.company_id ||
+    null;
+
   return {
-    company_id:
-      project.companyId ||
-      currentUserProfile?.companyId ||
-      null,
+    company_id: companyId,
 
     created_by_user_id:
       project.createdByUserId ||
@@ -5923,7 +5927,6 @@ function getProjectCloudMetadata(project, userId) {
       userId,
 
     last_edited_by_user_id:
-      project.lastEditedByUserId ||
       currentUserProfile?.id ||
       userId,
 
@@ -5938,7 +5941,6 @@ function getProjectCloudMetadata(project, userId) {
       '',
 
     last_edited_by_email:
-      project.lastEditedByEmail ||
       currentUserProfile?.email ||
       ''
   };
@@ -14157,65 +14159,132 @@ async function uploadSingleInspection(project) {
   if (!project || !project.id) return;
 
   const syncStatus = document.getElementById('syncStatus');
+  const quiet = !!window.__fireSQuietCloudUpload;
 
   try {
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
-      if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud not connected.';
+      if (syncStatus && !quiet) {
+        syncStatus.textContent = 'Saved locally. Cloud not connected.';
+      }
       return;
     }
 
-   if (syncStatus && project.syncPending === false) {
+    const myId = userData.user.id;
+    const myCompanyId = String(currentUserProfile?.companyId || '').trim() || null;
+
+    if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Uploading saved inspection...';
     }
 
-const cloudMetadata =
-  getProjectCloudMetadata(project, userData.user.id);
+    const cloudMetadata = getProjectCloudMetadata(project, myId);
 
-let projectToUpload = {
-  ...project,
-  syncPending: false,
-  syncError: false,
-  syncedAt: new Date().toISOString()
-};
-
-const hasStrippedPhotos =
-  (project.photos || []).some(photo => !photo.src);
-
-if (hasStrippedPhotos) {
-  const { data: existingRows, error: existingError } = await supabaseClient
-    .from('inspections')
-    .select('inspection_data')
-    .eq('id', project.id)
-    .limit(1);
-
-  if (!existingError && existingRows && existingRows[0]?.inspection_data?.photos) {
-    projectToUpload = {
-      ...projectToUpload,
-      photos: existingRows[0].inspection_data.photos
+    let projectToUpload = {
+      ...project,
+      companyId: cloudMetadata.company_id || project.companyId || null,
+      company_id: cloudMetadata.company_id || project.company_id || null,
+      createdByUserId: project.createdByUserId || myId,
+      syncPending: false,
+      syncError: false,
+      syncedAt: new Date().toISOString()
     };
-  }
-}
 
-const { error } = await supabaseClient
-  .from('inspections')
-  .upsert({
-    id: project.id,
-    user_id: userData.user.id,
+    const hasStrippedPhotos =
+      (project.photos || []).some(photo => !photo.src);
 
-    ...cloudMetadata,
+    if (hasStrippedPhotos) {
+      const { data: existingPhotoRows, error: existingPhotoError } =
+        await supabaseClient
+          .from('inspections')
+          .select('inspection_data')
+          .eq('id', project.id)
+          .limit(1);
 
-    inspection_data: projectToUpload,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'id' });
+      if (
+        !existingPhotoError &&
+        existingPhotoRows &&
+        existingPhotoRows[0]?.inspection_data?.photos
+      ) {
+        projectToUpload = {
+          ...projectToUpload,
+          photos: existingPhotoRows[0].inspection_data.photos
+        };
+      }
+    }
+
+    // Read existing cloud row so we do not violate RLS by changing owner/company.
+    const { data: existingRows } = await supabaseClient
+      .from('inspections')
+      .select('id, user_id, company_id')
+      .eq('id', project.id)
+      .limit(1);
+
+    const existing = Array.isArray(existingRows) ? existingRows[0] : null;
+    const existingOwnerId = existing?.user_id || null;
+    const existingCompanyId = String(existing?.company_id || '').trim() || null;
+
+    // Payload rules that satisfy typical inspections RLS:
+    // - INSERT: user_id must be auth.uid()
+    // - UPDATE: keep existing user_id; keep/align company_id with membership
+    const rowCompanyId = myCompanyId || existingCompanyId || cloudMetadata.company_id || null;
+    const rowUserId = existingOwnerId || myId;
+
+    if (
+      existing &&
+      existingOwnerId &&
+      existingOwnerId !== myId &&
+      existingCompanyId &&
+      myCompanyId &&
+      existingCompanyId !== myCompanyId
+    ) {
+      // Someone else's inspection in another company — do not keep retrying.
+      removeInspectionFromUploadQueue(project.id);
+      return;
+    }
+
+    let error = null;
+
+    if (existing) {
+      const { error: updateError } = await supabaseClient
+        .from('inspections')
+        .update({
+          user_id: rowUserId,
+          company_id: rowCompanyId,
+          created_by_user_id: cloudMetadata.created_by_user_id,
+          last_edited_by_user_id: myId,
+          company_access_status: cloudMetadata.company_access_status,
+          created_by_email: cloudMetadata.created_by_email,
+          last_edited_by_email: cloudMetadata.last_edited_by_email,
+          inspection_data: projectToUpload,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', project.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabaseClient
+        .from('inspections')
+        .insert({
+          id: project.id,
+          user_id: myId,
+          company_id: rowCompanyId,
+          created_by_user_id: cloudMetadata.created_by_user_id,
+          last_edited_by_user_id: myId,
+          company_access_status: cloudMetadata.company_access_status,
+          created_by_email: cloudMetadata.created_by_email,
+          last_edited_by_email: cloudMetadata.last_edited_by_email,
+          inspection_data: projectToUpload,
+          updated_at: new Date().toISOString()
+        });
+      error = insertError;
+    }
+
     if (error) {
       console.error('Single upload failed:', error);
       markUploadQueueFailure(project.id, error);
-      if (window.__fireSQuietCloudUpload) {
-        return;
-      }
+      if (quiet) return;
+
       const isDuplicatePremisesError =
         String(error.code || '') === '23505' &&
         [
@@ -14225,7 +14294,7 @@ const { error } = await supabaseClient
         ].some(indexName =>
           String(error.message || '').includes(indexName)
         );
-      const isRlsError = /row-level security|rls/i.test(
+      const isRlsError = /row-level security|rls|USING expression/i.test(
         String(error.message || '')
       );
 
@@ -14233,7 +14302,7 @@ const { error } = await supabaseClient
         syncStatus.textContent = isDuplicatePremisesError
           ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
           : isRlsError
-            ? 'Cloud save blocked by company access rules. Your work is still saved on this device.'
+            ? 'Cloud save blocked by company access rules. Work is saved on this device. Ask admin to run SUPABASE_inspections_rls.sql.'
             : `Cloud upload failed: ${error.message}`;
       }
       return;
@@ -14242,13 +14311,15 @@ const { error } = await supabaseClient
     removeInspectionFromUploadQueue(project.id);
     markInspectionSynced(project.id);
 
-    if (syncStatus && project.syncPending === false) {
+    if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Saved locally and uploaded to cloud.';
     }
   } catch (err) {
     console.error('Single upload failed:', err);
     markUploadQueueFailure(project.id, err);
-    if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
+    if (syncStatus && !quiet) {
+      syncStatus.textContent = 'Saved locally. Cloud upload failed.';
+    }
   }
 }
 
