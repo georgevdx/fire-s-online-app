@@ -460,6 +460,17 @@
     setStatus('Signed in. Waiting for your owner to add you.');
   }
 
+  function accessRedirectUrl() {
+    try {
+      var path = String(window.location.pathname || '/');
+      path = path.replace(/index\.html$/i, '');
+      if (!path.endsWith('/')) path += '/';
+      return String(window.location.origin || '') + path;
+    } catch (_) {
+      return '';
+    }
+  }
+
   async function doForgotPassword(fromCreate) {
     var emailField = fromCreate ? byId('fireSCreateEmail') : byId('fireSLoginEmail');
     var email = text(emailField && emailField.value).toLowerCase();
@@ -474,10 +485,7 @@
     }
     setStatus('Sending password reset email…');
     try {
-      var redirectTo = '';
-      try {
-        redirectTo = String(window.location.origin || '') + '/';
-      } catch (_) {}
+      var redirectTo = accessRedirectUrl();
       var opts = redirectTo ? { redirectTo: redirectTo } : undefined;
       var res = await sb.auth.resetPasswordForEmail(email, opts);
       if (res.error) throw res.error;
