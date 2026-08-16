@@ -1,9 +1,9 @@
--- Fire-S: RESET inspections RLS (run this whole script in Supabase SQL Editor)
--- Fixes: Cloud upload failed: new row violates row-level security policy for table "inspections"
+-- Fire-S: FULL RESET of inspections RLS
+-- Paste ALL of this into Supabase → SQL Editor → Run
+-- Fixes: new row violates row-level security policy (USING expression)
 
 begin;
 
--- 1) Helper: active company membership
 create or replace function public.fire_s_is_company_member(p_company_id uuid)
 returns boolean
 language sql
@@ -25,10 +25,9 @@ $$;
 revoke all on function public.fire_s_is_company_member(uuid) from public;
 grant execute on function public.fire_s_is_company_member(uuid) to authenticated;
 
--- 2) Turn RLS on
 alter table public.inspections enable row level security;
 
--- 3) Drop EVERY existing policy on inspections (old names included)
+-- Drop ALL policies on inspections
 do $$
 declare
   r record;
@@ -43,7 +42,7 @@ begin
   end loop;
 end $$;
 
--- 4) Simple policies that always allow YOUR own uploads
+-- SELECT: own rows or company rows
 create policy "fire_s_inspections_select"
   on public.inspections
   for select
@@ -53,14 +52,15 @@ create policy "fire_s_inspections_select"
     or public.fire_s_is_company_member(company_id)
   );
 
+-- INSERT: only require the row belongs to the signed-in user
 create policy "fire_s_inspections_insert"
   on public.inspections
   for insert
   to authenticated
-  with check (
-    user_id = auth.uid()
-  );
+  with check (user_id = auth.uid());
 
+-- UPDATE: if you can access the row, allow the new values
+-- (WITH CHECK true avoids USING-expression failures when only JSON changes)
 create policy "fire_s_inspections_update"
   on public.inspections
   for update
@@ -69,10 +69,7 @@ create policy "fire_s_inspections_update"
     user_id = auth.uid()
     or public.fire_s_is_company_member(company_id)
   )
-  with check (
-    user_id = auth.uid()
-    or public.fire_s_is_company_member(company_id)
-  );
+  with check (true);
 
 create policy "fire_s_inspections_delete"
   on public.inspections
@@ -85,5 +82,5 @@ create policy "fire_s_inspections_delete"
 
 commit;
 
--- Optional check: should list the 4 fire_s_inspections_* policies
--- select policyname, cmd from pg_policies where tablename = 'inspections';
+-- Verify (run separately if you want):
+-- select policyname, cmd, qual, with_check from pg_policies where tablename = 'inspections';

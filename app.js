@@ -3925,12 +3925,23 @@ if (cloudTime > localTime) {
     };
   });
 
-  const { error: uploadError } = await supabaseClient
-    .from('inspections')
-    .upsert(rows, { onConflict: 'id' });
+  // Never bulk-upsert: rewriting user_id on shared company rows trips RLS USING.
+  let uploadFailures = 0;
+  for (const project of mergedProjects) {
+    try {
+      await uploadSingleInspection({
+        ...project,
+        syncPending: true,
+        syncError: false
+      });
+    } catch (_) {
+      uploadFailures += 1;
+    }
+  }
 
-  if (uploadError) {
-    getEl('syncStatus').textContent = `Merged locally, but upload failed: ${uploadError.message}`;
+  if (uploadFailures) {
+    getEl('syncStatus').textContent =
+      `Merged locally. ${uploadFailures} cloud upload(s) still blocked.`;
     return;
   }
 
@@ -14262,19 +14273,19 @@ async function uploadSingleInspection(project) {
       return;
     }
 
-    const buildPayload = (companyId, userId) => ({
+    const buildInsertPayload = companyId => ({
       id: project.id,
-      user_id: userId,
+      user_id: myId,
       company_id: companyId,
-      created_by_user_id: cloudMetadata.created_by_user_id || myId,
+      created_by_user_id: myId,
       last_edited_by_user_id: myId,
-      company_access_status: cloudMetadata.company_access_status,
       created_by_email: cloudMetadata.created_by_email,
       last_edited_by_email: cloudMetadata.last_edited_by_email,
       inspection_data: {
         ...projectToUpload,
         companyId: companyId,
-        company_id: companyId
+        company_id: companyId,
+        createdByUserId: myId
       },
       updated_at: new Date().toISOString()
     });
@@ -14282,45 +14293,43 @@ async function uploadSingleInspection(project) {
     let error = null;
 
     if (existing) {
-      // Keep original owner; attach our company only when we are a confirmed member.
-      const updateCompanyId = myCompanyId || existingCompanyId || null;
+      // CRITICAL: do not change user_id / company_id on update — that triggers
+      // "new row violates row-level security policy (USING expression)".
       const { error: updateError } = await supabaseClient
         .from('inspections')
-        .update(buildPayload(updateCompanyId, existingOwnerId || myId))
+        .update({
+          inspection_data: projectToUpload,
+          updated_at: new Date().toISOString(),
+          last_edited_by_user_id: myId,
+          last_edited_by_email: cloudMetadata.last_edited_by_email
+        })
         .eq('id', project.id);
       error = updateError;
 
-      // If update blocked, try a minimal own-row update.
-      if (error && isRlsError(error) && (!existingOwnerId || existingOwnerId === myId)) {
+      if (error && isRlsError(error) && existingOwnerId === myId) {
         const { error: retryUpdateError } = await supabaseClient
           .from('inspections')
           .update({
             inspection_data: projectToUpload,
-            updated_at: new Date().toISOString(),
-            last_edited_by_user_id: myId
+            updated_at: new Date().toISOString()
           })
           .eq('id', project.id)
           .eq('user_id', myId);
         error = retryUpdateError;
       }
     } else {
-      // INSERT must always use auth user id.
-      let insertPayload = buildPayload(myCompanyId, myId);
       let insertResult = await supabaseClient
         .from('inspections')
-        .insert(insertPayload);
+        .insert(buildInsertPayload(myCompanyId));
       error = insertResult.error;
 
-      // Retry without company_id — works with the simplest "own row" insert policy.
       if (error && isRlsError(error) && myCompanyId) {
-        insertPayload = buildPayload(null, myId);
         insertResult = await supabaseClient
           .from('inspections')
-          .insert(insertPayload);
+          .insert(buildInsertPayload(null));
         error = insertResult.error;
       }
 
-      // Last resort: only core columns (in case optional columns trip policies/triggers).
       if (error && isRlsError(error)) {
         insertResult = await supabaseClient.from('inspections').insert({
           id: project.id,
@@ -14329,6 +14338,20 @@ async function uploadSingleInspection(project) {
           updated_at: new Date().toISOString()
         });
         error = insertResult.error;
+      }
+
+      // Row may already exist but be invisible due to old RLS — try minimal update.
+      if (error && (isRlsError(error) || String(error.code || '') === '23505')) {
+        const { error: hiddenUpdateError } = await supabaseClient
+          .from('inspections')
+          .update({
+            inspection_data: projectToUpload,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', project.id)
+          .eq('user_id', myId);
+        if (!hiddenUpdateError) error = null;
+        else if (!isRlsError(error)) error = hiddenUpdateError;
       }
     }
 
