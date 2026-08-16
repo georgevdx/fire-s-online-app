@@ -119,9 +119,11 @@ declare
   v_email text := null;
   v_company uuid := null;
   v_company_text text := nullif(trim(coalesce(p_company_id, '')), '');
+  v_json_company text := null;
   v_owner uuid := null;
   v_existing_company uuid := null;
   v_id_text text := nullif(trim(coalesce(p_id, '')), '');
+  v_saved_company uuid := null;
 begin
   -- Bypass RLS inside this function (needed when FORCE RLS was/is involved)
   perform set_config('row_security', 'off', true);
@@ -135,6 +137,19 @@ begin
 
   select u.email into v_email from auth.users u where u.id = v_uid;
   perform public.fire_s_ensure_profile(v_uid, coalesce(v_email, v_uid::text), 'inspector');
+
+  v_json_company := nullif(
+    trim(coalesce(
+      p_inspection_data->>'companyId',
+      p_inspection_data->>'company_id',
+      ''
+    )),
+    ''
+  );
+
+  if v_company_text is null then
+    v_company_text := v_json_company;
+  end if;
 
   if v_company_text is not null then
     begin
@@ -172,26 +187,62 @@ begin
       raise exception 'Not allowed to update this inspection';
     end if;
 
+    v_saved_company := coalesce(v_existing_company, v_company);
+
     update public.inspections
-       set inspection_data = coalesce(p_inspection_data, '{}'::jsonb),
+       set inspection_data = coalesce(p_inspection_data, '{}'::jsonb)
+             || case
+                  when v_saved_company is null then '{}'::jsonb
+                  else jsonb_build_object(
+                    'companyId', v_saved_company,
+                    'company_id', v_saved_company
+                  )
+                end,
            updated_at = now(),
-           company_id = coalesce(v_existing_company, v_company)
+           company_id = v_saved_company
      where id::text = v_id_text;
   else
+    v_saved_company := v_company;
     begin
       insert into public.inspections (id, user_id, company_id, inspection_data, updated_at)
-      values (v_id_text::uuid, v_uid, v_company, coalesce(p_inspection_data, '{}'::jsonb), now());
+      values (
+        v_id_text::uuid,
+        v_uid,
+        v_saved_company,
+        coalesce(p_inspection_data, '{}'::jsonb)
+          || case
+               when v_saved_company is null then '{}'::jsonb
+               else jsonb_build_object(
+                 'companyId', v_saved_company,
+                 'company_id', v_saved_company
+               )
+             end,
+        now()
+      );
     exception when invalid_text_representation then
       -- id column may be text
       insert into public.inspections (id, user_id, company_id, inspection_data, updated_at)
-      values (v_id_text, v_uid, v_company, coalesce(p_inspection_data, '{}'::jsonb), now());
+      values (
+        v_id_text,
+        v_uid,
+        v_saved_company,
+        coalesce(p_inspection_data, '{}'::jsonb)
+          || case
+               when v_saved_company is null then '{}'::jsonb
+               else jsonb_build_object(
+                 'companyId', v_saved_company,
+                 'company_id', v_saved_company
+               )
+             end,
+        now()
+      );
     end;
   end if;
 
   return jsonb_build_object(
     'ok', true,
     'id', v_id_text,
-    'company_id', coalesce(v_existing_company, v_company)
+    'company_id', v_saved_company
   );
 end;
 $$;
