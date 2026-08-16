@@ -72,7 +72,6 @@ begin
     from public.company_members m
     where m.user_id = v_uid
       and coalesce(m.status, 'active') = 'active'
-    order by m.created_at nulls last
     limit 1;
   end if;
 
