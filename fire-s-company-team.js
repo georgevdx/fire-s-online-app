@@ -900,10 +900,12 @@
         if (roleSelect) roleSelect.value = 'inspector';
         if (status === 'invited') {
           setMessage(
-            `${email} saved as ${roleLabel(role)}. They only need to install Fire-S and login with this email.`
+            `${email} saved as ${roleLabel(role)}. They open Access → Create password (first time only). If that email already exists, they use Login or Forgot password — not Create password again.`
           );
         } else {
-          setMessage(`${email} added as ${roleLabel(role)}.`);
+          setMessage(
+            `${email} added as ${roleLabel(role)}. They Login with that email. If the password is unknown, use Forgot password on Access.`
+          );
         }
         await refreshTeam();
         return;

@@ -422,6 +422,75 @@
     else showChoices();
   }
 
+  function authErrorMessage(err) {
+    var msg = text(err && (err.message || err.error_description || err));
+    var low = msg.toLowerCase();
+    if (low.indexOf('invalid login') >= 0 || low.indexOf('invalid credentials') >= 0) {
+      return 'Wrong password for that email. Try again, or use Forgot password. Do not use Create password again if this email already exists.';
+    }
+    if (
+      low.indexOf('already registered') >= 0 ||
+      low.indexOf('already been registered') >= 0 ||
+      low.indexOf('user already exists') >= 0 ||
+      low.indexOf('email address is already') >= 0
+    ) {
+      return 'This email already has a login. Use Login, or Forgot password if the password is unknown.';
+    }
+    return msg || 'Something went wrong.';
+  }
+
+  async function finishSignedInSession(successMsg) {
+    var claimed = await claimInvitesQuiet();
+    await refreshMembership();
+    mode = 'choices';
+    refreshHomeChrome();
+    if (claimed > 0 || hasCompany()) {
+      await syncCloudAfterAuth();
+      enterAppHome(
+        successMsg || (claimed > 0 ? 'You are on the team.' : 'Signed in.')
+      );
+      return;
+    }
+    if (canRegisterCompany()) {
+      setStatus('Signed in. Register your company name next.');
+      showCompanyOnly();
+      return;
+    }
+    showWaiting();
+    setStatus('Signed in. Waiting for your owner to add you.');
+  }
+
+  async function doForgotPassword(fromCreate) {
+    var emailField = fromCreate ? byId('fireSCreateEmail') : byId('fireSLoginEmail');
+    var email = text(emailField && emailField.value).toLowerCase();
+    if (!email) {
+      setStatus('Enter the email first, then tap Forgot password.', true);
+      return;
+    }
+    var sb = getSb();
+    if (!sb || !sb.auth) {
+      setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
+      return;
+    }
+    setStatus('Sending password reset email…');
+    try {
+      var redirectTo = '';
+      try {
+        redirectTo = String(window.location.origin || '') + '/';
+      } catch (_) {}
+      var opts = redirectTo ? { redirectTo: redirectTo } : undefined;
+      var res = await sb.auth.resetPasswordForEmail(email, opts);
+      if (res.error) throw res.error;
+      setStatus(
+        'Check the inbox for ' +
+          email +
+          '. Open the reset link, choose a new password, then use Login.'
+      );
+    } catch (e) {
+      setStatus(authErrorMessage(e), true);
+    }
+  }
+
   async function doLogin() {
     var email = text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
     var password = (byId('fireSLoginPassword') && byId('fireSLoginPassword').value) || '';
@@ -438,24 +507,9 @@
     try {
       var res = await sb.auth.signInWithPassword({ email: email, password: password });
       if (res.error) throw res.error;
-      var claimed = await claimInvitesQuiet();
-      await refreshMembership();
-      mode = 'choices';
-      refreshHomeChrome();
-      if (claimed > 0 || hasCompany()) {
-        await syncCloudAfterAuth();
-        enterAppHome(claimed > 0 ? 'You are on the team.' : 'Signed in.');
-        return;
-      }
-      if (canRegisterCompany()) {
-        setStatus('Signed in. Register your company name next.');
-        showCompanyOnly();
-        return;
-      }
-      showWaiting();
-      setStatus('Signed in. Waiting for your owner to add you.');
+      await finishSignedInSession('Signed in.');
     } catch (e) {
-      setStatus((e && e.message) || 'Login failed.', true);
+      setStatus(authErrorMessage(e), true);
     }
   }
 
@@ -480,24 +534,44 @@
     setStatus('Creating your login…');
     try {
       var res = await sb.auth.signUp({ email: email, password: password });
-      if (res.error) throw res.error;
+      if (res.error) {
+        var low = text(res.error.message).toLowerCase();
+        var already =
+          low.indexOf('already registered') >= 0 ||
+          low.indexOf('already been registered') >= 0 ||
+          low.indexOf('user already exists') >= 0 ||
+          low.indexOf('email address is already') >= 0;
+        if (already) {
+          setStatus('This email already exists. Trying Login with that password…');
+          var loginTry = await sb.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+          if (!loginTry.error) {
+            await finishSignedInSession('Signed in with existing login.');
+            return;
+          }
+          // Prefill login form and guide to Forgot password
+          try {
+            var loginEmail = byId('fireSLoginEmail');
+            if (loginEmail) loginEmail.value = email;
+          } catch (_) {}
+          showLogin();
+          setStatus(
+            'This email already has a login, but that password is wrong. Use Forgot password, then Login. Do not delete and re-create the person for this.',
+            true
+          );
+          return;
+        }
+        throw res.error;
+      }
       if (!res.data || !res.data.session) {
         setStatus('Check your email to confirm, then use Login.', false);
         return;
       }
-      var claimed = await claimInvitesQuiet();
-      await refreshMembership();
-      mode = 'choices';
-      refreshHomeChrome();
-      if (claimed > 0 || hasCompany()) {
-        await syncCloudAfterAuth();
-        enterAppHome(claimed > 0 ? 'You are on the team.' : 'Login created.');
-        return;
-      }
-      showWaiting();
-      setStatus('Login created. Ask your owner to add your email if Home is still locked.');
+      await finishSignedInSession('Login created.');
     } catch (e) {
-      setStatus((e && e.message) || 'Could not create login.', true);
+      setStatus(authErrorMessage(e), true);
     }
   }
 
@@ -656,6 +730,18 @@
     var checkBtn = byId('fireSWaitingCheckBtn');
     if (doLoginBtn) doLoginBtn.addEventListener('click', doLogin);
     if (doCreateBtn) doCreateBtn.addEventListener('click', doCreatePassword);
+    var forgotLoginBtn = byId('fireSForgotPasswordBtn');
+    var forgotCreateBtn = byId('fireSForgotFromCreateBtn');
+    if (forgotLoginBtn) {
+      forgotLoginBtn.addEventListener('click', function () {
+        doForgotPassword(false);
+      });
+    }
+    if (forgotCreateBtn) {
+      forgotCreateBtn.addEventListener('click', function () {
+        doForgotPassword(true);
+      });
+    }
     if (registerBtn) registerBtn.addEventListener('click', doRegisterCompany);
     if (finishBtn) finishBtn.addEventListener('click', doFinishCompanyOnly);
     if (checkBtn) checkBtn.addEventListener('click', doCheckAgain);

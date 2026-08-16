@@ -374,10 +374,10 @@
   }
 
   function applyInspectorHome() {
+    showHomeHero();
     setBodyRole('fire-s-role-inspector', 'inspector');
     document.body.classList.add('fire-s-inspector-v4');
 
-    // Inspector V4 owns the main visual; keep outer hero quiet.
     const homeHero = document.querySelector('#homeSection .home-hero');
     if (homeHero) homeHero.style.setProperty('display', 'none', 'important');
 
@@ -385,7 +385,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Find or Start an Inspection');
     setText(
       '#mainCommandSubtitle',
-      'Search a premises, continue an inspection, or start at a new site.'
+      'Use Inspection Gateway below, or the Inspector Work Area.'
     );
     setText('#mainCommandAccessStatus', 'Inspector access');
     setStatsVisible(false);
@@ -393,14 +393,30 @@
     hideManagementOverlays();
 
     ALL_CMD_IDS.forEach(hide);
+    // Keep Gateway visible so inspectors always have a clear entry.
+    show('cmdInspectionsBtn');
+    cardText(
+      'cmdInspectionsBtn',
+      'Inspection Gateway',
+      'Find, continue or start an inspection.'
+    );
 
-    // Inspectors never set up a company — owner does that via Access.
     try {
       if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
     } catch (_) {}
 
     const shell = byId('inspectorV4Shell');
-    if (shell) shell.style.setProperty('display', 'flex', 'important');
+    if (shell) {
+      shell.style.setProperty('display', 'flex', 'important');
+      shell.removeAttribute('hidden');
+      shell.setAttribute('aria-hidden', 'false');
+    }
+
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (grid) {
+      grid.style.setProperty('display', 'grid', 'important');
+      grid.removeAttribute('hidden');
+    }
   }
 
   function showHomeHero() {
@@ -477,6 +493,14 @@
       'Support',
       'Request review or operational support.'
     );
+
+    // Force Gateway visible even if older inspector CSS left it hidden.
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (grid) {
+      grid.style.setProperty('display', 'grid', 'important');
+      grid.removeAttribute('hidden');
+    }
+    show('cmdInspectionsBtn');
   }
 
   function applyOwnerHome(role) {
@@ -513,6 +537,14 @@
     setBetaPanelsVisible(role === 'super_admin');
 
     ALL_CMD_IDS.forEach(show);
+
+    // Force Gateway visible even if older inspector CSS left it hidden.
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (grid) {
+      grid.style.setProperty('display', 'grid', 'important');
+      grid.removeAttribute('hidden');
+    }
+    show('cmdInspectionsBtn');
 
     cardText(
       'cmdInspectionsBtn',
