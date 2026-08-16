@@ -14172,11 +14172,6 @@ async function uploadSingleInspection(project) {
   const syncStatus = document.getElementById('syncStatus');
   const quiet = !!window.__fireSQuietCloudUpload;
 
-  const isRlsError = err =>
-    /row-level security|rls|USING expression/i.test(
-      String(err?.message || err || '')
-    );
-
   try {
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
@@ -14191,7 +14186,6 @@ async function uploadSingleInspection(project) {
     const myId = userData.user.id;
     let myCompanyId = String(currentUserProfile?.companyId || '').trim() || null;
 
-    // Confirm membership before attaching company_id (prevents INSERT RLS failures).
     if (myCompanyId) {
       try {
         const { data: memberRow, error: memberError } = await supabaseClient
@@ -14213,11 +14207,6 @@ async function uploadSingleInspection(project) {
       syncStatus.textContent = 'Uploading saved inspection...';
     }
 
-    const cloudMetadata = {
-      ...getProjectCloudMetadata(project, myId),
-      company_id: myCompanyId
-    };
-
     let projectToUpload = {
       ...project,
       companyId: myCompanyId || project.companyId || null,
@@ -14232,177 +14221,41 @@ async function uploadSingleInspection(project) {
       (project.photos || []).some(photo => !photo.src);
 
     if (hasStrippedPhotos) {
-      const { data: existingPhotoRows, error: existingPhotoError } =
-        await supabaseClient
+      try {
+        const { data: existingPhotoRows } = await supabaseClient
           .from('inspections')
           .select('inspection_data')
           .eq('id', project.id)
           .limit(1);
-
-      if (
-        !existingPhotoError &&
-        existingPhotoRows &&
-        existingPhotoRows[0]?.inspection_data?.photos
-      ) {
-        projectToUpload = {
-          ...projectToUpload,
-          photos: existingPhotoRows[0].inspection_data.photos
-        };
-      }
-    }
-
-    // Preferred path: SECURITY DEFINER RPC (bypasses inspections RLS safely).
-    try {
-      const rpc = await supabaseClient.rpc('fire_s_upsert_inspection', {
-        p_id: project.id,
-        p_inspection_data: projectToUpload,
-        p_company_id: myCompanyId
-      });
-      if (!rpc.error) {
-        removeInspectionFromUploadQueue(project.id);
-        markInspectionSynced(project.id);
-        if (syncStatus && project.syncPending === false && !quiet) {
-          syncStatus.textContent = 'Saved locally and uploaded to cloud.';
+        if (existingPhotoRows?.[0]?.inspection_data?.photos) {
+          projectToUpload = {
+            ...projectToUpload,
+            photos: existingPhotoRows[0].inspection_data.photos
+          };
         }
-        return;
-      }
-      // Function missing / not deployed yet → fall through to direct write.
-      if (
-        !/could not find the function|schema cache|PGRST202|404/i.test(
-          String(rpc.error?.message || '')
-        )
-      ) {
-        console.warn('fire_s_upsert_inspection failed, trying direct write:', rpc.error);
-      }
-    } catch (rpcErr) {
-      console.warn('fire_s_upsert_inspection unavailable:', rpcErr);
+      } catch (_) {}
     }
 
-    const { data: existingRows } = await supabaseClient
-      .from('inspections')
-      .select('id, user_id, company_id')
-      .eq('id', project.id)
-      .limit(1);
-
-    const existing = Array.isArray(existingRows) ? existingRows[0] : null;
-    const existingOwnerId = existing?.user_id || null;
-    const existingCompanyId = String(existing?.company_id || '').trim() || null;
-
-    if (
-      existing &&
-      existingOwnerId &&
-      existingOwnerId !== myId &&
-      existingCompanyId &&
-      myCompanyId &&
-      existingCompanyId !== myCompanyId
-    ) {
-      removeInspectionFromUploadQueue(project.id);
-      return;
-    }
-
-    const buildInsertPayload = companyId => ({
-      id: project.id,
-      user_id: myId,
-      company_id: companyId,
-      created_by_user_id: myId,
-      last_edited_by_user_id: myId,
-      created_by_email: cloudMetadata.created_by_email,
-      last_edited_by_email: cloudMetadata.last_edited_by_email,
-      inspection_data: {
-        ...projectToUpload,
-        companyId: companyId,
-        company_id: companyId,
-        createdByUserId: myId
-      },
-      updated_at: new Date().toISOString()
+    // ONLY path: security-definer RPC. No direct table insert/update fallback
+    // (direct writes are what show the USING expression RLS error).
+    const rpc = await supabaseClient.rpc('fire_s_upsert_inspection', {
+      p_id: String(project.id),
+      p_inspection_data: projectToUpload,
+      p_company_id: myCompanyId ? String(myCompanyId) : null
     });
 
-    let error = null;
-
-    if (existing) {
-      // CRITICAL: do not change user_id / company_id on update — that triggers
-      // "new row violates row-level security policy (USING expression)".
-      const { error: updateError } = await supabaseClient
-        .from('inspections')
-        .update({
-          inspection_data: projectToUpload,
-          updated_at: new Date().toISOString(),
-          last_edited_by_user_id: myId,
-          last_edited_by_email: cloudMetadata.last_edited_by_email
-        })
-        .eq('id', project.id);
-      error = updateError;
-
-      if (error && isRlsError(error) && existingOwnerId === myId) {
-        const { error: retryUpdateError } = await supabaseClient
-          .from('inspections')
-          .update({
-            inspection_data: projectToUpload,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', project.id)
-          .eq('user_id', myId);
-        error = retryUpdateError;
-      }
-    } else {
-      let insertResult = await supabaseClient
-        .from('inspections')
-        .insert(buildInsertPayload(myCompanyId));
-      error = insertResult.error;
-
-      if (error && isRlsError(error) && myCompanyId) {
-        insertResult = await supabaseClient
-          .from('inspections')
-          .insert(buildInsertPayload(null));
-        error = insertResult.error;
-      }
-
-      if (error && isRlsError(error)) {
-        insertResult = await supabaseClient.from('inspections').insert({
-          id: project.id,
-          user_id: myId,
-          inspection_data: projectToUpload,
-          updated_at: new Date().toISOString()
-        });
-        error = insertResult.error;
-      }
-
-      // Row may already exist but be invisible due to old RLS — try minimal update.
-      if (error && (isRlsError(error) || String(error.code || '') === '23505')) {
-        const { error: hiddenUpdateError } = await supabaseClient
-          .from('inspections')
-          .update({
-            inspection_data: projectToUpload,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', project.id)
-          .eq('user_id', myId);
-        if (!hiddenUpdateError) error = null;
-        else if (!isRlsError(error)) error = hiddenUpdateError;
-      }
-    }
-
-    if (error) {
-      console.error('Single upload failed:', error);
-      markUploadQueueFailure(project.id, error);
+    if (rpc.error) {
+      console.error('fire_s_upsert_inspection failed:', rpc.error);
+      markUploadQueueFailure(project.id, rpc.error);
       if (quiet) return;
 
-      const isDuplicatePremisesError =
-        String(error.code || '') === '23505' &&
-        [
-          'inspections_company_premises_name_unique',
-          'inspections_company_organisation_name_unique',
-          'inspections_company_organisation_site_unique'
-        ].some(indexName =>
-          String(error.message || '').includes(indexName)
-        );
+      const msg = String(rpc.error.message || rpc.error);
+      const missingFn = /could not find the function|schema cache|PGRST202|404/i.test(msg);
 
       if (syncStatus) {
-        syncStatus.textContent = isDuplicatePremisesError
-          ? 'Cloud save blocked: this exact Name and Site combination already exists in the company.'
-          : isRlsError(error)
-            ? 'Cloud save blocked. Run the inspections SQL in Supabase (fire_s_upsert_inspection), then Sync Now.'
-            : `Cloud upload failed: ${error.message}`;
+        syncStatus.textContent = missingFn
+          ? 'Cloud save needs SQL setup. In Supabase run SUPABASE_inspections_rls.sql, then Sync Now.'
+          : `Cloud upload failed: ${msg}`;
       }
       return;
     }
@@ -14417,7 +14270,7 @@ async function uploadSingleInspection(project) {
     console.error('Single upload failed:', err);
     markUploadQueueFailure(project.id, err);
     if (syncStatus && !quiet) {
-      syncStatus.textContent = 'Saved locally. Cloud upload failed.';
+      syncStatus.textContent = `Saved locally. Cloud upload failed: ${err?.message || err}`;
     }
   }
 }
