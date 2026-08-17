@@ -1,0 +1,17 @@
+{
+  "name": "Fire-S",
+  "install": "echo \"Fire-S is a static PWA with no dependencies to install (python3 and node are provided by the base image). Nothing to do.\"",
+  "terminals": [
+    {
+      "name": "static-server",
+      "command": "python3 -m http.server 8787",
+      "description": "Serve the Fire-S static PWA at http://127.0.0.1:8787/ (required — do not open index.html via file://)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 8787
+    }
+  ]
+}
