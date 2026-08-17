@@ -5661,6 +5661,65 @@ function fireSResolveCompanyNameLazy(companyId) {
     .catch(() => {});
 }
 
+async function fireSLoadActiveCompanyMembership(userId) {
+  const loadRows = async (withCompanies) => {
+    const query = supabaseClient
+      .from('company_members')
+      .select(
+        withCompanies
+          ? 'company_id, role, status, companies(name, status, plan)'
+          : 'company_id, role, status'
+      )
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    const result = await withTimeout(query, 3000).catch(() => ({ data: [], error: null }));
+    return Array.isArray(result?.data) ? result.data : [];
+  };
+
+  let rows = await loadRows(true);
+  if (!rows.length) {
+    rows = await loadRows(false);
+  }
+  if (!rows.length) return null;
+  if (rows.length === 1) return rows[0];
+
+  const companyIds = [...new Set(rows.map(row => row.company_id).filter(Boolean))];
+  const countByCompany = {};
+
+  try {
+    const countResult = await withTimeout(
+      supabaseClient
+        .from('company_members')
+        .select('company_id')
+        .in('company_id', companyIds)
+        .eq('status', 'active'),
+      3000
+    );
+    (Array.isArray(countResult?.data) ? countResult.data : []).forEach(row => {
+      const id = row.company_id;
+      countByCompany[id] = (countByCompany[id] || 0) + 1;
+    });
+  } catch (_) {}
+
+  const roleRank = role => {
+    const value = String(role || '').toLowerCase();
+    if (value === 'manager') return 0;
+    if (value === 'inspector') return 1;
+    if (value === 'company_owner' || value === 'owner') return 2;
+    return 3;
+  };
+
+  rows.sort((a, b) => {
+    const countDiff =
+      (countByCompany[b.company_id] || 0) - (countByCompany[a.company_id] || 0);
+    if (countDiff !== 0) return countDiff;
+    return roleRank(a.role) - roleRank(b.role);
+  });
+
+  return rows[0];
+}
+
 async function loadUserAccessProfile() {
   const previousProfile = currentUserProfile;
   const previousCompanyId = previousProfile?.companyId || null;
@@ -5692,7 +5751,7 @@ async function loadUserAccessProfile() {
       );
     } catch (_) {}
 
-    const [profileResult, membershipResult] = await Promise.all([
+    const [profileResult, membership] = await Promise.all([
       withTimeout(
         supabaseClient
           .from('profiles')
@@ -5701,33 +5760,12 @@ async function loadUserAccessProfile() {
           .maybeSingle(),
         3000
       ).catch(error => ({ data: null, error })),
-      withTimeout(
-        supabaseClient
-          .from('company_members')
-          .select('company_id, role, status, companies(name, status, plan)')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .limit(1)
-          .maybeSingle(),
-        3000
-      ).catch(() =>
-        withTimeout(
-          supabaseClient
-            .from('company_members')
-            .select('company_id, role, status')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .limit(1)
-            .maybeSingle(),
-          3000
-        ).catch(error => ({ data: null, error }))
-      )
+      fireSLoadActiveCompanyMembership(user.id)
     ]);
 
     const profile = profileResult?.data || null;
     const profileError = profileResult?.error || null;
-    let membership = membershipResult?.data || null;
-    const membershipError = membershipResult?.error || null;
+    const membershipError = null;
 
     if (profileError) {
       console.error('Profile load failed:', profileError);
@@ -32411,9 +32449,16 @@ function fireSApplyLifecycleUxLabels() {
     const compliantCount = count('compliant');
     const monthCount = count('month');
 
-    // Main Command Centre: restore Gateway as a navigation card, not a monthly KPI card.
-    const gatewayBtn = cloneButton('cmdInspectionsBtn', 'cmdGatewayBtn') || document.getElementById('cmdGatewayBtn');
+    // Keep #cmdInspectionsBtn in the DOM — renaming it breaks role-home chrome.
+    let gatewayBtn = document.getElementById('cmdInspectionsBtn');
+    const renamedGateway = document.getElementById('cmdGatewayBtn');
+    if (!gatewayBtn && renamedGateway) {
+      renamedGateway.id = 'cmdInspectionsBtn';
+      gatewayBtn = renamedGateway;
+    }
     if (gatewayBtn) {
+      gatewayBtn.hidden = false;
+      gatewayBtn.style.removeProperty('display');
       setLabel(gatewayBtn, 'Inspection Gateway', 'Search, open, continue or manage inspections.');
       bind(gatewayBtn, 'all', 'Inspection Gateway opened.');
     }
