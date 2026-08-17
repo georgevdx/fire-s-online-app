@@ -1,6 +1,10 @@
 -- Fire-S: Fix company personnel roles for a known team layout.
--- Run in Supabase SQL Editor after replacing v_company_id with your company UUID
--- (or leave null to target the company georgevdx@gmail.com belongs to).
+-- Run in Supabase SQL Editor.
+--
+-- RUN ORDER:
+--   1) SUPABASE_cleanup_test_companies.sql  (deactivate old test companies)
+--   2) This file                             (set roles on Company S)
+--   3) SUPABASE_my_company.sql               (optional — refresh login picker RPC)
 --
 -- Intended layout:
 --   georgevdx@gmail.com     → company_owner
@@ -70,33 +74,8 @@ update public.company_members as cm
    and lower(trim(p.email)) <> 'georgevdx@gmail.com'
    and lower(trim(p.email)) = 'johandb@live.com';
 
--- Deactivate duplicate shell company so login always lands on the main team (Company S).
-update public.company_members as cm
-   set status = 'inactive'
-  from public.profiles as p, public.companies as c
- where cm.user_id = p.id
-   and cm.company_id = c.id
-   and lower(trim(p.email)) = 'johandb@live.com'
-   and lower(trim(c.name)) like '%fire-s company%'
-   and exists (
-     select 1
-       from public.company_members as cm2
-       join public.companies as c2 on c2.id = cm2.company_id
-      where cm2.user_id = p.id
-        and coalesce(cm2.status, 'active') = 'active'
-        and cm2.company_id <> cm.company_id
-        and (
-          select count(*)
-            from public.company_members as cm3
-           where cm3.company_id = cm2.company_id
-             and coalesce(cm3.status, 'active') = 'active'
-        ) > (
-          select count(*)
-            from public.company_members as cm4
-           where cm4.company_id = cm.company_id
-             and coalesce(cm4.status, 'active') = 'active'
-        )
-   );
+-- Deactivate duplicate shell companies: see SUPABASE_cleanup_test_companies.sql
+-- (lists all test companies for team emails and deactivates everything except Company S)
 
 commit;
 
