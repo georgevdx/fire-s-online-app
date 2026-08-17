@@ -1,0 +1,18 @@
+/* Fire-S: keep Home and Inspection Gateway as one screen at a time.
+   Background sync must not let Executive Command Centre and Executive Snapshot
+   paint over each other. */
+
+body.fire-s-premises-render-lock #homeSection,
+body.fire-s-premises-render-lock #mainCommandCentre,
+body.fire-s-premises-render-lock #fireSExecutiveDashboard1115,
+body.fire-s-premises-render-lock .fire-s-exec-dashboard-v1115,
+body.fire-s-premises-render-lock .fire-s-exec-mini-dashboard:not(#fireSExecutiveMiniDashboard) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.fire-s-clean-home #fireSExecutiveDashboard1115,
+body.fire-s-clean-home .fire-s-exec-dashboard-v1115 {
+  display: none !important;
+}

@@ -27,6 +27,12 @@ body.fire-s-clean-home.fire-s-role-inspector .fire-s-exec-dashboard-v1115 {
   display: none !important;
 }
 
+/* One home surface: do not keep a second Executive Dashboard under Command Centre. */
+body.fire-s-clean-home #fireSExecutiveDashboard1115,
+body.fire-s-clean-home .fire-s-exec-dashboard-v1115 {
+  display: none !important;
+}
+
 body.fire-s-clean-home.fire-s-role-new-company #inspectorV4Shell,
 body.fire-s-clean-home.fire-s-role-guest #inspectorV4Shell,
 body.fire-s-clean-home.fire-s-role-pending-member #inspectorV4Shell {
