@@ -143,16 +143,27 @@ begin
   end;
 
   -- Delete companies that now have zero memberships and zero inspections
-  delete from public.companies as c
-   where c.id <> v_keep_id
-     and not exists (
-       select 1 from public.company_members as cm where cm.company_id = c.id
-     )
-     and not exists (
-       select 1 from public.inspections as i where i.company_id = c.id
-     );
-  get diagnostics v_companies = row_count;
-  raise notice 'Deleted % empty test company row(s)', v_companies;
+  begin
+    delete from public.companies as c
+     where c.id <> v_keep_id
+       and not exists (
+         select 1 from public.company_members as cm where cm.company_id = c.id
+       )
+       and not exists (
+         select 1 from public.inspections as i where i.company_id = c.id
+       );
+    get diagnostics v_companies = row_count;
+    raise notice 'Deleted % empty test company row(s)', v_companies;
+  exception
+    when undefined_table then
+      delete from public.companies as c
+       where c.id <> v_keep_id
+         and not exists (
+           select 1 from public.company_members as cm where cm.company_id = c.id
+         );
+      get diagnostics v_companies = row_count;
+      raise notice 'Deleted % empty test company row(s) (no inspections table)', v_companies;
+  end;
 end $$;
 
 commit;
