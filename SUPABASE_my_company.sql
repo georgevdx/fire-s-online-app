@@ -1,6 +1,7 @@
--- Fire-S: return the signed-in user's company id + name (SECURITY DEFINER)
--- Use when the app cannot read public.companies due to RLS timing / policy gaps.
--- Run in Supabase SQL Editor once.
+-- Fire-S: return the signed-in user's primary company (SECURITY DEFINER)
+-- Picks the active membership with the most team members so staff on a large
+-- company are not left on a personal shell company after login.
+-- Run in Supabase SQL Editor once (replaces prior fire_s_my_company()).
 
 begin;
 
@@ -24,11 +25,27 @@ begin
   end if;
 
   return query
-    select c.id, c.name, m.role::text
+    select
+      c.id,
+      c.name,
+      m.role::text
     from public.company_members as m
     join public.companies as c on c.id = m.company_id
     where m.user_id = v_uid
       and coalesce(m.status, 'active') = 'active'
+    order by (
+      select count(*)::int
+      from public.company_members as cm
+      where cm.company_id = m.company_id
+        and coalesce(cm.status, 'active') = 'active'
+    ) desc,
+    case m.role
+      when 'manager' then 0
+      when 'inspector' then 1
+      when 'company_owner' then 2
+      else 3
+    end,
+    c.name asc
     limit 1;
 end;
 $$;

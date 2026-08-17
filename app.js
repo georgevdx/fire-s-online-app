@@ -5572,12 +5572,24 @@ function fireSRecalledCompanyName(companyId) {
     if (
       name &&
       !fireSIsGenericCompanyName(name) &&
-      (!companyId || String(cached?.id || '') === String(companyId))
+      companyId &&
+      String(cached?.id || '') === String(companyId)
     ) {
       return name;
     }
   } catch (_) {}
   return '';
+}
+
+function fireSClearCompanyCacheIfMismatch(companyId) {
+  if (!companyId) return;
+  try {
+    const raw = localStorage.getItem('fireS.cachedCompany');
+    const cached = raw ? JSON.parse(raw) : null;
+    if (cached?.id && String(cached.id) !== String(companyId)) {
+      localStorage.removeItem('fireS.cachedCompany');
+    }
+  } catch (_) {}
 }
 
 function fireSApplyCompanyNameToUi(companyId, companyName, extra) {
@@ -5662,6 +5674,29 @@ function fireSResolveCompanyNameLazy(companyId) {
 }
 
 async function fireSLoadActiveCompanyMembership(userId) {
+  // Prefer SECURITY DEFINER RPC — member counts work even when RLS hides rows.
+  try {
+    const rpc = await withTimeout(supabaseClient.rpc('fire_s_my_company'), 3000);
+    if (!rpc?.error && rpc?.data) {
+      const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+      const companyId = row?.out_company_id || row?.company_id || null;
+      const companyName = String(
+        row?.out_company_name || row?.company_name || ''
+      ).trim();
+      const role = row?.out_member_role || row?.role || 'inspector';
+      if (companyId) {
+        return {
+          company_id: companyId,
+          role,
+          status: 'active',
+          companies: companyName
+            ? { name: companyName, status: 'active', plan: 'development' }
+            : null
+        };
+      }
+    }
+  } catch (_) {}
+
   const loadRows = async (withCompanies) => {
     const query = supabaseClient
       .from('company_members')
@@ -5720,6 +5755,8 @@ async function fireSLoadActiveCompanyMembership(userId) {
   return rows[0];
 }
 
+window.fireSLoadActiveCompanyMembership = fireSLoadActiveCompanyMembership;
+
 async function loadUserAccessProfile() {
   const previousProfile = currentUserProfile;
   const previousCompanyId = previousProfile?.companyId || null;
@@ -5772,6 +5809,7 @@ async function loadUserAccessProfile() {
     }
 
     const companyId = membership?.company_id || null;
+    fireSClearCompanyCacheIfMismatch(companyId);
     const embeddedCompany = membership?.companies;
     const embeddedRow = Array.isArray(embeddedCompany)
       ? embeddedCompany[0]
@@ -5821,12 +5859,8 @@ async function loadUserAccessProfile() {
         }
       } catch (_) {}
 
-      if (companyId && fireSIsGenericCompanyName(immediateName)) {
-        fireSResolveCompanyNameLazy(companyId);
-      } else if (companyId && !embeddedName) {
-        fireSResolveCompanyNameLazy(companyId);
-      }
       if (companyId) {
+        fireSResolveCompanyNameLazy(companyId);
         restampLocalInspectionsWithCompany(companyId, immediateName);
       }
       return;
@@ -5867,7 +5901,7 @@ async function loadUserAccessProfile() {
       }
     } catch (_) {}
 
-    if (companyId && (fireSIsGenericCompanyName(immediateName) || !embeddedName)) {
+    if (companyId) {
       fireSResolveCompanyNameLazy(companyId);
     }
 
