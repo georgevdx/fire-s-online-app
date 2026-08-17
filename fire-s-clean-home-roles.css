@@ -83,6 +83,58 @@ body.fire-s-clean-home.fire-s-role-manager #mainCommandAccessStatus {
   font-weight: 700;
 }
 
+.main-command-personnel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 4px 4px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.main-command-personnel[hidden] {
+  display: none !important;
+}
+
+.main-command-personnel .personnel-stat {
+  text-align: center;
+}
+
+.main-command-personnel .personnel-number {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.main-command-personnel .personnel-label {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandPersonnelStats,
+body.fire-s-clean-home.fire-s-role-guest #mainCommandPersonnelStats,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandPersonnelStats,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandPersonnelStats {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #mainCommandPersonnelStats:not([hidden]),
+body.fire-s-clean-home.fire-s-role-manager #mainCommandPersonnelStats:not([hidden]) {
+  display: grid !important;
+}
+
+@media (max-width: 640px) {
+  .main-command-personnel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 body.fire-s-clean-home.fire-s-role-inspector #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdServicesBtn,

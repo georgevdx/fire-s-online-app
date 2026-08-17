@@ -501,6 +501,12 @@
       grid.removeAttribute('hidden');
     }
     show('cmdInspectionsBtn');
+
+    try {
+      if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+        window.fireSRefreshCompanyPersonnelStats();
+      }
+    } catch (_) {}
   }
 
   function applyOwnerHome(role) {
@@ -571,6 +577,12 @@
       'Services / Support',
       'Consultancy, review requests and support.'
     );
+
+    try {
+      if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+        window.fireSRefreshCompanyPersonnelStats();
+      }
+    } catch (_) {}
   }
 
   function applyGuestHome() {
