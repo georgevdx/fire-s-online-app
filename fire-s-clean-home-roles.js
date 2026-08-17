@@ -58,6 +58,29 @@
     return document.getElementById(id);
   }
 
+  function gatewayButton() {
+    const renamed = byId('cmdGatewayBtn');
+    if (renamed && !byId('cmdInspectionsBtn')) {
+      renamed.id = 'cmdInspectionsBtn';
+    }
+    return byId('cmdInspectionsBtn');
+  }
+
+  function showGatewayCard(title, copy) {
+    const btn = gatewayButton();
+    if (!btn) return;
+    btn.hidden = false;
+    btn.removeAttribute('aria-hidden');
+    btn.removeAttribute('tabindex');
+    btn.style.setProperty('display', 'flex', 'important');
+    if (getComputedStyle(btn).display === 'none') {
+      btn.style.setProperty('display', 'flex', 'important');
+    }
+    if (title) {
+      cardText('cmdInspectionsBtn', title, copy);
+    }
+  }
+
   function normaliseRole(value) {
     const raw = String(value || '').trim().toLowerCase();
     return ROLE_ALIASES[raw] || raw;
@@ -394,9 +417,7 @@
 
     ALL_CMD_IDS.forEach(hide);
     // Keep Gateway visible so inspectors always have a clear entry.
-    show('cmdInspectionsBtn');
-    cardText(
-      'cmdInspectionsBtn',
+    showGatewayCard(
       'Inspection Gateway',
       'Find, continue or start an inspection.'
     );
@@ -500,7 +521,10 @@
       grid.style.setProperty('display', 'grid', 'important');
       grid.removeAttribute('hidden');
     }
-    show('cmdInspectionsBtn');
+    showGatewayCard(
+      'Inspection Gateway',
+      'Open, continue and review field inspections.'
+    );
   }
 
   function applyOwnerHome(role) {
@@ -544,10 +568,7 @@
       grid.style.setProperty('display', 'grid', 'important');
       grid.removeAttribute('hidden');
     }
-    show('cmdInspectionsBtn');
-
-    cardText(
-      'cmdInspectionsBtn',
+    showGatewayCard(
       'Inspection Gateway',
       'Company-wide inspection search and oversight.'
     );
@@ -717,6 +738,26 @@
     setTimeout(bindRoleTestRefresh, 50);
   };
   window.refreshCleanHomeRoles = window.fireSApplyCleanHomeRoles;
+
+  // KPI modules rebind cards after we set role-specific Home chrome — re-assert it.
+  [
+    'fireSRefreshManagementKpis134',
+    'fireSSyncManagementCards132',
+    'fireSSyncManagementCards133'
+  ].forEach(name => {
+    const original = window[name];
+    if (typeof original !== 'function' || original.__fireSCleanHomeWrapped) return;
+    const wrapped = function fireSCleanHomeAfterKpi() {
+      const result = original.apply(this, arguments);
+      Promise.resolve(result).finally(() => {
+        setTimeout(applyCleanHome, 0);
+        setTimeout(applyCleanHome, 80);
+      });
+      return result;
+    };
+    wrapped.__fireSCleanHomeWrapped = true;
+    window[name] = wrapped;
+  });
   window.fireSGetCompanyDisplayName = getCompanyDisplayName;
 
   // Run after existing home controller, then refine by role.
