@@ -77,7 +77,8 @@
     btn.hidden = false;
     btn.removeAttribute('aria-hidden');
     btn.removeAttribute('tabindex');
-    btn.style.setProperty('display', 'flex', 'important');
+    wrapCommandCardText(btn);
+    btn.style.removeProperty('display');
     if (getComputedStyle(btn).display === 'none') {
       btn.style.setProperty('display', 'flex', 'important');
     }
@@ -338,9 +339,28 @@
     });
   }
 
+  function wrapCommandCardText(card) {
+    if (!card || card.querySelector(':scope > .command-text')) return;
+    const title = card.querySelector(':scope > .command-title');
+    const copy = card.querySelector(':scope > .command-copy');
+    if (!title && !copy) return;
+    const wrap = document.createElement('span');
+    wrap.className = 'command-text';
+    const icon = card.querySelector(':scope > .command-icon');
+    if (title) wrap.appendChild(title);
+    if (copy) wrap.appendChild(copy);
+    if (icon && icon.parentNode === card) icon.after(wrap);
+    else card.appendChild(wrap);
+  }
+
+  function wrapAllCommandCards() {
+    document.querySelectorAll('#mainCommandCentre .main-command-card').forEach(wrapCommandCardText);
+  }
+
   function cardText(id, title, copy) {
     const card = byId(id);
     if (!card) return;
+    wrapCommandCardText(card);
     const titleEl = card.querySelector('.command-title, .route-title, strong');
     const copyEl = card.querySelector('.command-copy, .route-copy, p, small');
     if (titleEl) titleEl.textContent = title;
@@ -738,6 +758,8 @@
   function applyCleanHome() {
     const centre = byId('mainCommandCentre');
     if (!centre || !document.body) return;
+
+    wrapAllCommandCards();
 
     const role = resolveHomeRole();
 
