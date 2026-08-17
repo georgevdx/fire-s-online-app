@@ -544,7 +544,20 @@
     updateDangerControls();
   }
 
-  function renderMeta(ctx, members) {
+  function countMembersByRole(members) {
+    const tallies = { inspector: 0, manager: 0, company_owner: 0 };
+    members
+      .filter(m => text(m.status || 'active').toLowerCase() !== 'inactive')
+      .forEach(m => {
+        const role = text(m.role).toLowerCase() || 'inspector';
+        if (role === 'company_owner' || role === 'owner') tallies.company_owner += 1;
+        else if (role === 'manager') tallies.manager += 1;
+        else tallies.inspector += 1;
+      });
+    return tallies;
+  }
+
+  function renderMeta(ctx, members, pendingInvites) {
     const meta = byId('companyTeamMeta');
     const hasCompany = !!text(ctx.companyId) && !isFreshCompanyMode();
     setPersonnelChrome(hasCompany ? 'manage' : 'setup', ctx.companyName);
@@ -553,11 +566,23 @@
       meta.textContent = 'No company linked yet';
       return;
     }
-    const active = members.filter(m => text(m.status).toLowerCase() !== 'inactive').length;
+    const activeMembers = members.filter(
+      m => text(m.status || 'active').toLowerCase() !== 'inactive'
+    );
+    const pending = Array.isArray(pendingInvites) ? pendingInvites : [];
+    const tallies = countMembersByRole(activeMembers);
+    pending.forEach(invite => {
+      const role = text(invite.role).toLowerCase() || 'inspector';
+      if (role === 'company_owner' || role === 'owner') tallies.company_owner += 1;
+      else if (role === 'manager') tallies.manager += 1;
+      else tallies.inspector += 1;
+    });
+    const peopleTotal = activeMembers.length + pending.length;
     const nameBit = !isGenericCompanyName(ctx.companyName)
       ? `${ctx.companyName} · `
       : '';
-    meta.textContent = `${nameBit}${active} person(s) · Your role: ${roleLabel(ctx.role)}`;
+    meta.textContent =
+      `${nameBit}Inspectors (${tallies.inspector}) · Managers (${tallies.manager}) · Owner (${tallies.company_owner}) · People (${peopleTotal}) · Your role: ${roleLabel(ctx.role)}`;
   }
 
   function refreshPersonnelChrome() {
@@ -1305,7 +1330,7 @@
       }
       const members = await loadMembers(ctx.companyId);
       const invites = await loadPendingInvites(ctx.companyId);
-      renderMeta(ctx, members);
+      renderMeta(ctx, members, invites);
       renderPendingInvites(invites);
       renderMembers(members);
       if (window.__fireSTeamAfterCreate) {

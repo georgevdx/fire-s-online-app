@@ -64,6 +64,11 @@ body.fire-s-clean-home.fire-s-role-inspector #cmdInspectionsBtn {
   display: flex !important;
 }
 
+body.fire-s-clean-home.fire-s-role-manager #cmdInspectionsBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdInspectionsBtn {
+  display: flex !important;
+}
+
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats {
   display: grid !important;

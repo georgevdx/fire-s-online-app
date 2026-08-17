@@ -717,6 +717,26 @@
     setTimeout(bindRoleTestRefresh, 50);
   };
   window.refreshCleanHomeRoles = window.fireSApplyCleanHomeRoles;
+
+  // KPI modules rebind cards after we set role-specific Home chrome — re-assert it.
+  [
+    'fireSRefreshManagementKpis134',
+    'fireSSyncManagementCards132',
+    'fireSSyncManagementCards133'
+  ].forEach(name => {
+    const original = window[name];
+    if (typeof original !== 'function' || original.__fireSCleanHomeWrapped) return;
+    const wrapped = function fireSCleanHomeAfterKpi() {
+      const result = original.apply(this, arguments);
+      Promise.resolve(result).finally(() => {
+        setTimeout(applyCleanHome, 0);
+        setTimeout(applyCleanHome, 80);
+      });
+      return result;
+    };
+    wrapped.__fireSCleanHomeWrapped = true;
+    window[name] = wrapped;
+  });
   window.fireSGetCompanyDisplayName = getCompanyDisplayName;
 
   // Run after existing home controller, then refine by role.
