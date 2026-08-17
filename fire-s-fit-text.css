@@ -200,6 +200,10 @@ body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
   white-space: normal !important;
 }
 
+.main-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+
 #mainCommandCentre .main-command-card,
 body.fire-s-clean-home #cmdInspectionsBtn,
 body.fire-s-clean-home #cmdInspectorsBtn,
@@ -207,6 +211,10 @@ body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch;
+  justify-content: flex-start;
   width: 100%;
   max-width: none;
   margin-left: 0;
@@ -225,10 +233,33 @@ body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
   min-width: 0;
 }
 
+.main-stat-card {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.main-stat-card.attention {
+  background: #fff1f1 !important;
+  border-color: #fecaca !important;
+}
+
+.main-stat-card.warning {
+  background: #fff7ed !important;
+  border-color: #fed7aa !important;
+}
+
+.main-stat-card .stat-number {
+  color: #b71c1c !important;
+}
+
 .main-stat-card .stat-label {
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  color: #4b5563 !important;
 }
 
 .inspector-board-home-bar select,
@@ -397,8 +428,10 @@ body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
     padding: 10px 8px;
   }
 
-  .main-command-personnel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .main-command-personnel,
+  body.fire-s-clean-home.fire-s-role-owner #mainCommandPersonnelStats,
+  body.fire-s-clean-home.fire-s-role-manager #mainCommandPersonnelStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px;
     padding-top: 10px;
   }
