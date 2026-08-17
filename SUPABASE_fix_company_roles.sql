@@ -70,6 +70,34 @@ update public.company_members as cm
    and lower(trim(p.email)) <> 'georgevdx@gmail.com'
    and lower(trim(p.email)) = 'johandb@live.com';
 
+-- Deactivate duplicate shell company so login always lands on the main team (Company S).
+update public.company_members as cm
+   set status = 'inactive'
+  from public.profiles as p, public.companies as c
+ where cm.user_id = p.id
+   and cm.company_id = c.id
+   and lower(trim(p.email)) = 'johandb@live.com'
+   and lower(trim(c.name)) like '%fire-s company%'
+   and exists (
+     select 1
+       from public.company_members as cm2
+       join public.companies as c2 on c2.id = cm2.company_id
+      where cm2.user_id = p.id
+        and coalesce(cm2.status, 'active') = 'active'
+        and cm2.company_id <> cm.company_id
+        and (
+          select count(*)
+            from public.company_members as cm3
+           where cm3.company_id = cm2.company_id
+             and coalesce(cm3.status, 'active') = 'active'
+        ) > (
+          select count(*)
+            from public.company_members as cm4
+           where cm4.company_id = cm.company_id
+             and coalesce(cm4.status, 'active') = 'active'
+        )
+   );
+
 commit;
 
 -- Verify:
