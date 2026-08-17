@@ -408,6 +408,24 @@
   }
 
   async function discoverCompanyForUser(userId) {
+    try {
+      if (typeof window.fireSLoadActiveCompanyMembership === 'function') {
+        const picked = await window.fireSLoadActiveCompanyMembership(userId);
+        if (picked?.company_id) {
+          const knownName = text(window.currentUserProfile?.companyName);
+          const companyName =
+            (knownName && knownName !== 'Your company' ? knownName : '') ||
+            (await fetchCompanyName(picked.company_id)) ||
+            'Your company';
+          return {
+            companyId: picked.company_id,
+            companyName,
+            role: picked.role || 'company_owner'
+          };
+        }
+      }
+    } catch (_) {}
+
     const basic = await waitFor(
       supabaseClient
         .from('company_members')
