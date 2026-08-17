@@ -5424,8 +5424,26 @@ function populateProductTypes(preferredProductType) {
   select.value = selectedProductType;
 }
 
+const FIRE_S_CANONICAL_TEAM_ROLES = {
+  'georgevdx@gmail.com': 'company_owner',
+  'johandb@live.com': 'manager',
+  'johandb1974ik@gmail.com': 'inspector',
+  'com1@gmail.com': 'inspector',
+  'coi1@gmail.com': 'inspector',
+  '1@gmail.com': 'inspector'
+};
+const FIRE_S_PREFERRED_COMPANY_NAME = 'company s';
+
+function fireSCanonicalTeamRole(email, fallback) {
+  const key = String(email || '').trim().toLowerCase();
+  return FIRE_S_CANONICAL_TEAM_ROLES[key] || fallback || '';
+}
+
+window.fireSCanonicalTeamRole = fireSCanonicalTeamRole;
+
 function getCurrentUserRole() {
-  return currentUserProfile?.role || 'guest';
+  const fallback = currentUserProfile?.role || 'guest';
+  return fireSCanonicalTeamRole(currentUserProfile?.email, fallback) || fallback;
 }
 
 function isSuperAdmin() {
@@ -5673,31 +5691,71 @@ function fireSResolveCompanyNameLazy(companyId) {
     .catch(() => {});
 }
 
-async function fireSLoadActiveCompanyMembership(userId) {
-  // Prefer SECURITY DEFINER RPC — member counts work even when RLS hides rows.
+function fireSMembershipCompanyName(row) {
+  const embedded = row?.companies;
+  const nested = Array.isArray(embedded) ? embedded[0] : embedded;
+  return String(nested?.name || '').trim();
+}
+
+function fireSPickPrimaryMembership(rows, countByCompany) {
+  const list = Array.isArray(rows) ? rows.slice() : [];
+  if (!list.length) return null;
+  if (list.length === 1) return list[0];
+
+  const counts = countByCompany || {};
+  const roleRank = role => {
+    const value = String(role || '').toLowerCase();
+    if (value === 'manager') return 0;
+    if (value === 'inspector') return 1;
+    if (value === 'company_owner' || value === 'owner') return 2;
+    return 3;
+  };
+  const preferredNameScore = row => {
+    const name = fireSMembershipCompanyName(row).toLowerCase();
+    return name === FIRE_S_PREFERRED_COMPANY_NAME ? 0 : 1;
+  };
+
+  list.sort((a, b) => {
+    const countDiff = (counts[b.company_id] || 0) - (counts[a.company_id] || 0);
+    if (countDiff !== 0) return countDiff;
+    const nameDiff = preferredNameScore(a) - preferredNameScore(b);
+    if (nameDiff !== 0) return nameDiff;
+    return roleRank(a.role) - roleRank(b.role);
+  });
+
+  return list[0];
+}
+
+window.fireSPickPrimaryMembership = fireSPickPrimaryMembership;
+
+async function fireSRpcMyCompanyFallback() {
   try {
     const rpc = await withTimeout(supabaseClient.rpc('fire_s_my_company'), 3000);
-    if (!rpc?.error && rpc?.data) {
-      const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
-      const companyId = row?.out_company_id || row?.company_id || null;
-      const companyName = String(
-        row?.out_company_name || row?.company_name || ''
-      ).trim();
-      const role = row?.out_member_role || row?.role || 'inspector';
-      if (companyId) {
-        return {
-          company_id: companyId,
-          role,
-          status: 'active',
-          companies: companyName
-            ? { name: companyName, status: 'active', plan: 'development' }
-            : null
-        };
-      }
-    }
-  } catch (_) {}
+    if (rpc?.error || !rpc?.data) return null;
+    const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+    const companyId = row?.out_company_id || row?.company_id || null;
+    const companyName = String(
+      row?.out_company_name || row?.company_name || ''
+    ).trim();
+    const role = row?.out_member_role || row?.role || 'inspector';
+    if (!companyId) return null;
+    return {
+      company_id: companyId,
+      role,
+      status: 'active',
+      companies: companyName
+        ? { name: companyName, status: 'active', plan: 'development' }
+        : null
+    };
+  } catch (_) {
+    return null;
+  }
+}
 
-  const loadRows = async (withCompanies) => {
+async function fireSLoadActiveCompanyMembership(userId) {
+  // Own memberships first. Do not trust fire_s_my_company until it is
+  // upgraded — older copies used LIMIT 1 and returned the shell company.
+  const loadRows = async withCompanies => {
     const query = supabaseClient
       .from('company_members')
       .select(
@@ -5708,7 +5766,10 @@ async function fireSLoadActiveCompanyMembership(userId) {
       .eq('user_id', userId)
       .eq('status', 'active');
 
-    const result = await withTimeout(query, 3000).catch(() => ({ data: [], error: null }));
+    const result = await withTimeout(query, 3000).catch(() => ({
+      data: [],
+      error: null
+    }));
     return Array.isArray(result?.data) ? result.data : [];
   };
 
@@ -5716,43 +5777,64 @@ async function fireSLoadActiveCompanyMembership(userId) {
   if (!rows.length) {
     rows = await loadRows(false);
   }
-  if (!rows.length) return null;
-  if (rows.length === 1) return rows[0];
 
-  const companyIds = [...new Set(rows.map(row => row.company_id).filter(Boolean))];
-  const countByCompany = {};
-
-  try {
-    const countResult = await withTimeout(
-      supabaseClient
-        .from('company_members')
-        .select('company_id')
-        .in('company_id', companyIds)
-        .eq('status', 'active'),
-      3000
+  if (rows.length > 1) {
+    const missingNames = rows.filter(
+      row => !fireSMembershipCompanyName(row) && row.company_id
     );
-    (Array.isArray(countResult?.data) ? countResult.data : []).forEach(row => {
-      const id = row.company_id;
-      countByCompany[id] = (countByCompany[id] || 0) + 1;
-    });
-  } catch (_) {}
+    if (missingNames.length) {
+      try {
+        const ids = [
+          ...new Set(missingNames.map(row => row.company_id).filter(Boolean))
+        ];
+        const named = await withTimeout(
+          supabaseClient.from('companies').select('id, name').in('id', ids),
+          3000
+        );
+        const byId = {};
+        (Array.isArray(named?.data) ? named.data : []).forEach(company => {
+          if (company?.id) byId[company.id] = company.name;
+        });
+        rows = rows.map(row => {
+          const name = byId[row.company_id];
+          if (!name || fireSMembershipCompanyName(row)) return row;
+          return {
+            ...row,
+            companies: { name, status: 'active', plan: 'development' }
+          };
+        });
+      } catch (_) {}
+    }
+  }
 
-  const roleRank = role => {
-    const value = String(role || '').toLowerCase();
-    if (value === 'manager') return 0;
-    if (value === 'inspector') return 1;
-    if (value === 'company_owner' || value === 'owner') return 2;
-    return 3;
-  };
+  const companyIds = [
+    ...new Set(rows.map(row => row.company_id).filter(Boolean))
+  ];
+  const countByCompany = {};
+  if (companyIds.length > 1) {
+    try {
+      const countResult = await withTimeout(
+        supabaseClient
+          .from('company_members')
+          .select('company_id')
+          .in('company_id', companyIds)
+          .eq('status', 'active'),
+        3000
+      );
+      (Array.isArray(countResult?.data) ? countResult.data : []).forEach(row => {
+        const id = row.company_id;
+        countByCompany[id] = (countByCompany[id] || 0) + 1;
+      });
+    } catch (_) {}
+  } else if (companyIds.length === 1) {
+    countByCompany[companyIds[0]] = 1;
+  }
 
-  rows.sort((a, b) => {
-    const countDiff =
-      (countByCompany[b.company_id] || 0) - (countByCompany[a.company_id] || 0);
-    if (countDiff !== 0) return countDiff;
-    return roleRank(a.role) - roleRank(b.role);
-  });
+  if (rows.length) {
+    return fireSPickPrimaryMembership(rows, countByCompany);
+  }
 
-  return rows[0];
+  return fireSRpcMyCompanyFallback();
 }
 
 window.fireSLoadActiveCompanyMembership = fireSLoadActiveCompanyMembership;
@@ -5831,7 +5913,10 @@ async function loadUserAccessProfile() {
         id: user.id,
         email: user.email,
         fullName: user.email,
-        role: membership?.role || 'inspector',
+        role: fireSCanonicalTeamRole(
+          user.email,
+          membership?.role || 'inspector'
+        ),
         companyId,
         companyName: immediateName
       };
@@ -5874,7 +5959,10 @@ async function loadUserAccessProfile() {
       id: profile.id,
       email: profile.email || user.email,
       fullName: profile.full_name || profile.email || user.email,
-      role: membership?.role || profile.role || 'inspector',
+      role: fireSCanonicalTeamRole(
+        profile.email || user.email,
+        membership?.role || profile.role || 'inspector'
+      ),
       companyId,
       companyName: immediateName
     };

@@ -417,10 +417,15 @@
             (knownName && knownName !== 'Your company' ? knownName : '') ||
             (await fetchCompanyName(picked.company_id)) ||
             'Your company';
+          const email = window.currentUserProfile?.email;
+          const role =
+            (typeof window.fireSCanonicalTeamRole === 'function'
+              ? window.fireSCanonicalTeamRole(email, picked.role)
+              : picked.role) || 'company_owner';
           return {
             companyId: picked.company_id,
             companyName,
-            role: picked.role || 'company_owner'
+            role
           };
         }
       }
@@ -429,29 +434,40 @@
     const basic = await waitFor(
       supabaseClient
         .from('company_members')
-        .select('company_id, role, status')
+        .select('company_id, role, status, companies(name)')
         .eq('user_id', userId)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle(),
+        .eq('status', 'active'),
       2000,
       'Company lookup'
     );
 
     if (basic?.error) throw basic.error;
-    const row = basic?.data;
+    const rows = Array.isArray(basic?.data) ? basic.data : [];
+    const row =
+      typeof window.fireSPickPrimaryMembership === 'function'
+        ? window.fireSPickPrimaryMembership(rows, {})
+        : rows[0];
     if (!row?.company_id) return null;
 
     const knownName = text(window.currentUserProfile?.companyName);
+    const embedded = row?.companies;
+    const nested = Array.isArray(embedded) ? embedded[0] : embedded;
+    const embeddedName = text(nested?.name);
     const companyName =
       (knownName && knownName !== 'Your company' ? knownName : '') ||
+      embeddedName ||
       (await fetchCompanyName(row.company_id)) ||
       'Your company';
+    const email = window.currentUserProfile?.email;
+    const role =
+      (typeof window.fireSCanonicalTeamRole === 'function'
+        ? window.fireSCanonicalTeamRole(email, row.role)
+        : row.role) || 'company_owner';
 
     return {
       companyId: row.company_id,
       companyName,
-      role: row.role || 'company_owner'
+      role
     };
   }
 
@@ -490,10 +506,18 @@
       }
     }
 
-    return rows.map(row => ({
-      ...row,
-      profiles: profilesById[row.user_id] || null
-    }));
+    return rows.map(row => {
+      const profile = profilesById[row.user_id] || null;
+      const canonical =
+        typeof window.fireSCanonicalTeamRole === 'function'
+          ? window.fireSCanonicalTeamRole(profile?.email, row.role)
+          : row.role;
+      return {
+        ...row,
+        role: canonical || row.role,
+        profiles: profile
+      };
+    });
   }
 
   function hideOtherSections() {
