@@ -12,6 +12,18 @@ body.fire-s-inspector-v4 #cmdInspectionsBtn {
   display: flex !important;
   min-height: 88px;
 }
+.inspector-v4-gateway {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: #b71c1c;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.inspector-v4-gateway:hover { background: #9f1818; }
 body.fire-s-inspector-v4 #mainCommandCentre { max-width:760px; margin:0 auto; padding:18px; }
 .inspector-v4-shell { display:flex; flex-direction:column; gap:16px; }
 .inspector-v4-brand { text-align:center; padding:8px 0 2px; }

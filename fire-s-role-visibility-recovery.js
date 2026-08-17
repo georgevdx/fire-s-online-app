@@ -66,6 +66,13 @@
   function readCandidateRoles() {
     const values = [];
 
+    // Authoritative: active membership role on the loaded profile.
+    try {
+      if (window.currentUserProfile?.role) {
+        values.push(window.currentUserProfile.role);
+      }
+    } catch (_) {}
+
     try {
       if (typeof window.getCurrentUserRole === 'function') {
         values.push(window.getCurrentUserRole());
@@ -73,42 +80,8 @@
     } catch (_) {}
 
     try {
-      if (window.currentUserProfile) {
-        values.push(
-          window.currentUserProfile.role,
-          window.currentUserProfile.userRole,
-          window.currentUserProfile.companyRole
-        );
-      }
-    } catch (_) {}
-
-    try {
-      if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-        values.push(
-          currentUserProfile.role,
-          currentUserProfile.userRole,
-          currentUserProfile.companyRole
-        );
-      }
-    } catch (_) {}
-
-    try {
-      if (window.currentCompanyAccess) {
-        values.push(
-          window.currentCompanyAccess.role,
-          window.currentCompanyAccess.userRole,
-          window.currentCompanyAccess.companyRole
-        );
-      }
-    } catch (_) {}
-
-    try {
-      if (typeof currentCompanyAccess !== 'undefined' && currentCompanyAccess) {
-        values.push(
-          currentCompanyAccess.role,
-          currentCompanyAccess.userRole,
-          currentCompanyAccess.companyRole
-        );
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) {
+        values.push(currentUserProfile.role);
       }
     } catch (_) {}
 
@@ -118,17 +91,19 @@
   function resolveRole() {
     const candidates = readCandidateRoles();
 
-    // Highest privilege wins where stale objects disagree.
     const superRole = candidates.find(role => SUPER_ROLES.has(role));
     if (superRole) return superRole;
 
-    const managementRole = candidates.find(role => MANAGEMENT_ROLES.has(role));
-    if (managementRole) return managementRole;
+    // Prefer manager over owner when both appear from stale profile objects.
+    const managerRole = candidates.find(role => role === 'manager');
+    if (managerRole) return managerRole;
 
     const inspectorRole = candidates.find(role => INSPECTOR_ROLES.has(role));
     if (inspectorRole) return inspectorRole;
 
-    // Critical fix: unknown/loading is NOT inspector.
+    const managementRole = candidates.find(role => MANAGEMENT_ROLES.has(role));
+    if (managementRole) return managementRole;
+
     return '';
   }
 

@@ -426,32 +426,66 @@
   }
 
   async function discoverCompanyForUser(userId) {
+    try {
+      if (typeof window.fireSLoadActiveCompanyMembership === 'function') {
+        const picked = await window.fireSLoadActiveCompanyMembership(userId);
+        if (picked?.company_id) {
+          const knownName = text(window.currentUserProfile?.companyName);
+          const companyName =
+            (knownName && knownName !== 'Your company' ? knownName : '') ||
+            (await fetchCompanyName(picked.company_id)) ||
+            'Your company';
+          const email = window.currentUserProfile?.email;
+          const role =
+            (typeof window.fireSCanonicalTeamRole === 'function'
+              ? window.fireSCanonicalTeamRole(email, picked.role)
+              : picked.role) || 'company_owner';
+          return {
+            companyId: picked.company_id,
+            companyName,
+            role
+          };
+        }
+      }
+    } catch (_) {}
+
     const basic = await waitFor(
       supabaseClient
         .from('company_members')
-        .select('company_id, role, status')
+        .select('company_id, role, status, companies(name)')
         .eq('user_id', userId)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle(),
+        .eq('status', 'active'),
       2000,
       'Company lookup'
     );
 
     if (basic?.error) throw basic.error;
-    const row = basic?.data;
+    const rows = Array.isArray(basic?.data) ? basic.data : [];
+    const row =
+      typeof window.fireSPickPrimaryMembership === 'function'
+        ? window.fireSPickPrimaryMembership(rows, {})
+        : rows[0];
     if (!row?.company_id) return null;
 
     const knownName = text(window.currentUserProfile?.companyName);
+    const embedded = row?.companies;
+    const nested = Array.isArray(embedded) ? embedded[0] : embedded;
+    const embeddedName = text(nested?.name);
     const companyName =
       (knownName && knownName !== 'Your company' ? knownName : '') ||
+      embeddedName ||
       (await fetchCompanyName(row.company_id)) ||
       'Your company';
+    const email = window.currentUserProfile?.email;
+    const role =
+      (typeof window.fireSCanonicalTeamRole === 'function'
+        ? window.fireSCanonicalTeamRole(email, row.role)
+        : row.role) || 'company_owner';
 
     return {
       companyId: row.company_id,
       companyName,
-      role: row.role || 'company_owner'
+      role
     };
   }
 
@@ -490,10 +524,18 @@
       }
     }
 
-    return rows.map(row => ({
-      ...row,
-      profiles: profilesById[row.user_id] || null
-    }));
+    return rows.map(row => {
+      const profile = profilesById[row.user_id] || null;
+      const canonical =
+        typeof window.fireSCanonicalTeamRole === 'function'
+          ? window.fireSCanonicalTeamRole(profile?.email, row.role)
+          : row.role;
+      return {
+        ...row,
+        role: canonical || row.role,
+        profiles: profile
+      };
+    });
   }
 
   function hideOtherSections() {
@@ -562,7 +604,20 @@
     updateDangerControls();
   }
 
-  function renderMeta(ctx, members) {
+  function countMembersByRole(members) {
+    const tallies = { inspector: 0, manager: 0, company_owner: 0 };
+    members
+      .filter(m => text(m.status || 'active').toLowerCase() !== 'inactive')
+      .forEach(m => {
+        const role = text(m.role).toLowerCase() || 'inspector';
+        if (role === 'company_owner' || role === 'owner') tallies.company_owner += 1;
+        else if (role === 'manager') tallies.manager += 1;
+        else tallies.inspector += 1;
+      });
+    return tallies;
+  }
+
+  function renderMeta(ctx, members, pendingInvites) {
     const meta = byId('companyTeamMeta');
     const hasCompany = !!text(ctx.companyId) && !isFreshCompanyMode();
     setPersonnelChrome(hasCompany ? 'manage' : 'setup', ctx.companyName);
@@ -571,25 +626,23 @@
       meta.textContent = 'No company linked yet';
       return;
     }
-    const active = members.filter(m => text(m.status).toLowerCase() !== 'inactive');
+    const activeMembers = members.filter(
+      m => text(m.status || 'active').toLowerCase() !== 'inactive'
+    );
+    const pending = Array.isArray(pendingInvites) ? pendingInvites : [];
+    const tallies = countMembersByRole(activeMembers);
+    pending.forEach(invite => {
+      const role = text(invite.role).toLowerCase() || 'inspector';
+      if (role === 'company_owner' || role === 'owner') tallies.company_owner += 1;
+      else if (role === 'manager') tallies.manager += 1;
+      else tallies.inspector += 1;
+    });
+    const peopleTotal = activeMembers.length + pending.length;
     const nameBit = !isGenericCompanyName(ctx.companyName)
       ? `${ctx.companyName} · `
       : '';
-    let inspectors = 0;
-    let managers = 0;
-    let owners = 0;
-    active.forEach(member => {
-      const role = text(member.role).toLowerCase();
-      if (role === 'manager') managers += 1;
-      else if (role === 'company_owner' || role === 'owner') owners += 1;
-      else inspectors += 1;
-    });
     meta.textContent =
-      `${nameBit}${active.length} person(s)` +
-      ` · ${inspectors} Inspector(s)` +
-      ` · ${managers} Manager(s)` +
-      ` · ${owners} Owner(s)` +
-      ` · Your role: ${roleLabel(ctx.role)}`;
+      `${nameBit}Inspectors (${tallies.inspector}) · Managers (${tallies.manager}) · Owner (${tallies.company_owner}) · People (${peopleTotal}) · Your role: ${roleLabel(ctx.role)}`;
     try {
       if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
         window.fireSRefreshCompanyPersonnelStats();
@@ -1365,7 +1418,7 @@
       }
       const members = await loadMembers(ctx.companyId);
       const invites = await loadPendingInvites(ctx.companyId);
-      renderMeta(ctx, members);
+      renderMeta(ctx, members, invites);
       renderPendingInvites(invites);
       renderMembers(members);
       if (window.__fireSTeamAfterCreate) {

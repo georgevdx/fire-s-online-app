@@ -38,6 +38,7 @@
 
   const ALL_CMD_IDS = [
     'cmdInspectionsBtn',
+    'cmdInspectorsBtn',
     'cmdScheduleBtn',
     'cmdReportsBtn',
     'cmdCompanyBtn',
@@ -56,6 +57,59 @@
 
   function byId(id) {
     return document.getElementById(id);
+  }
+
+  function gatewayButton() {
+    const renamed = byId('cmdGatewayBtn');
+    if (renamed && !byId('cmdInspectionsBtn')) {
+      renamed.id = 'cmdInspectionsBtn';
+    }
+    return byId('cmdInspectionsBtn');
+  }
+
+  function showGatewayCard(title, copy) {
+    const btn = gatewayButton();
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (btn && grid && grid.firstElementChild !== btn) {
+      grid.insertBefore(btn, grid.firstElementChild);
+    }
+    if (!btn) return;
+    btn.hidden = false;
+    btn.removeAttribute('aria-hidden');
+    btn.removeAttribute('tabindex');
+    btn.style.setProperty('display', 'flex', 'important');
+    if (getComputedStyle(btn).display === 'none') {
+      btn.style.setProperty('display', 'flex', 'important');
+    }
+    if (title) {
+      cardText('cmdInspectionsBtn', title, copy);
+    }
+  }
+
+  function assertGatewayOnFrontPage(role) {
+    if (
+      ![
+        'inspector',
+        'manager',
+        'company_owner',
+        'super_admin',
+        'viewer'
+      ].includes(role)
+    ) {
+      return;
+    }
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (grid) {
+      grid.style.setProperty('display', 'grid', 'important');
+      grid.removeAttribute('hidden');
+    }
+    const copy =
+      role === 'inspector'
+        ? 'Find, continue or start an inspection.'
+        : role === 'viewer'
+          ? 'Search and open completed inspection work.'
+          : 'Open, continue, search and manage inspections.';
+    showGatewayCard('Inspection Gateway', copy);
   }
 
   function normaliseRole(value) {
@@ -303,6 +357,7 @@
       'fire-s-role-owner',
       'fire-s-role-management',
       'fire-s-role-guest',
+      'fire-s-role-viewer',
       'fire-s-role-new-company',
       'fire-s-role-pending-member',
       'fire-s-clean-home'
@@ -359,7 +414,8 @@
       'complianceHeroCard',
       'executiveSnapshotCard',
       'executiveSnapshotPanel',
-      'fireSExecutiveDashboard1115'
+      'fireSExecutiveDashboard1115',
+      'inspectorBoardHomeBar'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -393,10 +449,10 @@
     hideManagementOverlays();
 
     ALL_CMD_IDS.forEach(hide);
+    hide('cmdInspectorsBtn');
+    hide('inspectorBoardHomeBar');
     // Keep Gateway visible so inspectors always have a clear entry.
-    show('cmdInspectionsBtn');
-    cardText(
-      'cmdInspectionsBtn',
+    showGatewayCard(
       'Inspection Gateway',
       'Find, continue or start an inspection.'
     );
@@ -474,6 +530,11 @@
       'Open, continue and review field inspections.'
     );
     cardText(
+      'cmdInspectorsBtn',
+      'Inspectors',
+      'Select an inspector, view the whole team, or compare them.'
+    );
+    cardText(
       'cmdScheduleBtn',
       'Schedule',
       'Bookings, follow-ups and new-site planning.'
@@ -500,7 +561,10 @@
       grid.style.setProperty('display', 'grid', 'important');
       grid.removeAttribute('hidden');
     }
-    show('cmdInspectionsBtn');
+    showGatewayCard(
+      'Inspection Gateway',
+      'Open, continue and review field inspections.'
+    );
 
     try {
       if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
@@ -550,12 +614,14 @@
       grid.style.setProperty('display', 'grid', 'important');
       grid.removeAttribute('hidden');
     }
-    show('cmdInspectionsBtn');
-
-    cardText(
-      'cmdInspectionsBtn',
+    showGatewayCard(
       'Inspection Gateway',
       'Company-wide inspection search and oversight.'
+    );
+    cardText(
+      'cmdInspectorsBtn',
+      'Inspectors',
+      'Select an inspector, view the whole team, or compare them.'
     );
     cardText(
       'cmdScheduleBtn',
@@ -600,11 +666,12 @@
     setBetaPanelsVisible(false);
     hideManagementOverlays();
     ALL_CMD_IDS.forEach(hide);
+    hide('inspectorBoardHomeBar');
   }
 
   function applyViewerHome() {
     showHomeHero();
-    setBodyRole('fire-s-role-guest', 'viewer');
+    setBodyRole('fire-s-role-viewer', 'viewer');
     setHero('Fire-S · Viewer', 'REVIEW', 'Read-only view of reports and compliance status.');
     setText('#mainCommandCentre .main-command-kicker', 'Review Workspace');
     setText('#mainCommandCentre .main-command-top h3', 'Reports & Status');
@@ -624,6 +691,12 @@
     hide('cmdScheduleBtn');
     hide('cmdCompanyBtn');
     hide('cmdServicesBtn');
+    hide('cmdInspectorsBtn');
+    hide('inspectorBoardHomeBar');
+    showGatewayCard(
+      'Inspection Gateway',
+      'Search and open completed inspection work.'
+    );
   }
 
   function applyPendingMemberHome() {
@@ -641,6 +714,7 @@
     setBetaPanelsVisible(false);
     hideManagementOverlays();
     ALL_CMD_IDS.forEach(hide);
+    hide('inspectorBoardHomeBar');
   }
 
   function applyNewCompanyHome() {
@@ -658,6 +732,7 @@
     setBetaPanelsVisible(false);
     hideManagementOverlays();
     ALL_CMD_IDS.forEach(hide);
+    hide('inspectorBoardHomeBar');
   }
 
   function applyCleanHome() {
@@ -674,7 +749,9 @@
     else if (role === 'viewer') applyViewerHome();
     else applyGuestHome();
 
-    // Keep Personnel card wired after other Home controllers rebind clicks.
+    assertGatewayOnFrontPage(role);
+
+    // Keep Personnel / Inspectors cards wired after other Home controllers rebind clicks.
     try {
       if (
         (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
@@ -687,6 +764,27 @@
             window.fireSOpenCompanyTeam();
           };
         }
+      }
+    } catch (_) {}
+
+    try {
+      if (
+        (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
+        typeof window.fireSOpenInspectorBoard === 'function'
+      ) {
+        const btn = byId('cmdInspectorsBtn');
+        if (btn) {
+          btn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenInspectorBoard();
+          };
+        }
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof window.fireSRefreshInspectorBoard === 'function') {
+        window.fireSRefreshInspectorBoard();
       }
     } catch (_) {}
 
@@ -729,6 +827,26 @@
     setTimeout(bindRoleTestRefresh, 50);
   };
   window.refreshCleanHomeRoles = window.fireSApplyCleanHomeRoles;
+
+  // KPI modules rebind cards after we set role-specific Home chrome — re-assert it.
+  [
+    'fireSRefreshManagementKpis134',
+    'fireSSyncManagementCards132',
+    'fireSSyncManagementCards133'
+  ].forEach(name => {
+    const original = window[name];
+    if (typeof original !== 'function' || original.__fireSCleanHomeWrapped) return;
+    const wrapped = function fireSCleanHomeAfterKpi() {
+      const result = original.apply(this, arguments);
+      Promise.resolve(result).finally(() => {
+        setTimeout(applyCleanHome, 0);
+        setTimeout(applyCleanHome, 80);
+      });
+      return result;
+    };
+    wrapped.__fireSCleanHomeWrapped = true;
+    window[name] = wrapped;
+  });
   window.fireSGetCompanyDisplayName = getCompanyDisplayName;
 
   // Run after existing home controller, then refine by role.
