@@ -755,9 +755,26 @@
     hide('inspectorBoardHomeBar');
   }
 
+  function isGatewayOrFormVisible() {
+    const list = byId('projectListSection');
+    const form = byId('projectFormSection');
+    const shown = el => {
+      if (!el || el.hidden) return false;
+      if (el.style.display === 'none') return false;
+      try {
+        const style = window.getComputedStyle(el);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      } catch (_) {
+        return true;
+      }
+    };
+    return shown(list) || shown(form);
+  }
+
   function applyCleanHome() {
     const centre = byId('mainCommandCentre');
     if (!centre || !document.body) return;
+    if (isGatewayOrFormVisible()) return;
 
     wrapAllCommandCards();
 
@@ -878,6 +895,7 @@
       : null;
 
   function cleanHomeRender() {
+    if (isGatewayOrFormVisible()) return;
     if (typeof previousRender === 'function' && !previousRender.__fireSCleanHome) {
       try {
         previousRender();
