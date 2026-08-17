@@ -99,6 +99,7 @@
     if(!shell){
       shell=document.createElement('div'); shell.id='inspectorV4Shell'; shell.className='inspector-v4-shell';
       shell.innerHTML=`<div class="inspector-v4-brand"><div class="kicker">Fire-S</div><h2>INSPECT</h2></div>
+        <button id="inspectorV4Gateway" class="inspector-v4-gateway" type="button">Inspection Gateway</button>
         <input id="inspectorV4Search" class="inspector-v4-search" type="search" autocomplete="off" placeholder="Search premises or site…" aria-label="Search premises or site">
         <div id="inspectorV4Next"></div><div id="inspectorV4Results" class="inspector-v4-results"></div>
         <button id="inspectorV4New" class="inspector-v4-new" type="button">+ NEW PREMISES</button>
@@ -106,10 +107,26 @@
       centre.appendChild(shell);
       shell.querySelector('#inspectorV4Search').addEventListener('input',render);
       shell.querySelector('#inspectorV4New').addEventListener('click',newPremises);
+      shell.querySelector('#inspectorV4Gateway').addEventListener('click',()=>{
+        try { if(typeof showProjectList==='function') showProjectList(); } catch(e){}
+      });
     }
     shell.removeAttribute('hidden');
     shell.removeAttribute('aria-hidden');
     shell.style.setProperty('display','flex','important');
+    if(!shell.querySelector('#inspectorV4Gateway')){
+      const gateway=document.createElement('button');
+      gateway.id='inspectorV4Gateway';
+      gateway.className='inspector-v4-gateway';
+      gateway.type='button';
+      gateway.textContent='Inspection Gateway';
+      const brand=shell.querySelector('.inspector-v4-brand');
+      if(brand&&brand.nextSibling) shell.insertBefore(gateway, brand.nextSibling);
+      else shell.insertBefore(gateway, shell.firstChild);
+      gateway.addEventListener('click',()=>{
+        try { if(typeof showProjectList==='function') showProjectList(); } catch(e){}
+      });
+    }
     render();
   }
   function render(){

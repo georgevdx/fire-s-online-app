@@ -38,6 +38,7 @@
 
   const ALL_CMD_IDS = [
     'cmdInspectionsBtn',
+    'cmdInspectorsBtn',
     'cmdScheduleBtn',
     'cmdReportsBtn',
     'cmdCompanyBtn',
@@ -68,6 +69,10 @@
 
   function showGatewayCard(title, copy) {
     const btn = gatewayButton();
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (btn && grid && grid.firstElementChild !== btn) {
+      grid.insertBefore(btn, grid.firstElementChild);
+    }
     if (!btn) return;
     btn.hidden = false;
     btn.removeAttribute('aria-hidden');
@@ -79,6 +84,32 @@
     if (title) {
       cardText('cmdInspectionsBtn', title, copy);
     }
+  }
+
+  function assertGatewayOnFrontPage(role) {
+    if (
+      ![
+        'inspector',
+        'manager',
+        'company_owner',
+        'super_admin',
+        'viewer'
+      ].includes(role)
+    ) {
+      return;
+    }
+    const grid = document.querySelector('#mainCommandCentre .main-command-grid');
+    if (grid) {
+      grid.style.setProperty('display', 'grid', 'important');
+      grid.removeAttribute('hidden');
+    }
+    const copy =
+      role === 'inspector'
+        ? 'Find, continue or start an inspection.'
+        : role === 'viewer'
+          ? 'Search and open completed inspection work.'
+          : 'Open, continue, search and manage inspections.';
+    showGatewayCard('Inspection Gateway', copy);
   }
 
   function normaliseRole(value) {
@@ -326,6 +357,7 @@
       'fire-s-role-owner',
       'fire-s-role-management',
       'fire-s-role-guest',
+      'fire-s-role-viewer',
       'fire-s-role-new-company',
       'fire-s-role-pending-member',
       'fire-s-clean-home'
@@ -382,7 +414,8 @@
       'complianceHeroCard',
       'executiveSnapshotCard',
       'executiveSnapshotPanel',
-      'fireSExecutiveDashboard1115'
+      'fireSExecutiveDashboard1115',
+      'inspectorBoardHomeBar'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -416,6 +449,8 @@
     hideManagementOverlays();
 
     ALL_CMD_IDS.forEach(hide);
+    hide('cmdInspectorsBtn');
+    hide('inspectorBoardHomeBar');
     // Keep Gateway visible so inspectors always have a clear entry.
     showGatewayCard(
       'Inspection Gateway',
@@ -493,6 +528,11 @@
       'cmdInspectionsBtn',
       'Inspection Gateway',
       'Open, continue and review field inspections.'
+    );
+    cardText(
+      'cmdInspectorsBtn',
+      'Inspectors',
+      'Select an inspector, view the whole team, or compare them.'
     );
     cardText(
       'cmdScheduleBtn',
@@ -573,6 +613,11 @@
       'Company-wide inspection search and oversight.'
     );
     cardText(
+      'cmdInspectorsBtn',
+      'Inspectors',
+      'Select an inspector, view the whole team, or compare them.'
+    );
+    cardText(
       'cmdScheduleBtn',
       'Schedule',
       'Portfolio bookings and follow-up planning.'
@@ -609,11 +654,12 @@
     setBetaPanelsVisible(false);
     hideManagementOverlays();
     ALL_CMD_IDS.forEach(hide);
+    hide('inspectorBoardHomeBar');
   }
 
   function applyViewerHome() {
     showHomeHero();
-    setBodyRole('fire-s-role-guest', 'viewer');
+    setBodyRole('fire-s-role-viewer', 'viewer');
     setHero('Fire-S · Viewer', 'REVIEW', 'Read-only view of reports and compliance status.');
     setText('#mainCommandCentre .main-command-kicker', 'Review Workspace');
     setText('#mainCommandCentre .main-command-top h3', 'Reports & Status');
@@ -633,6 +679,12 @@
     hide('cmdScheduleBtn');
     hide('cmdCompanyBtn');
     hide('cmdServicesBtn');
+    hide('cmdInspectorsBtn');
+    hide('inspectorBoardHomeBar');
+    showGatewayCard(
+      'Inspection Gateway',
+      'Search and open completed inspection work.'
+    );
   }
 
   function applyPendingMemberHome() {
@@ -650,6 +702,7 @@
     setBetaPanelsVisible(false);
     hideManagementOverlays();
     ALL_CMD_IDS.forEach(hide);
+    hide('inspectorBoardHomeBar');
   }
 
   function applyNewCompanyHome() {
@@ -667,6 +720,7 @@
     setBetaPanelsVisible(false);
     hideManagementOverlays();
     ALL_CMD_IDS.forEach(hide);
+    hide('inspectorBoardHomeBar');
   }
 
   function applyCleanHome() {
@@ -683,7 +737,9 @@
     else if (role === 'viewer') applyViewerHome();
     else applyGuestHome();
 
-    // Keep Personnel card wired after other Home controllers rebind clicks.
+    assertGatewayOnFrontPage(role);
+
+    // Keep Personnel / Inspectors cards wired after other Home controllers rebind clicks.
     try {
       if (
         (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
@@ -696,6 +752,27 @@
             window.fireSOpenCompanyTeam();
           };
         }
+      }
+    } catch (_) {}
+
+    try {
+      if (
+        (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
+        typeof window.fireSOpenInspectorBoard === 'function'
+      ) {
+        const btn = byId('cmdInspectorsBtn');
+        if (btn) {
+          btn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenInspectorBoard();
+          };
+        }
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof window.fireSRefreshInspectorBoard === 'function') {
+        window.fireSRefreshInspectorBoard();
       }
     } catch (_) {}
 

@@ -51,7 +51,8 @@ body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-grid,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-grid,
-body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid {
+body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-viewer #mainCommandCentre .main-command-grid {
   display: grid !important;
 }
 
@@ -60,15 +61,14 @@ body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top 
   display: flex !important;
 }
 
-body.fire-s-clean-home.fire-s-role-inspector #cmdInspectionsBtn {
-  display: flex !important;
-}
-
+body.fire-s-clean-home.fire-s-role-inspector #cmdInspectionsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdInspectionsBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdInspectionsBtn,
+body.fire-s-clean-home.fire-s-role-viewer #cmdInspectionsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdGatewayBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdGatewayBtn {
   display: flex !important;
+  visibility: visible !important;
 }
 
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid {

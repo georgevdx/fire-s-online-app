@@ -32,10 +32,11 @@
   </style>
   <link rel="stylesheet" href="styles.css?v=106-0-new-inspection-flow">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="inspector-v4.css?v=4-2-gateway">
-  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-7-gateway">
+  <link rel="stylesheet" href="inspector-v4.css?v=4-3-gateway">
+  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-8-gateway">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-5">
+  <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-0">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-0">
 </head>
 <body>
@@ -289,11 +290,31 @@
       </button>
     </div>
 
+    <div id="inspectorBoardHomeBar" class="inspector-board-home-bar" hidden>
+      <label>
+        Inspectors
+        <select id="inspectorBoardHomeSelect" aria-label="Select inspector">
+          <option value="all">All inspectors</option>
+        </select>
+      </label>
+      <div class="inspector-board-home-actions">
+        <button id="inspectorBoardOpenBtn" type="button" class="secondary-btn">Team status</button>
+        <button id="inspectorBoardCompareBtn" type="button" class="secondary-btn">Compare</button>
+      </div>
+      <p id="inspectorBoardHomeStatus" class="inspector-board-home-status">Select an inspector or view the whole team.</p>
+    </div>
+
     <div class="main-command-grid">
       <button type="button" class="main-command-card primary" id="cmdInspectionsBtn">
         <span class="command-icon">📋</span>
         <span class="command-title">Inspection Gateway</span>
         <span class="command-copy">Open, continue, search and manage inspections.</span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdInspectorsBtn">
+        <span class="command-icon">👷</span>
+        <span class="command-title">Inspectors</span>
+        <span class="command-copy">Team stats, individual status and comparison.</span>
       </button>
 
       <button type="button" class="main-command-card" id="cmdScheduleBtn">
@@ -458,6 +479,31 @@
   <div id="companyTeamList" class="company-team-list">
     <div class="company-team-empty">Loading personnel…</div>
   </div>
+</section>
+<section id="inspectorBoardSection" class="card inspector-board-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Inspectors</h2>
+    <button id="inspectorBoardBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="inspector-board-kicker">Field team</div>
+  <h3 id="inspectorBoardTitle">All inspectors</h3>
+  <p id="inspectorBoardSubtitle">Collective inspection stats and status for the whole field team.</p>
+  <div id="inspectorBoardMeta" class="inspector-board-meta"></div>
+
+  <div class="inspector-board-toolbar">
+    <select id="inspectorBoardSelect" aria-label="Select inspector">
+      <option value="all">All inspectors</option>
+    </select>
+    <div class="inspector-board-modes">
+      <button type="button" data-inspector-mode="team">Team / inspector</button>
+      <button type="button" data-inspector-mode="compare">Compare</button>
+    </div>
+  </div>
+
+  <div id="inspectorBoardBody"></div>
 </section>
 <section id="servicesSection" class="card services-section" style="display:none;">
   <div class="toolbar">
@@ -1159,12 +1205,13 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-0-new-inspection-flow"></script>
-  <script src="app.js?v=company-s-v2"></script>
+  <script src="app.js?v=company-s-v3"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
-  <script src="inspector-v4.js?v=4-3-role-lock"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-3-gateway"></script>
+  <script src="inspector-v4.js?v=4-4-gateway"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-4-gateway"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-0"></script>
   <script src="fire-s-company-team.js?v=2-2"></script>
+  <script src="fire-s-inspector-board.js?v=1-0"></script>
   <script src="fire-s-get-started.js?v=2-3-pages"></script>
   <script src="fire-s-startup-stability.js?v=1-0"></script>
   <script>
