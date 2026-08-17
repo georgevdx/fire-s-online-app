@@ -33,12 +33,22 @@ begin
     v_name := 'Fire-S Company';
   end if;
 
-  -- If user already belongs to a company, return that instead of creating another.
+  -- If user already belongs to a company, return the primary one
+  -- (most members, prefer "Company S") instead of LIMIT 1.
   select m.company_id, m.role
     into v_company_id, v_role
   from public.company_members as m
+  join public.companies as c on c.id = m.company_id
   where m.user_id = v_uid
     and coalesce(m.status, 'active') = 'active'
+  order by (
+    select count(*)::int
+    from public.company_members as cm
+    where cm.company_id = m.company_id
+      and coalesce(cm.status, 'active') = 'active'
+  ) desc,
+  case when lower(trim(c.name)) = lower(trim('Company S')) then 0 else 1 end,
+  c.name asc
   limit 1;
 
   if v_company_id is not null then

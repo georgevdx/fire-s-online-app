@@ -14,6 +14,10 @@
 --   1) Run section A (PREVIEW) only — check the lists
 --   2) Run section B (APPLY) inside a transaction when preview looks correct
 --   3) Run section C (VERIFY)
+--   4) Then SUPABASE_fix_company_roles.sql
+--   5) Then SUPABASE_my_company.sql
+--   6) Optional: SUPABASE_delete_empty_test_companies.sql (scrap empty shells)
+--   7) Everyone logout + login (or clear site data once)
 
 -- =============================================================================
 -- A) PREVIEW — read-only (safe to run anytime)
