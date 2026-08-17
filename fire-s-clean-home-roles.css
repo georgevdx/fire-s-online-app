@@ -58,7 +58,10 @@ body.fire-s-clean-home.fire-s-role-viewer #mainCommandCentre .main-command-grid 
 
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-top,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start;
+  gap: 8px;
 }
 
 body.fire-s-clean-home.fire-s-role-inspector #cmdInspectionsBtn,
@@ -68,6 +71,9 @@ body.fire-s-clean-home.fire-s-role-viewer #cmdInspectionsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdGatewayBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdGatewayBtn {
   display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
   visibility: visible !important;
 }
 

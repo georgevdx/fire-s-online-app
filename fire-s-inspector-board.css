@@ -269,4 +269,7 @@ body.fire-s-clean-home.fire-s-role-viewer #cmdInspectorsBtn {
 body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
   display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
 }
