@@ -87,7 +87,8 @@ body.fire-s-clean-home.fire-s-role-manager #homeSection .home-hero.has-company-n
   font-size: clamp(1.65rem, 4.5vw, 2.35rem);
   line-height: 1.15;
   letter-spacing: -0.02em;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 body.fire-s-clean-home.fire-s-role-owner #mainCommandAccessStatus,

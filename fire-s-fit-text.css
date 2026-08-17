@@ -1,4 +1,4 @@
-/* Fire-S: keep all page text inside cards and frames */
+/* Fire-S: keep page text inside frames without splitting words. */
 
 html {
   overflow-x: hidden;
@@ -10,12 +10,14 @@ html {
 .company-team-section,
 .inspector-board-section,
 .fire-s-get-started,
+.findings-centre,
 #homeSection,
 #projectListSection,
 #projectFormSection,
 #companyTeamSection,
 #inspectorBoardSection,
-#servicesSection {
+#servicesSection,
+#reportSection {
   max-width: 100%;
   min-width: 0;
 }
@@ -24,7 +26,9 @@ html {
 .brand-header,
 .brand-left,
 .home-hero,
+.home-hero > div,
 .main-command-top,
+.main-command-top > div,
 .main-command-grid,
 .main-command-stats,
 .main-command-personnel,
@@ -35,17 +39,41 @@ html {
 .company-team-card,
 .inspector-board-home-bar,
 .inspector-board-kpi,
-.inspector-board-item {
+.inspector-board-item,
+.findings-centre-header,
+.project-card,
+.project-card-top {
   min-width: 0;
 }
 
-.home-hero,
-.home-hero h2,
-.home-hero p,
-.main-command-top h3,
-.main-command-top p,
-#mainCommandSubtitle,
-#mainCommandAccessStatus,
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+/*
+  Wrap at spaces. Only break a word if that one word is wider than the frame.
+  Never use overflow-wrap: anywhere on titles — it splits "Company S".
+*/
+h1,
+h2,
+h3,
+h4,
+p,
+label,
+li,
+td,
+th,
 .command-title,
 .command-copy,
 .stat-label,
@@ -53,47 +81,154 @@ html {
 .company-team-meta,
 .inspector-board-home-status,
 .route-copy,
-.route-title {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  white-space: normal;
+.route-title,
+.home-kicker,
+.main-command-kicker,
+.subtitle,
+.brand-version {
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
   max-width: 100%;
 }
 
-.main-command-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 158px), 1fr));
-}
-
-.main-command-stats {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+button,
+button *,
+.main-command-card,
+.main-command-card *,
+.main-stat-card,
+.main-stat-card *,
+.command-centre-card,
+.command-centre-card *,
+.startup-route-card,
+.startup-route-card *,
+.inspection-card-action,
+.inspection-card-action *,
+.fire-s-get-started-choice,
+.fire-s-get-started-choice *,
+.inspector-board-item,
+.inspector-board-item *,
+.company-team-card,
+.company-team-intro h3,
+.home-hero h2,
+.home-hero p,
+.main-command-top h3,
+.main-command-top p,
+#mainCommandSubtitle,
+#mainCommandAccessStatus,
+.main-command-status {
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  hyphens: none !important;
 }
 
 .main-command-card,
-body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
-body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn,
-body.fire-s-clean-home #cmdInspectionsBtn,
-body.fire-s-clean-home #cmdInspectorsBtn {
-  display: flex !important;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  height: auto;
-  max-width: none;
-  overflow: hidden;
+.main-command-card .command-title,
+.main-command-card .command-copy,
+.main-stat-card .stat-label,
+.startup-route-card,
+.fire-s-get-started-choice {
+  white-space: normal !important;
 }
 
-.command-icon {
-  line-height: 1;
+/* Emails and other long tokens may break anywhere inside the frame. */
+.company-team-card-main span,
+.inspector-board-table small,
+a[href^="mailto:"] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.header.brand-header,
+.brand-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.brand-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.cloud-menu {
+  flex: 0 0 auto;
+}
+
+.cloud-dropdown {
+  max-width: min(260px, calc(100vw - 24px));
+}
+
+.home-hero {
+  display: block;
+  width: 100%;
+}
+
+.home-hero h2,
+body.fire-s-clean-home.fire-s-role-owner #homeSection .home-hero.has-company-name h2,
+body.fire-s-clean-home.fire-s-role-manager #homeSection .home-hero.has-company-name h2,
+.company-team-intro h3,
+.company-team-intro.has-company-name h3 {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
+.main-command-top {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start;
+  gap: 10px 12px;
+}
+
+.main-command-top > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.main-command-status,
+#mainCommandAccessStatus {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal !important;
+}
+
+#mainCommandCentre .main-command-card,
+body.fire-s-clean-home #cmdInspectionsBtn,
+body.fire-s-clean-home #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn,
+body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left !important;
+  overflow: visible;
+  height: auto;
+  box-sizing: border-box;
+}
+
+.command-title,
+.command-copy,
+.route-title,
+.route-copy {
+  display: block;
+  min-width: 0;
 }
 
 .main-stat-card .stat-label {
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-}
-
-.main-command-status {
-  max-width: min(100%, 240px);
 }
 
 .inspector-board-home-bar select,
@@ -103,12 +238,35 @@ body.fire-s-clean-home #cmdInspectorsBtn {
   width: 100%;
 }
 
-.inspector-board-item {
-  grid-template-columns: minmax(0, 110px) minmax(0, 1fr);
+.inspector-board-home-bar label {
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 .inspector-board-table-wrap {
   max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inspector-board-table {
+  min-width: 520px;
+}
+
+.findings-centre-header,
+.findings-toolbar,
+.project-card-top {
+  flex-wrap: wrap;
+}
+
+.findings-centre-header > div,
+.project-card-top > div {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.service-request-detail-row {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (max-width: 700px) {
@@ -117,7 +275,8 @@ body.fire-s-clean-home #cmdInspectorsBtn {
   }
 
   .card,
-  .main-command-centre {
+  .main-command-centre,
+  .findings-centre {
     padding: 12px;
   }
 
@@ -126,61 +285,100 @@ body.fire-s-clean-home #cmdInspectorsBtn {
     line-height: 1.2;
   }
 
-  .home-hero {
-    flex-wrap: wrap;
-  }
-
   .home-hero h2,
   body.fire-s-clean-home.fire-s-role-owner #homeSection .home-hero.has-company-name h2,
   body.fire-s-clean-home.fire-s-role-manager #homeSection .home-hero.has-company-name h2 {
-    font-size: clamp(1.2rem, 6vw, 1.65rem) !important;
+    font-size: clamp(1.35rem, 6.4vw, 1.75rem) !important;
     line-height: 1.2 !important;
+    letter-spacing: -0.01em;
   }
 
   .home-hero p {
-    font-size: 0.88rem;
-  }
-
-  .main-command-top {
-    display: block !important;
-  }
-
-  .main-command-top h3 {
-    font-size: 1.15rem;
-    line-height: 1.25;
-  }
-
-  .main-command-top p,
-  #mainCommandSubtitle {
-    font-size: 12px;
+    font-size: 0.9rem;
     line-height: 1.4;
   }
 
-  .main-command-status {
+  body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-top,
+  body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
+  .main-command-top {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .main-command-top h3,
+  #mainCommandCentre .main-command-top h3 {
+    font-size: clamp(1.15rem, 5vw, 1.4rem) !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-command-top p,
+  #mainCommandCentre .main-command-top p,
+  #mainCommandSubtitle {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  .main-command-status,
+  #mainCommandAccessStatus {
     display: inline-block;
-    margin-top: 8px;
-    max-width: 100%;
-    font-size: 10px;
+    width: auto;
+    max-width: 100% !important;
+    margin-top: 0;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
   }
 
-  .main-command-card {
-    min-height: 0;
-    padding: 12px;
+  /* Keep every command card on the same left-aligned mobile layout. */
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectionsBtn,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectorsBtn,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
+  body:not(.fire-s-inspector-v4).fire-s-role-inspector #cmdInspectionsBtn,
+  body:not(.fire-s-inspector-v4).fire-s-role-inspector #cmdScheduleBtn {
+    display: grid !important;
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 12px !important;
+    row-gap: 4px !important;
+    align-items: center !important;
+    justify-items: stretch !important;
+    min-height: 96px !important;
+    padding: 14px 12px !important;
+    text-align: left !important;
   }
 
-  .command-icon {
-    font-size: 20px;
-    margin-bottom: 6px;
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: center;
+    margin: 0 !important;
+    font-size: 28px !important;
+    line-height: 1 !important;
   }
 
-  .command-title {
-    font-size: 13px;
-    margin-bottom: 4px;
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-title {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    min-width: 0;
+    margin: 0 0 2px !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
   }
 
-  .command-copy {
-    font-size: 11px;
-    line-height: 1.35;
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-copy {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    min-width: 0;
+    margin: 0 !important;
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
   }
 
   .stat-number {
@@ -191,6 +389,7 @@ body.fire-s-clean-home #cmdInspectorsBtn {
   .main-stat-card .stat-label {
     font-size: 10px !important;
     letter-spacing: 0.03em;
+    line-height: 1.25 !important;
   }
 
   .main-stat-card {
@@ -258,11 +457,48 @@ body.fire-s-clean-home #cmdInspectorsBtn {
   .startup-route-grid {
     grid-template-columns: 1fr;
   }
+
+  .findings-centre-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .findings-centre-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .findings-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .service-request-detail-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 420px) {
-  .main-command-grid,
-  .main-command-stats {
-    grid-template-columns: 1fr;
+  .main-command-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectionsBtn,
+  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectorsBtn {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    column-gap: 10px !important;
+    padding: 12px 10px !important;
+  }
+
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-icon {
+    font-size: 24px !important;
+  }
+
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-title {
+    font-size: 15px !important;
+  }
+
+  body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-copy {
+    font-size: 12px !important;
   }
 }
