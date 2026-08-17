@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="styles.css?v=106-0-new-inspection-flow">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-2-gateway">
-  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-7-gateway">
+  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-8-personnel">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-5">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-0">
@@ -287,6 +287,30 @@
         <span class="stat-number" id="cmdPhotoCount">0</span>
         <span class="stat-label">Inspections This Month</span>
       </button>
+    </div>
+
+    <div
+      id="mainCommandPersonnelStats"
+      class="main-command-personnel"
+      aria-label="Company personnel summary"
+      hidden
+    >
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelInspectors">0</span>
+        <span class="personnel-label">Inspectors</span>
+      </div>
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelManagers">0</span>
+        <span class="personnel-label">Managers</span>
+      </div>
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelOwners">0</span>
+        <span class="personnel-label">Owners</span>
+      </div>
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelTotal">0</span>
+        <span class="personnel-label">People</span>
+      </div>
     </div>
 
     <div class="main-command-grid">
@@ -1159,12 +1183,12 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-0-new-inspection-flow"></script>
-  <script src="app.js?v=company-stamp-v1"></script>
+  <script src="app.js?v=company-link-v2"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-3-role-lock"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-2-gateway"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-3-personnel"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-0"></script>
-  <script src="fire-s-company-team.js?v=2-1"></script>
+  <script src="fire-s-company-team.js?v=2-2-link"></script>
   <script src="fire-s-get-started.js?v=2-3-pages"></script>
   <script src="fire-s-startup-stability.js?v=1-0"></script>
   <script>

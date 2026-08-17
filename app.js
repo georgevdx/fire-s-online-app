@@ -4097,28 +4097,50 @@ async function restoreCloudSession() {
 
     updateSyncUI();
 
-    loadUserAccessProfile()
-      .then(() => {
-        renderProjectsList();
-      })
-      .catch(error => {
-        console.error('Access profile load failed after session restore:', error);
-      });
+    if (!(data && data.session)) {
+      return;
+    }
 
-    if (data && data.session) {
-      // Defer heavy sync so Home can paint first (startup stability).
-      setTimeout(() => {
-        try {
-          if (typeof refreshSyncData === 'function') {
-            Promise.resolve(refreshSyncData()).catch(error => {
+    // Membership MUST resolve before company-scoped sync, or owners only
+    // download their own user_id rows and Home stats stay empty.
+    try {
+      await loadUserAccessProfile();
+      try {
+        renderProjectsList();
+      } catch (_) {}
+      try {
+        if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+          window.fireSRefreshCompanyPersonnelStats();
+        }
+      } catch (_) {}
+    } catch (profileError) {
+      console.error('Access profile load failed after session restore:', profileError);
+    }
+
+    setTimeout(() => {
+      try {
+        if (typeof refreshSyncData === 'function') {
+          Promise.resolve(refreshSyncData())
+            .then(() => {
+              try {
+                if (typeof renderHomeCommandCentre === 'function') {
+                  renderHomeCommandCentre();
+                }
+              } catch (_) {}
+              try {
+                if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+                  window.fireSRefreshCompanyPersonnelStats();
+                }
+              } catch (_) {}
+            })
+            .catch(error => {
               console.warn('Deferred startup sync failed:', error);
             });
-          }
-        } catch (error) {
-          console.warn('Deferred startup sync failed:', error);
         }
-      }, 2000);
-    }
+      } catch (error) {
+        console.warn('Deferred startup sync failed:', error);
+      }
+    }, 400);
 
   } catch (error) {
     console.error('Cloud session restore failed:', error);
@@ -5790,6 +5812,7 @@ async function loadUserAccessProfile() {
       }
       if (companyId) {
         restampLocalInspectionsWithCompany(companyId, immediateName);
+        scheduleCompanyCloudRefresh('membership');
       }
       return;
     }
@@ -5835,6 +5858,7 @@ async function loadUserAccessProfile() {
 
     if (companyId) {
       restampLocalInspectionsWithCompany(companyId, immediateName);
+      scheduleCompanyCloudRefresh('membership');
     }
 
   } catch (error) {
@@ -5882,6 +5906,67 @@ function updateAccessUI() {
   syncStatus.textContent =
     `Access: ${currentUserProfile.role} | ${currentCompanyAccess?.status || 'unknown'}`;
 }
+
+/** Keep app.js + window profile as one object so People / Home / sync agree. */
+window.fireSApplyUserProfilePatch = function fireSApplyUserProfilePatch(patch) {
+  if (!patch || typeof patch !== 'object') return currentUserProfile;
+  const base = currentUserProfile || window.currentUserProfile || {};
+  currentUserProfile = {
+    ...base,
+    ...patch
+  };
+  window.currentUserProfile = currentUserProfile;
+  if (patch.companyName || patch.companyId) {
+    currentCompanyAccess = {
+      ...(currentCompanyAccess || window.currentCompanyAccess || {}),
+      companyName:
+        patch.companyName ||
+        currentCompanyAccess?.companyName ||
+        currentUserProfile.companyName,
+      source: currentCompanyAccess?.source || 'supabase'
+    };
+    window.currentCompanyAccess = currentCompanyAccess;
+  }
+  updateAccessUI();
+  return currentUserProfile;
+};
+
+function scheduleCompanyCloudRefresh(reason) {
+  if (!currentUserProfile?.companyId) return;
+  try {
+    if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+      window.fireSRefreshCompanyPersonnelStats();
+    }
+  } catch (_) {}
+  setTimeout(() => {
+    try {
+      if (typeof refreshSyncData === 'function') {
+        Promise.resolve(refreshSyncData())
+          .then(() => {
+            try {
+              if (typeof renderHomeCommandCentre === 'function') {
+                renderHomeCommandCentre();
+              }
+            } catch (_) {}
+            try {
+              if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+                window.fireSApplyCleanHomeRoles();
+              }
+            } catch (_) {}
+            try {
+              if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+                window.fireSRefreshCompanyPersonnelStats();
+              }
+            } catch (_) {}
+          })
+          .catch(() => {});
+      }
+    } catch (_) {}
+  }, reason === 'immediate' ? 50 : 350);
+}
+
+window.loadUserAccessProfile = loadUserAccessProfile;
+window.getVisibleProjectsForCurrentUser = getVisibleProjectsForCurrentUser;
 
 function getAccessMetadata() {
   return {
@@ -23683,7 +23768,73 @@ function renderHomeCommandCentre() {
       ? `${kpis.premisesRequiringAction} premise${kpis.premisesRequiringAction === 1 ? '' : 's'} require action, ${kpis.overdueInspections} inspection${kpis.overdueInspections === 1 ? '' : 's'} overdue.`
       : 'Start by creating or scheduling your first inspection.';
   }
+
+  try {
+    if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+      window.fireSRefreshCompanyPersonnelStats();
+    }
+  } catch (_) {}
 }
+
+async function refreshCompanyPersonnelStats() {
+  const strip = document.getElementById('mainCommandPersonnelStats');
+  if (!strip) return;
+
+  const role = String(currentUserProfile?.role || '').toLowerCase();
+  const companyId = String(currentUserProfile?.companyId || '').trim();
+  const canSee =
+    !!companyId &&
+    (role === 'company_owner' ||
+      role === 'owner' ||
+      role === 'manager' ||
+      role === 'super_admin');
+
+  if (!canSee || typeof supabaseClient === 'undefined') {
+    strip.hidden = true;
+    strip.setAttribute('aria-hidden', 'true');
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('company_members')
+      .select('role, status')
+      .eq('company_id', companyId)
+      .eq('status', 'active');
+
+    if (error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    let inspectors = 0;
+    let managers = 0;
+    let owners = 0;
+    rows.forEach(row => {
+      const r = String(row?.role || '').toLowerCase();
+      if (r === 'inspector') inspectors += 1;
+      else if (r === 'manager') managers += 1;
+      else if (r === 'company_owner' || r === 'owner') owners += 1;
+      else inspectors += 1;
+    });
+    const total = rows.length;
+
+    const setNum = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(value);
+    };
+    setNum('cmdPersonnelInspectors', inspectors);
+    setNum('cmdPersonnelManagers', managers);
+    setNum('cmdPersonnelOwners', owners);
+    setNum('cmdPersonnelTotal', total);
+
+    strip.hidden = false;
+    strip.removeAttribute('aria-hidden');
+  } catch (error) {
+    console.warn('Personnel stats failed:', error);
+    strip.hidden = true;
+  }
+}
+
+window.fireSRefreshCompanyPersonnelStats = refreshCompanyPersonnelStats;
 
 function fsExecutiveOpenGateway(filter, message) {
   showProjectList();

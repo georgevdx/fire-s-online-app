@@ -48,7 +48,12 @@
       );
     } catch (_) {}
     try {
-      if (window.currentUserProfile) {
+      if (typeof window.fireSApplyUserProfilePatch === 'function') {
+        window.fireSApplyUserProfilePatch({
+          companyId: id,
+          companyName: name
+        });
+      } else if (window.currentUserProfile) {
         window.currentUserProfile.companyId = id;
         window.currentUserProfile.companyName = name;
       }
@@ -56,6 +61,19 @@
         window.currentCompanyAccess.companyName = name;
       }
     } catch (_) {}
+  }
+
+  function applySharedProfile(patch) {
+    try {
+      if (typeof window.fireSApplyUserProfilePatch === 'function') {
+        return window.fireSApplyUserProfilePatch(patch);
+      }
+    } catch (_) {}
+    window.currentUserProfile = {
+      ...(window.currentUserProfile || {}),
+      ...(patch || {})
+    };
+    return window.currentUserProfile;
   }
 
   function recalledCompanyName(companyId) {
@@ -553,11 +571,30 @@
       meta.textContent = 'No company linked yet';
       return;
     }
-    const active = members.filter(m => text(m.status).toLowerCase() !== 'inactive').length;
+    const active = members.filter(m => text(m.status).toLowerCase() !== 'inactive');
     const nameBit = !isGenericCompanyName(ctx.companyName)
       ? `${ctx.companyName} · `
       : '';
-    meta.textContent = `${nameBit}${active} person(s) · Your role: ${roleLabel(ctx.role)}`;
+    let inspectors = 0;
+    let managers = 0;
+    let owners = 0;
+    active.forEach(member => {
+      const role = text(member.role).toLowerCase();
+      if (role === 'manager') managers += 1;
+      else if (role === 'company_owner' || role === 'owner') owners += 1;
+      else inspectors += 1;
+    });
+    meta.textContent =
+      `${nameBit}${active.length} person(s)` +
+      ` · ${inspectors} Inspector(s)` +
+      ` · ${managers} Manager(s)` +
+      ` · ${owners} Owner(s)` +
+      ` · Your role: ${roleLabel(ctx.role)}`;
+    try {
+      if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+        window.fireSRefreshCompanyPersonnelStats();
+      }
+    } catch (_) {}
   }
 
   function refreshPersonnelChrome() {
@@ -908,6 +945,11 @@
           );
         }
         await refreshTeam();
+        try {
+          if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+            window.fireSRefreshCompanyPersonnelStats();
+          }
+        } catch (_) {}
         return;
       }
 
@@ -1094,18 +1136,27 @@
         }
       } catch (_) {}
 
-      window.currentUserProfile = {
-        ...(window.currentUserProfile || {}),
+      applySharedProfile({
         id: user.id,
         email: user.email,
         role: 'company_owner',
         companyId: company.id,
         companyName: company.name
-      };
+      });
       rememberCompanyName(company.id, company.name || companyName);
       try {
         if (typeof window.fireSApplyCleanHomeRoles === 'function') {
           window.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.refreshSyncData === 'function') {
+          Promise.resolve(window.refreshSyncData()).catch(() => {});
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+          window.fireSRefreshCompanyPersonnelStats();
         }
       } catch (_) {}
 
@@ -1245,15 +1296,24 @@
         try {
           const discovered = await discoverCompanyForUser(user.id);
           if (discovered?.companyId) {
-            window.currentUserProfile = {
-              ...(window.currentUserProfile || {}),
+            applySharedProfile({
               id: user.id,
               email: user.email,
               role: discovered.role || currentRole(),
               companyId: discovered.companyId,
               companyName: discovered.companyName
-            };
+            });
             ctx = companyContext();
+            try {
+              if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+                window.fireSApplyCleanHomeRoles();
+              }
+            } catch (_) {}
+            try {
+              if (typeof window.refreshSyncData === 'function') {
+                Promise.resolve(window.refreshSyncData()).catch(() => {});
+              }
+            } catch (_) {}
           }
         } catch (discoverError) {
           console.warn('Company discover failed:', discoverError);
