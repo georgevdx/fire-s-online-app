@@ -4294,10 +4294,18 @@ async function loadData() {
 
 
 function updateAppInfo() {
-  const appVersion = document.getElementById('appVersion');
-  if (appVersion) {
-    appVersion.textContent = `Version ${APP_VERSION}`;
-  }
+  const versionLabel = `Version ${APP_VERSION}`;
+  const versionNodes = [
+    document.getElementById('appVersion'),
+    document.getElementById('Version'),
+    ...document.querySelectorAll('.brand-version')
+  ];
+  const seen = new Set();
+  versionNodes.forEach((node) => {
+    if (!node || seen.has(node)) return;
+    seen.add(node);
+    node.textContent = versionLabel;
+  });
 
   const cloudAppVersion = document.getElementById('cloudAppVersion');
   if (cloudAppVersion) {
@@ -4340,6 +4348,20 @@ function updateAppInfo() {
       ? `Ready (${formatBytes(backupJson.length)})`
       : 'Not created yet';
   }
+}
+
+window.updateAppInfo = updateAppInfo;
+function paintAppVersionNow() {
+  try {
+    updateAppInfo();
+  } catch (error) {
+    console.warn('Could not update app version label.', error);
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', paintAppVersionNow);
+} else {
+  paintAppVersionNow();
 }
 
 function positionGlobalActionDropdown() {
