@@ -12,7 +12,22 @@ body.fire-s-premises-render-lock .fire-s-exec-mini-dashboard:not(#fireSExecutive
   pointer-events: none !important;
 }
 
-body.fire-s-clean-home #fireSExecutiveDashboard1115,
-body.fire-s-clean-home .fire-s-exec-dashboard-v1115 {
+body.fire-s-filling-inspection #fireSPremisesWorkspaceV105,
+body.fire-s-filling-inspection #fireSBuildingPassportV104Wrapper,
+body.fire-s-filling-inspection #fireSPremisesWorkspaceModule1113,
+body.fire-s-filling-inspection #fireSPremisesWorkspaceLiteV101,
+body.fire-s-filling-inspection #fireSBuildingHealthCentre,
+body.fire-s-filling-inspection #fireSBuildingHealthCentre1114,
+body.fire-s-filling-inspection .fire-s-workspace-v105,
+body.fire-s-filling-inspection .fire-s-building-passport-v104,
+body.fire-s-filling-inspection .fire-s-premises-workspace-v1113,
+body.fire-s-filling-inspection .fire-s-health-centre,
+body.fire-s-filling-inspection .fire-s-health-centre-v1114 {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
 }

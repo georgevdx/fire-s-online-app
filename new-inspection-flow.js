@@ -151,6 +151,10 @@
     }
 
     setTimeout(() => {
+      if (typeof window.fireSIsFillingInspection === 'function' && window.fireSIsFillingInspection()) {
+        if (typeof renderPhotos === 'function') renderPhotos();
+        return;
+      }
       if (typeof renderPhotos === 'function') renderPhotos();
       if (window.FireSPremisesWorkspace?.inject) window.FireSPremisesWorkspace.inject(true);
       if (window.FireSBuildingPassport?.inject) window.FireSBuildingPassport.inject(true);

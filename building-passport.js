@@ -295,7 +295,20 @@
     });
   }
 
+  function isFillingInspection() {
+    if (typeof window.fireSIsFillingInspection === 'function') {
+      return window.fireSIsFillingInspection();
+    }
+    const form = document.getElementById('projectFormSection');
+    return !!(form && form.style.display !== 'none' && !form.hidden);
+  }
+
   function inject(force = false) {
+    if (isFillingInspection()) {
+      document.getElementById('fireSBuildingPassportV104Wrapper')?.remove();
+      return;
+    }
+
     const form = document.getElementById('projectFormSection');
     if (!form || form.style.display === 'none') return;
 

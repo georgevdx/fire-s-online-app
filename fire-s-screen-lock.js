@@ -38,14 +38,19 @@
     const space = activeWorkspace();
     const away = space !== 'home';
     const onGateway = space === 'gateway' || space === 'form';
+    const filling = space === 'form';
     const lockOn = document.body.classList.contains('fire-s-premises-render-lock');
     const awayOn = document.body.classList.contains('fire-s-away-from-home');
+    const fillingOn = document.body.classList.contains('fire-s-filling-inspection');
 
     if (lockOn !== onGateway) {
       document.body.classList.toggle('fire-s-premises-render-lock', onGateway);
     }
     if (awayOn !== away) {
       document.body.classList.toggle('fire-s-away-from-home', away);
+    }
+    if (fillingOn !== filling) {
+      document.body.classList.toggle('fire-s-filling-inspection', filling);
     }
 
     const command = byId('mainCommandCentre');
@@ -60,6 +65,45 @@
       if (command) command.removeAttribute('aria-hidden');
       if (home) home.removeAttribute('aria-hidden');
     }
+
+    if (filling) hidePremisesDashboardChrome();
+  }
+
+  function hidePremisesDashboardChrome() {
+    restoreActionRegisterForFill();
+    [
+      'fireSPremisesWorkspaceV105',
+      'fireSBuildingPassportV104Wrapper',
+      'fireSPremisesWorkspaceModule1113',
+      'fireSPremisesWorkspaceLiteV101',
+      'fireSBuildingHealthCentre',
+      'fireSBuildingHealthCentre1114'
+    ].forEach(id => {
+      const el = byId(id);
+      if (el) el.remove();
+    });
+  }
+
+  function restoreActionRegisterForFill() {
+    const register = document.querySelector('.fire-s-action-register-v1033');
+    if (!register) return;
+    const trapped = register.closest(
+      '#fireSPremisesWorkspaceV105, #fireSBuildingPassportV104Wrapper, #fireSWorkspaceActionsSlotV105, #fireSPassportActionsSlotV1043'
+    );
+    if (!trapped) return;
+
+    const form = byId('projectFormSection');
+    const after =
+      byId('checklist') ||
+      byId('checklistCard') ||
+      byId('projectDetailsCard') ||
+      form;
+    if (!after) return;
+    after.insertAdjacentElement(after === form ? 'beforeend' : 'afterend', register);
+    register.classList.remove(
+      'fire-s-action-register-v105-integrated',
+      'fire-s-action-register-integrated-v1043'
+    );
   }
 
   function skipHomePaint() {
@@ -206,4 +250,8 @@
   }
 
   window.fireSApplyScreenLock = applyLock;
+  window.fireSIsFillingInspection = function fireSIsFillingInspection() {
+    return activeWorkspace() === 'form';
+  };
+  window.fireSHidePremisesDashboardChrome = hidePremisesDashboardChrome;
 })();

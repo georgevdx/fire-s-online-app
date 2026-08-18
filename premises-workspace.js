@@ -369,7 +369,20 @@
     if (wrapper) wrapper.remove();
   }
 
+  function isFillingInspection() {
+    if (typeof window.fireSIsFillingInspection === 'function') {
+      return window.fireSIsFillingInspection();
+    }
+    const form = document.getElementById('projectFormSection');
+    return !!(form && form.style.display !== 'none' && !form.hidden);
+  }
+
   function inject(force = false) {
+    if (isFillingInspection()) {
+      removeInspectorWorkspace();
+      return;
+    }
+
     if (isInspectorRole()) {
       removeInspectorWorkspace();
       return;

@@ -60,6 +60,9 @@
   function run(force = false) {
     const form = $('projectFormSection');
     if (!form || form.style.display === 'none') return;
+    if (typeof window.fireSIsFillingInspection !== 'function' || window.fireSIsFillingInspection()) {
+      return;
+    }
 
     const id = currentId();
 

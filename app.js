@@ -25868,8 +25868,16 @@ if (!window.fireSMobileSmartCardsApplied) {
     }
   }
 
+  function isFillingInspection() {
+    if (typeof window.fireSIsFillingInspection === 'function') {
+      return window.fireSIsFillingInspection();
+    }
+    const form = document.getElementById('projectFormSection');
+    return !!(form && form.style.display !== 'none' && !form.hidden);
+  }
+
   function ensureCentre() {
-    if (isInspectorRole()) {
+    if (isInspectorRole() || isFillingInspection()) {
       document.getElementById('fireSBuildingHealthCentre')?.remove();
       return;
     }
@@ -27534,7 +27542,12 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function renderWorkspace() {
-    if (isInspectorRole()) {
+    const form = document.getElementById('projectFormSection');
+    const filling = typeof window.fireSIsFillingInspection === 'function'
+      ? window.fireSIsFillingInspection()
+      : !!(form && form.style.display !== 'none' && !form.hidden);
+
+    if (isInspectorRole() || filling) {
       document.getElementById('fireSPremisesWorkspaceModule1113')?.remove();
       return;
     }
@@ -27865,7 +27878,12 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function ensureHost() {
-    if (isInspectorRole()) {
+    const form = document.getElementById('projectFormSection');
+    const filling = typeof window.fireSIsFillingInspection === 'function'
+      ? window.fireSIsFillingInspection()
+      : !!(form && form.style.display !== 'none' && !form.hidden);
+
+    if (isInspectorRole() || filling) {
       document.getElementById('fireSBuildingHealthCentre1114')?.remove();
       return null;
     }
