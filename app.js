@@ -15794,6 +15794,7 @@ function renderChecklist(selected) {
       </div>
       <div id="answerSummary" class="answer-summary">Compliant: 0 | Action/Critical: 0 | N/A: 0</div>
     </div>
+    <p class="checklist-expand-hint">Questions are under <strong>Expand</strong>.</p>
     <div id="checklistSectionStatus" class="checklist-section-status-panel"></div>
   `;
 

@@ -12655,6 +12655,20 @@ button,
   line-height: 1.25;
 }
 
+.checklist-expand-hint {
+  margin: 0 0 8px;
+  padding: 0;
+  color: #5b5b5b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.checklist-expand-hint strong {
+  color: #1a1a1a;
+  font-weight: 800;
+}
+
 .checklist-section-status-panel {
   width: 100%;
   margin: 0;
