@@ -121,6 +121,7 @@ function buildStreetAddress(address = {}) {
 function getStreetNumberFromAddress(address = {}) {
   return (
     address.house_number ||
+    address.housenumber ||
     address.building_number ||
     address.house_name ||
     address.unit ||
@@ -129,12 +130,42 @@ function getStreetNumberFromAddress(address = {}) {
 }
 
 function getStreetNumberFromDisplayName(displayName = '') {
-  const firstPart = String(displayName)
-    .split(',')[0]
-    .trim();
+  const parts = String(displayName)
+    .split(',')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
-  const match = firstPart.match(/^(\d+[A-Za-z]?(?:[-/]\d+[A-Za-z]?)?)/);
-  return match ? match[1] : '';
+  const standalone = /^(\d+[A-Za-z]?(?:[-/]\d+[A-Za-z]?)?)$/;
+  const leadingOnStreet = /^(\d+[A-Za-z]?(?:[-/]\d+[A-Za-z]?)?)\s+(?=[A-Za-z])/;
+
+  for (const part of parts) {
+    const alone = part.match(standalone);
+    if (alone) return alone[1];
+
+    const leading = part.match(leadingOnStreet);
+    if (leading) return leading[1];
+  }
+
+  return '';
+}
+
+function pickStreetNumberFromLookup(data = {}) {
+  return (
+    getStreetNumberFromAddress(data.address || {}) ||
+    getStreetNumberFromDisplayName(data.display_name || '')
+  );
+}
+
+function streetNamesLookTheSame(left, right) {
+  const normalise = value => String(value || '')
+    .toLowerCase()
+    .replace(/\b(street|straat|road|rd|avenue|ave|drive|dr|lane|ln|boulevard|blvd)\b/g, '')
+    .replace(/[^a-z0-9]/g, '');
+
+  const a = normalise(left);
+  const b = normalise(right);
+  return !!(a && b && (a === b || a.includes(b) || b.includes(a)));
 }
 
 function buildAddressLineWithoutStreetNumber(address = {}) {
@@ -2321,16 +2352,46 @@ pagebreak: {
   }
 }
 
-async function reverseLookupAddress(lat, lon, zoom = 19) {
-  const response = await fetch(
+async function fetchJsonWithoutCustomHeaders(url, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Lookup failed: ${response.status}`);
+    }
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function reverseLookupAddress(lat, lon, zoom = 18) {
+  return fetchJsonWithoutCustomHeaders(
     `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=${zoom}&addressdetails=1&namedetails=1&extratags=1`
   );
+}
 
-  if (!response.ok) {
-    throw new Error(`Address lookup failed: ${response.status}`);
-  }
+async function reverseLookupPhotonAddress(lat, lon) {
+  const data = await fetchJsonWithoutCustomHeaders(
+    `https://photon.komoot.io/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+  );
+  const props = data?.features?.[0]?.properties || {};
+  const address = {
+    house_number: props.housenumber || '',
+    road: props.street || '',
+    suburb: props.locality || props.district || '',
+    city: props.city || '',
+    state: props.state || '',
+    postcode: props.postcode || ''
+  };
 
-  return response.json();
+  return {
+    address,
+    display_name: buildStreetAddress(address) || props.name || '',
+    streetNumberConfidence: props.housenumber ? 'photon' : 'street_number_not_found'
+  };
 }
 
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
@@ -2375,21 +2436,16 @@ async function lookupNearestNumberedAddress(lat, lon) {
   const query = `
     [out:json][timeout:8];
     (
-      node(around:45,${lat},${lon})["addr:housenumber"];
-      way(around:45,${lat},${lon})["addr:housenumber"];
-      relation(around:45,${lat},${lon})["addr:housenumber"];
+      node(around:120,${lat},${lon})["addr:housenumber"];
+      way(around:120,${lat},${lon})["addr:housenumber"];
+      relation(around:120,${lat},${lon})["addr:housenumber"];
     );
     out center tags 20;
   `;
-  const response = await fetch(
-    `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+  const data = await fetchJsonWithoutCustomHeaders(
+    `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
+    9000
   );
-
-  if (!response.ok) {
-    throw new Error(`Nearest numbered address lookup failed: ${response.status}`);
-  }
-
-  const data = await response.json();
   const candidates = (data.elements || [])
     .map(element => {
       const candidateLat = element.lat || element.center?.lat;
@@ -2407,58 +2463,72 @@ async function lookupNearestNumberedAddress(lat, lon) {
     .filter(Boolean)
     .sort((a, b) => a.distance - b.distance);
 
-  return candidates[0] || null;
+  return candidates;
 }
 
 async function reverseLookupBestAddress(lat, lon) {
-  let nearestNumberedAddress = null;
+  const [nominatimResult, photonResult, nearestCandidates] = await Promise.all([
+    reverseLookupAddress(lat, lon, 18).catch(error => {
+      console.warn('Nominatim reverse lookup failed:', error);
+      return null;
+    }),
+    reverseLookupPhotonAddress(lat, lon).catch(error => {
+      console.warn('Photon reverse lookup failed:', error);
+      return null;
+    }),
+    lookupNearestNumberedAddress(lat, lon).catch(error => {
+      console.warn('Nearest numbered address lookup failed:', error);
+      return [];
+    })
+  ]);
 
-  // First priority: try to find a nearby address with a street number.
-  // This gives the app the best chance to fill the street number field.
-  try {
-    nearestNumberedAddress =
-      await lookupNearestNumberedAddress(lat, lon);
+  const nearestList = Array.isArray(nearestCandidates) ? nearestCandidates : [];
+  const sources = [photonResult, nominatimResult].filter(Boolean);
 
-    const nearestStreetNumber =
-      getStreetNumberFromAddress(nearestNumberedAddress?.address || {}) ||
-      getStreetNumberFromDisplayName(nearestNumberedAddress?.display_name);
+  let bestResult =
+    sources.find(source => pickStreetNumberFromLookup(source)) ||
+    sources[0] ||
+    nearestList[0] ||
+    null;
 
-    if (nearestStreetNumber) {
-      return {
-        ...nearestNumberedAddress,
+  if (bestResult && !pickStreetNumberFromLookup(bestResult) && nearestList.length) {
+    const road = bestResult.address?.road || bestResult.address?.street || '';
+    const matchingStreet = nearestList.find(candidate =>
+      streetNamesLookTheSame(road, candidate.address?.road)
+    );
+    const nearby = matchingStreet || (nearestList[0].distance <= 80 ? nearestList[0] : null);
+
+    if (nearby) {
+      bestResult = {
+        ...bestResult,
+        address: {
+          ...(bestResult.address || {}),
+          house_number:
+            nearby.address?.house_number ||
+            bestResult.address?.house_number ||
+            '',
+          road:
+            bestResult.address?.road ||
+            nearby.address?.road ||
+            ''
+        },
+        display_name: bestResult.display_name || nearby.display_name,
         streetNumberConfidence: 'nearest_numbered_address'
       };
     }
-  } catch (error) {
-    console.warn('Nearest numbered address lookup failed:', error);
   }
 
-  // Second priority: use normal reverse lookup for the rest of the address.
-  const zoomLevels = [19, 18, 17];
-  let bestResult = null;
-
-  for (const zoom of zoomLevels) {
-    const result =
-      await reverseLookupAddress(lat, lon, zoom);
-
-    const streetNumber =
-      getStreetNumberFromAddress(result.address || {}) ||
-      getStreetNumberFromDisplayName(result.display_name);
-
-    if (!bestResult) {
-      bestResult = result;
-    }
-
-    if (streetNumber) {
-      return {
-        ...result,
-        streetNumberConfidence: 'reverse_lookup'
-      };
-    }
+  if (bestResult && pickStreetNumberFromLookup(bestResult)) {
+    return {
+      ...bestResult,
+      streetNumberConfidence:
+        bestResult.streetNumberConfidence &&
+        bestResult.streetNumberConfidence !== 'street_number_not_found'
+          ? bestResult.streetNumberConfidence
+          : 'reverse_lookup'
+    };
   }
 
-  // Last fallback: return the best address we found,
-  // even if no street number was available.
   if (bestResult) {
     return {
       ...bestResult,
@@ -2545,9 +2615,7 @@ function updateGpsMapPreview() {
 }
 
 function applyAddressLookupResult(data, fallbackText) {
-  const streetNumber =
-    getStreetNumberFromAddress(data.address || {}) ||
-    getStreetNumberFromDisplayName(data.display_name);
+  const streetNumber = pickStreetNumberFromLookup(data);
 
   const addressLine =
     buildAddressLineWithoutStreetNumber(data.address || {});
@@ -2620,9 +2688,7 @@ function projectNeedsOfflineAddressLookup(project) {
 }
 
 function applyAddressLookupToProject(project, data) {
-  const streetNumber =
-    getStreetNumberFromAddress(data.address || {}) ||
-    getStreetNumberFromDisplayName(data.display_name);
+  const streetNumber = pickStreetNumberFromLookup(data);
   const addressLine =
     buildAddressLineWithoutStreetNumber(data.address || {}) ||
     data.display_name ||
@@ -2705,6 +2771,19 @@ async function resolvePendingGpsAddresses() {
     });
 }
 
+let gpsAddressLookupTimer = null;
+let gpsAddressLookupSeq = 0;
+
+function scheduleGpsAddressLookup() {
+  window.clearTimeout(gpsAddressLookupTimer);
+  const parsed = parseGpsInput(getEl('gps').value);
+  if (!parsed) return;
+
+  gpsAddressLookupTimer = window.setTimeout(() => {
+    lookupAddressFromGpsInput();
+  }, 700);
+}
+
 async function lookupAddressFromGpsInput() {
   const parsed = parseGpsInput(getEl('gps').value);
 
@@ -2714,13 +2793,16 @@ async function lookupAddressFromGpsInput() {
     return;
   }
 
+  const seq = ++gpsAddressLookupSeq;
   getEl('saveMessage').textContent = 'Finding address from GPS...';
 
   try {
     const data = await reverseLookupBestAddress(parsed.lat, parsed.lon);
+    if (seq !== gpsAddressLookupSeq) return;
     applyAddressLookupResult(data, `${parsed.lat}, ${parsed.lon}`);
   } catch (error) {
     console.error('GPS address lookup failed:', error);
+    if (seq !== gpsAddressLookupSeq) return;
     getEl('saveMessage').textContent =
       'Could not find address from GPS. Enter the address manually.';
   }
@@ -5297,6 +5379,7 @@ if (cancelScheduledInspectionBtn) {
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', () => {
     updateGpsMapPreview();
+    scheduleGpsAddressLookup();
     scheduleAutoSave();
   });
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
@@ -14221,6 +14304,9 @@ followUpSourceInspectionNumber:
   getEl('projectAddress').value = project.addressLine || project.projectAddress || '';
   getEl('gps').value = project.gps || '';
   updateGpsMapPreview();
+  if (parseGpsInput(project.gps) && !String(project.streetNumber || '').trim()) {
+    scheduleGpsAddressLookup();
+  }
   getEl('inMall').value = project.inMall || 'No';
   getEl('mallName').value = project.mallName || '';
   getEl('unitNumber').value = project.unitNumber || '';
