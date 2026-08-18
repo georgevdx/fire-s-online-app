@@ -2509,7 +2509,10 @@ function getGpsMapUrls(gpsValue) {
 }
 
 function updateGpsMapPreview() {
-  const preview = document.getElementById('gpsMapPreview');
+  const preview =
+    document.getElementById('gpsMapPreview') ||
+    document.getElementById('gpsMreview') ||
+    document.querySelector('.gps-map-preview');
   const frame = document.getElementById('gpsMapFrame');
   const link = document.getElementById('openMapsLink');
   const status = document.getElementById('gpsMapStatus');
