@@ -618,6 +618,11 @@
     );
 
     try {
+      if (typeof window.fireSRefreshDesktopAccess === 'function') {
+        window.fireSRefreshDesktopAccess();
+      }
+    } catch (_) {}
+    try {
       if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
         window.fireSRefreshCompanyPersonnelStats();
       }
@@ -715,6 +720,11 @@
       'Consultancy, review requests and support.'
     );
 
+    try {
+      if (typeof window.fireSRefreshDesktopAccess === 'function') {
+        window.fireSRefreshDesktopAccess();
+      }
+    } catch (_) {}
     try {
       if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
         window.fireSRefreshCompanyPersonnelStats();

@@ -215,9 +215,8 @@
         <h2>3. Home for each level</h2>
         <p>After Access, Home changes to match your level.</p>
         <ul>
-          <li><strong>Inspector</strong> — Inspector Work Area and Inspection Gateway. Field work only.</li>
-          <li><strong>Manager</strong> — Operations Centre. Stats, inspections, people, company details, dashboard.</li>
-          <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control.</li>
+          <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control. Home shows a desktop address to type on a computer.</li>
+          <li><strong>Manager</strong> — Operations Centre. Stats, inspections, people, company details, dashboard. Home shows the same desktop address.</li>
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>

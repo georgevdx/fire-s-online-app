@@ -1,0 +1,90 @@
+/* Desktop / PC access address — owner and manager Home */
+
+.fire-s-desktop-access {
+  display: none;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+body.fire-s-clean-home.fire-s-role-owner .fire-s-desktop-access,
+body.fire-s-clean-home.fire-s-role-manager .fire-s-desktop-access,
+body.fire-s-role-management .fire-s-desktop-access {
+  display: block;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector .fire-s-desktop-access,
+body.fire-s-clean-home.fire-s-role-guest .fire-s-desktop-access,
+body.fire-s-clean-home.fire-s-role-pending-member .fire-s-desktop-access,
+body.fire-s-clean-home.fire-s-role-new-company .fire-s-desktop-access,
+body.fire-s-filling-inspection .fire-s-desktop-access,
+body.fire-s-away-from-home .fire-s-desktop-access {
+  display: none !important;
+}
+
+.fire-s-desktop-access-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.fire-s-desktop-access h4 {
+  margin: 4px 0 6px;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.fire-s-desktop-access p {
+  margin: 0 0 8px;
+  color: #4b5563;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.fire-s-desktop-access-url {
+  display: block;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #111827;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.82rem;
+  word-break: break-all;
+  user-select: all;
+}
+
+.fire-s-desktop-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fire-s-desktop-access-note {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #065f46;
+}
+
+html.fire-s-desktop-view .app,
+body.fire-s-desktop-view .app {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+html.fire-s-desktop-view #mainCommandCentre,
+body.fire-s-desktop-view #mainCommandCentre {
+  max-width: none;
+}
+
+@media (min-width: 900px) {
+  html.fire-s-desktop-view .main-command-grid,
+  body.fire-s-desktop-view .main-command-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
