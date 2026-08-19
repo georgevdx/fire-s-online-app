@@ -9,6 +9,8 @@
 
   const STORAGE_KEY = 'fireS.companyLetterhead.v1';
   const FIRE_S_LOGO = 'icon-192.png';
+  const SAMPLE_COMPANY_S_LOGO =
+    'sample-company-s-logo.svg';
   const WORKSPACE_IDS = [
     'homeSection',
     'servicesSection',
@@ -301,15 +303,35 @@
   }
 
   function paintLogoPreview(src) {
-    const img = byId('companyLetterheadLogoPreview');
-    if (!img) return;
+    const box = byId('companyLetterheadLogoPreview');
+    if (!box) return;
     if (src && !isFireSAppLogo(src)) {
-      img.src = src;
-      img.classList.remove('is-empty');
+      box.classList.remove('is-empty');
+      box.innerHTML = `<img src="${esc(src)}" alt="Company logo preview">`;
     } else {
-      img.removeAttribute('src');
-      img.classList.add('is-empty');
+      box.classList.add('is-empty');
+      box.textContent = 'No logo yet';
     }
+  }
+
+  async function applyLogoDataUrl(dataUrl, message) {
+    const hidden = byId('companyLetterheadLogoData');
+    if (hidden) hidden.value = dataUrl;
+    paintLogoPreview(dataUrl);
+    paintLivePreview();
+    setMessage(message || 'Logo ready. Tap Save company details to keep it.');
+  }
+
+  async function loadSampleLogo() {
+    setMessage('Loading sample Company S logo…');
+    const res = await fetch(SAMPLE_COMPANY_S_LOGO);
+    if (!res.ok) {
+      throw new Error('The sample logo file is missing.');
+    }
+    const blob = await res.blob();
+    const file = new File([blob], 'sample-company-s-logo.svg', { type: 'image/svg+xml' });
+    const dataUrl = await resizeLogoFile(file);
+    await applyLogoDataUrl(dataUrl, 'Sample Company S logo is in. Tap Save company details to keep it.');
   }
 
   function contactHtml(record) {
@@ -366,7 +388,9 @@
       'companyLetterheadEmail',
       'companyLetterheadLogoFile',
       'companyLetterheadSaveBtn',
-      'companyLetterheadClearLogoBtn'
+      'companyLetterheadClearLogoBtn',
+      'companyLetterheadChooseLogoBtn',
+      'companyLetterheadSampleLogoBtn'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.disabled = !enabled;
@@ -408,11 +432,7 @@
     try {
       setMessage('Preparing logo…');
       const dataUrl = await resizeLogoFile(file);
-      const hidden = byId('companyLetterheadLogoData');
-      if (hidden) hidden.value = dataUrl;
-      paintLogoPreview(dataUrl);
-      paintLivePreview();
-      setMessage('Logo ready. Tap Save company details to keep it.');
+      await applyLogoDataUrl(dataUrl, 'Logo ready. Tap Save company details to keep it.');
     } catch (error) {
       setMessage(error.message || 'Could not use that picture.', true);
     }
@@ -496,6 +516,8 @@
   function bind() {
     const back = byId('companyLetterheadBackBtn');
     const save = byId('companyLetterheadSaveBtn');
+    const choose = byId('companyLetterheadChooseLogoBtn');
+    const sample = byId('companyLetterheadSampleLogoBtn');
     const logo = byId('companyLetterheadLogoFile');
     const clear = byId('companyLetterheadClearLogoBtn');
     if (back && !back.__fireSBound) {
@@ -507,6 +529,21 @@
       save.addEventListener('click', () => {
         saveDetails().catch(error => {
           setMessage(error.message || 'Could not save company details.', true);
+        });
+      });
+    }
+    if (choose && !choose.__fireSBound) {
+      choose.__fireSBound = true;
+      choose.addEventListener('click', () => {
+        const file = byId('companyLetterheadLogoFile');
+        if (file) file.click();
+      });
+    }
+    if (sample && !sample.__fireSBound) {
+      sample.__fireSBound = true;
+      sample.addEventListener('click', () => {
+        loadSampleLogo().catch(error => {
+          setMessage(error.message || 'Could not load the sample logo.', true);
         });
       });
     }
