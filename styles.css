@@ -2447,26 +2447,29 @@ button.readiness-chip:focus {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 2px;
+  gap: 3px;
   flex-shrink: 0;
-  min-width: 44px;
+  min-width: 56px;
   text-align: center;
 }
 
 .report-app-mark img {
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
+  opacity: 0.28;
+  filter: grayscale(0.2);
 }
 
 .report-app-mark span {
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #888;
   line-height: 1.15;
-  max-width: 52px;
+  max-width: 64px;
+  opacity: 0.45;
 }
 
 .report-app-mark-footer {
@@ -2478,13 +2481,19 @@ button.readiness-chip:focus {
 }
 
 .report-app-mark-footer img {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
+  opacity: 0.28;
+  filter: grayscale(0.2);
+}
+
+.report-app-mark-footer span {
+  opacity: 0.45;
 }
 
 .report-client-logo {
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
   flex-shrink: 0;
 }
