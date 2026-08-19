@@ -493,10 +493,10 @@
     const dots = rows.map((item, index) => {
       const x = padL + index * step;
       const y = padT + plotH - Math.round((item.value / top) * plotH);
-      const showLabel = index === 0 || index === rows.length - 1 || index % 2 === 0;
+      const showTick = rows.length <= 12 || index === 0 || index === rows.length - 1 || index % 2 === 0;
       return `
         <circle cx="${x}" cy="${y}" r="2.5" fill="${color || '#118DFF'}"></circle>
-        ${showLabel ? `<text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>` : ''}
+        ${showTick ? `<text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>` : ''}
       `;
     }).join('');
     return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
