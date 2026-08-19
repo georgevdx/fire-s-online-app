@@ -574,6 +574,7 @@
       'projectListSection',
       'projectFormSection',
       'findingsCentreSection',
+      'testSamplesSection',
       'companyLetterheadSection',
       'companyTeamSection'
     ].forEach(id => {

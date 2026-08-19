@@ -34,6 +34,7 @@
     'cmdReportsBtn',
     'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
+    'cmdTestSamplesBtn',
     'cmdServicesBtn',
     'cmdFindingsBtn',
     'cmdOverdueBtn'

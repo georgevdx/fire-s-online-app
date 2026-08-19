@@ -19,6 +19,7 @@
     const show = new Set(['homeSection']);
     [
       'homeSection',
+      'testSamplesSection',
       'companyLetterheadSection',
       'companyTeamSection',
       'servicesSection',

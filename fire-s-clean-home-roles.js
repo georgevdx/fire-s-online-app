@@ -43,6 +43,7 @@
     'cmdReportsBtn',
     'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
+    'cmdTestSamplesBtn',
     'cmdServicesBtn',
     'cmdDashboardBtn',
     'cmdFindingsBtn',
@@ -576,6 +577,11 @@
       'Add Inspectors and Managers, or change roles.'
     );
     cardText(
+      'cmdTestSamplesBtn',
+      'Test samples',
+      'Load 50 sample inspections, then delete them later.'
+    );
+    cardText(
       'cmdServicesBtn',
       'Support',
       'Request review or operational support.'
@@ -670,6 +676,11 @@
       'Add Inspectors and Managers, or change roles.'
     );
     cardText(
+      'cmdTestSamplesBtn',
+      'Test samples',
+      'Load 50 sample inspections, then delete them later.'
+    );
+    cardText(
       'cmdServicesBtn',
       'Services / Support',
       'Consultancy, review requests and support.'
@@ -722,6 +733,7 @@
     hide('cmdScheduleBtn');
     hide('cmdCompanyDetailsBtn');
     hide('cmdCompanyBtn');
+    hide('cmdTestSamplesBtn');
     hide('cmdServicesBtn');
     hide('cmdInspectorsBtn');
     hide('inspectorBoardHomeBar');
@@ -813,6 +825,13 @@
           detailsBtn.onclick = function (event) {
             if (event) event.preventDefault();
             window.fireSOpenCompanyLetterhead();
+          };
+        }
+        const testBtn = byId('cmdTestSamplesBtn');
+        if (testBtn && typeof window.fireSOpenTestSamples === 'function') {
+          testBtn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenTestSamples();
           };
         }
         const btn = byId('cmdCompanyBtn');

@@ -7620,6 +7620,8 @@ function showProjectList() {
   if (servicesSection) servicesSection.style.display = 'none';
   const companyLetterheadSection = document.getElementById('companyLetterheadSection');
   if (companyLetterheadSection) companyLetterheadSection.style.display = 'none';
+  const testSamplesSection = document.getElementById('testSamplesSection');
+  if (testSamplesSection) testSamplesSection.style.display = 'none';
   const companyTeamSection = document.getElementById('companyTeamSection');
   if (companyTeamSection) companyTeamSection.style.display = 'none';
   getEl('projectListSection').style.display = 'block';
@@ -8959,6 +8961,8 @@ function showHome() {
 
   const companyLetterheadSection = document.getElementById('companyLetterheadSection');
   if (companyLetterheadSection) companyLetterheadSection.style.display = 'none';
+  const testSamplesSection = document.getElementById('testSamplesSection');
+  if (testSamplesSection) testSamplesSection.style.display = 'none';
   const companyTeamSection = document.getElementById('companyTeamSection');
   if (companyTeamSection) companyTeamSection.style.display = 'none';
 

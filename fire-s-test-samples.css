@@ -1,0 +1,78 @@
+/* Test samples — owner/manager load & delete */
+
+.test-samples-section {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.test-samples-intro {
+  margin-bottom: 16px;
+}
+
+.test-samples-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.test-samples-intro h3 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.45rem, 4vw, 2.1rem);
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.test-samples-intro p {
+  margin: 0;
+  color: #4b5563;
+}
+
+.test-samples-message {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.9rem;
+}
+
+.test-samples-message.is-error {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.test-samples-panel {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.test-samples-meta {
+  margin: 0 0 12px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.test-samples-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.test-samples-inspectors {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.test-samples-inspectors li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  font-size: 0.92rem;
+}

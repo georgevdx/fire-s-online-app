@@ -16,6 +16,7 @@
     'projectFormSection',
     'findingsCentreSection',
     'companyTeamSection',
+    'testSamplesSection',
     'inspectorBoardSection',
     'reportSection'
   ];

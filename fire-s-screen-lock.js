@@ -26,6 +26,7 @@
   function activeWorkspace() {
     if (isShown(byId('projectFormSection'))) return 'form';
     if (isShown(byId('projectListSection'))) return 'gateway';
+    if (isShown(byId('testSamplesSection'))) return 'test-samples';
     if (isShown(byId('companyLetterheadSection'))) return 'company-details';
     if (isShown(byId('companyTeamSection'))) return 'team';
     if (isShown(byId('inspectorBoardSection'))) return 'inspectors';

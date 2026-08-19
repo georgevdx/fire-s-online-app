@@ -30,16 +30,17 @@
     html:not(.fire-s-booting) #fireSBootScreen { display: none !important; }
     html.fire-s-ready .app { opacity: 1; transition: opacity .18s ease; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=107-2-company-details">
+  <link rel="stylesheet" href="styles.css?v=107-3-test-samples">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-4-live">
-  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-13-company-details">
+  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-14-test-samples">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-6">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-0">
-  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-5">
+  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-6">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-1-hide-fill-dashboard">
 </head>
 <body>
@@ -380,6 +381,14 @@
         </span>
       </button>
 
+      <button type="button" class="main-command-card" id="cmdTestSamplesBtn">
+        <span class="command-icon">🧪</span>
+        <span class="command-text">
+          <span class="command-title">Test samples</span>
+          <span class="command-copy">Load 50 sample inspections, then delete them later.</span>
+        </span>
+      </button>
+
       <button type="button" class="main-command-card" id="cmdServicesBtn">
         <span class="command-icon">🛠️</span>
         <span class="command-text">
@@ -457,6 +466,34 @@
       <span class="route-title">Logout</span>
       <span class="route-copy">Sign out of your Fire-S cloud session.</span>
     </button>
+  </div>
+</section>
+<section id="testSamplesSection" class="card test-samples-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Test samples</h2>
+    <button id="testSamplesBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="test-samples-intro">
+    <div class="test-samples-kicker">Temporary data</div>
+    <h3>50 sample inspections</h3>
+    <p>
+      This loads 50 TEST inspections with Q&amp;A and photos, split across 5 test inspectors.
+      Delete the whole batch when you are finished testing.
+    </p>
+  </div>
+
+  <div id="testSamplesMessage" class="test-samples-message" style="display:none;"></div>
+
+  <div class="test-samples-panel">
+    <div id="testSamplesMeta" class="test-samples-meta">No test inspections loaded yet.</div>
+    <div class="test-samples-actions">
+      <button id="testSamplesLoadBtn" type="button" class="cloud-primary-btn">Load 50 sample inspections</button>
+      <button id="testSamplesDeleteBtn" type="button" class="secondary-btn">Delete all test samples</button>
+    </div>
+    <ul id="testSamplesInspectorList" class="test-samples-inspectors"></ul>
   </div>
 </section>
 <section id="companyLetterheadSection" class="card company-letterhead-section" style="display:none;">
@@ -1316,14 +1353,15 @@
   <script src="app.js?v=live-company-letterhead-v3"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-8-company-details"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-9-test-samples"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-0"></script>
   <script src="fire-s-company-team.js?v=2-4-company-details"></script>
   <script src="fire-s-company-letterhead.js?v=1-0"></script>
+  <script src="fire-s-test-samples.js?v=1-0"></script>
   <script src="fire-s-inspector-board.js?v=1-1-company-details"></script>
   <script src="fire-s-get-started.js?v=2-3-pages"></script>
   <script src="fire-s-startup-stability.js?v=1-1-company-details"></script>
-  <script src="fire-s-screen-lock.js?v=1-2-company-details"></script>
+  <script src="fire-s-screen-lock.js?v=1-3-test-samples"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

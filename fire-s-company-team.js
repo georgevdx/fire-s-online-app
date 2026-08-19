@@ -545,6 +545,7 @@
       'projectListSection',
       'projectFormSection',
       'findingsCentreSection',
+      'testSamplesSection',
       'companyLetterheadSection'
     ].forEach(id => {
       const el = byId(id);
