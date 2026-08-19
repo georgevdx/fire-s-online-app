@@ -1,13 +1,15 @@
 /* ============================================================
    Fire-S desktop / PC workspace
    Owner and Manager see a site address they can type on a computer.
-   ?desktop=1 opens the wide layout and the Management dashboard.
+   ?desktop=1 opens the wide layout and the Management dashboard
+   after Access is closed and the boot screen is gone.
    ============================================================ */
 (function fireSDesktopAccess() {
   'use strict';
 
   const LIVE_URL = 'https://georgevdx.github.io/fire-s-online-app/';
   let openedThisLoad = false;
+  let painting = false;
 
   function byId(id) {
     return document.getElementById(id);
@@ -23,6 +25,13 @@
       if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) return false;
     } catch (_) {}
     return true;
+  }
+
+  function isBooting() {
+    try {
+      return document.documentElement.classList.contains('fire-s-booting');
+    } catch (_) {}
+    return false;
   }
 
   function isManagement() {
@@ -66,17 +75,20 @@
     const body = document.body;
     if (!body) return false;
     if (body.classList.contains('fire-s-filling-inspection')) return true;
-    const form = byId('projectFormSection');
-    if (isShown(form)) return true;
-    const list = byId('projectListSection');
-    if (isShown(list)) return true;
+    if (isShown(byId('projectFormSection'))) return true;
+    if (isShown(byId('projectListSection'))) return true;
     return false;
   }
 
   function applyDesktopMode() {
     if (!wantsDesktop()) return false;
-    document.documentElement.classList.add('fire-s-desktop-view');
-    if (document.body) document.body.classList.add('fire-s-desktop-view');
+    const html = document.documentElement;
+    if (html && !html.classList.contains('fire-s-desktop-view')) {
+      html.classList.add('fire-s-desktop-view');
+    }
+    if (document.body && !document.body.classList.contains('fire-s-desktop-view')) {
+      document.body.classList.add('fire-s-desktop-view');
+    }
     return true;
   }
 
@@ -84,6 +96,7 @@
     applyDesktopMode();
     if (!wantsDesktop()) return false;
     if (openedThisLoad) return false;
+    if (isBooting()) return false;
     if (!isManagement()) return false;
     if (accessGateOpen()) return false;
     if (isBusyAwayFromHome()) return false;
@@ -99,19 +112,29 @@
   }
 
   function paint() {
-    const box = byId('fireSDesktopAccess');
-    const urlEl = byId('fireSDesktopAccessUrl');
-    const note = byId('fireSDesktopAccessNote');
-    if (!box) return;
-    const url = desktopAddress();
-    if (urlEl) urlEl.textContent = url;
-    box.hidden = !isManagement();
-    if (note && !note.dataset.fireSCopied) {
-      note.textContent = wantsDesktop()
-        ? 'Desktop workspace is on. Owner and Manager land on the Management dashboard.'
-        : '';
+    if (painting) return;
+    painting = true;
+    try {
+      applyDesktopMode();
+      const box = byId('fireSDesktopAccess');
+      const urlEl = byId('fireSDesktopAccessUrl');
+      const note = byId('fireSDesktopAccessNote');
+      if (box) {
+        const url = desktopAddress();
+        if (urlEl && urlEl.textContent !== url) urlEl.textContent = url;
+        const hide = !isManagement();
+        if (box.hidden !== hide) box.hidden = hide;
+        if (note && !note.dataset.fireSCopied) {
+          const next = wantsDesktop()
+            ? 'Desktop workspace is on. Owner and Manager land on the Management dashboard.'
+            : '';
+          if (note.textContent !== next) note.textContent = next;
+        }
+      }
+      maybeOpenDesktopWorkspace();
+    } finally {
+      painting = false;
     }
-    maybeOpenDesktopWorkspace();
   }
 
   function copyAddress() {
@@ -152,13 +175,19 @@
     }
   }
 
+  function wrapReveal() {
+    const previous = window.fireSRevealApp;
+    if (typeof previous !== 'function' || previous.__fireSDesktopWrapped) return;
+    const wrapped = function fireSDesktopRevealApp() {
+      const result = previous.apply(this, arguments);
+      paint();
+      return result;
+    };
+    wrapped.__fireSDesktopWrapped = true;
+    window.fireSRevealApp = wrapped;
+  }
+
   function watch() {
-    try {
-      if (document.body) {
-        const bodyWatch = new MutationObserver(paint);
-        bodyWatch.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-      }
-    } catch (_) {}
     try {
       const access = byId('fireSGetStarted');
       if (access) {
@@ -166,14 +195,21 @@
         accessWatch.observe(access, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
       }
     } catch (_) {}
+    try {
+      const htmlWatch = new MutationObserver(() => {
+        if (!isBooting()) paint();
+      });
+      htmlWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    } catch (_) {}
   }
 
   function boot() {
     applyDesktopMode();
     bind();
+    wrapReveal();
     paint();
     watch();
-    [250, 800, 1800].forEach(ms => {
+    [400, 900, 2000].forEach(ms => {
       setTimeout(paint, ms);
     });
   }
