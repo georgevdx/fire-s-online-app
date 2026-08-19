@@ -142,6 +142,15 @@
     if (!isDropdownOpen(drop)) return;
     placingDropdown = true;
     try {
+      if (window.innerWidth <= 720) {
+        drop.style.position = '';
+        drop.style.top = '';
+        drop.style.left = '';
+        drop.style.right = '';
+        drop.style.width = '';
+        drop.style.maxWidth = '';
+        return;
+      }
       const box = cloudDropdownBox(btn.getBoundingClientRect(), window.innerWidth);
       drop.style.position = 'fixed';
       drop.style.top = `${Math.round(box.top)}px`;

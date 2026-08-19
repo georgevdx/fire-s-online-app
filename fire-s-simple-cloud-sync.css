@@ -8,6 +8,26 @@
   left: auto;
 }
 
+.header.brand-header {
+  position: relative;
+}
+
+@media (max-width: 720px) {
+  .cloud-menu {
+    position: static;
+  }
+
+  .cloud-dropdown,
+  .cloud-dropdown.fire-s-simple-cloud {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+}
+
 .cloud-simple-help {
   margin: 0 0 10px;
   font-size: 0.82rem;
