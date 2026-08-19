@@ -20,6 +20,8 @@
     [
       'homeSection',
       'testSamplesSection',
+      'userManualSection',
+      'managementDashboardSection',
       'companyLetterheadSection',
       'companyTeamSection',
       'servicesSection',

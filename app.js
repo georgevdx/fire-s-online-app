@@ -7622,6 +7622,10 @@ function showProjectList() {
   if (companyLetterheadSection) companyLetterheadSection.style.display = 'none';
   const testSamplesSection = document.getElementById('testSamplesSection');
   if (testSamplesSection) testSamplesSection.style.display = 'none';
+  const userManualSection = document.getElementById('userManualSection');
+  if (userManualSection) userManualSection.style.display = 'none';
+  const managementDashboardSection = document.getElementById('managementDashboardSection');
+  if (managementDashboardSection) managementDashboardSection.style.display = 'none';
   const companyTeamSection = document.getElementById('companyTeamSection');
   if (companyTeamSection) companyTeamSection.style.display = 'none';
   getEl('projectListSection').style.display = 'block';
@@ -8963,6 +8967,10 @@ function showHome() {
   if (companyLetterheadSection) companyLetterheadSection.style.display = 'none';
   const testSamplesSection = document.getElementById('testSamplesSection');
   if (testSamplesSection) testSamplesSection.style.display = 'none';
+  const userManualSection = document.getElementById('userManualSection');
+  if (userManualSection) userManualSection.style.display = 'none';
+  const managementDashboardSection = document.getElementById('managementDashboardSection');
+  if (managementDashboardSection) managementDashboardSection.style.display = 'none';
   const companyTeamSection = document.getElementById('companyTeamSection');
   if (companyTeamSection) companyTeamSection.style.display = 'none';
 
@@ -8983,6 +8991,11 @@ function showServices() {
 
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
+
+  const userManualSection = document.getElementById('userManualSection');
+  if (userManualSection) userManualSection.style.display = 'none';
+  const managementDashboardSection = document.getElementById('managementDashboardSection');
+  if (managementDashboardSection) managementDashboardSection.style.display = 'none';
 
   const viewServiceRequestsBtn =
   document.getElementById('viewServiceRequestsBtn');

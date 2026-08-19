@@ -44,6 +44,8 @@
     'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
     'cmdTestSamplesBtn',
+    'cmdManagementDashboardBtn',
+    'cmdUserManualBtn',
     'cmdServicesBtn',
     'cmdDashboardBtn',
     'cmdFindingsBtn',
@@ -473,10 +475,17 @@
     ALL_CMD_IDS.forEach(hide);
     hide('cmdInspectorsBtn');
     hide('inspectorBoardHomeBar');
+    hide('cmdManagementDashboardBtn');
     // Keep Gateway visible so inspectors always have a clear entry.
     showGatewayCard(
       'Inspection Gateway',
       'Find, continue or start an inspection.'
+    );
+    show('cmdUserManualBtn');
+    cardText(
+      'cmdUserManualBtn',
+      'User manual',
+      'Download the subscriber guide as a PDF.'
     );
 
     try {
@@ -582,6 +591,16 @@
       'Load 50 sample inspections, then delete them later.'
     );
     cardText(
+      'cmdManagementDashboardBtn',
+      'Management dashboard',
+      'Power BI-style graphs on tablet, laptop or PC.'
+    );
+    cardText(
+      'cmdUserManualBtn',
+      'User manual',
+      'Download the subscriber guide as a PDF.'
+    );
+    cardText(
       'cmdServicesBtn',
       'Support',
       'Request review or operational support.'
@@ -681,6 +700,16 @@
       'Load 50 sample inspections, then delete them later.'
     );
     cardText(
+      'cmdManagementDashboardBtn',
+      'Management dashboard',
+      'Power BI-style graphs on tablet, laptop or PC.'
+    );
+    cardText(
+      'cmdUserManualBtn',
+      'User manual',
+      'Download the subscriber guide as a PDF.'
+    );
+    cardText(
       'cmdServicesBtn',
       'Services / Support',
       'Consultancy, review requests and support.'
@@ -730,13 +759,20 @@
     show('cmdDashboardBtn');
     show('cmdFindingsBtn');
     show('cmdOverdueBtn');
+    show('cmdUserManualBtn');
     hide('cmdScheduleBtn');
     hide('cmdCompanyDetailsBtn');
     hide('cmdCompanyBtn');
     hide('cmdTestSamplesBtn');
+    hide('cmdManagementDashboardBtn');
     hide('cmdServicesBtn');
     hide('cmdInspectorsBtn');
     hide('inspectorBoardHomeBar');
+    cardText(
+      'cmdUserManualBtn',
+      'User manual',
+      'Download the subscriber guide as a PDF.'
+    );
     showGatewayCard(
       'Inspection Gateway',
       'Search and open completed inspection work.'
@@ -832,6 +868,13 @@
           testBtn.onclick = function (event) {
             if (event) event.preventDefault();
             window.fireSOpenTestSamples();
+          };
+        }
+        const dashBtn = byId('cmdManagementDashboardBtn');
+        if (dashBtn && typeof window.fireSOpenManagementDashboard === 'function') {
+          dashBtn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenManagementDashboard();
           };
         }
         const btn = byId('cmdCompanyBtn');

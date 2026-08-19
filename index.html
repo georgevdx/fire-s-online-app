@@ -30,17 +30,19 @@
     html:not(.fire-s-booting) #fireSBootScreen { display: none !important; }
     html.fire-s-ready .app { opacity: 1; transition: opacity .18s ease; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=107-3-test-samples">
+  <link rel="stylesheet" href="styles.css?v=107-4-manual-dashboard">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-4-live">
-  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-14-test-samples">
+  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-15-manual-dashboard">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-0">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-6">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-0">
-  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-6">
+  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-7-manual-dashboard">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-0">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-1-hide-fill-dashboard">
 </head>
 <body>
@@ -389,6 +391,22 @@
         </span>
       </button>
 
+      <button type="button" class="main-command-card" id="cmdManagementDashboardBtn">
+        <span class="command-icon">📊</span>
+        <span class="command-text">
+          <span class="command-title">Management dashboard</span>
+          <span class="command-copy">Power BI-style graphs for tablet, laptop and PC.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdUserManualBtn">
+        <span class="command-icon">📘</span>
+        <span class="command-text">
+          <span class="command-title">User manual</span>
+          <span class="command-copy">Download the full subscriber guide as a PDF.</span>
+        </span>
+      </button>
+
       <button type="button" class="main-command-card" id="cmdServicesBtn">
         <span class="command-icon">🛠️</span>
         <span class="command-text">
@@ -494,6 +512,77 @@
       <button id="testSamplesDeleteBtn" type="button" class="secondary-btn">Delete all test samples</button>
     </div>
     <ul id="testSamplesInspectorList" class="test-samples-inspectors"></ul>
+  </div>
+</section>
+<section id="userManualSection" class="card user-manual-section" style="display:none;">
+  <div class="toolbar">
+    <h2>User manual</h2>
+    <button id="userManualBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="user-manual-intro">
+    <div class="user-manual-kicker">Subscriber guide</div>
+    <h3>From the first screen to the last action</h3>
+    <p>
+      This is the future subscriber manual. Download it from the app as a PDF.
+      It covers every level, every main action, and the subscription packages.
+    </p>
+  </div>
+
+  <div class="user-manual-toolbar">
+    <button id="userManualPdfBtn" type="button" class="cloud-primary-btn">Download PDF</button>
+    <button id="userManualHtmlBtn" type="button" class="secondary-btn">Download HTML</button>
+  </div>
+  <div id="userManualMessage" class="user-manual-message" style="display:none;"></div>
+  <div id="userManualPrintRoot" class="user-manual-print"></div>
+</section>
+<section id="managementDashboardSection" class="card management-dashboard-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Management dashboard</h2>
+    <button id="managementDashboardBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+  <p class="management-dashboard-hint">
+    Built for a tablet on its side, or a laptop / PC. Graphs come from your inspection data.
+    Use Download Power BI data to open the same numbers in Microsoft Power BI Desktop.
+  </p>
+  <div id="managementDashboardMessage" class="management-dashboard-message" style="display:none;"></div>
+  <div id="pbiShell" class="pbi-shell">
+    <div class="pbi-titlebar">
+      <div class="pbi-titlebar-brand">
+        <span class="pbi-mark" aria-hidden="true"></span>
+        <div>
+          <h3>Fire-S Power BI view</h3>
+          <p id="pbiCompanyLabel">Live inspection data</p>
+        </div>
+      </div>
+      <div class="pbi-titlebar-actions">
+        <button id="pbiExportBtn" type="button" class="cloud-primary-btn">Download Power BI data</button>
+        <button id="pbiFullscreenBtn" type="button" class="secondary-btn">Full screen</button>
+      </div>
+    </div>
+    <div class="pbi-filters">
+      <label>
+        Range
+        <select id="pbiRangeFilter">
+          <option value="all">All inspections</option>
+          <option value="month">This month</option>
+          <option value="completed">Completed</option>
+          <option value="overdue">Overdue</option>
+          <option value="action">Premises requiring action</option>
+        </select>
+      </label>
+      <label>
+        Inspector
+        <select id="pbiInspectorFilter">
+          <option value="all">All inspectors</option>
+        </select>
+      </label>
+    </div>
+    <div id="managementDashboardBody"></div>
   </div>
 </section>
 <section id="companyLetterheadSection" class="card company-letterhead-section" style="display:none;">
@@ -1394,15 +1483,18 @@
   <script src="app.js?v=live-company-letterhead-v3"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-9-test-samples"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-10-manual-dashboard"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-0"></script>
-  <script src="fire-s-company-team.js?v=2-5-test-samples"></script>
-  <script src="fire-s-company-letterhead.js?v=1-1-sample-logo"></script>
-  <script src="fire-s-test-samples.js?v=1-0"></script>
-  <script src="fire-s-inspector-board.js?v=1-2-test-samples"></script>
+  <script src="fire-s-company-team.js?v=2-6-manual-dashboard"></script>
+  <script src="fire-s-company-letterhead.js?v=1-2-manual-dashboard"></script>
+  <script src="fire-s-test-samples.js?v=1-1-manual-dashboard"></script>
+  <script src="fire-s-subscriptions.js?v=1-0"></script>
+  <script src="fire-s-user-manual.js?v=1-0"></script>
+  <script src="fire-s-management-dashboard.js?v=1-0"></script>
+  <script src="fire-s-inspector-board.js?v=1-3-manual-dashboard"></script>
   <script src="fire-s-get-started.js?v=2-3-pages"></script>
-  <script src="fire-s-startup-stability.js?v=1-2-test-samples"></script>
-  <script src="fire-s-screen-lock.js?v=1-3-test-samples"></script>
+  <script src="fire-s-startup-stability.js?v=1-3-manual-dashboard"></script>
+  <script src="fire-s-screen-lock.js?v=1-4-manual-dashboard"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

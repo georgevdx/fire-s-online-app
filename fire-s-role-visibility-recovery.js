@@ -35,6 +35,8 @@
     'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
     'cmdTestSamplesBtn',
+    'cmdManagementDashboardBtn',
+    'cmdUserManualBtn',
     'cmdServicesBtn',
     'cmdFindingsBtn',
     'cmdOverdueBtn'
@@ -192,8 +194,10 @@
         'cmdCompanyBtn',
         'cmdServicesBtn',
         'cmdFindingsBtn',
-        'cmdOverdueBtn'
+        'cmdOverdueBtn',
+        'cmdManagementDashboardBtn'
       ].forEach(hideCard);
+      showCard('cmdUserManualBtn');
 
       document.body.classList.add('fire-s-role-inspector');
       return;

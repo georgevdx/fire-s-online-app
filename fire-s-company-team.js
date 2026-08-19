@@ -546,7 +546,9 @@
       'projectFormSection',
       'findingsCentreSection',
       'testSamplesSection',
-      'companyLetterheadSection'
+      'companyLetterheadSection',
+      'userManualSection',
+      'managementDashboardSection'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.display = 'none';

@@ -20,6 +20,8 @@
     'companyTeamSection',
     'testSamplesSection',
     'inspectorBoardSection',
+    'userManualSection',
+    'managementDashboardSection',
     'reportSection'
   ];
 

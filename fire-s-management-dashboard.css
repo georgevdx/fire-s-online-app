@@ -1,0 +1,227 @@
+/* Fire-S Management dashboard — Power BI-style, tablet / PC */
+
+.management-dashboard-section {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.pbi-shell {
+  background: #f3f2f1;
+  border: 1px solid #e1dfdd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pbi-titlebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #252423;
+  color: #fff;
+}
+
+.pbi-titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pbi-mark {
+  width: 18px;
+  height: 18px;
+  background: #f2c811;
+  border-radius: 2px;
+}
+
+.pbi-titlebar h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.pbi-titlebar p {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+.pbi-titlebar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pbi-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff;
+  border-bottom: 1px solid #edebe9;
+}
+
+.pbi-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #605e5c;
+}
+
+.pbi-filters select {
+  min-width: 160px;
+  padding: 6px 8px;
+  border: 1px solid #c8c6c4;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.pbi-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 12px 14px 0;
+}
+
+.pbi-kpi {
+  background: #fff;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pbi-kpi .pbi-kpi-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #605e5c;
+}
+
+.pbi-kpi .pbi-kpi-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #252423;
+  line-height: 1.1;
+}
+
+.pbi-kpi.is-warn .pbi-kpi-value { color: #b71c1c; }
+.pbi-kpi.is-ok .pbi-kpi-value { color: #0f7b0f; }
+.pbi-kpi.is-gold .pbi-kpi-value { color: #8a6d00; }
+
+.pbi-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 10px;
+  padding: 12px 14px 16px;
+}
+
+.pbi-tile {
+  grid-column: span 6;
+  background: #fff;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  padding: 10px 12px 12px;
+  min-height: 220px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pbi-tile.is-wide { grid-column: span 12; }
+.pbi-tile.is-third { grid-column: span 4; }
+
+.pbi-tile h4 {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #252423;
+}
+
+.pbi-tile .pbi-empty {
+  color: #8a8886;
+  font-size: 0.88rem;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.pbi-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #605e5c;
+}
+
+.pbi-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pbi-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.pbi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.pbi-table th,
+.pbi-table td {
+  border-bottom: 1px solid #edebe9;
+  padding: 6px 4px;
+  text-align: left;
+}
+
+.pbi-table th {
+  color: #605e5c;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.management-dashboard-message {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff4ce;
+  color: #3b2e05;
+  font-size: 0.88rem;
+}
+
+.management-dashboard-hint {
+  margin: 8px 0 12px;
+  color: #605e5c;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 900px) {
+  .pbi-tile,
+  .pbi-tile.is-third {
+    grid-column: span 12;
+  }
+}
+
+@media (min-width: 901px) {
+  .management-dashboard-section {
+    padding-bottom: 24px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .pbi-tile.is-wide { grid-column: span 8; }
+  .pbi-tile.is-side { grid-column: span 4; }
+}

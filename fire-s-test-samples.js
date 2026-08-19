@@ -16,6 +16,8 @@
     'companyTeamSection',
     'companyLetterheadSection',
     'inspectorBoardSection',
+    'userManualSection',
+    'managementDashboardSection',
     'reportSection'
   ];
 
