@@ -1889,7 +1889,7 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
     pdf.line(marginX, 282, pageWidth - marginX, 282);
     pdf.setFontSize(7);
     pdf.setTextColor(90, 90, 90);
-    pdf.text('Fire-S Fire Safety Inspection Report | Photographic Evidence', marginX, 287);
+    pdf.text(getClientPhotoAppendixFooter(), marginX, 287);
     pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - marginX, 287, { align: 'right' });
   }
 }
@@ -2012,7 +2012,7 @@ async function addTwoUpPhotoAppendixToPdf(pdf, photos = []) {
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7);
     pdf.setTextColor(90, 90, 90);
-    pdf.text('Fire-S Fire Safety Inspection Report | Photographic Evidence', marginX, 291);
+    pdf.text(getClientPhotoAppendixFooter(), marginX, 291);
     pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - marginX, 291, { align: 'right' });
   }
 }
@@ -2053,10 +2053,14 @@ function getReportPdfFileName(
       ? String(inspectionDateValue).slice(0, 10)
       : new Date().toISOString().slice(0, 10);
 
+  const companyFileLabel = sanitizeFileName(
+    getClientReportLetterhead(currentProject).companyName,
+    'Company_S'
+  );
   const reportLabel =
     reportMode === 'archived'
-      ? 'Fire-S_Archived_Inspection_Report'
-      : 'Fire-S_Inspection_Report';
+      ? `${companyFileLabel}_Archived_Inspection_Report`
+      : `${companyFileLabel}_Inspection_Report`;
 
   const maxPremisesLength =
     Math.max(
@@ -18343,11 +18347,15 @@ function buildReportSharePayload(reportFile, inspection) {
     inspectionDate
   } = getReportShareIdentity(inspection);
 
+  const letterhead = getClientReportLetterhead(
+    getActiveReportProjectForPdf()
+  );
+
   return {
     title:
-      `Fire-S Inspection Report - ${premisesName}`,
+      `${letterhead.companyName} Inspection Report - ${premisesName}`,
     text: [
-      'Please find attached the formal Fire-S Fire Safety Inspection Report.',
+      `Please find attached the formal ${letterhead.companyName} Fire Safety Inspection Report.`,
       '',
       `Premises: ${premisesName}`,
       `Inspection date: ${inspectionDate}`
@@ -19728,9 +19736,26 @@ function isGenericReportCompanyName(name) {
   );
 }
 
+function getActiveReportProjectForPdf() {
+  if (archivedReportContext?.mode === 'live' && liveReportContext?.project) {
+    return liveReportContext.project;
+  }
+
+  if (archivedReportContext?.projectId && typeof getProjects === 'function') {
+    return getProjects().find(p => p.id === archivedReportContext.projectId);
+  }
+
+  if (typeof currentProjectId !== 'undefined' && typeof getProjects === 'function') {
+    return getProjects().find(p => p.id === currentProjectId);
+  }
+
+  return null;
+}
+
 function getClientReportLetterhead(project) {
+  const source = project || getActiveReportProjectForPdf();
   const rawName =
-    (project && project.companyName) ||
+    (source && source.companyName) ||
     (typeof currentUserProfile !== 'undefined' && currentUserProfile?.companyName) ||
     (typeof currentCompanyAccess !== 'undefined' && currentCompanyAccess?.companyName) ||
     '';
@@ -19740,7 +19765,7 @@ function getClientReportLetterhead(project) {
     : String(rawName).trim();
 
   const logo =
-    (project && project.companyLogo) ||
+    (source && source.companyLogo) ||
     'icon-192.png';
 
   return {
@@ -19749,6 +19774,11 @@ function getClientReportLetterhead(project) {
     serviceLine: 'Fire Safety Inspection Report',
     preparedLine: `Prepared by ${companyName}`
   };
+}
+
+function getClientPhotoAppendixFooter(project) {
+  const letterhead = getClientReportLetterhead(project);
+  return `${letterhead.companyName} Fire Safety Inspection Report | Photographic Evidence`;
 }
 
 function generateArchivedInspectionReport(projectId, historyIndex) {
