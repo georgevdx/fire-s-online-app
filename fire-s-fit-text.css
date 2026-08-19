@@ -161,7 +161,7 @@ a[href^="mailto:"] {
 }
 
 .cloud-dropdown {
-  max-width: min(260px, calc(100vw - 24px));
+  max-width: min(320px, calc(100vw - 24px));
 }
 
 .home-hero {

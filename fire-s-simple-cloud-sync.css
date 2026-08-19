@@ -1,7 +1,11 @@
 /* Fire-S Simple Cloud Sync — load after styles.css */
 
 .cloud-dropdown.fire-s-simple-cloud {
+  box-sizing: border-box;
   width: min(320px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  right: 0;
+  left: auto;
 }
 
 .cloud-simple-help {

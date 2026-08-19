@@ -5268,6 +5268,11 @@ function initApp() {
         cloudDropdown.style.display === 'none'
           ? 'block'
           : 'none';
+      try {
+        if (typeof window.fireSPlaceCloudDropdown === 'function') {
+          window.fireSPlaceCloudDropdown();
+        }
+      } catch (_) {}
     });
   }
   const actionMenuBtn =
