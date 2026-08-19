@@ -353,65 +353,160 @@
     return Math.max(1, ...items.map(item => Number(item.value) || 0));
   }
 
-  function barChart(items, color) {
-    const rows = (items || []).slice(0, 10);
-    if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
-    const width = 420;
-    const rowH = 22;
-    const height = Math.max(80, rows.length * rowH + 8);
-    const max = maxValue(rows);
-    const bars = rows.map((item, index) => {
-      const y = 4 + index * rowH;
-      const w = Math.max(2, Math.round((item.value / max) * 260));
-      return `
-        <text x="0" y="${y + 12}" font-size="10" fill="#605e5c">${esc(item.label).slice(0, 18)}</text>
-        <rect x="130" y="${y + 2}" width="${w}" height="14" fill="${color || PALETTE[index % PALETTE.length]}" rx="2"></rect>
-        <text x="${140 + w}" y="${y + 13}" font-size="10" fill="#252423">${item.value}</text>
-      `;
-    }).join('');
-    return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(280, height)}" role="img">${bars}</svg>`;
+  function niceCeiling(value) {
+    const n = Math.max(1, Number(value) || 1);
+    if (n <= 4) return 4;
+    if (n <= 5) return 5;
+    if (n <= 8) return 8;
+    if (n <= 10) return 10;
+    const pow = Math.pow(10, Math.floor(Math.log10(n)));
+    const norm = n / pow;
+    const nice = norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+    return nice * pow;
   }
 
-  function columnChart(items, color) {
-    const rows = items || [];
-    if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
-    const width = 440;
-    const height = 180;
-    const max = maxValue(rows);
-    const gap = 6;
-    const barW = Math.max(8, Math.min(28, (width - 40) / rows.length - gap));
-    const bars = rows.map((item, index) => {
-      const h = Math.max(2, Math.round((item.value / max) * 130));
-      const x = 24 + index * (barW + gap);
-      const y = 150 - h;
-      return `
-        <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color || PALETTE[index % PALETTE.length]}" rx="2"></rect>
-        <text x="${x + barW / 2}" y="168" font-size="8" text-anchor="middle" fill="#605e5c">${esc(String(item.label).replace(/^\d{4}-/, ''))}</text>
-      `;
-    }).join('');
-    return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="180" role="img">${bars}</svg>`;
+  function axisTicks(max) {
+    const top = niceCeiling(max);
+    const ticks = [];
+    for (let i = 0; i <= 4; i += 1) {
+      ticks.push(Math.round((top * i) / 4));
+    }
+    return { top, ticks };
   }
 
-  function lineChart(items, color) {
+  function shortAxisLabel(label) {
+    const raw = String(label || '');
+    const ym = raw.match(/^(\d{4})-(\d{2})$/);
+    if (ym) {
+      const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return names[Number(ym[2]) - 1] || ym[2];
+    }
+    return raw.length > 14 ? `${raw.slice(0, 13)}…` : raw;
+  }
+
+  function yGrid(padL, padT, plotW, plotH, ticks, top) {
+    return ticks.map(tick => {
+      const y = padT + plotH - (tick / top) * plotH;
+      return `
+        <line x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" stroke="#edebe9" stroke-width="1"></line>
+        <text class="pbi-tick" x="${padL - 6}" y="${y + 3}" text-anchor="end" font-size="9" fill="#605e5c">${tick}</text>
+      `;
+    }).join('');
+  }
+
+  function barChart(items, color, axis) {
+    const rows = (items || []).slice(0, 8);
+    if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
+    const yTitle = (axis && axis.y) || 'Count';
+    const xTitle = (axis && axis.x) || 'Value';
+    const width = 460;
+    const rowH = 20;
+    const padL = 108;
+    const padR = 28;
+    const padT = 6;
+    const padB = 34;
+    const plotW = width - padL - padR;
+    const plotH = Math.max(48, rows.length * rowH);
+    const height = padT + plotH + padB;
+    const { top, ticks } = axisTicks(maxValue(rows));
+    const bars = rows.map((item, index) => {
+      const y = padT + index * rowH;
+      const w = Math.max(2, Math.round((item.value / top) * plotW));
+      return `
+        <text class="pbi-tick" x="${padL - 8}" y="${y + 13}" text-anchor="end" font-size="9" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>
+        <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${color || PALETTE[index % PALETTE.length]}" rx="1.5"></rect>
+        <text x="${padL + w + 4}" y="${y + 14}" font-size="9" fill="#252423">${item.value}</text>
+      `;
+    }).join('');
+    const xTicks = ticks.map(tick => {
+      const x = padL + (tick / top) * plotW;
+      return `
+        <line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#f3f2f1" stroke-width="1"></line>
+        <text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" text-anchor="middle" font-size="9" fill="#605e5c">${tick}</text>
+      `;
+    }).join('');
+    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(210, height)}" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+      ${xTicks}
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      ${bars}
+      <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+    </svg>`;
+  }
+
+  function columnChart(items, color, axis) {
     const rows = items || [];
     if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
-    const width = 440;
-    const height = 180;
-    const max = maxValue(rows);
-    const step = rows.length > 1 ? 400 / (rows.length - 1) : 0;
+    const yTitle = (axis && axis.y) || 'Count';
+    const xTitle = (axis && axis.x) || 'Category';
+    const width = 480;
+    const height = 188;
+    const padL = 42;
+    const padR = 10;
+    const padT = 16;
+    const padB = 40;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const { top, ticks } = axisTicks(maxValue(rows));
+    const gap = 5;
+    const barW = Math.max(10, Math.min(26, plotW / rows.length - gap));
+    const bars = rows.map((item, index) => {
+      const h = Math.max(2, Math.round((item.value / top) * plotH));
+      const x = padL + index * (plotW / rows.length) + (plotW / rows.length - barW) / 2;
+      const y = padT + plotH - h;
+      return `
+        <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color || PALETTE[index % PALETTE.length]}" rx="1.5"></rect>
+        <text x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${item.value}</text>
+        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>
+      `;
+    }).join('');
+    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+      ${yGrid(padL, padT, plotW, plotH, ticks, top)}
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      ${bars}
+      <text class="pbi-axis-title" transform="rotate(-90 ${14} ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
+      <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+    </svg>`;
+  }
+
+  function lineChart(items, color, axis) {
+    const rows = items || [];
+    if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
+    const yTitle = (axis && axis.y) || 'Count';
+    const xTitle = (axis && axis.x) || 'Period';
+    const width = 480;
+    const height = 188;
+    const padL = 42;
+    const padR = 10;
+    const padT = 16;
+    const padB = 40;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const { top, ticks } = axisTicks(maxValue(rows));
+    const step = rows.length > 1 ? plotW / (rows.length - 1) : 0;
     const points = rows.map((item, index) => {
-      const x = 20 + index * step;
-      const y = 150 - Math.round((item.value / max) * 130);
+      const x = padL + index * step;
+      const y = padT + plotH - Math.round((item.value / top) * plotH);
       return `${x},${y}`;
     }).join(' ');
     const dots = rows.map((item, index) => {
-      const x = 20 + index * step;
-      const y = 150 - Math.round((item.value / max) * 130);
-      return `<circle cx="${x}" cy="${y}" r="3" fill="${color || '#118DFF'}"></circle>`;
+      const x = padL + index * step;
+      const y = padT + plotH - Math.round((item.value / top) * plotH);
+      const showLabel = index === 0 || index === rows.length - 1 || index % 2 === 0;
+      return `
+        <circle cx="${x}" cy="${y}" r="2.5" fill="${color || '#118DFF'}"></circle>
+        ${showLabel ? `<text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>` : ''}
+      `;
     }).join('');
-    return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="180" role="img">
-      <polyline fill="none" stroke="${color || '#118DFF'}" stroke-width="2.5" points="${points}"></polyline>
+    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+      ${yGrid(padL, padT, plotW, plotH, ticks, top)}
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <polyline fill="none" stroke="${color || '#118DFF'}" stroke-width="2" points="${points}"></polyline>
       ${dots}
+      <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
+      <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
     </svg>`;
   }
 
@@ -419,22 +514,28 @@
     const rows = Object.keys(map).map(label => ({ label, value: map[label] })).filter(item => item.value > 0);
     if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
     const total = rows.reduce((sum, item) => sum + item.value, 0) || 1;
-    const r = 54;
+    const r = 46;
     const c = 2 * Math.PI * r;
     let offset = 0;
     const rings = rows.map((item, index) => {
       const len = (item.value / total) * c;
       const dash = `${len} ${c - len}`;
-      const el = `<circle cx="80" cy="80" r="${r}" fill="none" stroke="${PALETTE[index % PALETTE.length]}" stroke-width="18" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 80 80)"></circle>`;
+      const el = `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${PALETTE[index % PALETTE.length]}" stroke-width="14" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 70 70)"></circle>`;
       offset += len;
       return el;
     }).join('');
-    const legend = rows.map((item, index) =>
-      `<span><i class="pbi-swatch" style="background:${PALETTE[index % PALETTE.length]}"></i>${esc(item.label)} (${item.value})</span>`
-    ).join('');
-    return `<svg viewBox="0 0 160 160" width="160" height="160" role="img">${rings}
-      <text x="80" y="84" text-anchor="middle" font-size="18" font-weight="700" fill="#252423">${total}</text>
-    </svg><div class="pbi-legend">${legend}</div>`;
+    const legend = rows.map((item, index) => {
+      const pct = Math.round((item.value / total) * 100);
+      return `<span><i class="pbi-swatch" style="background:${PALETTE[index % PALETTE.length]}"></i>${esc(item.label)} ${item.value} · ${pct}%</span>`;
+    }).join('');
+    return `<div class="pbi-donut">
+      <svg class="pbi-chart" viewBox="0 0 140 140" width="118" height="118" role="img">
+        ${rings}
+        <text x="70" y="66" text-anchor="middle" font-size="16" font-weight="700" fill="#252423">${total}</text>
+        <text x="70" y="82" text-anchor="middle" font-size="9" fill="#605e5c">total</text>
+      </svg>
+      <div class="pbi-legend">${legend}</div>
+    </div>`;
   }
 
   function tableHtml(rows) {
@@ -525,8 +626,16 @@
     }
   }
 
-  function kpi(label, value, extra) {
-    return `<div class="pbi-kpi ${extra || ''}"><span class="pbi-kpi-label">${esc(label)}</span><span class="pbi-kpi-value">${esc(String(value))}</span></div>`;
+  function kpi(label, value, extra, hint) {
+    return `<div class="pbi-kpi ${extra || ''}"><span class="pbi-kpi-label">${esc(label)}</span><span class="pbi-kpi-value">${esc(String(value))}</span>${hint ? `<span class="pbi-kpi-hint">${esc(hint)}</span>` : ''}</div>`;
+  }
+
+  function tile(title, insight, body, extraClass) {
+    return `<div class="pbi-tile ${extraClass || ''}">
+      <h4>${esc(title)}</h4>
+      ${insight ? `<p class="pbi-insight">${esc(insight)}</p>` : ''}
+      ${body}
+    </div>`;
   }
 
   function render() {
@@ -545,78 +654,74 @@
 
     host.innerHTML = `
       <div class="pbi-kpi-row">
-        ${kpi('Inspections', stats.total)}
-        ${kpi('Completed', stats.status.Completed, 'is-ok')}
-        ${kpi('Overdue', stats.status.Overdue, 'is-warn')}
-        ${kpi('Findings (No)', stats.no, stats.no ? 'is-warn' : '')}
-        ${kpi('Compliance', `${stats.compliance}%`, 'is-gold')}
-        ${kpi('Q&A complete', `${stats.qaRate}%`)}
-        ${kpi('Photos', stats.photoTotal)}
-        ${kpi('Avg photos', stats.avgPhotos)}
+        ${kpi('Inspections', stats.total, '', 'In this filter')}
+        ${kpi('Completed', stats.status.Completed, 'is-ok', `${stats.compliance}% of total`)}
+        ${kpi('Overdue', stats.status.Overdue, 'is-warn', 'Past due date')}
+        ${kpi('Findings', stats.no, stats.no ? 'is-warn' : '', 'No answers')}
+        ${kpi('Q&A complete', `${stats.qaRate}%`, '', `${stats.answered}/${stats.questions || 0}`)}
+        ${kpi('Photos', stats.photoTotal, '', `${stats.avgPhotos} avg`)}
       </div>
       <div class="pbi-grid">
-        <div class="pbi-tile">
-          <h4>Inspection status mix</h4>
-          ${donutChart(stats.status)}
-        </div>
-        <div class="pbi-tile">
-          <h4>Yes / No / N/A answers</h4>
-          ${donutChart({ Yes: stats.yes, No: stats.no, 'N/A': stats.na })}
-        </div>
-        <div class="pbi-tile is-wide">
-          <h4>Inspections over the last 12 months</h4>
-          ${lineChart(stats.months, '#118DFF')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Inspections by inspector</h4>
-          ${barChart(stats.inspectors, '#F2C811')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Findings by inspector</h4>
-          ${barChart(stats.inspectorFindings, '#b71c1c')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Findings by fire-safety category</h4>
-          ${barChart(stats.categories, '#CA5010')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Occupancy types</h4>
-          ${barChart(stats.occupancy, '#5C2D91')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Weekday pattern</h4>
-          ${columnChart(stats.weekdays, '#00B7C3')}
-        </div>
-        <div class="pbi-tile">
-          <h4>GPS captured vs missing</h4>
-          ${donutChart({ 'GPS yes': stats.gpsYes, 'GPS no': stats.gpsNo })}
-        </div>
-        <div class="pbi-tile">
-          <h4>Photos by inspector</h4>
-          ${barChart(stats.inspectorPhotos, '#0F7B0F')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Completed vs overdue by inspector</h4>
-          ${barChart(stats.inspectorDone.map(item => ({
+        ${tile('Inspection status', 'Share of completed, overdue, in progress and draft', donutChart(stats.status))}
+        ${tile('Question answers', 'Yes, No and N/A across the checklist', donutChart({ Yes: stats.yes, No: stats.no, 'N/A': stats.na }))}
+        ${tile(
+          '12-month inspection volume',
+          'How many inspections were worked in each month',
+          lineChart(stats.months, '#118DFF', { y: 'Inspections', x: 'Month' }),
+          'is-wide'
+        )}
+        ${tile(
+          'Inspections by inspector',
+          'Workload count for each inspector',
+          barChart(stats.inspectors, '#F2C811', { y: 'Inspector', x: 'Inspections' })
+        )}
+        ${tile(
+          'Findings by inspector',
+          'No answers recorded by inspector',
+          barChart(stats.inspectorFindings, '#b71c1c', { y: 'Inspector', x: 'Findings' })
+        )}
+        ${tile(
+          'Findings by category',
+          'No answers grouped by fire-safety topic',
+          barChart(stats.categories, '#CA5010', { y: 'Category', x: 'Findings' })
+        )}
+        ${tile(
+          'Occupancy mix',
+          'Inspections by occupancy type',
+          barChart(stats.occupancy, '#5C2D91', { y: 'Occupancy', x: 'Inspections' })
+        )}
+        ${tile(
+          'Weekday pattern',
+          'When inspection work is dated',
+          columnChart(stats.weekdays, '#00B7C3', { y: 'Inspections', x: 'Day of week' })
+        )}
+        ${tile('GPS coverage', 'Sites with a captured map pin', donutChart({ Captured: stats.gpsYes, Missing: stats.gpsNo }))}
+        ${tile(
+          'Photos by inspector',
+          'Photo evidence count',
+          barChart(stats.inspectorPhotos, '#0F7B0F', { y: 'Inspector', x: 'Photos' })
+        )}
+        ${tile(
+          'Completed vs overdue',
+          'Outcome count by inspector',
+          barChart(stats.inspectorDone.map(item => ({
             label: `${item.label} done`,
             value: item.value
           })).concat(stats.inspectorOverdue.map(item => ({
             label: `${item.label} overdue`,
             value: item.value
-          }))), '#118DFF')}
-        </div>
-        <div class="pbi-tile">
-          <h4>Follow-up and recurring</h4>
-          ${donutChart({
-            'Follow-up set': stats.followUp,
+          }))), '#118DFF', { y: 'Inspector', x: 'Inspections' })
+        )}
+        ${tile(
+          'Follow-up vs one-off',
+          'How much work is booked to return',
+          donutChart({
+            'Follow-up': stats.followUp,
             Recurring: stats.recurring,
             'One-off': Math.max(0, stats.total - stats.followUp)
-          })}
-        </div>
-        <div class="pbi-tile is-wide">
-          <h4>Sites needing attention</h4>
-          ${tableHtml(stats.sites)}
-        </div>
+          })
+        )}
+        ${tile('Sites needing attention', 'Highest findings first, then overdue', tableHtml(stats.sites), 'is-wide')}
       </div>
     `;
   }
@@ -655,7 +760,7 @@
     const count = projects().length;
     setMessage(
       count
-        ? `Graphs generated from ${count} inspection(s). Turn a tablet sideways or use a PC for the full wall. Download CSV for Microsoft Power BI Desktop.`
+        ? `${count} inspection(s) in this view. Axis labels show what each graph is counting.`
         : 'No inspections yet. Load Test samples (Home) to see graphs, or complete field inspections.'
     );
     try {
@@ -759,6 +864,13 @@ in
 
   window.fireSOpenManagementDashboard = openDashboard;
   window.fireSRenderManagementDashboard = render;
+  window.fireSDashboardCharts = {
+    barChart,
+    columnChart,
+    lineChart,
+    donutChart,
+    shortAxisLabel
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);

@@ -1,4 +1,4 @@
-/* Fire-S Management dashboard — Power BI-style, tablet / PC */
+/* Fire-S Management dashboard — compact Power BI-style, tablet / PC */
 
 .management-dashboard-section {
   max-width: 1280px;
@@ -8,7 +8,7 @@
 .pbi-shell {
   background: #f3f2f1;
   border: 1px solid #e1dfdd;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -17,8 +17,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #252423;
   color: #fff;
 }
@@ -26,39 +26,39 @@
 .pbi-titlebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .pbi-mark {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   background: #f2c811;
   border-radius: 2px;
 }
 
 .pbi-titlebar h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
 .pbi-titlebar p {
-  margin: 2px 0 0;
-  font-size: 0.78rem;
+  margin: 1px 0 0;
+  font-size: 0.72rem;
   opacity: 0.75;
 }
 
 .pbi-titlebar-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pbi-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #fff;
   border-bottom: 1px solid #edebe9;
 }
@@ -66,8 +66,8 @@
 .pbi-filters label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.72rem;
+  gap: 3px;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -75,30 +75,30 @@
 }
 
 .pbi-filters select {
-  min-width: 160px;
-  padding: 6px 8px;
+  min-width: 148px;
+  padding: 5px 7px;
   border: 1px solid #c8c6c4;
-  border-radius: 4px;
+  border-radius: 3px;
   background: #fff;
 }
 
 .pbi-kpi-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
-  padding: 12px 14px 0;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+  padding: 10px 12px 0;
 }
 
 .pbi-kpi {
   background: #fff;
   border: 1px solid #edebe9;
-  border-radius: 4px;
-  padding: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 3px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
 }
 
 .pbi-kpi .pbi-kpi-label {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #605e5c;
@@ -106,11 +106,18 @@
 
 .pbi-kpi .pbi-kpi-value {
   display: block;
-  margin-top: 4px;
-  font-size: 1.7rem;
+  margin-top: 2px;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #252423;
   line-height: 1.1;
+}
+
+.pbi-kpi .pbi-kpi-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: #8a8886;
 }
 
 .pbi-kpi.is-warn .pbi-kpi-value { color: #b71c1c; }
@@ -120,44 +127,63 @@
 .pbi-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 10px;
-  padding: 12px 14px 16px;
+  gap: 8px;
+  padding: 10px 12px 12px;
 }
 
 .pbi-tile {
   grid-column: span 6;
   background: #fff;
   border: 1px solid #edebe9;
-  border-radius: 4px;
-  padding: 10px 12px 12px;
-  min-height: 220px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 3px;
+  padding: 8px 10px 10px;
+  min-height: 0;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
 }
 
 .pbi-tile.is-wide { grid-column: span 12; }
 .pbi-tile.is-third { grid-column: span 4; }
 
 .pbi-tile h4 {
-  margin: 0 0 8px;
-  font-size: 0.82rem;
+  margin: 0;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #252423;
 }
 
+.pbi-insight {
+  margin: 2px 0 6px;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: #605e5c;
+}
+
 .pbi-tile .pbi-empty {
   color: #8a8886;
-  font-size: 0.88rem;
-  padding: 24px 8px;
+  font-size: 0.8rem;
+  padding: 16px 8px;
   text-align: center;
+}
+
+.pbi-chart {
+  display: block;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.pbi-donut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 118px;
 }
 
 .pbi-legend {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-  font-size: 0.75rem;
-  color: #605e5c;
+  gap: 4px 10px;
+  font-size: 0.72rem;
+  color: #323130;
 }
 
 .pbi-legend span {
@@ -167,45 +193,46 @@
 }
 
 .pbi-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
   display: inline-block;
+  flex: 0 0 auto;
 }
 
 .pbi-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .pbi-table th,
 .pbi-table td {
   border-bottom: 1px solid #edebe9;
-  padding: 6px 4px;
+  padding: 4px 4px;
   text-align: left;
 }
 
 .pbi-table th {
   color: #605e5c;
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
 }
 
 .management-dashboard-message {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
   background: #fff4ce;
   color: #3b2e05;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
 }
 
 .management-dashboard-hint {
-  margin: 8px 0 12px;
+  margin: 4px 0 8px;
   color: #605e5c;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
 }
 
 @media (max-width: 900px) {
@@ -217,11 +244,20 @@
 
 @media (min-width: 901px) {
   .management-dashboard-section {
-    padding-bottom: 24px;
+    padding-bottom: 16px;
+  }
+
+  .pbi-donut {
+    min-height: 128px;
   }
 }
 
 @media (min-width: 1100px) {
   .pbi-tile.is-wide { grid-column: span 8; }
   .pbi-tile.is-side { grid-column: span 4; }
+}
+
+html.fire-s-desktop-view .pbi-kpi-row,
+body.fire-s-desktop-view .pbi-kpi-row {
+  grid-template-columns: repeat(6, minmax(110px, 1fr));
 }
