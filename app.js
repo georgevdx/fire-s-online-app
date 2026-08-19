@@ -5643,6 +5643,12 @@ function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
 }
 
+function canEditCompanyDetails() {
+  return isSuperAdmin() || isCompanyOwner() || isManager();
+}
+
+window.canEditCompanyDetails = canEditCompanyDetails;
+
 function isAllowedAdminEmail(email) {
   const allowedEmails = [
     'georgevdx@gmail.com',
@@ -7612,6 +7618,10 @@ function showProjectList() {
 
   if (homeSection) homeSection.style.display = 'none';
   if (servicesSection) servicesSection.style.display = 'none';
+  const companyLetterheadSection = document.getElementById('companyLetterheadSection');
+  if (companyLetterheadSection) companyLetterheadSection.style.display = 'none';
+  const companyTeamSection = document.getElementById('companyTeamSection');
+  if (companyTeamSection) companyTeamSection.style.display = 'none';
   getEl('projectListSection').style.display = 'block';
   getEl('projectFormSection').style.display = 'none';
 
@@ -8946,6 +8956,11 @@ function showHome() {
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
+
+  const companyLetterheadSection = document.getElementById('companyLetterheadSection');
+  if (companyLetterheadSection) companyLetterheadSection.style.display = 'none';
+  const companyTeamSection = document.getElementById('companyTeamSection');
+  if (companyTeamSection) companyTeamSection.style.display = 'none';
 
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
@@ -19732,8 +19747,28 @@ function isGenericReportCompanyName(name) {
     n === 'your company' ||
     n === 'your new company' ||
     n === 'local workspace' ||
-    n === 'local / personal workspace'
+    n === 'local / personal workspace' ||
+    n === 'fire-s company'
   );
+}
+
+function isFireSAppLogoSrc(src) {
+  const s = String(src || '').toLowerCase();
+  return (
+    !s ||
+    s.indexOf('icon-192') !== -1 ||
+    s.indexOf('icon-512') !== -1 ||
+    s.indexOf('fire-s-logo') !== -1
+  );
+}
+
+function getSavedCompanyLetterhead() {
+  try {
+    if (typeof window.fireSGetCompanyLetterhead === 'function') {
+      return window.fireSGetCompanyLetterhead() || {};
+    }
+  } catch (_) {}
+  return window.currentUserProfile?.companyLetterhead || {};
 }
 
 function getActiveReportProjectForPdf() {
@@ -19753,8 +19788,10 @@ function getActiveReportProjectForPdf() {
 }
 
 function getClientReportLetterhead(project) {
+  const saved = getSavedCompanyLetterhead();
   const source = project || getActiveReportProjectForPdf();
   const rawName =
+    (saved && saved.name) ||
     (source && source.companyName) ||
     (typeof currentUserProfile !== 'undefined' && currentUserProfile?.companyName) ||
     (typeof currentCompanyAccess !== 'undefined' && currentCompanyAccess?.companyName) ||
@@ -19764,16 +19801,69 @@ function getClientReportLetterhead(project) {
     ? 'Company S'
     : String(rawName).trim();
 
-  const logo =
+  const rawLogo =
+    (saved && saved.logo) ||
     (source && source.companyLogo) ||
-    'icon-192.png';
+    '';
+  const logo = isFireSAppLogoSrc(rawLogo) ? '' : String(rawLogo).trim();
 
   return {
     companyName,
     logo,
+    address: String((saved && saved.address) || '').trim(),
+    phone: String((saved && saved.phone) || '').trim(),
+    mobile: String((saved && saved.mobile) || '').trim(),
+    email: String((saved && saved.email) || '').trim(),
+    fireSLogo: 'icon-192.png',
+    fireSMark: 'Prepared with Fire-S',
     serviceLine: 'Fire Safety Inspection Report',
     preparedLine: `Prepared by ${companyName}`
   };
+}
+
+function buildClientReportLetterheadHtml(letterhead) {
+  const lh = letterhead || getClientReportLetterhead();
+  const logoHtml = lh.logo
+    ? `<img class="report-client-logo" src="${escapeHtml(lh.logo)}" alt="${escapeHtml(lh.companyName)} logo">`
+    : '';
+
+  const contactLines = [];
+  if (lh.address) {
+    contactLines.push(
+      `<div>${escapeHtml(lh.address).replace(/\n/g, '<br>')}</div>`
+    );
+  }
+  const numbers = [];
+  if (lh.phone) numbers.push(`Tel ${escapeHtml(lh.phone)}`);
+  if (lh.mobile) numbers.push(`Cell ${escapeHtml(lh.mobile)}`);
+  if (numbers.length) {
+    contactLines.push(`<div>${numbers.join(' · ')}</div>`);
+  }
+  if (lh.email) {
+    contactLines.push(`<div>${escapeHtml(lh.email)}</div>`);
+  }
+  const contactHtml = contactLines.length
+    ? `<div class="report-company-contact">${contactLines.join('')}</div>`
+    : '';
+
+  return `
+    <div class="report-header report-client-header formal-letterhead">
+      <div class="report-client-brand">
+        ${logoHtml}
+        <div>
+          <h1>${escapeHtml(lh.companyName)}</h1>
+          <div class="report-subtitle">
+            ${escapeHtml(lh.serviceLine)}
+          </div>
+          ${contactHtml}
+        </div>
+      </div>
+      <div class="report-app-mark">
+        <img src="${escapeHtml(lh.fireSLogo || 'icon-192.png')}" alt="Fire-S">
+        <span>${escapeHtml(lh.fireSMark || 'Prepared with Fire-S')}</span>
+      </div>
+    </div>
+  `;
 }
 
 function getClientPhotoAppendixFooter(project) {
@@ -20139,24 +20229,7 @@ reportContent.innerHTML = `
     </div>
 
     <article class="formal-letter-report">
-    <div class="report-header report-client-header formal-letterhead">
-      <div class="report-client-brand">
-        <img
-          class="report-client-logo"
-          src="${escapeHtml(reportLetterhead.logo)}"
-          alt="${escapeHtml(reportLetterhead.companyName)} logo"
-        >
-
-        <div>
-          <h1>${escapeHtml(reportLetterhead.companyName)}</h1>
-
-          <div class="report-subtitle">
-            ${escapeHtml(reportLetterhead.serviceLine)}
-          </div>
-        </div>
-      </div>
-
-    </div>
+    ${buildClientReportLetterheadHtml(reportLetterhead)}
 
     <div class="formal-letter-routing">
       <div class="formal-addressee">
@@ -20322,6 +20395,10 @@ reportContent.innerHTML = `
 
         <div class="report-generated">
           ${escapeHtml(reportLetterhead.preparedLine)}
+        </div>
+        <div class="report-app-mark report-app-mark-footer">
+          <img src="${escapeHtml(reportLetterhead.fireSLogo || 'icon-192.png')}" alt="Fire-S">
+          <span>${escapeHtml(reportLetterhead.fireSMark || 'Prepared with Fire-S')}</span>
         </div>
       </div>
     </div>

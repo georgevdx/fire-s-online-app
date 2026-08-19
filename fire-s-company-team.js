@@ -544,7 +544,8 @@
       'servicesSection',
       'projectListSection',
       'projectFormSection',
-      'findingsCentreSection'
+      'findingsCentreSection',
+      'companyLetterheadSection'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.display = 'none';

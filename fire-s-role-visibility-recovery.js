@@ -32,6 +32,7 @@
     'cmdScheduleBtn',
     'cmdDashboardBtn',
     'cmdReportsBtn',
+    'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
     'cmdServicesBtn',
     'cmdFindingsBtn',

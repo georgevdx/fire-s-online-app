@@ -41,6 +41,7 @@
     'cmdInspectorsBtn',
     'cmdScheduleBtn',
     'cmdReportsBtn',
+    'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
     'cmdServicesBtn',
     'cmdDashboardBtn',
@@ -565,6 +566,11 @@
       'Completed inspections and export-ready reports.'
     );
     cardText(
+      'cmdCompanyDetailsBtn',
+      'Company details',
+      'Name, address, logo and contact numbers for the client PDF.'
+    );
+    cardText(
       'cmdCompanyBtn',
       'People',
       'Add Inspectors and Managers, or change roles.'
@@ -654,6 +660,11 @@
       'Completed inspections and client-ready exports.'
     );
     cardText(
+      'cmdCompanyDetailsBtn',
+      'Company details',
+      'Name, address, logo and contact numbers for the client PDF.'
+    );
+    cardText(
       'cmdCompanyBtn',
       'People',
       'Add Inspectors and Managers, or change roles.'
@@ -709,6 +720,7 @@
     show('cmdFindingsBtn');
     show('cmdOverdueBtn');
     hide('cmdScheduleBtn');
+    hide('cmdCompanyDetailsBtn');
     hide('cmdCompanyBtn');
     hide('cmdServicesBtn');
     hide('cmdInspectorsBtn');
@@ -796,6 +808,13 @@
         (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
         typeof window.fireSOpenCompanyTeam === 'function'
       ) {
+        const detailsBtn = byId('cmdCompanyDetailsBtn');
+        if (detailsBtn && typeof window.fireSOpenCompanyLetterhead === 'function') {
+          detailsBtn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenCompanyLetterhead();
+          };
+        }
         const btn = byId('cmdCompanyBtn');
         if (btn) {
           btn.onclick = function (event) {

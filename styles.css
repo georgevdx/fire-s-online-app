@@ -2420,14 +2420,65 @@ button.readiness-chip:focus {
 .report-client-header.formal-letterhead {
   display: flex;
   grid-template-columns: none;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .report-client-brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   min-width: 0;
+}
+
+.report-company-contact {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #444;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.report-app-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 72px;
+  text-align: center;
+}
+
+.report-app-mark img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.report-app-mark span {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #888;
+  line-height: 1.2;
+}
+
+.report-app-mark-footer {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.report-app-mark-footer img {
+  width: 22px;
+  height: 22px;
 }
 
 .report-client-logo {
@@ -11092,6 +11143,7 @@ body.fire-s-role-inspector #cmdInspectionsBtn,
 }
 
 .fire-s-inspector-access-121c #cmdReportsBtn,
+.fire-s-inspector-access-121c #cmdCompanyDetailsBtn,
 .fire-s-inspector-access-121c #cmdCompanyBtn,
 .fire-s-inspector-access-121c #cmdServicesBtn,
 .fire-s-inspector-access-121c #cmdDashboardBtn,
@@ -11166,6 +11218,7 @@ body.fire-s-role-inspector #cmdInspectionsBtn,
 }
 
 .fire-s-inspector-mission-lock-121d #cmdReportsBtn,
+.fire-s-inspector-mission-lock-121d #cmdCompanyDetailsBtn,
 .fire-s-inspector-mission-lock-121d #cmdCompanyBtn,
 .fire-s-inspector-mission-lock-121d #cmdServicesBtn,
 .fire-s-inspector-mission-lock-121d #cmdDashboardBtn,
@@ -11191,6 +11244,7 @@ body.fire-s-role-inspector #cmdInspectionsBtn,
 }
 
 .fire-s-inspector-mission-lock-121e #cmdReportsBtn,
+.fire-s-inspector-mission-lock-121e #cmdCompanyDetailsBtn,
 .fire-s-inspector-mission-lock-121e #cmdCompanyBtn,
 .fire-s-inspector-mission-lock-121e #cmdServicesBtn,
 .fire-s-inspector-mission-lock-121e #cmdDashboardBtn,
@@ -11342,6 +11396,7 @@ body.fire-s-home-resolved-inspector-121j #cmdDashboardBtn,
 body.fire-s-home-resolved-inspector-121j #cmdFindingsBtn,
 body.fire-s-home-resolved-inspector-121j #cmdOverdueBtn,
 body.fire-s-home-resolved-inspector-121j #cmdReportsBtn,
+body.fire-s-home-resolved-inspector-121j #cmdCompanyDetailsBtn,
 body.fire-s-home-resolved-inspector-121j #cmdCompanyBtn,
 body.fire-s-home-resolved-inspector-121j #cmdServicesBtn {
   display: none !important;
