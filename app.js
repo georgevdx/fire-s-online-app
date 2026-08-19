@@ -3505,116 +3505,184 @@ async function loginUser() {
   }
 }
 
-async function logoutUser() {
-  const syncStatus = document.getElementById('syncStatus');
+let logoutInProgress = false;
 
-  if (syncStatus) {
-    syncStatus.textContent = 'Logging out…';
+function withTimeout(promise, ms) {
+  return Promise.race([
+    Promise.resolve(promise).then(value => ({ value, timeout: false })),
+    new Promise(resolve => setTimeout(() => resolve({ timeout: true }), ms))
+  ]);
+}
+
+function showLogoutWait() {
+  const screen = document.getElementById('fireSLogoutScreen');
+  if (screen) screen.classList.add('is-on');
+  document.documentElement.classList.add('fire-s-logging-out');
+  const homeTitle = document.querySelector('#homeLogoutBtn .route-title');
+  if (homeTitle) homeTitle.textContent = 'Logging out…';
+  const cloudBtn = document.getElementById('logoutBtn');
+  if (cloudBtn) {
+    cloudBtn.disabled = true;
+    cloudBtn.textContent = 'Logging out…';
   }
+  const homeBtn = document.getElementById('homeLogoutBtn');
+  if (homeBtn) homeBtn.disabled = true;
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) syncStatus.textContent = 'Logging out…';
+}
+
+function hideLogoutWait() {
+  const screen = document.getElementById('fireSLogoutScreen');
+  if (screen) screen.classList.remove('is-on');
+  document.documentElement.classList.remove('fire-s-logging-out');
+  const homeTitle = document.querySelector('#homeLogoutBtn .route-title');
+  if (homeTitle) homeTitle.textContent = 'Logout';
+  const cloudBtn = document.getElementById('logoutBtn');
+  if (cloudBtn) {
+    cloudBtn.disabled = false;
+    cloudBtn.textContent = 'Logout';
+  }
+  const homeBtn = document.getElementById('homeLogoutBtn');
+  if (homeBtn) homeBtn.disabled = false;
+}
+
+function applyLoggedOutUi() {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        key.startsWith('sb-') &&
+        (key.includes('auth-token') || key.endsWith('-code-verifier'))
+      ) {
+        keys.push(key);
+      }
+    }
+    keys.forEach(key => localStorage.removeItem(key));
+  } catch (_) {}
+
+  currentUserProfile = null;
+  currentCompanyAccess = null;
+  window.currentUserProfile = null;
+  window.currentCompanyAccess = null;
+  try {
+    localStorage.removeItem('fireS.forceNewCompanySetup');
+  } catch (_) {}
 
   try {
-    // Best-effort save only — never block or scare the user with RLS errors on logout.
+    updateHomeAccessCards();
+  } catch (_) {}
+  try {
+    updateAccessUI();
+  } catch (_) {}
+  try {
+    updateSyncUI();
+  } catch (_) {}
+  try {
+    refreshRcHomePanels();
+  } catch (_) {}
+
+  const projectsList = document.getElementById('projectsList');
+  const dashboardMetrics = document.getElementById('dashboardMetrics');
+  const projectPagingControls = document.getElementById('projectPagingControls');
+  if (projectsList) projectsList.innerHTML = '';
+  if (dashboardMetrics) dashboardMetrics.innerHTML = '';
+  if (projectPagingControls) projectPagingControls.innerHTML = '';
+
+  try {
+    showHome();
+  } catch (_) {}
+  try {
+    if (typeof window.fireSApplyCleanHomeRoles === 'function') {
+      window.fireSApplyCleanHomeRoles();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSOpenAccess === 'function') {
+      window.fireSOpenAccess('choices');
+    } else if (typeof window.fireSSyncGetStarted === 'function') {
+      window.fireSSyncGetStarted();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSApplySimpleCloudSync === 'function') {
+      window.fireSApplySimpleCloudSync();
+    }
+  } catch (_) {}
+
+  const cloudDropdown = document.getElementById('cloudDropdown');
+  if (cloudDropdown) cloudDropdown.style.display = 'none';
+
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent = 'Logged out. Use Access to sign in again.';
+  }
+}
+
+async function saveOwnWorkBeforeLogout() {
+  window.__fireSQuietCloudUpload = true;
+  const myId = currentUserProfile?.id || null;
+  const myCompanyId = String(currentUserProfile?.companyId || '').trim();
+  const pending = typeof getQueuedProjects === 'function' ? getQueuedProjects() : [];
+  const ownPending = pending.filter(project => {
+    if (!project || !project.id) return false;
+    const createdBy = project.createdByUserId || project.user_id || null;
+    if (myId && createdBy && createdBy !== myId) return false;
+    const projectCompany = String(project.companyId || project.company_id || '').trim();
+    if (myCompanyId && projectCompany && projectCompany !== myCompanyId) return false;
+    return true;
+  });
+  await Promise.all(
+    ownPending.slice(0, 3).map(project =>
+      Promise.resolve()
+        .then(() => uploadSingleInspection(project))
+        .catch(() => {})
+    )
+  );
+}
+
+async function logoutUser() {
+  if (logoutInProgress) return;
+  logoutInProgress = true;
+  showLogoutWait();
+  try {
     try {
-      window.__fireSQuietCloudUpload = true;
-      const myId = currentUserProfile?.id || null;
-      const myCompanyId = String(currentUserProfile?.companyId || '').trim();
-      const pending =
-        typeof getQueuedProjects === 'function' ? getQueuedProjects() : [];
-      const ownPending = pending.filter(project => {
-        if (!project || !project.id) return false;
-        const createdBy = project.createdByUserId || project.user_id || null;
-        if (myId && createdBy && createdBy !== myId) return false;
-        const projectCompany = String(
-          project.companyId || project.company_id || ''
-        ).trim();
-        if (myCompanyId && projectCompany && projectCompany !== myCompanyId) {
-          return false;
-        }
-        return true;
-      });
-      for (const project of ownPending.slice(0, 25)) {
-        try {
-          await uploadSingleInspection(project);
-        } catch (_) {}
-      }
+      closeCloudDropdown();
+    } catch (_) {}
+
+    try {
+      await withTimeout(saveOwnWorkBeforeLogout(), 800);
     } catch (preLogoutSyncError) {
       console.warn('Pre-logout sync skipped:', preLogoutSyncError);
     } finally {
       window.__fireSQuietCloudUpload = false;
     }
 
-  const { error } = await supabaseClient.auth.signOut();
-
-    if (error) {
-      if (syncStatus) {
-        syncStatus.textContent = `Logout failed: ${error.message}`;
-      }
-
-      alert(`Logout failed: ${error.message}`);
-      return;
+    try {
+      await withTimeout(
+        supabaseClient.auth.signOut({ scope: 'local' }),
+        1200
+      );
+    } catch (error) {
+      console.warn('Local sign-out skipped:', error);
     }
 
-    currentUserProfile = null;
-    currentCompanyAccess = null;
-    window.currentUserProfile = null;
-    window.currentCompanyAccess = null;
     try {
-      localStorage.removeItem('fireS.forceNewCompanySetup');
+      supabaseClient.auth.signOut({ scope: 'global' }).catch(() => {});
     } catch (_) {}
 
-    updateHomeAccessCards();
-    updateAccessUI();
-    updateSyncUI();
-    refreshRcHomePanels();
-
-    const projectsList = document.getElementById('projectsList');
-    const dashboardMetrics = document.getElementById('dashboardMetrics');
-    const projectPagingControls = document.getElementById('projectPagingControls');
-
-    if (projectsList) projectsList.innerHTML = '';
-    if (dashboardMetrics) dashboardMetrics.innerHTML = '';
-    if (projectPagingControls) projectPagingControls.innerHTML = '';
-
-    showHome();
-    try {
-      if (typeof window.fireSApplyCleanHomeRoles === 'function') {
-        window.fireSApplyCleanHomeRoles();
-      }
-    } catch (_) {}
-    try {
-      if (typeof window.fireSOpenAccess === 'function') {
-        window.fireSOpenAccess('choices');
-      } else if (typeof window.fireSSyncGetStarted === 'function') {
-        window.fireSSyncGetStarted();
-      }
-    } catch (_) {}
-    try {
-      if (typeof window.fireSApplySimpleCloudSync === 'function') {
-        window.fireSApplySimpleCloudSync();
-      }
-    } catch (_) {}
-
-    const cloudDropdown = document.getElementById('cloudDropdown');
-
-    if (cloudDropdown) {
-      cloudDropdown.style.display = 'none';
-    }
-
-    if (syncStatus) {
-      syncStatus.textContent = 'Logged out. Use Access to sign in again.';
-    }
+    applyLoggedOutUi();
   } catch (error) {
     console.error('Logout crashed:', error);
     window.__fireSQuietCloudUpload = false;
-
-    // Still try to leave the session so the user is not stuck.
     try {
-      await supabaseClient.auth.signOut();
+      await withTimeout(supabaseClient.auth.signOut({ scope: 'local' }), 800);
     } catch (_) {}
-
-    if (syncStatus) {
-      syncStatus.textContent = 'Logged out. Use Access to sign in again.';
-    }
+    applyLoggedOutUi();
+  } finally {
+    hideLogoutWait();
+    logoutInProgress = false;
   }
 }
 

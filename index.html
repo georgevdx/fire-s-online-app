@@ -29,6 +29,22 @@
     }
     html:not(.fire-s-booting) #fireSBootScreen { display: none !important; }
     html.fire-s-ready .app { opacity: 1; transition: opacity .18s ease; }
+    #fireSLogoutScreen {
+      display: none;
+      position: fixed; inset: 0; z-index: 100000;
+      align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #111 0%, #1a0505 100%);
+      color: #fff; font-family: Arial, sans-serif;
+    }
+    #fireSLogoutScreen.is-on { display: flex; }
+    #fireSLogoutScreen .boot-card {
+      text-align: center; padding: 28px 22px; max-width: 280px;
+    }
+    #fireSLogoutScreen .boot-kicker {
+      letter-spacing: .18em; text-transform: uppercase; opacity: .7; font-size: .75rem;
+    }
+    #fireSLogoutScreen h1 { margin: 8px 0 6px; font-size: 2rem; }
+    #fireSLogoutScreen p { margin: 0; opacity: .75; font-size: .95rem; }
   </style>
   <link rel="stylesheet" href="styles.css?v=107-6-logo-watermark">
   <link rel="icon" href="data:,">
@@ -52,6 +68,13 @@
       <div class="boot-kicker">Fire-S</div>
       <h1>Loading</h1>
       <p>Preparing your workspace…</p>
+    </div>
+  </div>
+  <div id="fireSLogoutScreen" aria-live="assertive">
+    <div class="boot-card">
+      <div class="boot-kicker">Fire-S</div>
+      <h1>Logging out</h1>
+      <p>Please wait a moment…</p>
     </div>
   </div>
   <div class="app">
@@ -494,7 +517,7 @@
       style="display:none;"
     >
       <span class="route-title">Logout</span>
-      <span class="route-copy">Sign out of your Fire-S cloud session.</span>
+      <span class="route-copy">Sign out. You will see Logging out, then Access.</span>
     </button>
   </div>
 </section>
@@ -1492,7 +1515,7 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=live-company-letterhead-v3"></script>
+  <script src="app.js?v=live-logout-wait-v1"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
   <script src="fire-s-clean-home-roles.js?v=2-11-desktop-access"></script>
