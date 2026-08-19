@@ -774,6 +774,12 @@
   window.fireSSyncGetStarted = window.refreshFireSGetStarted;
   window.fireSOpenAccess = openAccess;
   window.fireSClaimInvitesQuiet = claimInvitesQuiet;
+  window.fireSGetStartedPhoneBack = function fireSGetStartedPhoneBack() {
+    if (!root || !shouldShowAccess()) return false;
+    if (mode === 'choices' || mode === 'company') return false;
+    showChoices();
+    return true;
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
