@@ -2447,43 +2447,44 @@ button.readiness-chip:focus {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
-  min-width: 72px;
+  min-width: 44px;
   text-align: center;
 }
 
 .report-app-mark img {
-  width: 36px;
-  height: 36px;
+  width: 16px;
+  height: 16px;
   object-fit: contain;
 }
 
 .report-app-mark span {
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #888;
-  line-height: 1.2;
+  line-height: 1.15;
+  max-width: 52px;
 }
 
 .report-app-mark-footer {
   flex-direction: row;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   margin-top: 10px;
   min-width: 0;
 }
 
 .report-app-mark-footer img {
-  width: 22px;
-  height: 22px;
+  width: 12px;
+  height: 12px;
 }
 
 .report-client-logo {
-  width: 58px;
-  height: 58px;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
   flex-shrink: 0;
 }
