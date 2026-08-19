@@ -215,7 +215,7 @@
         <h2>3. Home for each level</h2>
         <p>After Access, Home changes to match your level.</p>
         <ul>
-          <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control. Home shows a desktop address to type on a computer.</li>
+          <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control. Home shows a desktop address. On a computer that address opens the Management dashboard.</li>
           <li><strong>Manager</strong> — Operations Centre. Stats, inspections, people, company details, dashboard. Home shows the same desktop address.</li>
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
@@ -298,6 +298,7 @@
       <article class="user-manual-chapter">
         <h2>9. Management dashboard (tablet / PC)</h2>
         <p>Owner and Manager: Home → <strong>Management dashboard</strong>.</p>
+        <p>On a computer, type the desktop address from Home. After login, Fire-S opens the Management dashboard in a wide layout. Inspectors keep the phone layout. Access (login) still shows first if you are not signed in.</p>
         <p>Turn a tablet sideways, or open Fire-S on a laptop / PC. Graphs are built from your inspection data in a Power BI-style layout.</p>
         <ul>
           <li>Status mix, overdue vs completed, findings by category</li>

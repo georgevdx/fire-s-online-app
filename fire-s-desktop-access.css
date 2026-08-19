@@ -78,13 +78,30 @@ body.fire-s-desktop-view .app {
 }
 
 html.fire-s-desktop-view #mainCommandCentre,
-body.fire-s-desktop-view #mainCommandCentre {
+body.fire-s-desktop-view #mainCommandCentre,
+html.fire-s-desktop-view #managementDashboardSection,
+body.fire-s-desktop-view #managementDashboardSection {
   max-width: none;
+}
+
+html.fire-s-desktop-view .pbi-kpi-row,
+body.fire-s-desktop-view .pbi-kpi-row {
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+}
+
+html.fire-s-desktop-view .pbi-tile,
+body.fire-s-desktop-view .pbi-tile {
+  min-height: 240px;
 }
 
 @media (min-width: 900px) {
   html.fire-s-desktop-view .main-command-grid,
   body.fire-s-desktop-view .main-command-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html.fire-s-desktop-view .main-command-stats,
+  body.fire-s-desktop-view .main-command-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }

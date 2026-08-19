@@ -160,6 +160,11 @@
 
   function hideAccess() {
     if (root) root.style.display = 'none';
+    try {
+      if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
+        window.fireSMaybeOpenDesktopWorkspace();
+      }
+    } catch (_) {}
   }
 
   function showAccess() {
