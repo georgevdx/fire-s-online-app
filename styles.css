@@ -2466,7 +2466,7 @@ button.readiness-chip:focus {
   text-transform: uppercase;
   color: #555;
   line-height: 1.15;
-  max-width: 72px;
+  max-width: 108px;
 }
 
 .report-app-mark-footer {
@@ -5544,6 +5544,23 @@ html.pdf-exporting body {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
   -webkit-column-break-inside: avoid !important;
+}
+
+.formal-letter-report .formal-reference-box div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.formal-letter-report .formal-reference-box span {
+  font-weight: 700;
+}
+
+.pdf-export-mode .formal-letter-report .formal-reference-box div {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
 }
 
 /* Formal report refinement: separate the routing details from the subject. */

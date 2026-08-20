@@ -1773,6 +1773,10 @@ function applyMeasuredA4Pagination(pdfClone) {
 }
 
 function getPhotosForPdfExport() {
+  if (Array.isArray(archivedReportContext?.photos) && archivedReportContext.photos.length) {
+    return archivedReportContext.photos;
+  }
+
   if (
     archivedReportContext?.mode === 'live' &&
     liveReportContext?.inspection
@@ -2107,7 +2111,20 @@ function getReportPdfFileName(
 
   const {
     premisesName
-  } = getReportShareIdentity(reportInspection);
+  } = getReportShareIdentity({
+    ...reportInspection,
+    organisationName:
+      reportInspection.organisationName ||
+      currentProject?.organisationName,
+    siteName:
+      reportInspection.siteName ||
+      currentProject?.siteName,
+    projectName:
+      reportInspection.projectName ||
+      archivedReportContext?.projectName ||
+      currentProject?.projectName ||
+      currentProject?.premisesName
+  });
 
   const inspectionDateValue =
     reportInspection.inspectionDate ||
@@ -11115,6 +11132,22 @@ function getChecklistForProject(project) {
   );
 }
 
+function resolveChecklistItem(checklist, answer) {
+  const list = Array.isArray(checklist) ? checklist : [];
+  const itemNumber = String(answer?.itemNumber || '').trim();
+  if (itemNumber) {
+    const byNumber = list.find(item =>
+      String(item?.['Item Number'] || item?.itemNumber || '').trim() === itemNumber
+    );
+    if (byNumber) return byNumber;
+  }
+  const index = Number(answer?.itemIndex);
+  if (Number.isInteger(index) && index >= 0 && list[index]) {
+    return list[index];
+  }
+  return null;
+}
+
 function getReportChecklistRows(project) {
   const checklist =
     getChecklistForProject(project);
@@ -11125,10 +11158,7 @@ function getReportChecklistRows(project) {
   return answers
     .map(answer => {
       const checklistItem =
-        checklist.find((item, index) =>
-          index === answer.itemIndex ||
-          String(item["Item Number"]) === String(answer.itemNumber)
-        );
+        resolveChecklistItem(checklist, answer);
 
       if (!checklistItem) {
         return null;
@@ -20253,6 +20283,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     mode: isLiveReport ? 'live' : 'archived',
     inspectionNumber: inspection.inspectionNumber || '',
     inspectionDate: getCanonicalHistoricalInspectionDate(inspection),
+    photos: Array.isArray(inspection.photos) ? inspection.photos : [],
     projectName:
       inspection.projectName ||
       [inspection.organisationName, inspection.siteName]
@@ -20287,6 +20318,9 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   const reportPhotos = Array.isArray(inspection.photos)
     ? inspection.photos
     : [];
+  if (archivedReportContext) {
+    archivedReportContext.photos = reportPhotos;
+  }
 
   let compliantCount = 0;
   let actionRequiredCount = 0;
@@ -20297,7 +20331,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   (inspection.answers || []).forEach(answer => {
     const item =
-      checklist[answer.itemIndex] || {};
+      resolveChecklistItem(checklist, answer) || {};
 
     const itemNumber =
       answer.itemNumber ||
@@ -20555,9 +20589,9 @@ reportContent.innerHTML = `
       </div>
 
       <div class="formal-reference-box">
-        <div><span>Our reference</span><strong>${escapeHtml(inspectionNumber)}</strong></div>
-        <div><span>Inspection date</span><strong>${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}</strong></div>
-        <div><span>Report date</span><strong>${escapeHtml(new Date().toLocaleDateString())}</strong></div>
+        <div><span>Our reference:</span> <strong>${escapeHtml(inspectionNumber)}</strong></div>
+        <div><span>Inspection date:</span> <strong>${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}</strong></div>
+        <div><span>Report date:</span> <strong>${escapeHtml(new Date().toLocaleDateString())}</strong></div>
       </div>
     </div>
 
@@ -20911,7 +20945,7 @@ function viewArchivedInspection(projectId, historyIndex) {
     (inspection.answers || []).length > 0
       ? (inspection.answers || []).map(answer => {
           const checklistItem =
-            checklist[answer.itemIndex] || {};
+            resolveChecklistItem(checklist, answer) || {};
 
           const itemText =
             checklistItem["Checklist Item"] ||
