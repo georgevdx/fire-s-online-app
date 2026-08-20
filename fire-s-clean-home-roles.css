@@ -2,21 +2,25 @@
 
 body.fire-s-clean-home.fire-s-role-inspector #homeSection .home-hero,
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-inspector #fireSOwnerKpiRow,
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .fs-prod-kpi-row,
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .fs-kpi-row,
 body.fire-s-clean-home.fire-s-role-inspector #complianceHeroCard,
 body.fire-s-clean-home.fire-s-role-inspector .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-guest #fireSOwnerKpiRow,
 body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-guest #complianceHeroCard,
 body.fire-s-clean-home.fire-s-role-guest #fireSExecutiveDashboard1115,
 body.fire-s-clean-home.fire-s-role-guest .fire-s-exec-dashboard-v1115,
 body.fire-s-clean-home.fire-s-role-guest .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-new-company #fireSOwnerKpiRow,
 body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-new-company #complianceHeroCard,
 body.fire-s-clean-home.fire-s-role-new-company #fireSExecutiveDashboard1115,
 body.fire-s-clean-home.fire-s-role-new-company .fire-s-exec-dashboard-v1115,
 body.fire-s-clean-home.fire-s-role-new-company .fire-s-exec-mini-dashboard,
+body.fire-s-clean-home.fire-s-role-pending-member #fireSOwnerKpiRow,
 body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-pending-member #complianceHeroCard,
 body.fire-s-clean-home.fire-s-role-pending-member #fireSExecutiveDashboard1115,
@@ -52,10 +56,8 @@ body.fire-s-clean-home:not(.fire-s-role-inspector) #inspectorV4Shell {
 }
 
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-top,
-body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-grid,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
-body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-grid,
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid,
 body.fire-s-clean-home.fire-s-role-viewer #mainCommandCentre .main-command-grid {
@@ -92,6 +94,12 @@ body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats.fs-prod-kpi-row,
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats.fs-prod-kpi-row {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #fireSOwnerKpiRow,
+body.fire-s-clean-home.fire-s-role-manager #fireSOwnerKpiRow,
+body.fire-s-clean-home.fire-s-role-viewer #fireSOwnerKpiRow {
   display: grid !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -245,9 +253,14 @@ body.fire-s-clean-home.fire-s-role-new-company #fireSDesktopAccess {
   display: none !important;
 }
 
+body.fire-s-clean-home.fire-s-role-manager #fireSOwnerKpiRow,
+body.fire-s-clean-home.fire-s-role-owner #fireSOwnerKpiRow {
+  display: grid !important;
+}
+
 body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats {
-  display: grid !important;
+  display: none !important;
 }
 
 body.fire-s-clean-home #betaNotesPanel,

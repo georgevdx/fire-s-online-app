@@ -328,15 +328,33 @@
   }
 
   function setStatsVisible(visible) {
-    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
-    if (!stats) return;
+    const legacy = document.querySelector('#mainCommandCentre .main-command-stats');
+    const ownerRow = byId('fireSOwnerKpiRow');
     if (visible) {
-      stats.hidden = false;
-      stats.removeAttribute('aria-hidden');
-      stats.style.setProperty('display', 'grid', 'important');
+      if (legacy) {
+        legacy.hidden = true;
+        legacy.setAttribute('aria-hidden', 'true');
+        legacy.style.setProperty('display', 'none', 'important');
+      }
+      if (ownerRow) {
+        ownerRow.hidden = false;
+        ownerRow.removeAttribute('aria-hidden');
+        ownerRow.style.setProperty('display', 'grid', 'important');
+      }
+      try {
+        if (typeof window.fireSProductionRenderKpis === 'function') {
+          window.fireSProductionRenderKpis();
+        }
+      } catch (_) {}
     } else {
-      stats.hidden = true;
-      stats.style.setProperty('display', 'none', 'important');
+      if (legacy) {
+        legacy.hidden = true;
+        legacy.style.setProperty('display', 'none', 'important');
+      }
+      if (ownerRow) {
+        ownerRow.hidden = true;
+        ownerRow.style.setProperty('display', 'none', 'important');
+      }
     }
   }
 
@@ -532,15 +550,15 @@
     // Ensure management chrome is not left hidden by stale inspector CSS.
     const centre = byId('mainCommandCentre');
     if (centre) {
-      centre.querySelectorAll('.main-command-top, .main-command-stats, .main-command-grid').forEach(el => {
+      centre.querySelectorAll('.main-command-top, .main-command-grid').forEach(el => {
+        el.style.removeProperty('display');
         el.removeAttribute('hidden');
-        el.removeAttribute('aria-hidden');
-        if (el.classList.contains('main-command-stats')) {
-          el.style.setProperty('display', 'grid', 'important');
-        } else {
-          el.style.removeProperty('display');
-        }
       });
+      const legacyStats = centre.querySelector('.main-command-stats');
+      if (legacyStats) {
+        legacyStats.hidden = true;
+        legacyStats.style.setProperty('display', 'none', 'important');
+      }
     }
   }
 

@@ -11094,6 +11094,7 @@ body.fire-s-phase1-inspector .fire-s-exec-dashboard-v1115 {
 }
 
 body.fire-s-role-inspector #mainCommandCentre .main-command-stats,
+body.fire-s-role-inspector #mainCommandCentre #fireSOwnerKpiRow,
 body.fire-s-role-inspector #dashboardMetrics,
 body.fire-s-role-inspector .dashboard-metrics,
 body.fire-s-role-inspector .compliance-hero-card,
@@ -12372,11 +12373,15 @@ button,
 }
 
 /* FIRE-S RC 1.3.6A.10 - Stable visible KPI row */
-#mainCommandCentre .main-command-stats.fs-prod-kpi-row {
-  display: grid !important;
+#mainCommandCentre .main-command-stats.fs-prod-kpi-row,
+#fireSOwnerKpiRow.fs-prod-kpi-row {
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 10px !important;
   align-items: stretch !important;
+  margin: 0 0 14px !important;
+}
+#fireSOwnerKpiRow[hidden] {
+  display: none !important;
 }
 /* Hide leftover original stat tiles only. Do not hide .fs-kpi-card —
    a later Home render can put those into this row, and hiding them made
@@ -12472,7 +12477,8 @@ button,
 .fs-prod-kpi-month { border-top-color: #3b82f6 !important; background: #eff6ff !important; }
 .fs-prod-kpi-month .fs-prod-kpi-number, .fs-prod-kpi-month .fs-prod-kpi-filter { color: #1d4ed8 !important; }
 @media (max-width: 700px) {
-  #mainCommandCentre .main-command-stats.fs-prod-kpi-row {
+  #mainCommandCentre .main-command-stats.fs-prod-kpi-row,
+  #fireSOwnerKpiRow.fs-prod-kpi-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px !important;
   }

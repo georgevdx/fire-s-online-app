@@ -31971,6 +31971,11 @@ function fireSApplyLifecycleUxLabels() {
 
     const stats = qs('#mainCommandCentre .main-command-stats');
     if (stats) stats.style.setProperty('display','none','important');
+    const ownerKpis = byId('fireSOwnerKpiRow');
+    if (ownerKpis) {
+      ownerKpis.hidden = true;
+      ownerKpis.style.setProperty('display','none','important');
+    }
 
     ['cmdInspectionsBtn','cmdScheduleBtn'].forEach(show);
     ['cmdReportsBtn','cmdCompanyBtn','cmdServicesBtn','cmdDashboardBtn','cmdFindingsBtn','cmdOverdueBtn'].forEach(hide);
@@ -31992,7 +31997,13 @@ function fireSApplyLifecycleUxLabels() {
     setText('#mainCommandAccessStatus', `${companyName} · ${role() || 'user'}`);
 
     const stats = qs('#mainCommandCentre .main-command-stats');
-    if (stats) stats.style.display = '';
+    if (stats) stats.style.setProperty('display','none','important');
+    const ownerKpis = byId('fireSOwnerKpiRow');
+    if (ownerKpis) {
+      ownerKpis.hidden = false;
+      ownerKpis.style.setProperty('display','grid','important');
+    }
+    try { if (typeof window.fireSProductionRenderKpis === 'function') window.fireSProductionRenderKpis(); } catch (_) {}
 
     ['cmdInspectionsBtn','cmdScheduleBtn','cmdReportsBtn','cmdCompanyBtn','cmdServicesBtn','cmdDashboardBtn','cmdFindingsBtn','cmdOverdueBtn'].forEach(show);
     cardText('cmdInspectionsBtn','Inspection Gateway','Open, continue, search and manage inspections.');
@@ -33617,6 +33628,7 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function renderKpiCards(){
+    if (document.getElementById('fireSOwnerKpiRow')) return;
     const centre = document.getElementById('mainCommandCentre');
     if (!centre) return;
     const stats = centre.querySelector('.main-command-stats');
@@ -36550,16 +36562,51 @@ function fireSApplyLifecycleUxLabels() {
       <span class="fs-prod-kpi-filter">Filter: ${esc(filterText)}</span>
     </button>`;
   }
+  function isInspectorOrGuestHome(){
+    const b = document.body;
+    if (!b) return false;
+    return b.classList.contains('fire-s-role-inspector') ||
+      b.classList.contains('fire-s-inspector-v4') ||
+      b.classList.contains('fire-s-role-guest') ||
+      b.classList.contains('fire-s-role-pending-member') ||
+      b.classList.contains('fire-s-role-new-company');
+  }
+  function ensureOwnerKpiRow(){
+    let row = document.getElementById('fireSOwnerKpiRow');
+    const centre = document.getElementById('mainCommandCentre');
+    if (row) return row;
+    if (!centre) return null;
+    row = document.createElement('div');
+    row.id = 'fireSOwnerKpiRow';
+    row.className = 'fire-s-owner-kpi-row fs-prod-kpi-row';
+    row.setAttribute('aria-label', 'Fire-S dashboard summary');
+    const stats = centre.querySelector('.main-command-stats');
+    const desktop = document.getElementById('fireSDesktopAccess');
+    if (stats) centre.insertBefore(row, stats);
+    else if (desktop && desktop.parentNode === centre) desktop.after(row);
+    else centre.appendChild(row);
+    return row;
+  }
+  function hideLegacyStatsRow(){
+    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+    if (!stats || stats.id === 'fireSOwnerKpiRow') return;
+    stats.hidden = true;
+    stats.setAttribute('aria-hidden', 'true');
+    stats.style.setProperty('display', 'none', 'important');
+  }
   function renderKpis(){
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
     const homeVisible = homeSection && getComputedStyle(homeSection).display !== 'none';
     if (gatewayVisible && !homeVisible) return;
-    const centre = document.getElementById('mainCommandCentre');
-    if (!centre) return;
-    const row = centre.querySelector('.main-command-stats');
+    const row = ensureOwnerKpiRow();
     if (!row) return;
+    if (isInspectorOrGuestHome()) {
+      row.hidden = true;
+      row.style.setProperty('display', 'none', 'important');
+      return;
+    }
     const c = counts();
     const html = [
       card('compliant', c.compliant, 'Compliant Sites', 'Compliant', '✅'),
@@ -36568,18 +36615,14 @@ function fireSApplyLifecycleUxLabels() {
       card('month', c.month, 'Inspections This Month', 'This Month', '📆')
     ].join('');
     if (row.getAttribute('data-fire-s-prod-kpis') !== html) {
-      row.classList.add('fs-prod-kpi-row');
+      row.classList.add('fs-prod-kpi-row', 'fire-s-owner-kpi-row');
       row.setAttribute('data-fire-s-prod-kpis', html);
       row.innerHTML = html;
     }
-    const inspectorHome =
-      document.body.classList.contains('fire-s-role-inspector') ||
-      document.body.classList.contains('fire-s-inspector-v4');
-    if (!inspectorHome) {
-      row.hidden = false;
-      row.removeAttribute('aria-hidden');
-      row.style.setProperty('display', 'grid', 'important');
-    }
+    row.hidden = false;
+    row.removeAttribute('aria-hidden');
+    row.style.setProperty('display', 'grid', 'important');
+    hideLegacyStatsRow();
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
       subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
@@ -36636,6 +36679,17 @@ function fireSApplyLifecycleUxLabels() {
     });
   });
   try { obs.observe(document.body, { childList: true, subtree: true }); } catch (_) {}
+  setInterval(() => {
+    try {
+      if (isInspectorOrGuestHome()) return;
+      const home = document.getElementById('homeSection');
+      if (!home || getComputedStyle(home).display === 'none') return;
+      const row = document.getElementById('fireSOwnerKpiRow');
+      if (!row || row.hidden || row.style.display === 'none' || !row.querySelector('.fs-prod-kpi-card')) {
+        renderKpis();
+      }
+    } catch (_) {}
+  }, 800);
 })();
 
 /* =====================================================
