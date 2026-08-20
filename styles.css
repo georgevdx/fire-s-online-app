@@ -2963,18 +2963,9 @@ button.readiness-chip:focus {
   min-width: 34px;
 }
 
-.beta-badge {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 6px;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: #fff3e0;
-  color: #8a3b00;
-  border: 1px solid #ffb74d;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
+.beta-badge,
+.rc-badge {
+  display: none !important;
 }
 
 .beta-feedback-list {
