@@ -502,7 +502,7 @@
     const gap = 5;
     const barW = Math.max(10, Math.min(26, plotW / rows.length - gap));
     const bars = rows.map((item, index) => {
-      const h = Math.max(2, Math.round((item.value / top) * plotH));
+      const h = Number(item.value) ? Math.max(2, Math.round((item.value / top) * plotH)) : 0;
       const x = padL + index * (plotW / rows.length) + (plotW / rows.length - barW) / 2;
       const y = padT + plotH - h;
       return `
