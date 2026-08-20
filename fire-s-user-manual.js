@@ -301,9 +301,9 @@
         <p>On a computer, type the desktop address from Home. After login, Fire-S opens the Management dashboard in a wide layout. Inspectors keep the phone layout. Access (login) still shows first if you are not signed in.</p>
         <p>Turn a tablet sideways, or open Fire-S on a laptop / PC. Graphs are built from your inspection data in a Power BI-style layout. Each graph has axis labels so you can see what is counted, and a short line of meaning under the title.</p>
         <ul>
-          <li>Status mix, overdue vs completed, findings by category</li>
-          <li>Inspector comparison, occupancy, GPS coverage</li>
-          <li>Monthly trend, weekday pattern, photos, Q&amp;A completion</li>
+          <li>Inspection status (bar chart), Completed vs overdue</li>
+          <li>Findings by category — named checklist sections</li>
+          <li>Inspector workload, occupancy mix, monthly trend, weekday pattern</li>
           <li><strong>Download Power BI data</strong> — CSV files for Microsoft Power BI Desktop</li>
         </ul>
       </article>

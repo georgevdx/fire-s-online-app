@@ -113,8 +113,48 @@
     return lower(item?.answer || item?.value);
   }
 
+  function checklistForProject(project) {
+    try {
+      if (typeof getChecklistForProject === 'function') {
+        const rows = getChecklistForProject(project);
+        if (Array.isArray(rows) && rows.length) return rows;
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  function checklistItemFor(item, checklist) {
+    const list = Array.isArray(checklist) ? checklist : [];
+    const idx = Number(item?.itemIndex);
+    if (Number.isFinite(idx) && idx >= 0 && list[idx]) return list[idx];
+    const number = text(item?.itemNumber);
+    if (number) {
+      const byNumber = list.find(row => String(row['Item Number']) === number);
+      if (byNumber) return byNumber;
+    }
+    const question = text(item?.question || item?.text || item?.title || item?.['Checklist Item']);
+    if (question) {
+      const byText = list.find(row => text(row['Checklist Item']) === question);
+      if (byText) return byText;
+    }
+    return null;
+  }
+
+  function isGateChecklistItem(row) {
+    return !!(row && (row['Gate Question'] === true || row.gateQuestion === true));
+  }
+
+  function isFindingItem(item, checklist) {
+    const value = answerValue(item);
+    const assessment = lower(item?.assessment);
+    const flagged = value === 'no' || assessment === 'action required';
+    if (!flagged) return false;
+    return !isGateChecklistItem(checklistItemFor(item, checklist));
+  }
+
   function noCount(project) {
-    return answers(project).filter(item => answerValue(item) === 'no').length;
+    const checklist = checklistForProject(project);
+    return answers(project).filter(item => isFindingItem(item, checklist)).length;
   }
 
   function yesCount(project) {
@@ -131,19 +171,13 @@
     ).length;
   }
 
-  function categoryOf(item) {
-    const t = lower(item?.question || item?.text || item?.title);
-    if (/escape|egress|exit|stair|corridor|route/.test(t)) return 'Means of Escape';
-    if (/sprinkler|pump|hydrant|hose|water|booster|valve/.test(t)) return 'Fire Water';
-    if (/alarm|detect|detector|mcp|call point|sounder|panel/.test(t)) return 'Detection / Alarm';
-    if (/extinguisher|equipment|service tag/.test(t)) return 'Fire Equipment';
-    if (/emergency light|exit sign|signage/.test(t)) return 'Lighting / Signage';
-    if (/door|self closing|smoke seal/.test(t)) return 'Fire Doors';
-    if (/hazard|flammable|chemical|fuel|gas/.test(t)) return 'Hazards';
-    if (/electrical|distribution board|cable|generator/.test(t)) return 'Electrical';
-    if (/housekeeping|storage|combustible|waste/.test(t)) return 'Housekeeping';
-    if (/document|certificate|coc|logbook|drill|plan/.test(t)) return 'Documentation';
-    return 'General';
+  function categoryOf(item, checklist) {
+    const named = text(item?.Section || item?.sectionName || item?.section);
+    if (named) return named;
+    const row = checklistItemFor(item, checklist);
+    const fromRow = text(row?.Section || row?.sectionName);
+    if (fromRow) return fromRow;
+    return 'Unspecified category';
   }
 
   function inspectorName(project) {
@@ -287,8 +321,11 @@
       answered += answeredCount(project);
       questions += answers(project).length;
 
+      const checklist = checklistForProject(project);
       answers(project).forEach(item => {
-        if (answerValue(item) === 'no') increment(categories, categoryOf(item));
+        if (isFindingItem(item, checklist)) {
+          increment(categories, categoryOf(item, checklist));
+        }
       });
 
       const when = activityDate(project);
@@ -394,14 +431,28 @@
     }).join('');
   }
 
-  function barChart(items, color, axis) {
-    const rows = (items || []).slice(0, 8);
+  function barFill(color, index) {
+    if (Array.isArray(color)) return color[index % color.length];
+    return color || PALETTE[index % PALETTE.length];
+  }
+
+  function formatTickLabel(label, maxChars) {
+    const raw = String(label || '');
+    const limit = Number(maxChars) > 0 ? Number(maxChars) : 14;
+    if (raw.length <= limit) return raw;
+    return `${raw.slice(0, Math.max(1, limit - 1))}…`;
+  }
+
+  function barChart(items, color, axis, options) {
+    const maxRows = Number(options && options.maxRows) > 0 ? Number(options.maxRows) : 8;
+    const labelMax = Number(options && options.labelMax) > 0 ? Number(options.labelMax) : 14;
+    const rows = (items || []).slice(0, maxRows);
     if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
     const yTitle = (axis && axis.y) || 'Count';
     const xTitle = (axis && axis.x) || 'Value';
     const width = 460;
-    const rowH = 20;
-    const padL = 108;
+    const rowH = Number(options && options.rowH) > 0 ? Number(options.rowH) : 20;
+    const padL = Number(options && options.padL) > 0 ? Number(options.padL) : 108;
     const padR = 28;
     const padT = 6;
     const padB = 34;
@@ -413,8 +464,8 @@
       const y = padT + index * rowH;
       const w = Math.max(2, Math.round((item.value / top) * plotW));
       return `
-        <text class="pbi-tick" x="${padL - 8}" y="${y + 13}" text-anchor="end" font-size="9" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>
-        <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${color || PALETTE[index % PALETTE.length]}" rx="1.5"></rect>
+        <text class="pbi-tick" x="${padL - 8}" y="${y + 13}" text-anchor="end" font-size="9" fill="#605e5c">${esc(formatTickLabel(item.label, labelMax))}</text>
+        <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${barFill(color, index)}" rx="1.5"></rect>
         <text x="${padL + w + 4}" y="${y + 14}" font-size="9" fill="#252423">${item.value}</text>
       `;
     }).join('');
@@ -455,7 +506,7 @@
       const x = padL + index * (plotW / rows.length) + (plotW / rows.length - barW) / 2;
       const y = padT + plotH - h;
       return `
-        <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color || PALETTE[index % PALETTE.length]}" rx="1.5"></rect>
+        <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${barFill(color, index)}" rx="1.5"></rect>
         <text x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${item.value}</text>
         <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>
       `;
@@ -508,6 +559,95 @@
       <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
       <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
     </svg>`;
+  }
+
+  function groupedColumnChart(rows, series, axis) {
+    const list = (rows || []).slice(0, 8);
+    const seriesList = Array.isArray(series) && series.length
+      ? series
+      : [
+          { key: 'Completed', color: '#0F7B0F' },
+          { key: 'Overdue', color: '#b71c1c' }
+        ];
+    if (!list.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
+    const yTitle = (axis && axis.y) || 'Inspections';
+    const xTitle = (axis && axis.x) || 'Inspector';
+    const width = 480;
+    const height = 210;
+    const padL = 42;
+    const padR = 10;
+    const padT = 16;
+    const padB = 56;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const peak = maxValue(list.flatMap(row => seriesList.map(item => ({
+      value: Number(row[item.key] != null ? row[item.key] : row.values && row.values[item.key]) || 0
+    }))));
+    const { top, ticks } = axisTicks(peak);
+    const groupW = plotW / Math.max(1, list.length);
+    const gap = 3;
+    const barW = Math.max(6, Math.min(18, (groupW - 10) / seriesList.length - gap));
+    const bars = list.map((row, groupIndex) => {
+      const groupX = padL + groupIndex * groupW;
+      const seriesBars = seriesList.map((item, seriesIndex) => {
+        const value = Number(row[item.key] != null ? row[item.key] : row.values && row.values[item.key]) || 0;
+        const h = value ? Math.max(2, Math.round((value / top) * plotH)) : 0;
+        const x = groupX + (groupW - (seriesList.length * (barW + gap) - gap)) / 2 + seriesIndex * (barW + gap);
+        const y = padT + plotH - h;
+        return `
+          <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${item.color || barFill(null, seriesIndex)}" rx="1.5"></rect>
+          <text x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${value}</text>
+        `;
+      }).join('');
+      return `
+        ${seriesBars}
+        <text class="pbi-tick" x="${groupX + groupW / 2}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(formatTickLabel(row.label, 16))}</text>
+      `;
+    }).join('');
+    const legend = seriesList.map(item =>
+      `<span><i class="pbi-swatch" style="background:${item.color}"></i>${esc(item.key)}</span>`
+    ).join('');
+    return `<div>
+      <svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="196" role="img" aria-label="${esc(seriesList.map(item => item.key).join(' vs '))} by ${esc(xTitle)}">
+        ${yGrid(padL, padT, plotW, plotH, ticks, top)}
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+        <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+        ${bars}
+        <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
+        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 22}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+      </svg>
+      <div class="pbi-legend pbi-series-legend">${legend}</div>
+    </div>`;
+  }
+
+  function statusBarItems(status) {
+    return ['Completed', 'Overdue', 'In progress', 'Draft'].map(label => ({
+      label,
+      value: Number(status && status[label]) || 0
+    }));
+  }
+
+  function completedVsOverdueRows(stats) {
+    const names = Array.from(new Set(
+      []
+        .concat((stats.inspectorDone || []).map(item => item.label))
+        .concat((stats.inspectorOverdue || []).map(item => item.label))
+        .concat((stats.inspectors || []).map(item => item.label))
+    ));
+    const doneMap = Object.fromEntries((stats.inspectorDone || []).map(item => [item.label, item.value]));
+    const overdueMap = Object.fromEntries((stats.inspectorOverdue || []).map(item => [item.label, item.value]));
+    const rows = names.map(label => ({
+      label,
+      Completed: Number(doneMap[label]) || 0,
+      Overdue: Number(overdueMap[label]) || 0
+    })).filter(row => row.Completed || row.Overdue);
+    rows.sort((a, b) => (b.Completed + b.Overdue) - (a.Completed + a.Overdue));
+    if (rows.length) return rows;
+    return [{
+      label: 'Company',
+      Completed: Number(stats.status && stats.status.Completed) || 0,
+      Overdue: Number(stats.status && stats.status.Overdue) || 0
+    }];
   }
 
   function donutChart(map) {
@@ -599,13 +739,15 @@
   function findingRows(list) {
     const rows = [];
     list.forEach(project => {
+      const checklist = checklistForProject(project);
       answers(project).forEach(item => {
-        if (answerValue(item) !== 'no') return;
+        if (!isFindingItem(item, checklist)) return;
+        const row = checklistItemFor(item, checklist);
         rows.push({
           site: siteName(project),
           inspector: inspectorName(project),
-          category: categoryOf(item),
-          question: text(item?.question || item?.text || item?.title),
+          category: categoryOf(item, checklist),
+          question: text(item?.question || item?.text || item?.title || row?.['Checklist Item']),
           inspectionDate: dateKey(project?.inspectionDate || activityDate(project))
         });
       });
@@ -657,13 +799,19 @@
         ${kpi('Inspections', stats.total, '', 'In this filter')}
         ${kpi('Completed', stats.status.Completed, 'is-ok', `${stats.compliance}% of total`)}
         ${kpi('Overdue', stats.status.Overdue, 'is-warn', 'Past due date')}
-        ${kpi('Findings', stats.no, stats.no ? 'is-warn' : '', 'No answers')}
+        ${kpi('Findings', stats.no, stats.no ? 'is-warn' : '', 'Action required')}
         ${kpi('Q&A complete', `${stats.qaRate}%`, '', `${stats.answered}/${stats.questions || 0}`)}
         ${kpi('Photos', stats.photoTotal, '', `${stats.avgPhotos} avg`)}
       </div>
       <div class="pbi-grid">
-        ${tile('Inspection status', 'Share of completed, overdue, in progress and draft', donutChart(stats.status))}
-        ${tile('Question answers', 'Yes, No and N/A across the checklist', donutChart({ Yes: stats.yes, No: stats.no, 'N/A': stats.na }))}
+        ${tile(
+          'Inspection status',
+          'Completed, overdue, in progress and draft as a bar chart',
+          columnChart(statusBarItems(stats.status), ['#0F7B0F', '#b71c1c', '#118DFF', '#605e5c'], {
+            y: 'Inspections',
+            x: 'Status'
+          })
+        )}
         ${tile(
           '12-month inspection volume',
           'How many inspections were worked in each month',
@@ -676,14 +824,14 @@
           barChart(stats.inspectors, '#F2C811', { y: 'Inspector', x: 'Inspections' })
         )}
         ${tile(
-          'Findings by inspector',
-          'No answers recorded by inspector',
-          barChart(stats.inspectorFindings, '#b71c1c', { y: 'Inspector', x: 'Findings' })
-        )}
-        ${tile(
           'Findings by category',
-          'No answers grouped by fire-safety topic',
-          barChart(stats.categories, '#CA5010', { y: 'Category', x: 'Findings' })
+          'Action required answers grouped by checklist section',
+          barChart(stats.categories, '#CA5010', { y: 'Category', x: 'Findings' }, {
+            maxRows: 16,
+            labelMax: 32,
+            padL: 186
+          }),
+          'is-wide'
         )}
         ${tile(
           'Occupancy mix',
@@ -695,31 +843,18 @@
           'When inspection work is dated',
           columnChart(stats.weekdays, '#00B7C3', { y: 'Inspections', x: 'Day of week' })
         )}
-        ${tile('GPS coverage', 'Sites with a captured map pin', donutChart({ Captured: stats.gpsYes, Missing: stats.gpsNo }))}
-        ${tile(
-          'Photos by inspector',
-          'Photo evidence count',
-          barChart(stats.inspectorPhotos, '#0F7B0F', { y: 'Inspector', x: 'Photos' })
-        )}
         ${tile(
           'Completed vs overdue',
-          'Outcome count by inspector',
-          barChart(stats.inspectorDone.map(item => ({
-            label: `${item.label} done`,
-            value: item.value
-          })).concat(stats.inspectorOverdue.map(item => ({
-            label: `${item.label} overdue`,
-            value: item.value
-          }))), '#118DFF', { y: 'Inspector', x: 'Inspections' })
-        )}
-        ${tile(
-          'Follow-up vs one-off',
-          'How much work is booked to return',
-          donutChart({
-            'Follow-up': stats.followUp,
-            Recurring: stats.recurring,
-            'One-off': Math.max(0, stats.total - stats.followUp)
-          })
+          'Green is Completed. Red is Overdue. Counted per inspector.',
+          groupedColumnChart(
+            completedVsOverdueRows(stats),
+            [
+              { key: 'Completed', color: '#0F7B0F' },
+              { key: 'Overdue', color: '#b71c1c' }
+            ],
+            { y: 'Inspections', x: 'Inspector' }
+          ),
+          'is-wide'
         )}
         ${tile('Sites needing attention', 'Highest findings first, then overdue', tableHtml(stats.sites), 'is-wide')}
       </div>
@@ -867,9 +1002,15 @@ in
   window.fireSDashboardCharts = {
     barChart,
     columnChart,
+    groupedColumnChart,
     lineChart,
     donutChart,
-    shortAxisLabel
+    shortAxisLabel,
+    categoryOf,
+    isFindingItem,
+    compute,
+    statusBarItems,
+    completedVsOverdueRows
   };
 
   if (document.readyState === 'loading') {

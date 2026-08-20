@@ -131,9 +131,12 @@
     ];
   }
 
-  function answerValue(rng, kind, index, total) {
+  function answerValue(rng, kind, index, total, item) {
     if (kind === 'scheduled') return '';
     if (kind === 'in-progress' && index > Math.floor(total * 0.55)) return '';
+    if (item && (item['Gate Question'] === true || item.gateQuestion === true)) {
+      return rng() < 0.28 ? 'N/A' : 'Yes';
+    }
     const roll = rng();
     if (kind === 'clear') return roll < 0.08 ? 'N/A' : 'Yes';
     if (kind === 'attention' || kind === 'overdue') {
@@ -164,7 +167,7 @@
   function buildAnswers(rng, occupancy, kind) {
     const checklist = checklistFor(occupancy);
     return checklist.map((item, index) => {
-      const answer = answerValue(rng, kind, index, checklist.length);
+      const answer = answerValue(rng, kind, index, checklist.length, item);
       return {
         itemIndex: index,
         itemNumber: item['Item Number'] || String(index + 1),

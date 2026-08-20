@@ -192,6 +192,13 @@
   gap: 6px;
 }
 
+.pbi-series-legend {
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px 16px;
+  margin-top: 2px;
+}
+
 .pbi-swatch {
   width: 8px;
   height: 8px;
