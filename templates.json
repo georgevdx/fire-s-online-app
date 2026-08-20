@@ -48,21 +48,6 @@
               "All"
             ],
             "Track Expiry": false
-          },
-          {
-            "Item Number": "4",
-            "Assessment": "Maintenance and servicing",
-            "Checklist Item": "Are they maintained and serviced? Record the expiry date.",
-            "Description": "Check seals, service tags and records. Enter the expiry date shown on the equipment.",
-            "Non Compliance Text": "Portable fire extinguishers are not maintained or serviced, or the expiry date is missing or overdue.",
-            "Corrective Action": "Arrange servicing by a competent provider and keep the expiry date on record.",
-            "Reference": "SANS 10400-T, clause 4.37.3; SANS 10105-1 and SANS 1475-1 (inspection, maintenance and servicing)",
-            "Severity": "High",
-            "Answer Type": "Professional Assessment",
-            "Applicable To": [
-              "All"
-            ],
-            "Track Expiry": true
           }
         ]
       },
@@ -117,12 +102,32 @@
           },
           {
             "Item Number": "10",
-            "Assessment": "Condition, maintenance and servicing",
-            "Checklist Item": "Are they in sound condition, maintained and serviced? Record the expiry date.",
-            "Description": "Check overall condition, seals, service tags and records. Enter the expiry date shown on the equipment.",
-            "Non Compliance Text": "Fire hose reels are damaged, not maintained or serviced, or the expiry date is missing or overdue.",
-            "Corrective Action": "Repair where needed, arrange servicing by a competent provider and keep the expiry date on record.",
-            "Reference": "SANS 10400-T, clause 4.34.2; SANS 10105-2 and SANS 1475-2 (condition, inspection, testing and maintenance of fire hose reels)",
+            "Assessment": "Condition",
+            "Checklist Item": "Are they in sound condition?",
+            "Description": "Check the hose, drum, cabinet, valve and nozzle for damage, leaks or parts that cannot be used.",
+            "Non Compliance Text": "Fire hose reels are damaged, incomplete or not in a usable condition.",
+            "Corrective Action": "Repair or replace damaged hose reel components.",
+            "Reference": "SANS 10400-T, clause 4.34.2; SANS 543 and SANS 10105-2 (condition of fire hose reels)",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
+          }
+        ]
+      },
+      {
+        "sectionName": "Fire Equipment Servicing",
+        "items": [
+          {
+            "Item Number": "11",
+            "Assessment": "Servicing",
+            "Checklist Item": "Are the fire extinguishers, hose reels and hydrants serviced? Record the expiry date.",
+            "Description": "These items are normally serviced together. Check the service tags and enter the expiry date. If a type is not on site, still record the date for the equipment that is present.",
+            "Non Compliance Text": "Fire extinguishers, hose reels and/or hydrants are not serviced, or the expiry date is missing or overdue.",
+            "Corrective Action": "Arrange servicing by a competent provider and keep the expiry date on record.",
+            "Reference": "SANS 1475-1; SANS 1475-2; SANS 10105-1; SANS 10105-2; SANS 1128-1 (servicing of portable fire extinguishers, hose reels and hydrants)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -172,25 +177,44 @@
         "sectionName": "Fixed Fire Suppression Systems",
         "items": [
           {
-            "Item Number": "17",
-            "Checklist Item": "Are sprinkler, gas suppression or fixed firefighting systems accessible and free from visible impairment?",
-            "Non Compliance Text": "Fixed firefighting systems were inaccessible, impaired and/or showed visible signs of damage, isolation or non-operational condition.",
-            "Reference": "SANS 10400-T, SANS 10287, SANS 246, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Ensure fixed firefighting systems remain accessible, operational and free from visible impairment, damage or unauthorised isolation.",
+            "Item Number": "16",
+            "Assessment": "Requirement",
+            "Checklist Item": "Are fixed fire suppression systems required on these premises?",
+            "Description": "Confirm whether sprinkler, gas suppression or other automatic fire suppression is required. If it is not required, choose No, not required. The remaining suppression questions will then be hidden and will not create findings.",
+            "Non Compliance Text": "Fixed fire suppression systems are required on these premises but have not been provided or assessed.",
+            "Corrective Action": "Provide fixed fire suppression where required, or confirm it is not required for these premises.",
+            "Reference": "SANS 10400-T; SANS 10287; SANS 246; applicable municipal fire safety by-laws",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
+            ],
+            "Track Expiry": false,
+            "Gate Question": true
+          },
+          {
+            "Item Number": "17",
+            "Assessment": "Servicing",
+            "Checklist Item": "Are the fixed fire suppression systems serviced? Record the expiry date.",
+            "Description": "Sprinklers, gas suppression and other automatic systems often have a different service date from portable fire equipment. Enter the expiry date shown on the system or service record.",
+            "Non Compliance Text": "Fixed fire suppression systems are not serviced, or the expiry date is missing or overdue.",
+            "Corrective Action": "Arrange servicing by a competent provider and keep the expiry date on record.",
+            "Reference": "SANS 10287; SANS 246; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": true
           },
           {
             "Item Number": "18",
-            "Checklist Item": "Are control valves, panels or system interfaces accessible and not tampered with?",
-            "Non Compliance Text": "Control valves, fire system panels and/or system interfaces were inaccessible, tampered with or not adequately protected from interference.",
-            "Reference": "SANS 10400-T, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Maintain fire protection control valves, panels and interfaces accessible, secured and protected against tampering or unauthorised interference.",
+            "Checklist Item": "Are the systems accessible, free from visible impairment, and are control valves not tampered with?",
+            "Non Compliance Text": "Fixed firefighting systems were inaccessible, impaired, isolated, or control valves and panels were tampered with.",
+            "Reference": "SANS 10400-T, SANS 10287, SANS 246, Applicable Municipal Fire Safety By-laws",
+            "Corrective Action": "Keep fixed firefighting systems accessible and operational, and protect control valves and panels against tampering.",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
             ]
