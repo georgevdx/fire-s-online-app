@@ -877,7 +877,9 @@
     const padB = 40;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
-    const { top, ticks } = axisTicks(maxValue(rows));
+    const { top, ticks } = axis && Number(axis.top) > 0
+      ? { top: Number(axis.top), ticks: [0, 25, 50, 75, 100].map(v => Math.round((Number(axis.top) * v) / 100)) }
+      : axisTicks(maxValue(rows));
     const step = rows.length > 1 ? plotW / (rows.length - 1) : 0;
     const points = rows.map((item, index) => {
       const x = padL + index * step;
@@ -1431,7 +1433,7 @@
           ${tile(
             'Compliance trend',
             'Compliant share of completed inspections each month',
-            lineChart(ops.trend, '#0F7B0F', { y: 'Compliance %', x: 'Month' }),
+            lineChart(ops.trend, '#0F7B0F', { y: 'Compliance %', x: 'Month', top: 100 }),
             'is-chart'
           )}
         </div>
