@@ -374,7 +374,7 @@
           </div>
         </div>
         <div class="report-app-mark">
-          <img src="${FIRE_S_LOGO}" alt="Fire-S" style="width:22px;height:22px;max-width:22px;max-height:22px;opacity:0.28;object-fit:contain;">
+          <img src="${FIRE_S_LOGO}" alt="Fire-S" style="width:40px;height:40px;max-width:40px;max-height:40px;opacity:1;object-fit:contain;">
           <span>Prepared with Fire-S</span>
         </div>
       </div>

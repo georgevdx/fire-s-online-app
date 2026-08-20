@@ -2454,11 +2454,9 @@ button.readiness-chip:focus {
 }
 
 .report-app-mark img {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  opacity: 0.28;
-  filter: grayscale(0.2);
 }
 
 .report-app-mark span {
@@ -2466,10 +2464,9 @@ button.readiness-chip:focus {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #888;
+  color: #555;
   line-height: 1.15;
-  max-width: 64px;
-  opacity: 0.45;
+  max-width: 72px;
 }
 
 .report-app-mark-footer {
@@ -2481,14 +2478,13 @@ button.readiness-chip:focus {
 }
 
 .report-app-mark-footer img {
-  width: 18px;
-  height: 18px;
-  opacity: 0.28;
-  filter: grayscale(0.2);
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .report-app-mark-footer span {
-  opacity: 0.45;
+  color: #555;
 }
 
 .report-client-logo {
@@ -5084,11 +5080,12 @@ button.readiness-chip:focus {
 
 .pdf-export-mode .formal-letterhead .report-app-mark img,
 .pdf-export-mode .report-app-mark-footer img {
-  width: 22px !important;
-  height: 22px !important;
-  max-width: 22px !important;
-  max-height: 22px !important;
-  opacity: 0.28 !important;
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  opacity: 1 !important;
+  filter: none !important;
   object-fit: contain !important;
 }
 
@@ -5184,11 +5181,12 @@ button.readiness-chip:focus {
 .pdf-export-mode .formal-letterhead .report-app-mark img,
 .pdf-export-mode .report-app-mark-footer img {
   display: block !important;
-  width: 22px !important;
-  height: 22px !important;
-  max-width: 22px !important;
-  max-height: 22px !important;
-  opacity: 0.28 !important;
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 .pdf-page-inner {

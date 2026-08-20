@@ -1611,11 +1611,12 @@ function applyPdfLetterheadImageSizes(root) {
     img.style.setProperty('object-fit', 'contain', 'important');
   });
   root.querySelectorAll('.formal-letterhead .report-app-mark img, .report-app-mark-footer img').forEach(img => {
-    img.style.setProperty('width', '22px', 'important');
-    img.style.setProperty('height', '22px', 'important');
-    img.style.setProperty('max-width', '22px', 'important');
-    img.style.setProperty('max-height', '22px', 'important');
-    img.style.setProperty('opacity', '0.28', 'important');
+    img.style.setProperty('width', '40px', 'important');
+    img.style.setProperty('height', '40px', 'important');
+    img.style.setProperty('max-width', '40px', 'important');
+    img.style.setProperty('max-height', '40px', 'important');
+    img.style.setProperty('opacity', '1', 'important');
+    img.style.setProperty('filter', 'none', 'important');
     img.style.setProperty('object-fit', 'contain', 'important');
   });
 }
@@ -20041,7 +20042,7 @@ function buildClientReportLetterheadHtml(letterhead) {
         </div>
       </div>
       <div class="report-app-mark">
-        <img src="${escapeHtml(lh.fireSLogo || 'icon-192.png')}" alt="Fire-S" style="width:22px;height:22px;max-width:22px;max-height:22px;opacity:0.28;object-fit:contain;">
+        <img src="${escapeHtml(lh.fireSLogo || 'icon-192.png')}" alt="Fire-S" style="width:40px;height:40px;max-width:40px;max-height:40px;opacity:1;object-fit:contain;">
         <span>${escapeHtml(lh.fireSMark || 'Prepared with Fire-S')}</span>
       </div>
     </div>
@@ -20560,7 +20561,7 @@ reportContent.innerHTML = `
           ${escapeHtml(reportLetterhead.preparedLine)}
         </div>
         <div class="report-app-mark report-app-mark-footer">
-          <img src="${escapeHtml(reportLetterhead.fireSLogo || 'icon-192.png')}" alt="Fire-S" style="width:22px;height:22px;max-width:22px;max-height:22px;opacity:0.28;object-fit:contain;">
+          <img src="${escapeHtml(reportLetterhead.fireSLogo || 'icon-192.png')}" alt="Fire-S" style="width:40px;height:40px;max-width:40px;max-height:40px;opacity:1;object-fit:contain;">
           <span>${escapeHtml(reportLetterhead.fireSMark || 'Prepared with Fire-S')}</span>
         </div>
       </div>
