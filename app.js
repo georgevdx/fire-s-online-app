@@ -61,7 +61,7 @@ let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.1 - Exec Reports card';
+const APP_VERSION = 'RC 1.2.1 - Hide Exec Reports card';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -23866,39 +23866,12 @@ window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
 
 
 // =====================================================
-// FIRE-S EXEC REPORTS CARD RESTORED
-// Purpose: Owner / Manager / Viewer see Reports as the fourth Home card
-// (after Schedule, before Company details). Inspectors still do not.
+// FIRE-S EXEC REPORTS CARD HIDDEN
+// Purpose: keep Reports off the Exec / Operations Command Centre.
+// Client PDFs stay on the inspection itself (Export PDF).
 // =====================================================
 function shouldShowReportsCommandCard() {
-  const body = document.body;
-  if (!body) return false;
-
-  const cleanRole = String(body.dataset.fireSCleanHomeRole || '')
-    .toLowerCase()
-    .replace(/-/g, '_');
-  if (['owner', 'company_owner', 'super_admin', 'manager', 'viewer'].includes(cleanRole)) {
-    return true;
-  }
-
-  if (
-    body.classList.contains('fire-s-role-owner') ||
-    body.classList.contains('fire-s-role-manager') ||
-    body.classList.contains('fire-s-role-viewer') ||
-    body.classList.contains('fire-s-role-management')
-  ) {
-    return true;
-  }
-
-  const profileRole = String(
-    (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.role) ||
-      window.currentUserProfile?.role ||
-      ''
-  )
-    .toLowerCase()
-    .replace(/-/g, '_');
-
-  return ['company_owner', 'super_admin', 'manager', 'viewer', 'owner'].includes(profileRole);
+  return false;
 }
 
 function syncReportsCommandCardForExecHome() {
@@ -32264,7 +32237,7 @@ function fireSApplyLifecycleUxLabels() {
     }
     try { if (typeof window.fireSProductionRenderKpis === 'function') window.fireSProductionRenderKpis(); } catch (_) {}
 
-    ['cmdInspectionsBtn','cmdScheduleBtn','cmdReportsBtn','cmdCompanyBtn','cmdServicesBtn','cmdDashboardBtn','cmdFindingsBtn','cmdOverdueBtn'].forEach(show);
+    ['cmdInspectionsBtn','cmdScheduleBtn','cmdCompanyBtn','cmdServicesBtn','cmdDashboardBtn','cmdFindingsBtn','cmdOverdueBtn'].forEach(show);
     cardText('cmdInspectionsBtn','Inspection Gateway','Open, continue, search and manage inspections.');
     cardText('cmdScheduleBtn','Schedule','Create new-site bookings and review follow-ups.');
   }

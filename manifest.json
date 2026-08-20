@@ -1,7 +1,7 @@
 {
   "name": "Fire-S Professional Fire Safety Platform",
   "short_name": "Fire-S",
-  "start_url": "./?v=107-17-exec-reports",
+  "start_url": "./?v=107-18-hide-exec-reports",
   "scope": ".",
   "display": "standalone",
   "background_color": "#050505",

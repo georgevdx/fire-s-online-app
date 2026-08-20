@@ -590,6 +590,7 @@
     setBetaPanelsVisible(false);
 
     ALL_CMD_IDS.forEach(show);
+    hide('cmdReportsBtn');
 
     cardText(
       'cmdInspectionsBtn',
@@ -699,6 +700,7 @@
     setBetaPanelsVisible(role === 'super_admin');
 
     ALL_CMD_IDS.forEach(show);
+    hide('cmdReportsBtn');
 
     // Force Gateway visible even if older inspector CSS left it hidden.
     const grid = document.querySelector('#mainCommandCentre .main-command-grid');
@@ -801,7 +803,7 @@
     setBetaPanelsVisible(false);
 
     show('cmdInspectionsBtn');
-    show('cmdReportsBtn');
+    hide('cmdReportsBtn');
     show('cmdDashboardBtn');
     show('cmdFindingsBtn');
     show('cmdOverdueBtn');

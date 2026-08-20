@@ -220,7 +220,7 @@
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>
-        <p>Under those numbers, the fourth big button is <strong>Reports</strong> — after Schedule, before Company details. Inspectors do not see this button. Management dashboard is graphs. Reports is the list of completed inspections for the client PDF.</p>
+        <p>There is no Reports button on Home. Open a completed inspection from Inspection Gateway, then tap Export PDF.</p>
       </article>
 
       <article class="user-manual-chapter">
@@ -268,7 +268,7 @@
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
           <li><strong>Schedule</strong> — new-site bookings and follow-ups.</li>
-          <li><strong>Reports</strong> — Owner / Manager Home, fourth button. Opens completed inspections. Open one, then tap Export PDF.</li>
+          <li><strong>Reports</strong> — open a completed inspection in Inspection Gateway, then tap Export PDF. There is no Reports button on Home.</li>
           <li><strong>Support</strong> — request help or send a review request.</li>
         </ul>
       </article>
