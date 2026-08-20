@@ -960,7 +960,7 @@ function autoSaveProject() {
           : '',
 
       expiryDate: expiryField ? expiryField.value : null,
-      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
+      assessment: normaliseProfessionalAssessment(field.dataset.assessment, field.value)
     });
   });
 
@@ -10551,7 +10551,7 @@ function getCurrentFormProjectSnapshot() {
       answer: field.value,
       note: noteField ? noteField.value.trim() : '',
       expiryDate: expiryField ? expiryField.value : null,
-      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
+      assessment: normaliseProfessionalAssessment(field.dataset.assessment, field.value)
     });
   });
 
@@ -14479,7 +14479,7 @@ getEl('finalComments').value = project.finalComments || '';
       const field = document.getElementById(`check_${item.itemIndex}`);
      if (field) {
         field.value = item.answer;
-        field.dataset.assessment = item.assessment || (item.answer === 'Yes' ? 'Compliant' : item.answer === 'No' ? 'Action Required' : item.answer === 'N/A' ? 'N/A' : '');
+        field.dataset.assessment = normaliseProfessionalAssessment(item.assessment, item.answer);
      }
 
       const noteField = document.getElementById(`note_${item.itemIndex}`);
@@ -14494,7 +14494,7 @@ getEl('finalComments').value = project.finalComments || '';
       }
 
       if (field) {
-        setProfessionalAssessment(item.itemIndex, field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : ''), { skipAutoSave: true });
+        setProfessionalAssessment(item.itemIndex, normaliseProfessionalAssessment(field.dataset.assessment, field.value), { skipAutoSave: true });
       }
     });
   }
@@ -15070,7 +15070,7 @@ const finalComments = getEl('finalComments').value.trim();
           : '',
 
       expiryDate: expiryField ? expiryField.value : null,
-      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
+      assessment: normaliseProfessionalAssessment(field.dataset.assessment, field.value)
     });
   });
 
@@ -15915,7 +15915,7 @@ function renderChecklist(selected) {
         <button type="button" onclick="expandAllSections()">Expand</button>
         <button type="button" onclick="collapseAllSections()">Collapse</button>
       </div>
-      <div id="answerSummary" class="answer-summary">Compliant: 0 | Action/Critical: 0 | N/A: 0</div>
+      <div id="answerSummary" class="answer-summary">Compliant: 0 | Action Required: 0 | N/A: 0</div>
     </div>
     <p class="checklist-expand-hint">Click <strong>Expand</strong> to access questions.</p>
     <div id="checklistSectionStatus" class="checklist-section-status-panel"></div>
@@ -16033,7 +16033,6 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
         <div class="professional-assessment" role="group" aria-label="Assessment status">
           <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Compliant</button>
           <button type="button" class="assessment-chip assessment-action" data-assessment="Action Required" onclick="setProfessionalAssessment(${originalIndex}, 'Action Required')">Action Required</button>
-          <button type="button" class="assessment-chip assessment-critical" data-assessment="Critical" onclick="setProfessionalAssessment(${originalIndex}, 'Critical')">Critical</button>
           <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">N/A</button>
         </div>
       `;
@@ -16235,17 +16234,7 @@ async function generateReport() {
       answer: field.value || 'Not answered',
       note: noteField ? noteField.value.trim() : '',
       expiryDate: expiryField ? expiryField.value : null,
-      assessment:
-        field.dataset.assessment ||
-        (
-          field.value === 'Yes'
-            ? 'Compliant'
-            : field.value === 'No'
-            ? 'Action Required'
-            : field.value === 'N/A'
-            ? 'N/A'
-            : 'Not answered'
-        )
+      assessment: normaliseProfessionalAssessment(field.dataset.assessment, field.value) || 'Not answered'
     });
   });
 
@@ -16411,7 +16400,7 @@ async function generateReport() {
       answer,
       note: itemNote,
       expiryDate: expiryField ? expiryField.value : null,
-      assessment: field.dataset.assessment || (field.value === 'Yes' ? 'Compliant' : field.value === 'No' ? 'Action Required' : field.value === 'N/A' ? 'N/A' : '')
+      assessment: normaliseProfessionalAssessment(field.dataset.assessment, field.value)
     });
 
     if (trackExpiry && expiryApplies && expiryDate) {
@@ -18699,30 +18688,46 @@ function collapseAllSections() {
   closeAllChecklistSections();
 }
 
+function normaliseProfessionalAssessment(assessment, answerValue) {
+  const raw = String(assessment || '').trim().toLowerCase();
+  if (raw === 'critical' || raw === 'action required') return 'Action Required';
+  if (raw === 'compliant') return 'Compliant';
+  if (raw === 'n/a' || raw === 'na' || raw === 'not applicable') return 'N/A';
+
+  const answer = String(answerValue || '').trim().toLowerCase();
+  if (answer === 'yes') return 'Compliant';
+  if (answer === 'no') return 'Action Required';
+  if (answer === 'n/a' || answer === 'na' || answer === 'not applicable') return 'N/A';
+  return '';
+}
+
 function setProfessionalAssessment(itemIndex, assessment, options = {}) {
   const selectEl = document.getElementById(`check_${itemIndex}`);
   if (!selectEl) return;
 
+  const normalised = String(assessment || '').trim()
+    ? normaliseProfessionalAssessment(assessment)
+    : '';
+
   const answerMap = {
     'Compliant': 'Yes',
     'Action Required': 'No',
-    'Critical': 'No',
     'N/A': 'N/A'
   };
 
-  selectEl.value = answerMap[assessment] || '';
-  selectEl.dataset.assessment = assessment || '';
+  selectEl.value = answerMap[normalised] || '';
+  selectEl.dataset.assessment = normalised;
 
   const row = selectEl.closest('.checklist-row');
   if (row) {
     row.querySelectorAll('.assessment-chip').forEach(button => {
-      button.classList.toggle('is-selected', button.dataset.assessment === assessment);
-      button.setAttribute('aria-pressed', button.dataset.assessment === assessment ? 'true' : 'false');
+      button.classList.toggle('is-selected', button.dataset.assessment === normalised);
+      button.setAttribute('aria-pressed', button.dataset.assessment === normalised ? 'true' : 'false');
     });
-    row.classList.toggle('has-critical', assessment === 'Critical');
+    row.classList.remove('has-critical');
     const note = row.querySelector('.professional-note');
     if (note) {
-      const needsDetail = assessment === 'Action Required' || assessment === 'Critical';
+      const needsDetail = normalised === 'Action Required';
       note.classList.toggle('is-required-visible', needsDetail);
       note.setAttribute('aria-hidden', needsDetail ? 'false' : 'true');
     }
@@ -19848,7 +19853,7 @@ function updateAnswerSummary() {
 
   const summary = document.getElementById("answerSummary");
   if (summary) {
-    summary.textContent = `Compliant: ${yes} | Action/Critical: ${no} | N/A: ${na}`;
+    summary.textContent = `Compliant: ${yes} | Action Required: ${no} | N/A: ${na}`;
   }
 
   updateChecklistSectionLabels();
@@ -20071,7 +20076,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   let compliantCount = 0;
   let actionRequiredCount = 0;
-  let criticalCount = 0;
   let naCount = 0;
   let actionSections = {};
   let nonCompliance = {};
@@ -20093,24 +20097,11 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     const answerValue =
       answer.answer || 'Not answered';
 
-    const answerLower =
-      String(answerValue).trim().toLowerCase();
-
-    const savedAssessment = String(answer.assessment || '').trim();
-    const assessment = savedAssessment || (
-      answerLower === 'yes'
-        ? 'Compliant'
-        : answerLower === 'no'
-        ? 'Action Required'
-        : answerLower === 'n/a'
-        ? 'N/A'
-        : 'Not answered'
-    );
+    const assessment = normaliseProfessionalAssessment(answer.assessment, answerValue) || 'Not answered';
     const assessmentLower = assessment.toLowerCase();
 
     if (assessmentLower === 'compliant') compliantCount++;
     if (assessmentLower === 'action required') actionRequiredCount++;
-    if (assessmentLower === 'critical') criticalCount++;
     if (assessmentLower === 'n/a') naCount++;
 
     const sectionName =
@@ -20123,24 +20114,21 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
         assessed: 0,
         compliant: 0,
         actionRequired: 0,
-        critical: 0,
         na: 0
       };
     }
 
-    if (assessmentLower !== 'not answered') sectionSummary[sectionName].assessed++;
+    sectionSummary[sectionName].assessed++;
     if (assessmentLower === 'compliant') sectionSummary[sectionName].compliant++;
     if (assessmentLower === 'action required') sectionSummary[sectionName].actionRequired++;
-    if (assessmentLower === 'critical') sectionSummary[sectionName].critical++;
     if (assessmentLower === 'n/a') sectionSummary[sectionName].na++;
 
-    if (assessmentLower === 'action required' || assessmentLower === 'critical') {
+    if (assessmentLower === 'action required') {
       if (!actionSections[sectionName]) {
-        actionSections[sectionName] = { total: 0, critical: 0 };
+        actionSections[sectionName] = { total: 0 };
       }
 
       actionSections[sectionName].total++;
-      if (assessmentLower === 'critical') actionSections[sectionName].critical++;
 
       if (!nonCompliance[sectionName]) {
         nonCompliance[sectionName] = [];
@@ -20148,20 +20136,20 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
       nonCompliance[sectionName].push({
         itemNumber,
-        assessment: assessmentLower === 'critical' ? 'Critical' : 'Action Required',
+        assessment: 'Action Required',
         assessmentName: item.Assessment || '',
         checklistItem: itemText,
         text: item["Non Compliance Text"] || itemText,
         note: answer.note || '',
         reference: item["Reference"] || '',
         correctiveAction: item["Corrective Action"] || '',
-        severity: assessmentLower === 'critical' ? 'Critical' : (item["Severity"] || 'Medium')
+        severity: item["Severity"] || 'Medium'
       });
     }
 
   });
 
-  const answeredCount = compliantCount + actionRequiredCount + criticalCount + naCount;
+  const answeredCount = compliantCount + actionRequiredCount + naCount;
 
   const photoReferencesByItem = reportPhotos.reduce((references, photo, photoIndex) => {
     const linkedItem = String(photo.linkedQuestion || '').trim();
@@ -20198,11 +20186,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   let riskRating = 'LOW RISK';
   let riskComment = 'No significant fire safety risks identified.';
 
-  if (criticalCount > 0) {
-    overallStatus = 'Critical Attention Required';
-    riskRating = 'HIGH RISK';
-    riskComment = 'Critical fire safety deficiencies were identified and require urgent corrective action.';
-  } else if (actionRequiredCount > 0) {
+  if (actionRequiredCount > 0) {
     overallStatus = 'Attention Required';
     riskRating = actionRequiredCount >= 5 ? 'HIGH RISK' : 'MEDIUM RISK';
     riskComment =
@@ -20213,9 +20197,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   const sectionSummaryHtml = Object.keys(sectionSummary).map(section => {
     const summary = sectionSummary[section];
-    const sectionStatus = summary.critical > 0
-      ? 'Critical'
-      : summary.actionRequired > 0
+    const sectionStatus = summary.actionRequired > 0
       ? 'Action Required'
       : 'Compliant';
 
@@ -20229,7 +20211,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
           <span>Criteria Assessed <b>${summary.assessed}</b></span>
           <span>Criteria Compliant <b>${summary.compliant}</b></span>
           <span>Criteria Requiring Action <b>${summary.actionRequired}</b></span>
-          <span>Critical Criteria <b>${summary.critical}</b></span>
           <span>Not Applicable <b>${summary.na}</b></span>
         </div>
       </div>

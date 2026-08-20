@@ -240,7 +240,7 @@
           <li><strong>Inspection Information</strong> — site name, address, occupancy, inspector, date.</li>
           <li><strong>GPS</strong> — capture the map pin so the street number can fill in.</li>
           <li><strong>Occupancy Requirements</strong> — read what that occupancy needs.</li>
-          <li><strong>Q&amp;A Checklist</strong> — tap <strong>Expand</strong> to open the questions. Answer Yes, No or N/A. No answers become findings.</li>
+          <li><strong>Q&amp;A Checklist</strong> — tap <strong>Expand</strong> to open the questions. Tap Compliant, Action Required or N/A. Action Required becomes a finding.</li>
           <li><strong>Photo Evidence</strong> — take or choose pictures. Add a short note on each photo.</li>
           <li><strong>Inspector Comments / Conclusion</strong> — write the close-out note.</li>
           <li><strong>Schedule Next Inspection</strong> — follow-up date or recurring cycle if needed.</li>

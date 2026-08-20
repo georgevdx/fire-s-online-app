@@ -41,15 +41,18 @@
     delete row.dataset.gateSavedAssessment;
     const itemIndex = Number(row.dataset.index);
     if (savedAnswer === undefined) return;
-    const assessment =
-      savedAssessment ||
-      (savedAnswer === 'Yes'
-        ? 'Compliant'
-        : savedAnswer === 'No'
-        ? 'Action Required'
-        : savedAnswer === 'N/A'
-        ? 'N/A'
-        : '');
+    const assessment = (() => {
+      const mapped =
+        savedAssessment ||
+        (savedAnswer === 'Yes'
+          ? 'Compliant'
+          : savedAnswer === 'No'
+          ? 'Action Required'
+          : savedAnswer === 'N/A'
+          ? 'N/A'
+          : '');
+      return String(mapped).toLowerCase() === 'critical' ? 'Action Required' : mapped;
+    })();
     if (typeof window.setProfessionalAssessment === 'function') {
       window.setProfessionalAssessment(itemIndex, assessment, {
         skipAutoSave: true,
