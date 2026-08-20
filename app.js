@@ -3099,7 +3099,9 @@ function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
   getChecklistSectionRows(sectionIndex).forEach(row => {
     row.classList.remove('question-hidden');
     row.classList.remove('active-checklist-question');
-    row.style.removeProperty('display');
+    if (!row.classList.contains('fire-s-gate-hidden')) {
+      row.style.removeProperty('display');
+    }
   });
 
   activeChecklistSectionIndex = sectionIndex;
@@ -3143,7 +3145,9 @@ function showChecklistQuestion(sectionIndex, position, shouldScroll = true) {
   rows.forEach(row => {
     row.classList.remove('question-hidden');
     row.classList.remove('active-checklist-question');
-    row.style.removeProperty('display');
+    if (!row.classList.contains('fire-s-gate-hidden')) {
+      row.style.removeProperty('display');
+    }
   });
 
   const nav = document.getElementById(`sectionNav_${sectionIndex}`);
@@ -10238,6 +10242,16 @@ function isExpiryTrackedChecklistItem(checklistItem) {
   );
 }
 
+function getChecklistExpiryLabel(checklistItem) {
+  const label = String(
+    checklistItem?.["Expiry Label"] ||
+    checklistItem?.ExpiryLabel ||
+    checklistItem?.expiryLabel ||
+    ''
+  ).trim();
+  return label || 'Expiry Date';
+}
+
 function isExpiryApplicableAnswer(answerValue) {
   return String(answerValue || '').trim().toLowerCase() !== 'n/a';
 }
@@ -16006,12 +16020,30 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
   sectionItems.forEach(({ item: c, originalIndex }) => {
     const itemId = `check_${originalIndex}`;
     const trackExpiry = isExpiryTrackedChecklistItem(c);
+    const isGateQuestion = c["Gate Question"] === true;
+    const expiryLabel = escapeHtml(getChecklistExpiryLabel(c));
+    const assessmentChips = isGateQuestion
+      ? `
+        <div class="professional-assessment" role="group" aria-label="Is this required">
+          <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Yes, required</button>
+          <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">No, not required</button>
+        </div>
+      `
+      : `
+        <div class="professional-assessment" role="group" aria-label="Assessment status">
+          <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Compliant</button>
+          <button type="button" class="assessment-chip assessment-action" data-assessment="Action Required" onclick="setProfessionalAssessment(${originalIndex}, 'Action Required')">Action Required</button>
+          <button type="button" class="assessment-chip assessment-critical" data-assessment="Critical" onclick="setProfessionalAssessment(${originalIndex}, 'Critical')">Critical</button>
+          <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">N/A</button>
+        </div>
+      `;
 
     html += `
       <div
         class="checklist-row"
         data-index="${originalIndex}"
         data-section-index="${sectionIndex}"
+        data-gate-question="${isGateQuestion ? 'true' : 'false'}"
       >
         <div class="note">
           <strong>Section:</strong> ${escapeHtml(sectionName)}
@@ -16029,12 +16061,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
           </div>
         ` : ''}
 
-        <div class="professional-assessment" role="group" aria-label="Assessment status">
-          <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Compliant</button>
-          <button type="button" class="assessment-chip assessment-action" data-assessment="Action Required" onclick="setProfessionalAssessment(${originalIndex}, 'Action Required')">Action Required</button>
-          <button type="button" class="assessment-chip assessment-critical" data-assessment="Critical" onclick="setProfessionalAssessment(${originalIndex}, 'Critical')">Critical</button>
-          <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">N/A</button>
-        </div>
+        ${assessmentChips}
 
         <select
           class="answer-select professional-answer-select"
@@ -16058,7 +16085,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 
         ${trackExpiry ? `
           <div class="expiry-wrapper">
-            <label>Expiry Date</label>
+            <label>${expiryLabel}</label>
 
             <input
               type="date"
@@ -16400,6 +16427,7 @@ async function generateReport() {
         itemNumber: item["Item Number"] || '',
         checklistItem: item["Checklist Item"] || '',
         expiryDate,
+        expiryLabel: getChecklistExpiryLabel(item),
         status: expiryStatus,
         label: expiryLabel
       });
@@ -16490,7 +16518,7 @@ async function generateReport() {
 
       ${
         trackExpiry && expiryApplies && expiryDate
-          ? `<br><strong>Expiry Date:</strong> ${escapeHtml(expiryDate)}`
+          ? `<br><strong>${escapeHtml(getChecklistExpiryLabel(item))}:</strong> ${escapeHtml(expiryDate)}`
           : ''
       }
 
@@ -16832,7 +16860,7 @@ const executiveSummaryHtml = `
             </div>
 
             <div>
-              <strong>Expiry Date:</strong>
+              <strong>${escapeHtml(item.expiryLabel || 'Expiry Date')}:</strong>
               ${escapeHtml(item.expiryDate)}
             </div>
 
@@ -18767,7 +18795,9 @@ function handleAnswerChange(selectEl, options = {}) {
     getChecklistSectionRows(sectionIndex).forEach(sectionRow => {
       sectionRow.classList.remove('question-hidden');
       sectionRow.classList.remove('active-checklist-question');
-      sectionRow.style.removeProperty('display');
+      if (!sectionRow.classList.contains('fire-s-gate-hidden')) {
+        sectionRow.style.removeProperty('display');
+      }
     });
 
     const nav = document.getElementById(`sectionNav_${sectionIndex}`);
@@ -18797,7 +18827,7 @@ function handleAnswerChange(selectEl, options = {}) {
       if (followUpFindingModeActive) return;
       mutations.forEach(mutation => {
         const row = mutation.target?.closest?.('.checklist-row');
-        if (row && row.classList.contains('question-hidden')) {
+        if (row && row.classList.contains('question-hidden') && !row.classList.contains('fire-s-gate-hidden')) {
           row.classList.remove('question-hidden');
         }
       });
