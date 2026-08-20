@@ -12378,8 +12378,10 @@ button,
   gap: 10px !important;
   align-items: stretch !important;
 }
-#mainCommandCentre .main-command-stats.fs-prod-kpi-row .fs-kpi-card,
-#mainCommandCentre .main-command-stats.fs-prod-kpi-row .main-stat-card {
+/* Hide leftover original stat tiles only. Do not hide .fs-kpi-card —
+   a later Home render can put those into this row, and hiding them made
+   Owner Command Centre cards vanish after a second. */
+#mainCommandCentre .main-command-stats.fs-prod-kpi-row .main-stat-card:not(.fs-kpi-card):not(.fs-prod-kpi-card) {
   display: none !important;
 }
 .fs-prod-kpi-card {

@@ -89,8 +89,21 @@ body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-gr
 }
 
 body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats,
-body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats {
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .main-command-stats.fs-prod-kpi-row,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-stats.fs-prod-kpi-row {
   display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .fs-prod-kpi-card,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .fs-prod-kpi-card,
+body.fire-s-clean-home.fire-s-role-owner #mainCommandCentre .fs-kpi-card,
+body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .fs-kpi-card {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Company name is the Home hero signal for Owner / Manager */

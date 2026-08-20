@@ -23293,11 +23293,14 @@ function cleanupDuplicateHomeKpiCards() {
   const centre = document.getElementById('mainCommandCentre');
   if (!centre) return;
 
-  // Hide the old duplicate row: Inspections / Open Action Items / Overdue / Photos.
-  const duplicateStats = centre.querySelector('.main-command-stats');
-  if (duplicateStats) {
-    duplicateStats.style.display = 'none';
-    duplicateStats.setAttribute('aria-hidden', 'true');
+  // Production Command Centre KPIs live in .main-command-stats.
+  // Older builds hid this row as a duplicate of the executive hero cards,
+  // which made Owner/Manager cards disappear a moment after Home loaded.
+  const stats = centre.querySelector('.main-command-stats');
+  if (stats) {
+    stats.hidden = false;
+    stats.removeAttribute('aria-hidden');
+    if (stats.style.display === 'none') stats.style.removeProperty('display');
   }
 
   // Remove visual beta/test clutter if any slipped back into Home.
@@ -28725,10 +28728,11 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   document.addEventListener('change', event => {
     if (event.target && event.target.id === 'photoInput') {
+      // Photo list is already rendered by handlePhotoUpload. A delayed
+      // rebuild here closed the Category / Linked-item dropdowns.
       setTimeout(() => {
         safePhotos().forEach(normalisePhoto);
         savePhotos();
-        if (typeof renderPhotos === 'function') renderPhotos();
       }, 800);
     }
   }, true);
@@ -28938,7 +28942,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   document.addEventListener('change', event => {
     if (event.target && event.target.id === 'photoInput') {
-      setTimeout(() => { window.fireSActivePhotoCategoryFilter = 'All'; if (typeof window.renderPhotos === 'function') window.renderPhotos(); }, 900);
+      window.fireSActivePhotoCategoryFilter = 'All';
     }
   }, true);
 
@@ -29127,7 +29131,6 @@ if (!window.fireSMobileSmartCardsApplied) {
     photo.linkedSection = option?.dataset?.section || '';
 
     savePhotos(photos);
-    if (typeof window.renderPhotos === 'function') window.renderPhotos();
   };
 
   window.setPhotoCategoryFilter = window.setPhotoCategoryFilter || function setPhotoCategoryFilter(category) {
@@ -29257,6 +29260,44 @@ if (!window.fireSMobileSmartCardsApplied) {
       setTimeout(markQuestionsWithPhotoCounts, 250);
     }
   }, 900);
+
+  (function keepPhotoDropdownsOpen() {
+    function photoFieldsBusy() {
+      const active = document.activeElement;
+      if (!active) return false;
+      const root = document.getElementById('photoPreview');
+      if (!root || !root.contains(active)) return false;
+      const tag = String(active.tagName || '').toLowerCase();
+      return tag === 'select' || tag === 'input' || tag === 'textarea';
+    }
+    window.fireSPhotoUiBusy = photoFieldsBusy;
+
+    const liveRender = window.renderPhotos;
+    if (typeof liveRender !== 'function' || liveRender.__fireSPhotoKeepOpen) return;
+
+    function renderPhotosKeepDropdowns() {
+      if (photoFieldsBusy()) {
+        window.__fireSPhotosRenderWhenIdle = true;
+        return;
+      }
+      window.__fireSPhotosRenderWhenIdle = false;
+      return liveRender.apply(this, arguments);
+    }
+    renderPhotosKeepDropdowns.__fireSPhotoKeepOpen = true;
+    window.renderPhotos = renderPhotosKeepDropdowns;
+    try { renderPhotos = renderPhotosKeepDropdowns; } catch (_) {}
+
+    document.addEventListener('focusout', function (event) {
+      if (!window.__fireSPhotosRenderWhenIdle) return;
+      const root = document.getElementById('photoPreview');
+      if (!root || !event.target || !root.contains(event.target)) return;
+      setTimeout(function () {
+        if (photoFieldsBusy() || !window.__fireSPhotosRenderWhenIdle) return;
+        window.__fireSPhotosRenderWhenIdle = false;
+        if (typeof window.renderPhotos === 'function') window.renderPhotos();
+      }, 0);
+    }, true);
+  })();
 
   window.FireSPhotoQuestionLinking1116D = {
     version: VERSION,
@@ -33580,6 +33621,12 @@ function fireSApplyLifecycleUxLabels() {
     if (!centre) return;
     const stats = centre.querySelector('.main-command-stats');
     if (!stats) return;
+    // Production KPI module already owns this row. Replacing it with
+    // .fs-kpi-card while .fs-prod-kpi-row stays on the row used to hide
+    // every card after the delayed 700ms Home refresh.
+    if (stats.classList.contains('fs-prod-kpi-row') || stats.querySelector('.fs-prod-kpi-card')) {
+      return;
+    }
     const counts = kpiCounts();
 
     stats.classList.add('fs-kpi-row');
@@ -36524,6 +36571,14 @@ function fireSApplyLifecycleUxLabels() {
       row.classList.add('fs-prod-kpi-row');
       row.setAttribute('data-fire-s-prod-kpis', html);
       row.innerHTML = html;
+    }
+    const inspectorHome =
+      document.body.classList.contains('fire-s-role-inspector') ||
+      document.body.classList.contains('fire-s-inspector-v4');
+    if (!inspectorHome) {
+      row.hidden = false;
+      row.removeAttribute('aria-hidden');
+      row.style.setProperty('display', 'grid', 'important');
     }
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {

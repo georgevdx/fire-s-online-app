@@ -280,10 +280,21 @@
     return 'guest';
   }
 
+  const STICKY_COMMAND_ROLES = ['company_owner', 'manager', 'super_admin'];
+
   function resolveHomeRole() {
-    const role = readRole() || lastRole || 'guest';
+    const role = readRole();
+    // Token refresh / profile reload can briefly look like a guest. Keep the
+    // Owner Command Centre cards up until a real SIGNED_OUT clears lastRole.
+    if (
+      !roleTestActive() &&
+      STICKY_COMMAND_ROLES.includes(lastRole) &&
+      (!role || role === 'guest' || role === 'pending_member')
+    ) {
+      return lastRole;
+    }
     if (role) lastRole = role;
-    return role;
+    return role || lastRole || 'guest';
   }
 
   window.resolveFireSHomeRole = resolveHomeRole;
@@ -321,7 +332,8 @@
     if (!stats) return;
     if (visible) {
       stats.hidden = false;
-      stats.style.removeProperty('display');
+      stats.removeAttribute('aria-hidden');
+      stats.style.setProperty('display', 'grid', 'important');
     } else {
       stats.hidden = true;
       stats.style.setProperty('display', 'none', 'important');
@@ -446,9 +458,10 @@
     });
     document
       .querySelectorAll(
-        '.compliance-hero-card, .fire-s-exec-mini-dashboard, .fire-s-exec-dashboard-v1115, .fs-prod-kpi-row, .fs-kpi-row'
+        '.compliance-hero-card, .fire-s-exec-mini-dashboard, .fire-s-exec-dashboard-v1115'
       )
       .forEach(el => {
+        if (el.classList.contains('main-command-stats')) return;
         el.style.setProperty('display', 'none', 'important');
       });
   }
@@ -520,8 +533,13 @@
     const centre = byId('mainCommandCentre');
     if (centre) {
       centre.querySelectorAll('.main-command-top, .main-command-stats, .main-command-grid').forEach(el => {
-        el.style.removeProperty('display');
         el.removeAttribute('hidden');
+        el.removeAttribute('aria-hidden');
+        if (el.classList.contains('main-command-stats')) {
+          el.style.setProperty('display', 'grid', 'important');
+        } else {
+          el.style.removeProperty('display');
+        }
       });
     }
   }
@@ -1045,8 +1063,8 @@
   try {
     const client = window.supabaseClient;
     if (client && client.auth && typeof client.auth.onAuthStateChange === 'function') {
-      client.auth.onAuthStateChange(() => {
-        lastRole = '';
+      client.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') lastRole = '';
         window.fireSApplyCleanHomeRoles();
       });
     }
