@@ -62,8 +62,7 @@
             "Applicable To": [
               "All"
             ],
-            "Track Expiry": true,
-            "Expiry Label": "Last or next service date"
+            "Track Expiry": true
           }
         ]
       },
@@ -129,8 +128,7 @@
             "Applicable To": [
               "All"
             ],
-            "Track Expiry": true,
-            "Expiry Label": "Last or next service date"
+            "Track Expiry": true
           }
         ]
       },

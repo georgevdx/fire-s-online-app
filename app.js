@@ -10242,16 +10242,6 @@ function isExpiryTrackedChecklistItem(checklistItem) {
   );
 }
 
-function getChecklistExpiryLabel(checklistItem) {
-  const label = String(
-    checklistItem?.["Expiry Label"] ||
-    checklistItem?.ExpiryLabel ||
-    checklistItem?.expiryLabel ||
-    ''
-  ).trim();
-  return label || 'Expiry Date';
-}
-
 function isExpiryApplicableAnswer(answerValue) {
   return String(answerValue || '').trim().toLowerCase() !== 'n/a';
 }
@@ -16021,7 +16011,6 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
     const itemId = `check_${originalIndex}`;
     const trackExpiry = isExpiryTrackedChecklistItem(c);
     const isGateQuestion = c["Gate Question"] === true;
-    const expiryLabel = escapeHtml(getChecklistExpiryLabel(c));
     const assessmentChips = isGateQuestion
       ? `
         <div class="professional-assessment" role="group" aria-label="Is this required">
@@ -16084,7 +16073,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 
         ${trackExpiry ? `
           <div class="expiry-wrapper">
-            <label>${expiryLabel}</label>
+            <label>Expiry Date</label>
 
             <input
               type="date"
@@ -16416,7 +16405,6 @@ async function generateReport() {
         itemNumber: item["Item Number"] || '',
         checklistItem: item["Checklist Item"] || '',
         expiryDate,
-        expiryLabel: getChecklistExpiryLabel(item),
         status: expiryStatus,
         label: expiryLabel
       });
@@ -16507,7 +16495,7 @@ async function generateReport() {
 
       ${
         trackExpiry && expiryApplies && expiryDate
-          ? `<br><strong>${escapeHtml(getChecklistExpiryLabel(item))}:</strong> ${escapeHtml(expiryDate)}`
+          ? `<br><strong>Expiry Date:</strong> ${escapeHtml(expiryDate)}`
           : ''
       }
 
@@ -16849,7 +16837,7 @@ const executiveSummaryHtml = `
             </div>
 
             <div>
-              <strong>${escapeHtml(item.expiryLabel || 'Expiry Date')}:</strong>
+              <strong>Expiry Date:</strong>
               ${escapeHtml(item.expiryDate)}
             </div>
 
