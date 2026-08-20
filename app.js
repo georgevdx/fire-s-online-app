@@ -61,7 +61,7 @@ let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.1 - Phone PDF 20 Aug';
+const APP_VERSION = 'RC 1.2.1 - Phone PDF download';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2184,12 +2184,16 @@ function lockPdfExportViewport() {
     previousHtmlOverflow: root.style.overflowX,
     previousBodyOverflow: document.body.style.overflowX,
     previousHtmlMinWidth: root.style.minWidth,
-    previousBodyMinWidth: document.body.style.minWidth
+    previousBodyMinWidth: document.body.style.minWidth,
+    previousHtmlWidth: root.style.width,
+    previousBodyWidth: document.body.style.width
   };
   root.classList.add('pdf-exporting');
   root.style.overflowX = 'visible';
   document.body.style.overflowX = 'visible';
+  root.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
   root.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
+  document.body.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
   document.body.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
   if (meta) {
     meta.setAttribute(
@@ -2208,6 +2212,8 @@ function unlockPdfExportViewport(state) {
   document.body.style.overflowX = state.previousBodyOverflow;
   root.style.minWidth = state.previousHtmlMinWidth;
   document.body.style.minWidth = state.previousBodyMinWidth;
+  root.style.width = state.previousHtmlWidth;
+  document.body.style.width = state.previousBodyWidth;
   if (state.meta) {
     state.meta.setAttribute(
       'content',
@@ -2220,6 +2226,59 @@ function waitForPdfLayout() {
   return new Promise(resolve => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   });
+}
+
+async function waitForPdfViewport() {
+  await waitForPdfLayout();
+  const started = Date.now();
+  while (Date.now() - started < 800) {
+    if ((window.innerWidth || 0) >= 720) {
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  await waitForPdfLayout();
+}
+
+async function downloadGeneratedPdf(pdf, fileName) {
+  const blob = pdf.output('blob');
+  const file = new File([blob], fileName, { type: 'application/pdf' });
+  const isIos = /iPad|iPhone|iPod/i.test(navigator.userAgent || '');
+
+  if (
+    isIos &&
+    typeof navigator.canShare === 'function' &&
+    navigator.canShare({ files: [file] })
+  ) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: fileName
+      });
+      return;
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        return;
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  if (isIos) {
+    window.open(url, '_blank', 'noopener');
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 async function exportReport(options = {}) {
@@ -2275,7 +2334,7 @@ async function exportReport(options = {}) {
   let pdfSandbox = null;
 
   try {
-  await waitForPdfLayout();
+  await waitForPdfViewport();
 
   pdfSandbox = document.createElement('div');
   pdfSandbox.className = 'pdf-export-sandbox';
@@ -2407,6 +2466,7 @@ pdfClone
 
   pdfSandbox.appendChild(pdfClone);
   document.body.appendChild(pdfSandbox);
+  window.scrollTo(0, 0);
 
   await waitForPdfLayout();
 
@@ -2517,7 +2577,7 @@ pagebreak: {
       };
     }
 
-    pdf.save(fileName);
+    await downloadGeneratedPdf(pdf, fileName);
     return {
       fileName
     };
