@@ -9,11 +9,11 @@
 
   const PALETTE = ['#F2C811', '#b71c1c', '#118DFF', '#0F7B0F', '#5C2D91', '#CA5010', '#00B7C3', '#334155'];
   const AGE_BUCKETS = [
-    { key: '0-7', label: '0–7 days', min: 0, max: 7 },
-    { key: '8-30', label: '8–30 days', min: 8, max: 30 },
-    { key: '31-60', label: '31–60 days', min: 31, max: 60 },
-    { key: '61-90', label: '61–90 days', min: 61, max: 90 },
-    { key: '90+', label: 'More than 90 days', min: 91, max: 99999 }
+    { key: '0-7', label: '0–7 days', short: '0–7', min: 0, max: 7 },
+    { key: '8-30', label: '8–30 days', short: '8–30', min: 8, max: 30 },
+    { key: '31-60', label: '31–60 days', short: '31–60', min: 31, max: 60 },
+    { key: '61-90', label: '61–90 days', short: '61–90', min: 61, max: 90 },
+    { key: '90+', label: 'More than 90 days', short: '>90', min: 91, max: 99999 }
   ];
   const PRIORITIES = ['Critical', 'High', 'Medium', 'Low'];
   const PRIORITY_COLORS = {
@@ -660,7 +660,7 @@
     });
 
     const ageRows = AGE_BUCKETS.map(bucket => {
-      const row = { label: bucket.label, key: bucket.key };
+      const row = { label: bucket.short || bucket.label, key: bucket.key };
       PRIORITIES.forEach(priority => {
         row[priority] = allActions.filter(item => item.ageKey === bucket.key && item.priority === priority).length;
       });
@@ -1002,7 +1002,7 @@
       return `
         ${stacks}
         <text x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
-        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(formatTickLabel(row.label, 12))}</text>
+        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 14}" font-size="9" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
       `;
     }).join('');
     const legend = seriesList.map(item =>
@@ -1063,7 +1063,7 @@
       <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       ${bars}
-      <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)} · blue is running %</text>
+      <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
     </svg>`;
   }
 
@@ -1227,7 +1227,7 @@
     return `<div class="pbi-tile ${extraClass || ''}">
       <h4>${esc(title)}</h4>
       ${insight ? `<p class="pbi-insight">${esc(insight)}</p>` : ''}
-      ${body}
+      <div class="pbi-tile-body">${body}</div>
     </div>`;
   }
 
@@ -1414,45 +1414,57 @@
     if (title) title.textContent = `${company} · live inspection data`;
 
     host.innerHTML = `
-      <div class="pbi-kpi-row is-four">
-        ${kpi('Portfolio compliance', `${ops.compliancePct}%`, ops.compliancePct >= 70 ? 'is-ok' : 'is-warn', deltaHint(ops.delta), { type: 'compliant' })}
-        ${kpi('Critical / High open', ops.criticalHigh, ops.criticalHigh ? 'is-warn' : 'is-ok', 'Open action items', { type: 'criticalHigh' })}
-        ${kpi('Overdue inspections', ops.overdueInspections, ops.overdueInspections ? 'is-warn' : 'is-ok', 'Past due date', { type: 'overdue' })}
-        ${kpi('Due this week', ops.dueWeek, ops.dueWeek ? 'is-gold' : '', `Today ${ops.dueToday} · This month ${ops.dueMonth}`, { type: 'dueWeek' })}
-      </div>
-      <div class="pbi-grid">
-        ${tile(
-          'Compliance status',
-          'Tap Compliant, Action Required, Overdue or Not Yet Inspected',
-          donutChart(ops.portfolio, COMPLIANCE_COLORS)
-        )}
-        ${tile(
-          'Compliance trend',
-          'Share of completed inspections that were compliant each month',
-          lineChart(ops.trend, '#0F7B0F', { y: 'Compliance %', x: 'Month' })
-        )}
-        ${tile(
-          'Actions by priority and age',
-          'Stacked by Critical, High, Medium and Low. Tap a block or colour.',
-          stackedColumnChart(
-            ops.ageRows,
-            PRIORITIES.map(key => ({ key, color: PRIORITY_COLORS[key] })),
-            { y: 'Action items', x: 'Age of open item' }
-          ),
-          'is-wide'
-        )}
-        ${tile(
-          'Worst performing premises',
-          'Highest open actions and overdue first. Tap a bar.',
-          barChart(ops.worst, '#b71c1c', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 })
-        )}
-        ${tile(
-          'Recurring findings',
-          'How many premises share the same checklist section. Blue is running %.',
-          paretoChart(ops.recurring, '#CA5010', { y: 'Premises', x: 'Section' })
-        )}
-        ${tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-wide')}
-        ${tile('Filtered list', '', drillPanelHtml(ops), 'is-wide')}
+      <div class="pbi-ops">
+        <div class="pbi-kpi-row is-four">
+          ${kpi('Portfolio compliance', `${ops.compliancePct}%`, ops.compliancePct >= 70 ? 'is-ok' : 'is-warn', deltaHint(ops.delta), { type: 'compliant' })}
+          ${kpi('Critical / High open', ops.criticalHigh, ops.criticalHigh ? 'is-warn' : 'is-ok', 'Open action items', { type: 'criticalHigh' })}
+          ${kpi('Overdue inspections', ops.overdueInspections, ops.overdueInspections ? 'is-warn' : 'is-ok', 'Past due date', { type: 'overdue' })}
+          ${kpi('Due this week', ops.dueWeek, ops.dueWeek ? 'is-gold' : '', `Today ${ops.dueToday} · This month ${ops.dueMonth}`, { type: 'dueWeek' })}
+        </div>
+        <div class="pbi-row pbi-row-2">
+          ${tile(
+            'Compliance status',
+            'Tap a colour to open those premises',
+            donutChart(ops.portfolio, COMPLIANCE_COLORS),
+            'is-chart'
+          )}
+          ${tile(
+            'Compliance trend',
+            'Compliant share of completed inspections each month',
+            lineChart(ops.trend, '#0F7B0F', { y: 'Compliance %', x: 'Month' }),
+            'is-chart'
+          )}
+        </div>
+        <div class="pbi-row pbi-row-1">
+          ${tile(
+            'Actions by priority and age',
+            'Critical, High, Medium and Low stacked by how long the item has been open. Tap a block or colour.',
+            stackedColumnChart(
+              ops.ageRows,
+              PRIORITIES.map(key => ({ key, color: PRIORITY_COLORS[key] })),
+              { y: 'Action items', x: 'Age (days)' }
+            ),
+            'is-chart'
+          )}
+        </div>
+        <div class="pbi-row pbi-row-2">
+          ${tile(
+            'Worst performing premises',
+            'Highest open actions and overdue first. Tap a bar.',
+            barChart(ops.worst, '#b71c1c', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
+            'is-chart'
+          )}
+          ${tile(
+            'Recurring findings',
+            'How many premises share the same section. Blue is the running %.',
+            paretoChart(ops.recurring, '#CA5010', { y: 'Premises', x: 'Section' }),
+            'is-chart'
+          )}
+        </div>
+        <div class="pbi-row pbi-row-1">
+          ${tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-feed')}
+        </div>
+        ${activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''}
       </div>
     `;
   }

@@ -85,13 +85,15 @@ body.fire-s-desktop-view #managementDashboardSection {
 }
 
 html.fire-s-desktop-view .pbi-kpi-row,
-body.fire-s-desktop-view .pbi-kpi-row {
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
+html.fire-s-desktop-view .pbi-kpi-row.is-four,
+body.fire-s-desktop-view .pbi-kpi-row,
+body.fire-s-desktop-view .pbi-kpi-row.is-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-html.fire-s-desktop-view .pbi-tile,
-body.fire-s-desktop-view .pbi-tile {
-  min-height: 240px;
+html.fire-s-desktop-view .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-row-2 .pbi-tile.is-chart {
+  min-height: 280px;
 }
 
 @media (min-width: 900px) {
