@@ -16011,11 +16011,13 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
     const itemId = `check_${originalIndex}`;
     const trackExpiry = isExpiryTrackedChecklistItem(c);
     const isGateQuestion = c["Gate Question"] === true;
+    const gateYes = escapeHtml(c["Gate Yes"] || "Yes, required");
+    const gateNo = escapeHtml(c["Gate No"] || "No, not required");
     const assessmentChips = isGateQuestion
       ? `
         <div class="professional-assessment" role="group" aria-label="Is this required">
-          <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Yes, required</button>
-          <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">No, not required</button>
+          <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">${gateYes}</button>
+          <button type="button" class="assessment-chip assessment-na" data-assessment="N/A" onclick="setProfessionalAssessment(${originalIndex}, 'N/A')">${gateNo}</button>
         </div>
       `
       : `

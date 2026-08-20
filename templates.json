@@ -138,15 +138,15 @@
         ]
       },
       {
-        "sectionName": "Fire Detection and Alarm",
+        "sectionName": "Fire Detection",
         "items": [
           {
             "Item Number": "14",
             "Assessment": "Requirement",
-            "Checklist Item": "Are fire detection and alarm systems required on these premises?",
-            "Description": "Confirm whether fire detection and alarm is required for this occupancy and layout. If it is not required, choose No, not required. The remaining detection question will then be hidden and will not create a finding.",
-            "Non Compliance Text": "Fire detection and alarm systems are required on these premises but have not been provided or assessed.",
-            "Corrective Action": "Provide fire detection and alarm where required, or confirm they are not required for these premises.",
+            "Checklist Item": "Are fire detection systems required on these premises?",
+            "Description": "Confirm whether fire detection is required for this occupancy and layout. If it is not required, choose No, not required. The remaining detection question will then be hidden and will not create a finding.",
+            "Non Compliance Text": "Fire detection systems are required on these premises but have not been provided or assessed.",
+            "Corrective Action": "Provide fire detection where required, or confirm it is not required for these premises.",
             "Reference": "SANS 10400-T; SANS 10139; applicable municipal fire safety by-laws",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
@@ -170,6 +170,42 @@
               "All"
             ],
             "Track Expiry": true
+          }
+        ]
+      },
+      {
+        "sectionName": "Fire Alarm",
+        "items": [
+          {
+            "Item Number": "12",
+            "Assessment": "Requirement",
+            "Checklist Item": "Is a fire alarm required on these premises?",
+            "Description": "Confirm whether a fire alarm is required. If it is not required, choose No, not required. The remaining alarm question will then be hidden and will not create a finding.",
+            "Non Compliance Text": "A fire alarm is required on these premises but has not been provided or assessed.",
+            "Corrective Action": "Provide a fire alarm where required, or confirm it is not required for these premises.",
+            "Reference": "SANS 10400-T; SANS 10139; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false,
+            "Gate Question": true
+          },
+          {
+            "Item Number": "13",
+            "Assessment": "Call points and activation",
+            "Checklist Item": "Are all call points or activation mechanisms fixed, accessible and in working condition?",
+            "Description": "Check manual call points, break-glass units and other alarm activation devices. They must be securely fixed, unobstructed and able to operate.",
+            "Non Compliance Text": "Fire alarm call points or activation mechanisms are loose, obstructed, damaged or not in working condition.",
+            "Corrective Action": "Repair, refix or replace call points and keep them accessible and operational.",
+            "Reference": "SANS 10139; SANS 10400-T; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
           }
         ]
       },
@@ -226,124 +262,13 @@
         "items": [
           {
             "Item Number": "19",
-            "Checklist Item": "Are escape routes clear of storage, furniture, stock or obstruction?",
-            "Non Compliance Text": "Escape routes were obstructed and/or not maintained clear of storage, stock, furniture or other obstructions.",
-            "Reference": "SANS 10400-T, Occupational Health and Safety Act, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Remove all obstructions from escape routes and maintain clear emergency egress pathways at all times.",
+            "Assessment": "Access and obstruction",
+            "Checklist Item": "Are escape routes accessible and unobstructed, including stairways, corridors and lobbies?",
+            "Description": "Escape routes, stairways, corridors and lobbies must be clear of storage, furniture, stock and other obstructions.",
+            "Non Compliance Text": "Escape routes, stairways, corridors and/or lobbies are obstructed or not readily accessible.",
+            "Corrective Action": "Remove obstructions and keep escape routes, stairways, corridors and lobbies clear and accessible.",
+            "Reference": "SANS 10400-T; Occupational Health and Safety Act; applicable municipal fire safety by-laws",
             "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          },
-          {
-            "Item Number": "20",
-            "Checklist Item": "Do exit doors open freely without special knowledge, tools or keys?",
-            "Non Compliance Text": "Exit doors did not open freely and/or required keys, tools or special knowledge for emergency egress.",
-            "Reference": "SANS 10400-T, Occupational Health and Safety Act, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Ensure exit doors remain readily openable from the inside without the use of keys, tools or specialised knowledge during emergency conditions.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          },
-          {
-            "Item Number": "21",
-            "Checklist Item": "Are stairways, corridors and lobbies free from combustible storage?",
-            "Non Compliance Text": "Stairways, corridors and/or lobbies contained combustible storage or materials that may compromise safe evacuation.",
-            "Reference": "SANS 10400-T, Occupational Health and Safety Act, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Remove combustible storage from stairways, corridors and lobbies and maintain these areas clear for safe evacuation purposes.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          }
-        ]
-      },
-      {
-        "sectionName": "Exit Signage and Emergency Lighting",
-        "items": [
-          {
-            "Item Number": "22",
-            "Checklist Item": "Are exit signs visible, correctly positioned and unobstructed?",
-            "Non Compliance Text": "Exit signage was not visible, correctly positioned, illuminated and/or unobstructed where required.",
-            "Reference": "SANS 10400-T, SANS 1186-1, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Provide and maintain compliant exit signage in visible and unobstructed positions to assist effective emergency evacuation.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          },
-          {
-            "Item Number": "23",
-            "Checklist Item": "Are emergency lights installed where required and visibly operational?",
-            "Non Compliance Text": "Emergency lighting was not provided where required and/or was not visibly operational.",
-            "Reference": "SANS 10400-T, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Provide and maintain emergency lighting systems to ensure safe evacuation during power failure or emergency conditions.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          }
-        ]
-      },
-      {
-        "sectionName": "Hazardous Substances",
-        "items": [
-          {
-            "Item Number": "24",
-            "Checklist Item": "Where hazardous substances require registration, has registration been confirmed?",
-            "Answer Type": "Yes / No / N/A",
-            "Applicable To": [
-              "All"
-            ],
-            "Non Compliance Text": "Hazardous substance registration was not confirmed where registration is required.",
-            "Corrective Action": "Confirm whether registration is legally required for the hazardous substances on site. If required, obtain or update the relevant registration/records.",
-            "Severity": "Medium"
-          },
-          {
-            "Item Number": "25",
-            "Checklist Item": "If required, is the certificate of registration valid and within the expiry date?",
-            "Non Compliance Text": "No valid hazardous substances certificate of registration was available at the time of inspection where required.",
-            "Reference": "Applicable SANS code related to specific class hazardous substance, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Obtain and maintain a valid hazardous substances certificate of registration for the applicable installation or storage area.",
-            "Track Expiry": true,
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          },
-          {
-            "Item Number": "26",
-            "Checklist Item": "Is the hazardous substance installation/storeroom according to standard?",
-            "Non Compliance Text": "The hazardous substance installation and/or storage area did not comply with the applicable fire safety and hazardous substance requirements.",
-            "Reference": "Applicable SANS code related to specific class hazardous substance, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Ensure hazardous substance installations and storage areas comply with the applicable SANS standards and fire safety requirements.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          }
-        ]
-      },
-      {
-        "sectionName": "Housekeeping and Fire Load",
-        "items": [
-          {
-            "Item Number": "27",
-            "Assessment": "Storage Practices",
-            "Checklist Item": "Storage Practices",
-            "Description": "Storage is controlled and arranged without increasing fire spread or blocking safety systems.",
-            "Non Compliance Text": "Storage practices create excessive fire load, unsafe stacking or obstruction.",
-            "Corrective Action": "Rearrange and control storage to reduce fire load and maintain safe clearances.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
-            "Severity": "Medium",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
@@ -351,13 +276,157 @@
             "Track Expiry": false
           },
           {
+            "Item Number": "20",
+            "Assessment": "Locking mechanisms",
+            "Checklist Item": "Do exit doors have the correct locking mechanisms and open freely without keys, tools or special knowledge?",
+            "Description": "Exit doors must open from the inside in an emergency without keys, tools or special knowledge. Panic hardware or approved emergency locks must be in place where required.",
+            "Non Compliance Text": "Exit doors do not have the correct locking mechanisms, or they do not open freely in an emergency.",
+            "Corrective Action": "Fit the correct emergency locking hardware and keep exit doors freely openable from the inside.",
+            "Reference": "SANS 10400-T; Occupational Health and Safety Act; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
+          }
+        ]
+      },
+      {
+        "sectionName": "Exit Signs",
+        "items": [
+          {
+            "Item Number": "21",
+            "Assessment": "Visibility and standard",
+            "Checklist Item": "Are all exit signs visible and according to the applicable standard?",
+            "Description": "Exit signs must be visible, unobstructed, correctly positioned and of a compliant type.",
+            "Non Compliance Text": "Exit signs are missing, not visible, obstructed or not according to the applicable standard.",
+            "Corrective Action": "Provide, reposition or replace exit signs so that they are visible and compliant.",
+            "Reference": "SANS 10400-T; SANS 1186-1; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
+          }
+        ]
+      },
+      {
+        "sectionName": "Emergency Lights",
+        "items": [
+          {
+            "Item Number": "22",
+            "Assessment": "Requirement",
+            "Checklist Item": "Is emergency lighting required on these premises?",
+            "Description": "Confirm whether emergency lighting is required. If it is not required, choose No, not required. The remaining emergency-lighting questions will then be hidden and will not create findings.",
+            "Non Compliance Text": "Emergency lighting is required on these premises but has not been provided or assessed.",
+            "Corrective Action": "Provide emergency lighting where required, or confirm it is not required for these premises.",
+            "Reference": "SANS 10400-T; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false,
+            "Gate Question": true
+          },
+          {
+            "Item Number": "23",
+            "Assessment": "Type and coverage",
+            "Checklist Item": "Are the emergency lights of a sufficient type and coverage for the premises?",
+            "Description": "Check that the installed emergency lighting type and layout cover the escape routes and occupied areas.",
+            "Non Compliance Text": "Emergency lighting is not of a sufficient type or does not provide adequate coverage.",
+            "Corrective Action": "Provide or upgrade emergency lighting so that the type and coverage are sufficient.",
+            "Reference": "SANS 10400-T; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
+          },
+          {
+            "Item Number": "24",
+            "Assessment": "Working condition",
+            "Checklist Item": "Are the emergency lights in working condition?",
+            "Description": "Check that emergency lights illuminate and do not show obvious faults, damage or failed lamps.",
+            "Non Compliance Text": "Emergency lights are not in working condition.",
+            "Corrective Action": "Repair or replace defective emergency lights.",
+            "Reference": "SANS 10400-T; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
+          }
+        ]
+      },
+      {
+        "sectionName": "Hazardous Substances",
+        "items": [
+          {
+            "Item Number": "25",
+            "Assessment": "Presence",
+            "Checklist Item": "Are hazardous substances present on these premises?",
+            "Description": "If there are no hazardous substances, choose No, none. The remaining hazardous-substance questions will then be hidden and will not create findings.",
+            "Non Compliance Text": "Hazardous substances are present but have not been assessed.",
+            "Corrective Action": "Identify hazardous substances on site, or confirm that none are present.",
+            "Reference": "Applicable SANS hazardous-substance requirements; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false,
+            "Gate Question": true,
+            "Gate Yes": "Yes, present",
+            "Gate No": "No, none"
+          },
+          {
+            "Item Number": "26",
+            "Assessment": "Registration",
+            "Checklist Item": "Do they require registration? If yes, record the certificate expiry date.",
+            "Description": "If registration is required, confirm that a valid certificate is in place and enter the expiry date. If registration is not required, choose N/A.",
+            "Non Compliance Text": "Hazardous substances require registration, but a valid certificate is missing or the expiry date is overdue.",
+            "Corrective Action": "Obtain or renew the required registration certificate and keep the expiry date on record.",
+            "Reference": "Applicable SANS code for the substance class; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": true
+          },
+          {
+            "Item Number": "27",
+            "Assessment": "Storeroom and installation",
+            "Checklist Item": "Does the storeroom or installation comply with the applicable standard?",
+            "Description": "Check the store, cabinet or installation against the applicable hazardous-substance and fire-safety requirements.",
+            "Non Compliance Text": "The hazardous-substance storeroom or installation does not comply with the applicable standard.",
+            "Corrective Action": "Upgrade the storeroom or installation so that it complies with the applicable standard.",
+            "Reference": "Applicable SANS code for the substance class; applicable municipal fire safety by-laws",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false
+          }
+        ]
+      },
+      {
+        "sectionName": "Housekeeping",
+        "items": [
+          {
             "Item Number": "28",
-            "Assessment": "Combustible Waste",
-            "Checklist Item": "Combustible Waste",
-            "Description": "Combustible waste and unnecessary materials are removed regularly.",
-            "Non Compliance Text": "Combustible waste or unnecessary materials are accumulating.",
-            "Corrective Action": "Remove combustible waste and implement regular housekeeping controls.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Assessment": "Storage height",
+            "Checklist Item": "Does storage comply with the applicable height requirements?",
+            "Description": "Check stacking height against sprinkler clearances, lights, roof structure and any site or occupancy limits.",
+            "Non Compliance Text": "Storage exceeds the applicable height requirements.",
+            "Corrective Action": "Reduce storage height and keep it within the applicable limits.",
+            "Reference": "SANS 10400-T; applicable municipal fire safety by-laws",
             "Severity": "Medium",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -367,13 +436,13 @@
           },
           {
             "Item Number": "29",
-            "Assessment": "Obstructions",
-            "Checklist Item": "Obstructions",
-            "Description": "Escape routes, fire equipment and access areas remain clear.",
-            "Non Compliance Text": "Housekeeping or stored materials obstruct escape routes, fire equipment or access.",
-            "Corrective Action": "Remove all obstructions and maintain clear access at all times.",
+            "Assessment": "Waste",
+            "Checklist Item": "Is waste being dealt with correctly?",
+            "Description": "Combustible waste should be removed regularly and not left to accumulate.",
+            "Non Compliance Text": "Waste is not being dealt with correctly and is accumulating.",
+            "Corrective Action": "Remove waste and put a regular disposal routine in place.",
             "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
-            "Severity": "High",
+            "Severity": "Medium",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
@@ -382,28 +451,13 @@
           },
           {
             "Item Number": "30",
-            "Assessment": "Ignition Sources",
-            "Checklist Item": "Ignition Sources",
-            "Description": "Combustible materials are adequately separated from heat and ignition sources.",
-            "Non Compliance Text": "Combustible materials are stored too close to ignition or heat sources.",
-            "Corrective Action": "Separate combustible materials from ignition sources and control the hazard.",
+            "Assessment": "Visible fire hazards",
+            "Checklist Item": "Is the premises free from visible fire hazards?",
+            "Description": "Look for ignition sources next to combustibles, unsafe heaters, smoking risks or other obvious fire hazards.",
+            "Non Compliance Text": "Visible fire hazards are present on the premises.",
+            "Corrective Action": "Remove or control the visible fire hazards.",
             "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
             "Severity": "High",
-            "Answer Type": "Professional Assessment",
-            "Applicable To": [
-              "All"
-            ],
-            "Track Expiry": false
-          },
-          {
-            "Item Number": "31",
-            "Assessment": "General Fire Risk",
-            "Checklist Item": "General Fire Risk",
-            "Description": "General housekeeping does not create an avoidable fire or smoke-spread risk.",
-            "Non Compliance Text": "General housekeeping conditions create an avoidable fire safety risk.",
-            "Corrective Action": "Improve housekeeping standards and implement routine monitoring.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
-            "Severity": "Medium",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
@@ -413,84 +467,95 @@
         ]
       },
       {
-        "sectionName": "Electrical and Ignition Sources",
+        "sectionName": "Electrical",
         "items": [
           {
-            "Item Number": "32",
-            "Checklist Item": "Are DB boards accessible, closed and clearly identifiable?",
-            "Non Compliance Text": "Distribution boards were not adequately accessible, secured, labelled and/or clearly identifiable.",
-            "Reference": "Occupational Health and Safety Act, Electrical Installation Regulations, SANS 10142-1",
-            "Corrective Action": "Ensure distribution boards remain accessible, properly secured and clearly labelled for identification and emergency isolation purposes.",
+            "Item Number": "31",
+            "Assessment": "Distribution boards",
+            "Checklist Item": "Are DB boxes accessible, closed and indicated?",
+            "Description": "Distribution boards must be reachable, kept closed and clearly identified.",
+            "Non Compliance Text": "Distribution boards are not accessible, not closed, or not clearly indicated.",
+            "Corrective Action": "Keep DB boxes accessible, closed and labelled.",
+            "Reference": "Occupational Health and Safety Act; Electrical Installation Regulations; SANS 10142-1",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
+            ],
+            "Track Expiry": false
           },
           {
-            "Item Number": "33",
-            "Checklist Item": "Are extension leads, multiplugs and temporary wiring controlled and not overloaded?",
-            "Non Compliance Text": "Extension leads, multiplugs and/or temporary electrical wiring were improperly used, uncontrolled and/or overloaded.",
-            "Reference": "Occupational Health and Safety Act, Electrical Installation Regulations, SANS 10142-1",
-            "Corrective Action": "Control the use of extension leads and temporary wiring and prevent overloading of electrical circuits and adapters.",
+            "Item Number": "32",
+            "Assessment": "Wiring condition",
+            "Checklist Item": "Are electrical wires and fittings free from visible exposure, damage or unsafe temporary wiring?",
+            "Description": "Look for exposed conductors, damaged fittings, overloaded multiplugs and unsafe extension leads.",
+            "Non Compliance Text": "Visible exposed or damaged wiring, fittings or unsafe temporary wiring is present.",
+            "Corrective Action": "Repair or replace damaged electrical work using a competent person, and control temporary wiring.",
+            "Reference": "Occupational Health and Safety Act; Electrical Installation Regulations; SANS 10142-1",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
+            ],
+            "Track Expiry": false
+          }
+        ]
+      },
+      {
+        "sectionName": "Fire Doors and Compartments",
+        "items": [
+          {
+            "Item Number": "33",
+            "Assessment": "Presence",
+            "Checklist Item": "Are there any visible fire compartments, such as fire walls or fire doors?",
+            "Description": "If none are visible, choose No, none. The remaining compartmentation question will then be hidden and will not create a finding.",
+            "Non Compliance Text": "Visible fire compartments are present but have not been assessed.",
+            "Corrective Action": "Identify visible fire walls and fire doors, or confirm that none are present.",
+            "Reference": "SANS 10400-T; SANS 1253",
+            "Severity": "High",
+            "Answer Type": "Professional Assessment",
+            "Applicable To": [
+              "All"
+            ],
+            "Track Expiry": false,
+            "Gate Question": true,
+            "Gate Yes": "Yes, present",
+            "Gate No": "No, none"
           },
           {
             "Item Number": "34",
-            "Checklist Item": "Are there no visible exposed wires, damaged fittings or unsafe electrical conditions?",
-            "Non Compliance Text": "Visible exposed wiring, damaged electrical fittings and/or unsafe electrical conditions were observed on the premises.",
-            "Reference": "Occupational Health and Safety Act, Electrical Installation Regulations, SANS 10142-1",
-            "Corrective Action": "Repair or replace damaged electrical components and rectify unsafe electrical conditions using a competent person.",
+            "Assessment": "Compliance",
+            "Checklist Item": "Are visible fire walls, fire doors, door components, fire dampers and other compartmentation details compliant?",
+            "Description": "Check that fire doors are closed and not wedged open; seals, closers and hinges are in order; walls and service penetrations are intact; and visible fire dampers are unobstructed and in place.",
+            "Non Compliance Text": "Visible fire walls, fire doors, door components, fire dampers or other compartmentation details are not compliant.",
+            "Corrective Action": "Repair or reinstate fire doors, walls, dampers and penetrations so that compartmentation is compliant.",
+            "Reference": "SANS 10400-T; SANS 1253",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
+            ],
+            "Track Expiry": false
           }
         ]
       },
       {
-        "sectionName": "Fire Doors and Compartmentation",
+        "sectionName": "Fire Ventilation Systems",
         "items": [
           {
             "Item Number": "35",
-            "Checklist Item": "Are fire doors closed, unobstructed and not wedged open?",
-            "Non Compliance Text": "Fire doors were obstructed, wedged open and/or not maintained in the required closed position.",
-            "Reference": "SANS 10400-T, SANS 1253",
-            "Corrective Action": "Ensure fire doors are maintained operational, unobstructed and self-closing in accordance with the applicable fire protection requirements.",
+            "Assessment": "Condition",
+            "Checklist Item": "Does any visible ventilation system appear to be in working and unobstructed condition?",
+            "Description": "Check visible fire or smoke ventilation for obvious damage, isolation or obstruction. Choose N/A if no such system is visible.",
+            "Non Compliance Text": "A visible ventilation system appears damaged, isolated or obstructed.",
+            "Corrective Action": "Clear obstructions and restore the ventilation system to a working condition.",
+            "Reference": "SANS 10400-T; applicable municipal fire safety by-laws",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
-          },
-          {
-            "Item Number": "36",
-            "Checklist Item": "Are visible fire doors, seals, closers and hinges in acceptable condition?",
-            "Non Compliance Text": "Visible fire door components, including seals, hinges and/or door closers, were not maintained in an acceptable condition.",
-            "Reference": "SANS 10400-T, SANS 1253",
-            "Corrective Action": "Service or replace defective fire door components to ensure the fire door operates as intended.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          },
-          {
-            "Item Number": "37",
-            "Checklist Item": "Are visible fire separation elements and service penetrations intact where observable?",
-            "Non Compliance Text": "Visible fire separation elements and/or service penetrations were not adequately sealed or maintained where observable.",
-            "Reference": "SANS 10400-T",
-            "Corrective Action": "Reinstate fire separation integrity and seal service penetrations using suitable fire-stopping materials or systems.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
+            ],
+            "Track Expiry": false
           }
         ]
       },
@@ -520,26 +585,16 @@
         "sectionName": "General Requirements",
         "items": [
           {
-            "Item Number": "39",
-            "Checklist Item": "Is there an approved fire or internal layout plan available?",
-            "Non Compliance Text": "No approved fire and/or internal layout plan was available for inspection.",
-            "Reference": "SANS 10400-A, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Provide and maintain approved fire and/or internal layout plans available for inspection and emergency response purposes.",
-            "Severity": "Medium",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
-          },
-          {
             "Item Number": "40",
-            "Checklist Item": "Are kitchen extraction systems serviced and certificate available?",
-            "Non Compliance Text": "Kitchen extraction systems were not adequately serviced and/or no valid service certificate was available for inspection.",
-            "Reference": "SANS 1850, Occupational Health and Safety Act, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Ensure kitchen extraction systems are inspected, cleaned and serviced by a competent service provider and maintain valid service certification on site.",
+            "Assessment": "Kitchen extraction",
+            "Checklist Item": "Is the kitchen extraction system serviced? Record the expiry date.",
+            "Description": "If a kitchen extraction system is installed, check the service certificate and enter the expiry date. Choose N/A if there is no kitchen extraction.",
+            "Non Compliance Text": "The kitchen extraction system is not serviced, or the expiry date is missing or overdue.",
+            "Corrective Action": "Arrange servicing by a competent provider and keep the expiry date on record.",
+            "Reference": "SANS 1850; Occupational Health and Safety Act; applicable municipal fire safety by-laws",
             "Track Expiry": true,
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
             ]
