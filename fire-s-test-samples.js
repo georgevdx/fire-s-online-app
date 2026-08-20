@@ -217,7 +217,13 @@
     const addressLine = streetNumber + ' Sample Street, ' + suburb + ', Pretoria';
     const answers = buildAnswers(rng, occupancy, kind);
     const photos = kind === 'scheduled' ? [] : buildPhotos(rng, pad(n, 2), answers);
-    const daysAgo = 3 + Math.floor(rng() * 70);
+    const daysAgo = kind === 'overdue'
+      ? 45 + (index % 80)
+      : kind === 'attention'
+        ? 10 + (index % 55)
+        : kind === 'clear'
+          ? 6 + (index % 100)
+          : 1 + (index % 18);
     const inspectionDate = dateDaysAgo(daysAgo);
     const nowIso = isoDaysAgo(Math.max(0, daysAgo - 1));
     const completed = kind === 'clear' || kind === 'attention' || kind === 'overdue';
@@ -276,7 +282,7 @@
       finalComments: completed
         ? 'TEST sample inspection. Delete this batch when testing is done.'
         : '',
-      scheduledDate: kind === 'scheduled' ? dateDaysAhead(7 + (index % 21)) : '',
+      scheduledDate: kind === 'scheduled' ? dateDaysAhead(index % 8) : '',
       scheduledStatus: kind === 'scheduled' ? 'scheduled' : completed ? 'completed' : 'created',
       scheduleType: kind === 'scheduled' ? 'new_site' : '',
       completedAt: completed ? nowIso : null,

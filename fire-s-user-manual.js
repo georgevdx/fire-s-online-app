@@ -299,11 +299,13 @@
         <h2>9. Management dashboard (tablet / PC)</h2>
         <p>Owner and Manager: Home → <strong>Management dashboard</strong>.</p>
         <p>On a computer, type the desktop address from Home. After login, Fire-S opens the Management dashboard in a wide layout. Inspectors keep the phone layout. Access (login) still shows first if you are not signed in.</p>
-        <p>Turn a tablet sideways, or open Fire-S on a laptop / PC. Graphs are built from your inspection data in a Power BI-style layout. Each graph has axis labels so you can see what is counted, and a short line of meaning under the title.</p>
+        <p>Turn a tablet sideways, or open Fire-S on a laptop / PC. The first screen is a short management view, not a wall of graphs. Tap a number or a coloured graph piece to open the exact premises or Action Items underneath.</p>
         <ul>
-          <li>Inspection status (bar chart), Completed vs overdue</li>
-          <li>Findings by category — named checklist sections</li>
-          <li>Inspector workload, occupancy mix, monthly trend, weekday pattern</li>
+          <li>Four cards: portfolio compliance %, Critical/High open items, overdue inspections, due this week</li>
+          <li>Compliance status and the 12-month compliance trend</li>
+          <li>Open Action Items by priority and age (0–7, 8–30, 31–60, 61–90, more than 90 days)</li>
+          <li>Worst performing premises and recurring findings across sites</li>
+          <li>Activity list at the bottom</li>
           <li><strong>Download Power BI data</strong> — CSV files for Microsoft Power BI Desktop</li>
         </ul>
       </article>

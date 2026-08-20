@@ -124,6 +124,23 @@
 .pbi-kpi.is-ok .pbi-kpi-value { color: #0f7b0f; }
 .pbi-kpi.is-gold .pbi-kpi-value { color: #8a6d00; }
 
+button.pbi-kpi {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.pbi-kpi.is-clickable:hover,
+button.pbi-kpi.is-clickable:focus {
+  border-color: #b71c1c;
+  outline: none;
+}
+
+.pbi-kpi-row.is-four {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
 .pbi-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -207,6 +224,95 @@
   flex: 0 0 auto;
 }
 
+.pbi-legend-btn,
+.pbi-open-btn,
+.pbi-clear-btn,
+.pbi-feed-btn {
+  font: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+
+.pbi-legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pbi-legend-btn:hover,
+.pbi-legend-btn:focus {
+  text-decoration: underline;
+}
+
+.pbi-open-btn,
+.pbi-clear-btn {
+  padding: 3px 8px;
+  border: 1px solid #c8c6c4;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pbi-drill {
+  border-top: 1px solid #edebe9;
+  padding-top: 6px;
+}
+
+.pbi-drill.is-idle {
+  color: #8a8886;
+  font-size: 0.78rem;
+  padding: 8px 2px 2px;
+}
+
+.pbi-drill-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pbi-drill-head h4 {
+  margin: 0;
+}
+
+.pbi-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pbi-feed li + li {
+  border-top: 1px solid #f3f2f1;
+}
+
+.pbi-feed-btn {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  padding: 6px 2px;
+  text-align: left;
+}
+
+.pbi-feed-btn:hover,
+.pbi-feed-btn:focus {
+  background: #faf9f8;
+}
+
+.pbi-feed-date {
+  flex: 0 0 78px;
+  color: #605e5c;
+  font-size: 0.72rem;
+}
+
+.pbi-hit {
+  cursor: pointer;
+}
+
 .pbi-table {
   width: 100%;
   border-collapse: collapse;
@@ -264,7 +370,7 @@
   .pbi-tile.is-side { grid-column: span 4; }
 }
 
-html.fire-s-desktop-view .pbi-kpi-row,
-body.fire-s-desktop-view .pbi-kpi-row {
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
+html.fire-s-desktop-view .pbi-kpi-row.is-four,
+body.fire-s-desktop-view .pbi-kpi-row.is-four {
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
 }
