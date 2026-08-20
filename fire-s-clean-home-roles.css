@@ -227,6 +227,9 @@ body.fire-s-clean-home.fire-s-role-new-company #cmdOverdueBtn {
   display: none !important;
 }
 
+body.fire-s-clean-home.fire-s-role-manager #cmdReportsBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdReportsBtn,
+body.fire-s-clean-home.fire-s-role-viewer #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,

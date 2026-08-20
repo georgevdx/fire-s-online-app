@@ -923,6 +923,13 @@
             window.fireSOpenManagementDashboard();
           };
         }
+        const reportsBtn = byId('cmdReportsBtn');
+        if (reportsBtn && typeof window.openReportsCommand === 'function') {
+          reportsBtn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.openReportsCommand();
+          };
+        }
         const btn = byId('cmdCompanyBtn');
         if (btn) {
           btn.onclick = function (event) {
@@ -945,6 +952,27 @@
             window.fireSOpenInspectorBoard();
           };
         }
+      }
+    } catch (_) {}
+
+    try {
+      if (
+        (role === 'company_owner' || role === 'super_admin' || role === 'manager' || role === 'viewer') &&
+        typeof window.openReportsCommand === 'function'
+      ) {
+        const reportsBtn = byId('cmdReportsBtn');
+        if (reportsBtn) {
+          reportsBtn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.openReportsCommand();
+          };
+        }
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof window.syncReportsCommandCardForExecHome === 'function') {
+        window.syncReportsCommandCardForExecHome();
       }
     } catch (_) {}
 
