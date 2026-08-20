@@ -1457,6 +1457,8 @@ function getProjectInspectionDate(project) {
   );
 }
 
+const PDF_EXPORT_WIDTH_PX = 760;
+
 function preparePdfCloneForExport(pdfClone) {
   if (!pdfClone) return;
 
@@ -1603,6 +1605,14 @@ function waitForPdfImages(container) {
 
 function applyPdfLetterheadImageSizes(root) {
   if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('.formal-letterhead').forEach(header => {
+    header.style.setProperty('display', 'flex', 'important');
+    header.style.setProperty('flex-direction', 'row', 'important');
+    header.style.setProperty('flex-wrap', 'nowrap', 'important');
+    header.style.setProperty('justify-content', 'space-between', 'important');
+    header.style.setProperty('align-items', 'flex-start', 'important');
+    header.style.setProperty('width', '100%', 'important');
+  });
   root.querySelectorAll('.formal-letterhead .report-client-logo').forEach(img => {
     img.style.setProperty('width', '52px', 'important');
     img.style.setProperty('height', '52px', 'important');
@@ -1672,7 +1682,7 @@ function applyMeasuredA4Pagination(pdfClone) {
     Measure each logical report unit at the fixed export width and add only the
     space needed to start it on the next printable A4 page when necessary.
   */
-  const exportWidthPx = pdfClone.getBoundingClientRect().width || 760;
+  const exportWidthPx = PDF_EXPORT_WIDTH_PX;
   const printableWidthMm = 210 - 24;
   const printableHeightMm = 297 - 30;
   const pageHeightPx = exportWidthPx * printableHeightMm / printableWidthMm;
@@ -2139,6 +2149,113 @@ function getReportPdfFileName(
   return `${reportLabel}_${safePremisesName}_${inspectionDate}.pdf`;
 }
 
+function pdfExportAbsoluteUrl(href) {
+  try {
+    return new URL(href, document.baseURI).href;
+  } catch (_) {
+    return href;
+  }
+}
+
+function copyPageStylesToPdfDocument(targetDoc) {
+  const waits = [];
+
+  document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+    const node = targetDoc.createElement('link');
+    node.rel = 'stylesheet';
+    node.href = pdfExportAbsoluteUrl(link.href);
+    waits.push(
+      new Promise(resolve => {
+        const timeout = setTimeout(resolve, 2500);
+        node.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        node.onerror = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+      })
+    );
+    targetDoc.head.appendChild(node);
+  });
+
+  document.querySelectorAll('style').forEach(style => {
+    const node = targetDoc.createElement('style');
+    node.textContent = style.textContent;
+    targetDoc.head.appendChild(node);
+  });
+
+  return Promise.all(waits);
+}
+
+function showPdfExportOverlay() {
+  const overlay = document.createElement('div');
+  overlay.className = 'pdf-export-busy-overlay';
+  overlay.setAttribute('role', 'status');
+  overlay.innerHTML = '<div>Making the PDF…</div>';
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function createPdfExportFrame() {
+  const frame = document.createElement('iframe');
+  frame.className = 'pdf-export-frame';
+  frame.setAttribute('title', 'PDF export');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.setAttribute('width', String(PDF_EXPORT_WIDTH_PX));
+  frame.style.cssText = [
+    'position:fixed',
+    'left:0',
+    'top:0',
+    `width:${PDF_EXPORT_WIDTH_PX}px`,
+    `min-width:${PDF_EXPORT_WIDTH_PX}px`,
+    'height:100vh',
+    'border:0',
+    'opacity:1',
+    'pointer-events:none',
+    'background:#ffffff',
+    'z-index:2147483000'
+  ].join(';');
+  document.body.appendChild(frame);
+  return frame;
+}
+
+function writePdfExportFrameDocument(frame) {
+  const doc = frame.contentDocument;
+  const width = PDF_EXPORT_WIDTH_PX;
+  doc.open();
+  doc.write(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=${width}, initial-scale=1"></head><body></body></html>`
+  );
+  doc.close();
+  doc.documentElement.style.cssText = `width:${width}px;min-width:${width}px;overflow:visible;background:#ffffff;`;
+  doc.body.style.cssText = `margin:0;width:${width}px;min-width:${width}px;background:#ffffff;overflow:visible;`;
+  const forceLayout = doc.createElement('style');
+  forceLayout.textContent = `
+    html, body {
+      width: ${width}px !important;
+      min-width: ${width}px !important;
+      overflow: visible !important;
+      background: #ffffff !important;
+    }
+    .pdf-export-mode {
+      width: ${width}px !important;
+      min-width: ${width}px !important;
+      max-width: ${width}px !important;
+    }
+    .pdf-export-mode .formal-letterhead {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+    }
+  `;
+  doc.head.appendChild(forceLayout);
+  return doc;
+}
+
 async function exportReport(options = {}) {
   const returnFile =
     options &&
@@ -2182,24 +2299,40 @@ async function exportReport(options = {}) {
   const photosForPdf =
     getPhotosForPdfExport();
 
-  const pdfSandbox =
-    document.createElement('div');
+  /*
+    Phone browsers layout this clone against the 360–430px screen, so the PDF
+    wraps like a mobile page. A 760px iframe gives the same A4 width as a PC.
+  */
+  const overlay = showPdfExportOverlay();
+  const frame = createPdfExportFrame();
+  let pdfSandbox = null;
+  const root = document.documentElement;
+  const previousHtmlOverflow = root.style.overflowX;
+  const previousBodyOverflow = document.body.style.overflowX;
+  root.classList.add('pdf-exporting');
+  root.style.overflowX = 'visible';
+  document.body.style.overflowX = 'visible';
 
-  pdfSandbox.className =
-  'pdf-export-sandbox';
+  try {
+  const frameDoc = writePdfExportFrameDocument(frame);
 
-pdfSandbox.style.position = 'fixed';
-pdfSandbox.style.left = '0';
-pdfSandbox.style.top = '0';
-pdfSandbox.style.width = '760px';
-pdfSandbox.style.margin = '0';
-pdfSandbox.style.padding = '0';
-pdfSandbox.style.background = '#ffffff';
-pdfSandbox.style.overflow = 'visible';
-pdfSandbox.style.zIndex = '-1';
+  await copyPageStylesToPdfDocument(frameDoc);
 
-const pdfClone =
-  element.cloneNode(true);
+  pdfSandbox = frameDoc.createElement('div');
+  pdfSandbox.className = 'pdf-export-sandbox';
+  pdfSandbox.style.cssText = [
+    'position:relative',
+    'left:0',
+    'top:0',
+    `width:${PDF_EXPORT_WIDTH_PX}px`,
+    `min-width:${PDF_EXPORT_WIDTH_PX}px`,
+    'margin:0',
+    'padding:0',
+    'background:#ffffff',
+    'overflow:visible'
+  ].join(';');
+
+  const pdfClone = frameDoc.importNode(element.cloneNode(true), true);
 
   pdfClone.id =
     'reportContentPdfClone';
@@ -2208,9 +2341,9 @@ const pdfClone =
     'pdf-export-mode'
   );
   pdfClone.style.display = 'block';
-pdfClone.style.width = '760px';
-pdfClone.style.maxWidth = '760px';
-pdfClone.style.minWidth = '760px';
+pdfClone.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
+pdfClone.style.maxWidth = `${PDF_EXPORT_WIDTH_PX}px`;
+pdfClone.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
 pdfClone.style.marginLeft = '0';
 pdfClone.style.marginRight = '0';
 pdfClone.style.marginTop = '0';
@@ -2313,7 +2446,19 @@ pdfClone
   }
 
   pdfSandbox.appendChild(pdfClone);
-  document.body.appendChild(pdfSandbox);
+  frameDoc.body.appendChild(pdfSandbox);
+
+  if (frameDoc.fonts && frameDoc.fonts.ready) {
+    await Promise.race([
+      frameDoc.fonts.ready,
+      new Promise(resolve => setTimeout(resolve, 1500))
+    ]);
+  }
+
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  const cloneHeight = Math.max(pdfClone.scrollHeight || 0, pdfClone.offsetHeight || 0, 1200);
+  frame.style.height = `${cloneHeight + 40}px`;
 
   const opt = {
     margin: [15, 12, 15, 12],
@@ -2332,8 +2477,9 @@ pdfClone
   scrollY: 0,
   x: 0,
   y: 0,
-  windowWidth: 760,
-  width: 760,
+  windowWidth: PDF_EXPORT_WIDTH_PX,
+  width: PDF_EXPORT_WIDTH_PX,
+  windowHeight: cloneHeight + 40,
   backgroundColor: '#ffffff'
 },
 
@@ -2375,12 +2521,15 @@ pagebreak: {
 }
   };
 
-  try {
     await rasterizePdfLetterheadSvgs(pdfClone);
     applyPdfLetterheadImageSizes(pdfClone);
     await waitForPdfImages(pdfClone);
 
     applyMeasuredA4Pagination(pdfClone);
+
+    const pagedHeight = Math.max(pdfClone.scrollHeight || 0, pdfClone.offsetHeight || 0, cloneHeight);
+    frame.style.height = `${pagedHeight + 40}px`;
+    opt.html2canvas.windowHeight = pagedHeight + 40;
 
     const worker =
       html2pdf()
@@ -2417,7 +2566,14 @@ pagebreak: {
     }
     throw error;
   } finally {
-    pdfSandbox.remove();
+    if (pdfSandbox) {
+      pdfSandbox.remove();
+    }
+    frame.remove();
+    overlay.remove();
+    root.classList.remove('pdf-exporting');
+    root.style.overflowX = previousHtmlOverflow;
+    document.body.style.overflowX = previousBodyOverflow;
   }
 }
 

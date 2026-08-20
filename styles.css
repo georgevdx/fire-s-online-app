@@ -5170,7 +5170,8 @@ button.readiness-chip:focus {
   object-fit: contain !important;
 }
 
-.pdf-export-mode .formal-letterhead .report-client-logo {
+.pdf-export-mode .formal-letterhead .report-client-logo,
+.pdf-export-mode.formal-letterhead .report-client-logo {
   display: block !important;
   width: 52px !important;
   height: 52px !important;
@@ -5179,6 +5180,7 @@ button.readiness-chip:focus {
 }
 
 .pdf-export-mode .formal-letterhead .report-app-mark img,
+.pdf-export-mode.formal-letterhead .report-app-mark img,
 .pdf-export-mode .report-app-mark-footer img {
   display: block !important;
   width: 40px !important;
@@ -5375,16 +5377,48 @@ button.readiness-chip:focus {
 }
 
 .pdf-export-sandbox {
-  position: fixed !important;
+  position: relative !important;
   left: 0 !important;
   right: auto !important;
   top: 0 !important;
   width: 760px !important;
+  min-width: 760px !important;
   margin: 0 !important;
   padding: 0 !important;
   background: #ffffff !important;
   overflow: visible !important;
-  z-index: -1 !important;
+}
+
+.pdf-export-frame {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 760px !important;
+  min-width: 760px !important;
+  border: 0 !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  background: #ffffff !important;
+  z-index: 2147483000 !important;
+}
+
+html.pdf-exporting,
+html.pdf-exporting body {
+  overflow-x: visible !important;
+}
+
+.pdf-export-busy-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
 }
 
 .pdf-export-mode {
@@ -5408,6 +5442,37 @@ button.readiness-chip:focus {
 .pdf-export-mode * {
   box-sizing: border-box !important;
   max-width: 100% !important;
+}
+
+.pdf-export-mode .report-client-header,
+.pdf-export-mode .report-client-header.formal-letterhead {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  max-width: none !important;
+  grid-template-columns: none !important;
+}
+
+.pdf-export-mode .formal-letterhead,
+.pdf-export-mode .formal-letterhead * {
+  max-width: none !important;
+}
+
+.pdf-export-mode .formal-letterhead {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.pdf-export-mode .formal-letterhead .report-client-brand {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.pdf-export-mode .formal-letterhead .report-app-mark {
+  flex: 0 0 auto !important;
 }
 
 .pdf-export-mode .report-block,
