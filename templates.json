@@ -137,40 +137,34 @@
         "items": [
           {
             "Item Number": "14",
-            "Checklist Item": "If required, are fire detection and alarm serviced and within valid service date?",
-            "Non Compliance Text": "Fire detection and/or alarm systems were not serviced, maintained and/or within a valid service period where required.",
-            "Reference": "SANS 10139, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Ensure fire detection and alarm systems are inspected, tested and serviced by a competent service provider within the prescribed service intervals.",
-            "Track Expiry": true,
+            "Assessment": "Requirement",
+            "Checklist Item": "Are fire detection and alarm systems required on these premises?",
+            "Description": "Confirm whether fire detection and alarm is required for this occupancy and layout. If it is not required, choose No, not required. The remaining detection question will then be hidden and will not create a finding.",
+            "Non Compliance Text": "Fire detection and alarm systems are required on these premises but have not been provided or assessed.",
+            "Corrective Action": "Provide fire detection and alarm where required, or confirm they are not required for these premises.",
+            "Reference": "SANS 10400-T; SANS 10139; applicable municipal fire safety by-laws",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
+            ],
+            "Track Expiry": false,
+            "Gate Question": true
           },
           {
             "Item Number": "15",
-            "Checklist Item": "Is the fire alarm or detection panel accessible and indicating normal condition?",
-            "Non Compliance Text": "The fire alarm and/or detection panel was inaccessible and/or indicated abnormal, fault or isolated conditions.",
-            "Reference": "SANS 10400-T, SANS 10139, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Maintain fire alarm and detection panels accessible and ensure all faults, isolations or abnormal indications are investigated and rectified.",
+            "Assessment": "Servicing and panel condition",
+            "Checklist Item": "Is the fire detection system serviced, and is the panel without errors? Record the expiry date.",
+            "Description": "Check service records and the control panel. The panel should show a normal condition, with no faults, isolations or errors. Enter the expiry date shown on the equipment.",
+            "Non Compliance Text": "The fire detection system is not serviced, the panel shows errors or faults, or the expiry date is missing or overdue.",
+            "Corrective Action": "Arrange servicing by a competent provider, clear panel faults, and keep the expiry date on record.",
+            "Reference": "SANS 10139; SANS 10400-T; applicable municipal fire safety by-laws",
             "Severity": "High",
-            "Answer Type": "Yes/No",
+            "Answer Type": "Professional Assessment",
             "Applicable To": [
               "All"
-            ]
-          },
-          {
-            "Item Number": "16",
-            "Checklist Item": "Are detectors, manual call points and sounders unobstructed and not visibly damaged?",
-            "Non Compliance Text": "Detectors, manual call points and/or sounders were obstructed, damaged or not adequately maintained.",
-            "Reference": "SANS 10139, Applicable Municipal Fire Safety By-laws",
-            "Corrective Action": "Ensure detectors, manual call points and sounders remain unobstructed, visible and maintained in an operational condition.",
-            "Severity": "High",
-            "Answer Type": "Yes/No",
-            "Applicable To": [
-              "All"
-            ]
+            ],
+            "Track Expiry": true
           }
         ]
       },
