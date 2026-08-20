@@ -1601,6 +1601,63 @@ function waitForPdfImages(container) {
   );
 }
 
+function applyPdfLetterheadImageSizes(root) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('.formal-letterhead .report-client-logo').forEach(img => {
+    img.style.setProperty('width', '52px', 'important');
+    img.style.setProperty('height', '52px', 'important');
+    img.style.setProperty('max-width', '52px', 'important');
+    img.style.setProperty('max-height', '52px', 'important');
+    img.style.setProperty('object-fit', 'contain', 'important');
+  });
+  root.querySelectorAll('.formal-letterhead .report-app-mark img, .report-app-mark-footer img').forEach(img => {
+    img.style.setProperty('width', '22px', 'important');
+    img.style.setProperty('height', '22px', 'important');
+    img.style.setProperty('max-width', '22px', 'important');
+    img.style.setProperty('max-height', '22px', 'important');
+    img.style.setProperty('opacity', '0.28', 'important');
+    img.style.setProperty('object-fit', 'contain', 'important');
+  });
+}
+
+function rasterizeSvgImageForPdf(img, size) {
+  return new Promise(resolve => {
+    const src = String(img?.getAttribute('src') || img?.src || '');
+    if (!img || !/svg/i.test(src)) {
+      resolve();
+      return;
+    }
+    const picture = new Image();
+    picture.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(picture, 0, 0, size, size);
+        img.src = canvas.toDataURL('image/png');
+      } catch (_) {}
+      resolve();
+    };
+    picture.onerror = () => resolve();
+    picture.src = src;
+  });
+}
+
+function rasterizePdfLetterheadSvgs(root) {
+  if (!root || !root.querySelectorAll) return Promise.resolve();
+  const jobs = [];
+  root.querySelectorAll('.formal-letterhead .report-client-logo').forEach(img => {
+    jobs.push(rasterizeSvgImageForPdf(img, 104));
+  });
+  root.querySelectorAll('.formal-letterhead .report-app-mark img, .report-app-mark-footer img').forEach(img => {
+    jobs.push(rasterizeSvgImageForPdf(img, 44));
+  });
+  return Promise.all(jobs);
+}
+
 function applyMeasuredA4Pagination(pdfClone) {
   if (!pdfClone) return;
 
@@ -2169,8 +2226,13 @@ pdfClone
   .querySelectorAll('*')
   .forEach(child => {
     child.style.boxSizing = 'border-box';
+    if (child.closest && child.closest('.formal-letterhead, .report-app-mark')) {
+      return;
+    }
     child.style.maxWidth = '100%';
   });
+
+  applyPdfLetterheadImageSizes(pdfClone);
 
   pdfClone
     .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
@@ -2313,6 +2375,8 @@ pagebreak: {
   };
 
   try {
+    await rasterizePdfLetterheadSvgs(pdfClone);
+    applyPdfLetterheadImageSizes(pdfClone);
     await waitForPdfImages(pdfClone);
 
     applyMeasuredA4Pagination(pdfClone);
@@ -16519,7 +16583,7 @@ async function generateReport() {
   let overallStatus = 'Compliant / Acceptable';
 
   if (noCount > 0) {
-    overallStatus = 'Attention Required';
+    overallStatus = 'Action Required';
   } else if (notAnsweredCount > 0) {
     overallStatus = 'Incomplete Inspection';
   }
@@ -19920,7 +19984,10 @@ function getClientReportLetterhead(project) {
     (saved && saved.logo) ||
     (source && source.companyLogo) ||
     '';
-  const logo = isFireSAppLogoSrc(rawLogo) ? '' : String(rawLogo).trim();
+  let logo = isFireSAppLogoSrc(rawLogo) ? '' : String(rawLogo).trim();
+  if (!logo && companyName === 'Company S') {
+    logo = 'sample-company-s-logo.svg';
+  }
 
   return {
     companyName,
@@ -19939,7 +20006,7 @@ function getClientReportLetterhead(project) {
 function buildClientReportLetterheadHtml(letterhead) {
   const lh = letterhead || getClientReportLetterhead();
   const logoHtml = lh.logo
-    ? `<img class="report-client-logo" src="${escapeHtml(lh.logo)}" alt="${escapeHtml(lh.companyName)} logo">`
+    ? `<img class="report-client-logo" src="${escapeHtml(lh.logo)}" alt="${escapeHtml(lh.companyName)} logo" style="width:52px;height:52px;max-width:52px;max-height:52px;object-fit:contain;">`
     : '';
 
   const contactLines = [];
@@ -19974,7 +20041,7 @@ function buildClientReportLetterheadHtml(letterhead) {
         </div>
       </div>
       <div class="report-app-mark">
-        <img src="${escapeHtml(lh.fireSLogo || 'icon-192.png')}" alt="Fire-S">
+        <img src="${escapeHtml(lh.fireSLogo || 'icon-192.png')}" alt="Fire-S" style="width:22px;height:22px;max-width:22px;max-height:22px;opacity:0.28;object-fit:contain;">
         <span>${escapeHtml(lh.fireSMark || 'Prepared with Fire-S')}</span>
       </div>
     </div>
@@ -20177,7 +20244,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   let riskComment = 'No significant fire safety risks identified.';
 
   if (actionRequiredCount > 0) {
-    overallStatus = 'Attention Required';
+    overallStatus = 'Action Required';
     riskRating = actionRequiredCount >= 5 ? 'HIGH RISK' : 'MEDIUM RISK';
     riskComment =
       actionRequiredCount >= 5
@@ -20396,6 +20463,11 @@ reportContent.innerHTML = `
       </div>
 
       <div class="report-line">
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}
+      </div>
+
+      <div class="report-line">
         <strong>Inspector Name:</strong>
         ${escapeHtml(inspectorName)}
       </div>
@@ -20488,7 +20560,7 @@ reportContent.innerHTML = `
           ${escapeHtml(reportLetterhead.preparedLine)}
         </div>
         <div class="report-app-mark report-app-mark-footer">
-          <img src="${escapeHtml(reportLetterhead.fireSLogo || 'icon-192.png')}" alt="Fire-S">
+          <img src="${escapeHtml(reportLetterhead.fireSLogo || 'icon-192.png')}" alt="Fire-S" style="width:22px;height:22px;max-width:22px;max-height:22px;opacity:0.28;object-fit:contain;">
           <span>${escapeHtml(reportLetterhead.fireSMark || 'Prepared with Fire-S')}</span>
         </div>
       </div>

@@ -353,9 +353,15 @@
   function letterheadPreviewHtml(record) {
     const data = cleanRecord(record);
     const name = isGenericName(data.name) ? 'Company S' : data.name;
-    const logoHtml =
+    const logoSrc =
       data.logo && !isFireSAppLogo(data.logo)
-        ? `<img class="report-client-logo" src="${esc(data.logo)}" alt="${esc(name)} logo">`
+        ? data.logo
+        : name === 'Company S'
+          ? SAMPLE_COMPANY_S_LOGO
+          : '';
+    const logoHtml =
+      logoSrc
+        ? `<img class="report-client-logo" src="${esc(logoSrc)}" alt="${esc(name)} logo" style="width:52px;height:52px;max-width:52px;max-height:52px;object-fit:contain;">`
         : '';
     return `
       <div class="report-header report-client-header formal-letterhead">
@@ -368,7 +374,7 @@
           </div>
         </div>
         <div class="report-app-mark">
-          <img src="${FIRE_S_LOGO}" alt="Fire-S">
+          <img src="${FIRE_S_LOGO}" alt="Fire-S" style="width:22px;height:22px;max-width:22px;max-height:22px;opacity:0.28;object-fit:contain;">
           <span>Prepared with Fire-S</span>
         </div>
       </div>
