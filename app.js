@@ -61,7 +61,7 @@ let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.2.4';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19026,6 +19026,11 @@ function handleAnswerChange(selectEl, options = {}) {
 
   window.__fireSChecklistInputReleaseTimer = setTimeout(() => {
     window.__fireSChecklistInputActive = false;
+    try {
+      if (window.FireSFinalisationEngine && typeof window.FireSFinalisationEngine.refresh === 'function') {
+        window.FireSFinalisationEngine.refresh();
+      }
+    } catch (_) {}
   }, 1400);
 }
 
@@ -38154,7 +38159,26 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     return (typeof getProjects === 'function' ? getProjects() : []).find(project => String(project?.id) === id) || null;
   }
 
+  function isAnsweredValue(value) {
+    const v = String(value || '').trim().toLowerCase();
+    return v === 'yes' || v === 'no' || v === 'n/a' || v === 'na' || v === 'not applicable';
+  }
+
+  function liveChecklistCounts() {
+    const fields = Array.from(document.querySelectorAll('.answer-select'));
+    if (!fields.length) return null;
+    const answered = fields.filter(field => isAnsweredValue(field.value)).length;
+    return {
+      total: fields.length,
+      answered,
+      unanswered: Math.max(0, fields.length - answered)
+    };
+  }
+
   function checklistCounts(project){
+    const live = liveChecklistCounts();
+    if (live) return live;
+
     try {
       if (typeof getProjectCompletionCounts === 'function') {
         const counts = getProjectCompletionCounts(project) || {};
@@ -38166,9 +38190,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       }
     } catch (_) {}
 
-    const fields = Array.from(document.querySelectorAll('.answer-select'));
-    const answered = fields.filter(field => String(field.value || '').trim()).length;
-    return { total: fields.length, answered, unanswered: Math.max(0, fields.length - answered) };
+    return { total: 0, answered: 0, unanswered: 0 };
   }
 
   function checklistComplete(project){
@@ -38207,19 +38229,18 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     const reportBtn = document.getElementById('reportBtn');
 
     if (finishBtn) {
-      finishBtn.disabled = !complete;
-      finishBtn.textContent = complete ? 'Finalise Inspection' : 'Complete Checklist to Finalise';
+      finishBtn.disabled = false;
+      finishBtn.textContent = 'Finish Inspection';
       finishBtn.title = complete
-        ? 'Finalise this inspection and move the completed record to Inspection History.'
-        : 'Every checklist item must be answered before this inspection can be finalised.';
+        ? 'Finish this inspection and keep it in Inspection History.'
+        : 'Tap to finish. If a question is still empty, Fire-S opens that question.';
     }
 
-    // The final report is a completed-inspection output. Archived reports remain available from History.
     if (reportBtn) {
-      reportBtn.disabled = !complete;
+      reportBtn.disabled = false;
       reportBtn.title = complete
         ? 'Generate the completed inspection report.'
-        : 'Complete every checklist item before generating the final report.';
+        : 'Finish the remaining questions, then export the PDF.';
     }
 
     const review = document.getElementById('fireSInspectionReviewPanel');
@@ -38274,14 +38295,43 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       }
       const counts = checklistCounts(project);
       if (!(counts.total > 0 && counts.unanswered === 0)) {
-        alert(`This inspection cannot be finalised yet. ${counts.unanswered} checklist item${counts.unanswered === 1 ? '' : 's'} still require an answer. Save the inspection and continue later.`);
-        updateFinalisationControls();
-        document.getElementById('checklistCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
+        try {
+          if (window.FireSQaGates && typeof window.FireSQaGates.applyAllGates === 'function') {
+            window.FireSQaGates.applyAllGates();
+          }
+        } catch (_) {}
+        const retry = checklistCounts(project);
+        if (retry.total > 0 && retry.unanswered === 0) {
+          // Hidden follow-up questions were marked N/A; continue.
+        } else {
+          const firstEmpty = Array.from(document.querySelectorAll('.answer-select')).find(field => {
+            if (field.closest('.fire-s-gate-hidden')) return false;
+            const v = String(field.value || '').trim().toLowerCase();
+            return !(v === 'yes' || v === 'no' || v === 'n/a' || v === 'na' || v === 'not applicable');
+          });
+          const row = firstEmpty && firstEmpty.closest('.checklist-row');
+          const sectionIndex = Number(row && row.dataset.sectionIndex);
+          if (Number.isFinite(sectionIndex) && typeof openChecklistSection === 'function') {
+            openChecklistSection(sectionIndex, false);
+          }
+          if (row) {
+            row.classList.remove('question-hidden');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          alert(
+            retry.total === 0
+              ? 'There is no checklist yet. Choose occupancy, tap Expand, then answer the questions.'
+              : `This inspection is not finished yet.\n\n${retry.unanswered} question${retry.unanswered === 1 ? '' : 's'} still need an answer.\n\nI opened the first empty one.`
+          );
+          updateFinalisationControls();
+          return;
+        }
       }
 
+      const completeCounts = liveChecklistCounts() || counts;
+
       const confirmed = confirm(
-        `Finalise this inspection?\n\nChecklist: ${counts.answered} / ${counts.total} complete\nPhotos: ${Array.isArray(project.photos) ? project.photos.length : 0} (optional)\n\nThe completed record will be added to Inspection History and become the permanent inspection record.`
+        `Finish this inspection?\n\nChecklist: ${completeCounts.answered} / ${completeCounts.total} complete\nPhotos: ${Array.isArray(project.photos) ? project.photos.length : 0} (optional)\n\nThe completed record will be kept in Inspection History.`
       );
       if (!confirmed) return;
 
@@ -38303,8 +38353,20 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
         }
         const counts = checklistCounts(project);
         if (!(counts.total > 0 && counts.unanswered === 0)) {
-          alert(`The final report is not available yet. Complete the remaining ${counts.unanswered} checklist item${counts.unanswered === 1 ? '' : 's'} first.`);
-          return;
+          try {
+            if (window.FireSQaGates && typeof window.FireSQaGates.applyAllGates === 'function') {
+              window.FireSQaGates.applyAllGates();
+            }
+          } catch (_) {}
+          const retry = checklistCounts(project);
+          if (!(retry.total > 0 && retry.unanswered === 0)) {
+            alert(
+              retry.unanswered
+                ? `The PDF is not ready yet. ${retry.unanswered} question${retry.unanswered === 1 ? '' : 's'} still need an answer.`
+                : 'The PDF is not ready yet. Complete the checklist first.'
+            );
+            return;
+          }
         }
       }
       return originalGenerateReport.apply(this, arguments);
