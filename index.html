@@ -46,7 +46,7 @@
     #fireSLogoutScreen h1 { margin: 8px 0 6px; font-size: 2rem; }
     #fireSLogoutScreen p { margin: 0; opacity: .75; font-size: .95rem; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=107-19-no-rc-beta">
+  <link rel="stylesheet" href="styles.css?v=107-20-blank-click">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-5-owner-kpis">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-20-hide-exec-reports">
@@ -60,7 +60,7 @@
   <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
   <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
-  <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-1-hide-fill-dashboard">
+  <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
 </head>
 <body>
   <div id="fireSBootScreen" aria-live="polite">
@@ -1515,7 +1515,7 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=no-rc-beta-v1"></script>
+  <script src="app.js?v=fix-blank-click-v1"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
   <script src="fire-s-clean-home-roles.js?v=2-15-hide-exec-reports"></script>
@@ -1529,14 +1529,14 @@
   <script src="fire-s-inspector-board.js?v=1-3-manual-dashboard"></script>
   <script src="fire-s-get-started.js?v=2-5-desktop-workspace"></script>
   <script src="fire-s-startup-stability.js?v=1-3-manual-dashboard"></script>
-  <script src="fire-s-screen-lock.js?v=1-4-manual-dashboard"></script>
-  <script src="fire-s-phone-back.js?v=1-0"></script>
+  <script src="fire-s-screen-lock.js?v=1-5-blank-click"></script>
+  <script src="fire-s-phone-back.js?v=1-1-blank-click"></script>
   <script src="fire-s-desktop-access.js?v=1-2-boot-safe"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=107-19-no-rc-beta')
+        navigator.serviceWorker.register('./service-worker.js?v=107-20-blank-click')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

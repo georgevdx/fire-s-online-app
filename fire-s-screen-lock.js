@@ -7,6 +7,21 @@
   if (window.__fireSScreenLock) return;
   window.__fireSScreenLock = true;
 
+  const WORKSPACE_IDS = [
+    'homeSection',
+    'projectListSection',
+    'projectFormSection',
+    'servicesSection',
+    'findingsCentreSection',
+    'companyTeamSection',
+    'companyLetterheadSection',
+    'testSamplesSection',
+    'inspectorBoardSection',
+    'userManualSection',
+    'managementDashboardSection',
+    'reportSection'
+  ];
+
   function byId(id) {
     return document.getElementById(id);
   }
@@ -20,6 +35,53 @@
       if (!style) return true;
       if (style.display === 'none' || style.visibility === 'hidden') return false;
     } catch (_) {}
+    return true;
+  }
+
+  function visibleWorkspaceId() {
+    for (let i = 0; i < WORKSPACE_IDS.length; i += 1) {
+      const id = WORKSPACE_IDS[i];
+      if (isShown(byId(id))) return id;
+    }
+    return null;
+  }
+
+  function recoverHomeIfBlank() {
+    if (visibleWorkspaceId()) return false;
+
+    document.body.classList.remove(
+      'fire-s-premises-render-lock',
+      'fire-s-away-from-home',
+      'fire-s-filling-inspection'
+    );
+
+    WORKSPACE_IDS.forEach(id => {
+      if (id === 'homeSection') return;
+      const el = byId(id);
+      if (!el) return;
+      el.style.display = 'none';
+    });
+
+    const home = byId('homeSection');
+    if (home) {
+      home.hidden = false;
+      home.style.display = 'block';
+      home.style.visibility = '';
+      home.style.opacity = '';
+      home.style.pointerEvents = '';
+      home.removeAttribute('aria-hidden');
+    }
+
+    const command = byId('mainCommandCentre');
+    if (command) {
+      command.hidden = false;
+      command.style.removeProperty('display');
+      command.style.visibility = '';
+      command.style.opacity = '';
+      command.style.pointerEvents = '';
+      command.removeAttribute('aria-hidden');
+    }
+
     return true;
   }
 
@@ -71,6 +133,7 @@
     }
 
     if (filling) hidePremisesDashboardChrome();
+    recoverHomeIfBlank();
   }
 
   function hidePremisesDashboardChrome() {
@@ -143,11 +206,28 @@
   });
 
   wrap('showHome', original => function fireSShowHomeUnlocked() {
-    document.body.classList.remove('fire-s-premises-render-lock');
-    const list = byId('projectListSection');
-    if (list) list.style.display = 'none';
+    document.body.classList.remove(
+      'fire-s-premises-render-lock',
+      'fire-s-away-from-home',
+      'fire-s-filling-inspection'
+    );
+    WORKSPACE_IDS.forEach(id => {
+      if (id === 'homeSection') return;
+      const el = byId(id);
+      if (el) el.style.display = 'none';
+    });
+    const home = byId('homeSection');
+    if (home) {
+      home.hidden = false;
+      home.style.display = 'block';
+      home.style.visibility = '';
+      home.style.opacity = '';
+      home.style.pointerEvents = '';
+      home.removeAttribute('aria-hidden');
+    }
     const result = original.apply(this, arguments);
     applyLock();
+    recoverHomeIfBlank();
     return result;
   });
 
@@ -170,36 +250,19 @@
   });
 
   wrap('refreshSyncData', original => function fireSRefreshSyncWithoutLayerSwap() {
-    const space = activeWorkspace();
     const result = original.apply(this, arguments);
     return Promise.resolve(result).then(value => {
-      if (space === 'home') {
-        const list = byId('projectListSection');
-        if (list) list.style.display = 'none';
-        document.body.classList.remove('fire-s-premises-render-lock');
-      }
-      if (space === 'gateway' || space === 'form') {
-        document.body.classList.add('fire-s-premises-render-lock');
-        const command = byId('mainCommandCentre');
-        if (command) command.setAttribute('aria-hidden', 'true');
-      }
       applyLock();
+      recoverHomeIfBlank();
       return value;
     });
   });
 
   wrap('runBackgroundSync', original => function fireSBackgroundSyncKeepScreen() {
-    const space = activeWorkspace();
     const result = original.apply(this, arguments);
     return Promise.resolve(result).then(value => {
-      if (space === 'home') {
-        const list = byId('projectListSection');
-        if (list) list.style.display = 'none';
-      }
-      if (space === 'gateway' || space === 'form') {
-        document.body.classList.add('fire-s-premises-render-lock');
-      }
       applyLock();
+      recoverHomeIfBlank();
       return value;
     });
   });
@@ -242,10 +305,14 @@
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['style', 'hidden']
+      attributeFilter: ['style', 'hidden', 'class']
     });
     applyLock();
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) recoverHomeIfBlank();
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startObserver, { once: true });
@@ -254,6 +321,7 @@
   }
 
   window.fireSApplyScreenLock = applyLock;
+  window.fireSRecoverHomeIfBlank = recoverHomeIfBlank;
   window.fireSIsFillingInspection = function fireSIsFillingInspection() {
     return activeWorkspace() === 'form';
   };

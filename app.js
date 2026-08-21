@@ -61,7 +61,7 @@ let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.2.2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -32272,12 +32272,46 @@ function fireSApplyLifecycleUxLabels() {
     try { if (typeof updateBetaQuickTestPanel === 'function') updateBetaQuickTestPanel(); } catch (error) {}
     try { if (typeof refreshRcHomePanels === 'function') refreshRcHomePanels(); } catch (error) {}
 
-    if (homeSection) homeSection.style.display = 'block';
+    if (homeSection) {
+      homeSection.hidden = false;
+      homeSection.style.display = 'block';
+      homeSection.style.visibility = '';
+      homeSection.style.opacity = '';
+      homeSection.style.pointerEvents = '';
+      homeSection.removeAttribute('aria-hidden');
+    }
+    const commandCentre = byId('mainCommandCentre');
+    if (commandCentre) {
+      commandCentre.hidden = false;
+      commandCentre.style.removeProperty('display');
+      commandCentre.style.visibility = '';
+      commandCentre.style.opacity = '';
+      commandCentre.style.pointerEvents = '';
+      commandCentre.removeAttribute('aria-hidden');
+    }
     if (servicesSection) servicesSection.style.display = 'none';
-    const projectList = byId('projectListSection');
-    if (projectList) projectList.style.display = 'none';
-    const projectForm = byId('projectFormSection');
-    if (projectForm) projectForm.style.display = 'none';
+    [
+      'projectListSection',
+      'projectFormSection',
+      'findingsCentreSection',
+      'companyTeamSection',
+      'companyLetterheadSection',
+      'testSamplesSection',
+      'inspectorBoardSection',
+      'userManualSection',
+      'managementDashboardSection',
+      'reportSection'
+    ].forEach(id => {
+      const el = byId(id);
+      if (el) el.style.display = 'none';
+    });
+    try {
+      document.body.classList.remove(
+        'fire-s-premises-render-lock',
+        'fire-s-away-from-home',
+        'fire-s-filling-inspection'
+      );
+    } catch (error) {}
 
     renderHomeController();
     try { if (typeof updateFloatingBackButton === 'function') updateFloatingBackButton(); } catch (error) {}

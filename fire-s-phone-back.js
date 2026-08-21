@@ -116,6 +116,11 @@
       isShown(byId('reportSection'))
     ) {
       goHome();
+      return;
+    }
+
+    if (!isShown(byId('homeSection')) || !isShown(byId('mainCommandCentre'))) {
+      goHome();
     }
   }
 
