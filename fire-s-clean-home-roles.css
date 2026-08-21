@@ -231,8 +231,6 @@ body.fire-s-clean-home.fire-s-role-manager #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn,
-body.fire-s-clean-home.fire-s-role-manager #cmdTestSamplesBtn,
-body.fire-s-clean-home.fire-s-role-owner #cmdTestSamplesBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdManagementDashboardBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdManagementDashboardBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdUserManualBtn,
@@ -244,6 +242,12 @@ body.fire-s-clean-home.fire-s-role-inspector #cmdUserManualBtn {
 body.fire-s-clean-home.fire-s-role-owner #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-viewer #cmdReportsBtn {
+  display: block !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #cmdTestSamplesBtn,
+body.fire-s-clean-home.fire-s-role-manager #cmdTestSamplesBtn,
+body.fire-s-clean-home.fire-s-role-viewer #cmdTestSamplesBtn {
   display: none !important;
 }
 

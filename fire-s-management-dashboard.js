@@ -1507,7 +1507,7 @@
     setMessage(
       count
         ? `${count} inspection(s) in this view. Tap a number or graph to open the filtered list.`
-        : 'No inspections yet. Load Test samples (Home) to see graphs, or complete field inspections.'
+        : 'No inspections yet. Complete field inspections to see graphs.'
     );
     try {
       if (typeof window.updateFloatingBackButton === 'function') {

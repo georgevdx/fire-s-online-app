@@ -61,7 +61,7 @@ let inspectionHistoryViewMode = false;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = '1.2.4';
+const APP_VERSION = '1.2.5';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -11807,6 +11807,8 @@ function getFilterLabel(filter) {
     'inspection-warning': 'Missing data',
     'inspection-progress': 'In progress',
     'inspection-complete': 'Closed',
+    completed: 'Completed inspections',
+    'reports-completed': 'Completed inspections',
     'inspection-draft': 'Draft',
     'expiry-overdue': 'Expired equipment',
     'expiry-soon': 'Equipment due soon',
@@ -23939,7 +23941,7 @@ window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
 // Client PDFs stay on the inspection itself (Export PDF).
 // =====================================================
 function shouldShowReportsCommandCard() {
-  return false;
+  return true;
 }
 
 function syncReportsCommandCardForExecHome() {
@@ -23965,6 +23967,12 @@ function openReportsCommand() {
     hideScheduleNewPanelForReports();
   }
 
+  try {
+    currentFilter = 'completed';
+    window.currentFilter = 'completed';
+    currentProjectPage = 1;
+  } catch (_) {}
+
   if (typeof showProjectList === 'function') {
     showProjectList();
   }
@@ -23974,14 +23982,22 @@ function openReportsCommand() {
       hideScheduleNewPanelForReports();
     }
 
+    try {
+      currentFilter = 'completed';
+      window.currentFilter = 'completed';
+      if (typeof renderProjectsList === 'function') {
+        renderProjectsList();
+      }
+    } catch (_) {}
+
     const search = document.getElementById('projectSearch');
     if (search) {
-      search.placeholder = 'Search completed inspections or report-ready sites';
+      search.placeholder = 'Search completed inspections';
       search.focus();
     }
 
     if (typeof showMainCommandMessage === 'function') {
-      showMainCommandMessage('Reports: open a completed inspection, then tap Export PDF.');
+      showMainCommandMessage('Reports: completed inspections. Open one, then tap Export PDF.');
     }
   }, 120);
 }
@@ -30845,7 +30861,7 @@ function projectMatchesInspectionGatewayQuickFilter(project, filter) {
   if (activeFilter === 'new-premise') return fireSIsNewPremises(project);
   if (activeFilter === 'inspection-progress' || activeFilter === 'current') return fireSIsCurrentInspection(project);
   if (activeFilter === 'existing-history') return fireSHasPreviousCycles(project);
-  if (activeFilter === 'archive-new-cycle' || activeFilter === 'inspection-complete' || activeFilter === 'completed') return fireSIsCompletedOrArchiveCandidate(project);
+  if (activeFilter === 'archive-new-cycle' || activeFilter === 'inspection-complete' || activeFilter === 'completed' || activeFilter === 'reports-completed') return fireSIsCompletedOrArchiveCandidate(project);
   if (activeFilter === 'risk') return fireSHasMeaningfulInspectionData(project) && hasProjectOpenActionItems(project);
   if (activeFilter === 'overdue') return typeof fireSIsInspectionOverdue === 'function' ? fireSIsInspectionOverdue(project) : hasProjectOverdueActions(project);
   if (activeFilter === 'inspection-attention') return fireSHasMeaningfulInspectionData(project) && (hasProjectOpenActionItems(project) || hasProjectOverdueActions(project));

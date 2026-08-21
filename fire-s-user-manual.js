@@ -220,7 +220,7 @@
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>
-        <p>There is no Reports button on Home. Open a completed inspection from Inspection Gateway, then tap Export PDF.</p>
+        <p>Home has a <strong>Reports</strong> button. It opens completed inspections. Open one, then tap Export PDF.</p>
       </article>
 
       <article class="user-manual-chapter">
@@ -268,7 +268,7 @@
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
           <li><strong>Schedule</strong> — new-site bookings and follow-ups.</li>
-          <li><strong>Reports</strong> — open a completed inspection in Inspection Gateway, then tap Export PDF. There is no Reports button on Home.</li>
+          <li><strong>Reports</strong> — Home → Reports. This list is completed inspections. Open one, then tap Export PDF.</li>
           <li><strong>Support</strong> — request help or send a review request.</li>
         </ul>
       </article>
@@ -293,7 +293,7 @@
         <h3>Inspectors board</h3>
         <p>Select one inspector, view the whole team, or Compare.</p>
         <h3>Test samples</h3>
-        <p>Owner / Manager can load 50 labelled TEST inspections across 5 test inspectors, then delete that batch later. Training data only.</p>
+        <p>Test samples is a training tool. It is hidden on Home so clients do not see it.</p>
       </article>
 
       <article class="user-manual-chapter">
