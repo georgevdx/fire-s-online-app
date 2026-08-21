@@ -1,0 +1,134 @@
+/* Fire-S subscribe overlay and plan picker */
+
+.fire-s-plan-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.fire-s-plan-picker-label {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.fire-s-plan-options {
+  display: grid;
+  gap: 8px;
+}
+
+.fire-s-plan-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  margin: 0;
+  padding: 12px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.fire-s-plan-card:has(input:checked),
+.fire-s-plan-card.is-selected {
+  border-color: #991b1b;
+  background: #fff7f7;
+}
+
+.fire-s-plan-card input {
+  margin-top: 3px;
+  width: auto;
+}
+
+.fire-s-plan-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.fire-s-plan-card small {
+  display: block;
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+.fire-s-plan-billing-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.fire-s-get-started-privacy,
+.fire-s-get-started-install {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.fire-s-get-started-privacy a {
+  color: #1d4ed8;
+}
+
+.fire-s-subscribe-section .toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.fire-s-subscribe-intro {
+  margin: 0 0 14px;
+}
+
+.fire-s-subscribe-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.fire-s-subscribe-intro h3 {
+  margin: 6px 0 8px;
+  color: #0f172a;
+}
+
+.fire-s-subscribe-intro p {
+  margin: 0;
+  color: #475569;
+}
+
+.fire-s-subscribe-current {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+}
+
+.fire-s-subscribe-current strong {
+  display: block;
+  font-size: 1.15rem;
+}
+
+.fire-s-subscribe-current span {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.fire-s-subscribe-message {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.fire-s-subscribe-message.is-error {
+  background: #fff1f2;
+  color: #9f1239;
+}

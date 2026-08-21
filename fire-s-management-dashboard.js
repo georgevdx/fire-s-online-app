@@ -42,6 +42,7 @@
     'testSamplesSection',
     'inspectorBoardSection',
     'userManualSection',
+    'fireSSubscribeSection',
     'reportSection'
   ];
 

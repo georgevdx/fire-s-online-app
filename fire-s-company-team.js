@@ -548,6 +548,7 @@
       'testSamplesSection',
       'companyLetterheadSection',
       'userManualSection',
+      'fireSSubscribeSection',
       'managementDashboardSection'
     ].forEach(id => {
       const el = byId(id);

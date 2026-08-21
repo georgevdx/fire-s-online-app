@@ -186,6 +186,7 @@ body.fire-s-clean-home.fire-s-role-inspector #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdTestSamplesBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdManagementDashboardBtn,
+body.fire-s-clean-home.fire-s-role-inspector #cmdSubscribeBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdServicesBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdDashboardBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdFindingsBtn,
@@ -195,6 +196,7 @@ body.fire-s-clean-home.fire-s-role-guest #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdTestSamplesBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdManagementDashboardBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdSubscribeBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdServicesBtn,
 body.fire-s-clean-home.fire-s-role-guest #cmdDashboardBtn,
@@ -207,6 +209,7 @@ body.fire-s-clean-home.fire-s-role-pending-member #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-pending-member #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-pending-member #cmdTestSamplesBtn,
 body.fire-s-clean-home.fire-s-role-pending-member #cmdManagementDashboardBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdSubscribeBtn,
 body.fire-s-clean-home.fire-s-role-pending-member #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-pending-member #cmdServicesBtn,
 body.fire-s-clean-home.fire-s-role-pending-member #cmdDashboardBtn,
@@ -219,6 +222,7 @@ body.fire-s-clean-home.fire-s-role-new-company #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-new-company #cmdCompanyBtn,
 body.fire-s-clean-home.fire-s-role-new-company #cmdTestSamplesBtn,
 body.fire-s-clean-home.fire-s-role-new-company #cmdManagementDashboardBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdSubscribeBtn,
 body.fire-s-clean-home.fire-s-role-new-company #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-new-company #cmdServicesBtn,
 body.fire-s-clean-home.fire-s-role-new-company #cmdDashboardBtn,
@@ -235,7 +239,8 @@ body.fire-s-clean-home.fire-s-role-manager #cmdManagementDashboardBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdManagementDashboardBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdUserManualBtn,
-body.fire-s-clean-home.fire-s-role-inspector #cmdUserManualBtn {
+body.fire-s-clean-home.fire-s-role-inspector #cmdUserManualBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdSubscribeBtn {
   display: block !important;
 }
 
@@ -247,7 +252,9 @@ body.fire-s-clean-home.fire-s-role-viewer #cmdReportsBtn {
 
 body.fire-s-clean-home.fire-s-role-owner #cmdTestSamplesBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdTestSamplesBtn,
-body.fire-s-clean-home.fire-s-role-viewer #cmdTestSamplesBtn {
+body.fire-s-clean-home.fire-s-role-viewer #cmdTestSamplesBtn,
+body.fire-s-clean-home.fire-s-role-manager #cmdSubscribeBtn,
+body.fire-s-clean-home.fire-s-role-viewer #cmdSubscribeBtn {
   display: none !important;
 }
 

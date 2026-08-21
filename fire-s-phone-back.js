@@ -109,6 +109,7 @@
       isShown(byId('findingsCentreSection')) ||
       isShown(byId('testSamplesSection')) ||
       isShown(byId('userManualSection')) ||
+      isShown(byId('fireSSubscribeSection')) ||
       isShown(byId('managementDashboardSection')) ||
       isShown(byId('companyLetterheadSection')) ||
       isShown(byId('companyTeamSection')) ||

@@ -1,0 +1,43 @@
+Fire-S Play Store listing copy
+================================
+
+Use this text in Google Play Console. Do not go live in the app until Johan says sit dit live.
+
+App name (30 characters max)
+Fire-S
+
+Short description (80 characters max)
+Fire safety inspections. Subscribe, inspect, and export the client PDF.
+
+Full description
+Fire-S is the professional fire safety inspection app from Company S.
+
+Subscribe as the company owner, add your inspectors, then work on the phone:
+
+• Find or start an inspection
+• Fill the Q&A checklist
+• Take photos and capture GPS
+• Finish the inspection
+• Export the client PDF with your company letterhead
+
+Owners and managers also get Home reports, personnel, company details, and a management dashboard on tablet or PC.
+
+Packages: Field, Operations, Executive and Enterprise. Price is confirmed by Company S. The app does not take a card in this version.
+
+Privacy policy URL (after sit dit live)
+https://georgevdx.github.io/fire-s-online-app/privacy.html
+
+App icon
+../icon-512.png
+
+Feature graphic
+play/feature-graphic.png (1024 x 500)
+
+Package name
+za.co.companys.fires
+
+Category
+Business
+
+Contact
+Use the Support card inside Fire-S, and the email you enter in Play Console.

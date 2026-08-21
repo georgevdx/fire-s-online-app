@@ -79,6 +79,10 @@
   margin: 0;
 }
 
+.fire-s-get-started-fields .fire-s-plan-card input {
+  width: auto;
+}
+
 .fire-s-get-started-back {
   justify-self: start;
   width: auto !important;

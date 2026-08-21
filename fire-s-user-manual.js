@@ -17,6 +17,7 @@
     'testSamplesSection',
     'inspectorBoardSection',
     'managementDashboardSection',
+    'fireSSubscribeSection',
     'reportSection'
   ];
 
@@ -183,7 +184,7 @@
         <ol>
           <li><strong>1. Login</strong> — you already have an email and password.</li>
           <li><strong>2. Create password</strong> — first time only, after your owner added your email in Personnel.</li>
-          <li><strong>3. Register company</strong> — new business. You become the Owner.</li>
+          <li><strong>3. Subscribe</strong> — new business. Choose a package. You become the Owner.</li>
         </ol>
         <h3>Login</h3>
         <ol>
@@ -200,13 +201,15 @@
           <li>Type that same email and choose a password.</li>
           <li>Tap <strong>Create password</strong>, then Login.</li>
         </ol>
-        <h3>Register company (Owner)</h3>
+        <h3>Subscribe (Owner)</h3>
         <ol>
-          <li>Tap <strong>3. Register company</strong>.</li>
+          <li>Tap <strong>3. Subscribe</strong>.</li>
           <li>Type the company name, your email and a password.</li>
-          <li>Tap <strong>Register company</strong>.</li>
-          <li>If you are already signed in, type the company name and tap <strong>Save company</strong>.</li>
+          <li>Tap a package: Field, Operations, Executive or Enterprise.</li>
+          <li>Tap <strong>Subscribe</strong>.</li>
+          <li>If you are already signed in, type the company name, choose a package and tap <strong>Subscribe</strong>.</li>
         </ol>
+        <p>No card is taken in the app yet. Company S confirms the price. Owners can later open <strong>Subscription</strong> on Home to change the package.</p>
         <h3>Waiting</h3>
         <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
       </article>
@@ -318,12 +321,19 @@
 
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
-        <p>These are the future subscriber packages. The app is not taking payment for them yet. Company S will confirm price when billing starts.</p>
+        <p>New companies subscribe on Access and choose a package. The app does not take a card yet. Company S confirms the price and invoices the owner.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to view or change the package.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
           Field is for Inspectors. Operations adds Managers. Executive adds the Owner dashboard and Power BI export. Enterprise adds extra seats, test samples and support.
         </div>
+        <h3>Install Fire-S on a phone</h3>
+        <ol>
+          <li>Open Fire-S in Chrome.</li>
+          <li>On Access tap <strong>Install on this phone</strong>, or Chrome menu → Add to Home screen.</li>
+          <li>Google Play Store listing is a separate Company S upload. Until that listing is live, the home-screen icon is the download.</li>
+        </ol>
       </article>
 
       <article class="user-manual-chapter">

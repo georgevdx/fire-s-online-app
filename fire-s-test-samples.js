@@ -17,6 +17,7 @@
     'companyLetterheadSection',
     'inspectorBoardSection',
     'userManualSection',
+    'fireSSubscribeSection',
     'managementDashboardSection',
     'reportSection'
   ];

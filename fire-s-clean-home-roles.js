@@ -45,6 +45,7 @@
     'cmdCompanyBtn',
     'cmdTestSamplesBtn',
     'cmdManagementDashboardBtn',
+    'cmdSubscribeBtn',
     'cmdUserManualBtn',
     'cmdServicesBtn',
     'cmdDashboardBtn',
@@ -591,6 +592,7 @@
 
     ALL_CMD_IDS.forEach(show);
     hide('cmdTestSamplesBtn');
+    hide('cmdSubscribeBtn');
 
     cardText(
       'cmdInspectionsBtn',
@@ -748,6 +750,11 @@
       'Power BI-style graphs on tablet, laptop or PC.'
     );
     cardText(
+      'cmdSubscribeBtn',
+      'Subscription',
+      'View or change the company package.'
+    );
+    cardText(
       'cmdUserManualBtn',
       'User manual',
       'Download the subscriber guide as a PDF.'
@@ -768,12 +775,17 @@
         window.fireSRefreshCompanyPersonnelStats();
       }
     } catch (_) {}
+    try {
+      if (typeof window.fireSRefreshSubscribeCard === 'function') {
+        window.fireSRefreshSubscribeCard();
+      }
+    } catch (_) {}
   }
 
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest', 'guest');
-    setHero('Fire-S', 'ACCESS', 'Login, create a password, or register your company.');
+    setHero('Fire-S', 'ACCESS', 'Login, create a password, or subscribe.');
     setText('#mainCommandCentre .main-command-kicker', 'Access');
     setText('#mainCommandCentre .main-command-top h3', 'Start here');
     setText(
@@ -813,6 +825,7 @@
     hide('cmdCompanyBtn');
     hide('cmdTestSamplesBtn');
     hide('cmdManagementDashboardBtn');
+    hide('cmdSubscribeBtn');
     hide('cmdServicesBtn');
     hide('cmdInspectorsBtn');
     hide('inspectorBoardHomeBar');
@@ -853,12 +866,12 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'REGISTER', 'Save your company name, then manage personnel.');
+    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Choose a package and save your company name.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
-    setText('#mainCommandCentre .main-command-top h3', 'Register your company');
+    setText('#mainCommandCentre .main-command-top h3', 'Subscribe');
     setText(
       '#mainCommandSubtitle',
-      'Use Access below to save the company name once.'
+      'Use Access below to choose a package and save the company name once.'
     );
     setText('#mainCommandAccessStatus', 'New company setup');
     setStatsVisible(false);

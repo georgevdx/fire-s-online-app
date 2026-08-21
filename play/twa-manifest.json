@@ -1,0 +1,30 @@
+{
+  "packageId": "za.co.companys.fires",
+  "host": "georgevdx.github.io",
+  "name": "Fire-S",
+  "launcherName": "Fire-S",
+  "display": "standalone",
+  "themeColor": "#b71c1c",
+  "navigationColor": "#b71c1c",
+  "backgroundColor": "#050505",
+  "enableNotifications": false,
+  "startUrl": "/fire-s-online-app/",
+  "iconUrl": "https://georgevdx.github.io/fire-s-online-app/icon-512.png",
+  "maskableIconUrl": "https://georgevdx.github.io/fire-s-online-app/icon-512.png",
+  "appVersion": "1.3.0",
+  "appVersionCode": 130,
+  "shortcuts": [],
+  "generatorApp": "manual",
+  "webManifestUrl": "https://georgevdx.github.io/fire-s-online-app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": { "enabled": true },
+    "playBilling": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "fullScopeUrl": "https://georgevdx.github.io/fire-s-online-app/",
+  "minSdkVersion": 21,
+  "orientation": "default",
+  "isChromeOSOnly": false,
+  "isMetaQuest": false
+}

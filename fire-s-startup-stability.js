@@ -21,6 +21,7 @@
       'homeSection',
       'testSamplesSection',
       'userManualSection',
+      'fireSSubscribeSection',
       'managementDashboardSection',
       'companyLetterheadSection',
       'companyTeamSection',

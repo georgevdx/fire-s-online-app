@@ -298,12 +298,47 @@
     };
   }
 
+  function catalog() {
+    try {
+      return window.fireSSubscriptionCatalog || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function fillPlanPicker(containerId, selectedId) {
+    var cat = catalog();
+    var box = byId(containerId);
+    if (!cat || !cat.renderPlanPicker || !box) return;
+    cat.renderPlanPicker(box, selectedId || (cat.defaultPlanId || 'executive'));
+  }
+
+  function chosenPlan(containerId) {
+    var cat = catalog();
+    var box = byId(containerId);
+    if (cat && cat.selectedPlanFrom) return cat.selectedPlanFrom(box);
+    return 'executive';
+  }
+
+  async function saveChosenPlan(planId) {
+    var cat = catalog();
+    if (!cat || !cat.persistCompanyPlan) return;
+    try {
+      await cat.persistCompanyPlan(planId);
+    } catch (_) {}
+    try {
+      if (typeof window.fireSRefreshSubscribeCard === 'function') {
+        window.fireSRefreshSubscribeCard();
+      }
+    } catch (_) {}
+  }
+
   function showChoices() {
     mode = 'choices';
     hidePanels();
     setTitle(
       'Access',
-      'Choose one path. Staff and owners use the same Access screen.'
+      'Login, create a password, or subscribe as a new company.'
     );
     showPanel('fireSGetStartedChoices');
     var registerBtn = byId('fireSChoiceCompany');
@@ -345,10 +380,11 @@
     mode = 'register';
     hidePanels();
     setTitle(
-      'Register company',
-      'You become the Owner. Next you manage personnel.'
+      'Subscribe',
+      'Choose a package. You become the Owner. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
+    fillPlanPicker('fireSRegisterPlanOptions', 'executive');
     setStatus('');
   }
 
@@ -362,9 +398,10 @@
     hidePanels();
     setTitle(
       'Name your company',
-      'You are signed in. Save the company name once, then manage personnel.'
+      'You are signed in. Choose a package, save the company name, then manage personnel.'
     );
     showPanel('fireSGetStartedCompanyOnly');
+    fillPlanPicker('fireSCompanyOnlyPlanOptions', 'executive');
     setStatus('');
   }
 
@@ -457,7 +494,7 @@
       return;
     }
     if (canRegisterCompany()) {
-      setStatus('Signed in. Register your company name next.');
+      setStatus('Signed in. Subscribe with your company name next.');
       showCompanyOnly();
       return;
     }
@@ -618,13 +655,21 @@
         return;
       }
       setStatus('Creating company…');
-      var rpc = await sb.rpc('fire_s_create_company', { p_name: company });
+      var planId = chosenPlan('fireSRegisterPlanOptions');
+      var rpc = await sb.rpc('fire_s_create_company', {
+        p_name: company,
+        p_plan: planId
+      });
+      if (rpc.error) {
+        rpc = await sb.rpc('fire_s_create_company', { p_name: company });
+      }
       if (rpc.error) throw rpc.error;
       var companyRow = parseCompanyRpc(rpc, company);
       if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
       await refreshMembership();
       rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
-      setStatus('Company ready. Opening Personnel…');
+      await saveChosenPlan(planId);
+      setStatus('Subscribed. Opening Personnel…');
       mode = 'choices';
       refreshHomeChrome();
       setTimeout(openPersonnelAfterCreate, 200);
@@ -648,13 +693,21 @@
     }
     setStatus('Creating company…');
     try {
-      var rpc = await sb.rpc('fire_s_create_company', { p_name: company });
+      var planId = chosenPlan('fireSCompanyOnlyPlanOptions');
+      var rpc = await sb.rpc('fire_s_create_company', {
+        p_name: company,
+        p_plan: planId
+      });
+      if (rpc.error) {
+        rpc = await sb.rpc('fire_s_create_company', { p_name: company });
+      }
       if (rpc.error) throw rpc.error;
       var companyRow = parseCompanyRpc(rpc, company);
       if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
       await refreshMembership();
       rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
-      setStatus('Company ready. Opening Personnel…');
+      await saveChosenPlan(planId);
+      setStatus('Subscribed. Opening Personnel…');
       mode = 'choices';
       refreshHomeChrome();
       setTimeout(openPersonnelAfterCreate, 200);
@@ -712,6 +765,30 @@
     }, 120);
   }
 
+  var deferredInstall = null;
+
+  function installHelp() {
+    setStatus(
+      'On this phone: Chrome menu (three dots) → Add to Home screen / Install app. Google Play listing comes next, after Company S uploads the store file.',
+      false
+    );
+  }
+
+  async function tryInstallApp() {
+    if (deferredInstall) {
+      try {
+        deferredInstall.prompt();
+        var choice = await deferredInstall.userChoice;
+        deferredInstall = null;
+        if (choice && choice.outcome === 'accepted') {
+          setStatus('Fire-S is on this phone.');
+          return;
+        }
+      } catch (_) {}
+    }
+    installHelp();
+  }
+
   function wire() {
     if (wired || !ensureEls()) return;
     wired = true;
@@ -759,6 +836,13 @@
     if (finishBtn) finishBtn.addEventListener('click', doFinishCompanyOnly);
     if (checkBtn) checkBtn.addEventListener('click', doCheckAgain);
 
+    var installBtn = byId('fireSInstallAppBtn');
+    if (installBtn) {
+      installBtn.addEventListener('click', function () {
+        tryInstallApp();
+      });
+    }
+
     var openAccessBtn = byId('cloudOpenAccessBtn');
     if (openAccessBtn) {
       openAccessBtn.addEventListener('click', function () {
@@ -802,6 +886,12 @@
     }
     mode = 'choices';
     render();
+  });
+  window.addEventListener('beforeinstallprompt', function (event) {
+    try {
+      event.preventDefault();
+    } catch (_) {}
+    deferredInstall = event;
   });
   setTimeout(boot, 400);
   setTimeout(boot, 1200);

@@ -36,6 +36,7 @@
     'cmdCompanyBtn',
     'cmdTestSamplesBtn',
     'cmdManagementDashboardBtn',
+    'cmdSubscribeBtn',
     'cmdUserManualBtn',
     'cmdServicesBtn',
     'cmdFindingsBtn',
@@ -195,7 +196,8 @@
         'cmdServicesBtn',
         'cmdFindingsBtn',
         'cmdOverdueBtn',
-        'cmdManagementDashboardBtn'
+        'cmdManagementDashboardBtn',
+        'cmdSubscribeBtn'
       ].forEach(hideCard);
       showCard('cmdUserManualBtn');
 

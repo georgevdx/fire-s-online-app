@@ -1,10 +1,14 @@
 /* ============================================================
-   Fire-S subscriber plans (future catalogue)
-   Shared by the User manual and Management dashboard.
-   These plans are not billed in the app yet.
+   Fire-S subscriber plans
+   Shared by Access, Home, User manual and Play Store listing.
+   Card payment is not taken in the app yet. The chosen plan is stored
+   on the company so Company S can bill later.
    ============================================================ */
 (function fireSSubscriptions(root) {
   'use strict';
+
+  var DEFAULT_PLAN = 'executive';
+  var PLAN_IDS = ['field', 'operations', 'executive', 'enterprise'];
 
   const PLANS = [
     {
@@ -124,7 +128,7 @@
       plan: 'Executive',
       can: [
         'Everything a Manager can do',
-        'Register the company',
+        'Subscribe and register the company',
         'Set the company name, address, logo and numbers',
         'Add, change or remove staff',
         'Use the Executive dashboard and Power BI export',
@@ -149,6 +153,10 @@
     }
   ];
 
+  function text(value) {
+    return String(value == null ? '' : value).trim();
+  }
+
   function plans() {
     return PLANS.slice();
   }
@@ -158,13 +166,126 @@
   }
 
   function planById(id) {
-    return PLANS.find(plan => plan.id === id) || null;
+    var key = normalizePlanId(id);
+    return PLANS.find(function (plan) { return plan.id === key; }) || PLANS.find(function (plan) { return plan.id === DEFAULT_PLAN; });
+  }
+
+  function normalizePlanId(id) {
+    var raw = text(id).toLowerCase();
+    if (PLAN_IDS.indexOf(raw) >= 0) return raw;
+    if (raw === 'development' || raw === 'local' || raw === 'trial' || raw === 'owner') {
+      return DEFAULT_PLAN;
+    }
+    return DEFAULT_PLAN;
+  }
+
+  function rememberPlan(planId) {
+    var id = normalizePlanId(planId);
+    try {
+      localStorage.setItem('fireS.companyPlan', id);
+    } catch (_) {}
+    try {
+      if (root.currentCompanyAccess) root.currentCompanyAccess.plan = id;
+    } catch (_) {}
+    return id;
+  }
+
+  function currentPlanId() {
+    try {
+      var live = root.currentCompanyAccess && root.currentCompanyAccess.plan;
+      if (live) return normalizePlanId(live);
+    } catch (_) {}
+    try {
+      return normalizePlanId(localStorage.getItem('fireS.companyPlan'));
+    } catch (_) {}
+    return DEFAULT_PLAN;
+  }
+
+  function getSb() {
+    try {
+      if (root.supabaseClient) return root.supabaseClient;
+    } catch (_) {}
+    return null;
+  }
+
+  function companyId() {
+    try {
+      return text(root.currentUserProfile && root.currentUserProfile.companyId);
+    } catch (_) {}
+    return '';
+  }
+
+  function escapeHtml(value) {
+    return text(value).replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
+  function renderPlanPicker(container, selectedId) {
+    if (!container) return;
+    var selected = normalizePlanId(selectedId || currentPlanId());
+    var name = container.getAttribute('data-plan-name') || 'fireSPlanChoice';
+    container.innerHTML = PLANS.map(function (plan) {
+      var checked = plan.id === selected ? ' checked' : '';
+      var selectedClass = plan.id === selected ? ' is-selected' : '';
+      return (
+        '<label class="fire-s-plan-card' + selectedClass + '">' +
+          '<input type="radio" name="' + escapeHtml(name) + '" value="' + escapeHtml(plan.id) + '"' + checked + '>' +
+          '<span>' +
+            '<strong>' + escapeHtml(plan.name) + '</strong>' +
+            '<small>' + escapeHtml(plan.audience) + ' · ' + escapeHtml(plan.summary) + '</small>' +
+          '</span>' +
+        '</label>'
+      );
+    }).join('');
+    container.querySelectorAll('.fire-s-plan-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        container.querySelectorAll('.fire-s-plan-card').forEach(function (el) {
+          el.classList.remove('is-selected');
+        });
+        card.classList.add('is-selected');
+      });
+    });
+  }
+
+  function selectedPlanFrom(container) {
+    if (!container) return currentPlanId();
+    var checked = container.querySelector('input[type="radio"]:checked');
+    return normalizePlanId(checked && checked.value);
+  }
+
+  async function persistCompanyPlan(planId) {
+    var id = rememberPlan(planId);
+    var sb = getSb();
+    var cid = companyId();
+    if (!sb || !cid) return { ok: true, local: true, plan: id };
+
+    try {
+      var rpc = await sb.rpc('fire_s_set_company_plan', { p_plan: id });
+      if (!rpc || !rpc.error) return { ok: true, plan: id, source: 'rpc' };
+    } catch (_) {}
+
+    try {
+      var updated = await sb.from('companies').update({ plan: id }).eq('id', cid);
+      if (!updated || !updated.error) return { ok: true, plan: id, source: 'update' };
+      return { ok: false, plan: id, error: updated && updated.error };
+    } catch (err) {
+      return { ok: false, plan: id, error: err };
+    }
   }
 
   root.fireSSubscriptionCatalog = {
-    plans,
-    roles,
-    planById,
-    note: 'Future subscriber catalogue. The live app is not billing these plans yet.'
+    plans: plans,
+    roles: roles,
+    planById: planById,
+    normalizePlanId: normalizePlanId,
+    currentPlanId: currentPlanId,
+    rememberPlan: rememberPlan,
+    renderPlanPicker: renderPlanPicker,
+    selectedPlanFrom: selectedPlanFrom,
+    persistCompanyPlan: persistCompanyPlan,
+    defaultPlanId: DEFAULT_PLAN,
+    note: 'Choose a package when you subscribe. Price is confirmed by Company S. The app does not take a card yet.',
+    billingNote: 'No card is taken in Fire-S yet. Company S confirms the price and invoices the owner.'
   };
 })(window);
