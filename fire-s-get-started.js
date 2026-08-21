@@ -27,6 +27,11 @@
     return String(value == null ? '' : value).trim();
   }
 
+  function agreedToLegal(checkboxId) {
+    var box = byId(checkboxId);
+    return !!(box && box.checked);
+  }
+
   function ensureEls() {
     root = byId('fireSGetStarted');
     return !!root;
@@ -655,6 +660,10 @@
       setStatus('Password must be at least 6 characters.', true);
       return;
     }
+    if (!agreedToLegal('fireSRegisterAgree')) {
+      setStatus('Tick the box to agree to the Terms and the Privacy policy.', true);
+      return;
+    }
     var sb = getSb();
     if (!sb || !sb.auth) {
       setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
@@ -699,6 +708,10 @@
     );
     if (!company) {
       setStatus('Enter a company name.', true);
+      return;
+    }
+    if (!agreedToLegal('fireSCompanyOnlyAgree')) {
+      setStatus('Tick the box to agree to the Terms and the Privacy policy.', true);
       return;
     }
     var sb = getSb();

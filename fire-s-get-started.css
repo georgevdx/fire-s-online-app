@@ -100,6 +100,27 @@
   font-size: 0.9rem;
 }
 
+.fire-s-legal-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 2px;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.fire-s-legal-agree input {
+  width: auto !important;
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.fire-s-legal-agree a {
+  color: #1d4ed8;
+}
+
 .fire-s-get-started-status {
   margin-top: 12px;
   padding: 10px 12px;

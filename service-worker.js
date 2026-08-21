@@ -1,11 +1,12 @@
-const CACHE = 'fire-s-108-3-price';
+const CACHE = 'fire-s-108-4-terms';
 const PRECACHE = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './privacy.html'
+  './privacy.html',
+  './terms.html'
 ];
 
 self.addEventListener('install', event => {

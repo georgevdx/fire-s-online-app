@@ -206,10 +206,12 @@
           <li>Tap <strong>3. Subscribe</strong>.</li>
           <li>Type the company name, your email and a password. That email is R349 / month (or R3 490 / year).</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
+          <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
           <li>Tap <strong>Subscribe</strong>.</li>
-          <li>If you are already signed in, type the company name, choose Monthly or Annual, then tap <strong>Subscribe</strong>.</li>
+          <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
         <p>No card is taken in the app yet. Company S invoices R349 per email per month, or R3 490 per year. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>
         <h3>Waiting</h3>
         <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
       </article>
@@ -323,7 +325,7 @@
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
         <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. Inspector, Manager, Owner and Viewer pay the same. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
-        <p>New companies subscribe on Access and choose Monthly or Annual. The app does not take a card yet. Company S invoices each paid email.</p>
+        <p>New companies subscribe on Access and choose Monthly or Annual. Tick Terms and Privacy, then Subscribe. The app does not take a card yet. Company S invoices each paid email.</p>
         <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
         ${planTableHtml()}
         <div class="user-manual-note">

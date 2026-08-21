@@ -27,6 +27,9 @@ Billing: R349 per user email per month, or R3 490 per year. One email is one sea
 Privacy policy URL (after sit dit live)
 https://georgevdx.github.io/fire-s-online-app/privacy.html
 
+Terms and conditions URL (after sit dit live)
+https://georgevdx.github.io/fire-s-online-app/terms.html
+
 App icon
 ../icon-512.png
 
