@@ -248,7 +248,7 @@
 
     <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields" style="display:none;">
       <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
-      <p class="fire-s-get-started-note">Use the same email for owners and staff.</p>
+      <p class="fire-s-get-started-note">Use the same email on phone and desktop. One email is one paid seat.</p>
       <input id="fireSLoginEmail" type="email" placeholder="Email" autocomplete="username">
       <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
@@ -259,7 +259,7 @@
     <div id="fireSGetStartedCreateFields" class="fire-s-get-started-fields" style="display:none;">
       <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
       <p class="fire-s-get-started-note">
-        First time only. If this email already has a password, use Login or Forgot password — do not create again.
+        First time only. Same email on a second phone or desktop — use Login, do not create again.
       </p>
       <input id="fireSCreateEmail" type="email" placeholder="Email from your owner" autocomplete="username">
       <input id="fireSCreatePassword" type="password" placeholder="Choose a password" autocomplete="new-password">
@@ -271,15 +271,19 @@
     <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
       <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
       <p class="fire-s-get-started-note">
-        Creates your owner login and the company in one step. Choose a package. No card is taken yet.
+        Creates your owner login and the company. One email is one paid seat. Phone and desktop share that email. No card is taken yet.
       </p>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
-      <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner)" autocomplete="username">
+      <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Choose a package</p>
         <div id="fireSRegisterPlanOptions" class="fire-s-plan-options" data-plan-name="fireSRegisterPlan"></div>
-        <p class="fire-s-plan-billing-note">Company S confirms the price later. This step does not take a card.</p>
+      </div>
+      <div class="fire-s-plan-picker">
+        <p class="fire-s-plan-picker-label">Pay monthly or annually · per email</p>
+        <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
+        <p class="fire-s-plan-billing-note">Each email is one paid seat. Do not enter the same email twice for a second phone. Company S confirms the price. No card is taken yet.</p>
       </div>
       <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
         Subscribe
@@ -288,13 +292,17 @@
 
     <div id="fireSGetStartedCompanyOnly" class="fire-s-get-started-fields" style="display:none;">
       <p class="fire-s-get-started-note">
-        You are signed in. Choose a package and save the company name.
+        You are signed in. Choose a package and monthly or annual billing. One email is one seat.
       </p>
       <input id="fireSGetStartedCompanyOnlyName" type="text" placeholder="Company name" autocomplete="organization">
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Choose a package</p>
         <div id="fireSCompanyOnlyPlanOptions" class="fire-s-plan-options" data-plan-name="fireSCompanyOnlyPlan"></div>
-        <p class="fire-s-plan-billing-note">Company S confirms the price later. This step does not take a card.</p>
+      </div>
+      <div class="fire-s-plan-picker">
+        <p class="fire-s-plan-picker-label">Pay monthly or annually · per email</p>
+        <div id="fireSCompanyOnlyBillingOptions" class="fire-s-plan-options" data-interval-name="fireSCompanyOnlyBilling"></div>
+        <p class="fire-s-plan-billing-note">Each email is one paid seat. Phone and desktop share that login. Company S confirms the price. No card is taken yet.</p>
       </div>
       <button id="fireSGetStartedFinishBtn" type="button" class="cloud-primary-btn">
         Subscribe
@@ -617,13 +625,18 @@
     <div class="fire-s-subscribe-kicker">Company package</div>
     <h3>Subscribe to Fire-S</h3>
     <p>
-      Owners choose a package here. Company S confirms the price. The app does not take a card yet.
+      Paid subscription: monthly or annual, per email. One email is one seat.
+      Phone and desktop share that login. Company S confirms the price. The app does not take a card yet.
     </p>
   </div>
   <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
   <div class="fire-s-plan-picker">
     <p class="fire-s-plan-picker-label">Change package</p>
     <div id="fireSSubscribePlanOptions" class="fire-s-plan-options" data-plan-name="fireSSubscribePlan"></div>
+  </div>
+  <div class="fire-s-plan-picker">
+    <p class="fire-s-plan-picker-label">Pay monthly or annually · per email</p>
+    <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
   <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save package</button>
@@ -815,10 +828,10 @@
   <div id="companyTeamAddPanel" class="company-team-add">
     <div class="cloud-section-title">Add people</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Type their email and choose Inspector or Manager. They open Fire-S and create a password with that email.
+      Each email is one paid seat (monthly or annual). Type it once. They log in on phone and desktop with that same email — do not add it again for a second device.
     </p>
     <div class="company-team-add-row">
-      <input id="companyTeamEmail" type="email" placeholder="Their email" autocomplete="off">
+      <input id="companyTeamEmail" type="email" placeholder="Their email · one seat" autocomplete="off">
       <select id="companyTeamRole">
         <option value="inspector">Inspector</option>
         <option value="manager">Manager</option>
@@ -1569,20 +1582,20 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=subscribe-v1"></script>
+  <script src="app.js?v=subscribe-v2"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
   <script src="fire-s-clean-home-roles.js?v=2-17-subscribe"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
-  <script src="fire-s-company-team.js?v=2-7-subscribe"></script>
+  <script src="fire-s-company-team.js?v=2-8-seats"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-1-subscribe"></script>
-  <script src="fire-s-subscribe.js?v=1-0"></script>
-  <script src="fire-s-user-manual.js?v=1-10-subscribe"></script>
+  <script src="fire-s-subscriptions.js?v=1-2-seats"></script>
+  <script src="fire-s-subscribe.js?v=1-1-seats"></script>
+  <script src="fire-s-user-manual.js?v=1-11-seats"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
-  <script src="fire-s-get-started.js?v=2-6-subscribe"></script>
+  <script src="fire-s-get-started.js?v=2-7-seats"></script>
   <script src="fire-s-startup-stability.js?v=1-4-subscribe"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-2-subscribe"></script>

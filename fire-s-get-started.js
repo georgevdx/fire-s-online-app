@@ -313,6 +313,13 @@
     cat.renderPlanPicker(box, selectedId || (cat.defaultPlanId || 'executive'));
   }
 
+  function fillBillingPicker(containerId, selectedId) {
+    var cat = catalog();
+    var box = byId(containerId);
+    if (!cat || !cat.renderBillingPicker || !box) return;
+    cat.renderBillingPicker(box, selectedId || (cat.defaultIntervalId || 'monthly'));
+  }
+
   function chosenPlan(containerId) {
     var cat = catalog();
     var box = byId(containerId);
@@ -320,11 +327,18 @@
     return 'executive';
   }
 
-  async function saveChosenPlan(planId) {
+  function chosenInterval(containerId) {
+    var cat = catalog();
+    var box = byId(containerId);
+    if (cat && cat.selectedIntervalFrom) return cat.selectedIntervalFrom(box);
+    return 'monthly';
+  }
+
+  async function saveChosenPlan(planId, intervalId) {
     var cat = catalog();
     if (!cat || !cat.persistCompanyPlan) return;
     try {
-      await cat.persistCompanyPlan(planId);
+      await cat.persistCompanyPlan(planId, intervalId);
     } catch (_) {}
     try {
       if (typeof window.fireSRefreshSubscribeCard === 'function') {
@@ -385,6 +399,7 @@
     );
     showPanel('fireSGetStartedGuestFields');
     fillPlanPicker('fireSRegisterPlanOptions', 'executive');
+    fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
     setStatus('');
   }
 
@@ -402,6 +417,7 @@
     );
     showPanel('fireSGetStartedCompanyOnly');
     fillPlanPicker('fireSCompanyOnlyPlanOptions', 'executive');
+    fillBillingPicker('fireSCompanyOnlyBillingOptions', 'monthly');
     setStatus('');
   }
 
@@ -476,7 +492,7 @@
       low.indexOf('user already exists') >= 0 ||
       low.indexOf('email address is already') >= 0
     ) {
-      return 'This email already has a login. Use Login, or Forgot password if the password is unknown.';
+      return 'This email already has a login. Use Login on phone and desktop. Do not Subscribe or Create password again — one email is one paid seat.';
     }
     return msg || 'Something went wrong.';
   }
@@ -656,6 +672,7 @@
       }
       setStatus('Creating company…');
       var planId = chosenPlan('fireSRegisterPlanOptions');
+      var intervalId = chosenInterval('fireSRegisterBillingOptions');
       var rpc = await sb.rpc('fire_s_create_company', {
         p_name: company,
         p_plan: planId
@@ -668,7 +685,7 @@
       if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
       await refreshMembership();
       rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
-      await saveChosenPlan(planId);
+      await saveChosenPlan(planId, intervalId);
       setStatus('Subscribed. Opening Personnel…');
       mode = 'choices';
       refreshHomeChrome();
@@ -694,6 +711,7 @@
     setStatus('Creating company…');
     try {
       var planId = chosenPlan('fireSCompanyOnlyPlanOptions');
+      var intervalId = chosenInterval('fireSCompanyOnlyBillingOptions');
       var rpc = await sb.rpc('fire_s_create_company', {
         p_name: company,
         p_plan: planId
@@ -706,7 +724,7 @@
       if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
       await refreshMembership();
       rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
-      await saveChosenPlan(planId);
+      await saveChosenPlan(planId, intervalId);
       setStatus('Subscribed. Opening Personnel…');
       mode = 'choices';
       refreshHomeChrome();

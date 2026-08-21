@@ -45,14 +45,18 @@
   function paintCurrent() {
     var cat = catalog();
     var plan = cat && cat.planById ? cat.planById(cat.currentPlanId()) : null;
+    var interval = cat && cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
+    var intervalLabel = interval === 'annual' ? 'Annual' : 'Monthly';
     var current = byId('fireSSubscribeCurrent');
     if (!current || !plan) return;
     current.innerHTML =
       '<strong>' +
       plan.name +
-      '</strong><span>' +
-      plan.audience +
       ' · ' +
+      intervalLabel +
+      ' per email</strong><span>' +
+      plan.audience +
+      ' · one email is one paid seat on phone and desktop · ' +
       plan.summary +
       '</span>';
   }
@@ -95,9 +99,14 @@
     if (section) section.style.display = 'block';
     var cat = catalog();
     var picker = byId('fireSSubscribePlanOptions');
+    var billing = byId('fireSSubscribeBillingOptions');
     if (cat && cat.renderPlanPicker && picker) {
       picker.setAttribute('data-plan-name', 'fireSSubscribePlan');
       cat.renderPlanPicker(picker, cat.currentPlanId());
+    }
+    if (cat && cat.renderBillingPicker && billing) {
+      billing.setAttribute('data-interval-name', 'fireSSubscribeBilling');
+      cat.renderBillingPicker(billing, cat.currentIntervalId());
     }
     paintCurrent();
     setMessage('');
@@ -116,15 +125,23 @@
       return;
     }
     var planId = cat.selectedPlanFrom(picker);
+    var billing = byId('fireSSubscribeBillingOptions');
+    var intervalId = cat.selectedIntervalFrom ? cat.selectedIntervalFrom(billing) : 'monthly';
     setMessage('Saving package…');
-    var result = await cat.persistCompanyPlan(planId);
+    var result = await cat.persistCompanyPlan(planId, intervalId);
     paintCurrent();
     if (result && result.ok === false) {
       setMessage('Package chosen on this phone. Cloud save can wait — Company S still has the request.', true);
       return;
     }
     var plan = cat.planById(planId);
-    setMessage((plan && plan.name ? plan.name : 'Package') + ' saved. Company S will confirm price. No card was taken.');
+    var intervalLabel = intervalId === 'annual' ? 'annual' : 'monthly';
+    setMessage(
+      (plan && plan.name ? plan.name : 'Package') +
+        ' · ' +
+        intervalLabel +
+        ' per email saved. Each email is one seat. No card was taken.'
+    );
     try {
       if (typeof window.fireSApplyCleanHomeRoles === 'function') {
         window.fireSApplyCleanHomeRoles();
@@ -140,7 +157,11 @@
     var title = btn.querySelector('.command-title');
     var copy = btn.querySelector('.command-copy');
     if (title) title.textContent = 'Subscription';
-    if (copy) copy.textContent = plan.name + ' · tap to view or change.';
+    if (copy) {
+      var interval = cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
+      var intervalLabel = interval === 'annual' ? 'annual' : 'monthly';
+      copy.textContent = plan.name + ' · ' + intervalLabel + ' per email · tap to view or change.';
+    }
   }
 
   function wire() {

@@ -8,7 +8,20 @@
   'use strict';
 
   var DEFAULT_PLAN = 'executive';
+  var DEFAULT_INTERVAL = 'monthly';
   var PLAN_IDS = ['field', 'operations', 'executive', 'enterprise'];
+  var INTERVALS = [
+    {
+      id: 'monthly',
+      name: 'Monthly',
+      summary: 'Billed every month, per email. Same email on phone and desktop is one seat.'
+    },
+    {
+      id: 'annual',
+      name: 'Annual',
+      summary: 'Billed once a year, per email. Same email on phone and desktop is one seat.'
+    }
+  ];
 
   const PLANS = [
     {
@@ -179,6 +192,12 @@
     return DEFAULT_PLAN;
   }
 
+  function normalizeInterval(id) {
+    var raw = text(id).toLowerCase();
+    if (raw === 'annual' || raw === 'yearly' || raw === 'year') return 'annual';
+    return DEFAULT_INTERVAL;
+  }
+
   function rememberPlan(planId) {
     var id = normalizePlanId(planId);
     try {
@@ -188,6 +207,36 @@
       if (root.currentCompanyAccess) root.currentCompanyAccess.plan = id;
     } catch (_) {}
     return id;
+  }
+
+  function rememberInterval(intervalId) {
+    var id = normalizeInterval(intervalId);
+    try {
+      localStorage.setItem('fireS.billingInterval', id);
+    } catch (_) {}
+    try {
+      if (root.currentCompanyAccess) root.currentCompanyAccess.billingInterval = id;
+    } catch (_) {}
+    return id;
+  }
+
+  function currentIntervalId() {
+    try {
+      var live = root.currentCompanyAccess && root.currentCompanyAccess.billingInterval;
+      if (live) return normalizeInterval(live);
+    } catch (_) {}
+    try {
+      return normalizeInterval(localStorage.getItem('fireS.billingInterval'));
+    } catch (_) {}
+    return DEFAULT_INTERVAL;
+  }
+
+  function duplicateSeatMessage(email) {
+    var addr = text(email).toLowerCase() || 'This email';
+    return (
+      addr +
+      ' is already a paid seat. That person logs in on phone and desktop with the same email. Do not enter it again.'
+    );
   }
 
   function currentPlanId() {
@@ -254,23 +303,67 @@
     return normalizePlanId(checked && checked.value);
   }
 
-  async function persistCompanyPlan(planId) {
+  function renderBillingPicker(container, selectedId) {
+    if (!container) return;
+    var selected = normalizeInterval(selectedId || currentIntervalId());
+    var name = container.getAttribute('data-interval-name') || 'fireSBillingChoice';
+    container.innerHTML = INTERVALS.map(function (item) {
+      var checked = item.id === selected ? ' checked' : '';
+      var selectedClass = item.id === selected ? ' is-selected' : '';
+      return (
+        '<label class="fire-s-plan-card' + selectedClass + '">' +
+          '<input type="radio" name="' + escapeHtml(name) + '" value="' + escapeHtml(item.id) + '"' + checked + '>' +
+          '<span>' +
+            '<strong>' + escapeHtml(item.name) + '</strong>' +
+            '<small>' + escapeHtml(item.summary) + '</small>' +
+          '</span>' +
+        '</label>'
+      );
+    }).join('');
+    container.querySelectorAll('.fire-s-plan-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        container.querySelectorAll('.fire-s-plan-card').forEach(function (el) {
+          el.classList.remove('is-selected');
+        });
+        card.classList.add('is-selected');
+      });
+    });
+  }
+
+  function selectedIntervalFrom(container) {
+    if (!container) return currentIntervalId();
+    var checked = container.querySelector('input[type="radio"]:checked');
+    return normalizeInterval(checked && checked.value);
+  }
+
+  async function persistCompanyPlan(planId, intervalId) {
     var id = rememberPlan(planId);
+    var interval = rememberInterval(intervalId);
     var sb = getSb();
     var cid = companyId();
-    if (!sb || !cid) return { ok: true, local: true, plan: id };
+    if (!sb || !cid) return { ok: true, local: true, plan: id, interval: interval };
 
     try {
-      var rpc = await sb.rpc('fire_s_set_company_plan', { p_plan: id });
-      if (!rpc || !rpc.error) return { ok: true, plan: id, source: 'rpc' };
+      var rpc = await sb.rpc('fire_s_set_company_plan', {
+        p_plan: id,
+        p_interval: interval
+      });
+      if (!rpc || !rpc.error) return { ok: true, plan: id, interval: interval, source: 'rpc' };
     } catch (_) {}
 
     try {
+      var withInterval = await sb
+        .from('companies')
+        .update({ plan: id, billing_interval: interval })
+        .eq('id', cid);
+      if (!withInterval || !withInterval.error) {
+        return { ok: true, plan: id, interval: interval, source: 'update' };
+      }
       var updated = await sb.from('companies').update({ plan: id }).eq('id', cid);
-      if (!updated || !updated.error) return { ok: true, plan: id, source: 'update' };
-      return { ok: false, plan: id, error: updated && updated.error };
+      if (!updated || !updated.error) return { ok: true, plan: id, interval: interval, source: 'update-plan' };
+      return { ok: false, plan: id, interval: interval, error: updated && updated.error };
     } catch (err) {
-      return { ok: false, plan: id, error: err };
+      return { ok: false, plan: id, interval: interval, error: err };
     }
   }
 
@@ -279,13 +372,20 @@
     roles: roles,
     planById: planById,
     normalizePlanId: normalizePlanId,
+    normalizeInterval: normalizeInterval,
     currentPlanId: currentPlanId,
+    currentIntervalId: currentIntervalId,
     rememberPlan: rememberPlan,
+    rememberInterval: rememberInterval,
     renderPlanPicker: renderPlanPicker,
+    renderBillingPicker: renderBillingPicker,
     selectedPlanFrom: selectedPlanFrom,
+    selectedIntervalFrom: selectedIntervalFrom,
     persistCompanyPlan: persistCompanyPlan,
+    duplicateSeatMessage: duplicateSeatMessage,
     defaultPlanId: DEFAULT_PLAN,
-    note: 'Choose a package when you subscribe. Price is confirmed by Company S. The app does not take a card yet.',
-    billingNote: 'No card is taken in Fire-S yet. Company S confirms the price and invoices the owner.'
+    defaultIntervalId: DEFAULT_INTERVAL,
+    note: 'Paid seats are per email, monthly or annual. One email is one seat on phone and desktop. Company S confirms the price. The app does not take a card yet.',
+    billingNote: 'Each email is one paid seat. Phone and desktop share that login. No card is taken in Fire-S yet. Company S invoices monthly or annually.'
   };
 })(window);

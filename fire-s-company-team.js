@@ -17,6 +17,7 @@
   const FRESH_MODE_KEY = 'fireS.forceNewCompanySetup';
   const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
   const COMPANY_CACHE_KEY = 'fireS.cachedCompany';
+  let lastSeatEmails = [];
 
   function byId(id) {
     return document.getElementById(id);
@@ -34,6 +35,33 @@
       n === 'your new company' ||
       n === 'local workspace' ||
       n === 'local / personal workspace'
+    );
+  }
+
+  function rememberSeatEmails(members, invites) {
+    const emails = [];
+    (members || []).forEach(member => {
+      const status = text(member.status || 'active').toLowerCase();
+      if (status === 'inactive') return;
+      const email = text(member.profiles && member.profiles.email).toLowerCase();
+      if (email) emails.push(email);
+    });
+    (invites || []).forEach(invite => {
+      const email = text(invite.email).toLowerCase();
+      if (email) emails.push(email);
+    });
+    lastSeatEmails = emails;
+  }
+
+  function duplicateSeatMessage(email) {
+    try {
+      if (window.fireSSubscriptionCatalog && window.fireSSubscriptionCatalog.duplicateSeatMessage) {
+        return window.fireSSubscriptionCatalog.duplicateSeatMessage(email);
+      }
+    } catch (_) {}
+    return (
+      text(email).toLowerCase() +
+      ' is already a paid seat. That person logs in on phone and desktop with the same email. Do not enter it again.'
     );
   }
 
@@ -968,6 +996,9 @@
       if (!email || !email.includes('@')) {
         throw new Error('Enter a valid email address.');
       }
+      if (lastSeatEmails.indexOf(email) >= 0) {
+        throw new Error(duplicateSeatMessage(email));
+      }
       if (!ctx.companyId) {
         throw new Error('Save your company first, then add people.');
       }
@@ -991,15 +1022,18 @@
       if (!rpc.error && rpc.data) {
         const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
         const status = text(row?.out_status || row?.status).toLowerCase();
+        if (status === 'already' || status === 'duplicate') {
+          throw new Error(duplicateSeatMessage(email));
+        }
         if (emailInput) emailInput.value = '';
         if (roleSelect) roleSelect.value = 'inspector';
         if (status === 'invited') {
           setMessage(
-            `${email} saved as ${roleLabel(role)}. They open Access → Create password (first time only). If that email already exists, they use Login or Forgot password — not Create password again.`
+            `${email} saved as one paid seat (${roleLabel(role)}). They open Access → Create password once. Phone and desktop use that same email — do not add it again.`
           );
         } else {
           setMessage(
-            `${email} added as ${roleLabel(role)}. They Login with that email. If the password is unknown, use Forgot password on Access.`
+            `${email} is one paid seat (${roleLabel(role)}). They Login with that email on phone and desktop.`
           );
         }
         await refreshTeam();
@@ -1013,6 +1047,14 @@
 
       // Fallback: old profile lookup path
       if (rpc.error) {
+        const rpcMsg = text(rpc.error.message).toLowerCase();
+        if (
+          rpcMsg.indexOf('paid seat') >= 0 ||
+          rpcMsg.indexOf('already') >= 0 ||
+          rpcMsg.indexOf('do not enter') >= 0
+        ) {
+          throw new Error(rpc.error.message || duplicateSeatMessage(email));
+        }
         console.warn('Add member RPC failed, trying profile lookup:', rpc.error);
       }
 
@@ -1423,6 +1465,7 @@
       }
       const members = await loadMembers(ctx.companyId);
       const invites = await loadPendingInvites(ctx.companyId);
+      rememberSeatEmails(members, invites);
       renderMeta(ctx, members, invites);
       renderPendingInvites(invites);
       renderMembers(members);

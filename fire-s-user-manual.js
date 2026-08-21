@@ -204,12 +204,13 @@
         <h3>Subscribe (Owner)</h3>
         <ol>
           <li>Tap <strong>3. Subscribe</strong>.</li>
-          <li>Type the company name, your email and a password.</li>
+          <li>Type the company name, your email and a password. That email is your paid seat.</li>
           <li>Tap a package: Field, Operations, Executive or Enterprise.</li>
+          <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tap <strong>Subscribe</strong>.</li>
-          <li>If you are already signed in, type the company name, choose a package and tap <strong>Subscribe</strong>.</li>
+          <li>If you are already signed in, type the company name, choose package and Monthly/Annual, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S confirms the price. Owners can later open <strong>Subscription</strong> on Home to change the package.</p>
+        <p>No card is taken in the app yet. Company S confirms the price. Owners can later open <strong>Subscription</strong> on Home to change the package or the monthly/annual choice. A second phone uses Login with the same email — do not Subscribe again.</p>
         <h3>Waiting</h3>
         <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
       </article>
@@ -289,9 +290,10 @@
         <h3>Personnel</h3>
         <ol>
           <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
-          <li>Add the person’s email.</li>
+          <li>Add the person’s email <strong>once</strong>. Each email is one paid seat (monthly or annual).</li>
           <li>Choose Inspector, Manager or Owner.</li>
-          <li>They then Create password on their own phone (first time only).</li>
+          <li>They Create password on their own phone (first time only).</li>
+          <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
         </ol>
         <h3>Inspectors board</h3>
         <p>Select one inspector, view the whole team, or Compare.</p>
@@ -321,8 +323,9 @@
 
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
-        <p>New companies subscribe on Access and choose a package. The app does not take a card yet. Company S confirms the price and invoices the owner.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to view or change the package.</p>
+        <p>Fire-S is a paid subscription: <strong>monthly or annual</strong>, billed <strong>per email</strong>. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
+        <p>New companies subscribe on Access, choose a package, then choose Monthly or Annual. The app does not take a card yet. Company S confirms the price and invoices each paid email.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to view or change the package and the monthly/annual choice.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
