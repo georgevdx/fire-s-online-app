@@ -325,6 +325,7 @@
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
         <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. Inspector, Manager, Owner and Viewer pay the same. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
+        <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
         <p>New companies subscribe on Access and choose Monthly or Annual. Tick Terms and Privacy, then Subscribe. The app does not take a card yet. Company S invoices each paid email.</p>
         <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
         ${planTableHtml()}
