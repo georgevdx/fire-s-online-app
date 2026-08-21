@@ -121,6 +121,23 @@
   color: #1d4ed8;
 }
 
+.fire-s-legal-links {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+.fire-s-legal-links a {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .fire-s-get-started-status {
   margin-top: 12px;
   padding: 10px 12px;

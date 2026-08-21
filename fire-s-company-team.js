@@ -1038,6 +1038,21 @@
         }
         await refreshTeam();
         try {
+          if (typeof window.fireSNotifyCompanyS === 'function') {
+            window.fireSNotifyCompanyS({
+              kind: 'seat',
+              company: text(ctx.companyName || window.currentUserProfile?.companyName),
+              email: email,
+              role: roleLabel(role),
+              interval:
+                (window.fireSSubscriptionCatalog &&
+                  window.fireSSubscriptionCatalog.currentIntervalId &&
+                  window.fireSSubscriptionCatalog.currentIntervalId()) ||
+                'monthly'
+            });
+          }
+        } catch (_) {}
+        try {
           if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
             window.fireSRefreshCompanyPersonnelStats();
           }
@@ -1111,6 +1126,21 @@
       if (roleSelect) roleSelect.value = 'inspector';
       setMessage(`${profile.email || email} added as ${roleLabel(role)}.`);
       await refreshTeam();
+      try {
+        if (typeof window.fireSNotifyCompanyS === 'function') {
+          window.fireSNotifyCompanyS({
+            kind: 'seat',
+            company: text(ctx.companyName || window.currentUserProfile?.companyName),
+            email: profile.email || email,
+            role: roleLabel(role),
+            interval:
+              (window.fireSSubscriptionCatalog &&
+                window.fireSSubscriptionCatalog.currentIntervalId &&
+                window.fireSSubscriptionCatalog.currentIntervalId()) ||
+              'monthly'
+          });
+        }
+      } catch (_) {}
     } catch (error) {
       console.error('Add member failed:', error);
       setMessage(error.message || 'Could not add team member.', true);

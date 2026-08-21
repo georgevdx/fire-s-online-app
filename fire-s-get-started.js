@@ -130,6 +130,20 @@
       'fire-s-get-started-status' + (isError ? ' is-error' : '');
   }
 
+  function notifySubscribe(company, email, intervalId) {
+    try {
+      if (typeof window.fireSNotifyCompanyS === 'function') {
+        window.fireSNotifyCompanyS({
+          kind: 'subscribe',
+          company: company,
+          email: email,
+          interval: intervalId,
+          role: 'Owner'
+        });
+      }
+    } catch (_) {}
+  }
+
   function hidePanels() {
     [
       'fireSGetStartedChoices',
@@ -693,6 +707,7 @@
       await refreshMembership();
       rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
       await saveChosenPlan(planId, intervalId);
+      notifySubscribe(company, email, intervalId);
       setStatus('Subscribed. Opening Personnel…');
       mode = 'choices';
       refreshHomeChrome();
@@ -736,6 +751,7 @@
       await refreshMembership();
       rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
       await saveChosenPlan(planId, intervalId);
+      notifySubscribe(company, profile() && profile().email, intervalId);
       setStatus('Subscribed. Opening Personnel…');
       mode = 'choices';
       refreshHomeChrome();

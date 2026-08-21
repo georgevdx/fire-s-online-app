@@ -362,7 +362,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'One Fire-S seat is R349 per month or R3 490 per year, per email. Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login. The app does not take a card yet; Company S invoices.',
-    billingNote: 'Each email is one paid seat at R349 / month or R3 490 / year. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'One Fire-S seat is R349 per month or R3 490 per year, per email. No VAT — Company S is not VAT-registered. Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login. The app does not take a card yet; Company S invoices.',
+    billingNote: 'Each email is one paid seat at R349 / month or R3 490 / year. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
   };
 })(window);

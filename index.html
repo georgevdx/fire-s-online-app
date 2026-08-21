@@ -63,7 +63,7 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-6">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-2-terms">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-3-terms-links">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-0">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-9-owner-kpis">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
@@ -253,6 +253,10 @@
         <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a>.
         Fire-S © Company S. Do not copy or resell this app.
       </p>
+      <p class="fire-s-legal-links">
+        <a href="terms.html" target="_blank" rel="noopener">Open Terms and conditions</a>
+        <a href="privacy.html" target="_blank" rel="noopener">Open Privacy policy</a>
+      </p>
     </div>
 
     <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields" style="display:none;">
@@ -288,7 +292,7 @@
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
         <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
-        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. Do not enter the same email twice for a second phone. Company S invoices. No card is taken yet.</p>
+        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. No VAT. Company S invoices. No card is taken yet.</p>
       </div>
       <label class="fire-s-legal-agree">
         <input id="fireSRegisterAgree" type="checkbox">
@@ -307,7 +311,7 @@
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
         <div id="fireSCompanyOnlyBillingOptions" class="fire-s-plan-options" data-interval-name="fireSCompanyOnlyBilling"></div>
-        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. Phone and desktop share that login. Company S invoices. No card is taken yet.</p>
+        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. No VAT. Phone and desktop share that login. Company S invoices. No card is taken yet.</p>
       </div>
       <label class="fire-s-legal-agree">
         <input id="fireSCompanyOnlyAgree" type="checkbox">
@@ -636,7 +640,8 @@
     <p>
       One price for every email: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>.
       Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login.
-      The app does not take a card yet — Company S invoices.
+      The app does not take a card yet — Company S invoices. No VAT is added
+      (Company S is not registered for VAT).
       Read the
       <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a>
       and the
@@ -1592,20 +1597,21 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=1-3-4-copy"></script>
+  <script src="app.js?v=1-3-5-invoice"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
   <script src="fire-s-clean-home-roles.js?v=2-18-price"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
-  <script src="fire-s-company-team.js?v=2-8-seats"></script>
+  <script src="fire-s-subscribe-notify.js?v=1-0-invoice-mail"></script>
+  <script src="fire-s-company-team.js?v=2-9-notify"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-3-price"></script>
+  <script src="fire-s-subscriptions.js?v=1-4-novat"></script>
   <script src="fire-s-subscribe.js?v=1-2-price"></script>
-  <script src="fire-s-user-manual.js?v=1-14-copy"></script>
+  <script src="fire-s-user-manual.js?v=1-15-novat"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
-  <script src="fire-s-get-started.js?v=2-9-terms"></script>
+  <script src="fire-s-get-started.js?v=2-10-notify"></script>
   <script src="fire-s-startup-stability.js?v=1-4-subscribe"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-2-subscribe"></script>
@@ -1615,7 +1621,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-5-copy')
+        navigator.serviceWorker.register('./service-worker.js?v=108-6-invoice')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

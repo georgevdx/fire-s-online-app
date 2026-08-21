@@ -22,7 +22,7 @@ Subscribe as the company owner, add your inspectors, then work on the phone:
 
 Owners and managers also get Home reports, personnel, company details, and a management dashboard on tablet or PC.
 
-Billing: R349 per user email per month, or R3 490 per year. One email is one seat on phone and desktop. Inspector, Manager, Owner and Viewer pay the same. The app does not take a card in this version; Company S invoices.
+Billing: R349 per user email per month, or R3 490 per year. No VAT (Company S is not VAT-registered). One email is one seat on phone and desktop. Inspector, Manager, Owner and Viewer pay the same. The app does not take a card in this version; Company S invoices.
 
 Privacy policy URL (after sit dit live)
 https://georgevdx.github.io/fire-s-online-app/privacy.html
