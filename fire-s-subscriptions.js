@@ -7,91 +7,36 @@
 (function fireSSubscriptions(root) {
   'use strict';
 
-  var DEFAULT_PLAN = 'executive';
+  var DEFAULT_PLAN = 'standard';
   var DEFAULT_INTERVAL = 'monthly';
-  var PLAN_IDS = ['field', 'operations', 'executive', 'enterprise'];
+  var SEAT_PRICE_MONTHLY = 349;
+  var SEAT_PRICE_ANNUAL = 3490;
+  var PLAN_IDS = ['standard', 'seat', 'field', 'operations', 'executive', 'enterprise'];
   var INTERVALS = [
     {
       id: 'monthly',
-      name: 'Monthly',
-      summary: 'Billed every month, per email. Same email on phone and desktop is one seat.'
+      name: 'Monthly · R349 per email',
+      summary: 'R349 every month, per email. Same email on phone and desktop is one seat.'
     },
     {
       id: 'annual',
-      name: 'Annual',
-      summary: 'Billed once a year, per email. Same email on phone and desktop is one seat.'
+      name: 'Annual · R3 490 per email',
+      summary: 'R3 490 once a year, per email (2 months free). Same email on phone and desktop is one seat.'
     }
   ];
 
   const PLANS = [
     {
-      id: 'field',
-      name: 'Fire-S Field',
-      audience: 'Inspectors',
-      seats: 'Inspector seats',
-      summary: 'Phone and tablet field work: find a site, fill Q&A, take photos, make the client PDF.',
+      id: 'standard',
+      name: 'Fire-S seat',
+      audience: 'Every email',
+      seats: 'One paid seat per email',
+      summary: 'R349 per month or R3 490 per year, per email. Role (Inspector, Manager, Owner, Viewer) does not change the price.',
       includes: [
-        'Inspection Gateway',
-        'Checklist Q&A and Expand',
-        'Photo evidence and GPS',
-        'Client PDF for that inspection',
+        'One login on phone and desktop',
+        'Inspection Gateway, Q&A, photos, GPS and client PDF',
+        'Home, reports and the work that matches your role',
         'User manual download'
-      ],
-      excludes: [
-        'Personnel',
-        'Company details / letterhead edit',
-        'Management dashboard',
-        'Test samples'
-      ]
-    },
-    {
-      id: 'operations',
-      name: 'Fire-S Operations',
-      audience: 'Managers',
-      seats: 'Manager seats + Field',
-      summary: 'Day-to-day control of the field team: actions, overdue work, schedule and reports.',
-      includes: [
-        'Everything in Field',
-        'Operations Centre Home',
-        'Inspectors board and compare',
-        'Schedule and follow-ups',
-        'Findings / premises requiring action',
-        'Personnel (add Inspectors and Managers)',
-        'Company details for the client PDF',
-        'Management dashboard (tablet / PC)'
-      ],
-      excludes: [
-        'Enterprise support hours'
-      ]
-    },
-    {
-      id: 'executive',
-      name: 'Fire-S Executive',
-      audience: 'Owners',
-      seats: 'Owner seat + Operations + Field',
-      summary: 'Company-wide control: letterhead, people, compliance graphs and Power BI data export.',
-      includes: [
-        'Everything in Operations',
-        'Executive Command Centre',
-        'Management dashboard on tablet, laptop and PC',
-        'Power BI-style graphs from live inspection data',
-        'CSV download for Microsoft Power BI Desktop',
-        'Company logo and letterhead on client PDFs'
-      ],
-      excludes: []
-    },
-    {
-      id: 'enterprise',
-      name: 'Fire-S Enterprise',
-      audience: 'Larger companies',
-      seats: 'Extra Owner / Manager / Inspector seats',
-      summary: 'Executive plus extra seats, test samples for training, and support.',
-      includes: [
-        'Everything in Executive',
-        'Extra Inspector, Manager and Owner seats',
-        'Test samples (load and later delete training inspections)',
-        'Services / Support requests',
-        'Priority help from Company S'
       ],
       excludes: []
     }
@@ -101,7 +46,7 @@
     {
       id: 'inspector',
       name: 'Inspector',
-      plan: 'Field',
+      plan: 'Fire-S seat',
       can: [
         'Login with the email the owner added',
         'Open Inspection Gateway',
@@ -120,7 +65,7 @@
     {
       id: 'manager',
       name: 'Manager',
-      plan: 'Operations',
+      plan: 'Fire-S seat',
       can: [
         'Everything an Inspector can do',
         'See all company inspections',
@@ -138,7 +83,7 @@
     {
       id: 'company_owner',
       name: 'Owner',
-      plan: 'Executive',
+      plan: 'Fire-S seat',
       can: [
         'Everything a Manager can do',
         'Subscribe and register the company',
@@ -152,7 +97,7 @@
     {
       id: 'viewer',
       name: 'Viewer',
-      plan: 'Add-on (read only)',
+      plan: 'Fire-S seat',
       can: [
         'Open Inspection Gateway in review mode',
         'Read reports and compliance numbers',
@@ -185,11 +130,38 @@
 
   function normalizePlanId(id) {
     var raw = text(id).toLowerCase();
-    if (PLAN_IDS.indexOf(raw) >= 0) return raw;
-    if (raw === 'development' || raw === 'local' || raw === 'trial' || raw === 'owner') {
-      return DEFAULT_PLAN;
+    if (raw === 'standard' || raw === 'seat') return 'standard';
+    if (
+      raw === 'field' ||
+      raw === 'operations' ||
+      raw === 'executive' ||
+      raw === 'enterprise' ||
+      raw === 'development' ||
+      raw === 'local' ||
+      raw === 'trial' ||
+      raw === 'owner'
+    ) {
+      return 'standard';
     }
     return DEFAULT_PLAN;
+  }
+
+  function formatRand(amount) {
+    var n = Math.round(Number(amount) || 0);
+    var digits = String(n);
+    var withSpaces = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return 'R' + withSpaces;
+  }
+
+  function priceFor(interval) {
+    return normalizeInterval(interval) === 'annual' ? SEAT_PRICE_ANNUAL : SEAT_PRICE_MONTHLY;
+  }
+
+  function priceLabel(interval) {
+    if (normalizeInterval(interval) === 'annual') {
+      return formatRand(SEAT_PRICE_ANNUAL) + ' per email per year';
+    }
+    return formatRand(SEAT_PRICE_MONTHLY) + ' per email per month';
   }
 
   function normalizeInterval(id) {
@@ -383,9 +355,14 @@
     selectedIntervalFrom: selectedIntervalFrom,
     persistCompanyPlan: persistCompanyPlan,
     duplicateSeatMessage: duplicateSeatMessage,
+    formatRand: formatRand,
+    priceFor: priceFor,
+    priceLabel: priceLabel,
+    monthlyPrice: SEAT_PRICE_MONTHLY,
+    annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'Paid seats are per email, monthly or annual. One email is one seat on phone and desktop. Company S confirms the price. The app does not take a card yet.',
-    billingNote: 'Each email is one paid seat. Phone and desktop share that login. No card is taken in Fire-S yet. Company S invoices monthly or annually.'
+    note: 'One Fire-S seat is R349 per month or R3 490 per year, per email. Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login. The app does not take a card yet; Company S invoices.',
+    billingNote: 'Each email is one paid seat at R349 / month or R3 490 / year. Phone and desktop share that login. No card is taken in Fire-S yet.'
   };
 })(window);

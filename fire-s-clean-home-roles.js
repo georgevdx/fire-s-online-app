@@ -752,7 +752,7 @@
     cardText(
       'cmdSubscribeBtn',
       'Subscription',
-      'View or change the company package.'
+      'R349 / month per email · tap to view or change.'
     );
     cardText(
       'cmdUserManualBtn',
@@ -866,7 +866,7 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Choose a package and save your company name.');
+    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Choose monthly (R349) or annual (R3 490) per email.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
     setText('#mainCommandCentre .main-command-top h3', 'Subscribe');
     setText(

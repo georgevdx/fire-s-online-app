@@ -184,7 +184,7 @@
         <ol>
           <li><strong>1. Login</strong> — you already have an email and password.</li>
           <li><strong>2. Create password</strong> — first time only, after your owner added your email in Personnel.</li>
-          <li><strong>3. Subscribe</strong> — new business. Choose a package. You become the Owner.</li>
+          <li><strong>3. Subscribe</strong> — new business. R349 per email per month, or R3 490 per year. You become the Owner.</li>
         </ol>
         <h3>Login</h3>
         <ol>
@@ -204,13 +204,12 @@
         <h3>Subscribe (Owner)</h3>
         <ol>
           <li>Tap <strong>3. Subscribe</strong>.</li>
-          <li>Type the company name, your email and a password. That email is your paid seat.</li>
-          <li>Tap a package: Field, Operations, Executive or Enterprise.</li>
+          <li>Type the company name, your email and a password. That email is R349 / month (or R3 490 / year).</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tap <strong>Subscribe</strong>.</li>
-          <li>If you are already signed in, type the company name, choose package and Monthly/Annual, then tap <strong>Subscribe</strong>.</li>
+          <li>If you are already signed in, type the company name, choose Monthly or Annual, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S confirms the price. Owners can later open <strong>Subscription</strong> on Home to change the package or the monthly/annual choice. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>No card is taken in the app yet. Company S invoices R349 per email per month, or R3 490 per year. A second phone uses Login with the same email — do not Subscribe again.</p>
         <h3>Waiting</h3>
         <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
       </article>
@@ -323,13 +322,13 @@
 
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
-        <p>Fire-S is a paid subscription: <strong>monthly or annual</strong>, billed <strong>per email</strong>. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
-        <p>New companies subscribe on Access, choose a package, then choose Monthly or Annual. The app does not take a card yet. Company S confirms the price and invoices each paid email.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to view or change the package and the monthly/annual choice.</p>
+        <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. Inspector, Manager, Owner and Viewer pay the same. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
+        <p>New companies subscribe on Access and choose Monthly or Annual. The app does not take a card yet. Company S invoices each paid email.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
-          Field is for Inspectors. Operations adds Managers. Executive adds the Owner dashboard and Power BI export. Enterprise adds extra seats, test samples and support.
+          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change the price.
         </div>
         <h3>Install Fire-S on a phone</h3>
         <ol>

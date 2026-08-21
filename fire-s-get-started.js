@@ -395,10 +395,9 @@
     hidePanels();
     setTitle(
       'Subscribe',
-      'Choose a package. You become the Owner. Next you manage personnel.'
+      'You become the Owner. R349 per email per month, or R3 490 per year. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
-    fillPlanPicker('fireSRegisterPlanOptions', 'executive');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
     setStatus('');
   }
@@ -413,10 +412,9 @@
     hidePanels();
     setTitle(
       'Name your company',
-      'You are signed in. Choose a package, save the company name, then manage personnel.'
+      'You are signed in. Choose monthly (R349) or annual (R3 490) per email, then manage personnel.'
     );
     showPanel('fireSGetStartedCompanyOnly');
-    fillPlanPicker('fireSCompanyOnlyPlanOptions', 'executive');
     fillBillingPicker('fireSCompanyOnlyBillingOptions', 'monthly');
     setStatus('');
   }
@@ -671,7 +669,7 @@
         return;
       }
       setStatus('Creating company…');
-      var planId = chosenPlan('fireSRegisterPlanOptions');
+      var planId = 'standard';
       var intervalId = chosenInterval('fireSRegisterBillingOptions');
       var rpc = await sb.rpc('fire_s_create_company', {
         p_name: company,
@@ -710,7 +708,7 @@
     }
     setStatus('Creating company…');
     try {
-      var planId = chosenPlan('fireSCompanyOnlyPlanOptions');
+      var planId = 'standard';
       var intervalId = chosenInterval('fireSCompanyOnlyBillingOptions');
       var rpc = await sb.rpc('fire_s_create_company', {
         p_name: company,

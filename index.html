@@ -234,7 +234,7 @@
       </button>
       <button id="fireSChoiceCompany" type="button" class="fire-s-get-started-choice primary">
         <strong>3. Subscribe</strong>
-        <span>New business · choose a package · I become the Owner</span>
+        <span>New business · R349 per email · I become the Owner</span>
       </button>
       <button id="fireSInstallAppBtn" type="button" class="fire-s-get-started-choice">
         <strong>Install on this phone</strong>
@@ -271,19 +271,15 @@
     <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
       <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
       <p class="fire-s-get-started-note">
-        Creates your owner login and the company. One email is one paid seat. Phone and desktop share that email. No card is taken yet.
+        Creates your owner login and the company. One email is R349 / month (or R3 490 / year). Phone and desktop share that email. No card is taken yet.
       </p>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
       <div class="fire-s-plan-picker">
-        <p class="fire-s-plan-picker-label">Choose a package</p>
-        <div id="fireSRegisterPlanOptions" class="fire-s-plan-options" data-plan-name="fireSRegisterPlan"></div>
-      </div>
-      <div class="fire-s-plan-picker">
-        <p class="fire-s-plan-picker-label">Pay monthly or annually · per email</p>
+        <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
         <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
-        <p class="fire-s-plan-billing-note">Each email is one paid seat. Do not enter the same email twice for a second phone. Company S confirms the price. No card is taken yet.</p>
+        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. Do not enter the same email twice for a second phone. Company S invoices. No card is taken yet.</p>
       </div>
       <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
         Subscribe
@@ -292,17 +288,13 @@
 
     <div id="fireSGetStartedCompanyOnly" class="fire-s-get-started-fields" style="display:none;">
       <p class="fire-s-get-started-note">
-        You are signed in. Choose a package and monthly or annual billing. One email is one seat.
+        You are signed in. Choose monthly (R349) or annual (R3 490) per email. Role does not change the price.
       </p>
       <input id="fireSGetStartedCompanyOnlyName" type="text" placeholder="Company name" autocomplete="organization">
       <div class="fire-s-plan-picker">
-        <p class="fire-s-plan-picker-label">Choose a package</p>
-        <div id="fireSCompanyOnlyPlanOptions" class="fire-s-plan-options" data-plan-name="fireSCompanyOnlyPlan"></div>
-      </div>
-      <div class="fire-s-plan-picker">
-        <p class="fire-s-plan-picker-label">Pay monthly or annually · per email</p>
+        <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
         <div id="fireSCompanyOnlyBillingOptions" class="fire-s-plan-options" data-interval-name="fireSCompanyOnlyBilling"></div>
-        <p class="fire-s-plan-billing-note">Each email is one paid seat. Phone and desktop share that login. Company S confirms the price. No card is taken yet.</p>
+        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. Phone and desktop share that login. Company S invoices. No card is taken yet.</p>
       </div>
       <button id="fireSGetStartedFinishBtn" type="button" class="cloud-primary-btn">
         Subscribe
@@ -622,24 +614,21 @@
     </button>
   </div>
   <div class="fire-s-subscribe-intro">
-    <div class="fire-s-subscribe-kicker">Company package</div>
+    <div class="fire-s-subscribe-kicker">Paid seats</div>
     <h3>Subscribe to Fire-S</h3>
     <p>
-      Paid subscription: monthly or annual, per email. One email is one seat.
-      Phone and desktop share that login. Company S confirms the price. The app does not take a card yet.
+      One price for every email: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>.
+      Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login.
+      The app does not take a card yet — Company S invoices.
     </p>
   </div>
   <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
   <div class="fire-s-plan-picker">
-    <p class="fire-s-plan-picker-label">Change package</p>
-    <div id="fireSSubscribePlanOptions" class="fire-s-plan-options" data-plan-name="fireSSubscribePlan"></div>
-  </div>
-  <div class="fire-s-plan-picker">
-    <p class="fire-s-plan-picker-label">Pay monthly or annually · per email</p>
+    <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
     <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
-  <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save package</button>
+  <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save billing</button>
 </section>
 <section id="managementDashboardSection" class="card management-dashboard-section" style="display:none;">
   <div class="toolbar">
@@ -828,7 +817,7 @@
   <div id="companyTeamAddPanel" class="company-team-add">
     <div class="cloud-section-title">Add people</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Each email is one paid seat (monthly or annual). Type it once. They log in on phone and desktop with that same email — do not add it again for a second device.
+      Each email is R349 / month or R3 490 / year. Type it once. They log in on phone and desktop with that same email — do not add it again for a second device.
     </p>
     <div class="company-team-add-row">
       <input id="companyTeamEmail" type="email" placeholder="Their email · one seat" autocomplete="off">
@@ -1582,20 +1571,20 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=subscribe-v2"></script>
+  <script src="app.js?v=seat-price-v1"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-17-subscribe"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-18-price"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-company-team.js?v=2-8-seats"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-2-seats"></script>
-  <script src="fire-s-subscribe.js?v=1-1-seats"></script>
-  <script src="fire-s-user-manual.js?v=1-11-seats"></script>
+  <script src="fire-s-subscriptions.js?v=1-3-price"></script>
+  <script src="fire-s-subscribe.js?v=1-2-price"></script>
+  <script src="fire-s-user-manual.js?v=1-12-price"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
-  <script src="fire-s-get-started.js?v=2-7-seats"></script>
+  <script src="fire-s-get-started.js?v=2-8-price"></script>
   <script src="fire-s-startup-stability.js?v=1-4-subscribe"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-2-subscribe"></script>
@@ -1605,7 +1594,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-1-subscribe')
+        navigator.serviceWorker.register('./service-worker.js?v=108-3-price')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

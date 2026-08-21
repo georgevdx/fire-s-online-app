@@ -34,8 +34,8 @@ begin
     raise exception 'Not authenticated';
   end if;
 
-  if v_plan is null or v_plan not in ('field', 'operations', 'executive', 'enterprise') then
-    v_plan := 'executive';
+  if v_plan is null or v_plan not in ('standard', 'seat', 'field', 'operations', 'executive', 'enterprise') then
+    v_plan := 'standard';
   end if;
 
   if v_interval is null or v_interval not in ('monthly', 'annual') then

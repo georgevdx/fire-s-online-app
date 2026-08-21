@@ -32,8 +32,8 @@ begin
     v_name := 'Fire-S Company';
   end if;
 
-  if v_plan is null or v_plan not in ('field', 'operations', 'executive', 'enterprise') then
-    v_plan := 'executive';
+  if v_plan is null or v_plan not in ('standard', 'seat', 'field', 'operations', 'executive', 'enterprise') then
+    v_plan := 'standard';
   end if;
 
   select m.company_id, m.role
@@ -105,8 +105,8 @@ begin
     raise exception 'Not authenticated';
   end if;
 
-  if v_plan is null or v_plan not in ('field', 'operations', 'executive', 'enterprise') then
-    v_plan := 'executive';
+  if v_plan is null or v_plan not in ('standard', 'seat', 'field', 'operations', 'executive', 'enterprise') then
+    v_plan := 'standard';
   end if;
 
   select m.company_id
