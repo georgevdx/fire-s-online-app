@@ -81,6 +81,14 @@
     return !!(p && p.companyId);
   }
 
+  function isStagingEnv() {
+    try {
+      return !!(window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function isFreshCompanyStart() {
     try {
       var role = text(window.currentUserProfile && window.currentUserProfile.role).toLowerCase();
@@ -98,8 +106,10 @@
   }
 
   function canRegisterCompany() {
-    if (isFreshCompanyStart()) return true;
     if (hasCompany()) return false;
+    // Empty test cloud: first person on the toets-blad is the Owner.
+    if (isStagingEnv()) return true;
+    if (isFreshCompanyStart()) return true;
     var role = homeRole();
     if (
       role === 'owner' ||
@@ -366,9 +376,45 @@
     } catch (_) {}
   }
 
+  function paintStagingFirstSubscribe() {
+    var kicker = root && root.querySelector('.fire-s-get-started-kicker');
+    if (kicker) {
+      kicker.textContent = isStagingEnv()
+        ? 'Toets-blad · eerste keer'
+        : 'Fire-S Access';
+    }
+    ['fireSChoiceLogin', 'fireSChoiceCreate', 'fireSInstallAppBtn'].forEach(function (id) {
+      var el = byId(id);
+      if (!el) return;
+      if (isStagingEnv()) {
+        el.style.display = 'none';
+        el.hidden = true;
+      } else {
+        el.hidden = false;
+        el.style.display = '';
+      }
+    });
+    var guestBack =
+      byId('fireSGetStartedGuestFields') &&
+      byId('fireSGetStartedGuestFields').querySelector('[data-fire-s-back]');
+    if (guestBack) guestBack.style.display = isStagingEnv() ? 'none' : '';
+    var guestNote = byId('fireSRegisterNote');
+    if (guestNote && isStagingEnv()) {
+      guestNote.textContent =
+        'Use the same email you already use for Supabase. Do not make a new test email.';
+    }
+    var loginLink = byId('fireSRegisterSwitchToLoginBtn');
+    if (loginLink) loginLink.style.display = isStagingEnv() ? '' : 'none';
+  }
+
   function showChoices() {
+    if (isStagingEnv() && !isRealUser()) {
+      showRegister();
+      return;
+    }
     mode = 'choices';
     hidePanels();
+    paintStagingFirstSubscribe();
     setTitle(
       'Access',
       'Login, create a password, or subscribe as a new company.'
@@ -412,9 +458,12 @@
     }
     mode = 'register';
     hidePanels();
+    paintStagingFirstSubscribe();
     setTitle(
       'Subscribe',
-      'You become the Owner. R349 per email per month, or R3 490 per year. Next you manage personnel.'
+      isStagingEnv()
+        ? 'First time on the test page. Type a company name and the same email you already use for Supabase.'
+        : 'You become the Owner. R349 per email per month, or R3 490 per year. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
@@ -480,18 +529,21 @@
     var role = homeRole();
 
     if (role === 'pending_member') {
-      try {
-        if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
-          showCompanyOnly();
-          return;
-        }
-      } catch (_) {}
+      if (isStagingEnv()) {
+        showCompanyOnly();
+        return;
+      }
       showWaiting();
       return;
     }
 
     if (role === 'new_company' || (isRealUser() && !hasCompany() && canRegisterCompany())) {
       showCompanyOnly();
+      return;
+    }
+
+    if (isStagingEnv() && !isRealUser()) {
+      showRegister();
       return;
     }
 
@@ -664,6 +716,42 @@
     }
   }
 
+  function isAlreadyRegisteredError(err) {
+    var low = text(err && (err.message || err.error_description || err)).toLowerCase();
+    return (
+      low.indexOf('already registered') >= 0 ||
+      low.indexOf('already been registered') >= 0 ||
+      low.indexOf('user already exists') >= 0 ||
+      low.indexOf('email address is already') >= 0
+    );
+  }
+
+  async function createCompanyAfterSignIn(company, email, intervalPickerId) {
+    var sb = getSb();
+    if (!sb || !sb.rpc) throw new Error('Cloud is not ready yet. Wait a moment and try again.');
+    setStatus('Creating company…');
+    var planId = 'standard';
+    var intervalId = chosenInterval(intervalPickerId);
+    var rpc = await sb.rpc('fire_s_create_company', {
+      p_name: company,
+      p_plan: planId
+    });
+    if (rpc.error) {
+      rpc = await sb.rpc('fire_s_create_company', { p_name: company });
+    }
+    if (rpc.error) throw rpc.error;
+    var companyRow = parseCompanyRpc(rpc, company);
+    if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
+    await refreshMembership();
+    rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
+    await saveChosenPlan(planId, intervalId);
+    notifySubscribe(company, email, intervalId);
+    setStatus('Subscribed. Opening Personnel…');
+    mode = 'choices';
+    refreshHomeChrome();
+    setTimeout(openPersonnelAfterCreate, 200);
+  }
+
   async function doRegisterCompany() {
     var company = text(byId('fireSGetStartedCompany') && byId('fireSGetStartedCompany').value);
     var email = text(byId('fireSGetStartedEmail') && byId('fireSGetStartedEmail').value).toLowerCase();
@@ -692,32 +780,38 @@
     setStatus('Creating owner account…');
     try {
       var up = await sb.auth.signUp({ email: email, password: password });
+      if (up.error && isAlreadyRegisteredError(up.error)) {
+        setStatus('This email already has a login. Signing in to finish Subscribe…');
+        var loginTry = await sb.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        if (loginTry.error) {
+          try {
+            var loginEmail = byId('fireSLoginEmail');
+            if (loginEmail) loginEmail.value = email;
+          } catch (_) {}
+          showLogin();
+          setStatus(
+            'This email already has a login, but that password is wrong. Use Forgot password, then Login.',
+            true
+          );
+          return;
+        }
+        await refreshMembership();
+        if (hasCompany()) {
+          await finishSignedInSession('Signed in with existing login.');
+          return;
+        }
+        await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions');
+        return;
+      }
       if (up.error) throw up.error;
       if (!up.data || !up.data.session) {
         setStatus('Check your email to confirm, then Login and finish company setup.', false);
         return;
       }
-      setStatus('Creating company…');
-      var planId = 'standard';
-      var intervalId = chosenInterval('fireSRegisterBillingOptions');
-      var rpc = await sb.rpc('fire_s_create_company', {
-        p_name: company,
-        p_plan: planId
-      });
-      if (rpc.error) {
-        rpc = await sb.rpc('fire_s_create_company', { p_name: company });
-      }
-      if (rpc.error) throw rpc.error;
-      var companyRow = parseCompanyRpc(rpc, company);
-      if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
-      await refreshMembership();
-      rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
-      await saveChosenPlan(planId, intervalId);
-      notifySubscribe(company, email, intervalId);
-      setStatus('Subscribed. Opening Personnel…');
-      mode = 'choices';
-      refreshHomeChrome();
-      setTimeout(openPersonnelAfterCreate, 200);
+      await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions');
     } catch (e) {
       setStatus(authErrorMessage(e), true);
     }
@@ -735,33 +829,12 @@
       setStatus('Tick the box to agree to the Terms and the Privacy policy.', true);
       return;
     }
-    var sb = getSb();
-    if (!sb || !sb.rpc) {
-      setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
-      return;
-    }
-    setStatus('Creating company…');
     try {
-      var planId = 'standard';
-      var intervalId = chosenInterval('fireSCompanyOnlyBillingOptions');
-      var rpc = await sb.rpc('fire_s_create_company', {
-        p_name: company,
-        p_plan: planId
-      });
-      if (rpc.error) {
-        rpc = await sb.rpc('fire_s_create_company', { p_name: company });
-      }
-      if (rpc.error) throw rpc.error;
-      var companyRow = parseCompanyRpc(rpc, company);
-      if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
-      await refreshMembership();
-      rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
-      await saveChosenPlan(planId, intervalId);
-      notifySubscribe(company, profile() && profile().email, intervalId);
-      setStatus('Subscribed. Opening Personnel…');
-      mode = 'choices';
-      refreshHomeChrome();
-      setTimeout(openPersonnelAfterCreate, 200);
+      await createCompanyAfterSignIn(
+        company,
+        profile() && profile().email,
+        'fireSCompanyOnlyBillingOptions'
+      );
     } catch (e) {
       setStatus((e && e.message) || 'Could not create company.', true);
     }
@@ -852,8 +925,15 @@
     if (companyChoice) companyChoice.addEventListener('click', showRegister);
 
     root.querySelectorAll('[data-fire-s-back]').forEach(function (btn) {
-      btn.addEventListener('click', showChoices);
+      btn.addEventListener('click', function () {
+        if (isStagingEnv() && !isRealUser()) showRegister();
+        else showChoices();
+      });
     });
+    var registerLogin = byId('fireSRegisterSwitchToLoginBtn');
+    if (registerLogin) {
+      registerLogin.addEventListener('click', showLogin);
+    }
 
     var switchCreate = byId('fireSSwitchToCreateBtn');
     if (switchCreate) {

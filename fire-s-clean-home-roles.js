@@ -799,6 +799,17 @@
       '#mainCommandSubtitle',
       'Use the Access panel below. Cloud is only for sync after you are signed in.'
     );
+    try {
+      if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
+        setHero('Fire-S', 'SUBSCRIBE', 'First time on the test page. Fill in Subscribe below.');
+        setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
+        setText('#mainCommandCentre .main-command-top h3', 'First Subscribe');
+        setText(
+          '#mainCommandSubtitle',
+          'Use the same email you already use for Supabase. Do not make a new test email.'
+        );
+      }
+    } catch (_) {}
     setText('#mainCommandAccessStatus', 'Not signed in');
     setStatsVisible(false);
     setBetaPanelsVisible(false);
