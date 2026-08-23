@@ -87,9 +87,8 @@ begin
     delete from public.companies;
   end if;
 
-  if to_regclass('storage.objects') is not null then
-    delete from storage.objects where bucket_id = 'inspection-photos';
-  end if;
+  -- Do not delete storage.objects here. Supabase blocks that
+  -- (use the Storage API). Empty photos are not needed to Subscribe.
 
   delete from auth.users
    where email is not null
