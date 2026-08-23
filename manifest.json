@@ -2,7 +2,7 @@
   "id": "https://georgevdx.github.io/fire-s-online-app/",
   "name": "Fire-S Professional Fire Safety Platform",
   "short_name": "Fire-S",
-  "start_url": "./?v=108-6-invoice",
+  "start_url": "./?v=108-7-staging",
   "scope": ".",
   "display": "standalone",
   "orientation": "any",

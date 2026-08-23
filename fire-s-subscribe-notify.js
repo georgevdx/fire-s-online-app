@@ -47,6 +47,11 @@
   }
 
   function notifyCompanyS(info) {
+    try {
+      if (root.FIRE_S_ENV && root.FIRE_S_ENV.notifyCompanyS === false) {
+        return Promise.resolve({ ok: false, skipped: 'staging' });
+      }
+    } catch (_) {}
     var body;
     try {
       body = buildBody(info || {});

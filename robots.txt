@@ -1,6 +1,10 @@
 # Fire-S is proprietary software of Company S, South Africa.
 # People may open the app. AI crawlers may not copy it to train or clone a product.
 
+User-agent: *
+Disallow: /staging
+Disallow: /staging/
+
 User-agent: Googlebot
 Allow: /
 

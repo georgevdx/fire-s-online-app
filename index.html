@@ -1586,6 +1586,7 @@
     </section>
   </div>
 
+  <script src="fire-s-env.js?v=1-0-staging"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1597,12 +1598,12 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=1-3-5-invoice"></script>
+  <script src="app.js?v=1-3-6-staging"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
   <script src="fire-s-clean-home-roles.js?v=2-18-price"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
-  <script src="fire-s-subscribe-notify.js?v=1-0-invoice-mail"></script>
+  <script src="fire-s-subscribe-notify.js?v=1-1-staging"></script>
   <script src="fire-s-company-team.js?v=2-9-notify"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
@@ -1621,7 +1622,11 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-6-invoice')
+        if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
+          console.log('Fire-S staging skips the live service worker.');
+          return;
+        }
+        navigator.serviceWorker.register('./service-worker.js?v=108-7-staging')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

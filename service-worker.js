@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-6-invoice';
+const CACHE = 'fire-s-108-7-staging';
 const PRECACHE = [
   './',
   './index.html',

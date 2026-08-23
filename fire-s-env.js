@@ -1,0 +1,82 @@
+/* ============================================================
+   Fire-S environment fence
+   Production = live app + live Supabase.
+   Staging = toets-blad + Fire-S Test Supabase (keys empty until Johan sends them).
+   Staging never falls back to the live cloud.
+   ============================================================ */
+(function fireSEnv(root) {
+  'use strict';
+
+  var PROD_URL = 'https://ispsdmglyylcwkufphnv.supabase.co';
+  var PROD_ANON =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk';
+
+  // Paste Fire-S Test Project URL and anon key here when Johan sends them.
+  var STAGING_URL = '';
+  var STAGING_ANON = '';
+
+  function text(value) {
+    return String(value == null ? '' : value).trim();
+  }
+
+  function isStagingHere() {
+    try {
+      var path = String((root.location && root.location.pathname) || '').toLowerCase();
+      if (path.indexOf('/staging') !== -1) return true;
+      var search = String((root.location && root.location.search) || '').toLowerCase();
+      if (search.indexOf('env=staging') !== -1) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  var staging = isStagingHere();
+  var stagingUrl = text(STAGING_URL);
+  var stagingAnon = text(STAGING_ANON);
+  var stagingCloudReady = !!(stagingUrl && stagingAnon);
+
+  var env = {
+    name: staging ? 'staging' : 'production',
+    isStaging: staging,
+    isProduction: !staging,
+    appVersion: staging ? '1.3.6-toets' : '1.3.6',
+    supabaseUrl: staging ? stagingUrl : PROD_URL,
+    supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
+    cloudReady: staging ? stagingCloudReady : true,
+    notifyCompanyS: !staging,
+    storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth'
+  };
+
+  function paintBanner() {
+    if (!staging) return;
+    if (root.document && root.document.getElementById('fireSStagingBanner')) return;
+    var bar = root.document.createElement('div');
+    bar.id = 'fireSStagingBanner';
+    bar.setAttribute('role', 'status');
+    bar.style.cssText =
+      'position:sticky;top:0;z-index:100001;padding:10px 14px;background:#7c2d12;color:#fff;' +
+      'font-family:Arial,sans-serif;font-size:0.95rem;line-height:1.35;text-align:center;';
+    if (stagingCloudReady) {
+      bar.textContent =
+        'TOETS-BLAD — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie.';
+    } else {
+      bar.textContent =
+        'TOETS-BLAD — nie vir kliënte. Die toets-wolk is nog nie gekoppel nie. Moenie hier Subscribe asof dit live is nie.';
+    }
+    var body = root.document.body;
+    if (body) body.insertBefore(bar, body.firstChild);
+    try {
+      root.document.title = 'Fire-S TOETS';
+    } catch (_) {}
+  }
+
+  root.FIRE_S_ENV = env;
+  root.fireSIsStaging = function () {
+    return !!env.isStaging;
+  };
+
+  if (root.document && root.document.body) {
+    paintBanner();
+  } else if (root.document) {
+    root.document.addEventListener('DOMContentLoaded', paintBanner);
+  }
+})(window);
