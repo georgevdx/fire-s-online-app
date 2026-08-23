@@ -11,9 +11,9 @@
   var PROD_ANON =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk';
 
-  // Paste Fire-S Test Project URL and anon key here when Johan sends them.
-  var STAGING_URL = '';
-  var STAGING_ANON = '';
+  var STAGING_URL = 'https://ejqgzpkfcwocmtvwufwp.supabase.co';
+  var STAGING_ANON =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqcWd6cGtmY3dvY210dnd1ZndwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MDEwNzYsImV4cCI6MjEwMzA3NzA3Nn0.-sBT1bmd0TdVcaKGmw9Qcpt9cQDow2T94aHKJxtIUcA';
 
   function text(value) {
     return String(value == null ? '' : value).trim();
