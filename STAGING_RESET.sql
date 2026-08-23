@@ -109,6 +109,42 @@ end $$;
 
 commit;
 
+-- One Subscribe: confirm new Fire-S Test logins immediately.
+-- The app can then sign in and create the company in the same tap.
+-- Do not run this on fireye-sync.
+
+do $$
+declare
+  v_inspections int := 0;
+begin
+  if to_regclass('public.inspections') is not null then
+    select count(*) into v_inspections from public.inspections;
+  end if;
+  if v_inspections > 20 then
+    raise exception 'STOP: do not add autoconfirm on the live cloud.';
+  end if;
+end $$;
+
+create or replace function public.fire_s_test_autoconfirm()
+returns trigger
+language plpgsql
+security definer
+set search_path = auth, public
+as $$
+begin
+  update auth.users
+     set email_confirmed_at = coalesce(email_confirmed_at, now())
+   where id = new.id;
+  return new;
+end;
+$$;
+
+drop trigger if exists fire_s_test_autoconfirm on auth.users;
+create trigger fire_s_test_autoconfirm
+  after insert on auth.users
+  for each row
+  execute function public.fire_s_test_autoconfirm();
+
 select
   (select count(*) from auth.users) as logins_kept,
   (select string_agg(email, ', ' order by email) from auth.users) as emails_kept,

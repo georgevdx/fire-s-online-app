@@ -105,6 +105,40 @@
     return homeRole() === 'new_company';
   }
 
+  var PENDING_SUBSCRIBE_KEY = 'fireS.pendingSubscribe.v1';
+
+  function savePendingSubscribe(company, email, intervalId) {
+    try {
+      localStorage.setItem(
+        PENDING_SUBSCRIBE_KEY,
+        JSON.stringify({
+          company: company,
+          email: email,
+          interval: intervalId || 'monthly',
+          at: Date.now()
+        })
+      );
+    } catch (_) {}
+  }
+
+  function readPendingSubscribe() {
+    try {
+      var raw = localStorage.getItem(PENDING_SUBSCRIBE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !text(data.company)) return null;
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function clearPendingSubscribe() {
+    try {
+      localStorage.removeItem(PENDING_SUBSCRIBE_KEY);
+    } catch (_) {}
+  }
+
   function canRegisterCompany() {
     if (hasCompany()) return false;
     // Empty test cloud: first person on the toets-blad is the Owner.
@@ -401,7 +435,7 @@
     var guestNote = byId('fireSRegisterNote');
     if (guestNote && isStagingEnv()) {
       guestNote.textContent =
-        'Use the same email you already use for Supabase. Do not make a new test email.';
+        'One Subscribe creates the login and the company. Use the same email you already use for Supabase.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = isStagingEnv() ? '' : 'none';
@@ -462,7 +496,7 @@
     setTitle(
       'Subscribe',
       isStagingEnv()
-        ? 'First time on the test page. Type a company name and the same email you already use for Supabase.'
+        ? 'One Subscribe. Type a company name and the same email you already use for Supabase.'
         : 'You become the Owner. R349 per email per month, or R3 490 per year. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
@@ -578,12 +612,14 @@
     mode = 'choices';
     refreshHomeChrome();
     if (claimed > 0 || hasCompany()) {
+      clearPendingSubscribe();
       await syncCloudAfterAuth();
       enterAppHome(
         successMsg || (claimed > 0 ? 'You are on the team.' : 'Signed in.')
       );
       return;
     }
+    if (await finishPendingSubscribeIfAny()) return;
     if (canRegisterCompany()) {
       setStatus('Signed in. Subscribe with your company name next.');
       showCompanyOnly();
@@ -726,12 +762,12 @@
     );
   }
 
-  async function createCompanyAfterSignIn(company, email, intervalPickerId) {
+  async function createCompanyAfterSignIn(company, email, intervalPickerId, intervalOverride) {
     var sb = getSb();
     if (!sb || !sb.rpc) throw new Error('Cloud is not ready yet. Wait a moment and try again.');
     setStatus('Creating company…');
     var planId = 'standard';
-    var intervalId = chosenInterval(intervalPickerId);
+    var intervalId = intervalOverride || chosenInterval(intervalPickerId) || 'monthly';
     var rpc = await sb.rpc('fire_s_create_company', {
       p_name: company,
       p_plan: planId
@@ -746,10 +782,43 @@
     rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
     await saveChosenPlan(planId, intervalId);
     notifySubscribe(company, email, intervalId);
+    clearPendingSubscribe();
     setStatus('Subscribed. Opening Personnel…');
     mode = 'choices';
     refreshHomeChrome();
     setTimeout(openPersonnelAfterCreate, 200);
+  }
+
+  async function finishPendingSubscribeIfAny() {
+    if (hasCompany()) {
+      clearPendingSubscribe();
+      return false;
+    }
+    var pending = readPendingSubscribe();
+    if (!pending || !text(pending.company)) return false;
+    if (!canRegisterCompany()) return false;
+    try {
+      await createCompanyAfterSignIn(
+        text(pending.company),
+        text(pending.email),
+        null,
+        text(pending.interval) || 'monthly'
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function signInAfterSignUp(email, password) {
+    var sb = getSb();
+    if (!sb || !sb.auth) return null;
+    var loginTry = await sb.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+    if (loginTry.error) return null;
+    return loginTry;
   }
 
   async function doRegisterCompany() {
@@ -777,16 +846,21 @@
       setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
       return;
     }
+    var intervalId = chosenInterval('fireSRegisterBillingOptions');
+    savePendingSubscribe(company, email, intervalId);
     setStatus('Creating owner account…');
     try {
-      var up = await sb.auth.signUp({ email: email, password: password });
+      var redirectTo = accessRedirectUrl();
+      var signUpOpts = redirectTo ? { emailRedirectTo: redirectTo } : undefined;
+      var up = await sb.auth.signUp(
+        signUpOpts
+          ? { email: email, password: password, options: signUpOpts }
+          : { email: email, password: password }
+      );
       if (up.error && isAlreadyRegisteredError(up.error)) {
         setStatus('This email already has a login. Signing in to finish Subscribe…');
-        var loginTry = await sb.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
-        if (loginTry.error) {
+        var existing = await signInAfterSignUp(email, password);
+        if (!existing) {
           try {
             var loginEmail = byId('fireSLoginEmail');
             if (loginEmail) loginEmail.value = email;
@@ -800,18 +874,33 @@
         }
         await refreshMembership();
         if (hasCompany()) {
+          clearPendingSubscribe();
           await finishSignedInSession('Signed in with existing login.');
           return;
         }
-        await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions');
+        await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions', intervalId);
         return;
       }
       if (up.error) throw up.error;
       if (!up.data || !up.data.session) {
-        setStatus('Check your email to confirm, then Login and finish company setup.', false);
+        setStatus('Finishing Subscribe…');
+        var signedIn = await signInAfterSignUp(email, password);
+        if (!signedIn) {
+          if (isStagingEnv()) {
+            setStatus('Subscribe is not finished yet. Tap Subscribe once more.', true);
+          } else {
+            setStatus('Check your email to confirm, then Login and finish company setup.', false);
+          }
+          return;
+        }
+      }
+      await refreshMembership();
+      if (hasCompany()) {
+        clearPendingSubscribe();
+        await finishSignedInSession('Subscribed.');
         return;
       }
-      await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions');
+      await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions', intervalId);
     } catch (e) {
       setStatus(authErrorMessage(e), true);
     }

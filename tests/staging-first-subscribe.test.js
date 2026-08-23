@@ -66,6 +66,18 @@ assert.ok(
   'Reset SQL must refuse to run on the live cloud'
 );
 assert.ok(
+  /function signInAfterSignUp\(/.test(started),
+  'Subscribe must sign in in the same tap when the cloud needs a second step'
+);
+assert.ok(
+  /function finishPendingSubscribeIfAny\(/.test(started),
+  'A started Subscribe must finish the company without filling the form again'
+);
+assert.ok(
+  /fire_s_test_autoconfirm/.test(reset),
+  'Reset SQL must confirm new Fire-S Test logins so Subscribe is one tap'
+);
+assert.ok(
   !/\+toets/.test(started) && !/\+toets/.test(html),
   'App copy must not invent extra +toets emails'
 );

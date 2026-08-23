@@ -801,12 +801,12 @@
     );
     try {
       if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
-        setHero('Fire-S', 'SUBSCRIBE', 'First time on the test page. Fill in Subscribe below.');
+        setHero('Fire-S', 'SUBSCRIBE', 'One Subscribe. Fill in the form below.');
         setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
         setText('#mainCommandCentre .main-command-top h3', 'First Subscribe');
         setText(
           '#mainCommandSubtitle',
-          'Use the same email you already use for Supabase. Do not make a new test email.'
+          'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
         );
       }
     } catch (_) {}
