@@ -480,6 +480,12 @@
     var role = homeRole();
 
     if (role === 'pending_member') {
+      try {
+        if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
+          showCompanyOnly();
+          return;
+        }
+      } catch (_) {}
       showWaiting();
       return;
     }
@@ -880,6 +886,10 @@
     if (registerBtn) registerBtn.addEventListener('click', doRegisterCompany);
     if (finishBtn) finishBtn.addEventListener('click', doFinishCompanyOnly);
     if (checkBtn) checkBtn.addEventListener('click', doCheckAgain);
+    var startCompanyBtn = byId('fireSWaitingStartCompanyBtn');
+    if (startCompanyBtn) {
+      startCompanyBtn.addEventListener('click', showCompanyOnly);
+    }
 
     var installBtn = byId('fireSInstallAppBtn');
     if (installBtn) {

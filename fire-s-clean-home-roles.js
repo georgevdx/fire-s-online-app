@@ -256,6 +256,13 @@
 
     // 3) Signed in, no company yet.
     if (!hasLinkedCompany()) {
+      // Staging is an empty test cloud: the first login must become Owner,
+      // not wait for Personnel that does not exist yet.
+      try {
+        if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
+          return 'new_company';
+        }
+      } catch (_) {}
       if (
         actual === 'company_owner' ||
         actual === 'owner' ||
