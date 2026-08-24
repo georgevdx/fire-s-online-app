@@ -8997,7 +8997,7 @@ body > #actionDropdown.action-dropdown button:last-child {
   max-width: none;
   min-height: 76px;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   color: inherit;
   border: 1px solid rgba(148,163,184,.35);
   background: #fff;
@@ -9005,9 +9005,8 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 .fire-s-exec-grid .fire-s-exec-stat:hover,
 .fire-s-exec-grid .fire-s-exec-stat:focus {
-  transform: translateY(-1px);
-  outline: 2px solid rgba(183,28,28,.18);
-  outline-offset: 2px;
+  transform: none;
+  outline: none;
 }
 
 .fire-s-exec-grid .fire-s-exec-stat.good { background: #ecfdf5; }

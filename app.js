@@ -7864,47 +7864,11 @@ function getPendingUploadCount() {
 }
 
 function updatePostSiteSyncReminder() {
-  const reminder =
-    document.getElementById('postSiteSyncReminder');
-
+  const reminder = document.getElementById('postSiteSyncReminder');
   if (!reminder) return;
-
-  const pendingUploads =
-    getPendingUploadCount();
-
-  if (pendingUploads === 0) {
-    reminder.innerHTML = '';
-    reminder.className = '';
-    return;
-  }
-
-  reminder.className = 'post-site-sync-reminder';
-
-  reminder.innerHTML = `
-    <div>
-      <strong>Post-site sync reminder</strong>
-      <span>
-        ${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'}
-        waiting in the local upload queue. Up to 10 are processed per sync run.
-      </span>
-    </div>
-
-    <div class="post-site-sync-actions">
-      <button
-        type="button"
-        onclick="refreshSyncData()"
-      >
-        Sync / Refresh
-      </button>
-
-      <button
-        type="button"
-        onclick="dismissPostSiteSyncReminder()"
-      >
-        Dismiss
-      </button>
-    </div>
-  `;
+  // Do not inject a banner above the premises list. It jumps the page.
+  reminder.innerHTML = '';
+  reminder.className = '';
 }
 
 function dismissPostSiteSyncReminder() {
@@ -26771,14 +26735,13 @@ if (!window.fireSMobileSmartCardsApplied) {
     }
   }
 
-  function stat(label, value, sub, tone, filter) {
-    const active = window.fireSExecSnapshotActiveFilter === filter ? ' active' : '';
+  function stat(label, value, sub, tone) {
     return `
-      <button type="button" class="fire-s-exec-stat ${tone || ''}${active}" data-exec-snapshot-filter="${esc(filter || 'exec-all')}" aria-label="Filter by ${esc(label)}">
+      <div class="fire-s-exec-stat ${tone || ''}" role="group" aria-label="${esc(label)} ${esc(value)}">
         <span>${esc(label)}</span>
         <strong>${esc(value)}</strong>
         <em>${esc(sub || '')}</em>
-      </button>`;
+      </div>`;
   }
 
   function showPremisesList() {
@@ -26862,17 +26825,16 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises Overview</h3>
-          <p>Tap a tile to filter the premises list below.</p>
+          <p>Summary of visible premises. Use More Filters below to filter the list.</p>
         </div>
-        <button type="button" data-exec-snapshot-filter="exec-all">Clear</button>
       </div>
       <div class="fire-s-exec-grid">
-        ${stat('Premises', data.count, 'all visible', 'neutral', 'exec-all')}
-        ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone, 'exec-health-attention')}
-        ${stat('Open Actions', data.actions, data.actions ? 'tap to filter' : 'clear', data.actions ? 'risk' : 'good', 'exec-actions')}
-        ${stat('Overdue', data.overdue, data.overdue ? 'tap to filter' : 'none', data.overdue ? 'risk' : 'good', 'exec-overdue')}
-        ${stat('Photos', data.photos, 'tap to filter', 'neutral', 'exec-photos')}
-        ${stat('Attention', data.attention, 'health < 75%', data.attention ? 'watch' : 'good', 'exec-health-attention')}
+        ${stat('Premises', data.count, 'all visible', 'neutral')}
+        ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone)}
+        ${stat('Open Actions', data.actions, data.actions ? 'open work' : 'clear', data.actions ? 'risk' : 'good')}
+        ${stat('Overdue', data.overdue, data.overdue ? 'open overdue' : 'none', data.overdue ? 'risk' : 'good')}
+        ${stat('Photos', data.photos, 'photo evidence', 'neutral')}
+        ${stat('Attention', data.attention, 'health < 75%', data.attention ? 'watch' : 'good')}
       </div>
       <div class="fire-s-exec-bar"><i style="width:${Math.max(0, Math.min(100, data.avg || 0))}%"></i></div>
       <div id="fireSExecSnapshotMessage" class="fire-s-exec-message">${esc(activeFilterLabel(window.fireSExecSnapshotActiveFilter))}</div>
