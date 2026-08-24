@@ -24140,14 +24140,64 @@ function fireSGetInspectionScheduledDate(project) {
   );
 }
 
+function fireSHasRecycledCurrentInspection(project) {
+  const bin = project && project.recycleBin;
+  return !!(bin && Array.isArray(bin.currentInspections) && bin.currentInspections.length);
+}
+
+function fireSHasLiveCurrentInspection(project) {
+  if (!project) return false;
+  if (project.currentInspectionId || project.inspectionId) return true;
+  if (String(project.inspectionNumber || '').trim()) return true;
+  if (Array.isArray(project.answers) && project.answers.length) return true;
+  if (Array.isArray(project.photos) && project.photos.length) return true;
+  return false;
+}
+
+function fireSIsScheduledNewPremisesOnly(project) {
+  const status = String(project?.scheduledStatus || '').toLowerCase();
+  const type = String(project?.scheduleType || '').toLowerCase();
+  return (
+    status === 'scheduled' ||
+    type === 'new_site' ||
+    project?.scheduleFreshInspection === true
+  );
+}
+
 function fireSIsInspectionOverdue(project) {
+  if (!project) return false;
+  if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
+    return false;
+  }
+  if (fireSIsInspectionClosed(project)) return false;
+
+  // Deleted current inspections sit in Recycle. Leftover dates must not count.
+  if (
+    fireSHasRecycledCurrentInspection(project) &&
+    !fireSHasLiveCurrentInspection(project) &&
+    !fireSIsScheduledNewPremisesOnly(project)
+  ) {
+    return false;
+  }
+
+  const lifecycle = String(
+    project.inspectionLifecycleStatus || project.inspectionStatus || ''
+  ).toLowerCase();
+  const shell =
+    lifecycle === 'none' ||
+    String(project.status || '').toLowerCase() === 'premises';
+  if (
+    shell &&
+    !fireSHasLiveCurrentInspection(project) &&
+    !fireSIsScheduledNewPremisesOnly(project)
+  ) {
+    return false;
+  }
+
   const scheduledDate = normaliseDateString(
     fireSGetInspectionScheduledDate(project)
   );
-
   if (!scheduledDate) return false;
-  if (fireSIsInspectionClosed(project)) return false;
-
   return scheduledDate < getTodayDateString();
 }
 
@@ -36782,7 +36832,10 @@ function fireSApplyLifecycleUxLabels() {
     if (!key || key === 'all' || key === 'gateway') return true;
     if (key === 'compliant' || key === 'fs-kpi-compliant' || key === 'compliant-sites') return isCompliant(p);
     if (key === 'scheduled' || key === 'scheduled-new' || key === 'fs-kpi-scheduled' || key === 'scheduled-inspections') return Boolean(plan && plan >= today && !isCompleted(p) && !isArchived(p));
-    if (key === 'overdue' || key === 'fs-kpi-overdue' || key === 'overdue-inspections') return Boolean(plan && plan < today && !isCompleted(p) && !isArchived(p));
+    if (key === 'overdue' || key === 'fs-kpi-overdue' || key === 'overdue-inspections') {
+      if (typeof window.fireSIsInspectionOverdue === 'function') return !!window.fireSIsInspectionOverdue(p);
+      return Boolean(plan && plan < today && !isCompleted(p) && !isArchived(p));
+    }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') return hasOpenActions(p);
     return true;
@@ -36791,7 +36844,10 @@ function fireSApplyLifecycleUxLabels() {
     let list = [];
     try { if (typeof window.getProjects === 'function') list = window.getProjects(); else if (typeof getProjects === 'function') list = getProjects(); else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]'); } catch(_) { list = []; }
     if (!Array.isArray(list)) list = [];
-    try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch(_) {}
+    try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || []; } catch(_) {}
+    if (typeof window.fireSIsDeletedPremises === 'function') {
+      list = (Array.isArray(list) ? list : []).filter(project => !window.fireSIsDeletedPremises(project));
+    }
     return Array.isArray(list) ? list : [];
   }
   function counts(){
@@ -36931,7 +36987,10 @@ function fireSApplyLifecycleUxLabels() {
     if (!key || key === 'all' || key === 'gateway') return true;
     if (key === 'compliant' || key === 'fs-kpi-compliant' || key === 'compliant-sites') return isCompliant(p);
     if (key === 'scheduled' || key === 'scheduled-new' || key === 'fs-kpi-scheduled' || key === 'scheduled-inspections') return Boolean(plan && plan >= today && !isCompleted(p) && !isArchived(p));
-    if (key === 'overdue' || key === 'fs-kpi-overdue' || key === 'overdue-inspections') return Boolean(plan && plan < today && !isCompleted(p) && !isArchived(p));
+    if (key === 'overdue' || key === 'fs-kpi-overdue' || key === 'overdue-inspections') {
+      if (typeof window.fireSIsInspectionOverdue === 'function') return !!window.fireSIsInspectionOverdue(p);
+      return Boolean(plan && plan < today && !isCompleted(p) && !isArchived(p));
+    }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') return hasOpenActions(p);
     return true;
@@ -37197,7 +37256,10 @@ function fireSApplyLifecycleUxLabels() {
     const openActions = noAnswerCount(project) > 0 || (Array.isArray(project?.actions) && project.actions.some(a => !/closed|complete|completed|resolved|done/i.test(String(a?.status || ''))));
     if (key === 'compliant') return !!(answered && closed && !archived && !openActions);
     if (key === 'scheduled-new') return !!(plan && plan >= todayStr && !closed && !archived);
-    if (key === 'overdue') return !!(plan && plan < todayStr && !closed && !archived);
+    if (key === 'overdue') {
+      if (typeof window.fireSIsInspectionOverdue === 'function') return !!window.fireSIsInspectionOverdue(project);
+      return !!(plan && plan < todayStr && !closed && !archived);
+    }
     if (key === 'inspection-attention') return !!openActions;
     if (key === 'month') {
       const d = dateKey(project?.inspectionDate || project?.completedAt || project?.finalisedAt || project?.lastSaved || project?.updatedAt || project?.createdAt || project?.scheduledDate || project?.followUpDate);

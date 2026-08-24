@@ -32,8 +32,16 @@ assert.ok(
   'Cloud download must not bring a deleted premises back onto the list'
 );
 assert.ok(
-  /scheduledDate: '',\s*nextInspectionDate: ''/.test(app),
-  'Deleting a current inspection must clear leftover schedule dates'
+  /function fireSHasRecycledCurrentInspection\(project\)/.test(app),
+  'Overdue must know when the current inspection is in Recycle'
+);
+assert.ok(
+  /Leftover dates must not count/.test(app),
+  'Deleted current inspections must not add to Overdue'
+);
+assert.ok(
+  /window\.fireSIsInspectionOverdue === 'function'\) return !!window\.fireSIsInspectionOverdue/.test(app),
+  'More Filters Overdue must use the same rule as Executive Snapshot'
 );
 
 console.log('overdue-hide-deleted.test.js: ok');
