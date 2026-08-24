@@ -477,7 +477,8 @@
       'executiveSnapshotCard',
       'executiveSnapshotPanel',
       'fireSExecutiveDashboard1115',
-      'inspectorBoardHomeBar'
+      'inspectorBoardHomeBar',
+      'fireSOwnerLists'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -673,6 +674,11 @@
         window.fireSRefreshCompanyPersonnelStats();
       }
     } catch (_) {}
+    try {
+      if (typeof window.fireSRefreshOwnerLists === 'function') {
+        window.fireSRefreshOwnerLists();
+      }
+    } catch (_) {}
   }
 
   function applyOwnerHome(role) {
@@ -787,6 +793,11 @@
         window.fireSRefreshSubscribeCard();
       }
     } catch (_) {}
+    try {
+      if (typeof window.fireSRefreshOwnerLists === 'function') {
+        window.fireSRefreshOwnerLists();
+      }
+    } catch (_) {}
   }
 
   function applyGuestHome() {
@@ -861,6 +872,11 @@
       'Inspection Gateway',
       'Search and open completed inspection work.'
     );
+    try {
+      if (typeof window.fireSRefreshOwnerLists === 'function') {
+        window.fireSRefreshOwnerLists();
+      }
+    } catch (_) {}
   }
 
   function applyPendingMemberHome() {

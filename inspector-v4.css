@@ -3,6 +3,7 @@
 body.fire-s-inspector-v4 #mainCommandCentre .main-command-top,
 body.fire-s-inspector-v4 #mainCommandCentre .main-command-stats,
 body.fire-s-inspector-v4 #mainCommandCentre #fireSOwnerKpiRow,
+body.fire-s-inspector-v4 #mainCommandCentre #fireSOwnerLists,
 body.fire-s-inspector-v4 #mainCommandCentre #mainCommandMessage { display:none !important; }
 body.fire-s-inspector-v4 #mainCommandCentre .main-command-grid {
   display: grid !important;

@@ -1,0 +1,140 @@
+/* Fire-S Owner building lists — tables/rows, not premises cards */
+
+#fireSOwnerLists,
+.fire-s-owner-lists {
+  display: none;
+  margin: 12px 0 16px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#fireSOwnerLists[hidden] {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-owner #fireSOwnerLists,
+body.fire-s-clean-home.fire-s-role-manager #fireSOwnerLists,
+body.fire-s-clean-home.fire-s-role-viewer #fireSOwnerLists,
+body.fire-s-role-owner #fireSOwnerLists,
+body.fire-s-role-manager #fireSOwnerLists,
+body.fire-s-role-viewer #fireSOwnerLists {
+  display: block !important;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector #fireSOwnerLists,
+body.fire-s-clean-home.fire-s-role-guest #fireSOwnerLists,
+body.fire-s-clean-home.fire-s-role-new-company #fireSOwnerLists,
+body.fire-s-clean-home.fire-s-role-pending-member #fireSOwnerLists,
+body.fire-s-role-inspector #fireSOwnerLists,
+body.fire-s-inspector-v4 #fireSOwnerLists,
+body.fire-s-role-guest #fireSOwnerLists,
+body.fire-s-role-new-company #fireSOwnerLists,
+body.fire-s-role-pending-member #fireSOwnerLists {
+  display: none !important;
+}
+
+.fire-s-owner-lists-count {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.35;
+}
+
+.fire-s-owner-lists-block {
+  margin: 0 0 14px;
+  padding: 0;
+  background: transparent;
+}
+
+.fire-s-owner-lists-block h4 {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4b5563;
+}
+
+.fire-s-owner-lists-scroll {
+  max-height: 280px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border-top: 1px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.fire-s-owner-lists-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.95rem;
+}
+
+.fire-s-owner-lists-table th,
+.fire-s-owner-lists-table td {
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #e5e7eb;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.fire-s-owner-lists-table th {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f8fafc;
+}
+
+.fire-s-owner-lists-table td:last-child,
+.fire-s-owner-lists-table th:last-child {
+  white-space: nowrap;
+  width: 38%;
+}
+
+.fire-s-owner-lists-table col.fire-s-owner-lists-name {
+  width: 62%;
+}
+
+.fire-s-owner-lists-table.fire-s-owner-lists-upcoming td:nth-child(2),
+.fire-s-owner-lists-table.fire-s-owner-lists-upcoming th:nth-child(2) {
+  width: 32%;
+  white-space: nowrap;
+}
+
+.fire-s-owner-lists-table.fire-s-owner-lists-upcoming td:nth-child(3),
+.fire-s-owner-lists-table.fire-s-owner-lists-upcoming th:nth-child(3) {
+  width: 18%;
+  white-space: nowrap;
+}
+
+tr.fire-s-owner-lists-row[data-project-id] {
+  cursor: pointer;
+}
+
+tr.fire-s-owner-lists-row[data-project-id]:hover td,
+tr.fire-s-owner-lists-row[data-project-id]:focus td {
+  background: #f1f5f9;
+}
+
+tr.fire-s-owner-lists-empty td {
+  color: #6b7280;
+  font-style: italic;
+  cursor: default;
+  white-space: normal;
+  width: auto;
+}
+
+.fire-s-owner-lists-hint {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
