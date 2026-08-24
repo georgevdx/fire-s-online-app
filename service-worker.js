@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-8-lists';
+const CACHE = 'fire-s-108-9-space';
 const PRECACHE = [
   './',
   './index.html',

@@ -83,8 +83,20 @@ assert.ok(
   'Owner list CSS must style tables, not cards'
 );
 assert.ok(
-  /1\.3\.11/.test(env),
-  'App version must move to 1.3.11 for the owner lists build'
+  /text-align: right/.test(css) &&
+    /overflow-wrap: break-word/.test(css) &&
+    /width: 7\.5rem/.test(css),
+  'Name must wrap; dates and counts must sit in a right-hand column'
+);
+assert.ok(
+  /fire-s-owner-lists-meta/.test(js) &&
+    /fire-s-owner-lists-days/.test(js) &&
+    !/emptyRow\(3,/.test(js),
+  'Upcoming due date and days must share one column so phone rows do not overlap'
+);
+assert.ok(
+  /1\.3\.12/.test(env),
+  'App version must move to 1.3.12 for the list spacing fix'
 );
 
 const elements = {};

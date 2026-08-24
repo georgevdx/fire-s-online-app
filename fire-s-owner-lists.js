@@ -372,8 +372,8 @@
     if (allBody) {
       allBody.innerHTML = model.all.length
         ? model.all.map(row => rowHtml(row.id, [
-            `<td>${esc(row.name)}</td>`,
-            `<td>${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
+            `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
+            `<td class="fire-s-owner-lists-meta">${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
           ].join(''))).join('')
         : emptyRow(2, 'No buildings on your inspection list yet.');
     }
@@ -381,18 +381,17 @@
     if (upcomingBody) {
       upcomingBody.innerHTML = model.upcoming.length
         ? model.upcoming.map(row => rowHtml(row.id, [
-            `<td>${esc(row.name)}</td>`,
-            `<td>${esc(formatDate(row.due))}</td>`,
-            `<td>${esc(daysLabel(row.days))}</td>`
+            `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
+            `<td class="fire-s-owner-lists-meta"><span class="fire-s-owner-lists-date">${esc(formatDate(row.due))}</span><span class="fire-s-owner-lists-days">${esc(daysLabel(row.days))}</span></td>`
           ].join(''))).join('')
-        : emptyRow(3, 'No inspections due in the next 30 days.');
+        : emptyRow(2, 'No inspections due in the next 30 days.');
     }
 
     if (deficiencyBody) {
       deficiencyBody.innerHTML = model.deficiencies.length
         ? model.deficiencies.map(row => rowHtml(row.id, [
-            `<td>${esc(row.name)}</td>`,
-            `<td>${esc(String(row.count))}</td>`
+            `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
+            `<td class="fire-s-owner-lists-meta">${esc(String(row.count))}</td>`
           ].join(''))).join('')
         : emptyRow(2, 'No buildings with deficiencies.');
     }
