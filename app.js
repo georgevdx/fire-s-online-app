@@ -4634,7 +4634,20 @@ async function safeDownloadNewerCloudInspections() {
     data.forEach(row => {
       const cloudProject = normaliseCloudSyncedProject(row);
       if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
+      if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(cloudProject)) {
+        const localDeleted = mergedMap.get(cloudProject.id);
+        if (!localDeleted || fireSIsDeletedPremises(localDeleted)) {
+          mergedMap.set(cloudProject.id, cloudProject);
+        }
+        return;
+      }
       const localProject = mergedMap.get(cloudProject.id);
+
+      if (localProject && typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(localProject)) {
+        const localTime = localProject.lastSaved ? new Date(localProject.lastSaved).getTime() : 0;
+        const cloudTime = cloudProject.lastSaved ? new Date(cloudProject.lastSaved).getTime() : 0;
+        if (cloudTime <= localTime) return;
+      }
 
       if (!localProject) {
   mergedMap.set(cloudProject.id, cloudProject);
@@ -4859,7 +4872,7 @@ function toggleGlobalActionDropdown() {
 // HOME COMMAND CENTRE - SAFE BINDINGS HOTFIX
 // =====================================================
 function getCommandCentreProjects() {
-  const projects = getProjects();
+  const projects = filterDeletedProjects(getProjects());
 
   if (
     typeof getVisibleProjectsForCurrentUser === 'function' &&
@@ -5070,7 +5083,7 @@ function isProjectOverdueForCommandCentre(project) {
 }
 
 function getHomeCommandProjects() {
-  const allProjects = getProjects();
+  const allProjects = filterDeletedProjects(getProjects());
 
   if (typeof getVisibleProjectsForCurrentUser === 'function' && currentUserProfile) {
     return getVisibleProjectsForCurrentUser(allProjects);
@@ -6688,10 +6701,7 @@ function getVisibleProjectsForCurrentUser(projects) {
   }
 
   const activeProjects = (Array.isArray(projects) ? projects : []).filter(project =>
-    project &&
-    !project.deletedAt &&
-    !project.dataManagementDeletedAt &&
-    !isProjectDeleted(project.id)
+    !fireSIsDeletedPremises(project)
   );
 
   if (isSuperAdmin()) {
@@ -6964,6 +6974,17 @@ function getDeletedProjectIds() {
   }
 }
 
+function fireSIsDeletedPremises(project) {
+  if (!project) return true;
+  if (project.deletedAt || project.dataManagementDeletedAt) return true;
+  const deleteType = String(project.deleteType || '').toLowerCase();
+  if (deleteType === 'entire_premises' || deleteType === 'permanently_deleted') return true;
+  const status = String(project.status || project.archiveStatus || '').toLowerCase();
+  if (status === 'deleted' || status === 'permanently_deleted') return true;
+  if (typeof isProjectDeleted === 'function' && isProjectDeleted(project.id)) return true;
+  return false;
+}
+
 function markProjectDeleted(projectId) {
   if (!projectId) return;
 
@@ -6978,9 +6999,7 @@ function isProjectDeleted(projectId) {
 }
 
 function filterDeletedProjects(projects) {
-  return (projects || []).filter(project =>
-    project && !isProjectDeleted(project.id)
-  );
+  return (projects || []).filter(project => !fireSIsDeletedPremises(project));
 }
 
 function buildPhotoPublicUrlFromStoragePath(storagePath) {
@@ -26572,23 +26591,49 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function readVisibleProjects() {
     const all = readAllProjects();
+    const active = all.filter(project => {
+      try {
+        if (typeof window.fireSIsDeletedPremises === 'function') {
+          return !window.fireSIsDeletedPremises(project);
+        }
+      } catch (_) {}
+      return !(project?.deletedAt || project?.dataManagementDeletedAt);
+    });
     try {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(all) || [];
+        return window.getVisibleProjectsForCurrentUser(active) || [];
       }
     } catch (error) {
       console.warn('Fire-S Executive Snapshot could not filter visible premises:', error);
     }
-    return all;
+    return active;
+  }
+
+  function isClosed(project) {
+    if (typeof window.fireSIsInspectionClosed === 'function') {
+      try { return !!window.fireSIsInspectionClosed(project); } catch (_) {}
+    }
+    return Boolean(
+      project?.completedAt ||
+      project?.archivedAt ||
+      project?.finalisedAt ||
+      project?.scheduledStatus === 'completed' ||
+      project?.archiveStatus === 'completed' ||
+      project?.inspectionStatus === 'closed' ||
+      project?.status === 'closed'
+    );
   }
 
   function valueDate(project) {
-    return project?.followUpDate || project?.scheduledDate || '';
+    return project?.scheduledDate || project?.followUpDate || '';
   }
 
   function isOverdue(project) {
+    if (typeof window.fireSIsInspectionOverdue === 'function') {
+      try { return !!window.fireSIsInspectionOverdue(project); } catch (_) {}
+    }
     const date = String(valueDate(project) || '').slice(0, 10);
-    return Boolean(date && date < todayKey());
+    return Boolean(date && date < todayKey() && !isClosed(project));
   }
 
   function openActionCount(project) {
@@ -37127,6 +37172,11 @@ function fireSApplyLifecycleUxLabels() {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list;
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || list;
     } catch (_) {}
+    if (typeof window.fireSIsDeletedPremises === 'function') {
+      list = (Array.isArray(list) ? list : []).filter(project => !window.fireSIsDeletedPremises(project));
+    } else {
+      list = (Array.isArray(list) ? list : []).filter(project => !(project?.deletedAt || project?.dataManagementDeletedAt));
+    }
     return Array.isArray(list) ? list : [];
   }
 
@@ -40578,6 +40628,11 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       inspectionLifecycleStatus: 'none',
       inspectionStatus: 'none',
       scheduledStatus: '',
+      scheduledDate: '',
+      nextInspectionDate: '',
+      nextDate: '',
+      inspectionDueDate: '',
+      dueDate: '',
       inspectionFinalisedAt: null,
       inspectionFinalizedAt: null,
       inspectionReviewCompletedAt: null,
