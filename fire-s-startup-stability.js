@@ -7,9 +7,11 @@
 (function fireSStartupStability() {
   'use strict';
 
-  const BOOT_MAX_MS = 2500;
+  const BOOT_MIN_MS = 1100;
+  const BOOT_MAX_MS = 2800;
   let revealed = false;
   let revealTimer = null;
+  const startedAt = Date.now();
 
   function byId(id) {
     return document.getElementById(id);
@@ -39,6 +41,11 @@
 
   function revealApp(reason) {
     if (revealed) return;
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < BOOT_MIN_MS && reason !== 'timeout') {
+      scheduleReveal(reason || 'min', BOOT_MIN_MS - elapsed);
+      return;
+    }
     revealed = true;
     clearTimeout(revealTimer);
 

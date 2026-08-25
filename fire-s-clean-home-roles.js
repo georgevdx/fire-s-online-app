@@ -803,21 +803,19 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest', 'guest');
-    setHero('Fire-S', 'ACCESS', 'Login, create a password, or subscribe.');
+    setHero('Fire-S', 'LOGIN', 'Sign in. New company? Use Subscribe below.');
     setText('#mainCommandCentre .main-command-kicker', 'Access');
-    setText('#mainCommandCentre .main-command-top h3', 'Start here');
+    setText('#mainCommandCentre .main-command-top h3', 'Login');
     setText(
       '#mainCommandSubtitle',
-      'Use the Access panel below. Cloud is only for sync after you are signed in.'
+      'Use Login below. Subscribe only if this company is not registered yet. Cloud is only for sync after you are signed in.'
     );
     try {
       if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
-        setHero('Fire-S', 'SUBSCRIBE', 'One Subscribe. Fill in the form below.');
         setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
-        setText('#mainCommandCentre .main-command-top h3', 'First Subscribe');
         setText(
           '#mainCommandSubtitle',
-          'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
+          'Login first. Subscribe only if this company is not on the toets-blad yet.'
         );
       }
     } catch (_) {}

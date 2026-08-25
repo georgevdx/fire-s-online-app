@@ -28,6 +28,9 @@
     html.fire-s-booting #fireSBootScreen .boot-card {
       text-align: center; padding: 28px 22px; max-width: 280px;
     }
+    html.fire-s-booting #fireSBootScreen .boot-mark {
+      width: 72px; height: 72px; border-radius: 16px; display: block; margin: 0 auto 10px;
+    }
     html.fire-s-booting #fireSBootScreen .boot-kicker {
       letter-spacing: .18em; text-transform: uppercase; opacity: .7; font-size: .75rem;
     }
@@ -64,7 +67,7 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-6">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-3-terms-links">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-4-login">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-0">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
@@ -77,9 +80,10 @@
 <body>
   <div id="fireSBootScreen" aria-live="polite">
     <div class="boot-card">
+      <img class="boot-mark" src="icon-192.png" alt="">
       <div class="boot-kicker">Fire-S</div>
-      <h1>Loading</h1>
-      <p>Preparing your workspace…</p>
+      <h1>Fire-S</h1>
+      <p>Loading…</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -267,6 +271,7 @@
       <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
+      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn">New company? Subscribe</button>
       <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
     </div>
 
@@ -302,7 +307,7 @@
       <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
         Subscribe
       </button>
-      <button id="fireSRegisterSwitchToLoginBtn" type="button" class="secondary-btn" style="display:none;">
+      <button id="fireSRegisterSwitchToLoginBtn" type="button" class="secondary-btn">
         I already subscribed — Login
       </button>
     </div>
@@ -1643,7 +1648,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-12-space"></script>
+  <script src="fire-s-env.js?v=1-3-13-login"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1655,10 +1660,10 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=1-3-12-space"></script>
+  <script src="app.js?v=1-3-13-login"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-22-lists"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-23-login"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-1-staging"></script>
@@ -1670,8 +1675,8 @@
   <script src="fire-s-user-manual.js?v=1-15-novat"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
-  <script src="fire-s-get-started.js?v=2-13-once"></script>
-  <script src="fire-s-startup-stability.js?v=1-4-subscribe"></script>
+  <script src="fire-s-get-started.js?v=2-14-login"></script>
+  <script src="fire-s-startup-stability.js?v=1-5-login"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-2-subscribe"></script>
   <script src="fire-s-desktop-access.js?v=1-2-boot-safe"></script>
@@ -1684,7 +1689,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-9-space')
+        navigator.serviceWorker.register('./service-worker.js?v=108-10-login')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })
