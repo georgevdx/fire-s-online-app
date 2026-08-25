@@ -181,6 +181,7 @@
           kind: 'subscribe',
           company: company,
           email: email,
+          billedTo: email,
           interval: intervalId,
           role: 'Owner'
         });
@@ -497,7 +498,7 @@
       'Subscribe',
       isStagingEnv()
         ? 'One Subscribe. Type a company name and the same email you already use for Supabase.'
-        : 'You become the Owner. R349 per email per month, or R3 490 per year. Next you manage personnel.'
+        : 'You become the Owner. You pay R349 per email per month, or R3 490 per year. Inspectors do not pay. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
@@ -514,7 +515,7 @@
     hidePanels();
     setTitle(
       'Name your company',
-      'You are signed in. Choose monthly (R349) or annual (R3 490) per email, then manage personnel.'
+      'You are signed in. You pay monthly (R349) or annual (R3 490) per email. Inspectors do not pay. Then manage personnel.'
     );
     showPanel('fireSGetStartedCompanyOnly');
     fillBillingPicker('fireSCompanyOnlyBillingOptions', 'monthly');
@@ -601,7 +602,7 @@
       low.indexOf('user already exists') >= 0 ||
       low.indexOf('email address is already') >= 0
     ) {
-      return 'This email already has a login. Use Login on phone and desktop. Do not Subscribe or Create password again — one email is one paid seat.';
+      return 'This email already has a login. Use Login on phone and desktop. Do not Subscribe or Create password again — one email is one login the owner pays for.';
     }
     return msg || 'Something went wrong.';
   }

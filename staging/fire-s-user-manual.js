@@ -204,13 +204,13 @@
         <h3>Subscribe (Owner)</h3>
         <ol>
           <li>Tap <strong>3. Subscribe</strong>.</li>
-          <li>Type the company name, your email and a password. That email is R349 / month (or R3 490 / year).</li>
+          <li>Type the company name, your email and a password. You pay R349 / month (or R3 490 / year) for that email. Inspectors do not pay.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
           <li>Tap <strong>Subscribe</strong>.</li>
           <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S invoices R349 per email per month, or R3 490 per year. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>No card is taken in the app yet. Company S invoices the owner R349 per subscribed email per month, or R3 490 per year. Inspectors do not pay. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>
         <h3>Waiting</h3>
         <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
@@ -291,7 +291,7 @@
         <h3>Personnel</h3>
         <ol>
           <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
-          <li>Add the person’s email <strong>once</strong>. Each email is one paid seat (monthly or annual).</li>
+          <li>Add the person’s email <strong>once</strong>. That starts a new subscription. The owner pays; the inspector does not.</li>
           <li>Choose Inspector, Manager or Owner.</li>
           <li>They Create password on their own phone (first time only).</li>
           <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
@@ -324,14 +324,14 @@
 
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
-        <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. Inspector, Manager, Owner and Viewer pay the same. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
+        <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. The owner pays for every subscribed email. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
-        <p>New companies subscribe on Access and choose Monthly or Annual. Tick Terms and Privacy, then Subscribe. The app does not take a card yet. Company S invoices each paid email. No VAT is added. Company S receives an email when someone subscribes or a paid seat is added.</p>
+        <p>New companies subscribe on Access and choose Monthly or Annual. Tick Terms and Privacy, then Subscribe. The app does not take a card yet. Company S invoices the owner for each subscribed email. Inspectors do not pay. No VAT is added. Company S receives an email when the owner subscribes or adds a new email in Personnel — each new email is a new subscription.</p>
         <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
-          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change the price.
+          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays.
         </div>
         <h3>Install Fire-S on a phone</h3>
         <ol>

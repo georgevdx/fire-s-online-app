@@ -16,12 +16,12 @@
     {
       id: 'monthly',
       name: 'Monthly · R349 per email',
-      summary: 'R349 every month, per email. Same email on phone and desktop is one seat.'
+      summary: 'R349 every month, per email. The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
     },
     {
       id: 'annual',
       name: 'Annual · R3 490 per email',
-      summary: 'R3 490 once a year, per email (2 months free). Same email on phone and desktop is one seat.'
+      summary: 'R3 490 once a year, per email (2 months free). The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
     }
   ];
 
@@ -30,8 +30,8 @@
       id: 'standard',
       name: 'Fire-S seat',
       audience: 'Every email',
-      seats: 'One paid seat per email',
-      summary: 'R349 per month or R3 490 per year, per email. Role (Inspector, Manager, Owner, Viewer) does not change the price.',
+      seats: 'One subscription per email, paid by the owner',
+      summary: 'R349 per month or R3 490 per year, per email. The owner pays for every subscribed email. Inspectors and other staff do not pay.',
       includes: [
         'One login on phone and desktop',
         'Inspection Gateway, Q&A, photos, GPS and client PDF',
@@ -207,7 +207,7 @@
     var addr = text(email).toLowerCase() || 'This email';
     return (
       addr +
-      ' is already a paid seat. That person logs in on phone and desktop with the same email. Do not enter it again.'
+      ' is already a subscription the owner pays for. That person logs in on phone and desktop with the same email. Do not enter it again.'
     );
   }
 
@@ -362,7 +362,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'One Fire-S seat is R349 per month or R3 490 per year, per email. No VAT — Company S is not VAT-registered. Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login. The app does not take a card yet; Company S invoices.',
-    billingNote: 'Each email is one paid seat at R349 / month or R3 490 / year. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'The owner pays R349 per month or R3 490 per year for every subscribed email. Inspectors and other staff do not pay. Each new email is a new subscription, invoiced to the owner. No VAT — Company S is not VAT-registered. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
+    billingNote: 'The owner pays R349 / month or R3 490 / year for each subscribed email. Inspectors do not pay. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
   };
 })(window);
