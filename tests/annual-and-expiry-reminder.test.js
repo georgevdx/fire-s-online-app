@@ -50,7 +50,7 @@ assert.ok(
     /One month before the due date/.test(manual),
   'User manual must mention annual discount and the Home reminder'
 );
-assert.ok(/1\.3\.21-toets/.test(env), 'Toets-blad version must move to 1.3.21-toets');
+assert.ok(/1\.3\.2\d-toets/.test(env), 'Toets-blad version must stay on 1.3.21-toets or newer');
 assert.ok(/1\.3\.12/.test(liveEnv), 'Live Fire-S must stay 1.3.12 until Johan says sit dit live');
 
 const store = {};

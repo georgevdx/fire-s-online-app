@@ -6352,7 +6352,7 @@ async function loadUserAccessProfile() {
     try {
       await withTimeout(
         supabaseClient.rpc('fire_s_claim_my_invites'),
-        2500
+        8000
       );
     } catch (_) {}
 

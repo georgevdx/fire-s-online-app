@@ -215,7 +215,7 @@
         <p>No card is taken in the app yet. Company S invoices the owner R349 per subscribed email per month, or R3 490 per year. Inspectors do not pay. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>
         <h3>Waiting</h3>
-        <p>If Login works but Home is not open yet, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
+        <p>After Create password you should land on Inspector Home. If you see Almost ready, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
       </article>
 
       <article class="user-manual-chapter">
