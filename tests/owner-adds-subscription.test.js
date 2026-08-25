@@ -38,7 +38,8 @@ assert.ok(
 );
 assert.ok(
   /How a remote Inspector \/ Manager joins/.test(html) &&
-    /You tap Add/.test(html) &&
+    /You tap Add inspector \/ manager/.test(html) &&
+    /Subscribe this email/.test(html) &&
     /They must <strong>not<\/strong> tap Subscribe/.test(html),
   'Personnel must show the owner the remote-join map'
 );
@@ -48,13 +49,14 @@ assert.ok(
 );
 assert.ok(
   /Inspectors and managers never Subscribe/.test(manual) &&
-    /When you tap <strong>Add<\/strong>/.test(manual) &&
+    /Tap <strong>Add inspector \/ manager<\/strong>/.test(manual) &&
+    /Subscribe this email/.test(manual) &&
     /They can work remotely/.test(manual),
   'User manual must explain owner Add vs remote Create password'
 );
 assert.ok(
-  /1\.3\.19-toets/.test(env),
-  'Toets-blad version must move to 1.3.19-toets'
+  /1\.3\.20-toets/.test(env),
+  'Toets-blad version must move to 1.3.20-toets'
 );
 
 console.log('owner-adds-subscription.test.js: ok');

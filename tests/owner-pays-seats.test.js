@@ -110,7 +110,7 @@ if (/billed_to/.test(liveNotify)) {
 
 const toetsEnv = read('staging/fire-s-env.js');
 assert.ok(
-  /1\.3\.1[4-9]-toets/.test(toetsEnv),
+  /1\.3\.(1[4-9]|2\d)-toets/.test(toetsEnv),
   'Toets-blad must stay on 1.3.14-toets or newer with owner-pays copy'
 );
 

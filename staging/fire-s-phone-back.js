@@ -103,6 +103,15 @@
       return;
     }
 
+    if (isShown(byId('fireSSubscribeSection'))) {
+      try {
+        if (typeof window.fireSSubscribeGoBack === 'function') {
+          window.fireSSubscribeGoBack();
+          return;
+        }
+      } catch (_) {}
+    }
+
     if (
       isShown(byId('projectListSection')) ||
       isShown(byId('servicesSection')) ||

@@ -234,6 +234,19 @@
         window.fireSRefreshCompanyPersonnelStats();
       }
     } catch (_) {}
+    returnToPersonnelFromSeat();
+  }
+
+  function returnToPersonnelFromSeat() {
+    const sub = byId('fireSSubscribeSection');
+    if (!sub || sub.style.display === 'none') return;
+    sub.style.display = 'none';
+    showCompanyTeamSection();
+    try {
+      if (typeof window.updateFloatingBackButton === 'function') {
+        window.updateFloatingBackButton();
+      }
+    } catch (_) {}
   }
 
   function rememberCompanyName(companyId, companyName) {
@@ -1173,16 +1186,16 @@
     return result?.data || null;
   }
 
-  async function addMember() {
+  async function addMember(emailOverride, roleOverride) {
     try {
       if (!canManageTeam()) {
         throw new Error('Only Manager or Owner can add team members.');
       }
 
-      const emailInput = byId('companyTeamEmail');
-      const roleSelect = byId('companyTeamRole');
-      const email = text(emailInput?.value).toLowerCase();
-      const role = text(roleSelect?.value) || 'inspector';
+      const emailInput = byId('fireSSeatEmail');
+      const roleSelect = byId('fireSSeatRole');
+      const email = text(emailOverride || (emailInput && emailInput.value)).toLowerCase();
+      const role = text(roleOverride || (roleSelect && roleSelect.value)) || 'inspector';
       const ctx = companyContext();
 
       if (!email || !email.includes('@')) {
@@ -1205,6 +1218,11 @@
       }
 
       setMessage('Adding person…');
+      try {
+        if (typeof window.fireSSetSubscribeMessage === 'function') {
+          window.fireSSetSubscribeMessage('Subscribing this email. You (the owner) pay…');
+        }
+      } catch (_) {}
 
       // Preferred: SECURITY DEFINER RPC (finds auth login even without profiles row)
       const rpc = await waitFor(
@@ -1311,16 +1329,23 @@
         await supabaseClient.from('profiles').update({ role }).eq('id', profile.id);
       } catch (_) {}
 
-      if (emailInput) emailInput.value = '';
-      if (roleSelect) roleSelect.value = 'inspector';
-      setMessage(
-        `${profile.email || email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person.`
+      await finishAddedPerson(
+        profile.email || email,
+        role,
+        'added',
+        emailInput,
+        roleSelect,
+        true
       );
-      await refreshTeam();
-      notifyOwnerPaysSubscription(profile.email || email, roleLabel(role));
     } catch (error) {
       console.error('Add member failed:', error);
       setMessage(error.message || 'Could not add team member.', true);
+      try {
+        if (typeof window.fireSSetSubscribeMessage === 'function') {
+          window.fireSSetSubscribeMessage(error.message || 'Could not subscribe that email.', true);
+        }
+      } catch (_) {}
+      throw error;
     }
   }
 
@@ -1689,7 +1714,7 @@
         setMessage(
           members.length || invites.length
             ? ''
-            : 'Add your first Inspector or Manager below.'
+            : 'Tap Add inspector / manager to subscribe a person.'
         );
       }
     } catch (error) {
@@ -1818,10 +1843,14 @@
       back.addEventListener('click', goHome);
     }
 
-    const addBtn = byId('companyTeamAddBtn');
-    if (addBtn && !addBtn.__fireSCompanyBound) {
-      addBtn.__fireSCompanyBound = true;
-      addBtn.addEventListener('click', addMember);
+    const startSeatBtn = byId('companyTeamStartSeatBtn');
+    if (startSeatBtn && !startSeatBtn.__fireSCompanyBound) {
+      startSeatBtn.__fireSCompanyBound = true;
+      startSeatBtn.addEventListener('click', function () {
+        if (typeof window.fireSOpenSubscribePerson === 'function') {
+          window.fireSOpenSubscribePerson();
+        }
+      });
     }
 
     const laterBtn = byId('companyTeamLaterBtn');
@@ -1859,7 +1888,7 @@
     }
 
     // Manager cannot offer Owner in the add dropdown.
-    const roleSelect = byId('companyTeamRole');
+    const roleSelect = byId('fireSSeatRole');
     if (roleSelect) {
       [...roleSelect.options].forEach(opt => {
         if (opt.value === 'company_owner') {
@@ -1877,6 +1906,7 @@
 
   window.fireSOpenCompanyTeam = openCompanyTeam;
   window.openCompanyTeamOverlay = openCompanyTeam;
+  window.fireSAddPersonnelSeat = addMember;
   window.fireSRefreshCompanyTeam = refreshTeam;
   window.fireSRefreshCompanyTeamChrome = refreshPersonnelChrome;
   window.fireSRememberCompanyName = rememberCompanyName;

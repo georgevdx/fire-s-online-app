@@ -132,3 +132,32 @@
   background: #fff1f2;
   color: #9f1239;
 }
+
+.fire-s-subscribe-seat {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.fire-s-subscribe-seat-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.fire-s-subscribe-seat input,
+.fire-s-subscribe-seat select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.fire-s-subscribe-seat-note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #64748b;
+}
