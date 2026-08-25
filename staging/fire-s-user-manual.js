@@ -194,14 +194,16 @@
           <li>If you forgot the password, tap <strong>Forgot password</strong>.</li>
         </ol>
         <h3>Create password (staff, first time)</h3>
+        <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Add in Personnel.</p>
         <ol>
-          <li>Tell your owner your email.</li>
-          <li>They add you in <strong>Personnel</strong> as Inspector or Manager.</li>
+          <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
+          <li>You can be anywhere. Open Fire-S on your phone.</li>
           <li>Tap <strong>2. Create password</strong>.</li>
           <li>Type that same email and choose a password.</li>
-          <li>Tap <strong>Create password</strong>, then Login.</li>
+          <li>Tap <strong>Create password</strong>, then <strong>Login</strong>.</li>
+          <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
         </ol>
-        <h3>Subscribe (Owner)</h3>
+        <h3>Subscribe (Owner only)</h3>
         <ol>
           <li>Tap <strong>3. Subscribe</strong>.</li>
           <li>Type the company name, your email and a password. You pay R349 / month (or R3 490 / year) for that email. Inspectors do not pay.</li>
@@ -213,7 +215,7 @@
         <p>No card is taken in the app yet. Company S invoices the owner R349 per subscribed email per month, or R3 490 per year. Inspectors do not pay. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>
         <h3>Waiting</h3>
-        <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
+        <p>If Login works but Home is not open yet, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
       </article>
 
       <article class="user-manual-chapter">
@@ -289,11 +291,12 @@
           <li>Tap <strong>Save company details</strong>.</li>
         </ol>
         <h3>Personnel</h3>
+        <p>When you tap <strong>Add</strong>, you (the owner) place the subscription. The inspector or manager does not Subscribe and does not pay. They can work remotely.</p>
         <ol>
           <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
-          <li>Add the person’s email <strong>once</strong>. That starts a new subscription. The owner pays; the inspector does not.</li>
-          <li>Choose Inspector, Manager or Owner.</li>
-          <li>They Create password on their own phone (first time only).</li>
+          <li>Type the person’s email <strong>once</strong> and choose Inspector or Manager.</li>
+          <li>Tap <strong>Add</strong>. That starts a new subscription. Company S invoices you, not them.</li>
+          <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe.</li>
           <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
         </ol>
         <h3>Inspectors board</h3>
@@ -326,7 +329,7 @@
         <h2>11. Subscriptions</h2>
         <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. The owner pays for every subscribed email. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
-        <p>New companies subscribe on Access and choose Monthly or Annual. Tick Terms and Privacy, then Subscribe. The app does not take a card yet. Company S invoices the owner for each subscribed email. Inspectors do not pay. No VAT is added. Company S receives an email when the owner subscribes or adds a new email in Personnel — each new email is a new subscription.</p>
+        <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No VAT is added. No card is taken in the app yet.</p>
         <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
         ${planTableHtml()}
         <div class="user-manual-note">

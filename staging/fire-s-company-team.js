@@ -220,11 +220,11 @@
     if (roleSelect) roleSelect.value = 'inspector';
     if (status === 'invited' || status === 'reopened') {
       setMessage(
-        `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They open Access → Create password once.`
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → 2. Create password once, then Login. They must not Subscribe.`
       );
     } else {
       setMessage(
-        `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They Login with that email on phone and desktop.`
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They Login with that email. They must not Subscribe.`
       );
     }
     await refreshTeam();

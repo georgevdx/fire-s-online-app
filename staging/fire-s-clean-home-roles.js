@@ -256,8 +256,23 @@
 
     // 3) Signed in, no company yet.
     if (!hasLinkedCompany()) {
-      // Staging is an empty test cloud: the first login must become Owner,
-      // not wait for Personnel that does not exist yet.
+      // Invited Inspector / Manager never Subscribe. The owner already paid
+      // when they tapped Add. Staging used to treat every login as a new
+      // company owner — that sent remote staff to the Subscribe page.
+      if (
+        actual === 'inspector' ||
+        actual === 'manager' ||
+        actual === 'viewer' ||
+        actual === 'pending_member'
+      ) {
+        return 'pending_member';
+      }
+      try {
+        if (window.localStorage && window.localStorage.getItem('fireS.joiningAsStaff.v1') === '1') {
+          return 'pending_member';
+        }
+      } catch (_) {}
+      // Empty test cloud: first person on the toets-blad is the Owner.
       try {
         if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
           return 'new_company';
@@ -880,12 +895,12 @@
   function applyPendingMemberHome() {
     showHomeHero();
     setBodyRole('fire-s-role-pending-member', 'pending_member');
-    setHero('Fire-S', 'ALMOST READY', 'Your login works. Wait for your owner to add you.');
+    setHero('Fire-S', 'ALMOST READY', 'Your owner already added you. Create password once, then Login. Do not Subscribe — the owner pays.');
     setText('#mainCommandCentre .main-command-kicker', 'Waiting');
-    setText('#mainCommandCentre .main-command-top h3', 'Ask your owner to add you');
+    setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'They add your email in Personnel. Then tap Check again in Access.'
+      'Use Access → 2. Create password (first time), then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);
