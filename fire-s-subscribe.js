@@ -51,7 +51,7 @@
     current.innerHTML =
       '<strong>Fire-S seat · ' +
       price +
-      '</strong><span>Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that email.</span>';
+      '</strong><span>You (the owner) pay for every subscribed email. Inspectors do not pay. Phone and desktop share that email.</span>';
   }
 
   function hideOtherSections() {
@@ -121,7 +121,7 @@
       return;
     }
     var price = cat.priceLabel ? cat.priceLabel(intervalId) : '';
-    setMessage('Saved: ' + price + '. Company S invoices. No card was taken.');
+    setMessage('Saved: ' + price + '. Company S invoices you (the owner). Inspectors do not pay. No card was taken.');
     try {
       if (typeof window.fireSApplyCleanHomeRoles === 'function') {
         window.fireSApplyCleanHomeRoles();
