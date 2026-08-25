@@ -113,7 +113,7 @@
   function otherCompanySeatMessage(email) {
     return (
       text(email).toLowerCase() +
-      ' already belongs to a company. One person is one company. They Login with that email.'
+      ' already belongs to a company. One person is one company. Only that Owner can remove them under Personnel. Then they can Subscribe under another company name.'
     );
   }
 
@@ -364,6 +364,19 @@
   function canAssignOwner() {
     // Everyday Personnel: Inspector + Manager only. Owner assignment is rare/admin.
     return actualMembershipRole() === 'super_admin';
+  }
+
+  function canRemovePerson() {
+    const role = actualMembershipRole();
+    return ['company_owner', 'owner', 'super_admin'].includes(role);
+  }
+
+  function removedPersonMessage(rpcData) {
+    const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (payload && typeof payload === 'object' && payload.login_deleted === false) {
+      return 'Person removed from this company. Their kept login was not deleted. They Login with the same email.';
+    }
+    return 'Person removed. Their email and password are deleted from the cloud. They can Subscribe under another company name.';
   }
 
   function setMessage(message, isError) {
@@ -900,7 +913,7 @@
       if (!ctx.companyId) throw new Error('No company linked yet.');
 
       const ok = window.confirm(
-        'Remove all other people and pending invites?\n\nOnly your login stays. Then you can add fresh employees.'
+        'Remove all other people and pending invites?\n\nTheir emails and passwords will be deleted from the cloud. Only your login stays. Then they can Subscribe under another company name.'
       );
       if (!ok) return;
 
@@ -935,14 +948,14 @@
             p_company_id: ctx.companyId,
             p_user_id: userId
           }),
-          4000,
+          8000,
           'Remove member'
         );
         if (!rpc.error) removed += 1;
       }
 
       setMessage(
-        `Cleared. Removed ${removed} member(s), cancelled ${cancelled} invite(s). You can add fresh employees now.`
+        `Cleared. Removed ${removed} member(s), cancelled ${cancelled} invite(s). Their emails and passwords are deleted from the cloud.`
       );
       await refreshTeam();
     } catch (error) {
@@ -1006,7 +1019,7 @@
                 Change role
               </button>
               ${
-                isMe
+                isMe || !canRemovePerson()
                   ? ''
                   : `<button type="button" class="secondary-btn" data-remove-member="${esc(member.user_id)}">Remove</button>`
               }
@@ -1029,7 +1042,9 @@
     list.querySelectorAll('[data-remove-member]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const userId = btn.getAttribute('data-remove-member');
-        if (!window.confirm('Remove this person from the company?')) return;
+        if (!window.confirm(
+          'Remove this person from the company?\n\nTheir email and password will be deleted from the cloud. Then they can Subscribe under another company name.'
+        )) return;
         await removeMember(userId);
       });
     });
@@ -1037,8 +1052,10 @@
 
   async function removeMember(userId) {
     try {
-      if (!canManageTeam()) {
-        throw new Error('Only Manager or Owner can remove team members.');
+      if (!canRemovePerson()) {
+        throw new Error(
+          'Only the Owner can remove personnel. That deletes their email and password from the cloud.'
+        );
       }
       const ctx = companyContext();
       if (!ctx.companyId || !userId) throw new Error('Missing company or person.');
@@ -1049,11 +1066,11 @@
           p_company_id: ctx.companyId,
           p_user_id: userId
         }),
-        4000,
+        8000,
         'Remove member'
       );
       if (rpc.error) throw rpc.error;
-      setMessage('Person removed from the team.');
+      setMessage(removedPersonMessage(rpc.data));
       await refreshTeam();
     } catch (error) {
       console.error('Remove member failed:', error);

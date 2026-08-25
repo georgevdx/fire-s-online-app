@@ -207,7 +207,7 @@
     var addr = text(email).toLowerCase() || 'This email';
     return (
       addr +
-      ' already belongs to a company. One person is one company. They Login with that email. Do not enter it again.'
+      ' already belongs to a company. One person is one company. Only that Owner can remove them under Personnel. Then they can Subscribe under another company. Do not enter it again.'
     );
   }
 
