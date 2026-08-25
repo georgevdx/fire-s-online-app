@@ -65,6 +65,22 @@
     );
   }
 
+  function otherCompanySeatMessage(email) {
+    return (
+      text(email).toLowerCase() +
+      ' already belongs to a company. One person is one company. They Login with that email.'
+    );
+  }
+
+  function isOtherCompanySeatError(msg) {
+    const low = text(msg).toLowerCase();
+    return (
+      low.indexOf('one person is one company') >= 0 ||
+      low.indexOf('already belongs to a company') >= 0 ||
+      low.indexOf('company_members_one_active_user') >= 0
+    );
+  }
+
   function rememberCompanyName(companyId, companyName) {
     const id = text(companyId);
     const name = text(companyName);
@@ -1063,10 +1079,15 @@
       // Fallback: old profile lookup path
       if (rpc.error) {
         const rpcMsg = text(rpc.error.message).toLowerCase();
+        if (isOtherCompanySeatError(rpcMsg)) {
+          throw new Error(otherCompanySeatMessage(email));
+        }
         if (
           rpcMsg.indexOf('paid seat') >= 0 ||
           rpcMsg.indexOf('already') >= 0 ||
-          rpcMsg.indexOf('do not enter') >= 0
+          rpcMsg.indexOf('do not enter') >= 0 ||
+          rpcMsg.indexOf('duplicate key') >= 0 ||
+          rpcMsg.indexOf('unique') >= 0
         ) {
           throw new Error(rpc.error.message || duplicateSeatMessage(email));
         }
