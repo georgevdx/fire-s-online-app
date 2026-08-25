@@ -78,6 +78,17 @@ create table if not exists public.beta_feedback (
 );
 
 create index if not exists company_members_user_idx on public.company_members (user_id);
+do $$
+begin
+  execute $idx$
+    create unique index if not exists company_members_one_active_user
+      on public.company_members (user_id)
+      where coalesce(status, 'active') = 'active'
+  $idx$;
+exception when unique_violation then
+  raise notice
+    'Skipped one-person-one-company index: a login is still on two companies. Run STAGING_ONE_COMPANY.sql in Fire-S Test next.';
+end $$;
 create index if not exists company_invites_email_idx on public.company_invites (lower(email));
 create index if not exists inspections_company_idx on public.inspections (company_id);
 create index if not exists inspections_user_idx on public.inspections (user_id);
@@ -442,19 +453,26 @@ begin
       return;
     end if;
 
-    select m.user_id into v_existing
+    select m.company_id into v_existing
     from public.company_members m
     where m.user_id = v_target and coalesce(m.status, 'active') = 'active'
     limit 1;
     if v_existing is not null then
-      raise exception 'This email is already a paid seat. They log in on any phone or desktop with that email. Do not enter it again.';
+      if v_existing = p_company_id then
+        raise exception 'This email is already a paid seat. They log in on any phone or desktop with that email. Do not enter it again.';
+      end if;
+      raise exception 'This email already belongs to a company. One person is one company. They Login with that email.';
     end if;
 
     perform public.fire_s_ensure_profile(v_target, v_email, v_role);
-    insert into public.company_members (company_id, user_id, role, status)
-    values (p_company_id, v_target, v_role, 'active')
-    on conflict (company_id, user_id)
-    do update set role = excluded.role, status = 'active';
+    begin
+      insert into public.company_members (company_id, user_id, role, status)
+      values (p_company_id, v_target, v_role, 'active')
+      on conflict (company_id, user_id)
+      do update set role = excluded.role, status = 'active';
+    exception when unique_violation then
+      raise exception 'This email already belongs to a company. One person is one company. They Login with that email.';
+    end;
     update public.profiles set role = v_role where id = v_target;
     update public.company_invites
        set status = 'accepted'
@@ -672,6 +690,97 @@ create policy "fire_s_beta_feedback_all"
   on public.beta_feedback for all to authenticated
   using (true) with check (true);
 
+create or replace function public.fire_s_claim_my_invites()
+returns table (
+  out_company_id uuid,
+  out_company_name text,
+  out_role text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_existing uuid;
+  r record;
+begin
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select lower(trim(email)) into v_email from auth.users where id = v_uid;
+  if v_email is null then
+    return;
+  end if;
+
+  perform public.fire_s_ensure_profile(v_uid, v_email, 'inspector');
+
+  select m.company_id
+    into v_existing
+    from public.company_members m
+   where m.user_id = v_uid
+     and coalesce(m.status, 'active') = 'active'
+   limit 1;
+
+  if v_existing is not null then
+    update public.company_invites
+       set status = 'cancelled'
+     where lower(trim(email)) = v_email
+       and coalesce(status, 'pending') = 'pending';
+    return;
+  end if;
+
+  select i.id, i.company_id, i.role, c.name as company_name
+    into r
+    from public.company_invites i
+    join public.companies c on c.id = i.company_id
+   where lower(trim(i.email)) = v_email
+     and coalesce(i.status, 'pending') = 'pending'
+   order by i.created_at asc
+   limit 1;
+
+  if not found then
+    return;
+  end if;
+
+  begin
+    insert into public.company_members (company_id, user_id, role, status)
+    values (r.company_id, v_uid, r.role, 'active')
+    on conflict (company_id, user_id)
+    do update set role = excluded.role, status = 'active';
+  exception when unique_violation then
+    update public.company_invites
+       set status = 'cancelled'
+     where lower(trim(email)) = v_email
+       and coalesce(status, 'pending') = 'pending';
+    return;
+  end;
+
+  update public.company_invites
+     set status = 'accepted'
+   where id = r.id;
+
+  update public.company_invites
+     set status = 'cancelled'
+   where lower(trim(email)) = v_email
+     and coalesce(status, 'pending') = 'pending'
+     and id is distinct from r.id;
+
+  begin
+    update public.profiles set role = r.role where id = v_uid;
+  exception when others then
+    null;
+  end;
+
+  out_company_id := r.company_id;
+  out_company_name := r.company_name;
+  out_role := r.role;
+  return next;
+end;
+$$;
+
 grant execute on function public.fire_s_ensure_profile(uuid, text, text) to authenticated;
 grant execute on function public.fire_s_is_company_member(uuid) to authenticated;
 grant execute on function public.fire_s_can_manage_company(uuid) to authenticated;
@@ -680,6 +789,7 @@ grant execute on function public.fire_s_set_company_plan(text, text) to authenti
 grant execute on function public.fire_s_start_fresh_company(text) to authenticated;
 grant execute on function public.fire_s_update_company_letterhead(text, text, text, text, text, text) to authenticated;
 grant execute on function public.fire_s_add_member_by_email(uuid, text, text) to authenticated;
+grant execute on function public.fire_s_claim_my_invites() to authenticated;
 grant execute on function public.fire_s_upsert_inspection(text, jsonb, text) to authenticated;
 
 insert into storage.buckets (id, name, public)

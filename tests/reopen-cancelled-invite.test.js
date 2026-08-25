@@ -38,8 +38,8 @@ assert.ok(
   'Add person must reopen a cancelled invite instead of blocking the email'
 );
 assert.ok(
-  /1\.3\.15-toets/.test(env),
-  'Toets-blad version must move to 1.3.15-toets so Johan can see the invite fix'
+  /1\.3\.1[5-9]-toets/.test(env),
+  'Toets-blad must stay on 1.3.15-toets or newer with cancelled-invite reopen'
 );
 
 assert.ok(

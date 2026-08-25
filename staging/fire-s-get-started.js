@@ -433,7 +433,7 @@
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
         ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
-        : 'Creates your owner login and the company. You (the owner) pay R349 / month (or R3 490 / year) per email. Inspectors do not pay. Phone and desktop share that email. No card is taken yet.';
+        : 'Creates your owner login and this company name. One person is one company. You (the owner) pay R349 / month (or R3 490 / year) per email. Inspectors do not pay. Phone and desktop share that email. No card is taken yet.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';
@@ -505,7 +505,7 @@
       'Subscribe',
       isStagingEnv()
         ? 'One Subscribe. Type a company name and the same email you already use for Supabase.'
-        : 'You become the Owner. You pay R349 per email per month, or R3 490 per year. Inspectors do not pay. Next you manage personnel.'
+        : 'You become the Owner of this company name. One person is one company. You pay R349 per email per month, or R3 490 per year. Inspectors do not pay. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
