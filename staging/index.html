@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-4-login">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-1-seat">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -691,15 +691,15 @@
 </section>
 <section id="fireSSubscribeSection" class="card fire-s-subscribe-section" style="display:none;">
   <div class="toolbar">
-    <h2>Subscription</h2>
+    <h2 id="fireSSubscribeHeading">Subscription</h2>
     <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">
       Back Home
     </button>
   </div>
   <div class="fire-s-subscribe-intro">
-    <div class="fire-s-subscribe-kicker">Paid seats</div>
-    <h3>Subscribe to Fire-S</h3>
-    <p>
+    <div class="fire-s-subscribe-kicker" id="fireSSubscribeKicker">Paid seats</div>
+    <h3 id="fireSSubscribeTitle">Subscribe to Fire-S</h3>
+    <p id="fireSSubscribeIntroCopy">
       You (the owner) pay <strong>R349 per month</strong> or <strong>R3 490 per year</strong> for every subscribed email.
       Inspectors and other staff do not pay. Phone and desktop share that login.
       The app does not take a card yet — Company S invoices you. No VAT is added
@@ -710,8 +710,21 @@
       <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.
     </p>
   </div>
+  <div id="fireSSubscribeSeatPanel" class="fire-s-subscribe-seat" style="display:none;">
+    <label class="fire-s-subscribe-seat-label" for="fireSSeatEmail">Their email</label>
+    <input id="fireSSeatEmail" type="email" placeholder="inspector@company.com" autocomplete="off">
+    <label class="fire-s-subscribe-seat-label" for="fireSSeatRole">Role</label>
+    <select id="fireSSeatRole">
+      <option value="inspector">Inspector</option>
+      <option value="manager">Manager</option>
+    </select>
+    <p class="fire-s-subscribe-seat-note">
+      They do not fill this page. After you subscribe this email, they Create password and Login on their own phone.
+    </p>
+    <button id="fireSSubscribeSeatBtn" type="button" class="cloud-primary-btn">Subscribe this email</button>
+  </div>
   <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
-  <div class="fire-s-plan-picker">
+  <div id="fireSSubscribeBillingWrap" class="fire-s-plan-picker">
     <p class="fire-s-plan-picker-label">You pay monthly or annually · R349 per email</p>
     <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
   </div>
@@ -905,22 +918,17 @@
   <div id="companyTeamAddPanel" class="company-team-add">
     <div class="cloud-section-title">Add people</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Each new email is a new subscription under this company name (R349 / month or R3 490 / year). You (the owner) pay — inspectors do not. They never Subscribe. One person is one company. Only you (the owner) can Remove someone. That deletes their email and password from the cloud. Then they can Subscribe under another company name.
+      Each new email is a new subscription under this company name (R349 / month or R3 490 / year). You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email and choose Inspector or Manager. One person is one company. Only you (the owner) can Remove someone. That deletes their email and password from the cloud. Then they can Subscribe under another company name.
     </p>
-    <div class="company-team-add-row">
-      <input id="companyTeamEmail" type="email" placeholder="Their email · one seat" autocomplete="off">
-      <select id="companyTeamRole">
-        <option value="inspector">Inspector</option>
-        <option value="manager">Manager</option>
-      </select>
-      <button id="companyTeamAddBtn" type="button" class="cloud-primary-btn">Add</button>
-    </div>
+    <button id="companyTeamStartSeatBtn" type="button" class="cloud-primary-btn" style="width:100%; margin-top:10px;">
+      Add inspector / manager
+    </button>
     <div id="companyTeamJoinMap" class="company-team-map">
       <div class="cloud-section-title" style="margin:0 0 8px;">How a remote Inspector / Manager joins</div>
       <ol>
-        <li><strong>You tap Add.</strong> That is the subscription. You (the owner) pay R349 / month or R3 490 / year for that email. They do not pay.</li>
+        <li><strong>You tap Add inspector / manager.</strong> That opens the subscription page. Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. You (the owner) pay. They do not pay.</li>
         <li><strong>Tell them (they can be anywhere):</strong> Open Fire-S → <strong>2. Create password</strong> → type that same email → choose a password.</li>
-        <li><strong>They Login.</strong> They must <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
+        <li><strong>They Login.</strong> They must <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner, or for you adding a person.</li>
         <li>They inspect on their own phone. Phone and desktop use that same email.</li>
       </ol>
     </div>
@@ -1657,7 +1665,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-19-owneradd"></script>
+  <script src="fire-s-env.js?v=1-3-20-seat"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1676,18 +1684,18 @@
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-2-ownerpay"></script>
-  <script src="fire-s-company-team.js?v=2-15-owneradd"></script>
+  <script src="fire-s-company-team.js?v=2-16-seat"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-7-remove"></script>
-  <script src="fire-s-subscribe.js?v=1-3-ownerpay"></script>
-  <script src="fire-s-user-manual.js?v=1-17-owneradd"></script>
+  <script src="fire-s-subscribe.js?v=1-4-seat"></script>
+  <script src="fire-s-user-manual.js?v=1-18-seat"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
   <script src="fire-s-get-started.js?v=2-18-owneradd"></script>
   <script src="fire-s-startup-stability.js?v=1-5-login"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
-  <script src="fire-s-phone-back.js?v=1-2-subscribe"></script>
+  <script src="fire-s-phone-back.js?v=1-3-seat"></script>
   <script src="fire-s-desktop-access.js?v=1-2-boot-safe"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-0-finish-click"></script>

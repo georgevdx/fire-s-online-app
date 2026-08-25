@@ -194,7 +194,7 @@
           <li>If you forgot the password, tap <strong>Forgot password</strong>.</li>
         </ol>
         <h3>Create password (staff, first time)</h3>
-        <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Add in Personnel.</p>
+        <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>
         <ol>
           <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
           <li>You can be anywhere. Open Fire-S on your phone.</li>
@@ -291,12 +291,12 @@
           <li>Tap <strong>Save company details</strong>.</li>
         </ol>
         <h3>Personnel</h3>
-        <p>When you tap <strong>Add</strong>, you (the owner) place the subscription. The inspector or manager does not Subscribe and does not pay. They can work remotely.</p>
+        <p>Adding a person is a subscription you (the owner) place. The inspector or manager does not Subscribe and does not pay. They can work remotely.</p>
         <ol>
           <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
-          <li>Type the person’s email <strong>once</strong> and choose Inspector or Manager.</li>
-          <li>Tap <strong>Add</strong>. That starts a new subscription. Company S invoices you, not them.</li>
-          <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe.</li>
+          <li>Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
+          <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
+          <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe on Access.</li>
           <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
         </ol>
         <h3>Inspectors board</h3>
