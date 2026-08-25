@@ -70,16 +70,23 @@
   }
 
   function inspectorIdentity(project) {
-    const email = lower(
+    const assignedEmail = lower(
+      project?.assignedInspectorEmail || project?.assigned_inspector_email || ''
+    );
+    const assignedId = text(
+      project?.assignedInspectorUserId || project?.assigned_inspector_user_id || ''
+    );
+    const assignedName = text(project?.assignedInspectorName);
+    const email = assignedEmail || lower(
       project?.createdByEmail ||
         project?.created_by_email ||
         project?.lastEditedByEmail ||
         ''
     );
-    const userId = text(
+    const userId = assignedId || text(
       project?.createdByUserId || project?.created_by_user_id || ''
     );
-    const name = text(project?.inspectorName);
+    const name = assignedName || text(project?.inspectorName);
     const key = email || userId || lower(name) || 'unknown';
     return {
       key,

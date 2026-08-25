@@ -19,6 +19,7 @@
   const COMPANY_CACHE_KEY = 'fireS.cachedCompany';
   let lastSeatEmails = [];
   let lastMembers = [];
+  let lastInvites = [];
 
   function byId(id) {
     return document.getElementById(id);
@@ -95,6 +96,7 @@
     });
     lastSeatEmails = emails;
     lastMembers = Array.isArray(members) ? members : [];
+    lastInvites = Array.isArray(invites) ? invites : [];
   }
 
   function ownerBillingEmail() {
@@ -1904,6 +1906,85 @@
     wrapOpenCompanyCommand();
   }
 
+  function assignableRoleLabel(role) {
+    return roleLabel(role) || 'Inspector';
+  }
+
+  function peopleFromMembers(members) {
+    const people = [];
+    (members || []).forEach(member => {
+      const status = text(member && member.status ? member.status : 'active').toLowerCase();
+      if (status === 'inactive') return;
+      const email = memberEmail(member);
+      if (!email) return;
+      const role = text(member && member.role) || 'inspector';
+      people.push({
+        email,
+        name: text(member && member.profiles && member.profiles.full_name) || email,
+        userId: text(member && member.user_id),
+        role,
+        roleLabel: assignableRoleLabel(role),
+        pending: false
+      });
+    });
+    return people;
+  }
+
+  function peopleFromInvites(invites) {
+    const people = [];
+    (invites || []).forEach(invite => {
+      const email = text(invite && invite.email).toLowerCase();
+      if (!email) return;
+      const role = text(invite && invite.role) || 'inspector';
+      people.push({
+        email,
+        name: email,
+        userId: '',
+        role,
+        roleLabel: assignableRoleLabel(role),
+        pending: true
+      });
+    });
+    return people;
+  }
+
+  function sortAssignable(people) {
+    return (people || []).slice().sort((a, b) => {
+      const aRank = memberRank({ role: a.role });
+      const bRank = memberRank({ role: b.role });
+      if (aRank !== bRank) return aRank - bRank;
+      return text(a.name || a.email).localeCompare(text(b.name || b.email));
+    });
+  }
+
+  async function listAssignableInspectors() {
+    const ctx = companyContext();
+    let members = uniqueActiveMembers(lastMembers);
+    let invites = Array.isArray(lastInvites) ? lastInvites : [];
+    if ((!members.length && !invites.length) && ctx.companyId) {
+      try {
+        members = uniqueActiveMembers(await loadMembers(ctx.companyId));
+        invites = invitesNotOnTeam(await loadPendingInvites(ctx.companyId), members);
+        rememberSeatEmails(members, invites);
+      } catch (_) {}
+    }
+    const seen = {};
+    const people = [];
+    peopleFromMembers(members)
+      .concat(peopleFromInvites(invites))
+      .forEach(person => {
+        const key = lowerEmail(person.email);
+        if (!key || seen[key]) return;
+        seen[key] = true;
+        people.push(person);
+      });
+    return sortAssignable(people);
+  }
+
+  function lowerEmail(value) {
+    return text(value).toLowerCase();
+  }
+
   window.fireSOpenCompanyTeam = openCompanyTeam;
   window.openCompanyTeamOverlay = openCompanyTeam;
   window.fireSAddPersonnelSeat = addMember;
@@ -1913,6 +1994,7 @@
   window.fireSBeginFreshCompany = beginFreshCompany;
   window.fireSIsClosedInviteStatus = isClosedInviteStatus;
   window.fireSReopenCancelledInvite = reopenCancelledInvite;
+  window.fireSListAssignableInspectors = listAssignableInspectors;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });

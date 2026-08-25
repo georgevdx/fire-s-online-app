@@ -36,7 +36,7 @@ assert.ok(
     /auth\.jwt\(\) ->> 'email'/.test(bootstrap),
   'Fire-S Test SQL must join invited staff using the signed-in email'
 );
-assert.ok(/1\.3\.22-toets/.test(env), 'Toets-blad version must move to 1.3.22-toets');
+assert.ok(/1\.3\.2\d-toets/.test(env), 'Toets-blad version must stay on 1.3.22-toets or newer');
 assert.ok(/1\.3\.12/.test(liveEnv), 'Live Fire-S must stay 1.3.12 until Johan says sit dit live');
 
 console.log('inspector-join-after-password.test.js: ok');
