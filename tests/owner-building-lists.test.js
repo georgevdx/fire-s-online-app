@@ -95,8 +95,8 @@ assert.ok(
   'Upcoming due date and days must share one column so phone rows do not overlap'
 );
 assert.ok(
-  /1\.3\.12/.test(env),
-  'App version must move to 1.3.12 for the list spacing fix'
+  /1\.3\.1[2-9]/.test(env),
+  'App version must stay on 1.3.12 or later so owner lists remain in the build'
 );
 
 const elements = {};

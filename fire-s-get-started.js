@@ -15,7 +15,7 @@
 (function fireSAccessGate() {
   'use strict';
 
-  var mode = 'choices';
+  var mode = 'login';
   var wired = false;
   var root = null;
 
@@ -410,45 +410,51 @@
     } catch (_) {}
   }
 
-  function paintStagingFirstSubscribe() {
+  function paintAccessChoices() {
     var kicker = root && root.querySelector('.fire-s-get-started-kicker');
     if (kicker) {
-      kicker.textContent = isStagingEnv()
-        ? 'Toets-blad · eerste keer'
-        : 'Fire-S Access';
+      kicker.textContent = isStagingEnv() ? 'Toets-blad · Access' : 'Fire-S Access';
     }
     ['fireSChoiceLogin', 'fireSChoiceCreate', 'fireSInstallAppBtn'].forEach(function (id) {
       var el = byId(id);
       if (!el) return;
-      if (isStagingEnv()) {
-        el.style.display = 'none';
-        el.hidden = true;
-      } else {
-        el.hidden = false;
-        el.style.display = '';
-      }
+      el.hidden = false;
+      el.style.display = '';
     });
+  }
+
+  function paintSubscribeForm() {
     var guestBack =
       byId('fireSGetStartedGuestFields') &&
       byId('fireSGetStartedGuestFields').querySelector('[data-fire-s-back]');
-    if (guestBack) guestBack.style.display = isStagingEnv() ? 'none' : '';
+    if (guestBack) guestBack.style.display = '';
     var guestNote = byId('fireSRegisterNote');
-    if (guestNote && isStagingEnv()) {
-      guestNote.textContent =
-        'One Subscribe creates the login and the company. Use the same email you already use for Supabase.';
+    if (guestNote) {
+      guestNote.textContent = isStagingEnv()
+        ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
+        : 'Creates your owner login and the company. One email is R349 / month (or R3 490 / year). Phone and desktop share that email. No card is taken yet.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
-    if (loginLink) loginLink.style.display = isStagingEnv() ? '' : 'none';
+    if (loginLink) loginLink.style.display = '';
+  }
+
+  function paintLoginForm() {
+    var loginBack =
+      byId('fireSGetStartedLoginFields') &&
+      byId('fireSGetStartedLoginFields').querySelector('[data-fire-s-back]');
+    if (loginBack) loginBack.style.display = 'none';
+    var subscribeBtn = byId('fireSLoginSubscribeBtn');
+    if (subscribeBtn) {
+      var allow = canRegisterCompany();
+      subscribeBtn.style.display = allow ? '' : 'none';
+      subscribeBtn.hidden = !allow;
+    }
   }
 
   function showChoices() {
-    if (isStagingEnv() && !isRealUser()) {
-      showRegister();
-      return;
-    }
     mode = 'choices';
     hidePanels();
-    paintStagingFirstSubscribe();
+    paintAccessChoices();
     setTitle(
       'Access',
       'Login, create a password, or subscribe as a new company.'
@@ -466,7 +472,8 @@
   function showLogin() {
     mode = 'login';
     hidePanels();
-    setTitle('Login', 'Owners and staff use the same login.');
+    paintLoginForm();
+    setTitle('Login', 'Use your email and password. New company? Subscribe below.');
     showPanel('fireSGetStartedLoginFields');
     var createToggle = byId('fireSSwitchToCreateBtn');
     if (createToggle) createToggle.style.display = '';
@@ -492,7 +499,7 @@
     }
     mode = 'register';
     hidePanels();
-    paintStagingFirstSubscribe();
+    paintSubscribeForm();
     setTitle(
       'Subscribe',
       isStagingEnv()
@@ -576,8 +583,12 @@
       return;
     }
 
-    if (isStagingEnv() && !isRealUser()) {
-      showRegister();
+    // Logged out: Login first. Subscribe is a choice on that page.
+    if (!isRealUser()) {
+      if (mode === 'create') showCreatePassword();
+      else if (mode === 'register') showRegister();
+      else if (mode === 'choices') showChoices();
+      else showLogin();
       return;
     }
 
@@ -955,7 +966,7 @@
     if (preferredMode === 'login') mode = 'login';
     else if (preferredMode === 'create') mode = 'create';
     else if (preferredMode === 'register') mode = 'register';
-    else mode = 'choices';
+    else mode = 'login';
     render();
     try {
       if (root) {
@@ -1015,13 +1026,16 @@
 
     root.querySelectorAll('[data-fire-s-back]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        if (isStagingEnv() && !isRealUser()) showRegister();
-        else showChoices();
+        showLogin();
       });
     });
     var registerLogin = byId('fireSRegisterSwitchToLoginBtn');
     if (registerLogin) {
       registerLogin.addEventListener('click', showLogin);
+    }
+    var loginSubscribe = byId('fireSLoginSubscribeBtn');
+    if (loginSubscribe) {
+      loginSubscribe.addEventListener('click', showRegister);
     }
 
     var switchCreate = byId('fireSSwitchToCreateBtn');
@@ -1089,8 +1103,8 @@
   window.fireSClaimInvitesQuiet = claimInvitesQuiet;
   window.fireSGetStartedPhoneBack = function fireSGetStartedPhoneBack() {
     if (!root || !shouldShowAccess()) return false;
-    if (mode === 'choices' || mode === 'company') return false;
-    showChoices();
+    if (mode === 'login' || mode === 'company') return false;
+    showLogin();
     return true;
   };
 
@@ -1108,7 +1122,7 @@
       }
       return;
     }
-    mode = 'choices';
+    mode = 'login';
     render();
   });
   window.addEventListener('beforeinstallprompt', function (event) {

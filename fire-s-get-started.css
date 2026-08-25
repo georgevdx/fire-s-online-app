@@ -73,6 +73,10 @@
   gap: 10px;
 }
 
+#fireSGetStartedLoginFields .fire-s-get-started-back {
+  display: none;
+}
+
 .fire-s-get-started-fields input,
 .fire-s-get-started-fields button {
   width: 100%;
