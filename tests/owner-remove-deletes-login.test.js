@@ -58,8 +58,8 @@ assert.ok(
   'Personnel copy must say only the owner can free someone for another company'
 );
 assert.ok(
-  /1\.3\.17-toets/.test(env),
-  'Toets-blad version must move to 1.3.17-toets'
+  /1\.3\.1[7-9]-toets/.test(env),
+  'Toets-blad version must stay on 1.3.17-toets or newer with owner-remove'
 );
 assert.ok(
   /johandb@live.com/.test(reset) && /georgevdx@gmail.com/.test(reset),

@@ -39,6 +39,48 @@
     );
   }
 
+  function memberEmail(member) {
+    return text(member && member.profiles && member.profiles.email).toLowerCase();
+  }
+
+  function memberRank(member) {
+    const role = text(member && member.role).toLowerCase();
+    if (role === 'company_owner' || role === 'owner' || role === 'super_admin') return 0;
+    if (role === 'manager') return 1;
+    return 2;
+  }
+
+  function uniqueActiveMembers(members) {
+    const byKey = {};
+    (members || []).forEach(member => {
+      const status = text(member && member.status ? member.status : 'active').toLowerCase();
+      if (status === 'inactive') return;
+      const email = memberEmail(member);
+      const key = email || text(member && member.user_id);
+      if (!key) return;
+      const prev = byKey[key];
+      if (!prev || memberRank(member) < memberRank(prev)) {
+        byKey[key] = member;
+      }
+    });
+    return Object.keys(byKey).map(key => byKey[key]);
+  }
+
+  function invitesNotOnTeam(invites, members) {
+    const emails = {};
+    (members || []).forEach(member => {
+      const email = memberEmail(member);
+      if (email) emails[email] = true;
+    });
+    const seen = {};
+    return (invites || []).filter(invite => {
+      const email = text(invite && invite.email).toLowerCase();
+      if (!email || emails[email] || seen[email]) return false;
+      seen[email] = true;
+      return true;
+    });
+  }
+
   function rememberSeatEmails(members, invites) {
     const emails = [];
     (members || []).forEach(member => {
@@ -1628,8 +1670,11 @@
       } else {
         rememberCompanyName(ctx.companyId, ctx.companyName);
       }
-      const members = await loadMembers(ctx.companyId);
-      const invites = await loadPendingInvites(ctx.companyId);
+      const members = uniqueActiveMembers(await loadMembers(ctx.companyId));
+      const invites = invitesNotOnTeam(
+        await loadPendingInvites(ctx.companyId),
+        members
+      );
       rememberSeatEmails(members, invites);
       renderMeta(ctx, members, invites);
       renderPendingInvites(invites);
