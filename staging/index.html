@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-4-login">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-1-seat">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-2-annual">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -217,6 +217,16 @@
       <div class="home-kicker">Fire-S</div>
       <h2>INSPECT</h2>
       <p>Find or continue an inspection.</p>
+    </div>
+  </div>
+  <div id="fireSExpiryReminder" class="fire-s-expiry-reminder" hidden>
+    <div class="fire-s-expiry-reminder-copy">
+      <strong id="fireSExpiryReminderTitle">Subscription due soon</strong>
+      <span id="fireSExpiryReminderText"></span>
+    </div>
+    <div class="fire-s-expiry-reminder-actions">
+      <button type="button" id="fireSExpiryReminderOpenBtn" class="cloud-primary-btn">View subscription</button>
+      <button type="button" id="fireSExpiryReminderCloseBtn" class="secondary-btn">Close</button>
     </div>
   </div>
 
@@ -710,6 +720,11 @@
       <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.
     </p>
   </div>
+  <div id="fireSSubscribeBillingWrap" class="fire-s-plan-picker">
+    <p class="fire-s-plan-picker-label">Choose monthly or annual · annual is 2 months free</p>
+    <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
+  </div>
+  <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
   <div id="fireSSubscribeSeatPanel" class="fire-s-subscribe-seat" style="display:none;">
     <label class="fire-s-subscribe-seat-label" for="fireSSeatEmail">Their email</label>
     <input id="fireSSeatEmail" type="email" placeholder="inspector@company.com" autocomplete="off">
@@ -722,11 +737,6 @@
       They do not fill this page. After you subscribe this email, they Create password and Login on their own phone.
     </p>
     <button id="fireSSubscribeSeatBtn" type="button" class="cloud-primary-btn">Subscribe this email</button>
-  </div>
-  <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
-  <div id="fireSSubscribeBillingWrap" class="fire-s-plan-picker">
-    <p class="fire-s-plan-picker-label">You pay monthly or annually · R349 per email</p>
-    <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
   <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save billing</button>
@@ -1665,7 +1675,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-20-seat"></script>
+  <script src="fire-s-env.js?v=1-3-21-annual"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1680,16 +1690,16 @@
   <script src="app.js?v=1-3-13-login"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-4-live"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-25-owneradd"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-26-annual"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-2-ownerpay"></script>
   <script src="fire-s-company-team.js?v=2-16-seat"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-7-remove"></script>
-  <script src="fire-s-subscribe.js?v=1-4-seat"></script>
-  <script src="fire-s-user-manual.js?v=1-18-seat"></script>
+  <script src="fire-s-subscriptions.js?v=1-8-annual"></script>
+  <script src="fire-s-subscribe.js?v=1-5-annual"></script>
+  <script src="fire-s-user-manual.js?v=1-19-annual"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
   <script src="fire-s-get-started.js?v=2-18-owneradd"></script>

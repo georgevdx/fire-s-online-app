@@ -1054,6 +1054,12 @@
         window.fireSSyncGetStarted();
       }
     } catch (_) {}
+
+    try {
+      if (typeof window.fireSPaintExpiryReminder === 'function') {
+        window.fireSPaintExpiryReminder();
+      }
+    } catch (_) {}
   }
 
   function scheduleApply(delay) {

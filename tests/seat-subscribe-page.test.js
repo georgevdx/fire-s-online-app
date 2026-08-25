@@ -51,8 +51,8 @@ assert.ok(
   'Phone back from a new-person subscription must return to Personnel'
 );
 assert.ok(
-  /1\.3\.20-toets/.test(env),
-  'Toets-blad version must move to 1.3.20-toets'
+  /1\.3\.2\d-toets/.test(env),
+  'Toets-blad version must stay on 1.3.20-toets or newer'
 );
 assert.ok(
   /id="companyTeamEmail"/.test(liveHtml) &&
