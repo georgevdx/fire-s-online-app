@@ -306,6 +306,17 @@ begin
     v_name := 'New Fire-S Company';
   end if;
 
+  if exists (
+    select 1
+    from public.company_members m
+    where m.user_id = v_uid
+      and coalesce(m.status, 'active') = 'active'
+      and lower(coalesce(m.role, '')) not in ('company_owner', 'owner', 'super_admin')
+  ) then
+    raise exception
+      'You already belong to a company. Only that Owner can remove you under Personnel. Then you can Subscribe under a new company name.';
+  end if;
+
   update public.company_members
      set status = 'inactive'
    where user_id = v_uid
@@ -781,14 +792,171 @@ begin
 end;
 $$;
 
+create or replace function public.fire_s_is_company_owner(p_company_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.company_members m
+    where m.company_id = p_company_id
+      and m.user_id = auth.uid()
+      and coalesce(m.status, 'active') = 'active'
+      and lower(coalesce(m.role, '')) in ('company_owner', 'owner', 'super_admin')
+  );
+$$;
+
+create or replace function public.fire_s_delete_cloud_login(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_user_id is null then
+    return;
+  end if;
+
+  if to_regclass('public.company_invites') is not null then
+    delete from public.company_invites i
+     using auth.users u
+     where u.id = p_user_id
+       and lower(trim(i.email)) = lower(trim(u.email));
+  end if;
+
+  if to_regclass('public.company_members') is not null then
+    delete from public.company_members where user_id = p_user_id;
+  end if;
+
+  if to_regclass('public.profiles') is not null then
+    delete from public.profiles where id = p_user_id;
+  end if;
+
+  begin
+    delete from auth.refresh_tokens where user_id = p_user_id;
+  exception when others then
+    null;
+  end;
+  begin
+    delete from auth.sessions where user_id = p_user_id;
+  exception when others then
+    null;
+  end;
+  begin
+    delete from auth.identities where user_id = p_user_id;
+  exception when others then
+    null;
+  end;
+
+  delete from auth.users where id = p_user_id;
+end;
+$$;
+
+revoke all on function public.fire_s_delete_cloud_login(uuid) from public;
+revoke all on function public.fire_s_delete_cloud_login(uuid) from anon, authenticated;
+
+drop function if exists public.fire_s_remove_member(uuid, uuid);
+
+create or replace function public.fire_s_remove_member(
+  p_company_id uuid,
+  p_user_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_keep text[] := array[
+    'johandb@live.com',
+    'johandb1974ik@gmail.com',
+    'georgevdx@gmail.com'
+  ];
+  v_protected boolean := false;
+begin
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if not public.fire_s_is_company_owner(p_company_id) then
+    raise exception
+      'Only the Owner can remove personnel. That deletes their email and password from the cloud.';
+  end if;
+
+  if p_user_id is null then
+    raise exception 'Missing person';
+  end if;
+
+  if p_user_id = v_uid then
+    raise exception 'You cannot remove yourself';
+  end if;
+
+  if not exists (
+    select 1
+    from public.company_members m
+    where m.company_id = p_company_id
+      and m.user_id = p_user_id
+  ) then
+    raise exception 'That person is not on this company';
+  end if;
+
+  select lower(trim(u.email))
+    into v_email
+    from auth.users u
+   where u.id = p_user_id
+   limit 1;
+
+  v_protected :=
+    v_email is not null
+    and (
+      v_email = any (v_keep)
+      or v_email like '%@supabase.io'
+    );
+
+  if to_regclass('public.company_invites') is not null and v_email is not null then
+    update public.company_invites
+       set status = 'cancelled'
+     where company_id = p_company_id
+       and lower(trim(email)) = v_email
+       and coalesce(status, 'pending') = 'pending';
+  end if;
+
+  if v_protected then
+    delete from public.company_members
+     where company_id = p_company_id
+       and user_id = p_user_id;
+    return jsonb_build_object(
+      'ok', true,
+      'login_deleted', false,
+      'email', v_email
+    );
+  end if;
+
+  perform public.fire_s_delete_cloud_login(p_user_id);
+
+  return jsonb_build_object(
+    'ok', true,
+    'login_deleted', true,
+    'email', v_email
+  );
+end;
+$$;
+
 grant execute on function public.fire_s_ensure_profile(uuid, text, text) to authenticated;
 grant execute on function public.fire_s_is_company_member(uuid) to authenticated;
 grant execute on function public.fire_s_can_manage_company(uuid) to authenticated;
+grant execute on function public.fire_s_is_company_owner(uuid) to authenticated;
 grant execute on function public.fire_s_create_company(text, text) to authenticated;
 grant execute on function public.fire_s_set_company_plan(text, text) to authenticated;
 grant execute on function public.fire_s_start_fresh_company(text) to authenticated;
 grant execute on function public.fire_s_update_company_letterhead(text, text, text, text, text, text) to authenticated;
 grant execute on function public.fire_s_add_member_by_email(uuid, text, text) to authenticated;
+grant execute on function public.fire_s_remove_member(uuid, uuid) to authenticated;
 grant execute on function public.fire_s_claim_my_invites() to authenticated;
 grant execute on function public.fire_s_upsert_inspection(text, jsonb, text) to authenticated;
 
