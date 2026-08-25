@@ -103,8 +103,8 @@ if (/billed_to/.test(liveNotify)) {
 } else {
   const liveEnv = read('fire-s-env.js');
   assert.ok(
-    /1\.3\.12/.test(liveEnv),
-    'Live Fire-S must stay 1.3.12 until Johan says sit dit live'
+    /1\.3\.13/.test(liveEnv),
+    'Live Fire-S must be 1.3.13 after sit dit live'
   );
 }
 

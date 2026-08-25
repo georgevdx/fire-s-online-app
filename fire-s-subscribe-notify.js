@@ -77,4 +77,67 @@
   root.fireSNotifyCompanyS = notifyCompanyS;
   root.fireSNotifyCompanySBuildBody = buildBody;
   root.fireSNotifyCompanySAddress = COMPANY_S_EMAIL;
+
+  function assignmentBody(info) {
+    var company = text(info && info.company) || '(not given)';
+    var organisation = text(info && info.organisation) || '(not given)';
+    var site = text(info && info.site) || '(not given)';
+    var address = text(info && info.address) || '(not given)';
+    var date = text(info && info.date) || '(not given)';
+    var contactName = text(info && info.contactName);
+    var contactTel = text(info && info.contactTel);
+    var contact = [contactName, contactTel].filter(Boolean).join(' · ') || '(not given)';
+    var inspectionType = text(info && info.inspectionType) || 'General Fire Inspection';
+    var occupancy = text(info && info.occupancy) || '(not given)';
+    var scheduledBy = text(info && info.scheduledBy) || '(not given)';
+    var inspectorName = text(info && info.inspectorName) || text(info && info.email);
+    return {
+      _subject: 'Fire-S: inspection booked for you — ' + site,
+      _template: 'table',
+      _captcha: 'false',
+      event: 'Inspection assigned',
+      inspector: inspectorName,
+      company: company,
+      organisation: organisation,
+      premises: site,
+      address: address,
+      visit_date: date,
+      inspection_type: inspectionType,
+      occupancy: occupancy,
+      site_contact: contact,
+      scheduled_by: scheduledBy,
+      note:
+        'Open Fire-S. Home shows this booking under NEXT. Inspection Gateway still lists company inspections.'
+    };
+  }
+
+  function notifyInspectorAssignment(info) {
+    var email = text(info && info.email).toLowerCase();
+    if (!email || email.indexOf('@') < 1) {
+      return Promise.resolve({ ok: false, skipped: 'no-email' });
+    }
+    var body;
+    try {
+      body = assignmentBody(info || {});
+    } catch (_) {
+      return Promise.resolve({ ok: false });
+    }
+    return fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+      .then(function () {
+        return { ok: true };
+      })
+      .catch(function () {
+        return { ok: false };
+      });
+  }
+
+  root.fireSNotifyInspectorAssignment = notifyInspectorAssignment;
+  root.fireSNotifyInspectorAssignmentBuildBody = assignmentBody;
 })(window);

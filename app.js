@@ -7354,6 +7354,19 @@ function saveScheduledNewInspection() {
     `scheduled-new-site-${Date.now()}`;
 
   const companyStamp = resolveProjectCompanyFields({}, accessMetadata);
+
+  let assigned = { email: '', name: '', userId: '' };
+  try {
+    if (typeof window.fireSReadScheduleAssignee === 'function') {
+      assigned = window.fireSReadScheduleAssignee() || assigned;
+    }
+  } catch (_) {}
+  assigned = {
+    email: String(assigned.email || '').trim().toLowerCase(),
+    name: String(assigned.name || '').trim(),
+    userId: String(assigned.userId || '').trim()
+  };
+
   const newProject = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
 
@@ -7392,8 +7405,12 @@ function saveScheduledNewInspection() {
 
     productType: getDefaultProductType(),
     inspectionType,
-    inspectorName: '',
+    inspectorName: assigned.name || '',
     occupancy,
+
+    assignedInspectorEmail: assigned.email || '',
+    assignedInspectorName: assigned.name || '',
+    assignedInspectorUserId: assigned.userId || '',
 
     answers: [],
     photos: [],
@@ -7445,12 +7462,34 @@ function saveScheduledNewInspection() {
       console.warn('Scheduled new inspection upload failed:', error);
     });
 
+  try {
+    if (assigned.email && typeof window.fireSNotifyInspectorAssignment === 'function') {
+      window.fireSNotifyInspectorAssignment({
+        email: assigned.email,
+        inspectorName: assigned.name,
+        organisation: organisationName,
+        site: siteName,
+        address: addressLine,
+        date: scheduledDate,
+        contactName: contactPerson,
+        contactTel: contactTel,
+        inspectionType,
+        occupancy,
+        scheduledBy: accessMetadata.createdByEmail,
+        company: companyStamp.companyName || accessMetadata.companyName
+      });
+    }
+  } catch (_) {}
+
   const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
-    saveMessage.textContent =
-      `New inspection scheduled for ${scheduledDate}.`;
+    saveMessage.textContent = assigned.email
+      ? `New inspection scheduled for ${scheduledDate}. ${assigned.name || assigned.email} gets an email with the premises details.`
+      : `New inspection scheduled for ${scheduledDate}.`;
   }
 }
+
+window.saveScheduledNewInspection = saveScheduledNewInspection;
 
 function clearScheduleNewInspectionForm() {
   [
@@ -7465,6 +7504,9 @@ function clearScheduleNewInspectionForm() {
     const field = document.getElementById(id);
     if (field) field.value = '';
   });
+
+  const inspectorSelect = document.getElementById('scheduleInspectorSelect');
+  if (inspectorSelect) inspectorSelect.value = '';
 
   const typeField = document.getElementById('scheduleInspectionType');
   if (typeField) typeField.value = 'General Fire Inspection';
@@ -12435,6 +12477,13 @@ function projectMatchesGatewayBaseFilters(project, searchText) {
     const moduleName = normalizeProductType(project.productType).toLowerCase();
     const inspectionType = (project.inspectionType || '').toLowerCase();
     const inspectorName = (project.inspectorName || '').toLowerCase();
+    const assignedInspector = [
+      project.assignedInspectorEmail,
+      project.assignedInspectorName
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
     const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
     const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
 
@@ -12448,6 +12497,7 @@ function projectMatchesGatewayBaseFilters(project, searchText) {
       moduleName.includes(normalizedSearch) ||
       inspectionType.includes(normalizedSearch) ||
       inspectorName.includes(normalizedSearch) ||
+      assignedInspector.includes(normalizedSearch) ||
       inspectionNumber.includes(normalizedSearch) ||
       inspectionDate.includes(normalizedSearch);
 

@@ -32,6 +32,29 @@
   function text(v){ return String(v||'').trim(); }
   function name(p){ return text(p.projectName||p.organisationName||p.siteName||p.premisesName)||'Unnamed premises'; }
   function site(p){ return text(p.siteName||p.projectAddress||p.addressLine||p.address); }
+  function identity(){
+    try {
+      const p=(typeof currentUserProfile!=='undefined' && currentUserProfile) || window.currentUserProfile || {};
+      return { email:text(p.email).toLowerCase(), id:text(p.id) };
+    } catch(e){ return { email:'', id:'' }; }
+  }
+  function isMine(p){
+    try { if(typeof window.fireSIsMyInspection==='function') return window.fireSIsMyInspection(p, identity()); } catch(e){}
+    if(!p) return false;
+    const me=identity();
+    const assignedEmail=text(p.assignedInspectorEmail).toLowerCase();
+    const assignedId=text(p.assignedInspectorUserId);
+    if(assignedEmail || assignedId){
+      if(assignedEmail && me.email && assignedEmail===me.email) return true;
+      if(assignedId && me.id && assignedId===me.id) return true;
+      return false;
+    }
+    const createdEmail=text(p.createdByEmail).toLowerCase();
+    const createdId=text(p.createdByUserId);
+    if(createdEmail && me.email && createdEmail===me.email) return true;
+    if(createdId && me.id && createdId===me.id) return true;
+    return false;
+  }
   function haystack(p){
     return [
       name(p),
@@ -40,6 +63,8 @@
       p.premisesName,
       p.inspectionNumber,
       p.inspectorName,
+      p.assignedInspectorEmail,
+      p.assignedInspectorName,
       p.projectAddress,
       p.addressLine,
       p.address,
@@ -133,7 +158,7 @@
     if(!isInspector()) return;
     const input=document.getElementById('inspectorV4Search'), next=document.getElementById('inspectorV4Next'), results=document.getElementById('inspectorV4Results');
     if(!input||!next||!results) return;
-    const all=projects().slice();
+    const all=projects().slice().filter(isMine);
     const q=text(input.value).toLowerCase();
 
     // Searching: only show records that match. Do not keep an unrelated NEXT card.
@@ -159,7 +184,9 @@
     // No search: show NEXT priority, then nothing else until user searches.
     const ranked=all.slice().sort((a,b)=>workflowScore(a)-workflowScore(b));
     const priority=ranked.find(p=>!isComplete(p)) || ranked.find(p=>scheduled(p));
-    next.innerHTML=priority?cardHtml(priority,'next'):'';
+    next.innerHTML=priority
+      ?cardHtml(priority,'next')
+      :`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
     results.innerHTML='';
     document.querySelectorAll('[data-v4-open]').forEach(btn=>{
       btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));

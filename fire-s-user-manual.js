@@ -222,6 +222,7 @@
         <ul>
           <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control. Home shows a desktop address. On a computer that address opens the Management dashboard.</li>
           <li><strong>Manager</strong> — Operations Centre. Stats, inspections, people, company details, dashboard. Home shows the same desktop address.</li>
+          <li><strong>Inspector</strong> — Home shows <strong>NEXT</strong> only for an inspection you booked, or one the owner/manager assigned to you. Open <strong>Inspection Gateway</strong> to see the company's inspections.</li>
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>
@@ -235,7 +236,7 @@
           <li>Search by site, address, inspector, number or date.</li>
           <li>Use filters such as overdue, this month, or completed.</li>
           <li>Tap a card to open that inspection.</li>
-          <li>Use <strong>Schedule</strong> when you must book a new site or follow-up.</li>
+          <li>Use <strong>Schedule</strong> when you must book a new site or follow-up. Owner and Manager pick the inspector who must visit. That inspector gets an email with the premises details.</li>
         </ol>
       </article>
 
@@ -272,7 +273,7 @@
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
-          <li><strong>Schedule</strong> — new-site bookings and follow-ups.</li>
+          <li><strong>Schedule</strong> — Owner/Manager: book a new site, pick the inspector who must visit, Save. That inspector gets an email with the premises details and sees the booking on Home under NEXT. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — Home → Reports. This list is completed inspections. Open one, then tap Export PDF.</li>
           <li><strong>Support</strong> — request help or send a review request.</li>
         </ul>
@@ -295,6 +296,7 @@
           <li>Choose Inspector, Manager or Owner.</li>
           <li>They Create password on their own phone (first time only).</li>
           <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
+          <li>To send someone to a premises: Home → <strong>Schedule</strong> → fill the site → <strong>Assign to inspector</strong> → Save. They get an email with the address and date.</li>
         </ol>
         <h3>Inspectors board</h3>
         <p>Select one inspector, view the whole team, or Compare.</p>

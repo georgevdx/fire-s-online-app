@@ -57,8 +57,8 @@ assert.ok(
 assert.ok(
   /id="companyTeamEmail"/.test(liveHtml) &&
     /id="companyTeamAddBtn"/.test(liveHtml) &&
-    /1\.3\.12/.test(liveEnv),
-  'Live Fire-S must keep the old Add row until Johan says sit dit live'
+    /1\.3\.13/.test(liveEnv),
+  'Live Fire-S keeps the old Add row; version is 1.3.13 after schedule-assign went live'
 );
 
 console.log('seat-subscribe-page.test.js: ok');

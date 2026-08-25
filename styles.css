@@ -2793,9 +2793,14 @@ button.readiness-chip:focus {
   font-size: 0.85rem;
 }
 
-.schedule-new-panel input {
+.schedule-new-panel input,
+.schedule-new-panel select {
   width: 100%;
   margin-top: 4px;
+}
+
+.schedule-new-panel select {
+  min-height: 44px;
 }
 
 .schedule-new-actions {

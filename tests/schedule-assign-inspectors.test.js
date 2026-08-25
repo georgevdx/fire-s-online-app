@@ -12,19 +12,32 @@ function read(name) {
 const html = read('staging/index.html');
 const env = read('staging/fire-s-env.js');
 const liveEnv = read('fire-s-env.js');
+const liveHtml = read('index.html');
+const liveApp = read('app.js');
+const liveInspector = read('inspector-v4.js');
+const liveTeam = read('fire-s-company-team.js');
+const liveAssign = read('fire-s-schedule-assign.js');
+const liveNotify = read('fire-s-subscribe-notify.js');
 const app = read('staging/app.js');
 const inspector = read('staging/inspector-v4.js');
 const team = read('staging/fire-s-company-team.js');
 const assign = read('staging/fire-s-schedule-assign.js');
 const notify = read('staging/fire-s-subscribe-notify.js');
 const manual = read('staging/fire-s-user-manual.js');
+const liveManual = read('fire-s-user-manual.js');
 const css = read('staging/styles.css');
+const liveCss = read('styles.css');
 
-assert.ok(/1\.3\.23-toets/.test(env), 'Toets-blad version must move to 1.3.23-toets');
-assert.ok(/1\.3\.12/.test(liveEnv), 'Live Fire-S must stay 1.3.12 until Johan says sit dit live');
+assert.ok(/1\.3\.23-toets/.test(env), 'Toets-blad version must stay on 1.3.23-toets');
+assert.ok(/1\.3\.13/.test(liveEnv) && /bounceLegacyToetsQuery/.test(liveEnv), 'Live Fire-S must be 1.3.13 and keep the old toets-link bounce');
 assert.ok(
   !/1\.3\.23/.test(liveEnv),
-  'Live environment fence must not pick up the toets version'
+  'Live environment fence must not pick up the toets version number'
+);
+assert.ok(
+  /ispsdmglyylcwkufphnv/.test(liveEnv) &&
+    /notifyCompanyS: !staging/.test(liveEnv),
+  'Live must stay on fireye-sync and still invoice Company S'
 );
 
 assert.ok(
@@ -80,6 +93,22 @@ assert.ok(
     /Assign to inspector/.test(manual) &&
     /gets an email with the premises details/.test(manual),
   'User manual must explain NEXT, Schedule assign, and the inspector email'
+);
+
+assert.ok(
+  /id="scheduleInspectorSelect"/.test(liveHtml) &&
+    /fire-s-schedule-assign\.js/.test(liveHtml) &&
+    /function isMine\(p\)/.test(liveInspector) &&
+    /assignedInspectorEmail: assigned\.email/.test(liveApp) &&
+    /window\.fireSListAssignableInspectors = listAssignableInspectors/.test(liveTeam) &&
+    /function notifyInspectorAssignment\(/.test(liveNotify) &&
+    /schedule-new-panel select/.test(liveCss) &&
+    /Assign to inspector/.test(liveManual),
+  'Live Fire-S must have schedule-and-assign after sit dit live'
+);
+assert.ok(
+  /fireSIsMyInspection/.test(liveAssign),
+  'Live must load the assign helper'
 );
 
 const sandbox = { window: {}, console, setTimeout: fn => fn() };
