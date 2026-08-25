@@ -66,6 +66,47 @@
     return false;
   }
 
+  function isFinalizedInspection(project) {
+    if (!project) return false;
+    var status = lower(
+      project.status || project.inspectionStatus || project.archiveStatus
+    );
+    return !!(
+      project.completedAt ||
+      project.finalisedAt ||
+      project.finalizedAt ||
+      project.archivedAt ||
+      project.isArchived ||
+      status === 'completed' ||
+      status === 'finalised' ||
+      status === 'finalized'
+    );
+  }
+
+  function scheduleStamp(project) {
+    var d = text(
+      (project && (project.scheduledDate || project.followUpDate || project.nextInspectionDate)) ||
+        ''
+    ).slice(0, 10);
+    return d || '0000-01-01';
+  }
+
+  function scheduledPriorityList(projects, identity) {
+    return (Array.isArray(projects) ? projects : [])
+      .filter(function (project) {
+        return isMyInspection(project, identity) && !isFinalizedInspection(project);
+      })
+      .slice()
+      .sort(function (a, b) {
+        var ad = scheduleStamp(a);
+        var bd = scheduleStamp(b);
+        if (ad !== bd) return ad < bd ? -1 : 1;
+        var an = text(a.projectName || a.siteName || a.organisationName);
+        var bn = text(b.projectName || b.siteName || b.organisationName);
+        return an.localeCompare(bn);
+      });
+  }
+
   function readScheduleAssignee() {
     var doc = root.document;
     if (!doc) {
@@ -170,6 +211,8 @@
   }
 
   root.fireSIsMyInspection = isMyInspection;
+  root.fireSIsFinalizedInspection = isFinalizedInspection;
+  root.fireSScheduledPriorityList = scheduledPriorityList;
   root.fireSReadScheduleAssignee = readScheduleAssignee;
   root.fireSFillScheduleInspectorSelect = fillInspectorSelect;
 

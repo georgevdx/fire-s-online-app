@@ -38,7 +38,7 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.23-toets' : '1.3.23',
+    appVersion: staging ? '1.3.24-toets' : '1.3.24',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,

@@ -28,7 +28,7 @@ const liveManual = read('fire-s-user-manual.js');
 const css = read('staging/styles.css');
 const liveCss = read('styles.css');
 
-assert.ok(/1\.3\.23-toets/.test(env), 'Toets-blad version must stay on 1.3.23-toets');
+assert.ok(/1\.3\.24-toets/.test(env), 'Toets-blad version must stay on 1.3.24-toets');
 assert.ok(/1\.3\.13/.test(liveEnv) && /bounceLegacyToetsQuery/.test(liveEnv), 'Live Fire-S must be 1.3.13 and keep the old toets-link bounce');
 assert.ok(
   !/1\.3\.23/.test(liveEnv),
@@ -89,10 +89,10 @@ assert.ok(
 );
 
 assert.ok(
-  /NEXT<\/strong> only for an inspection you booked/.test(manual) &&
+  /Scheduled priority<\/strong>/.test(manual) &&
     /Assign to inspector/.test(manual) &&
     /gets an email with the premises details/.test(manual),
-  'User manual must explain NEXT, Schedule assign, and the inspector email'
+  'User manual must explain Scheduled priority, Schedule assign, and the inspector email'
 );
 
 assert.ok(

@@ -72,12 +72,30 @@
       p.contactPerson
     ].map(text).join(' ').toLowerCase();
   }
-  function isComplete(p){ return !!(p.completedAt||p.archivedAt||p.isArchived||String(p.status||'').toLowerCase()==='completed'||String(p.inspectionStatus||'').toLowerCase()==='completed'); }
+  function isComplete(p){ return !!(p.completedAt||p.finalisedAt||p.finalizedAt||p.archivedAt||p.isArchived||String(p.status||'').toLowerCase()==='completed'||String(p.inspectionStatus||'').toLowerCase()==='completed'||String(p.archiveStatus||'').toLowerCase()==='completed'||String(p.status||'').toLowerCase()==='finalised'||String(p.status||'').toLowerCase()==='finalized'); }
+  function isFinalized(p){
+    try { if(typeof window.fireSIsFinalizedInspection==='function') return window.fireSIsFinalizedInspection(p); } catch(e){}
+    return isComplete(p);
+  }
   function scheduled(p){ return text(p.scheduledDate||p.followUpDate||p.nextInspectionDate); }
-  function label(p){ if(!isComplete(p)) return 'Inspection in progress'; const d=scheduled(p); if(d) return 'Scheduled · '+d.slice(0,10); return 'Previous inspection available'; }
-  function action(p){ return !isComplete(p)?'CONTINUE →':(scheduled(p)?'START →':'OPEN →'); }
+  function label(p){
+    const d=scheduled(p);
+    if(!isFinalized(p)) return d ? 'Scheduled · '+d.slice(0,10) : 'Inspection in progress';
+    if(d) return 'Scheduled · '+d.slice(0,10);
+    return 'Previous inspection available';
+  }
+  function action(p){ return !isFinalized(p)?'CONTINUE →':(scheduled(p)?'START →':'OPEN →'); }
+  function openList(list){
+    try { if(typeof window.fireSScheduledPriorityList==='function') return window.fireSScheduledPriorityList(list, identity())||[]; } catch(e){}
+    return (list||[]).filter(p=>isMine(p)&&!isFinalized(p)).slice().sort((a,b)=>{
+      const ad=text(a.scheduledDate||a.followUpDate||a.nextInspectionDate).slice(0,10)||'0000-01-01';
+      const bd=text(b.scheduledDate||b.followUpDate||b.nextInspectionDate).slice(0,10)||'0000-01-01';
+      if(ad!==bd) return ad<bd?-1:1;
+      return name(a).localeCompare(name(b));
+    });
+  }
   function esc(s){ return text(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function workflowScore(p){ if(!isComplete(p)) return 0; if(scheduled(p)) return 1; return 2; }
+  function workflowScore(p){ if(!isFinalized(p)) return 0; if(scheduled(p)) return 1; return 2; }
   function matchScore(p, q){
     if(!q) return workflowScore(p);
     const n=name(p).toLowerCase();
@@ -104,7 +122,7 @@
   }
   function cardHtml(p, kind){
     const cls=kind==='next'?'inspector-v4-next':'inspector-v4-result';
-    const head=kind==='next'?`<div class="inspector-v4-label">NEXT</div>`:'';
+    const head=kind==='next'?`<div class="inspector-v4-label">Scheduled priority</div>`:'';
     return `<button type="button" class="${cls}" data-v4-open="${esc(p.id)}">${head}<div class="inspector-v4-title">${esc(name(p))}</div><div class="inspector-v4-meta">${esc(site(p))}${site(p)?' · ':''}${esc(label(p))}</div><span class="inspector-v4-action">${esc(action(p))}</span></button>`;
   }
   function build(){
@@ -128,7 +146,7 @@
         <input id="inspectorV4Search" class="inspector-v4-search" type="search" autocomplete="off" placeholder="Search premises or site…" aria-label="Search premises or site">
         <div id="inspectorV4Next"></div><div id="inspectorV4Results" class="inspector-v4-results"></div>
         <button id="inspectorV4New" class="inspector-v4-new" type="button">+ NEW PREMISES</button>
-        <p class="inspector-v4-hint">Choose the premises. Fire-S takes you to the inspection.</p>`;
+        <p class="inspector-v4-hint">Your scheduled inspections. Finish one and it leaves this list.</p>`;
       centre.appendChild(shell);
       shell.querySelector('#inspectorV4Search').addEventListener('input',render);
       shell.querySelector('#inspectorV4New').addEventListener('click',newPremises);
@@ -139,6 +157,8 @@
     shell.removeAttribute('hidden');
     shell.removeAttribute('aria-hidden');
     shell.style.setProperty('display','flex','important');
+    const hint=shell.querySelector('.inspector-v4-hint');
+    if(hint) hint.textContent='Your scheduled inspections. Finish one and it leaves this list.';
     if(!shell.querySelector('#inspectorV4Gateway')){
       const gateway=document.createElement('button');
       gateway.id='inspectorV4Gateway';
@@ -161,7 +181,7 @@
     const all=projects().slice().filter(isMine);
     const q=text(input.value).toLowerCase();
 
-    // Searching: only show records that match. Do not keep an unrelated NEXT card.
+    // Searching: only show records that match. Do not keep an unrelated priority card.
     if(q){
       const matches=all
         .filter(p=>matchesQuery(p,q))
@@ -181,12 +201,14 @@
       return;
     }
 
-    // No search: show NEXT priority, then nothing else until user searches.
-    const ranked=all.slice().sort((a,b)=>workflowScore(a)-workflowScore(b));
-    const priority=ranked.find(p=>!isComplete(p)) || ranked.find(p=>scheduled(p));
-    next.innerHTML=priority
-      ?cardHtml(priority,'next')
-      :`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
+    // No search: every open booking for this inspector, soonest date first.
+    const open=openList(all);
+    if(!open.length){
+      next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
+      results.innerHTML='';
+      return;
+    }
+    next.innerHTML=`<div class="inspector-v4-list">${open.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
     results.innerHTML='';
     document.querySelectorAll('[data-v4-open]').forEach(btn=>{
       btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));

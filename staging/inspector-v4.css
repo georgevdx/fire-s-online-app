@@ -41,6 +41,7 @@ body.fire-s-inspector-v4 #mainCommandCentre { max-width:760px; margin:0 auto; pa
 .inspector-v4-meta { margin-top:2px; font-size:.88rem; color:#6b7280; opacity:1; }
 .inspector-v4-action { display:inline-block; margin-top:8px; font-weight:800; color:#b91c1c; }
 .inspector-v4-results { display:grid; gap:10px; }
+.inspector-v4-list { display:grid; gap:10px; }
 .inspector-v4-empty { text-align:center; padding:12px; opacity:.7; }
 .inspector-v4-new { min-height:54px; border:0; border-radius:14px; font-size:1rem; font-weight:800; cursor:pointer; }
 .inspector-v4-hint { text-align:center; font-size:.86rem; opacity:.64; margin:0; }
