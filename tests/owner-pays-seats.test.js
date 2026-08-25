@@ -56,7 +56,7 @@ function checkTree(dir) {
 
 const sandbox = { window: {}, console };
 sandbox.window = sandbox;
-vm.runInNewContext(read('fire-s-subscribe-notify.js'), sandbox);
+vm.runInNewContext(read('staging/fire-s-subscribe-notify.js'), sandbox);
 
 const subscribeBody = sandbox.fireSNotifyCompanySBuildBody({
   kind: 'subscribe',
