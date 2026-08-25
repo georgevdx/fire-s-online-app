@@ -327,10 +327,10 @@
 
       <article class="user-manual-chapter">
         <h2>11. Subscriptions</h2>
-        <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. The owner pays for every subscribed email. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
+        <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong> (2 months free), per email. The owner pays for every subscribed email. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
         <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No VAT is added. No card is taken in the app yet.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free). One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}

@@ -20,8 +20,8 @@
     },
     {
       id: 'annual',
-      name: 'Annual · R3 490 per email',
-      summary: 'R3 490 once a year, per email (2 months free). The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
+      name: 'Annual · R3 490 per email · 2 months free',
+      summary: 'R3 490 once a year, per email. That is 2 months free (you save R698). The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
     }
   ];
 
@@ -222,6 +222,135 @@
     return DEFAULT_PLAN;
   }
 
+  var STARTED_KEY = 'fireS.billingStartedOn';
+  var RENEWS_KEY = 'fireS.billingRenewsOn';
+  var DISMISS_KEY = 'fireS.expiryReminderDismissed';
+
+  function pad2(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  function todayKey(value) {
+    var d = value ? new Date(value) : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  function addInterval(dateKey, interval) {
+    var parts = String(dateKey || todayKey()).split('-');
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (isNaN(d.getTime())) d = new Date();
+    if (normalizeInterval(interval) === 'annual') {
+      d.setFullYear(d.getFullYear() + 1);
+    } else {
+      d.setMonth(d.getMonth() + 1);
+    }
+    return todayKey(d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()));
+  }
+
+  function formatLongDate(dateKey) {
+    var parts = String(dateKey || '').split('-');
+    if (parts.length < 3) return dateKey || '';
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (isNaN(d.getTime())) return dateKey || '';
+    try {
+      return d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (_) {
+      return dateKey;
+    }
+  }
+
+  function readStored(key) {
+    try {
+      return text(localStorage.getItem(key));
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function rememberStartedOn(dateKey) {
+    var key = todayKey(dateKey);
+    try {
+      localStorage.setItem(STARTED_KEY, key);
+    } catch (_) {}
+    return key;
+  }
+
+  function rememberRenewsOn(dateKey) {
+    var key = todayKey(dateKey);
+    try {
+      localStorage.setItem(RENEWS_KEY, key);
+    } catch (_) {}
+    try {
+      if (root.currentCompanyAccess) root.currentCompanyAccess.billingRenewsOn = key;
+    } catch (_) {}
+    return key;
+  }
+
+  function currentRenewsOn() {
+    try {
+      var live = root.currentCompanyAccess && root.currentCompanyAccess.billingRenewsOn;
+      if (live) return todayKey(live);
+    } catch (_) {}
+    var stored = readStored(RENEWS_KEY);
+    return stored ? todayKey(stored) : '';
+  }
+
+  function startBillingPeriod(intervalId) {
+    var interval = normalizeInterval(intervalId || currentIntervalId());
+    var start = todayKey();
+    rememberStartedOn(start);
+    return rememberRenewsOn(addInterval(start, interval));
+  }
+
+  function ensureRenewsOn(intervalId) {
+    var interval = normalizeInterval(intervalId || currentIntervalId());
+    var today = todayKey();
+    var started = readStored(STARTED_KEY) || today;
+    if (!readStored(STARTED_KEY)) rememberStartedOn(started);
+    var renews = currentRenewsOn() || addInterval(started, interval);
+    var guard = 0;
+    while (renews < today && guard < 48) {
+      renews = addInterval(renews, interval);
+      guard += 1;
+    }
+    return rememberRenewsOn(renews);
+  }
+
+  function daysUntilRenewal(intervalId) {
+    var renews = ensureRenewsOn(intervalId);
+    var today = todayKey();
+    var a = new Date(today + 'T00:00:00');
+    var b = new Date(renews + 'T00:00:00');
+    return Math.round((b.getTime() - a.getTime()) / 86400000);
+  }
+
+  function shouldShowExpiryReminder(intervalId) {
+    var days = daysUntilRenewal(intervalId);
+    if (days > 31) return false;
+    var renews = currentRenewsOn();
+    return readStored(DISMISS_KEY) !== renews;
+  }
+
+  function dismissExpiryReminder() {
+    try {
+      localStorage.setItem(DISMISS_KEY, currentRenewsOn());
+    } catch (_) {}
+  }
+
+  function bothPriceLines(selectedId) {
+    var selected = normalizeInterval(selectedId || currentIntervalId());
+    return {
+      monthly: 'Monthly · ' + formatRand(SEAT_PRICE_MONTHLY) + ' per email',
+      annual: 'Annual · ' + formatRand(SEAT_PRICE_ANNUAL) + ' per email · 2 months free',
+      selected: selected,
+      saveNote: 'Annual saves R698 (2 months free).'
+    };
+  }
+
   function getSb() {
     try {
       if (root.supabaseClient) return root.supabaseClient;
@@ -311,6 +440,7 @@
   async function persistCompanyPlan(planId, intervalId) {
     var id = rememberPlan(planId);
     var interval = rememberInterval(intervalId);
+    startBillingPeriod(interval);
     var sb = getSb();
     var cid = companyId();
     if (!sb || !cid) return { ok: true, local: true, plan: id, interval: interval };
@@ -354,6 +484,14 @@
     selectedPlanFrom: selectedPlanFrom,
     selectedIntervalFrom: selectedIntervalFrom,
     persistCompanyPlan: persistCompanyPlan,
+    startBillingPeriod: startBillingPeriod,
+    ensureRenewsOn: ensureRenewsOn,
+    currentRenewsOn: currentRenewsOn,
+    daysUntilRenewal: daysUntilRenewal,
+    shouldShowExpiryReminder: shouldShowExpiryReminder,
+    dismissExpiryReminder: dismissExpiryReminder,
+    formatLongDate: formatLongDate,
+    bothPriceLines: bothPriceLines,
     duplicateSeatMessage: duplicateSeatMessage,
     formatRand: formatRand,
     priceFor: priceFor,

@@ -53,12 +53,39 @@
     el.className = 'fire-s-subscribe-message' + (isError ? ' is-error' : '');
   }
 
+  function selectedInterval() {
+    var cat = catalog();
+    var billing = byId('fireSSubscribeBillingOptions');
+    if (cat && cat.selectedIntervalFrom && billing) {
+      return cat.selectedIntervalFrom(billing);
+    }
+    return cat && cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
+  }
+
   function paintCurrent() {
     var cat = catalog();
-    var interval = cat && cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
-    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per email per month';
+    var interval = selectedInterval();
+    var lines = cat && cat.bothPriceLines ? cat.bothPriceLines(interval) : null;
     var current = byId('fireSSubscribeCurrent');
     if (!current) return;
+    if (lines) {
+      current.innerHTML =
+        '<strong class="' +
+        (lines.selected === 'monthly' ? 'is-picked' : '') +
+        '">' +
+        lines.monthly +
+        '</strong><strong class="' +
+        (lines.selected === 'annual' ? 'is-picked' : '') +
+        '">' +
+        lines.annual +
+        '</strong><span>Chosen: ' +
+        (interval === 'annual' ? lines.annual : lines.monthly) +
+        '. ' +
+        lines.saveNote +
+        ' You (the owner) pay. Inspectors do not. Phone and desktop share that email.</span>';
+      return;
+    }
+    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per email per month';
     current.innerHTML =
       '<strong>Fire-S seat · ' +
       price +
@@ -112,7 +139,7 @@
     var billingWrap = byId('fireSSubscribeBillingWrap');
     var isSeat = mode === 'seat';
     if (seat) seat.style.display = isSeat ? '' : 'none';
-    if (billingWrap) billingWrap.style.display = isSeat ? 'none' : '';
+    if (billingWrap) billingWrap.style.display = '';
     if (save) {
       save.style.display = isSeat ? 'none' : '';
       save.hidden = isSeat;
@@ -127,7 +154,7 @@
     }
     if (intro) {
       intro.innerHTML = isSeat
-        ? 'Type their email here. Choose Inspector or Manager. Then tap <strong>Subscribe this email</strong>. You (the owner) pay R349 / month or R3 490 / year. They do not pay and they never open this page.'
+        ? 'Choose monthly or annual first (annual is 2 months free). Then type their email, choose Inspector or Manager, and tap <strong>Subscribe this email</strong>. You (the owner) pay. They do not pay and they never open this page.'
         : 'You (the owner) pay <strong>R349 per month</strong> or <strong>R3 490 per year</strong> for every subscribed email. Inspectors and other staff do not pay. Phone and desktop share that login. The app does not take a card yet — Company S invoices you. No VAT is added (Company S is not registered for VAT). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
   }
@@ -159,6 +186,12 @@
     if (cat && cat.renderBillingPicker && billing) {
       billing.setAttribute('data-interval-name', 'fireSSubscribeBilling');
       cat.renderBillingPicker(billing, cat.currentIntervalId());
+      if (!billing.__fireSPaintBound) {
+        billing.__fireSPaintBound = true;
+        billing.addEventListener('change', function () {
+          paintCurrent();
+        });
+      }
     }
     paintMode();
     paintCurrent();
@@ -196,11 +229,20 @@
       setMessage('Personnel is not ready. Wait a moment and try again.', true);
       return;
     }
+    var cat = catalog();
+    var billing = byId('fireSSubscribeBillingOptions');
     var seatBtn = byId('fireSSubscribeSeatBtn');
     if (seatBtn) seatBtn.disabled = true;
     setMessage('Subscribing this email. You (the owner) pay…');
     try {
       await window.fireSAddPersonnelSeat(email, role);
+      if (cat && cat.persistCompanyPlan) {
+        var intervalId = cat.selectedIntervalFrom ? cat.selectedIntervalFrom(billing) : 'monthly';
+        try {
+          await cat.persistCompanyPlan('standard', intervalId);
+          paintCurrent();
+        } catch (_) {}
+      }
     } catch (err) {
       setMessage((err && err.message) || 'Could not subscribe that email.', true);
     } finally {
@@ -230,6 +272,54 @@
         window.fireSApplyCleanHomeRoles();
       }
     } catch (_) {}
+    paintExpiryReminder();
+  }
+
+  function reminderRole() {
+    var role = homeRole();
+    return role === 'company_owner' || role === 'owner' || role === 'super_admin' || role === 'manager';
+  }
+
+  function paintExpiryReminder() {
+    var box = byId('fireSExpiryReminder');
+    if (!box) return;
+    var cat = catalog();
+    if (!reminderRole() || !cat || !cat.shouldShowExpiryReminder) {
+      box.hidden = true;
+      return;
+    }
+    if (!cat.shouldShowExpiryReminder()) {
+      box.hidden = true;
+      return;
+    }
+    var days = cat.daysUntilRenewal ? cat.daysUntilRenewal() : 0;
+    var when = cat.formatLongDate ? cat.formatLongDate(cat.currentRenewsOn()) : cat.currentRenewsOn();
+    var title = byId('fireSExpiryReminderTitle');
+    var text = byId('fireSExpiryReminderText');
+    var openBtn = byId('fireSExpiryReminderOpenBtn');
+    if (title) {
+      title.textContent = days < 0 ? 'Subscription overdue' : days === 0 ? 'Subscription due today' : 'Subscription due in one month';
+    }
+    if (text) {
+      text.textContent =
+        (days < 0
+          ? 'Company S invoices you. Due date was ' + when + '.'
+          : days === 0
+            ? 'Company S invoices you today (' + when + ').'
+            : 'Due on ' + when + '. Company S invoices you. Close this if it is in the way.') +
+        ' Monthly is R349 per email. Annual is R3 490 (2 months free).';
+    }
+    if (openBtn) openBtn.style.display = canManage() ? '' : 'none';
+    box.hidden = false;
+  }
+
+  function closeExpiryReminder() {
+    var cat = catalog();
+    try {
+      if (cat && cat.dismissExpiryReminder) cat.dismissExpiryReminder();
+    } catch (_) {}
+    var box = byId('fireSExpiryReminder');
+    if (box) box.hidden = true;
   }
 
   function refreshCardCopy() {
@@ -241,7 +331,7 @@
     var title = btn.querySelector('.command-title');
     var copy = btn.querySelector('.command-copy');
     if (title) title.textContent = 'Subscription';
-    if (copy) copy.textContent = price + ' · tap to view or change.';
+    if (copy) copy.textContent = 'R349 / month or R3 490 / year · 2 months free on annual.';
   }
 
   function wire() {
@@ -251,9 +341,17 @@
     var save = byId('fireSSubscribeSaveBtn');
     var btn = byId('cmdSubscribeBtn');
     var seatBtn = byId('fireSSubscribeSeatBtn');
+    var reminderClose = byId('fireSExpiryReminderCloseBtn');
+    var reminderOpen = byId('fireSExpiryReminderOpenBtn');
     if (back) back.addEventListener('click', goHome);
     if (save) save.addEventListener('click', savePlan);
     if (seatBtn) seatBtn.addEventListener('click', subscribeSeat);
+    if (reminderClose) reminderClose.addEventListener('click', closeExpiryReminder);
+    if (reminderOpen) {
+      reminderOpen.addEventListener('click', function () {
+        openSubscribe();
+      });
+    }
     if (btn) {
       btn.addEventListener('click', function (event) {
         event.preventDefault();
@@ -265,6 +363,7 @@
   function boot() {
     wire();
     refreshCardCopy();
+    paintExpiryReminder();
   }
 
   window.fireSOpenSubscribe = openSubscribe;
@@ -272,11 +371,15 @@
   window.fireSSubscribeGoBack = goHome;
   window.fireSSetSubscribeMessage = setMessage;
   window.fireSRefreshSubscribeCard = refreshCardCopy;
+  window.fireSPaintExpiryReminder = paintExpiryReminder;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
   } else {
     boot();
   }
-  document.addEventListener('fire-s:auth-changed', refreshCardCopy);
+  document.addEventListener('fire-s:auth-changed', function () {
+    refreshCardCopy();
+    paintExpiryReminder();
+  });
 })();
