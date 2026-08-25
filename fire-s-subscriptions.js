@@ -207,7 +207,7 @@
     var addr = text(email).toLowerCase() || 'This email';
     return (
       addr +
-      ' is already a paid seat. That person logs in on phone and desktop with the same email. Do not enter it again.'
+      ' already belongs to a company. One person is one company. Only that Owner can remove them under Personnel. Then they can Subscribe under another company. Do not enter it again.'
     );
   }
 
