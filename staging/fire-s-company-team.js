@@ -110,6 +110,74 @@
     );
   }
 
+  function isClosedInviteStatus(status) {
+    const value = text(status).toLowerCase();
+    return (
+      value === 'cancelled' ||
+      value === 'canceled' ||
+      value === 'expired' ||
+      value === 'declined' ||
+      value === 'rejected'
+    );
+  }
+
+  function forgetSeatEmail(email) {
+    const addr = text(email).toLowerCase();
+    lastSeatEmails = (lastSeatEmails || []).filter(item => item !== addr);
+  }
+
+  async function reopenCancelledInvite(companyId, email, role) {
+    const result = await waitFor(
+      supabaseClient
+        .from('company_invites')
+        .select('id, email, role, status')
+        .eq('company_id', companyId)
+        .ilike('email', text(email).toLowerCase()),
+      3000,
+      'Invite lookup'
+    );
+    if (result?.error) return { ok: false, error: result.error };
+    const rows = Array.isArray(result?.data) ? result.data : [];
+    const pending = rows.some(row => text(row.status).toLowerCase() === 'pending');
+    if (pending) return { ok: false, reason: 'pending' };
+    const closed = rows.find(row => isClosedInviteStatus(row.status));
+    if (!closed) return { ok: false, reason: 'none' };
+    const updated = await waitFor(
+      supabaseClient
+        .from('company_invites')
+        .update({
+          status: 'pending',
+          role: role || closed.role || 'inspector'
+        })
+        .eq('id', closed.id),
+      4000,
+      'Reopen invite'
+    );
+    if (updated?.error) return { ok: false, error: updated.error };
+    return { ok: true, kind: 'invite' };
+  }
+
+  async function finishAddedPerson(email, role, status, emailInput, roleSelect, notify) {
+    if (emailInput) emailInput.value = '';
+    if (roleSelect) roleSelect.value = 'inspector';
+    if (status === 'invited' || status === 'reopened') {
+      setMessage(
+        `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They open Access → Create password once.`
+      );
+    } else {
+      setMessage(
+        `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They Login with that email on phone and desktop.`
+      );
+    }
+    await refreshTeam();
+    if (notify) notifyOwnerPaysSubscription(email, roleLabel(role));
+    try {
+      if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+        window.fireSRefreshCompanyPersonnelStats();
+      }
+    } catch (_) {}
+  }
+
   function rememberCompanyName(companyId, companyName) {
     const id = text(companyId);
     const name = text(companyName);
@@ -789,7 +857,7 @@
               <span>Invited as ${esc(roleLabel(role))} · not logged in yet</span>
             </div>
             <div class="company-team-card-actions is-invite">
-              <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}">
+              <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}" data-invite-email="${esc(email)}">
                 Cancel invite
               </button>
             </div>
@@ -799,7 +867,10 @@
 
     list.querySelectorAll('[data-cancel-invite]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await cancelInvite(btn.getAttribute('data-cancel-invite'));
+        await cancelInvite(
+          btn.getAttribute('data-cancel-invite'),
+          btn.getAttribute('data-invite-email')
+        );
       });
     });
   }
@@ -864,7 +935,7 @@
     }
   }
 
-  async function cancelInvite(inviteId) {
+  async function cancelInvite(inviteId, inviteEmail) {
     try {
       if (!inviteId) return;
       setMessage('Cancelling invite…');
@@ -877,7 +948,8 @@
         'Cancel invite'
       );
       if (error) throw error;
-      setMessage('Invite cancelled.');
+      forgetSeatEmail(inviteEmail);
+      setMessage('Invite cancelled. You can add that email again.');
       await refreshTeam();
     } catch (error) {
       setMessage(error.message || 'Could not cancel invite.', true);
@@ -1041,14 +1113,20 @@
       if (!email || !email.includes('@')) {
         throw new Error('Enter a valid email address.');
       }
-      if (lastSeatEmails.indexOf(email) >= 0) {
-        throw new Error(duplicateSeatMessage(email));
-      }
       if (!ctx.companyId) {
         throw new Error('Save your company first, then add people.');
       }
       if (role === 'company_owner' && !canAssignOwner()) {
         throw new Error('Only an Owner can add another Owner.');
+      }
+
+      if (lastSeatEmails.indexOf(email) >= 0) {
+        const reopenedEarly = await reopenCancelledInvite(ctx.companyId, email, role);
+        if (reopenedEarly && reopenedEarly.ok) {
+          await finishAddedPerson(email, role, 'reopened', emailInput, roleSelect, false);
+          return;
+        }
+        throw new Error(duplicateSeatMessage(email));
       }
 
       setMessage('Adding person…');
@@ -1068,31 +1146,31 @@
         const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
         const status = text(row?.out_status || row?.status).toLowerCase();
         if (status === 'already' || status === 'duplicate') {
+          const reopenedDup = await reopenCancelledInvite(ctx.companyId, email, role);
+          if (reopenedDup && reopenedDup.ok) {
+            await finishAddedPerson(email, role, 'reopened', emailInput, roleSelect, false);
+            return;
+          }
           throw new Error(duplicateSeatMessage(email));
         }
-        if (emailInput) emailInput.value = '';
-        if (roleSelect) roleSelect.value = 'inspector';
-        if (status === 'invited') {
-          setMessage(
-            `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They open Access → Create password once.`
-          );
-        } else {
-          setMessage(
-            `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They Login with that email on phone and desktop.`
-          );
-        }
-        await refreshTeam();
-        notifyOwnerPaysSubscription(email, roleLabel(role));
-        try {
-          if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
-            window.fireSRefreshCompanyPersonnelStats();
-          }
-        } catch (_) {}
+        await finishAddedPerson(
+          email,
+          role,
+          status === 'invited' ? 'invited' : 'added',
+          emailInput,
+          roleSelect,
+          true
+        );
         return;
       }
 
-      // Fallback: old profile lookup path
+      // Fallback: reopen a cancelled invite, then old profile lookup
       if (rpc.error) {
+        const reopened = await reopenCancelledInvite(ctx.companyId, email, role);
+        if (reopened && reopened.ok) {
+          await finishAddedPerson(email, role, 'reopened', emailInput, roleSelect, false);
+          return;
+        }
         const rpcMsg = text(rpc.error.message).toLowerCase();
         if (
           rpcMsg.indexOf('paid seat') >= 0 ||
@@ -1720,6 +1798,8 @@
   window.fireSRefreshCompanyTeamChrome = refreshPersonnelChrome;
   window.fireSRememberCompanyName = rememberCompanyName;
   window.fireSBeginFreshCompany = beginFreshCompany;
+  window.fireSIsClosedInviteStatus = isClosedInviteStatus;
+  window.fireSReopenCancelledInvite = reopenCancelledInvite;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });

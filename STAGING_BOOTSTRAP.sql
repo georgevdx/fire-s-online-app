@@ -426,6 +426,22 @@ begin
   end if;
 
   if v_target is not null then
+    update public.company_members
+       set status = 'active',
+           role = v_role
+     where company_id = p_company_id
+       and user_id = v_target
+       and coalesce(status, 'active') = 'inactive';
+    if found then
+      update public.profiles set role = v_role where id = v_target;
+      update public.company_invites
+         set status = 'accepted'
+       where company_id = p_company_id
+         and lower(trim(email)) = v_email;
+      return query select v_target, v_email, v_role, 'added'::text;
+      return;
+    end if;
+
     select m.user_id into v_existing
     from public.company_members m
     where m.user_id = v_target and coalesce(m.status, 'active') = 'active'
@@ -442,15 +458,51 @@ begin
     update public.profiles set role = v_role where id = v_target;
     update public.company_invites
        set status = 'accepted'
-     where company_id = p_company_id and lower(email) = v_email;
+     where company_id = p_company_id and lower(trim(email)) = v_email;
     return query select v_target, v_email, v_role, 'added'::text;
     return;
   end if;
 
-  insert into public.company_invites (company_id, email, role, status, created_by)
-  values (p_company_id, v_email, v_role, 'pending', v_uid)
-  on conflict (company_id, email)
-  do update set role = excluded.role, status = 'pending', created_by = v_uid;
+  update public.company_invites
+     set status = 'pending',
+         role = v_role,
+         created_by = v_uid
+   where company_id = p_company_id
+     and lower(trim(email)) = v_email
+     and lower(coalesce(status, 'pending')) in (
+       'cancelled', 'canceled', 'expired', 'declined', 'rejected'
+     );
+  if found then
+    return query select null::uuid, v_email, v_role, 'invited'::text;
+    return;
+  end if;
+
+  begin
+    insert into public.company_invites (company_id, email, role, status, created_by)
+    values (p_company_id, v_email, v_role, 'pending', v_uid)
+    on conflict (company_id, email)
+    do update set role = excluded.role, status = 'pending', created_by = v_uid;
+  exception when unique_violation then
+    update public.company_invites
+       set status = 'pending',
+           role = v_role,
+           created_by = v_uid
+     where company_id = p_company_id
+       and lower(trim(email)) = v_email;
+    if not found then
+      raise;
+    end if;
+  when others then
+    update public.company_invites
+       set status = 'pending',
+           role = v_role,
+           created_by = v_uid
+     where company_id = p_company_id
+       and lower(trim(email)) = v_email;
+    if not found then
+      raise;
+    end if;
+  end;
 
   return query select null::uuid, v_email, v_role, 'invited'::text;
 end;
