@@ -132,14 +132,19 @@ declare
   v_uid uuid := auth.uid();
   v_email text;
   v_existing uuid;
+  v_name text;
+  v_role text;
   r record;
 begin
   if v_uid is null then
     raise exception 'Not authenticated';
   end if;
 
-  select lower(trim(email)) into v_email from auth.users where id = v_uid;
-  if v_email is null then
+  v_email := lower(trim(coalesce(
+    nullif(auth.jwt() ->> 'email', ''),
+    (select email from auth.users where id = v_uid)
+  )));
+  if v_email is null or v_email = '' then
     return;
   end if;
 
@@ -153,10 +158,17 @@ begin
    limit 1;
 
   if v_existing is not null then
-    update public.company_invites
-       set status = 'cancelled'
-     where lower(trim(email)) = v_email
-       and coalesce(status, 'pending') = 'pending';
+    select c.name, m.role
+      into v_name, v_role
+      from public.company_members m
+      left join public.companies c on c.id = m.company_id
+     where m.user_id = v_uid
+       and m.company_id = v_existing
+     limit 1;
+    out_company_id := v_existing;
+    out_company_name := v_name;
+    out_role := coalesce(v_role, 'inspector');
+    return next;
     return;
   end if;
 
@@ -179,10 +191,16 @@ begin
     on conflict (company_id, user_id)
     do update set role = excluded.role, status = 'active';
   exception when unique_violation then
-    update public.company_invites
-       set status = 'cancelled'
-     where lower(trim(email)) = v_email
-       and coalesce(status, 'pending') = 'pending';
+    select m.company_id, c.name, m.role
+      into out_company_id, out_company_name, out_role
+      from public.company_members m
+      left join public.companies c on c.id = m.company_id
+     where m.user_id = v_uid
+       and coalesce(m.status, 'active') = 'active'
+     limit 1;
+    if out_company_id is not null then
+      return next;
+    end if;
     return;
   end;
 

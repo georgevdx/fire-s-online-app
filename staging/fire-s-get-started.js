@@ -346,17 +346,153 @@
     }
   }
 
-  async function claimInvitesQuiet() {
+  var lastJoinError = '';
+
+  function delay(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function waitForAuthSession() {
+    var sb = getSb();
+    if (!sb || !sb.auth) return null;
     try {
-      var sb = getSb();
-      if (!sb || !sb.rpc) return 0;
-      var res = await sb.rpc('fire_s_claim_my_invites');
-      if (res.error) return 0;
-      if (Array.isArray(res.data)) return res.data.length;
-      return res.data ? 1 : 0;
+      var sessionRes = await sb.auth.getSession();
+      if (sessionRes && sessionRes.data && sessionRes.data.session) {
+        return sessionRes.data.session;
+      }
+    } catch (_) {}
+    try {
+      var userRes = await sb.auth.getUser();
+      return (userRes && userRes.data && userRes.data.user) || null;
     } catch (_) {
-      return 0;
+      return null;
     }
+  }
+
+  function rememberJoinedCompany(companyId, companyName, role) {
+    var id = text(companyId);
+    if (!id) return;
+    var patch = {
+      companyId: id,
+      companyName: text(companyName) || (profile() && profile().companyName) || 'Your company',
+      role: text(role) || 'inspector'
+    };
+    try {
+      if (typeof window.fireSApplyUserProfilePatch === 'function') {
+        window.fireSApplyUserProfilePatch(patch);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (window.currentUserProfile) {
+        window.currentUserProfile.companyId = patch.companyId;
+        window.currentUserProfile.companyName = patch.companyName;
+        window.currentUserProfile.role = patch.role;
+      }
+    } catch (_) {}
+  }
+
+  async function joinFromVisibleInvites() {
+    var sb = getSb();
+    if (!sb || !sb.from || !sb.auth) return 0;
+    var userRes = await sb.auth.getUser();
+    var user = userRes && userRes.data && userRes.data.user;
+    if (!user || !user.id) return 0;
+    var email = text(user.email).toLowerCase();
+    if (!email) return 0;
+    var inv = await sb
+      .from('company_invites')
+      .select('id, company_id, role, email, status')
+      .eq('status', 'pending')
+      .limit(30);
+    var rows = Array.isArray(inv.data) ? inv.data : [];
+    var mine = rows.filter(function (row) {
+      return text(row && row.email).toLowerCase() === email;
+    });
+    if (!mine.length) {
+      var inv2 = await sb
+        .from('company_invites')
+        .select('id, company_id, role, email, status')
+        .ilike('email', email)
+        .eq('status', 'pending')
+        .limit(5);
+      mine = Array.isArray(inv2.data) ? inv2.data : [];
+    }
+    var joined = 0;
+    for (var i = 0; i < mine.length; i += 1) {
+      var row = mine[i];
+      if (!row || !row.company_id) continue;
+      var upsert = await sb.from('company_members').upsert(
+        {
+          company_id: row.company_id,
+          user_id: user.id,
+          role: text(row.role) || 'inspector',
+          status: 'active'
+        },
+        { onConflict: 'company_id,user_id' }
+      );
+      if (upsert && upsert.error) {
+        lastJoinError = text(upsert.error.message) || lastJoinError;
+        continue;
+      }
+      rememberJoinedCompany(row.company_id, '', text(row.role) || 'inspector');
+      joined += 1;
+    }
+    return joined;
+  }
+
+  async function claimInvitesQuiet() {
+    lastJoinError = '';
+    var sb = getSb();
+    if (!sb || !sb.rpc) return 0;
+    await waitForAuthSession();
+    var claimed = 0;
+    try {
+      var res = await sb.rpc('fire_s_claim_my_invites');
+      if (res && res.error) {
+        lastJoinError = text(res.error.message);
+      } else if (Array.isArray(res && res.data)) {
+        claimed = res.data.length;
+        if (claimed && res.data[0]) {
+          rememberJoinedCompany(
+            res.data[0].out_company_id || res.data[0].company_id,
+            res.data[0].out_company_name || res.data[0].company_name,
+            res.data[0].out_role || res.data[0].role
+          );
+        }
+      } else if (res && res.data) {
+        claimed = 1;
+        rememberJoinedCompany(
+          res.data.out_company_id || res.data.company_id,
+          res.data.out_company_name || res.data.company_name,
+          res.data.out_role || res.data.role
+        );
+      }
+    } catch (err) {
+      lastJoinError = text(err && err.message);
+    }
+    if (claimed > 0 || hasCompany()) return claimed || 1;
+    try {
+      var extra = await joinFromVisibleInvites();
+      if (extra > 0) return extra;
+    } catch (err2) {
+      lastJoinError = text(err2 && err2.message) || lastJoinError;
+    }
+    return 0;
+  }
+
+  async function joinCompanyAfterLogin() {
+    var claimed = 0;
+    var i;
+    for (i = 0; i < 3; i += 1) {
+      claimed = await claimInvitesQuiet();
+      await refreshMembership();
+      if (claimed > 0 || hasCompany()) return claimed || 1;
+      await delay(400);
+    }
+    return 0;
   }
 
   async function refreshMembership() {
@@ -676,8 +812,7 @@
   }
 
   async function finishSignedInSession(successMsg) {
-    var claimed = await claimInvitesQuiet();
-    await refreshMembership();
+    var claimed = await joinCompanyAfterLogin();
     mode = 'choices';
     refreshHomeChrome();
     if (claimed > 0 || hasCompany()) {
@@ -693,7 +828,11 @@
     var invited = isJoiningAsStaff() || (await hasPendingInviteQuiet());
     if (invited) {
       showWaiting();
-      setStatus('Your owner already added you and pays for this email. Tap Check again. Do not Subscribe.');
+      setStatus(
+        lastJoinError
+          ? lastJoinError
+          : 'Your owner already added you and pays for this email. Tap Check again to open Home. Do not Subscribe.'
+      );
       return;
     }
     if (canRegisterCompany()) {
@@ -702,7 +841,9 @@
       return;
     }
     showWaiting();
-    setStatus('Signed in. Waiting for your owner to add you.');
+    setStatus(
+      lastJoinError || 'Signed in. Tap Check again. If Home does not open, ask your owner to add this email under People again.'
+    );
   }
 
   function accessRedirectUrl() {
@@ -1007,17 +1148,21 @@
   }
 
   async function doCheckAgain() {
-    setStatus('Checking access…');
+    setStatus('Joining the company…');
     try {
-      var claimed = await claimInvitesQuiet();
-      await refreshMembership();
+      var claimed = await joinCompanyAfterLogin();
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
+        clearJoiningAsStaff();
         await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Access updated.');
         return;
       }
-      setStatus('Still waiting. Ask your owner to add your email under Personnel.', true);
+      setStatus(
+        lastJoinError ||
+          'Still not in the company. Ask your owner: People → Add inspector / manager → this same email. Then tap Check again.',
+        true
+      );
       showWaiting();
     } catch (e) {
       setStatus((e && e.message) || 'Could not refresh access.', true);
