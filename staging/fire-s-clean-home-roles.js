@@ -765,7 +765,7 @@
     cardText(
       'cmdSubscribeBtn',
       'Subscription',
-      'R349 / month per email · tap to view or change.'
+      'R349 / month per email · you (the owner) pay · tap to view or change.'
     );
     cardText(
       'cmdUserManualBtn',
@@ -898,7 +898,7 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Choose monthly (R349) or annual (R3 490) per email.');
+    setHero('Fire-S · New Company', 'SUBSCRIBE', 'You pay monthly (R349) or annual (R3 490) per email. Inspectors do not pay.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
     setText('#mainCommandCentre .main-command-top h3', 'Subscribe');
     setText(

@@ -18,6 +18,7 @@
   const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
   const COMPANY_CACHE_KEY = 'fireS.cachedCompany';
   let lastSeatEmails = [];
+  let lastMembers = [];
 
   function byId(id) {
     return document.getElementById(id);
@@ -51,6 +52,50 @@
       if (email) emails.push(email);
     });
     lastSeatEmails = emails;
+    lastMembers = Array.isArray(members) ? members : [];
+  }
+
+  function ownerBillingEmail() {
+    const members = lastMembers || [];
+    for (let i = 0; i < members.length; i += 1) {
+      const member = members[i];
+      const status = text((member && member.status) || 'active').toLowerCase();
+      if (status === 'inactive') continue;
+      const role = text(member && member.role).toLowerCase();
+      if (role !== 'company_owner' && role !== 'owner' && role !== 'super_admin') {
+        continue;
+      }
+      const email = text(member && member.profiles && member.profiles.email).toLowerCase();
+      if (email) return email;
+    }
+    return text(companyContext().email).toLowerCase();
+  }
+
+  function currentBillingInterval() {
+    try {
+      if (
+        window.fireSSubscriptionCatalog &&
+        window.fireSSubscriptionCatalog.currentIntervalId
+      ) {
+        return window.fireSSubscriptionCatalog.currentIntervalId() || 'monthly';
+      }
+    } catch (_) {}
+    return 'monthly';
+  }
+
+  function notifyOwnerPaysSubscription(personEmail, roleName) {
+    try {
+      if (typeof window.fireSNotifyCompanyS !== 'function') return;
+      const ctx = companyContext();
+      window.fireSNotifyCompanyS({
+        kind: 'seat',
+        company: text(ctx.companyName || window.currentUserProfile?.companyName),
+        email: text(personEmail).toLowerCase(),
+        role: roleName,
+        billedTo: ownerBillingEmail(),
+        interval: currentBillingInterval()
+      });
+    } catch (_) {}
   }
 
   function duplicateSeatMessage(email) {
@@ -61,7 +106,7 @@
     } catch (_) {}
     return (
       text(email).toLowerCase() +
-      ' is already a paid seat. That person logs in on phone and desktop with the same email. Do not enter it again.'
+      ' is already a subscription the owner pays for. That person logs in on phone and desktop with the same email. Do not enter it again.'
     );
   }
 
@@ -1029,29 +1074,15 @@
         if (roleSelect) roleSelect.value = 'inspector';
         if (status === 'invited') {
           setMessage(
-            `${email} saved as one paid seat (${roleLabel(role)}). They open Access → Create password once. Phone and desktop use that same email — do not add it again.`
+            `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They open Access → Create password once.`
           );
         } else {
           setMessage(
-            `${email} is one paid seat (${roleLabel(role)}). They Login with that email on phone and desktop.`
+            `${email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person. They Login with that email on phone and desktop.`
           );
         }
         await refreshTeam();
-        try {
-          if (typeof window.fireSNotifyCompanyS === 'function') {
-            window.fireSNotifyCompanyS({
-              kind: 'seat',
-              company: text(ctx.companyName || window.currentUserProfile?.companyName),
-              email: email,
-              role: roleLabel(role),
-              interval:
-                (window.fireSSubscriptionCatalog &&
-                  window.fireSSubscriptionCatalog.currentIntervalId &&
-                  window.fireSSubscriptionCatalog.currentIntervalId()) ||
-                'monthly'
-            });
-          }
-        } catch (_) {}
+        notifyOwnerPaysSubscription(email, roleLabel(role));
         try {
           if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
             window.fireSRefreshCompanyPersonnelStats();
@@ -1124,23 +1155,11 @@
 
       if (emailInput) emailInput.value = '';
       if (roleSelect) roleSelect.value = 'inspector';
-      setMessage(`${profile.email || email} added as ${roleLabel(role)}.`);
+      setMessage(
+        `${profile.email || email} is a new subscription (${roleLabel(role)}). Company S invoices the owner, not this person.`
+      );
       await refreshTeam();
-      try {
-        if (typeof window.fireSNotifyCompanyS === 'function') {
-          window.fireSNotifyCompanyS({
-            kind: 'seat',
-            company: text(ctx.companyName || window.currentUserProfile?.companyName),
-            email: profile.email || email,
-            role: roleLabel(role),
-            interval:
-              (window.fireSSubscriptionCatalog &&
-                window.fireSSubscriptionCatalog.currentIntervalId &&
-                window.fireSSubscriptionCatalog.currentIntervalId()) ||
-              'monthly'
-          });
-        }
-      } catch (_) {}
+      notifyOwnerPaysSubscription(profile.email || email, roleLabel(role));
     } catch (error) {
       console.error('Add member failed:', error);
       setMessage(error.message || 'Could not add team member.', true);
