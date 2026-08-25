@@ -1,0 +1,191 @@
+/* Fire-S Company Team / Personnel */
+
+.company-team-section {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.company-team-intro {
+  margin-bottom: 18px;
+}
+
+.company-team-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.company-team-intro h3 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.55rem, 4vw, 2.1rem);
+  line-height: 1.15;
+  color: #0f172a;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.company-team-intro.has-company-name h3 {
+  font-size: clamp(1.85rem, 5vw, 2.55rem);
+  letter-spacing: -0.02em;
+}
+
+.company-team-intro.is-setup h3 {
+  font-size: 1.35rem;
+}
+
+.company-team-intro p {
+  margin: 0;
+  color: #4b5563;
+}
+
+.company-team-meta {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+.company-team-message {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.9rem;
+}
+
+.company-team-message.is-error {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.company-team-fresh-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+}
+
+.company-team-fresh-banner strong {
+  font-weight: 700;
+}
+
+.company-team-fresh-banner .secondary-btn {
+  margin-left: auto;
+}
+
+.company-team-add {
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.company-team-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.7fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.company-team-setup-row {
+  grid-template-columns: 1fr auto;
+}
+
+.company-team-add-row input,
+.company-team-add-row select,
+.company-team-add-row button {
+  width: 100%;
+  margin: 0;
+}
+
+.company-team-hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.company-team-list {
+  display: grid;
+  gap: 10px;
+}
+
+.company-team-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.company-team-card-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.company-team-card-main strong {
+  font-size: 1rem;
+}
+
+.company-team-card-main span {
+  color: #6b7280;
+  font-size: 0.88rem;
+  word-break: break-word;
+}
+
+.company-team-card-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, 140px) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.company-team-card-actions.is-self {
+  grid-template-columns: minmax(120px, 140px) auto;
+}
+
+.company-team-card-actions.is-invite {
+  grid-template-columns: auto;
+}
+
+.company-team-card-actions select,
+.company-team-card-actions button {
+  width: 100%;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.company-team-card-actions [data-remove-member] {
+  color: #9f1239;
+  border-color: #fecdd3;
+}
+
+.company-team-empty {
+  padding: 16px;
+  text-align: center;
+  color: #6b7280;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+}
+
+@media (max-width: 720px) {
+  .company-team-add-row,
+  .company-team-card,
+  .company-team-card-actions,
+  .company-team-card-actions.is-self {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "https://georgevdx.github.io/fire-s-online-app/staging/",
+  "name": "Fire-S TOETS",
+  "short_name": "Fire-S TOETS",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050505",
+  "theme_color": "#b71c1c",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "description": "Subscribe, inspect fire safety, and export client PDFs. Inspect · Assess · Protect.",
+  "prefer_related_applications": false
+}

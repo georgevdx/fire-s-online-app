@@ -1,0 +1,26 @@
+[
+  {
+    "Occupancy Code": "A3",
+    "Requirement Type": "Exits",
+    "Requirement": "Minimum number of exits depends on occupancy load",
+    "Source": "SANS",
+    "Free or Paid": "Free",
+    "Notes": "Refine later"
+  },
+  {
+    "Occupancy Code": "D2",
+    "Requirement Type": "Extinguishers",
+    "Requirement": "Provide extinguishers as required by SANS 10400-T",
+    "Source": "SANS",
+    "Free or Paid": "Free",
+    "Notes": "Add distances later"
+  },
+  {
+    "Occupancy Code": "J2",
+    "Requirement Type": "Fire Separation",
+    "Requirement": "May require subdivision or rational design depending on size and risk",
+    "Source": "SANS/engineering review",
+    "Free or Paid": "Paid",
+    "Notes": "Advanced logic later"
+  }
+]

@@ -1,0 +1,148 @@
+/* Fire-S v2 Professional Gateway Command Bar v1.0 */
+
+.fire-s-command-bar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  margin: 0 0 12px 0;
+  padding: 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.98);
+  box-shadow: 0 4px 14px rgba(15,23,42,0.08);
+  backdrop-filter: blur(8px);
+}
+
+.fire-s-command-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.fire-s-command-row-search {
+  margin-bottom: 8px;
+}
+
+.fire-s-command-row-search #projectSearch {
+  position: static !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  border-radius: 12px !important;
+}
+
+.fire-s-command-row-actions {
+  flex-wrap: wrap;
+}
+
+.fire-s-command-row-actions .premises-search-wrapper {
+  flex: 1 1 220px;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.fire-s-command-row-actions .premises-search-wrapper label {
+  display: none !important;
+}
+
+.fire-s-command-row-actions #premisesQuickSelect {
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+.fire-s-command-btn {
+  width: auto;
+  max-width: none;
+  min-height: 42px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  background: #334155;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fire-s-command-new {
+  background: #b71c1c;
+}
+
+.fire-s-filter-drawer {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-filter-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.fire-s-filter-section strong {
+  grid-column: 1 / -1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fire-s-filter-section button,
+.fire-s-filter-footer button {
+  width: 100%;
+  max-width: none;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fire-s-filter-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.fire-s-filter-reset {
+  background: #64748b !important;
+  color: white !important;
+}
+
+.fire-s-filter-apply {
+  background: #b71c1c !important;
+  color: white !important;
+}
+
+@media (max-width: 640px) {
+  .fire-s-command-bar {
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .fire-s-command-row-actions {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: stretch;
+  }
+
+  .fire-s-command-row-actions .premises-search-wrapper {
+    min-width: 0;
+  }
+
+  .fire-s-command-btn {
+    min-height: 40px;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .fire-s-filter-section {
+    grid-template-columns: 1fr 1fr;
+  }
+}

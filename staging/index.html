@@ -1,31 +1,1704 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="fire-s-booting">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fire-S TOETS</title>
-  <meta name="robots" content="noindex, noai, noimageai" />
-  <meta http-equiv="refresh" content="0; url=../?env=staging" />
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #7c2d12;
-      color: #fff;
-      display: flex;
-      min-height: 100vh;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 24px;
+  <title>Fire-S Fire Safety App</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <meta name="theme-color" content="#b71c1c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Fire-S">
+  <meta name="description" content="Fire-S professional fire safety inspections. Subscribe, inspect, and export client PDFs.">
+  <meta name="copyright" content="Company S. Fire-S is proprietary. All rights reserved.">
+  <meta name="robots" content="index, follow, noai, noimageai">
+  <meta name="googlebot" content="index, follow">
+  <meta name="google-extended" content="unavailable">
+  <link rel="license" href="terms.html">
+  <style id="fire-s-boot-style">
+    html.fire-s-booting body { background: #0b0b0b; }
+    html.fire-s-booting .app { opacity: 0; pointer-events: none; }
+    html.fire-s-booting #fireSBootScreen {
+      position: fixed; inset: 0; z-index: 99999;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #111 0%, #1a0505 100%);
+      color: #fff; font-family: Arial, sans-serif;
     }
-    a { color: #fed7aa; }
+    html.fire-s-booting #fireSBootScreen .boot-card {
+      text-align: center; padding: 28px 22px; max-width: 280px;
+    }
+    html.fire-s-booting #fireSBootScreen .boot-mark {
+      width: 72px; height: 72px; border-radius: 16px; display: block; margin: 0 auto 10px;
+    }
+    html.fire-s-booting #fireSBootScreen .boot-kicker {
+      letter-spacing: .18em; text-transform: uppercase; opacity: .7; font-size: .75rem;
+    }
+    html.fire-s-booting #fireSBootScreen h1 {
+      margin: 8px 0 6px; font-size: 2rem;
+    }
+    html.fire-s-booting #fireSBootScreen p {
+      margin: 0; opacity: .75; font-size: .95rem;
+    }
+    html:not(.fire-s-booting) #fireSBootScreen { display: none !important; }
+    html.fire-s-ready .app { opacity: 1; transition: opacity .18s ease; }
+    #fireSLogoutScreen {
+      display: none;
+      position: fixed; inset: 0; z-index: 100000;
+      align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #111 0%, #1a0505 100%);
+      color: #fff; font-family: Arial, sans-serif;
+    }
+    #fireSLogoutScreen.is-on { display: flex; }
+    #fireSLogoutScreen .boot-card {
+      text-align: center; padding: 28px 22px; max-width: 280px;
+    }
+    #fireSLogoutScreen .boot-kicker {
+      letter-spacing: .18em; text-transform: uppercase; opacity: .7; font-size: .75rem;
+    }
+    #fireSLogoutScreen h1 { margin: 8px 0 6px; font-size: 2rem; }
+    #fireSLogoutScreen p { margin: 0; opacity: .75; font-size: .95rem; }
   </style>
+  <link rel="stylesheet" href="styles.css?v=108-2-lists">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="inspector-v4.css?v=4-6-lists">
+  <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-23-lists">
+  <link rel="stylesheet" href="fire-s-owner-lists.css?v=1-1-space">
+  <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
+  <link rel="stylesheet" href="fire-s-company-team.css?v=1-6">
+  <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-4-login">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
+  <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
+  <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
+  <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
+  <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
+  <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
 </head>
 <body>
-  <main>
-    <p>TOETS-BLAD — nie vir kliënte.</p>
-    <p><a href="../?env=staging">Open Fire-S toets</a></p>
-  </main>
+  <div id="fireSBootScreen" aria-live="polite">
+    <div class="boot-card">
+      <img class="boot-mark" src="icon-192.png" alt="">
+      <div class="boot-kicker">Fire-S</div>
+      <h1>Fire-S</h1>
+      <p>Loading…</p>
+    </div>
+  </div>
+  <div id="fireSLogoutScreen" aria-live="assertive">
+    <div class="boot-card">
+      <div class="boot-kicker">Fire-S</div>
+      <h1>Logging out</h1>
+      <p>Please wait a moment…</p>
+    </div>
+  </div>
+  <div class="app">
+<header class="header brand-header">
+  <div class="brand-left">
+    <img
+      class="brand-mark"
+      src="icon-192.png"
+      alt="Fire-S logo"
+    >
+    <div>
+     <h1>
+  Fire-S
+    </h1>
+
+    <p class="subtitle">Fire Safety </p>
+    <p id="appVersion" class="brand-version">Version loading...</p></div>
+  </div>
+
+  <div class="cloud-menu">
+    <button id="cloudMenuBtn" type="button" class="cloud-menu-btn">
+      Cloud
+    </button>
+
+    <div id="cloudDropdown" class="cloud-dropdown fire-s-simple-cloud" style="display:none;">
+      <div id="cloudConnectedView" style="display:none;">
+        <div id="cloudConnectedLabel" class="sync-connected">Cloud: Connected</div>
+        <p id="cloudSimpleHelp" class="cloud-simple-help">
+          Sync keeps your inspections up to date between this device and the cloud.
+        </p>
+
+        <button id="refreshSyncBtn" type="button" class="cloud-primary-btn">
+          Sync Now
+        </button>
+
+        <button id="cloudExportBackupBtn" type="button" class="secondary-btn" style="display:none;">
+          Export Backup
+        </button>
+
+        <button id="showSyncToolsBtn" type="button" class="secondary-btn" style="display:none;">
+          Advanced tools
+        </button>
+
+        <button id="logoutBtn" type="button" class="secondary-btn">
+          Logout
+        </button>
+      </div>
+
+      <div id="syncTools">
+        <div id="loginToolsPanel">
+          <div class="cloud-section-title">Access</div>
+          <p class="cloud-simple-help">
+            Login, create password, and register company live on the Home Access screen — not here.
+          </p>
+          <button id="cloudOpenAccessBtn" type="button" class="cloud-primary-btn">
+            Open Access
+          </button>
+          <!-- Legacy fields kept hidden so old app.js bindings do not crash -->
+          <div id="fireSLegacyCloudAuth" style="display:none;" aria-hidden="true">
+            <input id="loginEmail" type="email" tabindex="-1">
+            <input id="loginPassword" type="password" tabindex="-1">
+            <input id="signupCompanyName" type="text" tabindex="-1">
+            <button id="loginBtn" type="button" tabindex="-1">Login</button>
+            <button id="signupBtn" type="button" tabindex="-1">Create my company</button>
+          </div>
+        </div>
+
+        <div id="syncButtonsSection" class="cloud-section-title" style="display:none;">
+          Advanced sync
+        </div>
+
+        <div id="syncButtonsPanel" style="display:none;">
+          <p class="cloud-simple-help">
+            Use these only if Sync Now is not enough. Prefer Sync Now for normal work.
+          </p>
+          <button id="syncUploadBtn" type="button">Upload only</button>
+          <button id="syncDownloadBtn" type="button">Download only</button>
+          <button id="syncMergeBtn" type="button">Merge sync</button>
+        </div>
+      </div>
+
+      <div id="syncStatus" class="note cloud-sync-status"></div>
+
+      <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
+        <div class="cloud-section-title">Workspace info</div>
+        <div><strong>App:</strong> Fire-S</div>
+        <div><strong>Version:</strong> <span id="cloudVersion">Loading...</span></div>
+        <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
+        <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
+        <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
+        <div><strong>Storage:</strong> Local + Cloud Sync</div>
+        <div class="cloud-section-title">Backup tools</div>
+        <button id="adminExportBackupBtn" type="button">Export Backup</button>
+        <button id="createBackupTextBtn" type="button">Create Backup Text</button>
+        <button id="copyLastBackupBtn" type="button">Copy Last Backup</button>
+        <button id="showLastBackupBtn" type="button">Show Backup Text</button>
+        <label class="admin-import-backup-btn" for="importBackupInput">
+          Import Backup
+        </label>
+
+        <input
+          id="importBackupInput"
+          type="file"
+          accept=".json,application/json"
+          style="display:none;"
+        >
+        <div id="manualBackupPanel" class="manual-backup-panel" style="display:none;">
+          <div class="note">
+            Manual backup text. Select all and copy it, or paste backup JSON here and import.
+          </div>
+          <textarea id="manualBackupText"></textarea>
+          <button id="importPastedBackupBtn" type="button">
+            Import Pasted Backup
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="homeSection" class="card home-section">
+  <div class="home-hero">
+    <div>
+      <div class="home-kicker">Fire-S</div>
+      <h2>INSPECT</h2>
+      <p>Find or continue an inspection.</p>
+    </div>
+  </div>
+
+  <div id="betaNotesPanel" class="beta-notes-panel"></div>
+  <div id="betaQuickTestPanel" class="beta-quick-test-panel"></div>
+  <div id="releaseCandidatePanel" class="release-candidate-panel"></div>
+  <div id="rcBackupReminderPanel" class="rc-backup-reminder-panel"></div>
+  <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
+  <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
+  <div id="fireSGetStarted" class="fire-s-get-started" style="display:none;">
+    <div class="fire-s-get-started-kicker">Fire-S Access</div>
+    <h3 id="fireSGetStartedTitle">Access</h3>
+    <p id="fireSGetStartedHelp">
+      Login, create a password, or subscribe as a new company.
+    </p>
+
+    <div id="fireSGetStartedChoices" class="fire-s-get-started-choices">
+      <button id="fireSChoiceLogin" type="button" class="fire-s-get-started-choice">
+        <strong>1. Login</strong>
+        <span>I already have an email and password</span>
+      </button>
+      <button id="fireSChoiceCreate" type="button" class="fire-s-get-started-choice">
+        <strong>2. Create password</strong>
+        <span>My owner added my email · first time only</span>
+      </button>
+      <button id="fireSChoiceCompany" type="button" class="fire-s-get-started-choice primary">
+        <strong>3. Subscribe</strong>
+        <span>New business · R349 per email · I become the Owner</span>
+      </button>
+      <button id="fireSInstallAppBtn" type="button" class="fire-s-get-started-choice">
+        <strong>Install on this phone</strong>
+        <span>Put Fire-S on the home screen. Google Play listing follows.</span>
+      </button>
+      <p class="fire-s-get-started-privacy">
+        By subscribing you agree we store company, inspection and login details.
+        Read the
+        <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>
+        and the
+        <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a>.
+        Fire-S © Company S. Do not copy or resell this app.
+      </p>
+      <p class="fire-s-legal-links">
+        <a href="terms.html" target="_blank" rel="noopener">Open Terms and conditions</a>
+        <a href="privacy.html" target="_blank" rel="noopener">Open Privacy policy</a>
+      </p>
+    </div>
+
+    <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+      <p class="fire-s-get-started-note">Use the same email on phone and desktop. One email is one paid seat.</p>
+      <input id="fireSLoginEmail" type="email" placeholder="Email" autocomplete="username">
+      <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+      <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
+      <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
+      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn">New company? Subscribe</button>
+      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
+    </div>
+
+    <div id="fireSGetStartedCreateFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+      <p class="fire-s-get-started-note">
+        First time only. Same email on a second phone or desktop — use Login, do not create again.
+      </p>
+      <input id="fireSCreateEmail" type="email" placeholder="Email from your owner" autocomplete="username">
+      <input id="fireSCreatePassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <button id="fireSDoCreateBtn" type="button" class="cloud-primary-btn">Create password</button>
+      <button id="fireSForgotFromCreateBtn" type="button" class="secondary-btn">Forgot password</button>
+      <button id="fireSSwitchToLoginBtn" type="button" class="secondary-btn">Already have a password? Login</button>
+    </div>
+
+    <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
+      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+      <p id="fireSRegisterNote" class="fire-s-get-started-note">
+        Creates your owner login and the company. One email is R349 / month (or R3 490 / year). Phone and desktop share that email. No card is taken yet.
+      </p>
+      <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
+      <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
+      <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <div class="fire-s-plan-picker">
+        <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
+        <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
+        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. No VAT. Company S invoices. No card is taken yet.</p>
+      </div>
+      <label class="fire-s-legal-agree">
+        <input id="fireSRegisterAgree" type="checkbox">
+        <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.</span>
+      </label>
+      <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
+        Subscribe
+      </button>
+      <button id="fireSRegisterSwitchToLoginBtn" type="button" class="secondary-btn">
+        I already subscribed — Login
+      </button>
+    </div>
+
+    <div id="fireSGetStartedCompanyOnly" class="fire-s-get-started-fields" style="display:none;">
+      <p class="fire-s-get-started-note">
+        You are signed in. Choose monthly (R349) or annual (R3 490) per email. Role does not change the price.
+      </p>
+      <input id="fireSGetStartedCompanyOnlyName" type="text" placeholder="Company name" autocomplete="organization">
+      <div class="fire-s-plan-picker">
+        <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
+        <div id="fireSCompanyOnlyBillingOptions" class="fire-s-plan-options" data-interval-name="fireSCompanyOnlyBilling"></div>
+        <p class="fire-s-plan-billing-note">Every email is R349 / month or R3 490 / year. No VAT. Phone and desktop share that login. Company S invoices. No card is taken yet.</p>
+      </div>
+      <label class="fire-s-legal-agree">
+        <input id="fireSCompanyOnlyAgree" type="checkbox">
+        <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.</span>
+      </label>
+      <button id="fireSGetStartedFinishBtn" type="button" class="cloud-primary-btn">
+        Subscribe
+      </button>
+    </div>
+
+    <div id="fireSGetStartedWaiting" class="fire-s-get-started-fields" style="display:none;">
+      <p class="fire-s-get-started-note">
+        Tell your owner your email. They add you in Personnel as Inspector or Manager.
+      </p>
+      <button id="fireSWaitingCheckBtn" type="button" class="cloud-primary-btn">
+        Check again
+      </button>
+      <button id="fireSWaitingStartCompanyBtn" type="button" class="secondary-btn">
+        I am the Owner — start my company
+      </button>
+      <button type="button" class="secondary-btn" data-fire-s-back>Back to Access</button>
+    </div>
+
+    <div id="fireSGetStartedStatus" class="fire-s-get-started-status" style="display:none;"></div>
+  </div>
+
+  <section id="mainCommandCentre" class="main-command-centre">
+    <div class="main-command-top">
+      <div>
+        <div class="main-command-kicker">Command Centre</div>
+        <h3>Today’s Fire-S Workspace</h3>
+        <p id="mainCommandSubtitle">Monitor premises requiring action, overdue inspections, compliant sites and monthly inspection activity.</p>
+      </div>
+      <div class="main-command-status" id="mainCommandAccessStatus">Checking access...</div>
+    </div>
+
+    <div id="fireSDesktopAccess" class="fire-s-desktop-access" hidden>
+      <div class="fire-s-desktop-access-kicker">Desktop / PC</div>
+      <h4>Open the Owner / Manager dashboard on a computer</h4>
+      <p>Type this address in Chrome on a laptop, PC or wide tablet. Use the same login. It opens the Management dashboard in a wide desktop layout.</p>
+      <code id="fireSDesktopAccessUrl" class="fire-s-desktop-access-url"></code>
+      <div class="fire-s-desktop-access-actions">
+        <button id="fireSDesktopAccessCopyBtn" type="button" class="cloud-primary-btn">Copy address</button>
+      </div>
+      <p id="fireSDesktopAccessNote" class="fire-s-desktop-access-note"></p>
+    </div>
+
+    <div id="fireSOwnerKpiRow" class="fire-s-owner-kpi-row fs-prod-kpi-row" aria-label="Fire-S dashboard summary" hidden></div>
+
+    <section id="fireSOwnerLists" class="fire-s-owner-lists" hidden aria-label="Building inspection lists">
+      <p id="fireSOwnerListsCount" class="fire-s-owner-lists-count">Buildings on your inspection list</p>
+
+      <div class="fire-s-owner-lists-block">
+        <h4>All buildings</h4>
+        <div class="fire-s-owner-lists-scroll">
+          <table class="fire-s-owner-lists-table" id="fireSOwnerListsAll">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Last inspected</th>
+              </tr>
+            </thead>
+            <tbody id="fireSOwnerListsAllBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="fire-s-owner-lists-block">
+        <h4>Upcoming inspections (next 30 days)</h4>
+        <div class="fire-s-owner-lists-scroll">
+          <table class="fire-s-owner-lists-table fire-s-owner-lists-upcoming" id="fireSOwnerListsUpcoming">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Due</th>
+              </tr>
+            </thead>
+            <tbody id="fireSOwnerListsUpcomingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="fire-s-owner-lists-block">
+        <h4>Buildings with deficiencies</h4>
+        <div class="fire-s-owner-lists-scroll">
+          <table class="fire-s-owner-lists-table" id="fireSOwnerListsDeficiencies">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Deficiencies</th>
+              </tr>
+            </thead>
+            <tbody id="fireSOwnerListsDeficiencyBody"></tbody>
+          </table>
+        </div>
+        <p class="fire-s-owner-lists-hint">Tap a row to open that building.</p>
+      </div>
+    </section>
+
+    <div class="main-command-stats" aria-label="Fire-S dashboard summary">
+      <button type="button" class="main-stat-card" id="cmdDashboardBtn">
+        <span class="stat-number" id="cmdTotalInspections">0</span>
+        <span class="stat-label">Compliant Sites</span>
+      </button>
+      <button type="button" class="main-stat-card attention" id="cmdFindingsBtn">
+        <span class="stat-number" id="cmdOpenFindings">0</span>
+        <span class="stat-label">Premises Requiring Action</span>
+      </button>
+      <button type="button" class="main-stat-card warning" id="cmdOverdueBtn">
+        <span class="stat-number" id="cmdOverdueItems">0</span>
+        <span class="stat-label">Overdue Inspections</span>
+      </button>
+      <button type="button" class="main-stat-card">
+        <span class="stat-number" id="cmdPhotoCount">0</span>
+        <span class="stat-label">Inspections This Month</span>
+      </button>
+    </div>
+
+    <div
+      id="mainCommandPersonnelStats"
+      class="main-command-personnel"
+      aria-label="Company personnel summary"
+      hidden
+    >
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelInspectors">0</span>
+        <span class="personnel-label">Inspectors</span>
+      </div>
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelManagers">0</span>
+        <span class="personnel-label">Managers</span>
+      </div>
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelOwners">0</span>
+        <span class="personnel-label">Owners</span>
+      </div>
+      <div class="personnel-stat">
+        <span class="personnel-number" id="cmdPersonnelTotal">0</span>
+        <span class="personnel-label">People</span>
+      </div>
+    </div>
+
+    <div id="inspectorBoardHomeBar" class="inspector-board-home-bar" hidden>
+      <label>
+        Inspectors
+        <select id="inspectorBoardHomeSelect" aria-label="Select inspector">
+          <option value="all">All inspectors</option>
+        </select>
+      </label>
+      <div class="inspector-board-home-actions">
+        <button id="inspectorBoardOpenBtn" type="button" class="secondary-btn">Team status</button>
+        <button id="inspectorBoardCompareBtn" type="button" class="secondary-btn">Compare</button>
+      </div>
+      <p id="inspectorBoardHomeStatus" class="inspector-board-home-status">Select an inspector or view the whole team.</p>
+    </div>
+
+    <div class="main-command-grid">
+      <button type="button" class="main-command-card primary" id="cmdInspectionsBtn">
+        <span class="command-icon">📋</span>
+        <span class="command-text">
+          <span class="command-title">Inspection Gateway</span>
+          <span class="command-copy">Open, continue, search and manage inspections.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdInspectorsBtn">
+        <span class="command-icon">👷</span>
+        <span class="command-text">
+          <span class="command-title">Inspectors</span>
+          <span class="command-copy">Team stats, individual status and comparison.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdScheduleBtn">
+        <span class="command-icon">📅</span>
+        <span class="command-text">
+          <span class="command-title">Schedule</span>
+          <span class="command-copy">Create new-site bookings and review follow-ups.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdReportsBtn">
+        <span class="command-icon">📄</span>
+        <span class="command-text">
+          <span class="command-title">Reports</span>
+          <span class="command-copy">Find completed inspections and export reports.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdCompanyDetailsBtn">
+        <span class="command-icon">🏷️</span>
+        <span class="command-text">
+          <span class="command-title">Company details</span>
+          <span class="command-copy">Name, address, logo and contact numbers for the client PDF.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdCompanyBtn">
+        <span class="command-icon">🏢</span>
+        <span class="command-text">
+          <span class="command-title">Personnel</span>
+          <span class="command-copy">Add people, change roles, or remove staff.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdTestSamplesBtn">
+        <span class="command-icon">🧪</span>
+        <span class="command-text">
+          <span class="command-title">Test samples</span>
+          <span class="command-copy">Load 50 sample inspections, then delete them later.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdManagementDashboardBtn">
+        <span class="command-icon">📊</span>
+        <span class="command-text">
+          <span class="command-title">Management dashboard</span>
+          <span class="command-copy">Power BI-style graphs for tablet, laptop and PC.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdSubscribeBtn">
+        <span class="command-icon">⭐</span>
+        <span class="command-text">
+          <span class="command-title">Subscription</span>
+          <span class="command-copy">View or change the company package.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdUserManualBtn">
+        <span class="command-icon">📘</span>
+        <span class="command-text">
+          <span class="command-title">User manual</span>
+          <span class="command-copy">Download the full subscriber guide as a PDF.</span>
+        </span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdServicesBtn">
+        <span class="command-icon">🛠️</span>
+        <span class="command-text">
+          <span class="command-title">Services / Support</span>
+          <span class="command-copy">Request support, report a problem or ask for review.</span>
+        </span>
+      </button>
+    </div>
+
+    <div id="mainCommandMessage" class="main-command-message" style="display:none;"></div>
+  </section>
+
+
+  <section id="findingsCentreSection" class="findings-centre" style="display:none;">
+    <div class="findings-centre-header">
+      <div>
+        <div class="findings-kicker">Findings Centre</div>
+        <h3>Open Fire Safety Findings</h3>
+        <p id="findingsCentreSubtitle">NO answers are automatically grouped here as findings.</p>
+      </div>
+      <button id="closeFindingsCentreBtn" type="button" class="findings-close-btn">Close</button>
+    </div>
+
+    <div class="findings-centre-stats">
+      <button type="button" class="finding-stat-card" data-findings-filter="all">
+        <span id="findingTotalCount">0</span>
+        <small>Total Findings</small>
+      </button>
+      <button type="button" class="finding-stat-card attention" data-findings-filter="open">
+        <span id="findingOpenCount">0</span>
+        <small>Open</small>
+      </button>
+      <button type="button" class="finding-stat-card warning" data-findings-filter="overdue">
+        <span id="findingOverdueCount">0</span>
+        <small>Overdue</small>
+      </button>
+      <button type="button" class="finding-stat-card danger" data-findings-filter="high">
+        <span id="findingHighCount">0</span>
+        <small>High Risk</small>
+      </button>
+      <button type="button" class="finding-stat-card" data-findings-filter="with-photo">
+        <span id="findingPhotoCount">0</span>
+        <small>Sites With Photos</small>
+      </button>
+    </div>
+
+    <div class="findings-toolbar">
+      <input id="findingsSearch" type="text" placeholder="Search findings by site, inspection, inspector or note">
+      <select id="findingsSort">
+        <option value="latest">Latest first</option>
+        <option value="site">Site name</option>
+        <option value="inspection">Inspection number</option>
+        <option value="overdue">Overdue first</option>
+        <option value="risk">Risk first</option>
+      </select>
+    </div>
+
+    <div id="findingsBySiteSummary" class="findings-by-site-summary"></div>
+
+    <div id="findingsList" class="findings-list"></div>
+  </section>
+
+  <div class="startup-route-grid">
+    <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
+      <span class="route-title">Access</span>
+      <span class="route-copy">Login, create password, or register a company.</span>
+    </button>
+
+    <button
+      id="homeLogoutBtn"
+      type="button"
+      class="startup-route-card"
+      style="display:none;"
+    >
+      <span class="route-title">Logout</span>
+      <span class="route-copy">Sign out. You will see Logging out, then Access.</span>
+    </button>
+  </div>
+</section>
+<section id="testSamplesSection" class="card test-samples-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Test samples</h2>
+    <button id="testSamplesBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="test-samples-intro">
+    <div class="test-samples-kicker">Temporary data</div>
+    <h3>50 sample inspections</h3>
+    <p>
+      This loads 50 TEST inspections with Q&amp;A and photos, split across 5 test inspectors.
+      Delete the whole batch when you are finished testing.
+    </p>
+  </div>
+
+  <div id="testSamplesMessage" class="test-samples-message" style="display:none;"></div>
+
+  <div class="test-samples-panel">
+    <div id="testSamplesMeta" class="test-samples-meta">No test inspections loaded yet.</div>
+    <div class="test-samples-actions">
+      <button id="testSamplesLoadBtn" type="button" class="cloud-primary-btn">Load 50 sample inspections</button>
+      <button id="testSamplesDeleteBtn" type="button" class="secondary-btn">Delete all test samples</button>
+    </div>
+    <ul id="testSamplesInspectorList" class="test-samples-inspectors"></ul>
+  </div>
+</section>
+<section id="userManualSection" class="card user-manual-section" style="display:none;">
+  <div class="toolbar">
+    <h2>User manual</h2>
+    <button id="userManualBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="user-manual-intro">
+    <div class="user-manual-kicker">Subscriber guide</div>
+    <h3>From the first screen to the last action</h3>
+    <p>
+      This is the future subscriber manual. Download it from the app as a PDF.
+      It covers every level, every main action, and the subscription packages.
+    </p>
+  </div>
+
+  <div class="user-manual-toolbar">
+    <button id="userManualPdfBtn" type="button" class="cloud-primary-btn">Download PDF</button>
+    <button id="userManualHtmlBtn" type="button" class="secondary-btn">Download HTML</button>
+  </div>
+  <div id="userManualMessage" class="user-manual-message" style="display:none;"></div>
+  <div id="userManualPrintRoot" class="user-manual-print"></div>
+</section>
+<section id="fireSSubscribeSection" class="card fire-s-subscribe-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Subscription</h2>
+    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+  <div class="fire-s-subscribe-intro">
+    <div class="fire-s-subscribe-kicker">Paid seats</div>
+    <h3>Subscribe to Fire-S</h3>
+    <p>
+      One price for every email: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>.
+      Inspector, Manager, Owner and Viewer pay the same. Phone and desktop share that login.
+      The app does not take a card yet — Company S invoices. No VAT is added
+      (Company S is not registered for VAT).
+      Read the
+      <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a>
+      and the
+      <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.
+    </p>
+  </div>
+  <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
+  <div class="fire-s-plan-picker">
+    <p class="fire-s-plan-picker-label">Pay monthly or annually · R349 per email</p>
+    <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
+  </div>
+  <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
+  <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save billing</button>
+</section>
+<section id="managementDashboardSection" class="card management-dashboard-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Management dashboard</h2>
+    <button id="managementDashboardBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+  <p class="management-dashboard-hint">
+    Built for a tablet on its side, or a laptop / PC. Tap a number or a graph to open the exact premises or Action Items.
+  </p>
+  <div id="managementDashboardMessage" class="management-dashboard-message" style="display:none;"></div>
+  <div id="pbiShell" class="pbi-shell">
+    <div class="pbi-titlebar">
+      <div class="pbi-titlebar-brand">
+        <span class="pbi-mark" aria-hidden="true"></span>
+        <div>
+          <h3>Fire-S management view</h3>
+          <p id="pbiCompanyLabel">Live inspection data</p>
+        </div>
+      </div>
+      <div class="pbi-titlebar-actions">
+        <button id="pbiExportBtn" type="button" class="cloud-primary-btn">Download Power BI data</button>
+        <button id="pbiFullscreenBtn" type="button" class="secondary-btn">Full screen</button>
+      </div>
+    </div>
+    <div class="pbi-filters">
+      <label>
+        Range
+        <select id="pbiRangeFilter">
+          <option value="all">All inspections</option>
+          <option value="month">This month</option>
+          <option value="completed">Completed</option>
+          <option value="overdue">Overdue</option>
+          <option value="action">Premises requiring action</option>
+        </select>
+      </label>
+      <label>
+        Inspector
+        <select id="pbiInspectorFilter">
+          <option value="all">All inspectors</option>
+        </select>
+      </label>
+    </div>
+    <div id="managementDashboardBody"></div>
+  </div>
+</section>
+<section id="companyLetterheadSection" class="card company-letterhead-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Company details</h2>
+    <button id="companyLetterheadBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="company-letterhead-intro">
+    <div class="company-letterhead-kicker">Client PDF</div>
+    <h3>Your company letterhead</h3>
+    <p>
+      Put the company name, address, logo and phone numbers here. This is what clients see on the PDF.
+      You can change it whenever you need to.
+    </p>
+  </div>
+
+  <div id="companyLetterheadMessage" class="company-letterhead-message" style="display:none;"></div>
+
+  <div class="company-letterhead-form">
+    <div class="company-letterhead-field">
+      <label for="companyLetterheadName">Company name</label>
+      <input id="companyLetterheadName" type="text" placeholder="Company S" autocomplete="organization">
+    </div>
+    <div class="company-letterhead-field">
+      <label for="companyLetterheadAddress">Address</label>
+      <textarea id="companyLetterheadAddress" placeholder="Street, suburb, city"></textarea>
+    </div>
+    <div class="company-letterhead-row">
+      <div class="company-letterhead-field">
+        <label for="companyLetterheadPhone">Telephone</label>
+        <input id="companyLetterheadPhone" type="tel" placeholder="012 345 6789" autocomplete="tel">
+      </div>
+      <div class="company-letterhead-field">
+        <label for="companyLetterheadMobile">Cell</label>
+        <input id="companyLetterheadMobile" type="tel" placeholder="082 000 0000" autocomplete="tel">
+      </div>
+    </div>
+    <div class="company-letterhead-field">
+      <label for="companyLetterheadEmail">Email</label>
+      <input id="companyLetterheadEmail" type="email" placeholder="office@company.co.za" autocomplete="email">
+    </div>
+    <div class="company-letterhead-field">
+      <label for="companyLetterheadLogoFile">Company logo</label>
+      <p class="company-letterhead-hint">
+        Tap Choose logo picture to put your own picture here, or Sit sample Company S logo in to try the example.
+        That picture appears top-left on the client PDF, next to the company name.
+        The small Fire-S logo stays on the right as an app reminder.
+      </p>
+      <div class="company-letterhead-logo-row">
+        <div id="companyLetterheadLogoPreview" class="company-letterhead-logo-preview is-empty">No logo yet</div>
+        <input id="companyLetterheadLogoFile" type="file" accept="image/*" hidden>
+        <input id="companyLetterheadLogoData" type="hidden">
+        <button id="companyLetterheadChooseLogoBtn" type="button" class="cloud-primary-btn">
+          Choose logo picture
+        </button>
+        <button id="companyLetterheadSampleLogoBtn" type="button" class="secondary-btn">
+          Sit sample Company S logo in
+        </button>
+        <button id="companyLetterheadClearLogoBtn" type="button" class="secondary-btn">Remove logo</button>
+      </div>
+    </div>
+    <div class="company-letterhead-actions">
+      <button id="companyLetterheadSaveBtn" type="button" class="cloud-primary-btn">Save company details</button>
+    </div>
+  </div>
+
+  <div class="company-letterhead-sample-display" aria-label="Sample logo and PDF display">
+    <div class="company-letterhead-sample-card">
+      <div class="company-letterhead-preview-label">1. Sample company logo</div>
+      <p class="company-letterhead-hint">This is an example picture for Company S. Your own logo can replace it.</p>
+      <img class="company-letterhead-sample-logo" src="sample-company-s-logo.svg" alt="Sample Company S logo">
+    </div>
+    <div class="company-letterhead-sample-card">
+      <div class="company-letterhead-preview-label">2. Where it displays on the PDF</div>
+      <p class="company-letterhead-hint">Top-left is the company logo. Top-right is the Fire-S reminder. It is not the company logo.</p>
+      <div class="report-header report-client-header formal-letterhead company-letterhead-sample-pdf">
+        <div class="report-client-brand">
+          <img class="report-client-logo" src="sample-company-s-logo.svg" alt="Company S logo" style="width:52px;height:52px;max-width:52px;max-height:52px;object-fit:contain;">
+          <div>
+            <h1>Company S</h1>
+            <div class="report-subtitle">Fire Safety Inspection Report</div>
+            <div class="report-company-contact">
+              <div>12 Safety Street, Pretoria</div>
+              <div>Tel 012 345 6789 · Cell 082 000 0000</div>
+              <div>office@companys.co.za</div>
+            </div>
+          </div>
+        </div>
+        <div class="report-app-mark">
+          <img src="icon-192.png" alt="Fire-S" style="width:40px;height:40px;max-width:40px;max-height:40px;opacity:1;object-fit:contain;">
+          <span>Prepared with Fire-S</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="company-letterhead-preview-wrap">
+    <div class="company-letterhead-preview-label">Live PDF preview of your saved details</div>
+    <div id="companyLetterheadLivePreview" class="company-letterhead-preview"></div>
+  </div>
+</section>
+<section id="companyTeamSection" class="card company-team-section" style="display:none;">
+  <div class="toolbar">
+    <h2 id="companyTeamHeading">Personnel</h2>
+    <button id="companyTeamBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="company-team-intro">
+    <div class="company-team-kicker" id="companyTeamKicker">Company</div>
+    <h3 id="companyTeamTitle">Your company</h3>
+    <p id="companyTeamSubtitle">
+      Add people, change roles, or remove staff.
+    </p>
+    <div id="companyTeamMeta" class="company-team-meta">Loading company…</div>
+  </div>
+
+  <div id="companyTeamMessage" class="company-team-message" style="display:none;"></div>
+
+  <div id="companyTeamFreshBanner" class="company-team-fresh-banner" style="display:none;">
+    <strong>Test mode</strong>
+    <span>Create a practice company, then manage personnel.</span>
+    <button id="companyTeamExitFreshBtn" type="button" class="secondary-btn">Exit</button>
+  </div>
+
+  <div id="companyTeamSetupPanel" class="company-team-add" style="display:none;">
+    <div class="cloud-section-title">Name your company</div>
+    <p class="company-team-hint" style="margin-top:0;">
+      Save once. After that this screen is for managing personnel.
+    </p>
+    <div class="company-team-add-row company-team-setup-row">
+      <input id="companyTeamCompanyName" type="text" placeholder="Company name" autocomplete="organization">
+      <button id="companyTeamCreateBtn" type="button" class="cloud-primary-btn">Save company</button>
+    </div>
+  </div>
+
+  <div id="companyTeamAddPanel" class="company-team-add">
+    <div class="cloud-section-title">Add people</div>
+    <p class="company-team-hint" style="margin-top:0;">
+      Each email is R349 / month or R3 490 / year. Type it once. They log in on phone and desktop with that same email — do not add it again for a second device.
+    </p>
+    <div class="company-team-add-row">
+      <input id="companyTeamEmail" type="email" placeholder="Their email · one seat" autocomplete="off">
+      <select id="companyTeamRole">
+        <option value="inspector">Inspector</option>
+        <option value="manager">Manager</option>
+      </select>
+      <button id="companyTeamAddBtn" type="button" class="cloud-primary-btn">Add</button>
+    </div>
+    <button id="companyTeamLaterBtn" type="button" class="secondary-btn" style="display:none; margin-top:10px; width:100%;">
+      Do this later · go to Home
+    </button>
+    <button id="companyTeamClearOthersBtn" type="button" class="secondary-btn" style="display:none; margin-top:10px; width:100%;">
+      Clear other people · keep only me
+    </button>
+    <div id="companyTeamStartFreshWrap" style="display:none; margin-top:12px;">
+      <button id="companyTeamStartFreshBtn" type="button" class="secondary-btn">
+        Test: start another company
+      </button>
+    </div>
+  </div>
+
+  <div class="cloud-section-title">People in this company</div>
+  <div id="companyTeamPendingList" class="company-team-list" style="margin-bottom:12px;"></div>
+  <div id="companyTeamList" class="company-team-list">
+    <div class="company-team-empty">Loading personnel…</div>
+  </div>
+</section>
+<section id="inspectorBoardSection" class="card inspector-board-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Inspectors</h2>
+    <button id="inspectorBoardBackBtn" type="button" class="back-home-btn">
+      Back Home
+    </button>
+  </div>
+
+  <div class="inspector-board-kicker">Field team</div>
+  <h3 id="inspectorBoardTitle">All inspectors</h3>
+  <p id="inspectorBoardSubtitle">Collective inspection stats and status for the whole field team.</p>
+  <div id="inspectorBoardMeta" class="inspector-board-meta"></div>
+
+  <div class="inspector-board-toolbar">
+    <select id="inspectorBoardSelect" aria-label="Select inspector">
+      <option value="all">All inspectors</option>
+    </select>
+    <div class="inspector-board-modes">
+      <button type="button" data-inspector-mode="team">Team / inspector</button>
+      <button type="button" data-inspector-mode="compare">Compare</button>
+    </div>
+  </div>
+
+  <div id="inspectorBoardBody"></div>
+</section>
+<section id="servicesSection" class="card services-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Additional Services</h2>
+
+    <button
+      id="servicesBackBtn"
+      type="button"
+      class="back-home-btn"
+    >
+      Back Home
+    </button>
+  </div>
+
+  <div class="services-grid">
+    <div class="service-card">
+      <h3>Fire Safety Consultancy</h3>
+      <p>
+        Professional support for compliance reviews, site findings and corrective action planning.
+      </p>
+      <button type="button" data-service="Fire Safety Consultancy">
+        Request Service
+      </button>
+    </div>
+
+    <div class="service-card beta-feedback-card">
+      <h3>Report a problem</h3>
+      <p>
+        Report bugs, sync issues, layout problems or confusing wording.
+      </p>
+      <button type="button" id="openBetaFeedbackBtn">
+        Report a problem
+      </button>
+    </div>
+
+    <div class="service-card">
+      <h3>Report Review</h3>
+      <p>
+        Review inspection reports before client issue, follow-up or escalation.
+      </p>
+      <button type="button" data-service="Report Review">
+        Request Service
+      </button>
+    </div>
+
+    <div class="service-card">
+      <h3>Rational Fire Design Support</h3>
+      <p>
+        Support for fire design reviews, occupancy questions, escape routes and compliance strategy.
+      </p>
+      <button type="button" data-service="Rational Fire Design Support">
+        Request Service
+      </button>
+    </div>
+
+    <div class="service-card">
+      <h3>Compliance Guidance</h3>
+      <p>
+        Practical fire safety interpretation, inspection preparation and action priorities.
+      </p>
+      <button type="button" data-service="Compliance Guidance">
+        Request Service
+      </button>
+    </div>
+  </div>
+  <div class="service-requests-admin">
+    <button id="viewServiceRequestsBtn" type="button" class="secondary-btn">
+      View Saved Service Requests
+    </button>
+
+    <button id="viewBetaFeedbackBtn" type="button" class="secondary-btn">
+      View reported issues
+    </button>
+
+    <div id="serviceRequestsList" class="service-requests-list" style="display:none;"></div>
+
+    <div id="betaFeedbackList" class="service-requests-list" style="display:none;"></div>
+  </div>
+
+  <div id="serviceRequestForm" class="service-request-form" style="display:none;">
+  
+  
+
+  <h3>Request Service</h3>
+
+  <div class="form-row">
+    <label for="selectedService">Selected Service</label>
+    <input id="selectedService" type="text" readonly>
+  </div>
+
+  <div class="form-row">
+    <label for="serviceClientName">Name / Company</label>
+    <input id="serviceClientName" type="text" placeholder="Enter name or company">
+  </div>
+
+  <div class="form-row">
+    <label for="serviceClientPhone">Phone</label>
+    <input id="serviceClientPhone" type="tel" placeholder="Enter phone number">
+  </div>
+
+  <div class="form-row">
+    <label for="serviceClientEmail">Email</label>
+    <input id="serviceClientEmail" type="email" placeholder="Enter email address">
+  </div>
+
+  <div class="form-row">
+    <label for="serviceMessage">Message / Scope</label>
+    <textarea
+      id="serviceMessage"
+      placeholder="Briefly describe what support is needed..."
+    ></textarea>
+  </div>
+
+  <div class="button-row">
+    <button id="submitServiceRequestBtn" type="button">
+      Submit Request
+    </button>
+
+    <button id="cancelServiceRequestBtn" type="button" class="secondary-btn">
+      Cancel
+    </button>
+  </div>
+
+  <div id="serviceRequestStatus" class="note"></div>
+</div>
+
+<div id="betaFeedbackForm" class="service-request-form" style="display:none;">
+  <h3>Report a problem</h3>
+  <div id="betaAutoFillHint" class="beta-autofill-hint" style="display:none;"></div>
+
+  <div class="form-row">
+    <label for="betaIssueType">Issue Type</label>
+    <select id="betaIssueType">
+      <option value="Bug">Bug</option>
+      <option value="Sync Issue">Sync Issue</option>
+      <option value="Photo Issue">Photo Issue</option>
+      <option value="Report/PDF Issue">Report/PDF Issue</option>
+      <option value="Offline Issue">Offline Issue</option>
+      <option value="Layout/UI Issue">Layout/UI Issue</option>
+      <option value="Wording/Checklist Issue">Wording/Checklist Issue</option>
+      <option value="Suggestion">Suggestion</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="betaPriority">Priority</label>
+    <select id="betaPriority">
+      <option value="Low">Low</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="High">High</option>
+      <option value="Critical">Critical</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="betaDevice">Device</label>
+    <input id="betaDevice" type="text" placeholder="Example: Samsung phone / Laptop">
+  </div>
+
+  <div class="form-row">
+    <label for="betaBrowser">Browser</label>
+    <input id="betaBrowser" type="text" placeholder="Example: Chrome / Safari / PWA">
+  </div>
+
+  <div class="form-row">
+    <label for="betaOnlineStatus">Online / Offline</label>
+    <select id="betaOnlineStatus">
+      <option value="Online">Online</option>
+      <option value="Offline">Offline</option>
+      <option value="Intermittent signal">Intermittent signal</option>
+      <option value="Not sure">Not sure</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="betaInspectionNumber">Inspection Number</label>
+    <input id="betaInspectionNumber" type="text" placeholder="Example: FIR-2026-0004">
+  </div>
+
+  <div class="form-row">
+    <label for="betaWhatHened">What happened?</label>
+    <textarea
+      id="betaWhatHened"
+      placeholder="Describe the issue..."
+    ></textarea>
+  </div>
+
+  <div class="form-row">
+    <label for="betaExpectedResult">What did you expect?</label>
+    <textarea
+      id="betaExpectedResult"
+      placeholder="What should have hened?"
+    ></textarea>
+  </div>
+
+  <div class="button-row">
+    <button id="submitBetaFeedbackBtn" type="button">
+      Submit Feedback
+    </button>
+
+    <button id="cancelBetaFeedbackBtn" type="button" class="secondary-btn">
+      Cancel
+    </button>
+  </div>
+
+  <div id="betaFeedbackStatus" class="note"></div>
+</div>
+
+</section>
+
+    <section id="projectListSection" class="card" style="display:none;">
+      <div class="toolbar">
+      <h2>Projects</h2>
+
+      <div class="toolbar-actions">
+        <button id="projectsHomeBtn" type="button" class="back-home-btn">
+          Back to Home
+        </button>
+
+        <div class="project-action-buttons">
+          <button id="newProjectBtn" type="button" class="compact-action-btn">
+            + New
+          </button>
+
+          <button id="scheduleNewInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
+            Schedule Inspection for New Site
+          </button>
+        </div>
+        <div id="scheduleNewPanel" class="schedule-new-panel" style="display:none;">
+  <h3>Schedule New Inspection</h3>
+
+  <p class="form-help-text">
+    Use this to schedule a future inspection for a new site that has not been inspected yet.
+  </p>
+
+  <label for="scheduleOrganisationName">Client / Organisation</label>
+  <input id="scheduleOrganisationName" type="text" placeholder="Example: ABC Stores">
+
+  <label for="scheduleSiteName">Site / Premises</label>
+  <input id="scheduleSiteName" type="text" placeholder="Example: Shop 12">
+
+  <label for="scheduleDate">Scheduled Date</label>
+  <input id="scheduleDate" type="date">
+
+  <label for="scheduleInspectionType">Inspection Type</label>
+  <input id="scheduleInspectionType" type="text" value="General Fire Inspection">
+
+  <label for="scheduleOccupancy">Occupancy, if known</label>
+  <input id="scheduleOccupancy" type="text" placeholder="Example: H4">
+
+  <label for="scheduleAddress">Address / Location, if known</label>
+  <input id="scheduleAddress" type="text">
+
+  <label for="scheduleContactPerson">Contact Person, if known</label>
+  <input id="scheduleContactPerson" type="text">
+
+  <label for="scheduleContactTel">Contact Telephone, if known</label>
+  <input id="scheduleContactTel" type="text">
+
+  <div class="schedule-new-actions">
+    <button id="saveScheduledInspectionBtn" type="button" class="compact-action-btn">
+      Save Scheduled Inspection
+    </button>
+
+    <button id="cancelScheduledInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
+      Cancel
+    </button>
+  </div>
+</div>
+      </div>
+    </div>
+
+  <input
+    id="projectSearch"
+    type="text"
+    placeholder="Search by site, organisation, address, inspector, inspection number or date"
+    class="project-search-top"
+  >
+
+  <div id="inspectionDateFilterPanel" class="inspection-date-filter-panel">
+    <div class="inspection-date-filter-title">Inspection Date Filter</div>
+
+    <div class="inspection-date-filter-grid">
+      <label>
+        From
+        <input id="inspectionDateFrom" type="date">
+      </label>
+
+      <label>
+        To
+        <input id="inspectionDateTo" type="date">
+      </label>
+    </div>
+
+    <div class="inspection-quick-date-row">
+      <button type="button" data-date-filter="today">Today</button>
+      <button type="button" data-date-filter="week">This Week</button>
+      <button type="button" data-date-filter="month">This Month</button>
+      <button type="button" data-date-filter="quarter">This Quarter</button>
+      <button type="button" data-date-filter="year">This Year</button>
+      <button type="button" data-date-filter="all">All</button>
+    </div>
+
+    <div id="inspectionDateFilterStatus" class="inspection-date-filter-status"></div>
+  </div>
+
+  <div id="projectPagingControls" class="project-paging-controls"></div>
+
+<button id="toggleFiltersBtn" type="button" class="filter-toggle-btn">
+  Show Filters
+</button>
+
+<div id="filterPanel" class="filter-panel" style="display:none;">
+  <div id="dashboardMetrics" class="dashboard-metrics"></div>
+</div>
+
+<div id="activeFilterStatus" class="active-filter-status" style="display:none;"></div>
+
+<div id="offlineReadinessBanner" class="offline-readiness-banner"></div>
+
+<div id="siteReadyPreflightChecklist"></div>
+
+<div id="postSiteSyncReminder"></div>
+
+<div id="reminderBanner" class="reminder-banner" style="display:none;"></div>
+  <div id="projectsList"></div>
+    </section>
+
+    <section id="projectFormSection" style="display:none;">
+      <section class="card" id="projectDetailsCard">
+        <div class="toolbar">
+          <h2>Project Details</h2>
+          <button id="topBackBtn" type="button">Back to Projects</button>
+        </div>
+        <div id="inspectionCommandShell" class="inspection-command-shell">
+  <div class="inspection-command-header">
+    <div class="inspection-command-brand">
+      <strong>Fire-S</strong>
+      <span id="inspectionCommandCompany">Company</span>
+      <span id="inspectionCommandSite">Site</span>
+    </div>
+
+    <button id="inspectionMenuToggleBtn" type="button">
+      Menu
+    </button>
+  </div>
+
+  <div id="inspectionCommandMenu" class="inspection-command-menu" style="display:none;">
+    <button type="button" data-section-target="inspectionQuickActions">
+      Quick Actions
+    </button>
+
+    <button type="button" data-section-target="projectDetailsCard">
+      Inspection Information
+    </button>
+
+    <button type="button" data-section-target="requirementsSection">
+      Occupancy Requirements
+    </button>
+
+    <button type="button" data-section-target="checklistCard">
+      Q&amp;A Checklist
+    </button>
+
+    <button type="button" data-section-target="photoEvidenceCard">
+      Photo Evidence
+    </button>
+
+    <button type="button" data-section-target="inspectorCommentsCard">
+      Inspector Comments
+    </button>
+
+    <button type="button" data-section-target="nextInspectionCard">
+      Schedule Next Inspection
+    </button>
+  </div>
+</div>
+        <div class="form-grid">
+
+  <div class="form-row">
+    <label for="organisationName">Organisation / Company</label>
+    <input id="organisationName" type="text" placeholder="Enter company name">
+  </div>
+
+  <div class="form-row">
+    <label for="siteName">
+      Site / Branch / Location
+    </label>
+    <input id="siteName"
+       type="text"
+       placeholder="Enter branch, centre, area or location">
+  </div>
+
+  <div class="form-row">
+    <label for="projectAddress">Address</label>
+    <input id="streetNumber" placeholder="Street number" autocomplete="off">
+
+<input id="projectAddress" placeholder="Street, Suburb, City" autocomplete="off">
+  </div>
+
+  <div class="form-row">
+    <label for="gps">GPS Reference</label>
+    <div class="field-stack">
+      <input id="gps" type="text" placeholder="-25.7479, 28.2293" autocomplete="off">
+      <button id="useLocationBtn" type="button">Use Current Location</button>
+      <div id="gpsMapPreview" class="gps-map-preview">
+        <div id="gpsMapStatus" class="gps-map-status">
+          Map will show here after GPS is captured.
+        </div>
+        <iframe
+          id="gpsMapFrame"
+          title="Inspection location map"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+        <div class="gps-map-actions">
+          <span>Pin drop from GPS reference</span>
+          <a id="openMapsLink" href="#" target="_blank" rel="noopener">Open in Maps</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label for="inMall">In Mall/Centre?</label>
+    <select id="inMall">
+      <option value="No">No</option>
+      <option value="Yes">Yes</option>
+    </select>
+  </div>
+
+  <div id="mallFields" style="display:none;">
+    <div class="form-row">
+      <label for="mallName">Mall/Centre Name</label>
+      <input id="mallName" type="text">
+    </div>
+
+    <div class="form-row">
+      <label for="unitNumber">Unit / Shop Number</label>
+      <input id="unitNumber" type="text">
+    </div>
+  </div>
+  <div class="form-section">
+    <h3>Responsible Contact</h3>
+
+    <label>Contact Person</label>
+    <input id="contactPerson" type="text" placeholder="Contact person name">
+
+    <label>Telephone Number</label>
+    <input id="contactTel" type="tel" placeholder="Contact telephone number">
+
+    <label>Email Address</label>
+    <input id="contactEmail" type="email" placeholder="Contact email address">
+  </div>
+  <div class="form-row hidden-module-field">
+    <label for="productType">Compliance Area</label>
+    <select id="productType">
+      <option value="">Loading modules...</option>
+    </select>
+  </div>
+
+  <div class="module-heading">
+    Fire Safety Compliance
+  </div>
+
+  <div class="form-row">
+    <label for="inspectionType">Inspection Type</label>
+    <select id="inspectionType">
+      <option value="General Fire Inspection">General Fire Inspection</option>
+      <option value="Compliance Inspection">Compliance Inspection</option>
+      <option value="Occupancy Inspection">Occupancy Inspection</option>
+      <option value="Means of Escape Inspection">Means of Escape Inspection</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="inspectorName">Inspector Name</label>
+    <input id="inspectorName" type="text">
+    <label>
+      Inspection Date
+      <input
+        id="inspectionDate"
+        type="date"
+      >
+    </label>
+  </div>
+
+  <div class="form-row">
+    <label for="occupancySelect">Select Occupancy</label>
+    <select id="occupancySelect"></select>
+  </div>
+
+</div>
+        <div id="projectReadinessPanel" class="project-readiness-panel"></div>
+        <div class="sticky-action-bar">
+
+  <button id="backBtn" type="button" class="sticky-projects-btn">
+    Projects
+  </button>
+
+  <button id="saveBtn" type="button">
+    Save
+  </button>
+
+  <button id="finishBtn" type="button">
+    Finish
+  </button>
+
+  <div class="action-menu">
+
+    <button id="actionMenuBtn" type="button">
+      More
+    </button>
+
+    <div id="actionDropdown"
+         class="action-dropdown"
+         style="display:none;">
+
+      <button id="reportBtn" type="button">
+        Report
+      </button>
+
+      <button id="exportBtn" type="button">
+        PDF
+      </button>
+
+      <button id="shareBtn" type="button">
+        Share Report
+      </button>
+
+      <button id="followUpBtn" type="button">
+        Schedule Corrective Follow-up
+      </button>
+
+      <button id="deleteBtn"
+              type="button"
+              class="secondary-btn">
+        Delete Inspection
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+        <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
+      </section>
+
+      <div class="card" id="requirementsSection">
+        <h2>Requirements</h2>
+        <div id="requirements"></div>
+
+      </div>
+
+      <section class="card" id="checklistCard">
+  <h2>Q&amp;A Checklist</h2>
+  <div id="checklist"></div>
+  </section>
+
+  <section class="card" id="photoEvidenceCard">
+  <h2>Photo Evidence</h2>
+  <label for="photoInput" class="take-photo-btn">
+  Take Photo
+</label>
+
+<input
+  type="file"
+  id="photoInput"
+  accept="image/*"
+  capture="environment"
+  class="hidden-photo-input"
+>
+
+<button
+  type="button"
+  id="downloadAllPhotosBtn"
+  class="secondary-btn"
+>
+  Download All Photos
+</button>
+
+<div id="photoUploadStatus" class="note">
+  No photos added yet.
+</div>
+
+<div id="photoPreview"></div>
+  
+  <div class="form-section" id="inspectorCommentsCard">
+  <h3>Inspector Comments / Conclusion</h3>
+  <textarea 
+    id="finalComments" 
+    placeholder="Enter inspection findings, conclusions, and recommendations..."
+    style="width: 100%; min-height: 120px; margin-top: 8px;"
+  ></textarea>
+</div>
+  </section>
+
+<div class="form-section scheduling-card" id="nextInspectionCard">
+  <div class="scheduling-card-header">
+    <div>
+      <h3>Existing-Site Scheduling Centre</h3>
+      <p>
+        Scheduling for this existing site only. Use corrective follow-up for NO findings,
+        or recurring cycle for routine repeat inspections.
+      </p>
+    </div>
+
+    <span class="scheduling-card-badge">
+      Existing Site
+    </span>
+  </div>
+
+  <div class="scheduling-card-grid scheduling-card-grid-two">
+    <div class="schedule-option-card schedule-option-followup">
+      <div class="schedule-option-label">Corrective</div>
+      <h4>Schedule Corrective Follow-up</h4>
+      <p>
+        Use only when NO findings or corrective actions must be checked again.
+        This is a once-off follow-up date for this same site.
+      </p>
+
+      <label for="followUpRequired">Corrective Follow-up Required?</label>
+      <select id="followUpRequired">
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+
+      <label for="followUpDate">Corrective Follow-up Date</label>
+      <input type="date" id="followUpDate">
+
+      <label for="followUpNotes">Corrective Follow-up Notes</label>
+      <textarea
+        id="followUpNotes"
+        placeholder="Example: Check that NO findings / corrective actions have been closed."
+      ></textarea>
+    </div>
+
+    <div class="schedule-option-card schedule-option-recurring">
+      <div class="schedule-option-label">Routine</div>
+      <h4>Set Recurring Inspection Cycle</h4>
+      <p>
+        Use for routine repeat inspections for this same site,
+        for example every 6 months or yearly.
+      </p>
+
+      <div class="recurring-cycle-fields">
+  <label for="recurringCycleEnabled">Recurring Cycle Active?</label>
+  <select id="recurringCycleEnabled">
+    <option value="No">No</option>
+    <option value="Yes">Yes</option>
+  </select>
+
+  <label for="recurringCycleNumber">Repeat Every</label>
+  <input
+    id="recurringCycleNumber"
+    type="number"
+    min="1"
+    placeholder="Example: 6"
+  >
+
+  <label for="recurringCycleUnit">Cycle Unit</label>
+  <select id="recurringCycleUnit">
+    <option value="">Select cycle unit</option>
+    <option value="days">Days</option>
+    <option value="weeks">Weeks</option>
+    <option value="months">Months</option>
+    <option value="years">Years</option>
+  </select>
+
+  <label for="recurringCycleNotes">Cycle Notes</label>
+  <textarea
+    id="recurringCycleNotes"
+    placeholder="Example: Routine 6-monthly fire safety inspection."
+  ></textarea>
+
+  <div id="recurringCyclePreview" class="recurring-cycle-preview">
+    Recurring cycle not active.
+  </div>
+</div>
+    </div>
+  </div>
+</div>
+    <section class="card" id="reportSection" style="display:none;">
+      <h2>Inspection Report</h2>
+      <div id="reportContent"></div>
+      </section>
+    </section>
+  </div>
+
+  <script src="fire-s-env.js?v=1-3-13-login"></script>
+  <script src="supabase-js-v2.js?v=1"></script>
+  <script src="action-engine.js?v=103-5-action-dashboard"></script>
+  <script src="action-register.js?v=103-5-action-dashboard"></script>
+  <script src="building-passport.js?v=104-5-hide-during-fill"></script>
+  <script src="building-passport-assets.js"></script>
+  <script src="passport-consolidation.js?v=104-5-hide-during-fill"></script>
+  <script src="premises-workspace.js?v=105-1-hide-during-fill"></script>
+  <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
+  <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
+  <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
+  <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
+  <script src="app.js?v=1-3-13-login"></script>
+  <script src="inspection-lifecycle-engine.js?v=1-0"></script>
+  <script src="inspector-v4.js?v=4-4-live"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-23-login"></script>
+  <script src="fire-s-owner-lists.js?v=1-1-space"></script>
+  <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
+  <script src="fire-s-subscribe-notify.js?v=1-1-staging"></script>
+  <script src="fire-s-company-team.js?v=2-9-notify"></script>
+  <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
+  <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
+  <script src="fire-s-subscriptions.js?v=1-4-novat"></script>
+  <script src="fire-s-subscribe.js?v=1-2-price"></script>
+  <script src="fire-s-user-manual.js?v=1-15-novat"></script>
+  <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
+  <script src="fire-s-inspector-board.js?v=1-4-subscribe"></script>
+  <script src="fire-s-get-started.js?v=2-14-login"></script>
+  <script src="fire-s-startup-stability.js?v=1-5-login"></script>
+  <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
+  <script src="fire-s-phone-back.js?v=1-2-subscribe"></script>
+  <script src="fire-s-desktop-access.js?v=1-2-boot-safe"></script>
+  <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
+  <script src="fire-s-finish-unlock.js?v=1-0-finish-click"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
+          console.log('Fire-S staging skips the live service worker.');
+          return;
+        }
+        navigator.serviceWorker.register('./service-worker.js?v=108-10-login')
+          .then(() => {
+            console.log('Fire-S service worker registered.');
+          })
+          .catch(error => {
+            console.warn('Service worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>

@@ -19,20 +19,6 @@
     return String(value == null ? '' : value).trim();
   }
 
-  function bounceLegacyToetsQuery() {
-    try {
-      var path = String((root.location && root.location.pathname) || '').toLowerCase();
-      if (path.indexOf('/staging') !== -1) return;
-      var search = String((root.location && root.location.search) || '').toLowerCase();
-      if (search.indexOf('env=staging') === -1) return;
-      var dest = String((root.location && root.location.pathname) || '/');
-      dest = dest.replace(/index\.html$/i, '');
-      if (dest.charAt(dest.length - 1) !== '/') dest += '/';
-      root.location.replace(dest + 'staging/');
-    } catch (_) {}
-  }
-  bounceLegacyToetsQuery();
-
   function isStagingHere() {
     try {
       var path = String((root.location && root.location.pathname) || '').toLowerCase();
@@ -52,7 +38,7 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.12-toets' : '1.3.12',
+    appVersion: staging ? '1.3.13-toets' : '1.3.13',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,

@@ -1,0 +1,68 @@
+/* Fire-S Simple Cloud Sync — load after styles.css */
+
+.cloud-dropdown.fire-s-simple-cloud {
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  right: 0;
+  left: auto;
+}
+
+.header.brand-header {
+  position: relative;
+}
+
+@media (max-width: 720px) {
+  .cloud-menu {
+    position: static;
+  }
+
+  .cloud-dropdown,
+  .cloud-dropdown.fire-s-simple-cloud {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+.cloud-simple-help {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #4b5563;
+}
+
+.cloud-primary-btn {
+  background: #b71c1c !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.cloud-sync-status {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
+body.fire-s-simple-cloud #cloudMenuBtn.connected {
+  background: #2e7d32;
+}
+
+body.fire-s-simple-cloud[data-fire-s-cloud-role="inspector"] #showSyncToolsBtn,
+body.fire-s-simple-cloud[data-fire-s-cloud-role="guest"] #showSyncToolsBtn {
+  display: none !important;
+}
+
+body.fire-s-simple-cloud[data-fire-s-cloud-role="inspector"] #syncButtonsPanel,
+body.fire-s-simple-cloud[data-fire-s-cloud-role="inspector"] #syncButtonsSection,
+body.fire-s-simple-cloud[data-fire-s-cloud-role="inspector"] #cloudAdminPanel,
+body.fire-s-simple-cloud[data-fire-s-cloud-role="guest"] #syncButtonsPanel,
+body.fire-s-simple-cloud[data-fire-s-cloud-role="guest"] #syncButtonsSection,
+body.fire-s-simple-cloud[data-fire-s-cloud-role="guest"] #cloudAdminPanel {
+  display: none !important;
+}

@@ -1,0 +1,11 @@
+# Fire-S
+
+> Proprietary fire safety inspection software of Company S, South Africa.
+
+Fire-S is not open source. Do not scrape this site, copy the screens, questions, PDF layout, or branding, or use it to train an AI or to build a look-alike app.
+
+People may subscribe and use Fire-S under the Terms and conditions. That licence is to use the service, not to copy the product.
+
+- Terms: /terms.html
+- Privacy: /privacy.html
+- Owner: Company S, South Africa

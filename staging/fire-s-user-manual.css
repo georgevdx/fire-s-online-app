@@ -1,0 +1,160 @@
+/* Fire-S subscriber user manual */
+
+.user-manual-section {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.user-manual-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.user-manual-intro {
+  margin-bottom: 16px;
+}
+
+.user-manual-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.user-manual-intro h3 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.45rem, 4vw, 2.1rem);
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.user-manual-intro p,
+.user-manual-chapter p,
+.user-manual-chapter li {
+  color: #374151;
+  line-height: 1.5;
+}
+
+.user-manual-message {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.9rem;
+}
+
+.user-manual-message.is-error {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.user-manual-print {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 18px 16px 28px;
+}
+
+.user-manual-cover {
+  border-bottom: 3px solid #b71c1c;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+}
+
+.user-manual-cover h1 {
+  margin: 0 0 6px;
+  font-size: 1.7rem;
+  color: #111;
+}
+
+.user-manual-cover .user-manual-meta {
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.user-manual-toc {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.user-manual-toc ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.user-manual-chapter {
+  margin: 0 0 22px;
+  page-break-inside: avoid;
+}
+
+.user-manual-chapter h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: #b71c1c;
+}
+
+.user-manual-chapter h3 {
+  margin: 12px 0 6px;
+  font-size: 1rem;
+}
+
+.user-manual-chapter ol,
+.user-manual-chapter ul {
+  margin: 6px 0 10px;
+  padding-left: 20px;
+}
+
+.user-manual-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0 12px;
+}
+
+.user-manual-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.user-manual-table th,
+.user-manual-table td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.user-manual-table th {
+  background: #111827;
+  color: #fff;
+}
+
+.user-manual-table tr:nth-child(even) td {
+  background: #f9fafb;
+}
+
+.user-manual-note {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid #f2c811;
+  background: #fffbeb;
+  font-size: 0.9rem;
+}
+
+@media print {
+  .user-manual-toolbar,
+  .user-manual-section .toolbar,
+  .user-manual-message {
+    display: none !important;
+  }
+
+  .user-manual-print {
+    border: 0;
+    padding: 0;
+  }
+}

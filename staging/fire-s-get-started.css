@@ -1,0 +1,192 @@
+/* Fire-S Access Gate — single entry for login / create password / register */
+
+.fire-s-get-started {
+  margin: 0 0 18px;
+  padding: 18px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.fire-s-get-started-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.fire-s-get-started h3 {
+  margin: 0 0 8px;
+  font-size: clamp(1.45rem, 3.5vw, 1.85rem);
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.fire-s-get-started > p {
+  margin: 0 0 14px;
+  color: #475569;
+  font-size: 0.95rem;
+  max-width: 36rem;
+}
+
+.fire-s-get-started-choices {
+  display: grid;
+  gap: 10px;
+}
+
+.fire-s-get-started-choice {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.fire-s-get-started-choice:hover {
+  border-color: #94a3b8;
+}
+
+.fire-s-get-started-choice strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.fire-s-get-started-choice span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.fire-s-get-started-choice.primary {
+  border-color: #991b1b;
+  background: #fff7f7;
+}
+
+.fire-s-get-started-fields {
+  display: grid;
+  gap: 10px;
+}
+
+#fireSGetStartedLoginFields .fire-s-get-started-back {
+  display: none;
+}
+
+.fire-s-get-started-fields input,
+.fire-s-get-started-fields button {
+  width: 100%;
+  margin: 0;
+}
+
+.fire-s-get-started-fields .fire-s-plan-card input {
+  width: auto;
+}
+
+.fire-s-get-started-back {
+  justify-self: start;
+  width: auto !important;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.fire-s-get-started-note {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.fire-s-legal-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 2px;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.fire-s-legal-agree input {
+  width: auto !important;
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.fire-s-legal-agree a {
+  color: #1d4ed8;
+}
+
+.fire-s-legal-links {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+.fire-s-legal-links a {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.fire-s-get-started-status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.9rem;
+}
+
+.fire-s-get-started-status.is-error,
+.fire-s-get-started-status.error {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+/* Access is the guest / new-company / pending surface */
+body.fire-s-clean-home.fire-s-role-owner #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-manager #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-inspector #fireSGetStarted {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-new-company #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-pending-member #fireSGetStarted {
+  display: block !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-grid,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-command-stats,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-command-grid {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-top,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-command-top {
+  display: block !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest .startup-route-grid,
+body.fire-s-clean-home.fire-s-role-new-company .startup-route-grid,
+body.fire-s-clean-home.fire-s-role-pending-member .startup-route-grid {
+  display: none !important;
+}

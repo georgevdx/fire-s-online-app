@@ -1,0 +1,42 @@
+[
+  {
+    "Checklist Name": "Basic fire inspection",
+    "Item Number": "1",
+    "Checklist Item": "Are fire extinguishers provided?",
+    "Applicable To": "All occupancies",
+    "Answer Type": "Yes/No",
+    "Notes": "Photo Optional"
+  },
+  {
+    "Checklist Name": "Basic fire inspection",
+    "Item Number": "2",
+    "Checklist Item": "Are escape routes unobstructed?",
+    "Applicable To": "All occupancies",
+    "Answer Type": "Yes/No",
+    "Notes": "Urgent if blocked"
+  },
+  {
+    "Checklist Name": "Basic fire inspection",
+    "Item Number": "3",
+    "Checklist Item": "Are exit signs visible?",
+    "Applicable To": "All occupancies",
+    "Answer Type": "Yes/No",
+    "Notes": "Add standard later"
+  },
+  {
+    "Checklist Name": "Basic fire inspection",
+    "Item Number": "4",
+    "Checklist Item": "Are storage heights controlled?",
+    "Applicable To": "J2",
+    "Answer Type": "Yes/No",
+    "Notes": "Warehouse specific"
+  },
+  {
+    "Checklist Name": "Basic fire inspection",
+    "Item Number": "5",
+    "Checklist Item": "Are hazardous processes separated?",
+    "Applicable To": "D2",
+    "Answer Type": "Yes/No",
+    "Notes": "Industrial specific"
+  }
+]

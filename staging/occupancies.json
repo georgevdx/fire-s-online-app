@@ -1,0 +1,220 @@
+[
+  {
+    "Occupancy Code": "A1",
+    "Occupancy Name": "Place of entertainment",
+    "Description": "Place of entertainment",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "A2",
+    "Occupancy Name": "Indoor Sport",
+    "Description": "Indoor Sport",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "A3",
+    "Occupancy Name": "Place of Education",
+    "Description": "Facility for care of children",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "A4",
+    "Occupancy Name": "Worship",
+    "Description": "Worship",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "A5",
+    "Occupancy Name": "Outdoor Sport",
+    "Description": "Outdoor Sport",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "B1",
+    "Occupancy Name": "High risk commercial service",
+    "Description": "High risk commercial service",
+    "Typical Fire Risk": "High",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "B2",
+    "Occupancy Name": "Moderate risk commercial service",
+    "Description": "Moderate risk commercial service",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "B3",
+    "Occupancy Name": "Low risk commercial service",
+    "Description": "Low risk commercial service",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "C1",
+    "Occupancy Name": "Exhibition hall",
+    "Description": "Exhibition hall",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "C2",
+    "Occupancy Name": "Museum",
+    "Description": "Exhibition hall",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "D1",
+    "Occupancy Name": "High Risk Industrial",
+    "Description": "High Risk Industrial",
+    "Typical Fire Risk": "High",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "D2",
+    "Occupancy Name": "Moderate Risk Industrial",
+    "Description": "Moderate Risk Industrial",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "D3",
+    "Occupancy Name": "Low Risk Industrial",
+    "Description": "Low Risk Industrial",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "D4",
+    "Occupancy Name": "Plant Room",
+    "Description": "Plant Room",
+    "Typical Fire Risk": "High",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "E1",
+    "Occupancy Name": "Place of detention",
+    "Description": "Place of detention",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "E2",
+    "Occupancy Name": "Hospital",
+    "Description": "Hospital",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "E3",
+    "Occupancy Name": "Other institutional (residential)",
+    "Description": "Other institutional (residential)",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "E4",
+    "Occupancy Name": "Health care",
+    "Description": "Health care",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "F1",
+    "Occupancy Name": "Large shop",
+    "Description": "Large shop (exceeds 250 m²)>",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "F2",
+    "Occupancy Name": "Small shop",
+    "Description": "Small shop (less than 250 m²)",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "F3",
+    "Occupancy Name": "Wholesalers' store",
+    "Description": "Wholesalers' store",
+    "Typical Fire Risk": "High",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "G1",
+    "Occupancy Name": "Offices",
+    "Description": "Offices",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "H1",
+    "Occupancy Name": "Hotel",
+    "Description": "Hotel",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "H2",
+    "Occupancy Name": "Dormitory",
+    "Description": "Dormitory",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "H3",
+    "Occupancy Name": "Domestic residence",
+    "Description": "Domestic residence",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "H4",
+    "Occupancy Name": "Dwelling house",
+    "Description": "Dwelling house",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "H5",
+    "Occupancy Name": "Hospitality",
+    "Description": "Hospitality",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "J1",
+    "Occupancy Name": "High-risk storage",
+    "Description": "High-risk storage",
+    "Typical Fire Risk": "High",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "J2",
+    "Occupancy Name": "Moderate-risk storage",
+    "Description": "Moderate-risk storage",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "J3",
+    "Occupancy Name": "Low-risk storage",
+    "Description": "Low-risk storage",
+    "Typical Fire Risk": "Low",
+    "Notes": "Add SANS-based rules later"
+  },
+  {
+    "Occupancy Code": "J4",
+    "Occupancy Name": "Parking garage",
+    "Description": "Parking garage",
+    "Typical Fire Risk": "Moderate",
+    "Notes": "Add SANS-based rules later"
+  }
+
+]

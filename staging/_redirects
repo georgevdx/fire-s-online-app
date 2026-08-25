@@ -1,0 +1,212 @@
+/* =====================================================
+   FIRE-S MANUAL SPRINT 202 - SCREEN GUARD
+   Purpose:
+   - Enforce one visible primary screen at a time.
+   - Stop Home / Executive Snapshot ghosting behind Premises.
+   - Keep this as a removable manual module while app.js is being split.
+   ===================================================== */
+(function fireSScreenGuard202() {
+  'use strict';
+
+  if (window.__fireSScreenGuard202) return;
+  window.__fireSScreenGuard202 = true;
+
+  const VERSION = 'Manual Sprint 202 - Screen Guard';
+  const PRIMARY_SECTIONS = [
+    'homeSection',
+    'projectListSection',
+    'projectFormSection',
+    'servicesSection',
+    'reportSection'
+  ];
+
+  let enforcing = false;
+  let lastScreen = null;
+
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  function visible(node) {
+    if (!node) return false;
+    const style = getComputedStyle(node);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+  }
+
+  function inferScreen() {
+    if (visible(el('projectFormSection'))) return 'inspection';
+    if (visible(el('projectListSection'))) return 'premises';
+    if (visible(el('reportSection'))) return 'report';
+    if (visible(el('servicesSection'))) return 'services';
+    if (visible(el('homeSection'))) return 'home';
+    return lastScreen || 'home';
+  }
+
+  function dispatch(type, detail) {
+    try {
+      document.dispatchEvent(new CustomEvent(type, {
+        detail: Object.assign({ version: VERSION, screen: inferScreen() }, detail || {})
+      }));
+    } catch (_) {}
+  }
+
+  function hardHideHome() {
+    const home = el('homeSection');
+    const command = el('mainCommandCentre');
+
+    document.body.classList.add('fire-s-screen-guard-premises');
+
+    if (home) {
+      home.style.display = 'none';
+      home.style.visibility = 'hidden';
+      home.style.opacity = '0';
+      home.style.pointerEvents = 'none';
+      home.setAttribute('aria-hidden', 'true');
+    }
+
+    if (command) {
+      command.style.visibility = 'hidden';
+      command.style.opacity = '0';
+      command.style.pointerEvents = 'none';
+      command.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function restoreHome() {
+    const home = el('homeSection');
+    const command = el('mainCommandCentre');
+
+    document.body.classList.remove('fire-s-screen-guard-premises');
+
+    if (home) {
+      home.style.visibility = '';
+      home.style.opacity = '';
+      home.style.pointerEvents = '';
+      home.removeAttribute('aria-hidden');
+    }
+
+    if (command) {
+      command.style.visibility = '';
+      command.style.opacity = '';
+      command.style.pointerEvents = '';
+      command.removeAttribute('aria-hidden');
+    }
+  }
+
+  function enforce(reason) {
+    if (enforcing) return;
+    enforcing = true;
+
+    try {
+      const screen = inferScreen();
+      lastScreen = screen;
+
+      if (screen === 'premises' || screen === 'inspection' || screen === 'report' || screen === 'services') {
+        hardHideHome();
+      } else if (screen === 'home') {
+        restoreHome();
+      }
+
+      // Defensive: if Premises or Inspection is visible, no other primary
+      // section may be visible at the same time.
+      if (screen === 'premises') {
+        ['homeSection', 'projectFormSection', 'servicesSection', 'reportSection'].forEach(id => {
+          const node = el(id);
+          if (node) node.style.display = 'none';
+        });
+        const list = el('projectListSection');
+        if (list) {
+          list.style.display = 'block';
+          list.style.visibility = 'visible';
+          list.style.opacity = '1';
+          list.removeAttribute('aria-hidden');
+        }
+      }
+
+      if (screen === 'inspection') {
+        ['homeSection', 'projectListSection', 'servicesSection', 'reportSection'].forEach(id => {
+          const node = el(id);
+          if (node) node.style.display = 'none';
+        });
+        const form = el('projectFormSection');
+        if (form) {
+          form.style.display = 'block';
+          form.style.visibility = 'visible';
+          form.style.opacity = '1';
+          form.removeAttribute('aria-hidden');
+        }
+      }
+
+      dispatch('fire-s:screen-guard:enforced', { reason: reason || 'sync', screen });
+    } finally {
+      enforcing = false;
+    }
+  }
+
+  function wrap(name, after) {
+    const original = window[name];
+    if (typeof original !== 'function' || original.__fireSScreenGuardWrapped202) return;
+
+    const wrapped = function fireSScreenGuardWrapped() {
+      const result = original.apply(this, arguments);
+      requestAnimationFrame(() => enforce(name));
+      if (typeof after === 'function') {
+        try { after(); } catch (_) {}
+      }
+      return result;
+    };
+    wrapped.__fireSScreenGuardWrapped202 = true;
+    wrapped.__fireSOriginal = original;
+    window[name] = wrapped;
+  }
+
+  function install() {
+    wrap('showProjectList');
+    wrap('showProjectForm');
+    wrap('showHome', restoreHome);
+    wrap('showServices');
+
+    if (typeof window.renderHomeCommandCentre === 'function' && !window.renderHomeCommandCentre.__fireSScreenGuardWrapped202) {
+      const originalRenderHome = window.renderHomeCommandCentre;
+      const guarded = function fireSScreenGuardRenderHomeCommandCentre() {
+        const screen = inferScreen();
+        if (screen !== 'home') {
+          hardHideHome();
+          dispatch('fire-s:screen-guard:blocked-home-render', { screen });
+          return;
+        }
+        restoreHome();
+        return originalRenderHome.apply(this, arguments);
+      };
+      guarded.__fireSScreenGuardWrapped202 = true;
+      guarded.__fireSOriginal = originalRenderHome;
+      window.renderHomeCommandCentre = guarded;
+    }
+
+    enforce('install');
+  }
+
+  const observer = new MutationObserver(() => {
+    clearTimeout(window.__fireSScreenGuardTimer202);
+    window.__fireSScreenGuardTimer202 = setTimeout(() => enforce('mutation'), 30);
+  });
+
+  window.addEventListener('load', () => {
+    install();
+    PRIMARY_SECTIONS.forEach(id => {
+      const node = el(id);
+      if (node) observer.observe(node, { attributes: true, attributeFilter: ['style', 'class', 'hidden', 'aria-hidden'] });
+    });
+  });
+
+  document.addEventListener('fire-s:navigation:changed', () => enforce('navigation-event'));
+  document.addEventListener('fire-s:state:changed', () => enforce('state-event'));
+
+  window.FireSModules = window.FireSModules || {};
+  window.FireSModules.screenGuard = {
+    version: VERSION,
+    enforce,
+    inferScreen,
+    get lastScreen() { return lastScreen; }
+  };
+})();

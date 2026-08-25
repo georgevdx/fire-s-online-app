@@ -1,0 +1,275 @@
+/* Fire-S Inspector Board — management team stats */
+
+.inspector-board-home-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.inspector-board-home-bar[hidden] {
+  display: none !important;
+}
+
+.inspector-board-home-bar label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.inspector-board-home-bar select {
+  min-width: 220px;
+  min-height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #fff;
+}
+
+.inspector-board-home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inspector-board-home-status {
+  flex: 1 1 220px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.inspector-board-section {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.inspector-board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 16px;
+}
+
+.inspector-board-toolbar select {
+  min-height: 42px;
+  min-width: 220px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #fff;
+}
+
+.inspector-board-modes {
+  display: flex;
+  gap: 6px;
+}
+
+.inspector-board-modes button {
+  min-height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.inspector-board-modes button.is-active {
+  background: #b71c1c;
+  border-color: #b71c1c;
+  color: #fff;
+}
+
+.inspector-board-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.inspector-board-section h3 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  color: #0f172a;
+}
+
+.inspector-board-meta {
+  margin: 8px 0 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.inspector-board-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.inspector-board-kpi {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.inspector-board-kpi strong {
+  display: block;
+  font-size: 1.45rem;
+  color: #0f172a;
+}
+
+.inspector-board-kpi span {
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.inspector-board-kpi.warning strong,
+.inspector-board-table td.is-warn {
+  color: #b45309;
+}
+
+.inspector-board-kpi.attention strong {
+  color: #b91c1c;
+}
+
+.inspector-board-list {
+  display: grid;
+  gap: 8px;
+}
+
+.inspector-board-item {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.inspector-board-item-status {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inspector-board-item-status.overdue,
+.inspector-board-item-status.inspection_attention {
+  color: #b91c1c;
+}
+
+.inspector-board-item-status.completed,
+.inspector-board-item-status.clear_completed,
+.inspector-board-item-status.inspection_complete {
+  color: #047857;
+}
+
+.inspector-board-item-title {
+  font-weight: 800;
+}
+
+.inspector-board-item-meta {
+  grid-column: 2;
+  color: #6b7280;
+  font-size: 0.86rem;
+}
+
+.inspector-board-empty {
+  padding: 16px;
+  text-align: center;
+  color: #6b7280;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+}
+
+.inspector-board-table-wrap {
+  overflow-x: auto;
+}
+
+.inspector-board-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.inspector-board-table th,
+.inspector-board-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.inspector-board-table tbody tr {
+  cursor: pointer;
+}
+
+.inspector-board-table tbody tr:hover {
+  background: #fff5f5;
+}
+
+.inspector-board-table small {
+  display: block;
+  color: #6b7280;
+}
+
+.inspector-board-bar {
+  height: 6px;
+  background: #fee2e2;
+  border-radius: 99px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+}
+
+.inspector-board-bar span {
+  display: block;
+  height: 100%;
+  background: #b71c1c;
+}
+
+body.fire-s-clean-home.fire-s-role-inspector #inspectorBoardHomeBar,
+body.fire-s-clean-home.fire-s-role-guest #inspectorBoardHomeBar,
+body.fire-s-clean-home.fire-s-role-pending-member #inspectorBoardHomeBar,
+body.fire-s-clean-home.fire-s-role-new-company #inspectorBoardHomeBar,
+body.fire-s-clean-home.fire-s-role-inspector #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-guest #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-pending-member #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-new-company #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-viewer #cmdInspectorsBtn {
+  display: none !important;
+}
+
+body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}

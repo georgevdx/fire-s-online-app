@@ -1,0 +1,32 @@
+{
+  "Fire Doors": {
+    "priority": "High",
+    "responsible": "Building Owner",
+    "dueDays": 30
+  },
+  "Fire Extinguishers": {
+    "priority": "Critical",
+    "responsible": "Approved Contractor",
+    "dueDays": 14
+  },
+  "Emergency Lighting": {
+    "priority": "High",
+    "responsible": "Electrical Contractor",
+    "dueDays": 21
+  },
+  "Means of Escape": {
+    "priority": "Critical",
+    "responsible": "Building Owner",
+    "dueDays": 7
+  },
+  "Housekeeping": {
+    "priority": "Medium",
+    "responsible": "Site Manager",
+    "dueDays": 30
+  },
+  "Signage": {
+    "priority": "Low",
+    "responsible": "Site Manager",
+    "dueDays": 60
+  }
+}
