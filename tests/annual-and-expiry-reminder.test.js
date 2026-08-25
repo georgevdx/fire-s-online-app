@@ -51,7 +51,7 @@ assert.ok(
   'User manual must mention annual discount and the Home reminder'
 );
 assert.ok(/1\.3\.2\d-toets/.test(env), 'Toets-blad version must stay on 1.3.21-toets or newer');
-assert.ok(/1\.3\.13/.test(liveEnv), 'Live Fire-S must be 1.3.13 after sit dit live');
+assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must be 1.3.14 after sit dit live');
 
 const store = {};
 const sandbox = {

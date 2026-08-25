@@ -16,9 +16,13 @@ const liveEnv = read('fire-s-env.js');
 const assign = read('staging/fire-s-schedule-assign.js');
 const manual = read('staging/fire-s-user-manual.js');
 
-assert.ok(/1\.3\.24-toets/.test(env), 'Toets-blad version must move to 1.3.24-toets');
-assert.ok(/1\.3\.13/.test(liveEnv), 'Live Fire-S must stay 1.3.13 until Johan says sit dit live');
-assert.ok(!/Scheduled priority/.test(read('inspector-v4.js')), 'Live inspector Home must keep NEXT until sit dit live');
+assert.ok(/1\.3\.24-toets/.test(env), 'Toets-blad version must stay on 1.3.24-toets');
+assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must be 1.3.14 after sit dit live');
+assert.ok(
+  /Scheduled priority/.test(read('inspector-v4.js')) &&
+    /function openList\(/.test(read('inspector-v4.js')),
+  'Live inspector Home must show the Scheduled priority list'
+);
 
 assert.ok(
   /Scheduled priority/.test(inspector) &&

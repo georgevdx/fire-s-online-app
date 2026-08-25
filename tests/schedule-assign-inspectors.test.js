@@ -29,7 +29,7 @@ const css = read('staging/styles.css');
 const liveCss = read('styles.css');
 
 assert.ok(/1\.3\.24-toets/.test(env), 'Toets-blad version must stay on 1.3.24-toets');
-assert.ok(/1\.3\.13/.test(liveEnv) && /bounceLegacyToetsQuery/.test(liveEnv), 'Live Fire-S must be 1.3.13 and keep the old toets-link bounce');
+assert.ok(/1\.3\.14/.test(liveEnv) && /bounceLegacyToetsQuery/.test(liveEnv), 'Live Fire-S must be 1.3.14 and keep the old toets-link bounce');
 assert.ok(
   !/1\.3\.23/.test(liveEnv),
   'Live environment fence must not pick up the toets version number'
@@ -105,6 +105,12 @@ assert.ok(
     /schedule-new-panel select/.test(liveCss) &&
     /Assign to inspector/.test(liveManual),
   'Live Fire-S must have schedule-and-assign after sit dit live'
+);
+assert.ok(
+  /Scheduled priority/.test(liveInspector) &&
+    /function openList\(/.test(liveInspector) &&
+    /fireSScheduledPriorityList/.test(liveAssign),
+  'Live inspector Home must list open bookings under Scheduled priority'
 );
 assert.ok(
   /fireSIsMyInspection/.test(liveAssign),

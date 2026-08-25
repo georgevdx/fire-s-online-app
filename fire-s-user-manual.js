@@ -222,7 +222,7 @@
         <ul>
           <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control. Home shows a desktop address. On a computer that address opens the Management dashboard.</li>
           <li><strong>Manager</strong> — Operations Centre. Stats, inspections, people, company details, dashboard. Home shows the same desktop address.</li>
-          <li><strong>Inspector</strong> — Home shows <strong>NEXT</strong> only for an inspection you booked, or one the owner/manager assigned to you. Open <strong>Inspection Gateway</strong> to see the company's inspections.</li>
+          <li><strong>Inspector</strong> — Home shows <strong>Scheduled priority</strong>: every inspection you booked or that was assigned to you, soonest date first. Finish and finalise one and it leaves this list. Open <strong>Inspection Gateway</strong> to see the company's inspections.</li>
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>
@@ -273,7 +273,7 @@
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
-          <li><strong>Schedule</strong> — Owner/Manager: book a new site, pick the inspector who must visit, Save. That inspector gets an email with the premises details and sees the booking on Home under NEXT. If it is not assigned to them, they use Inspection Gateway.</li>
+          <li><strong>Schedule</strong> — Owner/Manager: book a new site, pick the inspector who must visit, Save. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — Home → Reports. This list is completed inspections. Open one, then tap Export PDF.</li>
           <li><strong>Support</strong> — request help or send a review request.</li>
         </ul>

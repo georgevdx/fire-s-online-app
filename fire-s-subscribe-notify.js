@@ -107,7 +107,7 @@
       site_contact: contact,
       scheduled_by: scheduledBy,
       note:
-        'Open Fire-S. Home shows this booking under NEXT. Inspection Gateway still lists company inspections.'
+        'Open Fire-S. Home shows this booking under Scheduled priority. Inspection Gateway still lists company inspections.'
     };
   }
 
