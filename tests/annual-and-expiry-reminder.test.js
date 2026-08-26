@@ -30,7 +30,7 @@ assert.ok(
 );
 assert.ok(
   /2 months free/.test(catalogSrc) &&
-    /save R698/.test(catalogSrc) &&
+    /save R500/.test(catalogSrc) &&
     /bothPriceLines/.test(catalogSrc),
   'Price list must name annual as 2 months free'
 );
@@ -72,8 +72,8 @@ vm.runInNewContext(catalogSrc, sandbox);
 const cat = sandbox.fireSSubscriptionCatalog;
 assert.ok(cat && cat.bothPriceLines, 'catalog must expose bothPriceLines');
 const lines = cat.bothPriceLines('annual');
-assert.ok(/R3 490/.test(lines.annual) && /2 months free/.test(lines.annual));
-assert.ok(/R349/.test(lines.monthly));
+assert.ok(/R2 500/.test(lines.annual) && /2 months free/.test(lines.annual));
+assert.ok(/R250/.test(lines.monthly));
 const monthlyRenews = cat.startBillingPeriod('monthly');
 assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(monthlyRenews));
 assert.ok(
