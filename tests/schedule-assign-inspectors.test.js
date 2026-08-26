@@ -29,7 +29,11 @@ const css = read('staging/styles.css');
 const liveCss = read('styles.css');
 
 assert.ok(/1\.3\.27-toets/.test(env), 'Toets-blad version must stay on 1.3.27-toets');
-assert.ok(/1\.3\.14/.test(liveEnv) && /bounceLegacyToetsQuery/.test(liveEnv), 'Live Fire-S must be 1.3.14 and keep the old toets-link bounce');
+assert.ok(
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv) &&
+    /bounceLegacyToetsQuery/.test(liveEnv),
+  'Live Fire-S must be 1.3.27 and keep the old toets-link bounce'
+);
 assert.ok(
   !/1\.3\.23/.test(liveEnv),
   'Live environment fence must not pick up the toets version number'

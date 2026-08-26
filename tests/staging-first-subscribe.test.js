@@ -22,8 +22,8 @@ assert.ok(
   'Toets-blad must allow first Subscribe without a company'
 );
 assert.ok(
-  /if \(isStagingEnv\(\) && !isRealUser\(\)\) \{\s*showRegister\(\);/.test(started),
-  'Logged-out toets-blad must open Subscribe, not Login'
+  /showLogin\(\);/.test(started) && /function showLogin\(/.test(started),
+  'Logged-out Access must open Login; Subscribe stays a separate owner path'
 );
 assert.ok(
   /function isAlreadyRegisteredError\(/.test(started),
@@ -38,8 +38,8 @@ assert.ok(
   'Toets-blad must tell the owner to reuse the Supabase email'
 );
 assert.ok(
-  /Toets-blad · eerste keer/.test(started),
-  'Toets-blad Access kicker must say first time'
+  /Toets-blad · Access/.test(started),
+  'Toets-blad Access kicker must name the toets-blad'
 );
 assert.ok(
   /id="fireSRegisterSwitchToLoginBtn"/.test(html),
@@ -50,8 +50,8 @@ assert.ok(
   'Subscribe form must have a note the toets-blad can rewrite'
 );
 assert.ok(
-  /First Subscribe/.test(roles),
-  'Guest home on the toets-blad must start at first Subscribe'
+  /Login first/.test(roles),
+  'Guest home on the toets-blad must start at Login'
 );
 assert.ok(
   /johandb@live.com/.test(reset) && /georgevdx@gmail.com/.test(reset),

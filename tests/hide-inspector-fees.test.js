@@ -19,7 +19,10 @@ const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 
 assert.ok(/1\.3\.27-toets/.test(env), 'Toets-blad version must be 1.3.27-toets');
-assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must stay on 1.3.14 until sit dit live');
+assert.ok(
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
+  'Live Fire-S must be 1.3.27 after sit dit live'
+);
 
 const choice = html.match(/id="fireSChoiceCompany"[\s\S]*?<\/button>/);
 assert.ok(choice, 'Access must still offer Subscribe for a new owner');
@@ -117,8 +120,10 @@ assert.strictEqual(
 );
 
 assert.ok(
-  /R349 per email/.test(liveHtml),
-  'Live root copy must stay unchanged until sit dit live'
+  /staff never Subscribe/.test(liveHtml) &&
+    !/you pay R349 per subscription · staff never Subscribe/.test(liveHtml) &&
+    /R349 per month/.test(liveHtml),
+  'Live Access choice must hide fees; Subscribe form must still show them'
 );
 
 console.log('hide-inspector-fees.test.js: ok');

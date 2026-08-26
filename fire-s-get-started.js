@@ -15,7 +15,7 @@
 (function fireSAccessGate() {
   'use strict';
 
-  var mode = 'choices';
+  var mode = 'login';
   var wired = false;
   var root = null;
 
@@ -106,6 +106,27 @@
   }
 
   var PENDING_SUBSCRIBE_KEY = 'fireS.pendingSubscribe.v1';
+  var JOINING_AS_STAFF_KEY = 'fireS.joiningAsStaff.v1';
+
+  function markJoiningAsStaff() {
+    try {
+      localStorage.setItem(JOINING_AS_STAFF_KEY, '1');
+    } catch (_) {}
+  }
+
+  function clearJoiningAsStaff() {
+    try {
+      localStorage.removeItem(JOINING_AS_STAFF_KEY);
+    } catch (_) {}
+  }
+
+  function isJoiningAsStaff() {
+    try {
+      return localStorage.getItem(JOINING_AS_STAFF_KEY) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
 
   function savePendingSubscribe(company, email, intervalId) {
     try {
@@ -141,18 +162,23 @@
 
   function canRegisterCompany() {
     if (hasCompany()) return false;
+    if (isJoiningAsStaff()) return false;
+    var role = homeRole();
+    if (
+      role === 'pending_member' ||
+      role === 'inspector' ||
+      role === 'manager' ||
+      role === 'viewer'
+    ) {
+      return false;
+    }
     // Empty test cloud: first person on the toets-blad is the Owner.
     if (isStagingEnv()) return true;
     if (isFreshCompanyStart()) return true;
-    var role = homeRole();
     if (
       role === 'owner' ||
       role === 'company_owner' ||
-      role === 'manager' ||
-      role === 'inspector' ||
-      role === 'super_admin' ||
-      role === 'viewer' ||
-      role === 'pending_member'
+      role === 'super_admin'
     ) {
       return false;
     }
@@ -181,6 +207,7 @@
           kind: 'subscribe',
           company: company,
           email: email,
+          billedTo: email,
           interval: intervalId,
           role: 'Owner'
         });
@@ -267,6 +294,7 @@
   }
 
   function enterAppHome(msg) {
+    clearJoiningAsStaff();
     if (msg) setStatus(msg);
     hideAccess();
     closeCloudPanels();
@@ -291,17 +319,180 @@
     }, 300);
   }
 
-  async function claimInvitesQuiet() {
+  async function hasPendingInviteQuiet() {
     try {
       var sb = getSb();
-      if (!sb || !sb.rpc) return 0;
-      var res = await sb.rpc('fire_s_claim_my_invites');
-      if (res.error) return 0;
-      if (Array.isArray(res.data)) return res.data.length;
-      return res.data ? 1 : 0;
+      if (!sb || !sb.from) return false;
+      var email = '';
+      try {
+        var userRes = await sb.auth.getUser();
+        email = text(
+          userRes && userRes.data && userRes.data.user && userRes.data.user.email
+        ).toLowerCase();
+      } catch (_) {}
+      if (!email) email = text(profile() && profile().email).toLowerCase();
+      if (!email) return false;
+      var res = await sb
+        .from('company_invites')
+        .select('id, email, status')
+        .eq('status', 'pending')
+        .limit(30);
+      if (res.error || !Array.isArray(res.data)) return false;
+      return res.data.some(function (row) {
+        return text(row && row.email).toLowerCase() === email;
+      });
     } catch (_) {
-      return 0;
+      return false;
     }
+  }
+
+  var lastJoinError = '';
+
+  function delay(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function waitForAuthSession() {
+    var sb = getSb();
+    if (!sb || !sb.auth) return null;
+    try {
+      var sessionRes = await sb.auth.getSession();
+      if (sessionRes && sessionRes.data && sessionRes.data.session) {
+        return sessionRes.data.session;
+      }
+    } catch (_) {}
+    try {
+      var userRes = await sb.auth.getUser();
+      return (userRes && userRes.data && userRes.data.user) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function rememberJoinedCompany(companyId, companyName, role) {
+    var id = text(companyId);
+    if (!id) return;
+    var patch = {
+      companyId: id,
+      companyName: text(companyName) || (profile() && profile().companyName) || 'Your company',
+      role: text(role) || 'inspector'
+    };
+    try {
+      if (typeof window.fireSApplyUserProfilePatch === 'function') {
+        window.fireSApplyUserProfilePatch(patch);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (window.currentUserProfile) {
+        window.currentUserProfile.companyId = patch.companyId;
+        window.currentUserProfile.companyName = patch.companyName;
+        window.currentUserProfile.role = patch.role;
+      }
+    } catch (_) {}
+  }
+
+  async function joinFromVisibleInvites() {
+    var sb = getSb();
+    if (!sb || !sb.from || !sb.auth) return 0;
+    var userRes = await sb.auth.getUser();
+    var user = userRes && userRes.data && userRes.data.user;
+    if (!user || !user.id) return 0;
+    var email = text(user.email).toLowerCase();
+    if (!email) return 0;
+    var inv = await sb
+      .from('company_invites')
+      .select('id, company_id, role, email, status')
+      .eq('status', 'pending')
+      .limit(30);
+    var rows = Array.isArray(inv.data) ? inv.data : [];
+    var mine = rows.filter(function (row) {
+      return text(row && row.email).toLowerCase() === email;
+    });
+    if (!mine.length) {
+      var inv2 = await sb
+        .from('company_invites')
+        .select('id, company_id, role, email, status')
+        .ilike('email', email)
+        .eq('status', 'pending')
+        .limit(5);
+      mine = Array.isArray(inv2.data) ? inv2.data : [];
+    }
+    var joined = 0;
+    for (var i = 0; i < mine.length; i += 1) {
+      var row = mine[i];
+      if (!row || !row.company_id) continue;
+      var upsert = await sb.from('company_members').upsert(
+        {
+          company_id: row.company_id,
+          user_id: user.id,
+          role: text(row.role) || 'inspector',
+          status: 'active'
+        },
+        { onConflict: 'company_id,user_id' }
+      );
+      if (upsert && upsert.error) {
+        lastJoinError = text(upsert.error.message) || lastJoinError;
+        continue;
+      }
+      rememberJoinedCompany(row.company_id, '', text(row.role) || 'inspector');
+      joined += 1;
+    }
+    return joined;
+  }
+
+  async function claimInvitesQuiet() {
+    lastJoinError = '';
+    var sb = getSb();
+    if (!sb || !sb.rpc) return 0;
+    await waitForAuthSession();
+    var claimed = 0;
+    try {
+      var res = await sb.rpc('fire_s_claim_my_invites');
+      if (res && res.error) {
+        lastJoinError = text(res.error.message);
+      } else if (Array.isArray(res && res.data)) {
+        claimed = res.data.length;
+        if (claimed && res.data[0]) {
+          rememberJoinedCompany(
+            res.data[0].out_company_id || res.data[0].company_id,
+            res.data[0].out_company_name || res.data[0].company_name,
+            res.data[0].out_role || res.data[0].role
+          );
+        }
+      } else if (res && res.data) {
+        claimed = 1;
+        rememberJoinedCompany(
+          res.data.out_company_id || res.data.company_id,
+          res.data.out_company_name || res.data.company_name,
+          res.data.out_role || res.data.role
+        );
+      }
+    } catch (err) {
+      lastJoinError = text(err && err.message);
+    }
+    if (claimed > 0 || hasCompany()) return claimed || 1;
+    try {
+      var extra = await joinFromVisibleInvites();
+      if (extra > 0) return extra;
+    } catch (err2) {
+      lastJoinError = text(err2 && err2.message) || lastJoinError;
+    }
+    return 0;
+  }
+
+  async function joinCompanyAfterLogin() {
+    var claimed = 0;
+    var i;
+    for (i = 0; i < 3; i += 1) {
+      claimed = await claimInvitesQuiet();
+      await refreshMembership();
+      if (claimed > 0 || hasCompany()) return claimed || 1;
+      await delay(400);
+    }
+    return 0;
   }
 
   async function refreshMembership() {
@@ -410,48 +601,54 @@
     } catch (_) {}
   }
 
-  function paintStagingFirstSubscribe() {
+  function paintAccessChoices() {
     var kicker = root && root.querySelector('.fire-s-get-started-kicker');
     if (kicker) {
-      kicker.textContent = isStagingEnv()
-        ? 'Toets-blad · eerste keer'
-        : 'Fire-S Access';
+      kicker.textContent = isStagingEnv() ? 'Toets-blad · Access' : 'Fire-S Access';
     }
     ['fireSChoiceLogin', 'fireSChoiceCreate', 'fireSInstallAppBtn'].forEach(function (id) {
       var el = byId(id);
       if (!el) return;
-      if (isStagingEnv()) {
-        el.style.display = 'none';
-        el.hidden = true;
-      } else {
-        el.hidden = false;
-        el.style.display = '';
-      }
+      el.hidden = false;
+      el.style.display = '';
     });
+  }
+
+  function paintSubscribeForm() {
     var guestBack =
       byId('fireSGetStartedGuestFields') &&
       byId('fireSGetStartedGuestFields').querySelector('[data-fire-s-back]');
-    if (guestBack) guestBack.style.display = isStagingEnv() ? 'none' : '';
+    if (guestBack) guestBack.style.display = '';
     var guestNote = byId('fireSRegisterNote');
-    if (guestNote && isStagingEnv()) {
-      guestNote.textContent =
-        'One Subscribe creates the login and the company. Use the same email you already use for Supabase.';
+    if (guestNote) {
+      guestNote.textContent = isStagingEnv()
+        ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
+        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R349 / month (or R3 490 / year) per subscription. Inspectors do not pay. Phone and desktop share that email. No card is taken yet.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
-    if (loginLink) loginLink.style.display = isStagingEnv() ? '' : 'none';
+    if (loginLink) loginLink.style.display = '';
+  }
+
+  function paintLoginForm() {
+    var loginBack =
+      byId('fireSGetStartedLoginFields') &&
+      byId('fireSGetStartedLoginFields').querySelector('[data-fire-s-back]');
+    if (loginBack) loginBack.style.display = 'none';
+    var subscribeBtn = byId('fireSLoginSubscribeBtn');
+    if (subscribeBtn) {
+      var allow = canRegisterCompany();
+      subscribeBtn.style.display = allow ? '' : 'none';
+      subscribeBtn.hidden = !allow;
+    }
   }
 
   function showChoices() {
-    if (isStagingEnv() && !isRealUser()) {
-      showRegister();
-      return;
-    }
     mode = 'choices';
     hidePanels();
-    paintStagingFirstSubscribe();
+    paintAccessChoices();
     setTitle(
       'Access',
-      'Login, create a password, or subscribe as a new company.'
+      'Inspector or Manager: Login or Create password. Only a new business owner taps Subscribe.'
     );
     showPanel('fireSGetStartedChoices');
     var registerBtn = byId('fireSChoiceCompany');
@@ -466,7 +663,8 @@
   function showLogin() {
     mode = 'login';
     hidePanels();
-    setTitle('Login', 'Owners and staff use the same login.');
+    paintLoginForm();
+    setTitle('Login', 'Use your email and password. A new business owner taps New company? Subscribe.');
     showPanel('fireSGetStartedLoginFields');
     var createToggle = byId('fireSSwitchToCreateBtn');
     if (createToggle) createToggle.style.display = '';
@@ -475,10 +673,11 @@
 
   function showCreatePassword() {
     mode = 'create';
+    markJoiningAsStaff();
     hidePanels();
     setTitle(
       'Create password',
-      'Use the email your owner added under Personnel. This is only needed once.'
+      'Use the email your owner added under Personnel. You do not Subscribe. Your owner already pays for this email. This is only needed once.'
     );
     showPanel('fireSGetStartedCreateFields');
     setStatus('');
@@ -492,12 +691,12 @@
     }
     mode = 'register';
     hidePanels();
-    paintStagingFirstSubscribe();
+    paintSubscribeForm();
     setTitle(
       'Subscribe',
       isStagingEnv()
         ? 'One Subscribe. Type a company name and the same email you already use for Supabase.'
-        : 'You become the Owner. R349 per email per month, or R3 490 per year. Next you manage personnel.'
+        : 'You become the Owner of this company name. One person is one company. If you already belong to a company, only that Owner can remove you first. You pay R349 per subscription per month, or R3 490 per year. Inspectors do not pay. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
@@ -514,7 +713,7 @@
     hidePanels();
     setTitle(
       'Name your company',
-      'You are signed in. Choose monthly (R349) or annual (R3 490) per email, then manage personnel.'
+      'You are signed in. You pay monthly (R349) or annual (R3 490) per subscription. Inspectors do not pay. Then manage personnel.'
     );
     showPanel('fireSGetStartedCompanyOnly');
     fillBillingPicker('fireSCompanyOnlyBillingOptions', 'monthly');
@@ -526,9 +725,15 @@
     hidePanels();
     setTitle(
       'Almost ready',
-      'Your login works. Ask your owner to add your email under Personnel, then tap Check again.'
+      'Your owner added your email. Create password once, then Login. You do not Subscribe — the owner pays for this email.'
     );
     showPanel('fireSGetStartedWaiting');
+    var startBtn = byId('fireSWaitingStartCompanyBtn');
+    if (startBtn) {
+      var hideOwner = isJoiningAsStaff() || homeRole() === 'pending_member';
+      startBtn.style.display = hideOwner ? 'none' : '';
+      startBtn.hidden = hideOwner;
+    }
     setStatus('');
   }
 
@@ -563,10 +768,6 @@
     var role = homeRole();
 
     if (role === 'pending_member') {
-      if (isStagingEnv()) {
-        showCompanyOnly();
-        return;
-      }
       showWaiting();
       return;
     }
@@ -576,8 +777,12 @@
       return;
     }
 
-    if (isStagingEnv() && !isRealUser()) {
-      showRegister();
+    // Logged out: Login first. Subscribe is a choice on that page.
+    if (!isRealUser()) {
+      if (mode === 'create') showCreatePassword();
+      else if (mode === 'register') showRegister();
+      else if (mode === 'choices') showChoices();
+      else showLogin();
       return;
     }
 
@@ -601,32 +806,44 @@
       low.indexOf('user already exists') >= 0 ||
       low.indexOf('email address is already') >= 0
     ) {
-      return 'This email already has a login. Use Login on phone and desktop. Do not Subscribe or Create password again — one email is one paid seat.';
+      return 'This email already has a login. Use Login on phone and desktop. Do not Subscribe or Create password again — one email is one login the owner pays for.';
     }
     return msg || 'Something went wrong.';
   }
 
   async function finishSignedInSession(successMsg) {
-    var claimed = await claimInvitesQuiet();
-    await refreshMembership();
+    var claimed = await joinCompanyAfterLogin();
     mode = 'choices';
     refreshHomeChrome();
     if (claimed > 0 || hasCompany()) {
       clearPendingSubscribe();
+      clearJoiningAsStaff();
       await syncCloudAfterAuth();
       enterAppHome(
-        successMsg || (claimed > 0 ? 'You are on the team.' : 'Signed in.')
+        successMsg || (claimed > 0 ? 'You are on the team. You do not Subscribe — your owner pays.' : 'Signed in.')
       );
       return;
     }
     if (await finishPendingSubscribeIfAny()) return;
+    var invited = isJoiningAsStaff() || (await hasPendingInviteQuiet());
+    if (invited) {
+      showWaiting();
+      setStatus(
+        lastJoinError
+          ? lastJoinError
+          : 'Your owner already added you and pays for this email. Tap Check again to open Home. Do not Subscribe.'
+      );
+      return;
+    }
     if (canRegisterCompany()) {
       setStatus('Signed in. Subscribe with your company name next.');
       showCompanyOnly();
       return;
     }
     showWaiting();
-    setStatus('Signed in. Waiting for your owner to add you.');
+    setStatus(
+      lastJoinError || 'Signed in. Tap Check again. If Home does not open, ask your owner to add this email under People again.'
+    );
   }
 
   function accessRedirectUrl() {
@@ -709,6 +926,7 @@
       return;
     }
     setStatus('Creating your login…');
+    markJoiningAsStaff();
     try {
       var res = await sb.auth.signUp({ email: email, password: password });
       if (res.error) {
@@ -796,7 +1014,7 @@
     }
     var pending = readPendingSubscribe();
     if (!pending || !text(pending.company)) return false;
-    if (!canRegisterCompany()) return false;
+    if (isJoiningAsStaff()) return false;
     try {
       await createCompanyAfterSignIn(
         text(pending.company),
@@ -930,17 +1148,21 @@
   }
 
   async function doCheckAgain() {
-    setStatus('Checking access…');
+    setStatus('Joining the company…');
     try {
-      var claimed = await claimInvitesQuiet();
-      await refreshMembership();
+      var claimed = await joinCompanyAfterLogin();
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
+        clearJoiningAsStaff();
         await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Access updated.');
         return;
       }
-      setStatus('Still waiting. Ask your owner to add your email under Personnel.', true);
+      setStatus(
+        lastJoinError ||
+          'Still not in the company. Ask your owner: People → Add inspector / manager → this same email. Then tap Check again.',
+        true
+      );
       showWaiting();
     } catch (e) {
       setStatus((e && e.message) || 'Could not refresh access.', true);
@@ -955,7 +1177,8 @@
     if (preferredMode === 'login') mode = 'login';
     else if (preferredMode === 'create') mode = 'create';
     else if (preferredMode === 'register') mode = 'register';
-    else mode = 'choices';
+    else if (preferredMode === 'choices') mode = 'choices';
+    else mode = 'login';
     render();
     try {
       if (root) {
@@ -982,7 +1205,7 @@
 
   function installHelp() {
     setStatus(
-      'On this phone: Chrome menu (three dots) → Add to Home screen / Install app. Google Play listing comes next, after Company S uploads the store file.',
+      'On this phone: Chrome menu (three dots) → Add to Home screen / Install app. Google Play listing comes next, after Fire-S uploads the store file.',
       false
     );
   }
@@ -1015,13 +1238,16 @@
 
     root.querySelectorAll('[data-fire-s-back]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        if (isStagingEnv() && !isRealUser()) showRegister();
-        else showChoices();
+        showLogin();
       });
     });
     var registerLogin = byId('fireSRegisterSwitchToLoginBtn');
     if (registerLogin) {
       registerLogin.addEventListener('click', showLogin);
+    }
+    var loginSubscribe = byId('fireSLoginSubscribeBtn');
+    if (loginSubscribe) {
+      loginSubscribe.addEventListener('click', showRegister);
     }
 
     var switchCreate = byId('fireSSwitchToCreateBtn');
@@ -1066,6 +1292,12 @@
         tryInstallApp();
       });
     }
+    var loginInstallBtn = byId('fireSLoginInstallBtn');
+    if (loginInstallBtn) {
+      loginInstallBtn.addEventListener('click', function () {
+        tryInstallApp();
+      });
+    }
 
     var openAccessBtn = byId('cloudOpenAccessBtn');
     if (openAccessBtn) {
@@ -1089,8 +1321,8 @@
   window.fireSClaimInvitesQuiet = claimInvitesQuiet;
   window.fireSGetStartedPhoneBack = function fireSGetStartedPhoneBack() {
     if (!root || !shouldShowAccess()) return false;
-    if (mode === 'choices' || mode === 'company') return false;
-    showChoices();
+    if (mode === 'login' || mode === 'company') return false;
+    showLogin();
     return true;
   };
 
@@ -1108,7 +1340,7 @@
       }
       return;
     }
-    mode = 'choices';
+    mode = 'login';
     render();
   });
   window.addEventListener('beforeinstallprompt', function (event) {

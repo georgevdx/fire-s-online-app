@@ -48,6 +48,21 @@
     return text(window.currentUserProfile?.role);
   }
 
+  function showFees() {
+    const role = currentRole().toLowerCase();
+    return [
+      'company_owner',
+      'owner',
+      'super_admin',
+      'manager'
+    ].includes(role);
+  }
+
+  function isInspectorManual() {
+    const role = currentRole().toLowerCase();
+    return role === 'inspector' || role === 'viewer' || role === 'field_inspector';
+  }
+
   function canOpen() {
     const role = currentRole().toLowerCase();
     return [
@@ -146,11 +161,11 @@
     });
     return `
       <div class="user-manual-cover">
-        <div class="user-manual-kicker">Subscriber guide</div>
+        <div class="user-manual-kicker">${isInspectorManual() ? 'Inspector guide' : 'Subscriber guide'}</div>
         <h1>Fire-S User Manual</h1>
         <p>From the first screen you see, to the last action you can take.</p>
         <div class="user-manual-meta">
-          ${esc(companyName())} · ${esc(today)} · ${esc(catalog().note || '')}
+          ${esc(companyName())} · ${esc(today)}${showFees() ? ' · ' + esc(catalog().note || '') : ' · Your owner pays. You do not Subscribe and you do not see the fees.'}
         </div>
       </div>
 
@@ -167,7 +182,7 @@
           <li>Company details, people and inspectors</li>
           <li>Management dashboard (tablet / PC)</li>
           <li>Levels — what each person can do</li>
-          <li>Subscriptions</li>
+          <li>${showFees() ? 'Subscriptions' : 'Who pays'}</li>
           <li>Download this manual</li>
         </ol>
       </div>
@@ -184,7 +199,11 @@
         <ol>
           <li><strong>1. Login</strong> — you already have an email and password.</li>
           <li><strong>2. Create password</strong> — first time only, after your owner added your email in Personnel.</li>
-          <li><strong>3. Subscribe</strong> — new business. R349 per email per month, or R3 490 per year. You become the Owner.</li>
+          <li><strong>3. Subscribe</strong> — ${
+            showFees()
+              ? 'new business. R349 per subscription per month, or R3 490 per year. You become the Owner.'
+              : 'new business owner only. Inspectors never tap this. Your owner pays. You do not see the fees.'
+          }</li>
         </ol>
         <h3>Login</h3>
         <ol>
@@ -194,26 +213,32 @@
           <li>If you forgot the password, tap <strong>Forgot password</strong>.</li>
         </ol>
         <h3>Create password (staff, first time)</h3>
+        <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>
         <ol>
-          <li>Tell your owner your email.</li>
-          <li>They add you in <strong>Personnel</strong> as Inspector or Manager.</li>
+          <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
+          <li>You can be anywhere. Open Fire-S on your phone.</li>
           <li>Tap <strong>2. Create password</strong>.</li>
           <li>Type that same email and choose a password.</li>
-          <li>Tap <strong>Create password</strong>, then Login.</li>
+          <li>Tap <strong>Create password</strong>, then <strong>Login</strong>.</li>
+          <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
         </ol>
-        <h3>Subscribe (Owner)</h3>
-        <ol>
+        <h3>Subscribe (Owner only)</h3>
+        ${
+          showFees()
+            ? `<ol>
           <li>Tap <strong>3. Subscribe</strong>.</li>
-          <li>Type the company name, your email and a password. That email is R349 / month (or R3 490 / year).</li>
+          <li>Type the company name, your email and a password. You pay R349 / month (or R3 490 / year) for that subscription. Inspectors do not pay.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
           <li>Tap <strong>Subscribe</strong>.</li>
           <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S invoices R349 per email per month, or R3 490 per year. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
-        <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>
+        <p>No card is taken in the app yet. Company S invoices the owner R349 per subscription per month, or R3 490 per year. Inspectors do not pay. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
+            : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
+        }
         <h3>Waiting</h3>
-        <p>If Login works but you are not in a company yet, you see <strong>Almost ready</strong>. Ask the owner to add your email, then tap <strong>Check again</strong>.</p>
+        <p>After Create password you should land on Inspector Home. If you see Almost ready, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
       </article>
 
       <article class="user-manual-chapter">
@@ -290,13 +315,14 @@
           <li>Tap <strong>Save company details</strong>.</li>
         </ol>
         <h3>Personnel</h3>
+        <p>Adding a person is a subscription you (the owner) place. The inspector or manager does not Subscribe and does not pay. They can work remotely.</p>
         <ol>
           <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
-          <li>Add the person’s email <strong>once</strong>. Each email is one paid seat (monthly or annual).</li>
-          <li>Choose Inspector, Manager or Owner.</li>
-          <li>They Create password on their own phone (first time only).</li>
-          <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
+          <li>Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
+          <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
+          <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe on Access.</li>
           <li>To send someone to a premises: Home → <strong>Schedule</strong> → fill the site → <strong>Assign to inspector</strong> → Save. They get an email with the address and date.</li>
+          <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
         </ol>
         <h3>Inspectors board</h3>
         <p>Select one inspector, view the whole team, or Compare.</p>
@@ -325,16 +351,21 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>11. Subscriptions</h2>
-        <p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong>, per email. Inspector, Manager, Owner and Viewer pay the same. One email is one seat. Phone and desktop share that login — do not enter the same email twice.</p>
+        <h2>11. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
+        ${
+          showFees()
+            ? `<p>Fire-S is a paid subscription: <strong>R349 per month</strong> or <strong>R3 490 per year</strong> (2 months free), per subscription. The owner pays for every subscription. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
-        <p>New companies subscribe on Access and choose Monthly or Annual. Tick Terms and Privacy, then Subscribe. The app does not take a card yet. Company S invoices each paid email. No VAT is added. Company S receives an email when someone subscribes or a paid seat is added.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to change monthly or annual.</p>
+        <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No VAT is added. No card is taken in the app yet.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free). One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
-          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change the price.
-        </div>
+          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays.
+        </div>`
+            : `<p>Your owner pays for Fire-S. Inspectors and other staff do not pay and never Subscribe. You never see the subscription fees. Phone and desktop share your login — do not enter the same email twice.</p>
+        <p>If your owner added your email, use <strong>Create password</strong> then <strong>Login</strong>. Do not tap Subscribe.</p>`
+        }
         <h3>Install Fire-S on a phone</h3>
         <ol>
           <li>Open Fire-S in Chrome.</li>
@@ -357,6 +388,14 @@
   function paint() {
     const root = byId('userManualPrintRoot');
     if (root) root.innerHTML = manualHtml();
+    const kicker = document.querySelector('.user-manual-intro .user-manual-kicker');
+    const copy = document.querySelector('.user-manual-intro p');
+    if (kicker) kicker.textContent = isInspectorManual() ? 'Inspector guide' : 'Subscriber guide';
+    if (copy) {
+      copy.textContent = showFees()
+        ? 'This is the subscriber manual. Download it from the app as a PDF. It covers every level, every main action, and the subscription packages.'
+        : 'This is the Fire-S inspector guide. Download it as a PDF. It covers inspection work. Your owner pays — you do not see the fees.';
+    }
   }
 
   function goHome() {

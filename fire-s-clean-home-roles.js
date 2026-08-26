@@ -256,8 +256,23 @@
 
     // 3) Signed in, no company yet.
     if (!hasLinkedCompany()) {
-      // Staging is an empty test cloud: the first login must become Owner,
-      // not wait for Personnel that does not exist yet.
+      // Invited Inspector / Manager never Subscribe. The owner already paid
+      // when they tapped Add. Staging used to treat every login as a new
+      // company owner — that sent remote staff to the Subscribe page.
+      if (
+        actual === 'inspector' ||
+        actual === 'manager' ||
+        actual === 'viewer' ||
+        actual === 'pending_member'
+      ) {
+        return 'pending_member';
+      }
+      try {
+        if (window.localStorage && window.localStorage.getItem('fireS.joiningAsStaff.v1') === '1') {
+          return 'pending_member';
+        }
+      } catch (_) {}
+      // Empty test cloud: first person on the toets-blad is the Owner.
       try {
         if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
           return 'new_company';
@@ -525,7 +540,7 @@
     cardText(
       'cmdUserManualBtn',
       'User manual',
-      'Download the subscriber guide as a PDF.'
+      'Download the inspection guide as a PDF.'
     );
 
     try {
@@ -765,7 +780,7 @@
     cardText(
       'cmdSubscribeBtn',
       'Subscription',
-      'R349 / month per email · tap to view or change.'
+      'View or change monthly or annual billing. You (the owner) pay. Fees show on that page.'
     );
     cardText(
       'cmdUserManualBtn',
@@ -803,21 +818,19 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest', 'guest');
-    setHero('Fire-S', 'ACCESS', 'Login, create a password, or subscribe.');
+    setHero('Fire-S', 'LOGIN', 'Sign in. New company? Use Subscribe below.');
     setText('#mainCommandCentre .main-command-kicker', 'Access');
-    setText('#mainCommandCentre .main-command-top h3', 'Start here');
+    setText('#mainCommandCentre .main-command-top h3', 'Login');
     setText(
       '#mainCommandSubtitle',
-      'Use the Access panel below. Cloud is only for sync after you are signed in.'
+      'Use Login below. Subscribe only if this company is not registered yet. Cloud is only for sync after you are signed in.'
     );
     try {
       if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
-        setHero('Fire-S', 'SUBSCRIBE', 'One Subscribe. Fill in the form below.');
         setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
-        setText('#mainCommandCentre .main-command-top h3', 'First Subscribe');
         setText(
           '#mainCommandSubtitle',
-          'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
+          'Login first. Subscribe only if this company is not on the toets-blad yet.'
         );
       }
     } catch (_) {}
@@ -882,12 +895,12 @@
   function applyPendingMemberHome() {
     showHomeHero();
     setBodyRole('fire-s-role-pending-member', 'pending_member');
-    setHero('Fire-S', 'ALMOST READY', 'Your login works. Wait for your owner to add you.');
+    setHero('Fire-S', 'ALMOST READY', 'Your owner already added you. Create password once, then Login. Do not Subscribe — the owner pays.');
     setText('#mainCommandCentre .main-command-kicker', 'Waiting');
-    setText('#mainCommandCentre .main-command-top h3', 'Ask your owner to add you');
+    setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'They add your email in Personnel. Then tap Check again in Access.'
+      'Use Access → 2. Create password (first time), then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);
@@ -900,7 +913,7 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Choose monthly (R349) or annual (R3 490) per email.');
+    setHero('Fire-S · New Company', 'SUBSCRIBE', 'You pay monthly (R349) or annual (R3 490) per subscription. Inspectors do not pay.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
     setText('#mainCommandCentre .main-command-top h3', 'Subscribe');
     setText(
@@ -1039,6 +1052,12 @@
     try {
       if (typeof window.fireSSyncGetStarted === 'function') {
         window.fireSSyncGetStarted();
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof window.fireSPaintExpiryReminder === 'function') {
+        window.fireSPaintExpiryReminder();
       }
     } catch (_) {}
   }

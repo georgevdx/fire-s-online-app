@@ -55,10 +55,10 @@ assert.ok(
   'Toets-blad version must stay on 1.3.20-toets or newer'
 );
 assert.ok(
-  /id="companyTeamEmail"/.test(liveHtml) &&
-    /id="companyTeamAddBtn"/.test(liveHtml) &&
-    /1\.3\.14/.test(liveEnv),
-  'Live Fire-S keeps the old Add row; version is 1.3.14 after scheduled-priority went live'
+  /id="companyTeamStartSeatBtn"/.test(liveHtml) &&
+    /id="fireSSubscribeSeatPanel"/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
+  'Live Fire-S must add people on the subscription page after sit dit live'
 );
 
 console.log('seat-subscribe-page.test.js: ok');

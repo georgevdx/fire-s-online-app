@@ -73,6 +73,10 @@
   gap: 10px;
 }
 
+#fireSGetStartedLoginFields .fire-s-get-started-back {
+  display: none;
+}
+
 .fire-s-get-started-fields input,
 .fire-s-get-started-fields button {
   width: 100%;
@@ -179,6 +183,15 @@ body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-top,
 body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre .main-command-top,
 body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-command-top {
   display: block !important;
+}
+
+body.fire-s-clean-home.fire-s-role-guest #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-new-company #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-pending-member #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre {
+  display: none !important;
 }
 
 body.fire-s-clean-home.fire-s-role-guest .startup-route-grid,
