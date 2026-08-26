@@ -500,7 +500,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'The owner pays R250 per month or R2 500 per year per subscription. Inspectors and other staff do not pay. Each new email is a new subscription, invoiced to the owner. No VAT — Company S is not VAT-registered. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
-    billingNote: 'The owner pays R250 / month or R2 500 / year per subscription. Inspectors do not pay. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'The owner pays R250 per month or R2 500 per year per subscription. Inspectors and other staff do not pay. Each new email is a new subscription, invoiced to the owner. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
+    billingNote: 'The owner pays R250 / month or R2 500 / year per subscription. Inspectors do not pay. Phone and desktop share that login. No card is taken in Fire-S yet.'
   };
 })(window);

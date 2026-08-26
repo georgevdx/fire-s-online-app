@@ -17,9 +17,9 @@
   function priceLine(interval) {
     var id = String(interval || '').toLowerCase();
     if (id === 'annual' || id === 'year' || id === 'yearly') {
-      return 'Annual · R2 500 per subscription per year. No VAT (Company S is not VAT-registered).';
+      return 'Annual · R2 500 per subscription per year.';
     }
-    return 'Monthly · R250 per subscription per month. No VAT (Company S is not VAT-registered).';
+    return 'Monthly · R250 per subscription per month.';
   }
 
   function billedToEmail(info) {
@@ -50,7 +50,7 @@
       role: role,
       billing: priceLine(interval),
       pay_how:
-        'Company S invoices the OWNER for every subscribed email. Inspectors and other staff do not pay. No card in the app. No VAT.',
+        'Invoice the OWNER the listed amount. Inspectors and other staff do not pay. Do not send a VAT or fee breakdown to the subscriber. PayFast VAT is PayFast’s. Fire-S is not VAT-registered.',
       note: isSeat
         ? 'This is a new subscription for this email. Invoice the owner (' +
           billedTo +

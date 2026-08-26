@@ -18,7 +18,7 @@ const liveHtml = read('index.html');
 const terms = read('staging/terms.html');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.28-toets/.test(env), 'Toets-blad version must be 1.3.28-toets');
+assert.ok(/1\.3\.29-toets/.test(env), 'Toets-blad version must be 1.3.29-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
   'Live Fire-S must stay on 1.3.27 until sit dit live'
@@ -66,6 +66,25 @@ assert.ok(
 assert.ok(
   /R349 per month/.test(liveTerms) && /R3 490/.test(liveTerms),
   'Live terms must stay R349 until sit dit live'
+);
+
+const subscriberFacing = [
+  html,
+  read('staging/fire-s-subscribe.js'),
+  read('staging/fire-s-subscriptions.js'),
+  read('staging/fire-s-user-manual.js'),
+  terms,
+  read('staging/privacy.html')
+];
+subscriberFacing.forEach(function (src, i) {
+  assert.ok(
+    !/VAT/.test(src) && !/No VAT/.test(src),
+    'Subscriber-facing copy must not explain VAT or fees: file ' + i
+  );
+});
+assert.ok(
+  /PayFast VAT is PayFast/.test(read('staging/fire-s-subscribe-notify.js')),
+  'Internal invoice note may remind that PayFast VAT is PayFast’s, not the subscriber’s'
 );
 
 console.log('moderate-prices.test.js: ok');
