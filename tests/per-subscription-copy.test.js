@@ -91,8 +91,20 @@ assert.ok(
 );
 
 assert.ok(
+  !/Company S/.test(terms) &&
+    !/Company-S/.test(terms) &&
+    !/Company S/.test(privacy) &&
+    !/Company-S/.test(privacy),
+  'Toets terms and privacy must not name Company S; Fire-S is the app identity'
+);
+assert.ok(/Fire-S invoices the owner/.test(terms), 'Toets terms must still say Fire-S invoices the owner');
+assert.ok(
   /R349 per email/.test(liveCatalog) && /R349 per email/.test(liveHtml),
   'Live root must still say per email until sit dit live'
+);
+assert.ok(
+  /Company S/.test(read('terms.html')) && /Company S/.test(read('privacy.html')),
+  'Live terms and privacy stay unchanged until sit dit live'
 );
 
 console.log('per-subscription-copy.test.js: ok');
