@@ -206,3 +206,9 @@
   min-height: 44px;
   flex: 1 1 140px;
 }
+
+body.fire-s-role-inspector #fireSExpiryReminder,
+body.fire-s-role-inspector #cmdSubscribeBtn,
+body.fire-s-role-inspector #fireSSubscribeSection {
+  display: none !important;
+}

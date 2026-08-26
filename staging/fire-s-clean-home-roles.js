@@ -540,7 +540,7 @@
     cardText(
       'cmdUserManualBtn',
       'User manual',
-      'Download the subscriber guide as a PDF.'
+      'Download the inspection guide as a PDF.'
     );
 
     try {
@@ -780,7 +780,7 @@
     cardText(
       'cmdSubscribeBtn',
       'Subscription',
-      'R349 / month per subscription · you (the owner) pay · tap to view or change.'
+      'View or change monthly or annual billing. You (the owner) pay. Fees show on that page.'
     );
     cardText(
       'cmdUserManualBtn',

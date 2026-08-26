@@ -23,7 +23,7 @@ const privacy = read('staging/privacy.html');
 const liveCatalog = read('fire-s-subscriptions.js');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.26-toets/.test(env), 'Toets-blad version must stay on 1.3.26-toets');
+assert.ok(/1\.3\.27-toets/.test(env), 'Toets-blad version must stay on 1.3.27-toets');
 assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must stay on 1.3.14 until sit dit live');
 
 const priceFiles = [html, catalogSrc, subscribe, notify, getStarted, roles, manual, terms, privacy];
@@ -49,10 +49,13 @@ priceFiles.forEach(function (src, i) {
 });
 
 assert.ok(
-  /you pay R349 per subscription/.test(html) &&
-    /You pay monthly or annually · R349 per subscription/.test(html) &&
+  /You pay monthly or annually · R349 per subscription/.test(html) &&
     /R349 \/ month \(or R3 490 \/ year\) per subscription/.test(html),
-  'Access Subscribe copy must say R349 per subscription'
+  'Access Subscribe form must say R349 per subscription'
+);
+assert.ok(
+  !/you pay R349 per subscription · staff never Subscribe/.test(html),
+  'Access choice list must not advertise the fee to inspectors'
 );
 assert.ok(
   /Each new email is a new subscription/.test(html) &&

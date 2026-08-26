@@ -16,7 +16,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const app = read('staging/app.js');
 const css = read('staging/fire-s-get-started.css');
 
-assert.ok(/1\.3\.26-toets/.test(env), 'Toets-blad version must be 1.3.26-toets');
+assert.ok(/1\.3\.27-toets/.test(env), 'Toets-blad version must be 1.3.27-toets');
 assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must stay on 1.3.14 until sit dit live');
 
 assert.ok(
