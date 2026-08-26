@@ -306,8 +306,7 @@
           ? 'Company S invoices you. Due date was ' + when + '.'
           : days === 0
             ? 'Company S invoices you today (' + when + ').'
-            : 'Due on ' + when + '. Company S invoices you. Close this if it is in the way.') +
-        ' Monthly is R349 per subscription. Annual is R3 490 (2 months free).';
+            : 'Due on ' + when + '. Company S invoices you. Close this if it is in the way.');
     }
     if (openBtn) openBtn.style.display = canManage() ? '' : 'none';
     box.hidden = false;
@@ -323,15 +322,12 @@
   }
 
   function refreshCardCopy() {
-    var cat = catalog();
     var btn = byId('cmdSubscribeBtn');
     if (!btn) return;
-    var interval = cat && cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
-    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per subscription per month';
     var title = btn.querySelector('.command-title');
     var copy = btn.querySelector('.command-copy');
     if (title) title.textContent = 'Subscription';
-    if (copy) copy.textContent = 'R349 / month or R3 490 / year · 2 months free on annual.';
+    if (copy) copy.textContent = 'View or change monthly or annual billing. You (the owner) pay.';
   }
 
   function wire() {
