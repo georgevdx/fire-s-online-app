@@ -1,0 +1,98 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const vm = require('vm');
+
+function read(name) {
+  return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
+}
+
+const env = read('staging/fire-s-env.js');
+const liveEnv = read('fire-s-env.js');
+const html = read('staging/index.html');
+const catalogSrc = read('staging/fire-s-subscriptions.js');
+const subscribe = read('staging/fire-s-subscribe.js');
+const notify = read('staging/fire-s-subscribe-notify.js');
+const getStarted = read('staging/fire-s-get-started.js');
+const roles = read('staging/fire-s-clean-home-roles.js');
+const manual = read('staging/fire-s-user-manual.js');
+const terms = read('staging/terms.html');
+const privacy = read('staging/privacy.html');
+const liveCatalog = read('fire-s-subscriptions.js');
+const liveHtml = read('index.html');
+
+assert.ok(/1\.3\.25-toets/.test(env), 'Toets-blad version must be 1.3.25-toets');
+assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must stay on 1.3.14 until sit dit live');
+
+const priceFiles = [html, catalogSrc, subscribe, notify, getStarted, roles, manual, terms, privacy];
+priceFiles.forEach(function (src, i) {
+  const names = [
+    'index.html',
+    'fire-s-subscriptions.js',
+    'fire-s-subscribe.js',
+    'fire-s-subscribe-notify.js',
+    'fire-s-get-started.js',
+    'fire-s-clean-home-roles.js',
+    'fire-s-user-manual.js',
+    'terms.html',
+    'privacy.html'
+  ];
+  assert.ok(
+    !/R349 per email/.test(src) &&
+      !/R3 490 per email/.test(src) &&
+      !/per email per (month|year)/.test(src) &&
+      !/\/ month per email/.test(src),
+    names[i] + ': toets price lines must not say R### per email'
+  );
+});
+
+assert.ok(
+  /you pay R349 per subscription/.test(html) &&
+    /You pay monthly or annually · R349 per subscription/.test(html) &&
+    /R349 \/ month \(or R3 490 \/ year\) per subscription/.test(html),
+  'Access Subscribe copy must say R349 per subscription'
+);
+assert.ok(
+  /Each new email is a new subscription/.test(html) &&
+    /Use the same email on phone and desktop/.test(html),
+  'Login identity copy must still say one email is one login'
+);
+assert.ok(
+  /do not enter the same email twice/.test(manual),
+  'User manual must still warn not to enter the same email twice'
+);
+
+const store = {};
+const sandbox = {
+  window: {},
+  console,
+  localStorage: {
+    getItem: key => (Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null),
+    setItem: (key, value) => {
+      store[key] = String(value);
+    }
+  }
+};
+sandbox.window = sandbox;
+vm.runInNewContext(catalogSrc, sandbox);
+const cat = sandbox.fireSSubscriptionCatalog;
+assert.ok(cat && cat.priceLabel && cat.bothPriceLines, 'catalog must expose price labels');
+assert.strictEqual(cat.priceLabel('monthly'), 'R349 per subscription per month');
+assert.strictEqual(cat.priceLabel('annual'), 'R3 490 per subscription per year');
+const lines = cat.bothPriceLines('monthly');
+assert.ok(/R349 per subscription/.test(lines.monthly), 'monthly picker must say per subscription');
+assert.ok(/R3 490 per subscription/.test(lines.annual), 'annual picker must say per subscription');
+assert.ok(!/per email/.test(lines.monthly + lines.annual), 'picker price lines must not say per email');
+assert.ok(
+  /per subscription/.test(cat.note) && /Each new email is a new subscription/.test(cat.note),
+  'catalog note must price per subscription and keep one-email identity'
+);
+
+assert.ok(
+  /R349 per email/.test(liveCatalog) && /R349 per email/.test(liveHtml),
+  'Live root must still say per email until sit dit live'
+);
+
+console.log('per-subscription-copy.test.js: ok');

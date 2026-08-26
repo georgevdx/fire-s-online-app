@@ -85,11 +85,11 @@
         ' You (the owner) pay. Inspectors do not. Phone and desktop share that email.</span>';
       return;
     }
-    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per email per month';
+    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per subscription per month';
     current.innerHTML =
       '<strong>Fire-S seat · ' +
       price +
-      '</strong><span>You (the owner) pay for every subscribed email. Inspectors do not pay. Phone and desktop share that email.</span>';
+      '</strong><span>You (the owner) pay for every subscription. Inspectors do not pay. Phone and desktop share that email.</span>';
   }
 
   function hideOtherSections() {
@@ -155,7 +155,7 @@
     if (intro) {
       intro.innerHTML = isSeat
         ? 'Choose monthly or annual first (annual is 2 months free). Then type their email, choose Inspector or Manager, and tap <strong>Subscribe this email</strong>. You (the owner) pay. They do not pay and they never open this page.'
-        : 'You (the owner) pay <strong>R349 per month</strong> or <strong>R3 490 per year</strong> for every subscribed email. Inspectors and other staff do not pay. Phone and desktop share that login. The app does not take a card yet — Company S invoices you. No VAT is added (Company S is not registered for VAT). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
+        : 'You (the owner) pay <strong>R349 per month</strong> or <strong>R3 490 per year</strong> per subscription. Inspectors and other staff do not pay. Phone and desktop share that login. The app does not take a card yet — Company S invoices you. No VAT is added (Company S is not registered for VAT). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
   }
 
@@ -307,7 +307,7 @@
           : days === 0
             ? 'Company S invoices you today (' + when + ').'
             : 'Due on ' + when + '. Company S invoices you. Close this if it is in the way.') +
-        ' Monthly is R349 per email. Annual is R3 490 (2 months free).';
+        ' Monthly is R349 per subscription. Annual is R3 490 (2 months free).';
     }
     if (openBtn) openBtn.style.display = canManage() ? '' : 'none';
     box.hidden = false;
@@ -327,7 +327,7 @@
     var btn = byId('cmdSubscribeBtn');
     if (!btn) return;
     var interval = cat && cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
-    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per email per month';
+    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R349 per subscription per month';
     var title = btn.querySelector('.command-title');
     var copy = btn.querySelector('.command-copy');
     if (title) title.textContent = 'Subscription';
