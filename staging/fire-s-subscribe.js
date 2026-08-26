@@ -16,6 +16,82 @@
     return window.fireSSubscriptionCatalog || null;
   }
 
+  function payfast() {
+    try {
+      return window.fireSPayfast || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function payfastOn() {
+    var pf = payfast();
+    return !!(pf && pf.isEnabled && pf.isEnabled());
+  }
+
+  function ownerEmail() {
+    try {
+      return String((window.currentUserProfile && window.currentUserProfile.email) || '')
+        .trim()
+        .toLowerCase();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function companyName() {
+    try {
+      return String(
+        (window.currentUserProfile &&
+          (window.currentUserProfile.companyName || window.currentUserProfile.company)) ||
+          ''
+      ).trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function selectedBillingInterval() {
+    var cat = catalog();
+    var billing = byId('fireSSubscribeBillingOptions');
+    if (cat && cat.selectedIntervalFrom) return cat.selectedIntervalFrom(billing);
+    return (cat && cat.currentIntervalId && cat.currentIntervalId()) || 'monthly';
+  }
+
+  function paintPayfastControls() {
+    var on = payfastOn();
+    var pf = payfast();
+    var payBtn = byId('fireSPayfastPayBtn');
+    var hint = byId('fireSPayfastHint');
+    var interval = selectedBillingInterval();
+    if (payBtn) {
+      payBtn.style.display = on && mode !== 'seat' ? '' : 'none';
+      payBtn.textContent = pf && pf.payLabel ? pf.payLabel(interval) : 'Pay on PayFast';
+    }
+    if (hint) hint.style.display = on ? '' : 'none';
+  }
+
+  function payNow() {
+    var pf = payfast();
+    if (!pf || !pf.startCheckout) {
+      setMessage('PayFast is not ready on this page.', true);
+      return;
+    }
+    var interval = selectedBillingInterval();
+    var email = ownerEmail();
+    if (!email) {
+      setMessage('Sign in first, then pay on PayFast.', true);
+      return;
+    }
+    setMessage('Opening PayFast…');
+    pf.startCheckout({
+      kind: 'subscribe',
+      company: companyName() || 'Fire-S',
+      email: email,
+      interval: interval
+    });
+  }
+
   function homeRole() {
     try {
       if (typeof window.resolveFireSHomeRole === 'function') {
@@ -82,14 +158,14 @@
         (interval === 'annual' ? lines.annual : lines.monthly) +
         '. ' +
         lines.saveNote +
-        ' Phone and desktop with the same email count as one login. Each extra person is another subscription.</span>';
+        ' Phone and desktop with the same email count as one login. Each extra person is another subscription. Pay on PayFast.</span>';
       return;
     }
     var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R250 per month per login';
     current.innerHTML =
       '<strong>Fire-S seat · ' +
       price +
-      '</strong><span>Subscription per month per login is R250. Phone and desktop with the same email count as one login. Each extra person is another subscription.</span>';
+      '</strong><span>Subscription per month per login is R250. Phone and desktop with the same email count as one login. Each extra person is another subscription. Pay on PayFast.</span>';
   }
 
   function hideOtherSections() {
@@ -154,8 +230,8 @@
     }
     if (intro) {
       intro.innerHTML = isSeat
-        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. Fire-S invoices you. They never open this page.'
-        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Each extra person is another subscription. Fire-S invoices you. No card is taken yet. Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
+        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. After you tap Subscribe this email, pay that extra login on PayFast. They never open this page.'
+        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Each extra person is another subscription. Pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
   }
 
@@ -190,11 +266,13 @@
         billing.__fireSPaintBound = true;
         billing.addEventListener('change', function () {
           paintCurrent();
+          paintPayfastControls();
         });
       }
     }
     paintMode();
     paintCurrent();
+    paintPayfastControls();
     setMessage('');
     var emailInput = byId('fireSSeatEmail');
     var roleSelect = byId('fireSSeatRole');
@@ -233,15 +311,26 @@
     var billing = byId('fireSSubscribeBillingOptions');
     var seatBtn = byId('fireSSubscribeSeatBtn');
     if (seatBtn) seatBtn.disabled = true;
-    setMessage('Subscribing this email. You (the owner) pay…');
+    setMessage('Subscribing this email. You pay this extra login…');
     try {
       await window.fireSAddPersonnelSeat(email, role);
+      var intervalId = selectedBillingInterval();
       if (cat && cat.persistCompanyPlan) {
-        var intervalId = cat.selectedIntervalFrom ? cat.selectedIntervalFrom(billing) : 'monthly';
         try {
           await cat.persistCompanyPlan('standard', intervalId);
           paintCurrent();
         } catch (_) {}
+      }
+      if (payfastOn()) {
+        setMessage('Opening PayFast for this extra login…');
+        payfast().startCheckout({
+          kind: 'seat',
+          company: companyName() || 'Fire-S',
+          email: ownerEmail(),
+          seatEmail: email,
+          interval: intervalId
+        });
+        return;
       }
     } catch (err) {
       setMessage((err && err.message) || 'Could not subscribe that email.', true);
@@ -261,12 +350,17 @@
     setMessage('Saving billing…');
     var result = await cat.persistCompanyPlan('standard', intervalId);
     paintCurrent();
+    paintPayfastControls();
     if (result && result.ok === false) {
       setMessage('Choice saved on this phone. Cloud save can wait — Company S still has the request.', true);
       return;
     }
     var price = cat.priceLabel ? cat.priceLabel(intervalId) : '';
-    setMessage('Saved: ' + price + '. Fire-S invoices you. No card was taken.');
+    setMessage(
+      payfastOn()
+        ? 'Saved: ' + price + '. Tap Pay on PayFast for this login.'
+        : 'Saved: ' + price + '.'
+    );
     try {
       if (typeof window.fireSApplyCleanHomeRoles === 'function') {
         window.fireSApplyCleanHomeRoles();
@@ -303,10 +397,10 @@
     if (text) {
       text.textContent =
         (days < 0
-          ? 'Company S invoices you. Due date was ' + when + '.'
+          ? 'Due date was ' + when + '. Open Subscription to pay on PayFast.'
           : days === 0
-            ? 'Company S invoices you today (' + when + ').'
-            : 'Due on ' + when + '. Company S invoices you. Close this if it is in the way.');
+            ? 'Due today (' + when + '). Open Subscription to pay on PayFast.'
+            : 'Due on ' + when + '. Pay on PayFast from Subscription. Close this if it is in the way.');
     }
     if (openBtn) openBtn.style.display = canManage() ? '' : 'none';
     box.hidden = false;
@@ -327,7 +421,7 @@
     var title = btn.querySelector('.command-title');
     var copy = btn.querySelector('.command-copy');
     if (title) title.textContent = 'Subscription';
-    if (copy) copy.textContent = 'View or change monthly or annual billing. You (the owner) pay.';
+    if (copy) copy.textContent = 'View or change monthly or annual billing. Pay this login on PayFast.';
   }
 
   function wire() {
@@ -335,12 +429,14 @@
     wired = true;
     var back = byId('fireSSubscribeBackBtn');
     var save = byId('fireSSubscribeSaveBtn');
+    var payBtn = byId('fireSPayfastPayBtn');
     var btn = byId('cmdSubscribeBtn');
     var seatBtn = byId('fireSSubscribeSeatBtn');
     var reminderClose = byId('fireSExpiryReminderCloseBtn');
     var reminderOpen = byId('fireSExpiryReminderOpenBtn');
     if (back) back.addEventListener('click', goHome);
     if (save) save.addEventListener('click', savePlan);
+    if (payBtn) payBtn.addEventListener('click', payNow);
     if (seatBtn) seatBtn.addEventListener('click', subscribeSeat);
     if (reminderClose) reminderClose.addEventListener('click', closeExpiryReminder);
     if (reminderOpen) {
@@ -360,6 +456,7 @@
     wire();
     refreshCardCopy();
     paintExpiryReminder();
+    paintPayfastControls();
   }
 
   window.fireSOpenSubscribe = openSubscribe;

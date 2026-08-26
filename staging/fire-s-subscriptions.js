@@ -500,7 +500,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription, invoiced to the owner. The app does not take a card yet; Fire-S invoices the owner.',
-    billingNote: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. Fire-S invoices you. No card is taken yet.'
+    note: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription, paid by the owner on PayFast. Card details stay with PayFast.',
+    billingNote: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. After Subscribe, pay on PayFast. Card details stay with PayFast.'
   };
 })(window);

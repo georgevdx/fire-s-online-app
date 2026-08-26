@@ -209,6 +209,34 @@
 
 body.fire-s-role-inspector #fireSExpiryReminder,
 body.fire-s-role-inspector #cmdSubscribeBtn,
-body.fire-s-role-inspector #fireSSubscribeSection {
+body.fire-s-role-inspector #fireSSubscribeSection,
+body.fire-s-role-inspector #fireSPayfastPayBtn,
+body.fire-s-role-inspector #fireSPayfastReturnBanner {
   display: none !important;
+}
+
+.fire-s-payfast-hint {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.fire-s-payfast-return {
+  position: sticky;
+  top: 0;
+  z-index: 100000;
+  padding: 10px 14px;
+  font-family: Arial, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: center;
+  color: #fff;
+}
+
+.fire-s-payfast-return.is-ok {
+  background: #166534;
+}
+
+.fire-s-payfast-return.is-cancel {
+  background: #9a3412;
 }

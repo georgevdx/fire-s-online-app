@@ -623,7 +623,7 @@
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
         ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
-        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. No card is taken yet.';
+        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. After Subscribe, pay on PayFast.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';
@@ -1001,6 +1001,16 @@
     await saveChosenPlan(planId, intervalId);
     notifySubscribe(company, email, intervalId);
     clearPendingSubscribe();
+    if (window.fireSPayfast && window.fireSPayfast.isEnabled && window.fireSPayfast.isEnabled()) {
+      setStatus('Opening PayFast…');
+      window.fireSPayfast.startCheckout({
+        kind: 'subscribe',
+        company: company,
+        email: email,
+        interval: intervalId
+      });
+      return;
+    }
     setStatus('Subscribed. Opening Personnel…');
     mode = 'choices';
     refreshHomeChrome();

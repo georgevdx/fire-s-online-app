@@ -38,12 +38,27 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.30-toets' : '1.3.27',
+    appVersion: staging ? '1.3.31-toets' : '1.3.27',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,
     notifyCompanyS: !staging,
-    storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth'
+    storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth',
+    payfast: staging
+      ? {
+          enabled: true,
+          sandbox: true,
+          merchantId: '10000100',
+          merchantKey: '46f0cd694581a',
+          passphrase: 'jt7NOE43FZPn'
+        }
+      : {
+          enabled: false,
+          sandbox: false,
+          merchantId: '',
+          merchantKey: '',
+          passphrase: ''
+        }
   };
 
   function paintVersion() {

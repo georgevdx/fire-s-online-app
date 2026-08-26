@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-5-startup">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-3-hide-fees">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-4-payfast">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -289,7 +289,7 @@
     <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
       <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
       <p id="fireSRegisterNote" class="fire-s-get-started-note">
-        Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. No card is taken yet.
+        Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. After Subscribe, pay on PayFast.
       </p>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
@@ -297,7 +297,7 @@
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Subscription per month per login is R250</p>
         <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
-        <p class="fire-s-plan-billing-note">Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. Fire-S invoices you. No card is taken yet.</p>
+        <p class="fire-s-plan-billing-note">Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. After Subscribe, pay on PayFast. Card details stay with PayFast.</p>
       </div>
       <label class="fire-s-legal-agree">
         <input id="fireSRegisterAgree" type="checkbox">
@@ -319,7 +319,7 @@
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Subscription per month per login is R250</p>
         <div id="fireSCompanyOnlyBillingOptions" class="fire-s-plan-options" data-interval-name="fireSCompanyOnlyBilling"></div>
-        <p class="fire-s-plan-billing-note">Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. Fire-S invoices you. No card is taken yet.</p>
+        <p class="fire-s-plan-billing-note">Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. After Subscribe, pay on PayFast. Card details stay with PayFast.</p>
       </div>
       <label class="fire-s-legal-agree">
         <input id="fireSCompanyOnlyAgree" type="checkbox">
@@ -709,7 +709,7 @@
     <p id="fireSSubscribeIntroCopy">
       Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free).
       Phone and desktop with the same email count as one login. Each extra person is another subscription.
-      Fire-S invoices you. No card is taken yet.
+      After Subscribe, pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money).
       Read the
       <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a>
       and the
@@ -730,12 +730,14 @@
       <option value="manager">Manager</option>
     </select>
     <p class="fire-s-subscribe-seat-note">
-      They do not fill this page. After you subscribe this email, they Create password and Login on their own phone.
+      They do not fill this page. After you subscribe this email, pay this extra login on PayFast. Then they Create password and Login on their own phone.
     </p>
     <button id="fireSSubscribeSeatBtn" type="button" class="cloud-primary-btn">Subscribe this email</button>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
   <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save billing</button>
+  <button id="fireSPayfastPayBtn" type="button" class="cloud-primary-btn">Pay R250 on PayFast</button>
+  <p id="fireSPayfastHint" class="fire-s-payfast-hint">PayFast sandbox on this toets-blad — no real money. Card details stay with PayFast.</p>
 </section>
 <section id="managementDashboardSection" class="card management-dashboard-section" style="display:none;">
   <div class="toolbar">
@@ -1679,7 +1681,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-30-per-login"></script>
+  <script src="fire-s-env.js?v=1-3-31-payfast"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1694,7 +1696,7 @@
   <script src="app.js?v=1-3-26-startup"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-30-per-login"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-31-payfast"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-5-per-sub"></script>
@@ -1702,12 +1704,14 @@
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-11-per-login"></script>
-  <script src="fire-s-subscribe.js?v=1-10-per-login"></script>
-  <script src="fire-s-user-manual.js?v=1-25-prices"></script>
+  <script src="fire-s-subscriptions.js?v=1-12-payfast"></script>
+  <script src="fire-s-md5.js?v=2-19-0"></script>
+  <script src="fire-s-payfast.js?v=1-0-sandbox"></script>
+  <script src="fire-s-subscribe.js?v=1-11-payfast"></script>
+  <script src="fire-s-user-manual.js?v=1-26-payfast"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-24-per-login"></script>
+  <script src="fire-s-get-started.js?v=2-25-payfast"></script>
   <script src="fire-s-startup-stability.js?v=1-6-startup"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>

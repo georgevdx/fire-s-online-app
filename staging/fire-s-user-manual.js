@@ -227,13 +227,13 @@
           showFees()
             ? `<ol>
           <li>Tap <strong>3. Subscribe</strong>.</li>
-          <li>Type the company name, your email and a password. You pay R250 / month (or R2 500 / year) for that subscription. Inspectors do not pay.</li>
+          <li>Type the company name, your email and a password. Subscription per month per login is R250. Per year per login is R2 500.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
-          <li>Tap <strong>Subscribe</strong>.</li>
+          <li>Tap <strong>Subscribe</strong>, then pay on PayFast. Card details stay with PayFast.</li>
           <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S invoices the owner R250 per subscription per month, or R2 500 per year. Inspectors do not pay. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>On the toets-blad PayFast is the sandbox (no real money). A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
             : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
         }
@@ -354,10 +354,10 @@
         <h2>11. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
         ${
           showFees()
-            ? `<p>Fire-S is a paid subscription: <strong>R250 per month</strong> or <strong>R2 500 per year</strong> (2 months free), per subscription. The owner pays for every subscription. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
+            ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. Each extra person is another subscription.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
-        <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No card is taken in the app yet.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free). One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
+        <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
