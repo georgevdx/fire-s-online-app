@@ -17,9 +17,9 @@
   function priceLine(interval) {
     var id = String(interval || '').toLowerCase();
     if (id === 'annual' || id === 'year' || id === 'yearly') {
-      return 'Annual · R3 490 per subscription per year. No VAT (Company S is not VAT-registered).';
+      return 'Annual · R2 500 per subscription per year. No VAT (Company S is not VAT-registered).';
     }
-    return 'Monthly · R349 per subscription per month. No VAT (Company S is not VAT-registered).';
+    return 'Monthly · R250 per subscription per month. No VAT (Company S is not VAT-registered).';
   }
 
   function billedToEmail(info) {

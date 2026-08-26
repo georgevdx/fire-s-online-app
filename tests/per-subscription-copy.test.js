@@ -23,7 +23,7 @@ const privacy = read('staging/privacy.html');
 const liveCatalog = read('fire-s-subscriptions.js');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.27-toets/.test(env), 'Toets-blad version must stay on 1.3.27-toets');
+assert.ok(/1\.3\.28-toets/.test(env), 'Toets-blad version must stay on 1.3.28-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
   'Live Fire-S must be 1.3.27 after sit dit live'
@@ -52,12 +52,12 @@ priceFiles.forEach(function (src, i) {
 });
 
 assert.ok(
-  /You pay monthly or annually · R349 per subscription/.test(html) &&
-    /R349 \/ month \(or R3 490 \/ year\) per subscription/.test(html),
-  'Access Subscribe form must say R349 per subscription'
+  /You pay monthly or annually · R250 per subscription/.test(html) &&
+    /R250 \/ month \(or R2 500 \/ year\) per subscription/.test(html),
+  'Access Subscribe form must say R250 per subscription'
 );
 assert.ok(
-  !/you pay R349 per subscription · staff never Subscribe/.test(html),
+  !/you pay R250 per subscription · staff never Subscribe/.test(html),
   'Access choice list must not advertise the fee to inspectors'
 );
 assert.ok(
@@ -85,11 +85,11 @@ sandbox.window = sandbox;
 vm.runInNewContext(catalogSrc, sandbox);
 const cat = sandbox.fireSSubscriptionCatalog;
 assert.ok(cat && cat.priceLabel && cat.bothPriceLines, 'catalog must expose price labels');
-assert.strictEqual(cat.priceLabel('monthly'), 'R349 per subscription per month');
-assert.strictEqual(cat.priceLabel('annual'), 'R3 490 per subscription per year');
+assert.strictEqual(cat.priceLabel('monthly'), 'R250 per subscription per month');
+assert.strictEqual(cat.priceLabel('annual'), 'R2 500 per subscription per year');
 const lines = cat.bothPriceLines('monthly');
-assert.ok(/R349 per subscription/.test(lines.monthly), 'monthly picker must say per subscription');
-assert.ok(/R3 490 per subscription/.test(lines.annual), 'annual picker must say per subscription');
+assert.ok(/R250 per subscription/.test(lines.monthly), 'monthly picker must say per subscription');
+assert.ok(/R2 500 per subscription/.test(lines.annual), 'annual picker must say per subscription');
 assert.ok(!/per email/.test(lines.monthly + lines.annual), 'picker price lines must not say per email');
 assert.ok(
   /per subscription/.test(cat.note) && /Each new email is a new subscription/.test(cat.note),
