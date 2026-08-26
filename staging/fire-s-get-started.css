@@ -185,6 +185,15 @@ body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre .main-comma
   display: block !important;
 }
 
+body.fire-s-clean-home.fire-s-role-guest #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-new-company #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-pending-member #homeSection .home-hero,
+body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre,
+body.fire-s-clean-home.fire-s-role-new-company #mainCommandCentre,
+body.fire-s-clean-home.fire-s-role-pending-member #mainCommandCentre {
+  display: none !important;
+}
+
 body.fire-s-clean-home.fire-s-role-guest .startup-route-grid,
 body.fire-s-clean-home.fire-s-role-new-company .startup-route-grid,
 body.fire-s-clean-home.fire-s-role-pending-member .startup-route-grid {

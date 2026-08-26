@@ -42,6 +42,10 @@
   function revealApp(reason) {
     if (revealed) return;
     const elapsed = Date.now() - startedAt;
+    const authReady = !!window.__fireSAuthSettled;
+    if (reason !== 'timeout' && reason !== 'auth-settled' && !authReady) {
+      return;
+    }
     if (elapsed < BOOT_MIN_MS && reason !== 'timeout') {
       scheduleReveal(reason || 'min', BOOT_MIN_MS - elapsed);
       return;
@@ -126,18 +130,30 @@
     wrapShowHome();
     forceHomeOnly();
 
+    try {
+      document.addEventListener(
+        'fire-s:auth-settled',
+        function () {
+          scheduleReveal('auth-settled', 80);
+        },
+        { once: true }
+      );
+    } catch (_) {}
+
     // Hard stop: never keep the splash longer than this.
     setTimeout(() => revealApp('timeout'), BOOT_MAX_MS);
 
-    // Prefer reveal after role home settles.
+    // Prefer reveal after role home settles — only if auth already knows.
     setTimeout(() => {
       try {
         if (typeof window.fireSApplyCleanHomeRoles === 'function') {
           window.fireSApplyCleanHomeRoles();
         }
       } catch (_) {}
-      scheduleReveal('settled', 120);
+      if (window.__fireSAuthSettled) scheduleReveal('settled', 120);
     }, 700);
+
+    if (window.__fireSAuthSettled) scheduleReveal('auth-settled', 80);
   }
 
   window.fireSRevealApp = revealApp;

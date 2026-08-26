@@ -23,7 +23,7 @@ const privacy = read('staging/privacy.html');
 const liveCatalog = read('fire-s-subscriptions.js');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.25-toets/.test(env), 'Toets-blad version must be 1.3.25-toets');
+assert.ok(/1\.3\.26-toets/.test(env), 'Toets-blad version must stay on 1.3.26-toets');
 assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must stay on 1.3.14 until sit dit live');
 
 const priceFiles = [html, catalogSrc, subscribe, notify, getStarted, roles, manual, terms, privacy];

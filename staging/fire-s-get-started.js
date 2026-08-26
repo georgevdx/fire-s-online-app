@@ -1177,6 +1177,7 @@
     if (preferredMode === 'login') mode = 'login';
     else if (preferredMode === 'create') mode = 'create';
     else if (preferredMode === 'register') mode = 'register';
+    else if (preferredMode === 'choices') mode = 'choices';
     else mode = 'login';
     render();
     try {
@@ -1204,7 +1205,7 @@
 
   function installHelp() {
     setStatus(
-      'On this phone: Chrome menu (three dots) → Add to Home screen / Install app. Google Play listing comes next, after Company S uploads the store file.',
+      'On this phone: Chrome menu (three dots) → Add to Home screen / Install app. Google Play listing comes next, after Fire-S uploads the store file.',
       false
     );
   }
@@ -1288,6 +1289,12 @@
     var installBtn = byId('fireSInstallAppBtn');
     if (installBtn) {
       installBtn.addEventListener('click', function () {
+        tryInstallApp();
+      });
+    }
+    var loginInstallBtn = byId('fireSLoginInstallBtn');
+    if (loginInstallBtn) {
+      loginInstallBtn.addEventListener('click', function () {
         tryInstallApp();
       });
     }
