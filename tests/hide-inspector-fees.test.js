@@ -18,7 +18,7 @@ const manual = read('staging/fire-s-user-manual.js');
 const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.29-toets/.test(env), 'Toets-blad version must be 1.3.29-toets');
+assert.ok(/1\.3\.30-toets/.test(env), 'Toets-blad version must be 1.3.30-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
   'Live Fire-S must be 1.3.27 after sit dit live'
@@ -56,7 +56,10 @@ const subscribePage = html.match(
   /id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/
 );
 assert.ok(
-  subscribePage && /R250 per month/.test(subscribePage[0]) && /R2 500 per year/.test(subscribePage[0]),
+  subscribePage &&
+    /per month per login is/.test(subscribePage[0]) &&
+    /R250/.test(subscribePage[0]) &&
+    /R2 500/.test(subscribePage[0]),
   'Owner Subscription page must still show the fees'
 );
 
@@ -116,7 +119,7 @@ sandbox.window = sandbox;
 vm.runInNewContext(catalogSrc, sandbox);
 assert.strictEqual(
   sandbox.fireSSubscriptionCatalog.priceLabel('monthly'),
-  'R250 per subscription per month'
+  'R250 per month per login'
 );
 
 assert.ok(

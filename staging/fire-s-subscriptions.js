@@ -15,13 +15,13 @@
   var INTERVALS = [
     {
       id: 'monthly',
-      name: 'Monthly · R250 per subscription',
-      summary: 'R250 every month, per subscription. The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
+      name: 'Monthly · R250 per month per login',
+      summary: 'Subscription per month per login is R250. Phone and desktop with the same email count as one login.'
     },
     {
       id: 'annual',
-      name: 'Annual · R2 500 per subscription · 2 months free',
-      summary: 'R2 500 once a year, per subscription. That is 2 months free (you save R500). The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
+      name: 'Annual · R2 500 per year per login · 2 months free',
+      summary: 'Subscription per year per login is R2 500. That is 2 months free (you save R500). Phone and desktop with the same email count as one login.'
     }
   ];
 
@@ -31,7 +31,7 @@
       name: 'Fire-S seat',
       audience: 'Every email',
       seats: 'One subscription, paid by the owner',
-      summary: 'R250 per month or R2 500 per year, per subscription. The owner pays for every subscription. Inspectors and other staff do not pay.',
+      summary: 'Subscription per month per login is R250, or R2 500 per year per login. Phone and desktop with the same email count as one login. Each extra person is another subscription.',
       includes: [
         'One login on phone and desktop',
         'Inspection Gateway, Q&A, photos, GPS and client PDF',
@@ -159,9 +159,9 @@
 
   function priceLabel(interval) {
     if (normalizeInterval(interval) === 'annual') {
-      return formatRand(SEAT_PRICE_ANNUAL) + ' per subscription per year';
+      return formatRand(SEAT_PRICE_ANNUAL) + ' per year per login';
     }
-    return formatRand(SEAT_PRICE_MONTHLY) + ' per subscription per month';
+    return formatRand(SEAT_PRICE_MONTHLY) + ' per month per login';
   }
 
   function normalizeInterval(id) {
@@ -344,8 +344,8 @@
   function bothPriceLines(selectedId) {
     var selected = normalizeInterval(selectedId || currentIntervalId());
     return {
-      monthly: 'Monthly · ' + formatRand(SEAT_PRICE_MONTHLY) + ' per subscription',
-      annual: 'Annual · ' + formatRand(SEAT_PRICE_ANNUAL) + ' per subscription · 2 months free',
+      monthly: 'Monthly · ' + formatRand(SEAT_PRICE_MONTHLY) + ' per month per login',
+      annual: 'Annual · ' + formatRand(SEAT_PRICE_ANNUAL) + ' per year per login · 2 months free',
       selected: selected,
       saveNote: 'Annual saves R500 (2 months free).'
     };
@@ -500,7 +500,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'The owner pays R250 per month or R2 500 per year per subscription. Inspectors and other staff do not pay. Each new email is a new subscription, invoiced to the owner. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
-    billingNote: 'The owner pays R250 / month or R2 500 / year per subscription. Inspectors do not pay. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription, invoiced to the owner. The app does not take a card yet; Fire-S invoices the owner.',
+    billingNote: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. Fire-S invoices you. No card is taken yet.'
   };
 })(window);

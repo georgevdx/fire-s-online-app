@@ -19,11 +19,31 @@ function checkTree(dir) {
   const terms = read(file('terms.html'));
   const privacy = read(file('privacy.html'));
 
-  assert.ok(
-    /Inspectors and other staff do not pay/.test(html) &&
-      /Each new email is a new subscription/.test(html),
-    label + ': Subscribe and Personnel copy must say the owner pays for each new email'
-  );
+  if (dir === 'staging') {
+    assert.ok(
+      /Each extra person is another subscription/.test(html) &&
+        /Each new email is a new subscription/.test(html),
+      label + ': Subscribe copy must price each extra person; Personnel must still say each new email'
+    );
+    assert.ok(
+      /per month per login/.test(catalog) && /Each extra person is another subscription/.test(catalog),
+      label + ': price list must say per login, not that staff apps are free'
+    );
+    assert.ok(
+      !/Inspectors do not pay/.test(catalog) && !/Inspectors and other staff do not pay/.test(html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/)[0]),
+      label + ': Subscription page must not say inspectors do not pay'
+    );
+  } else {
+    assert.ok(
+      /Inspectors and other staff do not pay/.test(html) &&
+        /Each new email is a new subscription/.test(html),
+      label + ': Subscribe and Personnel copy must say the owner pays for each new email'
+    );
+    assert.ok(
+      /The owner pays/.test(catalog) && /Inspectors do not pay/.test(catalog),
+      label + ': price list must say the owner pays'
+    );
+  }
   assert.ok(
     !/Inspector, Manager, Owner and Viewer pay the same/.test(html),
     label + ': app must not say inspectors pay the same as the owner'
@@ -38,10 +58,6 @@ function checkTree(dir) {
     /function notifyOwnerPaysSubscription\(/.test(team) &&
       /billedTo: ownerBillingEmail\(\)/.test(team),
     label + ': adding personnel must start a new subscription billed to the owner'
-  );
-  assert.ok(
-    /The owner pays/.test(catalog) && /Inspectors do not pay/.test(catalog),
-    label + ': price list must say the owner pays'
   );
   assert.ok(
     /Inspectors and other staff do not pay/.test(terms) &&
@@ -110,7 +126,7 @@ if (/billed_to/.test(liveNotify)) {
 
 const toetsEnv = read('staging/fire-s-env.js');
 assert.ok(
-  /1\.3\.(1[4-9]|2\d)-toets/.test(toetsEnv),
+  /1\.3\.(1[4-9]|[2-9]\d)-toets/.test(toetsEnv),
   'Toets-blad must stay on 1.3.14-toets or newer with owner-pays copy'
 );
 

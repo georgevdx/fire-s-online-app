@@ -55,7 +55,7 @@ assert.ok(
   'User manual must explain owner Add vs remote Create password'
 );
 assert.ok(
-  /1\.3\.2\d-toets/.test(env),
+  /1\.3\.[2-9]\d-toets/.test(env),
   'Toets-blad version must stay on 1.3.20-toets or newer'
 );
 

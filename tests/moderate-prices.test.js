@@ -18,7 +18,7 @@ const liveHtml = read('index.html');
 const terms = read('staging/terms.html');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.29-toets/.test(env), 'Toets-blad version must be 1.3.29-toets');
+assert.ok(/1\.3\.30-toets/.test(env), 'Toets-blad version must be 1.3.30-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
   'Live Fire-S must stay on 1.3.27 until sit dit live'
@@ -47,13 +47,13 @@ const sandbox = {
 sandbox.window = sandbox;
 vm.runInNewContext(catalogSrc, sandbox);
 const cat = sandbox.fireSSubscriptionCatalog;
-assert.strictEqual(cat.priceLabel('monthly'), 'R250 per subscription per month');
-assert.strictEqual(cat.priceLabel('annual'), 'R2 500 per subscription per year');
+assert.strictEqual(cat.priceLabel('monthly'), 'R250 per month per login');
+assert.strictEqual(cat.priceLabel('annual'), 'R2 500 per year per login');
 assert.ok(/R500/.test(cat.bothPriceLines('annual').saveNote), 'Annual must still be 2 months free (save R500)');
 
 assert.ok(
-  /R250 per month/.test(html) && /R2 500 per year/.test(html),
-  'Toets Subscribe screens must show R250 / R2 500'
+  /per month per login is R250/.test(html) && /Per year per login is R2 500/.test(html),
+  'Toets Subscribe screens must show R250 / R2 500 per login'
 );
 assert.ok(
   /R250 per month/.test(terms) && /R2 500/.test(terms),

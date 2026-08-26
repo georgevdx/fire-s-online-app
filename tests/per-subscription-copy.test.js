@@ -23,7 +23,7 @@ const privacy = read('staging/privacy.html');
 const liveCatalog = read('fire-s-subscriptions.js');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.29-toets/.test(env), 'Toets-blad version must stay on 1.3.29-toets');
+assert.ok(/1\.3\.30-toets/.test(env), 'Toets-blad version must stay on 1.3.30-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
   'Live Fire-S must be 1.3.27 after sit dit live'
@@ -52,9 +52,9 @@ priceFiles.forEach(function (src, i) {
 });
 
 assert.ok(
-  /You pay monthly or annually · R250 per subscription/.test(html) &&
-    /R250 \/ month \(or R2 500 \/ year\) per subscription/.test(html),
-  'Access Subscribe form must say R250 per subscription'
+  /Subscription per month per login is R250/.test(html) &&
+    /Per year per login is R2 500/.test(html),
+  'Access Subscribe form must say R250 per month per login'
 );
 assert.ok(
   !/you pay R250 per subscription · staff never Subscribe/.test(html),
@@ -85,15 +85,16 @@ sandbox.window = sandbox;
 vm.runInNewContext(catalogSrc, sandbox);
 const cat = sandbox.fireSSubscriptionCatalog;
 assert.ok(cat && cat.priceLabel && cat.bothPriceLines, 'catalog must expose price labels');
-assert.strictEqual(cat.priceLabel('monthly'), 'R250 per subscription per month');
-assert.strictEqual(cat.priceLabel('annual'), 'R2 500 per subscription per year');
+assert.strictEqual(cat.priceLabel('monthly'), 'R250 per month per login');
+assert.strictEqual(cat.priceLabel('annual'), 'R2 500 per year per login');
 const lines = cat.bothPriceLines('monthly');
-assert.ok(/R250 per subscription/.test(lines.monthly), 'monthly picker must say per subscription');
-assert.ok(/R2 500 per subscription/.test(lines.annual), 'annual picker must say per subscription');
+assert.ok(/R250 per month per login/.test(lines.monthly), 'monthly picker must say per login');
+assert.ok(/R2 500 per year per login/.test(lines.annual), 'annual picker must say per login');
 assert.ok(!/per email/.test(lines.monthly + lines.annual), 'picker price lines must not say per email');
+assert.ok(!/per device/.test(lines.monthly + lines.annual), 'picker price lines must not say per device');
 assert.ok(
-  /per subscription/.test(cat.note) && /Each new email is a new subscription/.test(cat.note),
-  'catalog note must price per subscription and keep one-email identity'
+  /per login/.test(cat.note) && /Each extra person is another subscription/.test(cat.note),
+  'catalog note must price per login and keep extra-person billing'
 );
 
 assert.ok(

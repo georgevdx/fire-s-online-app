@@ -82,14 +82,14 @@
         (interval === 'annual' ? lines.annual : lines.monthly) +
         '. ' +
         lines.saveNote +
-        ' You (the owner) pay. Inspectors do not. Phone and desktop share that email.</span>';
+        ' Phone and desktop with the same email count as one login. Each extra person is another subscription.</span>';
       return;
     }
-    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R250 per subscription per month';
+    var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R250 per month per login';
     current.innerHTML =
       '<strong>Fire-S seat · ' +
       price +
-      '</strong><span>You (the owner) pay for every subscription. Inspectors do not pay. Phone and desktop share that email.</span>';
+      '</strong><span>Subscription per month per login is R250. Phone and desktop with the same email count as one login. Each extra person is another subscription.</span>';
   }
 
   function hideOtherSections() {
@@ -154,8 +154,8 @@
     }
     if (intro) {
       intro.innerHTML = isSeat
-        ? 'Choose monthly or annual first (annual is 2 months free). Then type their email, choose Inspector or Manager, and tap <strong>Subscribe this email</strong>. You (the owner) pay. They do not pay and they never open this page.'
-        : 'You (the owner) pay <strong>R250 per month</strong> or <strong>R2 500 per year</strong> per subscription. Inspectors and other staff do not pay. Phone and desktop share that login. The app does not take a card yet — Fire-S invoices you. Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
+        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. Fire-S invoices you. They never open this page.'
+        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Each extra person is another subscription. Fire-S invoices you. No card is taken yet. Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
   }
 
@@ -266,7 +266,7 @@
       return;
     }
     var price = cat.priceLabel ? cat.priceLabel(intervalId) : '';
-    setMessage('Saved: ' + price + '. Company S invoices you (the owner). Inspectors do not pay. No card was taken.');
+    setMessage('Saved: ' + price + '. Fire-S invoices you. No card was taken.');
     try {
       if (typeof window.fireSApplyCleanHomeRoles === 'function') {
         window.fireSApplyCleanHomeRoles();

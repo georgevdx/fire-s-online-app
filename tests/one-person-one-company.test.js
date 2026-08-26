@@ -58,7 +58,7 @@ assert.ok(
   'Subscribe and Personnel copy must say one person is one company'
 );
 assert.ok(
-  /1\.3\.(1[6-9]|2\d)-toets/.test(env),
+  /1\.3\.(1[6-9]|[2-9]\d)-toets/.test(env),
   'Toets-blad version must stay on 1.3.16-toets or newer'
 );
 assert.ok(

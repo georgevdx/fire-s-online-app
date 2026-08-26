@@ -39,7 +39,7 @@ assert.ok(
   'Personnel must not show the same email twice'
 );
 assert.ok(
-  /1\.3\.(1[8-9]|2\d)-toets/.test(env),
+  /1\.3\.(1[8-9]|[2-9]\d)-toets/.test(env),
   'Toets-blad version must stay on 1.3.18-toets or newer'
 );
 assert.ok(
