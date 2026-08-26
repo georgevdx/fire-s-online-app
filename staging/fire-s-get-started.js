@@ -664,7 +664,7 @@
     mode = 'login';
     hidePanels();
     paintLoginForm();
-    setTitle('Login', 'Use your email and password. New company? Subscribe below.');
+    setTitle('Login', 'Use your email and password. A new business owner taps New company? Subscribe.');
     showPanel('fireSGetStartedLoginFields');
     var createToggle = byId('fireSSwitchToCreateBtn');
     if (createToggle) createToggle.style.display = '';

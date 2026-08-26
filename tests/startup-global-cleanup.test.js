@@ -45,6 +45,10 @@ assert.ok(
   'Login after splash must still offer Install on this phone'
 );
 assert.ok(
+  /id="fireSGetStartedStatus"[\s\S]*fire-s-legal-links[\s\S]*Open Terms and conditions[\s\S]*Open Privacy policy/.test(html),
+  'Terms and Privacy must stay visible on Login, not only on the old Access choice list'
+);
+assert.ok(
   /preferredMode === 'choices'/.test(getStarted),
   'Cloud Open Access must be able to open the Access choice list'
 );
