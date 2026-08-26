@@ -48,9 +48,16 @@ assert.ok(
 );
 assert.ok(
   /function canRemovePerson\(/.test(team) &&
+    /function canRemoveThisMember\(/.test(team) &&
+    /A manager cannot remove the Owner/.test(team) &&
     /Their email and password will be deleted from the cloud/.test(team) &&
     /Then they can Subscribe under another company name/.test(team),
-  'Personnel Remove must warn that the cloud login is deleted'
+  'Personnel Remove must warn that the cloud login is deleted and never let a manager remove the Owner'
+);
+assert.ok(
+  /A manager cannot remove the Owner/.test(sql) &&
+    /A manager cannot remove the Owner/.test(bootstrap),
+  'Cloud remove must refuse to delete an Owner row'
 );
 assert.ok(
   /Only you \(the owner\) can Remove someone/.test(html) &&

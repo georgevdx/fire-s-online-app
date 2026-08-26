@@ -428,6 +428,17 @@
     return ['company_owner', 'owner', 'super_admin'].includes(role);
   }
 
+  function isOwnerMemberRole(role) {
+    const r = text(role).toLowerCase();
+    return r === 'company_owner' || r === 'owner' || r === 'super_admin';
+  }
+
+  function canRemoveThisMember(member) {
+    if (!canRemovePerson()) return false;
+    if (isOwnerMemberRole(member && member.role)) return false;
+    return true;
+  }
+
   function removedPersonMessage(rpcData) {
     const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     if (payload && typeof payload === 'object' && payload.login_deleted === false) {
@@ -1045,6 +1056,7 @@
   function renderMembers(members) {
     const list = byId('companyTeamList');
     if (!list) return;
+    window.__fireSTeamMembersCache = Array.isArray(members) ? members : [];
 
     const active = members.filter(m => text(m.status || 'active').toLowerCase() !== 'inactive');
     if (!active.length) {
@@ -1062,6 +1074,7 @@
         const role = text(member.role) || 'inspector';
         const isMe = text(member.user_id) === me;
         const memberKey = text(member.id || member.user_id);
+        const lockOwner = isOwnerMemberRole(role) && !canAssignOwner();
         return `
           <article class="company-team-card" data-member-id="${esc(memberKey)}">
             <div class="company-team-card-main">
@@ -1069,14 +1082,18 @@
               <span>${esc(email)}${isMe ? ' · you' : ''} · ${esc(roleLabel(role))}</span>
             </div>
             <div class="company-team-card-actions${isMe ? ' is-self' : ''}">
-              <select data-role-select="${esc(memberKey)}" aria-label="Role for ${esc(email)}">
+              <select data-role-select="${esc(memberKey)}" aria-label="Role for ${esc(email)}"${lockOwner ? ' disabled' : ''}>
                 ${roleOptionsHtml(role, !canAssignOwner())}
               </select>
-              <button type="button" class="secondary-btn" data-save-role="${esc(memberKey)}" data-user-id="${esc(member.user_id)}">
-                Change role
-              </button>
               ${
-                isMe || !canRemovePerson()
+                lockOwner
+                  ? ''
+                  : `<button type="button" class="secondary-btn" data-save-role="${esc(memberKey)}" data-user-id="${esc(member.user_id)}">
+                Change role
+              </button>`
+              }
+              ${
+                isMe || !canRemoveThisMember(member)
                   ? ''
                   : `<button type="button" class="secondary-btn" data-remove-member="${esc(member.user_id)}">Remove</button>`
               }
@@ -1116,6 +1133,11 @@
       }
       const ctx = companyContext();
       if (!ctx.companyId || !userId) throw new Error('Missing company or person.');
+      const members = Array.isArray(window.__fireSTeamMembersCache) ? window.__fireSTeamMembersCache : [];
+      const target = members.find(m => text(m.user_id) === text(userId));
+      if (target && isOwnerMemberRole(target.role)) {
+        throw new Error('A manager cannot remove the Owner. Only the Owner can remove a Manager.');
+      }
 
       setMessage('Removing…');
       const rpc = await waitFor(
@@ -1142,6 +1164,15 @@
       }
       if (role === 'company_owner' && !canAssignOwner()) {
         throw new Error('Only an Owner can assign the Owner role.');
+      }
+      const members = Array.isArray(window.__fireSTeamMembersCache)
+        ? window.__fireSTeamMembersCache
+        : [];
+      const target = members.find(
+        m => text(m.user_id) === text(userId) || text(m.id) === text(memberId)
+      );
+      if (target && isOwnerMemberRole(target.role) && !canAssignOwner()) {
+        throw new Error('A manager cannot change or remove the Owner. Only the Owner can remove a Manager.');
       }
 
       setMessage('Saving role…');

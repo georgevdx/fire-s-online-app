@@ -1,8 +1,8 @@
 /* ============================================================
    Fire-S subscriber plans
    Shared by Access, Home, User manual and Play Store listing.
-   Card payment is not taken in the app yet. The chosen plan is stored
-   on the company so Company S can bill later.
+   Owner pays on PayFast. Status is active, unpaid or cancelled.
+   Cancel and failed payment never delete company info or inspections.
    ============================================================ */
 (function fireSSubscriptions(root) {
   'use strict';
@@ -225,6 +225,8 @@
   var STARTED_KEY = 'fireS.billingStartedOn';
   var RENEWS_KEY = 'fireS.billingRenewsOn';
   var DISMISS_KEY = 'fireS.expiryReminderDismissed';
+  var STATUS_KEY = 'fireS.billingStatus';
+  var CANCELLED_ON_KEY = 'fireS.billingCancelledOn';
 
   function pad2(n) {
     return (n < 10 ? '0' : '') + n;
@@ -277,6 +279,110 @@
       localStorage.setItem(STARTED_KEY, key);
     } catch (_) {}
     return key;
+  }
+
+  function rememberStatus(status) {
+    var value = text(status).toLowerCase() || 'unpaid';
+    if (value !== 'active' && value !== 'cancelled' && value !== 'unpaid') value = 'unpaid';
+    try {
+      localStorage.setItem(STATUS_KEY, value);
+    } catch (_) {}
+    try {
+      if (root.currentCompanyAccess) root.currentCompanyAccess.billingStatus = value;
+    } catch (_) {}
+    return value;
+  }
+
+  function billingStatus() {
+    try {
+      var live = root.currentCompanyAccess && root.currentCompanyAccess.billingStatus;
+      if (live) return text(live).toLowerCase();
+    } catch (_) {}
+    return text(readStored(STATUS_KEY)).toLowerCase() || 'unpaid';
+  }
+
+  function persistBillingMeta() {
+    var sb = getSb();
+    var cid = companyId();
+    if (!sb || !cid) return Promise.resolve({ ok: true, local: true });
+    var payload = {
+      billing_interval: currentIntervalId(),
+      billing_status: billingStatus(),
+      billing_renews_on: currentRenewsOn() || null
+    };
+    return sb
+      .from('companies')
+      .update(payload)
+      .eq('id', cid)
+      .then(function (res) {
+        if (res && res.error) return { ok: false, error: res.error };
+        return { ok: true };
+      })
+      .catch(function () {
+        return { ok: true, local: true };
+      });
+  }
+
+  function markPaid(intervalId) {
+    if (intervalId) rememberInterval(intervalId);
+    startBillingPeriod(intervalId);
+    rememberStatus('active');
+    persistBillingMeta();
+    return billingStatus();
+  }
+
+  function markUnpaid() {
+    if (billingStatus() === 'cancelled') return billingStatus();
+    rememberStatus('unpaid');
+    persistBillingMeta();
+    return billingStatus();
+  }
+
+  function cancelBilling() {
+    // Never delete companies, inspections, or people. Cancel only stops auto-renew.
+    ensureRenewsOn();
+    rememberStatus('cancelled');
+    try {
+      localStorage.setItem(CANCELLED_ON_KEY, todayKey());
+    } catch (_) {}
+    persistBillingMeta();
+    return billingStatus();
+  }
+
+  function reactivateBilling(intervalId) {
+    markPaid(intervalId);
+    try {
+      localStorage.removeItem(CANCELLED_ON_KEY);
+    } catch (_) {}
+    return billingStatus();
+  }
+
+  function statusHeadline() {
+    var interval = currentIntervalId();
+    var when = formatLongDate(ensureRenewsOn(interval));
+    var period = interval === 'annual' ? 'year' : 'month';
+    var status = billingStatus();
+    if (status === 'cancelled') {
+      return 'Cancelled. This login stays until ' + when + '. It will not auto-renew.';
+    }
+    if (status === 'active') {
+      return (
+        'This login is active for one ' +
+        period +
+        ' until ' +
+        when +
+        '. It renews automatically until you cancel.'
+      );
+    }
+    return 'Payment is not through yet. This company and its inspections stay saved.';
+  }
+
+  function statusKeepDataNote() {
+    return 'Cancelling or a failed payment does not delete the company name or inspections. That data stays in the cloud.';
+  }
+
+  function statusCopy() {
+    return statusHeadline() + ' ' + statusKeepDataNote();
   }
 
   function rememberRenewsOn(dateKey) {
@@ -491,6 +597,14 @@
     shouldShowExpiryReminder: shouldShowExpiryReminder,
     dismissExpiryReminder: dismissExpiryReminder,
     formatLongDate: formatLongDate,
+    billingStatus: billingStatus,
+    markPaid: markPaid,
+    markUnpaid: markUnpaid,
+    cancelBilling: cancelBilling,
+    reactivateBilling: reactivateBilling,
+    statusHeadline: statusHeadline,
+    statusKeepDataNote: statusKeepDataNote,
+    statusCopy: statusCopy,
     bothPriceLines: bothPriceLines,
     duplicateSeatMessage: duplicateSeatMessage,
     formatRand: formatRand,

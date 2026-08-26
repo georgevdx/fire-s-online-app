@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-5-startup">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-4-payfast">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-5-status">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -721,6 +721,22 @@
     <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
   </div>
   <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
+  <div id="fireSSubscribeStatus" class="fire-s-subscribe-status" hidden>
+    <strong id="fireSSubscribeStatusTitle">Subscription status</strong>
+    <p id="fireSSubscribeStatusCopy"></p>
+    <p id="fireSSubscribeStatusKeep" class="fire-s-subscribe-status-keep"></p>
+  </div>
+  <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel" hidden>
+    <h4>Cancel this subscription</h4>
+    <ol>
+      <li>Only the Owner can cancel.</li>
+      <li>Tap <strong>Cancel subscription</strong>.</li>
+      <li>Confirm. Auto-renew stops.</li>
+      <li>The company name and inspections stay in the cloud.</li>
+      <li>You can pay on PayFast again later if you want the login active.</li>
+    </ol>
+    <button id="fireSSubscribeCancelBtn" type="button" class="secondary-btn">Cancel subscription</button>
+  </div>
   <div id="fireSSubscribeSeatPanel" class="fire-s-subscribe-seat" style="display:none;">
     <label class="fire-s-subscribe-seat-label" for="fireSSeatEmail">Their email</label>
     <input id="fireSSeatEmail" type="email" placeholder="inspector@company.com" autocomplete="off">
@@ -926,7 +942,7 @@
   <div id="companyTeamAddPanel" class="company-team-add">
     <div class="cloud-section-title">Add people</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Each new email is a new subscription under this company name. You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email, choose Inspector or Manager, and see the fees. One person is one company. Only you (the owner) can Remove someone. That deletes their email and password from the cloud. Then they can Subscribe under another company name.
+      Each new email is a new subscription under this company name. You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email, choose Inspector or Manager, and see the fees. One person is one company. Only you (the owner) can Remove someone. A manager cannot remove the Owner. The Owner can remove a Manager. Remove deletes their email and password from the cloud. Then they can Subscribe under another company name. Cancelling a subscription does not delete this company or its inspections.
     </p>
     <button id="companyTeamStartSeatBtn" type="button" class="cloud-primary-btn" style="width:100%; margin-top:10px;">
       Add inspector / manager
@@ -1681,7 +1697,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-31-payfast"></script>
+  <script src="fire-s-env.js?v=1-3-32-status"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1700,15 +1716,15 @@
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-5-per-sub"></script>
-  <script src="fire-s-company-team.js?v=2-17-assign"></script>
+  <script src="fire-s-company-team.js?v=2-18-owner-guard"></script>
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-12-payfast"></script>
+  <script src="fire-s-subscriptions.js?v=1-13-status"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
-  <script src="fire-s-payfast.js?v=1-0-sandbox"></script>
-  <script src="fire-s-subscribe.js?v=1-11-payfast"></script>
-  <script src="fire-s-user-manual.js?v=1-26-payfast"></script>
+  <script src="fire-s-payfast.js?v=1-1-status"></script>
+  <script src="fire-s-subscribe.js?v=1-12-status"></script>
+  <script src="fire-s-user-manual.js?v=1-27-status"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-25-payfast"></script>

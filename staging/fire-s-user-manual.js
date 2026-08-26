@@ -357,7 +357,9 @@
             ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. Each extra person is another subscription.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
         <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date, and that it renews automatically until you cancel.</p>
+        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops. The login stays until the expiry date already shown. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud. Pay on PayFast later to make it active again.</p>
+        <p>One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}

@@ -274,8 +274,18 @@
     bar.className = 'fire-s-payfast-return is-' + status;
     bar.textContent =
       status === 'ok'
-        ? 'PayFast sandbox received this payment. No real money. Open Home to continue.'
-        : 'PayFast payment was cancelled. Open Subscription → Pay on PayFast when you are ready.';
+        ? 'PayFast sandbox received this payment. This login is now active and renews until you cancel. Company data stays saved.'
+        : 'PayFast payment was cancelled. This company and its inspections stay saved. Open Subscription → Pay on PayFast when you are ready.';
+    try {
+      var cat = root.fireSSubscriptionCatalog;
+      if (cat) {
+        if (status === 'ok' && cat.markPaid) cat.markPaid();
+        if (status === 'cancel' && cat.markUnpaid) cat.markUnpaid();
+      }
+    } catch (_) {}
+    try {
+      if (typeof root.fireSPaintSubscribeStatus === 'function') root.fireSPaintSubscribeStatus();
+    } catch (_) {}
     stripPayfastQuery();
   }
 

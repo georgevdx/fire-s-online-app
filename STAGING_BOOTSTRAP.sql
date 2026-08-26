@@ -924,6 +924,17 @@ begin
     raise exception 'That person is not on this company';
   end if;
 
+  if exists (
+    select 1
+    from public.company_members m
+    where m.company_id = p_company_id
+      and m.user_id = p_user_id
+      and lower(coalesce(m.role, '')) in ('company_owner', 'owner', 'super_admin')
+  ) then
+    raise exception
+      'A manager cannot remove the Owner. Only the Owner can remove a Manager.';
+  end if;
+
   select lower(trim(u.email))
     into v_email
     from auth.users u
