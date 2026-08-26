@@ -40,23 +40,6 @@
     );
   }
 
-  function rememberSeatEmails(members, invites) {
-    const emails = [];
-    (members || []).forEach(member => {
-      const status = text(member.status || 'active').toLowerCase();
-      if (status === 'inactive') return;
-      const email = text(member.profiles && member.profiles.email).toLowerCase();
-      if (email) emails.push(email);
-    });
-    (invites || []).forEach(invite => {
-      const email = text(invite.email).toLowerCase();
-      if (email) emails.push(email);
-    });
-    lastSeatEmails = emails;
-    lastMembers = Array.isArray(members) ? members : [];
-    lastInvites = Array.isArray(invites) ? invites : [];
-  }
-
   function memberEmail(member) {
     return text(member && member.profiles && member.profiles.email).toLowerCase();
   }
@@ -99,6 +82,66 @@
     });
   }
 
+  function rememberSeatEmails(members, invites) {
+    const emails = [];
+    (members || []).forEach(member => {
+      const status = text(member.status || 'active').toLowerCase();
+      if (status === 'inactive') return;
+      const email = text(member.profiles && member.profiles.email).toLowerCase();
+      if (email) emails.push(email);
+    });
+    (invites || []).forEach(invite => {
+      const email = text(invite.email).toLowerCase();
+      if (email) emails.push(email);
+    });
+    lastSeatEmails = emails;
+    lastMembers = Array.isArray(members) ? members : [];
+    lastInvites = Array.isArray(invites) ? invites : [];
+  }
+
+  function ownerBillingEmail() {
+    const members = lastMembers || [];
+    for (let i = 0; i < members.length; i += 1) {
+      const member = members[i];
+      const status = text((member && member.status) || 'active').toLowerCase();
+      if (status === 'inactive') continue;
+      const role = text(member && member.role).toLowerCase();
+      if (role !== 'company_owner' && role !== 'owner' && role !== 'super_admin') {
+        continue;
+      }
+      const email = text(member && member.profiles && member.profiles.email).toLowerCase();
+      if (email) return email;
+    }
+    return text(companyContext().email).toLowerCase();
+  }
+
+  function currentBillingInterval() {
+    try {
+      if (
+        window.fireSSubscriptionCatalog &&
+        window.fireSSubscriptionCatalog.currentIntervalId
+      ) {
+        return window.fireSSubscriptionCatalog.currentIntervalId() || 'monthly';
+      }
+    } catch (_) {}
+    return 'monthly';
+  }
+
+  function notifyOwnerPaysSubscription(personEmail, roleName) {
+    try {
+      if (typeof window.fireSNotifyCompanyS !== 'function') return;
+      const ctx = companyContext();
+      window.fireSNotifyCompanyS({
+        kind: 'seat',
+        company: text(ctx.companyName || window.currentUserProfile?.companyName),
+        email: text(personEmail).toLowerCase(),
+        role: roleName,
+        billedTo: ownerBillingEmail(),
+        interval: currentBillingInterval()
+      });
+    } catch (_) {}
+  }
+
   function duplicateSeatMessage(email) {
     try {
       if (window.fireSSubscriptionCatalog && window.fireSSubscriptionCatalog.duplicateSeatMessage) {
@@ -107,8 +150,105 @@
     } catch (_) {}
     return (
       text(email).toLowerCase() +
-      ' is already a paid seat. That person logs in on phone and desktop with the same email. Do not enter it again.'
+      ' is already a subscription the owner pays for. That person logs in on phone and desktop with the same email. Do not enter it again.'
     );
+  }
+
+  function otherCompanySeatMessage(email) {
+    return (
+      text(email).toLowerCase() +
+      ' already belongs to a company. One person is one company. Only that Owner can remove them under Personnel. Then they can Subscribe under another company name.'
+    );
+  }
+
+  function isOtherCompanySeatError(msg) {
+    const low = text(msg).toLowerCase();
+    return (
+      low.indexOf('one person is one company') >= 0 ||
+      low.indexOf('already belongs to a company') >= 0 ||
+      low.indexOf('company_members_one_active_user') >= 0
+    );
+  }
+
+  function isClosedInviteStatus(status) {
+    const value = text(status).toLowerCase();
+    return (
+      value === 'cancelled' ||
+      value === 'canceled' ||
+      value === 'expired' ||
+      value === 'declined' ||
+      value === 'rejected'
+    );
+  }
+
+  function forgetSeatEmail(email) {
+    const addr = text(email).toLowerCase();
+    lastSeatEmails = (lastSeatEmails || []).filter(item => item !== addr);
+  }
+
+  async function reopenCancelledInvite(companyId, email, role) {
+    const result = await waitFor(
+      supabaseClient
+        .from('company_invites')
+        .select('id, email, role, status')
+        .eq('company_id', companyId)
+        .ilike('email', text(email).toLowerCase()),
+      3000,
+      'Invite lookup'
+    );
+    if (result?.error) return { ok: false, error: result.error };
+    const rows = Array.isArray(result?.data) ? result.data : [];
+    const pending = rows.some(row => text(row.status).toLowerCase() === 'pending');
+    if (pending) return { ok: false, reason: 'pending' };
+    const closed = rows.find(row => isClosedInviteStatus(row.status));
+    if (!closed) return { ok: false, reason: 'none' };
+    const updated = await waitFor(
+      supabaseClient
+        .from('company_invites')
+        .update({
+          status: 'pending',
+          role: role || closed.role || 'inspector'
+        })
+        .eq('id', closed.id),
+      4000,
+      'Reopen invite'
+    );
+    if (updated?.error) return { ok: false, error: updated.error };
+    return { ok: true, kind: 'invite' };
+  }
+
+  async function finishAddedPerson(email, role, status, emailInput, roleSelect, notify) {
+    if (emailInput) emailInput.value = '';
+    if (roleSelect) roleSelect.value = 'inspector';
+    if (status === 'invited' || status === 'reopened') {
+      setMessage(
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → 2. Create password once, then Login. They must not Subscribe.`
+      );
+    } else {
+      setMessage(
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They Login with that email. They must not Subscribe.`
+      );
+    }
+    await refreshTeam();
+    if (notify) notifyOwnerPaysSubscription(email, roleLabel(role));
+    try {
+      if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
+        window.fireSRefreshCompanyPersonnelStats();
+      }
+    } catch (_) {}
+    returnToPersonnelFromSeat();
+  }
+
+  function returnToPersonnelFromSeat() {
+    const sub = byId('fireSSubscribeSection');
+    if (!sub || sub.style.display === 'none') return;
+    sub.style.display = 'none';
+    showCompanyTeamSection();
+    try {
+      if (typeof window.updateFloatingBackButton === 'function') {
+        window.updateFloatingBackButton();
+      }
+    } catch (_) {}
   }
 
   function rememberCompanyName(companyId, companyName) {
@@ -281,6 +421,19 @@
   function canAssignOwner() {
     // Everyday Personnel: Inspector + Manager only. Owner assignment is rare/admin.
     return actualMembershipRole() === 'super_admin';
+  }
+
+  function canRemovePerson() {
+    const role = actualMembershipRole();
+    return ['company_owner', 'owner', 'super_admin'].includes(role);
+  }
+
+  function removedPersonMessage(rpcData) {
+    const payload = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (payload && typeof payload === 'object' && payload.login_deleted === false) {
+      return 'Person removed from this company. Their kept login was not deleted. They Login with the same email.';
+    }
+    return 'Person removed. Their email and password are deleted from the cloud. They can Subscribe under another company name.';
   }
 
   function setMessage(message, isError) {
@@ -790,7 +943,7 @@
               <span>Invited as ${esc(roleLabel(role))} · not logged in yet</span>
             </div>
             <div class="company-team-card-actions is-invite">
-              <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}">
+              <button type="button" class="secondary-btn" data-cancel-invite="${esc(id)}" data-invite-email="${esc(email)}">
                 Cancel invite
               </button>
             </div>
@@ -800,7 +953,10 @@
 
     list.querySelectorAll('[data-cancel-invite]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await cancelInvite(btn.getAttribute('data-cancel-invite'));
+        await cancelInvite(
+          btn.getAttribute('data-cancel-invite'),
+          btn.getAttribute('data-invite-email')
+        );
       });
     });
   }
@@ -814,7 +970,7 @@
       if (!ctx.companyId) throw new Error('No company linked yet.');
 
       const ok = window.confirm(
-        'Remove all other people and pending invites?\n\nOnly your login stays. Then you can add fresh employees.'
+        'Remove all other people and pending invites?\n\nTheir emails and passwords will be deleted from the cloud. Only your login stays. Then they can Subscribe under another company name.'
       );
       if (!ok) return;
 
@@ -849,14 +1005,14 @@
             p_company_id: ctx.companyId,
             p_user_id: userId
           }),
-          4000,
+          8000,
           'Remove member'
         );
         if (!rpc.error) removed += 1;
       }
 
       setMessage(
-        `Cleared. Removed ${removed} member(s), cancelled ${cancelled} invite(s). You can add fresh employees now.`
+        `Cleared. Removed ${removed} member(s), cancelled ${cancelled} invite(s). Their emails and passwords are deleted from the cloud.`
       );
       await refreshTeam();
     } catch (error) {
@@ -865,7 +1021,7 @@
     }
   }
 
-  async function cancelInvite(inviteId) {
+  async function cancelInvite(inviteId, inviteEmail) {
     try {
       if (!inviteId) return;
       setMessage('Cancelling invite…');
@@ -878,7 +1034,8 @@
         'Cancel invite'
       );
       if (error) throw error;
-      setMessage('Invite cancelled.');
+      forgetSeatEmail(inviteEmail);
+      setMessage('Invite cancelled. You can add that email again.');
       await refreshTeam();
     } catch (error) {
       setMessage(error.message || 'Could not cancel invite.', true);
@@ -919,7 +1076,7 @@
                 Change role
               </button>
               ${
-                isMe
+                isMe || !canRemovePerson()
                   ? ''
                   : `<button type="button" class="secondary-btn" data-remove-member="${esc(member.user_id)}">Remove</button>`
               }
@@ -942,7 +1099,9 @@
     list.querySelectorAll('[data-remove-member]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const userId = btn.getAttribute('data-remove-member');
-        if (!window.confirm('Remove this person from the company?')) return;
+        if (!window.confirm(
+          'Remove this person from the company?\n\nTheir email and password will be deleted from the cloud. Then they can Subscribe under another company name.'
+        )) return;
         await removeMember(userId);
       });
     });
@@ -950,8 +1109,10 @@
 
   async function removeMember(userId) {
     try {
-      if (!canManageTeam()) {
-        throw new Error('Only Manager or Owner can remove team members.');
+      if (!canRemovePerson()) {
+        throw new Error(
+          'Only the Owner can remove personnel. That deletes their email and password from the cloud.'
+        );
       }
       const ctx = companyContext();
       if (!ctx.companyId || !userId) throw new Error('Missing company or person.');
@@ -962,11 +1123,11 @@
           p_company_id: ctx.companyId,
           p_user_id: userId
         }),
-        4000,
+        8000,
         'Remove member'
       );
       if (rpc.error) throw rpc.error;
-      setMessage('Person removed from the team.');
+      setMessage(removedPersonMessage(rpc.data));
       await refreshTeam();
     } catch (error) {
       console.error('Remove member failed:', error);
@@ -1027,23 +1188,20 @@
     return result?.data || null;
   }
 
-  async function addMember() {
+  async function addMember(emailOverride, roleOverride) {
     try {
       if (!canManageTeam()) {
         throw new Error('Only Manager or Owner can add team members.');
       }
 
-      const emailInput = byId('companyTeamEmail');
-      const roleSelect = byId('companyTeamRole');
-      const email = text(emailInput?.value).toLowerCase();
-      const role = text(roleSelect?.value) || 'inspector';
+      const emailInput = byId('fireSSeatEmail');
+      const roleSelect = byId('fireSSeatRole');
+      const email = text(emailOverride || (emailInput && emailInput.value)).toLowerCase();
+      const role = text(roleOverride || (roleSelect && roleSelect.value)) || 'inspector';
       const ctx = companyContext();
 
       if (!email || !email.includes('@')) {
         throw new Error('Enter a valid email address.');
-      }
-      if (lastSeatEmails.indexOf(email) >= 0) {
-        throw new Error(duplicateSeatMessage(email));
       }
       if (!ctx.companyId) {
         throw new Error('Save your company first, then add people.');
@@ -1052,7 +1210,21 @@
         throw new Error('Only an Owner can add another Owner.');
       }
 
+      if (lastSeatEmails.indexOf(email) >= 0) {
+        const reopenedEarly = await reopenCancelledInvite(ctx.companyId, email, role);
+        if (reopenedEarly && reopenedEarly.ok) {
+          await finishAddedPerson(email, role, 'reopened', emailInput, roleSelect, false);
+          return;
+        }
+        throw new Error(duplicateSeatMessage(email));
+      }
+
       setMessage('Adding person…');
+      try {
+        if (typeof window.fireSSetSubscribeMessage === 'function') {
+          window.fireSSetSubscribeMessage('Subscribing this email. You (the owner) pay…');
+        }
+      } catch (_) {}
 
       // Preferred: SECURITY DEFINER RPC (finds auth login even without profiles row)
       const rpc = await waitFor(
@@ -1069,50 +1241,41 @@
         const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
         const status = text(row?.out_status || row?.status).toLowerCase();
         if (status === 'already' || status === 'duplicate') {
+          const reopenedDup = await reopenCancelledInvite(ctx.companyId, email, role);
+          if (reopenedDup && reopenedDup.ok) {
+            await finishAddedPerson(email, role, 'reopened', emailInput, roleSelect, false);
+            return;
+          }
           throw new Error(duplicateSeatMessage(email));
         }
-        if (emailInput) emailInput.value = '';
-        if (roleSelect) roleSelect.value = 'inspector';
-        if (status === 'invited') {
-          setMessage(
-            `${email} saved as one paid seat (${roleLabel(role)}). They open Access → Create password once. Phone and desktop use that same email — do not add it again.`
-          );
-        } else {
-          setMessage(
-            `${email} is one paid seat (${roleLabel(role)}). They Login with that email on phone and desktop.`
-          );
-        }
-        await refreshTeam();
-        try {
-          if (typeof window.fireSNotifyCompanyS === 'function') {
-            window.fireSNotifyCompanyS({
-              kind: 'seat',
-              company: text(ctx.companyName || window.currentUserProfile?.companyName),
-              email: email,
-              role: roleLabel(role),
-              interval:
-                (window.fireSSubscriptionCatalog &&
-                  window.fireSSubscriptionCatalog.currentIntervalId &&
-                  window.fireSSubscriptionCatalog.currentIntervalId()) ||
-                'monthly'
-            });
-          }
-        } catch (_) {}
-        try {
-          if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
-            window.fireSRefreshCompanyPersonnelStats();
-          }
-        } catch (_) {}
+        await finishAddedPerson(
+          email,
+          role,
+          status === 'invited' ? 'invited' : 'added',
+          emailInput,
+          roleSelect,
+          true
+        );
         return;
       }
 
-      // Fallback: old profile lookup path
+      // Fallback: reopen a cancelled invite, then old profile lookup
       if (rpc.error) {
+        const reopened = await reopenCancelledInvite(ctx.companyId, email, role);
+        if (reopened && reopened.ok) {
+          await finishAddedPerson(email, role, 'reopened', emailInput, roleSelect, false);
+          return;
+        }
         const rpcMsg = text(rpc.error.message).toLowerCase();
+        if (isOtherCompanySeatError(rpcMsg)) {
+          throw new Error(otherCompanySeatMessage(email));
+        }
         if (
           rpcMsg.indexOf('paid seat') >= 0 ||
           rpcMsg.indexOf('already') >= 0 ||
-          rpcMsg.indexOf('do not enter') >= 0
+          rpcMsg.indexOf('do not enter') >= 0 ||
+          rpcMsg.indexOf('duplicate key') >= 0 ||
+          rpcMsg.indexOf('unique') >= 0
         ) {
           throw new Error(rpc.error.message || duplicateSeatMessage(email));
         }
@@ -1168,28 +1331,23 @@
         await supabaseClient.from('profiles').update({ role }).eq('id', profile.id);
       } catch (_) {}
 
-      if (emailInput) emailInput.value = '';
-      if (roleSelect) roleSelect.value = 'inspector';
-      setMessage(`${profile.email || email} added as ${roleLabel(role)}.`);
-      await refreshTeam();
-      try {
-        if (typeof window.fireSNotifyCompanyS === 'function') {
-          window.fireSNotifyCompanyS({
-            kind: 'seat',
-            company: text(ctx.companyName || window.currentUserProfile?.companyName),
-            email: profile.email || email,
-            role: roleLabel(role),
-            interval:
-              (window.fireSSubscriptionCatalog &&
-                window.fireSSubscriptionCatalog.currentIntervalId &&
-                window.fireSSubscriptionCatalog.currentIntervalId()) ||
-              'monthly'
-          });
-        }
-      } catch (_) {}
+      await finishAddedPerson(
+        profile.email || email,
+        role,
+        'added',
+        emailInput,
+        roleSelect,
+        true
+      );
     } catch (error) {
       console.error('Add member failed:', error);
       setMessage(error.message || 'Could not add team member.', true);
+      try {
+        if (typeof window.fireSSetSubscribeMessage === 'function') {
+          window.fireSSetSubscribeMessage(error.message || 'Could not subscribe that email.', true);
+        }
+      } catch (_) {}
+      throw error;
     }
   }
 
@@ -1539,8 +1697,11 @@
       } else {
         rememberCompanyName(ctx.companyId, ctx.companyName);
       }
-      const members = await loadMembers(ctx.companyId);
-      const invites = await loadPendingInvites(ctx.companyId);
+      const members = uniqueActiveMembers(await loadMembers(ctx.companyId));
+      const invites = invitesNotOnTeam(
+        await loadPendingInvites(ctx.companyId),
+        members
+      );
       rememberSeatEmails(members, invites);
       renderMeta(ctx, members, invites);
       renderPendingInvites(invites);
@@ -1555,7 +1716,7 @@
         setMessage(
           members.length || invites.length
             ? ''
-            : 'Add your first Inspector or Manager below.'
+            : 'Tap Add inspector / manager to subscribe a person.'
         );
       }
     } catch (error) {
@@ -1684,10 +1845,14 @@
       back.addEventListener('click', goHome);
     }
 
-    const addBtn = byId('companyTeamAddBtn');
-    if (addBtn && !addBtn.__fireSCompanyBound) {
-      addBtn.__fireSCompanyBound = true;
-      addBtn.addEventListener('click', addMember);
+    const startSeatBtn = byId('companyTeamStartSeatBtn');
+    if (startSeatBtn && !startSeatBtn.__fireSCompanyBound) {
+      startSeatBtn.__fireSCompanyBound = true;
+      startSeatBtn.addEventListener('click', function () {
+        if (typeof window.fireSOpenSubscribePerson === 'function') {
+          window.fireSOpenSubscribePerson();
+        }
+      });
     }
 
     const laterBtn = byId('companyTeamLaterBtn');
@@ -1725,7 +1890,7 @@
     }
 
     // Manager cannot offer Owner in the add dropdown.
-    const roleSelect = byId('companyTeamRole');
+    const roleSelect = byId('fireSSeatRole');
     if (roleSelect) {
       [...roleSelect.options].forEach(opt => {
         if (opt.value === 'company_owner') {
@@ -1792,10 +1957,6 @@
     });
   }
 
-  function lowerEmail(value) {
-    return text(value).toLowerCase();
-  }
-
   async function listAssignableInspectors() {
     const ctx = companyContext();
     let members = uniqueActiveMembers(lastMembers);
@@ -1820,12 +1981,19 @@
     return sortAssignable(people);
   }
 
+  function lowerEmail(value) {
+    return text(value).toLowerCase();
+  }
+
   window.fireSOpenCompanyTeam = openCompanyTeam;
   window.openCompanyTeamOverlay = openCompanyTeam;
+  window.fireSAddPersonnelSeat = addMember;
   window.fireSRefreshCompanyTeam = refreshTeam;
   window.fireSRefreshCompanyTeamChrome = refreshPersonnelChrome;
   window.fireSRememberCompanyName = rememberCompanyName;
   window.fireSBeginFreshCompany = beginFreshCompany;
+  window.fireSIsClosedInviteStatus = isClosedInviteStatus;
+  window.fireSReopenCancelledInvite = reopenCancelledInvite;
   window.fireSListAssignableInspectors = listAssignableInspectors;
 
   if (document.readyState === 'loading') {

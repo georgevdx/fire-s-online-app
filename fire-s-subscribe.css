@@ -110,12 +110,16 @@
 
 .fire-s-subscribe-current strong {
   display: block;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
+}
+
+.fire-s-subscribe-current strong.is-picked {
+  color: #fde68a;
 }
 
 .fire-s-subscribe-current span {
   display: block;
-  margin-top: 4px;
+  margin-top: 6px;
   opacity: 0.8;
   font-size: 0.9rem;
 }
@@ -131,4 +135,80 @@
 .fire-s-subscribe-message.is-error {
   background: #fff1f2;
   color: #9f1239;
+}
+
+.fire-s-subscribe-seat {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.fire-s-subscribe-seat-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.fire-s-subscribe-seat input,
+.fire-s-subscribe-seat select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.fire-s-subscribe-seat-note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.fire-s-expiry-reminder {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid #b45309;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.fire-s-expiry-reminder[hidden] {
+  display: none !important;
+}
+
+.fire-s-expiry-reminder-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.fire-s-expiry-reminder-copy strong {
+  font-size: 1.05rem;
+}
+
+.fire-s-expiry-reminder-copy span {
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.fire-s-expiry-reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fire-s-expiry-reminder-actions .cloud-primary-btn,
+.fire-s-expiry-reminder-actions .secondary-btn {
+  min-height: 44px;
+  flex: 1 1 140px;
+}
+
+body.fire-s-role-inspector #fireSExpiryReminder,
+body.fire-s-role-inspector #cmdSubscribeBtn,
+body.fire-s-role-inspector #fireSSubscribeSection {
+  display: none !important;
 }

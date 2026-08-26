@@ -114,6 +114,30 @@
   color: #6b7280;
 }
 
+.company-team-map {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.company-team-map ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.company-team-map li {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.company-team-map li:last-child {
+  margin-bottom: 0;
+}
+
 .company-team-list {
   display: grid;
   gap: 10px;

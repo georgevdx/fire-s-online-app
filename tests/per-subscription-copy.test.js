@@ -24,7 +24,10 @@ const liveCatalog = read('fire-s-subscriptions.js');
 const liveHtml = read('index.html');
 
 assert.ok(/1\.3\.27-toets/.test(env), 'Toets-blad version must stay on 1.3.27-toets');
-assert.ok(/1\.3\.14/.test(liveEnv), 'Live Fire-S must stay on 1.3.14 until sit dit live');
+assert.ok(
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
+  'Live Fire-S must be 1.3.27 after sit dit live'
+);
 
 const priceFiles = [html, catalogSrc, subscribe, notify, getStarted, roles, manual, terms, privacy];
 priceFiles.forEach(function (src, i) {
@@ -102,12 +105,18 @@ assert.ok(
 );
 assert.ok(/Fire-S invoices the owner/.test(terms), 'Toets terms must still say Fire-S invoices the owner');
 assert.ok(
-  /R349 per email/.test(liveCatalog) && /R349 per email/.test(liveHtml),
-  'Live root must still say per email until sit dit live'
+  /R349 per subscription/.test(liveCatalog) &&
+    /R349 per subscription/.test(liveHtml) &&
+    !/R349 per email/.test(liveCatalog) &&
+    !/R349 per email/.test(liveHtml),
+  'Live root must say R349 per subscription after sit dit live'
 );
 assert.ok(
-  /Company S/.test(read('terms.html')) && /Company S/.test(read('privacy.html')),
-  'Live terms and privacy stay unchanged until sit dit live'
+  !/Company S/.test(read('terms.html')) &&
+    !/Company-S/.test(read('terms.html')) &&
+    !/Company S/.test(read('privacy.html')) &&
+    !/Company-S/.test(read('privacy.html')),
+  'Live terms and privacy must name Fire-S, not Company S'
 );
 
 console.log('per-subscription-copy.test.js: ok');

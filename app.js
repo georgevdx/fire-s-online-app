@@ -89,6 +89,40 @@ const supabaseClient =
 
 window.supabaseClient = supabaseClient;
 
+window.__fireSAuthSettled = false;
+window.fireSMarkAuthSettled = function fireSMarkAuthSettled() {
+  if (window.__fireSAuthSettled) return;
+  window.__fireSAuthSettled = true;
+  try {
+    document.dispatchEvent(new CustomEvent('fire-s:auth-settled'));
+  } catch (_) {}
+  try {
+    if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('auth-settled');
+  } catch (_) {}
+  try {
+    if (typeof window.refreshFireSGetStarted === 'function') window.refreshFireSGetStarted();
+  } catch (_) {}
+};
+(function fireSEarlySessionCheck() {
+  if (!supabaseClient || !supabaseClient.auth) {
+    window.fireSMarkAuthSettled();
+    return;
+  }
+  supabaseClient.auth
+    .getSession()
+    .then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (session) {
+        window.__fireSSessionPending = true;
+        return;
+      }
+      window.fireSMarkAuthSettled();
+    })
+    .catch(function () {
+      window.fireSMarkAuthSettled();
+    });
+})();
+
 function buildStreetAddress(address = {}) {
 
   const streetNumber =
@@ -4499,6 +4533,16 @@ async function updateSyncUI() {
 
 async function restoreCloudSession() {
   const syncStatus = document.getElementById('syncStatus');
+  const markSettled = function () {
+    try {
+      if (typeof window.fireSMarkAuthSettled === 'function') window.fireSMarkAuthSettled();
+    } catch (_) {}
+  };
+
+  if (!supabaseClient || !supabaseClient.auth) {
+    markSettled();
+    return;
+  }
 
   try {
     const { data, error } = await supabaseClient.auth.getSession();
@@ -4515,6 +4559,7 @@ async function restoreCloudSession() {
     updateSyncUI();
 
     if (!(data && data.session)) {
+      markSettled();
       return;
     }
 
@@ -4565,6 +4610,8 @@ async function restoreCloudSession() {
     if (syncStatus) {
       syncStatus.textContent = 'Cloud session could not be restored.';
     }
+  } finally {
+    markSettled();
   }
 }
 
@@ -5446,7 +5493,6 @@ function initHomeCommandCentre() {
 function initApp() {
   updateAppInfo();
   injectInspectionGatewayPolishStyles();
-  initHomeCommandCentre();
   initHomeCommandCentre();
   initFindingsCentre();
 
@@ -6352,7 +6398,7 @@ async function loadUserAccessProfile() {
     try {
       await withTimeout(
         supabaseClient.rpc('fire_s_claim_my_invites'),
-        2500
+        8000
       );
     } catch (_) {}
 
