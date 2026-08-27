@@ -17,7 +17,7 @@ const liveStarted = read('fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveApp = read('app.js');
 
-assert.ok(/1\.3\.34-toets/.test(env), 'Toets-blad version must be 1.3.34-toets');
+assert.ok(/1\.3\.35-toets/.test(env), 'Toets-blad version must be 1.3.35-toets');
 
 assert.ok(
   /id="fireSForgotPasswordBtn"/.test(html) &&
@@ -31,7 +31,7 @@ assert.ok(
 assert.ok(
   /resetPasswordForEmail/.test(started) &&
     /Check Inbox AND Junk/.test(started) &&
-    /Outlook and Live hide it/.test(started) &&
+    /not localhost:3000/.test(started) &&
     /over_email_send_rate_limit/.test(started) &&
     /Wait one minute/.test(started),
   'Forgot password must tell the owner to check Junk and wait if they tap twice'

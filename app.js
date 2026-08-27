@@ -76,10 +76,14 @@ const SUPABASE_ANON_KEY = fireSStaging
     );
 
 try {
-  var fireSUrlBits = String(location.hash || '') + String(location.search || '');
-  if (/type=recovery/i.test(fireSUrlBits)) {
-    window.__fireSPasswordRecovery = true;
-    sessionStorage.setItem('fireS.passwordRecovery', '1');
+  if (window.fireSPasswordReset && typeof window.fireSPasswordReset.captureFromLocation === 'function') {
+    window.fireSPasswordReset.captureFromLocation(location, sessionStorage, window);
+  } else {
+    var fireSUrlBits = String(location.hash || '') + String(location.search || '');
+    if (/type=recovery/i.test(fireSUrlBits) || /token_hash=/i.test(fireSUrlBits)) {
+      window.__fireSPasswordRecovery = true;
+      sessionStorage.setItem('fireS.passwordRecovery', '1');
+    }
   }
 } catch (_) {}
 

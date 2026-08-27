@@ -110,7 +110,24 @@
   var JOINING_AS_STAFF_KEY = 'fireS.joiningAsStaff.v1';
   var RECOVERY_KEY = 'fireS.passwordRecovery';
 
+  function resetApi() {
+    try {
+      return window.fireSPasswordReset || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   function markPasswordRecovery() {
+    var api = resetApi();
+    if (api && typeof api.captureFromLocation === 'function') {
+      api.captureFromLocation(window.location, window.sessionStorage, window);
+      try {
+        window.__fireSPasswordRecovery = true;
+        sessionStorage.setItem(RECOVERY_KEY, '1');
+      } catch (_) {}
+      return;
+    }
     window.__fireSPasswordRecovery = true;
     try {
       sessionStorage.setItem(RECOVERY_KEY, '1');
@@ -118,18 +135,27 @@
   }
 
   function isPasswordRecovery() {
+    var api = resetApi();
+    if (api && typeof api.isCaptured === 'function') {
+      return api.isCaptured(window.sessionStorage, window, window.location);
+    }
     try {
       if (window.__fireSPasswordRecovery) return true;
       if (sessionStorage.getItem(RECOVERY_KEY) === '1') return true;
     } catch (_) {}
     try {
       var bits = String(window.location.hash || '') + String(window.location.search || '');
-      if (/type=recovery/i.test(bits)) return true;
+      if (/type=recovery/i.test(bits) || /token_hash=/i.test(bits)) return true;
     } catch (_) {}
     return false;
   }
 
   function clearPasswordRecovery() {
+    var api = resetApi();
+    if (api && typeof api.clear === 'function') {
+      api.clear(window.sessionStorage, window);
+      return;
+    }
     window.__fireSPasswordRecovery = false;
     try {
       sessionStorage.removeItem(RECOVERY_KEY);
@@ -848,6 +874,16 @@
       return 'Wait one minute, then tap Forgot password once. Check Inbox and Junk — Outlook and Live often hide the Supabase email.';
     }
     if (
+      low.indexOf('expired') >= 0 ||
+      low.indexOf('invalid') >= 0 && low.indexOf('token') >= 0 ||
+      low.indexOf('otp_expired') >= 0
+    ) {
+      return 'That reset link is no longer valid. Tap Forgot password once more, wait a minute, and open the new email. The link must open Fire-S, not localhost:3000.';
+    }
+    if (low.indexOf('localhost:3000') >= 0) {
+      return 'The email is still pointing at localhost:3000. On the live cloud, Site URL must be the Fire-S web address, not localhost.';
+    }
+    if (
       low.indexOf('already registered') >= 0 ||
       low.indexOf('already been registered') >= 0 ||
       low.indexOf('user already exists') >= 0 ||
@@ -894,6 +930,12 @@
   }
 
   function accessRedirectUrl() {
+    var api = resetApi();
+    if (api && typeof api.accessRedirectUrl === 'function') {
+      try {
+        return api.accessRedirectUrl(window.FIRE_S_ENV, window.location);
+      } catch (_) {}
+    }
     try {
       var path = String(window.location.pathname || '/');
       path = path.replace(/index\.html$/i, '');
@@ -925,7 +967,7 @@
       setStatus(
         'Check Inbox AND Junk for ' +
           email +
-          '. The email is often from Supabase, not Fire-S. Outlook and Live hide it. Open the link. Then choose a new password on Access. Tap Forgot password only once, then wait a minute.'
+          '. The email is from Supabase, not Fire-S. The link must open Fire-S on the web (georgevdx.github.io), not localhost:3000. If the email still shows localhost:3000, the cloud Site URL is still wrong. Open the new link, then choose a new password. Tap Forgot password only once, then wait a minute.'
       );
     } catch (e) {
       setStatus(authErrorMessage(e), true);
@@ -954,6 +996,10 @@
     }
     setStatus('Saving new password…');
     try {
+      var api = resetApi();
+      if (api && typeof api.ensureRecoverySession === 'function') {
+        await api.ensureRecoverySession(sb, window.sessionStorage);
+      }
       var res = await sb.auth.updateUser({ password: password });
       if (res.error) throw res.error;
       try {
