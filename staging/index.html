@@ -268,9 +268,20 @@
       <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
+      <p class="fire-s-get-started-note">Forgot password: check Inbox and Junk. The email is often from Supabase. Tap Forgot password once, then wait a minute.</p>
       <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
       <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn">New company? Subscribe</button>
       <button id="fireSLoginInstallBtn" type="button" class="secondary-btn">Install on this phone</button>
+    </div>
+
+    <div id="fireSGetStartedResetFields" class="fire-s-get-started-fields" style="display:none;">
+      <p class="fire-s-get-started-note">
+        You opened the reset link. Choose a new password for this login. Then Login.
+      </p>
+      <input id="fireSResetPassword" type="password" placeholder="New password" autocomplete="new-password">
+      <input id="fireSResetPassword2" type="password" placeholder="Type the new password again" autocomplete="new-password">
+      <button id="fireSDoResetBtn" type="button" class="cloud-primary-btn">Save new password</button>
+      <button id="fireSResetBackBtn" type="button" class="secondary-btn">Cancel reset</button>
     </div>
 
     <div id="fireSGetStartedCreateFields" class="fire-s-get-started-fields" style="display:none;">
@@ -1696,7 +1707,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-33-one-page"></script>
+  <script src="fire-s-env.js?v=1-3-34-reset"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1708,7 +1719,7 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=1-3-27-one-page"></script>
+  <script src="app.js?v=1-3-28-reset"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-32-one-page"></script>
@@ -1723,10 +1734,10 @@
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
   <script src="fire-s-subscribe.js?v=1-12-status"></script>
-  <script src="fire-s-user-manual.js?v=1-28-one-page"></script>
+  <script src="fire-s-user-manual.js?v=1-29-reset"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-26-one-page"></script>
+  <script src="fire-s-get-started.js?v=2-27-reset"></script>
   <script src="fire-s-startup-stability.js?v=1-6-startup"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>

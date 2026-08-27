@@ -21,7 +21,7 @@ const manual = read('staging/fire-s-user-manual.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.33-toets/.test(env), 'Toets-blad version must be 1.3.33-toets');
+assert.ok(/1\.3\.34-toets/.test(env), 'Toets-blad version must be 1.3.34-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
   'Live Fire-S must stay on 1.3.27 until sit dit live'

@@ -17,7 +17,7 @@ const manual = read('staging/fire-s-user-manual.js');
 const liveHtml = read('index.html');
 const liveStarted = read('fire-s-get-started.js');
 
-assert.ok(/1\.3\.33-toets/.test(env), 'Toets-blad version must be 1.3.33-toets');
+assert.ok(/1\.3\.34-toets/.test(env), 'Toets-blad version must be 1.3.34-toets');
 assert.ok(
   /fireSOpenAccess\('choices'\)/.test(liveStarted) || /openAccess\('choices'\)/.test(liveStarted),
   'Live Access/Login split must stay until sit dit live'

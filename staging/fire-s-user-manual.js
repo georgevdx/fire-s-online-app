@@ -205,7 +205,10 @@
         <ol>
           <li>On Access, type your email and password.</li>
           <li>Tap <strong>Login</strong>.</li>
-          <li>If you forgot the password, tap <strong>Forgot password</strong>.</li>
+          <li>If you forgot the password, type your email, then tap <strong>Forgot password</strong>.</li>
+          <li>Check Inbox and Junk. The email is often from Supabase. Outlook and Live hide it.</li>
+          <li>Wait one minute before you tap Forgot password again.</li>
+          <li>Open the link in the email. Access then shows <strong>Choose a new password</strong>. Save, then Login.</li>
         </ol>
         <h3>Create password (staff, first time)</h3>
         <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>

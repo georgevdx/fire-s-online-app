@@ -107,6 +107,33 @@
 
   var PENDING_SUBSCRIBE_KEY = 'fireS.pendingSubscribe.v1';
   var JOINING_AS_STAFF_KEY = 'fireS.joiningAsStaff.v1';
+  var RECOVERY_KEY = 'fireS.passwordRecovery';
+
+  function markPasswordRecovery() {
+    window.__fireSPasswordRecovery = true;
+    try {
+      sessionStorage.setItem(RECOVERY_KEY, '1');
+    } catch (_) {}
+  }
+
+  function isPasswordRecovery() {
+    try {
+      if (window.__fireSPasswordRecovery) return true;
+      if (sessionStorage.getItem(RECOVERY_KEY) === '1') return true;
+    } catch (_) {}
+    try {
+      var bits = String(window.location.hash || '') + String(window.location.search || '');
+      if (/type=recovery/i.test(bits)) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function clearPasswordRecovery() {
+    window.__fireSPasswordRecovery = false;
+    try {
+      sessionStorage.removeItem(RECOVERY_KEY);
+    } catch (_) {}
+  }
 
   function markJoiningAsStaff() {
     try {
@@ -219,6 +246,7 @@
     [
       'fireSGetStartedChoices',
       'fireSGetStartedLoginFields',
+      'fireSGetStartedResetFields',
       'fireSGetStartedCreateFields',
       'fireSGetStartedGuestFields',
       'fireSGetStartedCompanyOnly',
@@ -659,6 +687,23 @@
     setStatus('');
   }
 
+  function showResetPassword() {
+    mode = 'reset';
+    markPasswordRecovery();
+    hidePanels();
+    paintAccessKicker();
+    setTitle(
+      'Choose a new password',
+      'You opened the reset link. Type a new password twice, then Save. After that, Login with the new password.'
+    );
+    showPanel('fireSGetStartedResetFields');
+    setStatus('');
+    setTimeout(function () {
+      var field = byId('fireSResetPassword');
+      if (field) field.focus();
+    }, 80);
+  }
+
   function showCreatePassword() {
     mode = 'create';
     markJoiningAsStaff();
@@ -726,6 +771,7 @@
   }
 
   function shouldShowAccess() {
+    if (isPasswordRecovery()) return true;
     var role = homeRole();
     if (
       role === 'inspector' ||
@@ -746,6 +792,12 @@
 
   function render() {
     if (!ensureEls()) return;
+
+    if (isPasswordRecovery()) {
+      showAccess();
+      showResetPassword();
+      return;
+    }
 
     if (!shouldShowAccess()) {
       hideAccess();
@@ -786,6 +838,13 @@
     var low = msg.toLowerCase();
     if (low.indexOf('invalid login') >= 0 || low.indexOf('invalid credentials') >= 0) {
       return 'Wrong password for that email. Try again, or use Forgot password. Do not use Create password again if this email already exists.';
+    }
+    if (
+      low.indexOf('rate') >= 0 ||
+      low.indexOf('only request this after') >= 0 ||
+      low.indexOf('over_email_send_rate_limit') >= 0
+    ) {
+      return 'Wait one minute, then tap Forgot password once. Check Inbox and Junk — Outlook and Live often hide the Supabase email.';
     }
     if (
       low.indexOf('already registered') >= 0 ||
@@ -863,13 +922,62 @@
       var res = await sb.auth.resetPasswordForEmail(email, opts);
       if (res.error) throw res.error;
       setStatus(
-        'Check the inbox for ' +
+        'Check Inbox AND Junk for ' +
           email +
-          '. Open the reset link, choose a new password, then use Login.'
+          '. The email is often from Supabase, not Fire-S. Outlook and Live hide it. Open the link. Then choose a new password on Access. Tap Forgot password only once, then wait a minute.'
       );
     } catch (e) {
       setStatus(authErrorMessage(e), true);
     }
+  }
+
+  async function doSaveNewPassword() {
+    var password = (byId('fireSResetPassword') && byId('fireSResetPassword').value) || '';
+    var again = (byId('fireSResetPassword2') && byId('fireSResetPassword2').value) || '';
+    if (!password || !again) {
+      setStatus('Type the new password twice.', true);
+      return;
+    }
+    if (password.length < 6) {
+      setStatus('Password must be at least 6 characters.', true);
+      return;
+    }
+    if (password !== again) {
+      setStatus('The two passwords do not match.', true);
+      return;
+    }
+    var sb = getSb();
+    if (!sb || !sb.auth) {
+      setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
+      return;
+    }
+    setStatus('Saving new password…');
+    try {
+      var res = await sb.auth.updateUser({ password: password });
+      if (res.error) throw res.error;
+      try {
+        byId('fireSResetPassword').value = '';
+        byId('fireSResetPassword2').value = '';
+      } catch (_) {}
+      clearPasswordRecovery();
+      try {
+        if (byId('fireSLoginPassword')) byId('fireSLoginPassword').value = '';
+      } catch (_) {}
+      showLogin();
+      setStatus('Password saved. Login with the new password.');
+    } catch (e) {
+      setStatus(authErrorMessage(e), true);
+    }
+  }
+
+  async function leaveReset() {
+    clearPasswordRecovery();
+    try {
+      var sb = getSb();
+      if (sb && sb.auth) await sb.auth.signOut();
+    } catch (_) {}
+    showLogin();
+    setStatus('Reset cancelled. Login, or tap Forgot password again.');
   }
 
   async function doLogin() {
@@ -1258,11 +1366,19 @@
 
     var doLoginBtn = byId('fireSDoLoginBtn');
     var doCreateBtn = byId('fireSDoCreateBtn');
+    var doResetBtn = byId('fireSDoResetBtn');
+    var resetBackBtn = byId('fireSResetBackBtn');
     var registerBtn = byId('fireSGetStartedCreateBtn');
     var finishBtn = byId('fireSGetStartedFinishBtn');
     var checkBtn = byId('fireSWaitingCheckBtn');
     if (doLoginBtn) doLoginBtn.addEventListener('click', doLogin);
     if (doCreateBtn) doCreateBtn.addEventListener('click', doCreatePassword);
+    if (doResetBtn) doResetBtn.addEventListener('click', doSaveNewPassword);
+    if (resetBackBtn) {
+      resetBackBtn.addEventListener('click', function () {
+        leaveReset();
+      });
+    }
     var forgotLoginBtn = byId('fireSForgotPasswordBtn');
     var forgotCreateBtn = byId('fireSForgotFromCreateBtn');
     if (forgotLoginBtn) {
@@ -1318,6 +1434,10 @@
   window.fireSClaimInvitesQuiet = claimInvitesQuiet;
   window.fireSGetStartedPhoneBack = function fireSGetStartedPhoneBack() {
     if (!root || !shouldShowAccess()) return false;
+    if (mode === 'reset' || isPasswordRecovery()) {
+      leaveReset();
+      return true;
+    }
     if (mode === 'login' || mode === 'company') return false;
     showLogin();
     return true;
@@ -1328,8 +1448,19 @@
   } else {
     boot();
   }
+  document.addEventListener('fire-s:password-recovery', function () {
+    markPasswordRecovery();
+    if (!ensureEls()) return;
+    showAccess();
+    showResetPassword();
+  });
   document.addEventListener('fire-s:auth-changed', function () {
-    if (mode === 'login' || mode === 'create' || mode === 'register') {
+    if (isPasswordRecovery()) {
+      showAccess();
+      showResetPassword();
+      return;
+    }
+    if (mode === 'login' || mode === 'create' || mode === 'register' || mode === 'reset') {
       // keep current form while user is mid-flow unless access should hide
       if (!shouldShowAccess()) {
         mode = 'login';
