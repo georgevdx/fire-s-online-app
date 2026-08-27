@@ -5,12 +5,12 @@
  * Cloud menu no longer owns auth for normal users.
  *
  * Modes:
- *   choices   → pick a path
- *   login     → returning users
+ *   login     → Access page (email, password, Login, plus Create password / Subscribe)
  *   create    → invited staff, first time
  *   register  → new business owner
  *   company   → signed in, still need company name
  *   waiting   → signed in, waiting for owner invite
+ *   choices   → same as login (kept so old Open Access callers stay on one page)
  */
 (function fireSAccessGate() {
   'use strict';
@@ -601,17 +601,15 @@
     } catch (_) {}
   }
 
-  function paintAccessChoices() {
+  function paintAccessKicker() {
     var kicker = root && root.querySelector('.fire-s-get-started-kicker');
     if (kicker) {
       kicker.textContent = isStagingEnv() ? 'Toets-blad · Access' : 'Fire-S Access';
     }
-    ['fireSChoiceLogin', 'fireSChoiceCreate', 'fireSInstallAppBtn'].forEach(function (id) {
-      var el = byId(id);
-      if (!el) return;
-      el.hidden = false;
-      el.style.display = '';
-    });
+  }
+
+  function paintAccessChoices() {
+    paintAccessKicker();
   }
 
   function paintSubscribeForm() {
@@ -630,6 +628,7 @@
   }
 
   function paintLoginForm() {
+    paintAccessKicker();
     var loginBack =
       byId('fireSGetStartedLoginFields') &&
       byId('fireSGetStartedLoginFields').querySelector('[data-fire-s-back]');
@@ -643,28 +642,17 @@
   }
 
   function showChoices() {
-    mode = 'choices';
-    hidePanels();
-    paintAccessChoices();
-    setTitle(
-      'Access',
-      'Inspector or Manager: Login or Create password. Only a new business owner taps Subscribe.'
-    );
-    showPanel('fireSGetStartedChoices');
-    var registerBtn = byId('fireSChoiceCompany');
-    var allow = canRegisterCompany();
-    if (registerBtn) {
-      registerBtn.style.display = allow ? '' : 'none';
-      registerBtn.hidden = !allow;
-    }
-    setStatus('');
+    showLogin();
   }
 
   function showLogin() {
     mode = 'login';
     hidePanels();
     paintLoginForm();
-    setTitle('Login', 'Use your email and password. A new business owner taps New company? Subscribe.');
+    setTitle(
+      'Access',
+      'Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.'
+    );
     showPanel('fireSGetStartedLoginFields');
     var createToggle = byId('fireSSwitchToCreateBtn');
     if (createToggle) createToggle.style.display = '';
@@ -777,11 +765,10 @@
       return;
     }
 
-    // Logged out: Login first. Subscribe is a choice on that page.
+    // Logged out: one Access page with Login. Create password / Subscribe stay on that page.
     if (!isRealUser()) {
       if (mode === 'create') showCreatePassword();
       else if (mode === 'register') showRegister();
-      else if (mode === 'choices') showChoices();
       else showLogin();
       return;
     }
@@ -791,7 +778,7 @@
     else if (mode === 'register') showRegister();
     else if (mode === 'company') showCompanyOnly();
     else if (mode === 'waiting') showWaiting();
-    else showChoices();
+    else showLogin();
   }
 
   function authErrorMessage(err) {
@@ -813,7 +800,7 @@
 
   async function finishSignedInSession(successMsg) {
     var claimed = await joinCompanyAfterLogin();
-    mode = 'choices';
+    mode = 'login';
     refreshHomeChrome();
     if (claimed > 0 || hasCompany()) {
       clearPendingSubscribe();
@@ -1187,7 +1174,7 @@
     if (preferredMode === 'login') mode = 'login';
     else if (preferredMode === 'create') mode = 'create';
     else if (preferredMode === 'register') mode = 'register';
-    else if (preferredMode === 'choices') mode = 'choices';
+    else if (preferredMode === 'choices') mode = 'login';
     else mode = 'login';
     render();
     try {
@@ -1312,7 +1299,7 @@
     var openAccessBtn = byId('cloudOpenAccessBtn');
     if (openAccessBtn) {
       openAccessBtn.addEventListener('click', function () {
-        openAccess('choices');
+        openAccess('login');
       });
     }
   }
@@ -1345,7 +1332,7 @@
     if (mode === 'login' || mode === 'create' || mode === 'register') {
       // keep current form while user is mid-flow unless access should hide
       if (!shouldShowAccess()) {
-        mode = 'choices';
+        mode = 'login';
         render();
       }
       return;

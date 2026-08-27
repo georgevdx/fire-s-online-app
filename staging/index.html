@@ -67,7 +67,7 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-5-startup">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-6-one-page">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-5-status">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
@@ -240,10 +240,10 @@
     <div class="fire-s-get-started-kicker">Fire-S Access</div>
     <h3 id="fireSGetStartedTitle">Access</h3>
     <p id="fireSGetStartedHelp">
-      Inspector or Manager: Login or Create password. Only a new business owner taps Subscribe.
+      Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.
     </p>
 
-    <div id="fireSGetStartedChoices" class="fire-s-get-started-choices">
+    <div id="fireSGetStartedChoices" class="fire-s-get-started-choices" hidden>
       <button id="fireSChoiceLogin" type="button" class="fire-s-get-started-choice">
         <strong>1. Login</strong>
         <span>I already have an email and password</span>
@@ -262,15 +262,14 @@
       </button>
     </div>
 
-    <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields" style="display:none;">
-      <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
+    <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields">
       <p class="fire-s-get-started-note">Use the same email on phone and desktop. One email is one login. The owner pays for that email.</p>
       <input id="fireSLoginEmail" type="email" placeholder="Email" autocomplete="username">
       <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
-      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn">New company? Subscribe</button>
       <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
+      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn">New company? Subscribe</button>
       <button id="fireSLoginInstallBtn" type="button" class="secondary-btn">Install on this phone</button>
     </div>
 
@@ -630,7 +629,7 @@
   <div class="startup-route-grid">
     <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
       <span class="route-title">Access</span>
-      <span class="route-copy">Login, create password, or register a company.</span>
+      <span class="route-copy">Type email and password to Login. Create password or Subscribe on this same page.</span>
     </button>
 
     <button
@@ -1697,7 +1696,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-32-status"></script>
+  <script src="fire-s-env.js?v=1-3-33-one-page"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
@@ -1709,14 +1708,14 @@
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
-  <script src="app.js?v=1-3-26-startup"></script>
+  <script src="app.js?v=1-3-27-one-page"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-31-payfast"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-32-one-page"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-5-per-sub"></script>
-  <script src="fire-s-company-team.js?v=2-18-owner-guard"></script>
+  <script src="fire-s-company-team.js?v=2-19-one-page"></script>
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
@@ -1724,10 +1723,10 @@
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
   <script src="fire-s-subscribe.js?v=1-12-status"></script>
-  <script src="fire-s-user-manual.js?v=1-27-status"></script>
+  <script src="fire-s-user-manual.js?v=1-28-one-page"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-25-payfast"></script>
+  <script src="fire-s-get-started.js?v=2-26-one-page"></script>
   <script src="fire-s-startup-stability.js?v=1-6-startup"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>

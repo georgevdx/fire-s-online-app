@@ -3894,7 +3894,7 @@ function applyLoggedOutUi() {
   } catch (_) {}
   try {
     if (typeof window.fireSOpenAccess === 'function') {
-      window.fireSOpenAccess('choices');
+      window.fireSOpenAccess('login');
     } else if (typeof window.fireSSyncGetStarted === 'function') {
       window.fireSSyncGetStarted();
     }
@@ -9453,7 +9453,7 @@ function openLoginRoute() {
 
   try {
     if (typeof window.fireSOpenAccess === 'function') {
-      window.fireSOpenAccess('choices');
+      window.fireSOpenAccess('login');
       return;
     }
   } catch (_) {}

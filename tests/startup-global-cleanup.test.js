@@ -16,7 +16,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const app = read('staging/app.js');
 const css = read('staging/fire-s-get-started.css');
 
-assert.ok(/1\.3\.32-toets/.test(env), 'Toets-blad version must be 1.3.32-toets');
+assert.ok(/1\.3\.33-toets/.test(env), 'Toets-blad version must be 1.3.33-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv) &&
     /bounceLegacyToetsQuery/.test(liveEnv) &&
@@ -54,8 +54,10 @@ assert.ok(
   'Terms and Privacy must stay visible on Login, not only on the old Access choice list'
 );
 assert.ok(
-  /preferredMode === 'choices'/.test(getStarted),
-  'Cloud Open Access must be able to open the Access choice list'
+  /preferredMode === 'choices'/.test(getStarted) &&
+    /else if \(preferredMode === 'choices'\) mode = 'login'/.test(getStarted) &&
+    /function showChoices\(\) \{\s*showLogin\(\);/.test(getStarted),
+  'Cloud Open Access must open the same Access page as Login, not a second choice list'
 );
 assert.ok(
   !/Fire-S © Company S/.test(html) && /Fire-S\. Do not copy or resell this app/.test(html),

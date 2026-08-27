@@ -195,20 +195,15 @@
 
       <article class="user-manual-chapter">
         <h2>2. Access — the first working screen</h2>
-        <p>If you are not in a company yet, Home shows <strong>Fire-S Access</strong>. Choose one path:</p>
+        <p>If you are not signed in, Home shows one <strong>Access</strong> page. There is no separate Login page after that. On Access you:</p>
         <ol>
-          <li><strong>1. Login</strong> — you already have an email and password.</li>
-          <li><strong>2. Create password</strong> — first time only, after your owner added your email in Personnel.</li>
-          <li><strong>3. Subscribe</strong> — ${
-            showFees()
-              ? 'new business. R250 per subscription per month, or R2 500 per year. You become the Owner.'
-              : 'new business owner only. Inspectors never tap this. Your owner pays. You do not see the fees.'
-          }</li>
+          <li>Type your email and password, then tap <strong>Login</strong>.</li>
+          <li>Or tap <strong>First time? Create password</strong> if your owner already added your email.</li>
+          <li>Or tap <strong>New company? Subscribe</strong> if you are a new business owner.</li>
         </ol>
         <h3>Login</h3>
         <ol>
-          <li>Tap <strong>1. Login</strong>.</li>
-          <li>Type your email and password.</li>
+          <li>On Access, type your email and password.</li>
           <li>Tap <strong>Login</strong>.</li>
           <li>If you forgot the password, tap <strong>Forgot password</strong>.</li>
         </ol>
@@ -217,7 +212,7 @@
         <ol>
           <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
           <li>You can be anywhere. Open Fire-S on your phone.</li>
-          <li>Tap <strong>2. Create password</strong>.</li>
+          <li>On Access tap <strong>First time? Create password</strong>.</li>
           <li>Type that same email and choose a password.</li>
           <li>Tap <strong>Create password</strong>, then <strong>Login</strong>.</li>
           <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
@@ -226,7 +221,7 @@
         ${
           showFees()
             ? `<ol>
-          <li>Tap <strong>3. Subscribe</strong>.</li>
+          <li>On Access tap <strong>New company? Subscribe</strong>.</li>
           <li>Type the company name, your email and a password. Subscription per month per login is R250. Per year per login is R2 500.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
@@ -320,7 +315,7 @@
           <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
           <li>Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
           <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
-          <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe on Access.</li>
+          <li>Tell them: Open Fire-S → Access → <strong>First time? Create password</strong> → same email → choose a password → Login. They must not tap Subscribe on Access.</li>
           <li>To send someone to a premises: Home → <strong>Schedule</strong> → fill the site → <strong>Assign to inspector</strong> → Save. They get an email with the address and date.</li>
           <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
         </ol>
@@ -333,7 +328,7 @@
       <article class="user-manual-chapter">
         <h2>9. Management dashboard (tablet / PC)</h2>
         <p>Owner and Manager: Home → <strong>Management dashboard</strong>.</p>
-        <p>On a computer, type the desktop address from Home. After login, Fire-S opens the Management dashboard in a wide layout. Inspectors keep the phone layout. Access (login) still shows first if you are not signed in.</p>
+        <p>On a computer, type the desktop address from Home. After login, Fire-S opens the Management dashboard in a wide layout. Inspectors keep the phone layout. Access still shows first if you are not signed in — Login is on that same page.</p>
         <p>Turn a tablet sideways, or open Fire-S on a laptop / PC. The first screen is a short management view, not a wall of graphs. Tap a number or a coloured graph piece to open the exact premises or Action Items underneath.</p>
         <ul>
           <li>Four cards: portfolio compliance %, Critical/High open items, overdue inspections, due this week</li>
@@ -356,7 +351,7 @@
           showFees()
             ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. Each extra person is another subscription.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
-        <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
+        <p>New companies: only the owner taps <strong>New company? Subscribe</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date, and that it renews automatically until you cancel.</p>
         <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops. The login stays until the expiry date already shown. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud. Pay on PayFast later to make it active again.</p>
         <p>One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
