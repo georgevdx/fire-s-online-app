@@ -75,6 +75,14 @@ const SUPABASE_ANON_KEY = fireSStaging
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk'
     );
 
+try {
+  var fireSUrlBits = String(location.hash || '') + String(location.search || '');
+  if (/type=recovery/i.test(fireSUrlBits)) {
+    window.__fireSPasswordRecovery = true;
+    sessionStorage.setItem('fireS.passwordRecovery', '1');
+  }
+} catch (_) {}
+
 const supabaseClient =
   typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY
     ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -88,6 +96,19 @@ const supabaseClient =
     : null;
 
 window.supabaseClient = supabaseClient;
+
+if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthStateChange === 'function') {
+  supabaseClient.auth.onAuthStateChange(function (event) {
+    if (event !== 'PASSWORD_RECOVERY') return;
+    window.__fireSPasswordRecovery = true;
+    try {
+      sessionStorage.setItem('fireS.passwordRecovery', '1');
+    } catch (_) {}
+    try {
+      document.dispatchEvent(new CustomEvent('fire-s:password-recovery'));
+    } catch (_) {}
+  });
+}
 
 window.__fireSAuthSettled = false;
 window.fireSMarkAuthSettled = function fireSMarkAuthSettled() {
@@ -3894,7 +3915,7 @@ function applyLoggedOutUi() {
   } catch (_) {}
   try {
     if (typeof window.fireSOpenAccess === 'function') {
-      window.fireSOpenAccess('choices');
+      window.fireSOpenAccess('login');
     } else if (typeof window.fireSSyncGetStarted === 'function') {
       window.fireSSyncGetStarted();
     }
@@ -9453,7 +9474,7 @@ function openLoginRoute() {
 
   try {
     if (typeof window.fireSOpenAccess === 'function') {
-      window.fireSOpenAccess('choices');
+      window.fireSOpenAccess('login');
       return;
     }
   } catch (_) {}

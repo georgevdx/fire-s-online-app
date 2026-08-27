@@ -25,8 +25,8 @@ const liveHtml = read('index.html');
 
 assert.ok(/1\.3\.34-toets/.test(env), 'Toets-blad version must stay on 1.3.34-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
-  'Live Fire-S must be 1.3.27 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.28'/.test(liveEnv),
+  'Live Fire-S must be 1.3.28 after sit dit live'
 );
 
 const priceFiles = [html, catalogSrc, subscribe, notify, getStarted, roles, manual, terms, privacy];

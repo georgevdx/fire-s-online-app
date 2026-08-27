@@ -195,29 +195,27 @@
 
       <article class="user-manual-chapter">
         <h2>2. Access — the first working screen</h2>
-        <p>If you are not in a company yet, Home shows <strong>Fire-S Access</strong>. Choose one path:</p>
+        <p>If you are not signed in, Home shows one <strong>Access</strong> page. There is no separate Login page after that. On Access you:</p>
         <ol>
-          <li><strong>1. Login</strong> — you already have an email and password.</li>
-          <li><strong>2. Create password</strong> — first time only, after your owner added your email in Personnel.</li>
-          <li><strong>3. Subscribe</strong> — ${
-            showFees()
-              ? 'new business. R349 per subscription per month, or R3 490 per year. You become the Owner.'
-              : 'new business owner only. Inspectors never tap this. Your owner pays. You do not see the fees.'
-          }</li>
+          <li>Type your email and password, then tap <strong>Login</strong>.</li>
+          <li>Or tap <strong>First time? Create password</strong> if your owner already added your email.</li>
+          <li>Or tap <strong>New company? Subscribe</strong> if you are a new business owner.</li>
         </ol>
         <h3>Login</h3>
         <ol>
-          <li>Tap <strong>1. Login</strong>.</li>
-          <li>Type your email and password.</li>
+          <li>On Access, type your email and password.</li>
           <li>Tap <strong>Login</strong>.</li>
-          <li>If you forgot the password, tap <strong>Forgot password</strong>.</li>
+          <li>If you forgot the password, type your email, then tap <strong>Forgot password</strong>.</li>
+          <li>Check Inbox and Junk. The email is often from Supabase. Outlook and Live hide it.</li>
+          <li>Wait one minute before you tap Forgot password again.</li>
+          <li>Open the link in the email. Access then shows <strong>Choose a new password</strong>. Save, then Login.</li>
         </ol>
         <h3>Create password (staff, first time)</h3>
         <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>
         <ol>
           <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
           <li>You can be anywhere. Open Fire-S on your phone.</li>
-          <li>Tap <strong>2. Create password</strong>.</li>
+          <li>On Access tap <strong>First time? Create password</strong>.</li>
           <li>Type that same email and choose a password.</li>
           <li>Tap <strong>Create password</strong>, then <strong>Login</strong>.</li>
           <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
@@ -226,7 +224,7 @@
         ${
           showFees()
             ? `<ol>
-          <li>Tap <strong>3. Subscribe</strong>.</li>
+          <li>On Access tap <strong>New company? Subscribe</strong>.</li>
           <li>Type the company name, your email and a password. You pay R349 / month (or R3 490 / year) for that subscription. Inspectors do not pay.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>

@@ -16,11 +16,15 @@ const app = read('staging/app.js');
 const manual = read('staging/fire-s-user-manual.js');
 const liveHtml = read('index.html');
 const liveStarted = read('fire-s-get-started.js');
+const liveCss = read('fire-s-get-started.css');
+const liveApp = read('app.js');
+const liveManual = read('fire-s-user-manual.js');
 
 assert.ok(/1\.3\.34-toets/.test(env), 'Toets-blad version must be 1.3.34-toets');
 assert.ok(
-  /fireSOpenAccess\('choices'\)/.test(liveStarted) || /openAccess\('choices'\)/.test(liveStarted),
-  'Live Access/Login split must stay until sit dit live'
+  /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
+    /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
+  'Live Access and Login must be one page after sit dit live'
 );
 
 const gate = html.match(/id="fireSGetStarted"[\s\S]*?id="mainCommandCentre"/);
@@ -73,12 +77,15 @@ assert.ok(
 );
 
 assert.ok(
-  /id="fireSGetStartedChoices"/.test(liveHtml) &&
-    /← Back to Access/.test(liveHtml) &&
-    /display: grid/.test(
-      read('fire-s-get-started.css').match(/\.fire-s-get-started-choices \{[\s\S]*?\}/)[0]
-    ),
-  'Live root must keep the current Access then Login steps until sit dit live'
+  /id="fireSGetStartedLoginFields"/.test(liveHtml) &&
+    /First time\? Create password/.test(liveHtml) &&
+    /display: none !important/.test(
+      liveCss.match(/\.fire-s-get-started-choices \{[\s\S]*?\}/)[0]
+    ) &&
+    /fireSOpenAccess\('login'\)/.test(liveApp) &&
+    !/fireSOpenAccess\('choices'\)/.test(liveApp) &&
+    /one <strong>Access<\/strong> page/.test(liveManual),
+  'Live root must use the same one Access page after sit dit live'
 );
 
 console.log('one-access-page.test.js: ok');

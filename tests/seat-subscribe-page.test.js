@@ -57,7 +57,7 @@ assert.ok(
 assert.ok(
   /id="companyTeamStartSeatBtn"/.test(liveHtml) &&
     /id="fireSSubscribeSeatPanel"/.test(liveHtml) &&
-    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.27'/.test(liveEnv),
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.28'/.test(liveEnv),
   'Live Fire-S must add people on the subscription page after sit dit live'
 );
 

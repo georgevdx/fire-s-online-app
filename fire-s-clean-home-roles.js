@@ -818,12 +818,12 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest', 'guest');
-    setHero('Fire-S', 'LOGIN', 'Sign in. New company? Use Subscribe below.');
+    setHero('Fire-S', 'ACCESS', 'Type email and password to Login. New company? Subscribe on this same page.');
     setText('#mainCommandCentre .main-command-kicker', 'Access');
-    setText('#mainCommandCentre .main-command-top h3', 'Login');
+    setText('#mainCommandCentre .main-command-top h3', 'Access');
     setText(
       '#mainCommandSubtitle',
-      'Use Login below. Subscribe only if this company is not registered yet. Cloud is only for sync after you are signed in.'
+      'Use Access below. Login, Create password and Subscribe are on this one page. Cloud is only for sync after you are signed in.'
     );
     try {
       if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
@@ -900,7 +900,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'Use Access → 2. Create password (first time), then Login. You do not Subscribe. Your owner pays for this email.'
+      'Use Access: First time? Create password, then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);

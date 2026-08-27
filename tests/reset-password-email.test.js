@@ -15,6 +15,7 @@ const app = read('staging/app.js');
 const manual = read('staging/fire-s-user-manual.js');
 const liveStarted = read('fire-s-get-started.js');
 const liveHtml = read('index.html');
+const liveApp = read('app.js');
 
 assert.ok(/1\.3\.34-toets/.test(env), 'Toets-blad version must be 1.3.34-toets');
 
@@ -53,9 +54,16 @@ assert.ok(
 );
 
 assert.ok(
-  /Check the inbox for /.test(liveStarted) &&
-    !/id="fireSGetStartedResetFields"/.test(liveHtml),
-  'Live root must keep the current Forgot password copy until sit dit live'
+  /id="fireSForgotPasswordBtn"/.test(liveHtml) &&
+    /check Inbox and Junk/.test(liveHtml) &&
+    /id="fireSGetStartedResetFields"/.test(liveHtml) &&
+    /id="fireSDoResetBtn"/.test(liveHtml) &&
+    /Save new password/.test(liveHtml) &&
+    /Check Inbox AND Junk/.test(liveStarted) &&
+    /PASSWORD_RECOVERY/.test(liveApp) &&
+    /function showResetPassword\(/.test(liveStarted) &&
+    /updateUser\(\{ password:/.test(liveStarted),
+  'Live root must let someone change their password after sit dit live'
 );
 
 console.log('reset-password-email.test.js: ok');

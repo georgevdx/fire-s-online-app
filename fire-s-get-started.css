@@ -33,8 +33,7 @@
 }
 
 .fire-s-get-started-choices {
-  display: grid;
-  gap: 10px;
+  display: none !important;
 }
 
 .fire-s-get-started-choice {
