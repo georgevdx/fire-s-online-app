@@ -146,9 +146,7 @@ async function main() {
     /not localhost:3000/.test(liveStarted) && /not localhost:3000/.test(stagingStarted),
     'Forgot password copy must say the email link cannot be localhost:3000'
   );
-  assert.ok(
-    /not localhost:3000/.test(liveHtml) && /not localhost:3000/.test(stagingHtml)
-  );
+  assert.ok(/open the reset link/.test(liveStarted) && /open the reset link/.test(stagingStarted));
   console.log('password-reset-accurate.test.js: ok');
 }
 

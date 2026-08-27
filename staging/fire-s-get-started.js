@@ -874,10 +874,13 @@
     }
     if (
       low.indexOf('expired') >= 0 ||
-      low.indexOf('invalid') >= 0 && low.indexOf('token') >= 0 ||
+      (low.indexOf('invalid') >= 0 && low.indexOf('token') >= 0) ||
       low.indexOf('otp_expired') >= 0
     ) {
       return 'That reset link is no longer valid. Tap Forgot password once more, wait a minute, and open the new email. The link must open Fire-S, not localhost:3000.';
+    }
+    if (low.indexOf('open the reset link') >= 0) {
+      return 'Open the reset link from the new email. The link must open Fire-S on the web, not localhost:3000.';
     }
     if (low.indexOf('localhost:3000') >= 0) {
       return 'The email is still pointing at localhost:3000. On the live cloud, Site URL must be the Fire-S web address, not localhost.';
