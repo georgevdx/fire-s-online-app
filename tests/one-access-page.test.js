@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.40-toets/.test(env), 'Toets-blad version must be 1.3.40-toets');
+assert.ok(/1\.3\.41-toets/.test(env), 'Toets-blad version must be 1.3.41-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -91,6 +91,36 @@ assert.ok(
     !/fireSOpenAccess\('choices'\)/.test(liveApp) &&
     /one <strong>Access<\/strong> page/.test(liveManual),
   'Live root must use the same one Access page after sit dit live'
+);
+
+function loginOrder(src, label) {
+  const block = src.match(
+    /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
+  );
+  assert.ok(block, label + ' must have the Access login fields');
+  const fields = block[0];
+  const login = fields.indexOf('id="fireSDoLoginBtn"');
+  const create = fields.indexOf('First time? Create password');
+  const sub = fields.indexOf('id="fireSLoginSubscribeBtn"');
+  const forgotNote = fields.indexOf('Forgot password: check Inbox');
+  assert.ok(
+    login >= 0 && create > login && sub > create && forgotNote > sub,
+    label + ' must put Subscribing New Company after Login and before the Forgot note'
+  );
+}
+loginOrder(html, 'Toets Access');
+loginOrder(liveHtml, 'Live Access');
+
+assert.ok(
+  /subscribeBtn\.style\.display = ''/.test(getStarted) &&
+    /subscribeBtn\.style\.display = ''/.test(liveStarted) &&
+    !/allow \? '' : 'none'/.test(getStarted) &&
+    !/allow \? '' : 'none'/.test(liveStarted),
+  'Access must keep Subscribing New Company visible on the login form'
+);
+assert.ok(
+  /min-height: 52px/.test(css) && /min-height: 52px/.test(liveCss),
+  'Phone Subscribe button must be tall enough to see and tap'
 );
 
 console.log('one-access-page.test.js: ok');

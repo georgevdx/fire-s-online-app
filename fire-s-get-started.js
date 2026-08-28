@@ -691,9 +691,11 @@
     if (loginBack) loginBack.style.display = 'none';
     var subscribeBtn = byId('fireSLoginSubscribeBtn');
     if (subscribeBtn) {
-      var allow = canRegisterCompany();
-      subscribeBtn.style.display = allow ? '' : 'none';
-      subscribeBtn.hidden = !allow;
+      // Keep the blue Subscribe control on the first phone screen.
+      // Staff / already-registered taps are still blocked in showRegister().
+      subscribeBtn.hidden = false;
+      subscribeBtn.removeAttribute('hidden');
+      subscribeBtn.style.display = '';
     }
   }
 

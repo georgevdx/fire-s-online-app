@@ -38,8 +38,8 @@ assert.ok(
 );
 assert.ok(/1\.3\.[2-9]\d-toets/.test(env), 'Toets-blad version must stay on 1.3.22-toets or newer');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.34'/.test(liveEnv),
-  'Live Fire-S must be 1.3.34 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.35'/.test(liveEnv),
+  'Live Fire-S must be 1.3.35 after sit dit live'
 );
 
 console.log('inspector-join-after-password.test.js: ok');
