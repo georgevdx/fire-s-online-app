@@ -244,6 +244,14 @@ async function main() {
     'Showing Choose a new password must not wipe a live recovery flag'
   );
   assert.ok(
+    /function leaveReset\(\)/.test(liveStarted) &&
+      /stripRecoveryFromAddress/.test(liveStarted) &&
+      /history.replaceState/.test(liveStarted) &&
+      /function leaveReset\(\)/.test(stagingStarted) &&
+      /stripRecoveryFromAddress/.test(stagingStarted),
+    'Cancel reset must return to Login without waiting for signOut'
+  );
+  assert.ok(
     /stale recovery flag/.test(read('fire-s-password-reset.js')) &&
       /stale recovery flag/.test(stagingHelperSrc),
     'Live and toets helpers must drop a leftover recovery flag without a token'

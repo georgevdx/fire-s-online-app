@@ -1023,14 +1023,33 @@
     }
   }
 
-  async function leaveReset() {
-    clearPasswordRecovery();
+  function stripRecoveryFromAddress() {
     try {
-      var sb = getSb();
-      if (sb && sb.auth) await sb.auth.signOut();
+      var loc = window.location;
+      var bits = String(loc.hash || '') + String(loc.search || '');
+      if (!/type=recovery/i.test(bits) && !/access_token=/i.test(bits) && !/token_hash=/i.test(bits)) {
+        return;
+      }
+      var path = String(loc.pathname || '/');
+      if (window.history && typeof window.history.replaceState === 'function') {
+        window.history.replaceState(null, '', path + '#/');
+      } else {
+        loc.hash = '/';
+      }
     } catch (_) {}
+  }
+
+  function leaveReset() {
+    clearPasswordRecovery();
+    stripRecoveryFromAddress();
     showLogin();
     setStatus('Reset cancelled. Login, or tap Forgot password again.');
+    try {
+      var sb = getSb();
+      if (sb && sb.auth && typeof sb.auth.signOut === 'function') {
+        Promise.resolve(sb.auth.signOut()).catch(function () {});
+      }
+    } catch (_) {}
   }
 
   async function doLogin() {
