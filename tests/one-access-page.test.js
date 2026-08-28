@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.39-toets/.test(env), 'Toets-blad version must be 1.3.39-toets');
+assert.ok(/1\.3\.40-toets/.test(env), 'Toets-blad version must be 1.3.40-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -34,8 +34,13 @@ assert.ok(
     /id="fireSLoginEmail"/.test(gate[0]) &&
     /id="fireSDoLoginBtn"/.test(gate[0]) &&
     /First time\? Create password/.test(gate[0]) &&
-    /New company\? Subscribe/.test(gate[0]),
+    /Subscribing New Company/.test(gate[0]),
   'The one Access page must include Login fields plus Create password and Subscribe'
+);
+assert.ok(
+  /fire-s-access-subscribe-btn/.test(gate[0]) &&
+    /background: #2563eb !important/.test(css),
+  'Subscribing New Company must be the blue Access button'
 );
 assert.ok(
   /hidden/.test(html.match(/id="fireSGetStartedChoices"[\s\S]*?<\/div>/)[0]) ||

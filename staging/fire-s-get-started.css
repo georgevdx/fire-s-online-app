@@ -82,6 +82,13 @@
   margin: 0;
 }
 
+#fireSLoginSubscribeBtn.fire-s-access-subscribe-btn {
+  background: #2563eb !important;
+  border: 1px solid #1d4ed8 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
 .fire-s-get-started-fields .fire-s-plan-card input {
   width: auto;
 }

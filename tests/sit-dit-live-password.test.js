@@ -17,8 +17,8 @@ const manual = read('fire-s-user-manual.js');
 const roles = read('fire-s-clean-home-roles.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.33'/.test(env),
-  'Live Fire-S must be 1.3.33 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.34'/.test(env),
+  'Live Fire-S must be 1.3.34 after sit dit live'
 );
 assert.ok(!/fire-s-payfast\.js/.test(html), 'Live root must not load PayFast');
 assert.ok(
@@ -33,12 +33,18 @@ assert.ok(
     /id="fireSLoginEmail"/.test(gate[0]) &&
     /id="fireSDoLoginBtn"/.test(gate[0]) &&
     /First time\? Create password/.test(gate[0]) &&
-    /New company\? Subscribe/.test(gate[0]) &&
+    /Subscribing New Company/.test(gate[0]) &&
     /check Inbox and Junk/.test(gate[0]) &&
     /id="fireSGetStartedResetFields"/.test(gate[0]) &&
     /id="fireSDoResetBtn"/.test(gate[0]) &&
     /Save new password/.test(gate[0]),
   'Live Access must be one page with Login, Forgot password, Junk note, and Choose a new password'
+);
+assert.ok(
+  /fire-s-access-subscribe-btn/.test(gate[0]) &&
+    /#fireSLoginSubscribeBtn\.fire-s-access-subscribe-btn/.test(css) &&
+    /background: #2563eb !important/.test(css),
+  'Subscribing New Company must be the blue Access button'
 );
 assert.ok(
   !/← Back to Access/.test(

@@ -199,7 +199,7 @@
         <ol>
           <li>Type your email and password, then tap <strong>Login</strong>.</li>
           <li>Or tap <strong>First time? Create password</strong> if your owner already added your email.</li>
-          <li>Or tap <strong>New company? Subscribe</strong> if you are a new business owner.</li>
+          <li>Or tap <strong>Subscribing New Company</strong> if you are a new business owner.</li>
         </ol>
         <h3>Login</h3>
         <ol>
@@ -225,7 +225,7 @@
         ${
           showFees()
             ? `<ol>
-          <li>On Access tap <strong>New company? Subscribe</strong>.</li>
+          <li>On Access tap <strong>Subscribing New Company</strong>.</li>
           <li>Type the company name, your email and a password. You pay R349 / month (or R3 490 / year) for that subscription. Inspectors do not pay.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>

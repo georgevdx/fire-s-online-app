@@ -818,7 +818,7 @@
   function applyGuestHome() {
     showHomeHero();
     setBodyRole('fire-s-role-guest', 'guest');
-    setHero('Fire-S', 'ACCESS', 'Type email and password to Login. New company? Subscribe on this same page.');
+    setHero('Fire-S', 'ACCESS', 'Type email and password to Login. Subscribing New Company on this same page.');
     setText('#mainCommandCentre .main-command-kicker', 'Access');
     setText('#mainCommandCentre .main-command-top h3', 'Access');
     setText(
