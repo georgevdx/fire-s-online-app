@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.41-toets/.test(env), 'Toets-blad version must be 1.3.41-toets');
+assert.ok(/1\.3\.42-toets/.test(env), 'Toets-blad version must be 1.3.42-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -126,6 +126,23 @@ assert.ok(
   /#fireSGetStartedLoginFields > \.fire-s-get-started-note:first-of-type \{[\s\S]*?display: none;/.test(css) &&
     /#fireSGetStartedLoginFields > \.fire-s-get-started-note:first-of-type \{[\s\S]*?display: none;/.test(liveCss),
   'Phone Access must hide the long first note so Subscribe fits without scrolling'
+);
+assert.ok(
+  /clearJoiningAsStaff\(\)/.test(
+    getStarted.match(/function showRegister\(\) \{[\s\S]*?function showCompanyOnly/)[0]
+  ) &&
+    /clearJoiningAsStaff\(\)/.test(
+      liveStarted.match(/function showRegister\(\) \{[\s\S]*?function showCompanyOnly/)[0]
+    ) &&
+    !/Your company is already registered\. Use Login/.test(getStarted) &&
+    !/Your company is already registered\. Use Login/.test(liveStarted),
+  'Subscribe tap must open the form instead of bouncing back to Login'
+);
+assert.ok(
+  /fireSGetStartedGuestFields/.test(
+    liveStarted.match(/function showRegister\(\) \{[\s\S]*?function showCompanyOnly/)[0]
+  ),
+  'Live Subscribe tap must show the Subscribe fields'
 );
 
 console.log('one-access-page.test.js: ok');

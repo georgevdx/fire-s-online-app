@@ -746,11 +746,18 @@
   }
 
   function showRegister() {
-    if (!canRegisterCompany()) {
-      setStatus('Your company is already registered. Use Login.', true);
-      showLogin();
+    var role = homeRole();
+    if (role === 'pending_member') {
+      showWaiting();
+      setStatus(
+        'Your owner already added you. Use Login or Create password. Do not Subscribe.',
+        true
+      );
       return;
     }
+    // Phone Access can still carry a leftover Create-password flag or company
+    // id. Those used to bounce this tap back to Login with no visible change.
+    clearJoiningAsStaff();
     mode = 'register';
     hidePanels();
     paintSubscribeForm();
@@ -763,6 +770,10 @@
     showPanel('fireSGetStartedGuestFields');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
     setStatus('');
+    try {
+      var form = byId('fireSGetStartedGuestFields');
+      if (form && form.scrollIntoView) form.scrollIntoView({ block: 'start' });
+    } catch (_) {}
   }
 
   function showCompanyOnly() {
@@ -1439,7 +1450,12 @@
     }
     var loginSubscribe = byId('fireSLoginSubscribeBtn');
     if (loginSubscribe) {
-      loginSubscribe.addEventListener('click', showRegister);
+      loginSubscribe.addEventListener('click', function (event) {
+        try {
+          if (event) event.preventDefault();
+        } catch (_) {}
+        showRegister();
+      });
     }
 
     var switchCreate = byId('fireSSwitchToCreateBtn');

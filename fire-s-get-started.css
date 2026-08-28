@@ -85,6 +85,10 @@
 #fireSLoginSubscribeBtn.fire-s-access-subscribe-btn {
   -webkit-appearance: none;
   appearance: none;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  touch-action: manipulation;
   background: #2563eb !important;
   border: 1px solid #1d4ed8 !important;
   color: #fff !important;
