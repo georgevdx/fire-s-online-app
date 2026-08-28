@@ -163,6 +163,14 @@ body.fire-s-clean-home.fire-s-role-inspector #fireSGetStarted {
   display: none !important;
 }
 
+body.fire-s-clean-home.fire-s-role-owner.fire-s-password-recovery #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-manager.fire-s-password-recovery #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-inspector.fire-s-password-recovery #fireSGetStarted,
+body.fire-s-clean-home.fire-s-role-viewer.fire-s-password-recovery #fireSGetStarted,
+body.fire-s-clean-home.fire-s-password-recovery #fireSGetStarted {
+  display: block !important;
+}
+
 body.fire-s-clean-home.fire-s-role-guest #fireSGetStarted,
 body.fire-s-clean-home.fire-s-role-new-company #fireSGetStarted,
 body.fire-s-clean-home.fire-s-role-pending-member #fireSGetStarted {

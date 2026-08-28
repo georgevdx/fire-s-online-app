@@ -17,8 +17,8 @@ const manual = read('fire-s-user-manual.js');
 const roles = read('fire-s-clean-home-roles.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.31'/.test(env),
-  'Live Fire-S must be 1.3.31 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.32'/.test(env),
+  'Live Fire-S must be 1.3.32 after sit dit live'
 );
 assert.ok(!/fire-s-payfast\.js/.test(html), 'Live root must not load PayFast');
 assert.ok(
@@ -83,6 +83,11 @@ assert.ok(
 assert.ok(
   /setHero\('Fire-S', 'ACCESS'/.test(roles),
   'Live guest Home must say Access, not a separate Login screen'
+);
+assert.ok(
+  /isPasswordRecoveryNow/.test(roles) &&
+    /fire-s-password-recovery #fireSGetStarted/.test(css),
+  'Live must keep Choose a new password open instead of the company Home'
 );
 
 console.log('sit-dit-live-password.test.js: ok');

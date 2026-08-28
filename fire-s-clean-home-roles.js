@@ -944,9 +944,62 @@
     return shown(list) || shown(form);
   }
 
+  function isPasswordRecoveryNow() {
+    try {
+      var api = window.fireSPasswordReset;
+      if (api && typeof api.isCaptured === 'function') {
+        return !!api.isCaptured(
+          window.sessionStorage,
+          window,
+          window.location
+        );
+      }
+    } catch (_) {}
+    try {
+      if (window.__fireSPasswordRecovery) return true;
+      if (window.sessionStorage && sessionStorage.getItem('fireS.passwordRecovery') === '1') {
+        return true;
+      }
+    } catch (_) {}
+    try {
+      var bits = String(window.location.hash || '') + String(window.location.search || '');
+      if (/type=recovery/i.test(bits) || /token_hash=/i.test(bits) || /access_token=/i.test(bits)) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function paintRecoveryBody(on) {
+    try {
+      if (!document.body) return;
+      if (on) {
+        document.body.classList.add('fire-s-password-recovery');
+        if (document.documentElement) {
+          document.documentElement.classList.add('fire-s-password-recovery');
+        }
+      } else {
+        document.body.classList.remove('fire-s-password-recovery');
+        if (document.documentElement) {
+          document.documentElement.classList.remove('fire-s-password-recovery');
+        }
+      }
+    } catch (_) {}
+  }
+
   function applyCleanHome() {
     const centre = byId('mainCommandCentre');
     if (!centre || !document.body) return;
+    if (isPasswordRecoveryNow()) {
+      applyGuestHome();
+      paintRecoveryBody(true);
+      try {
+        const access = byId('fireSGetStarted');
+        if (access) access.style.display = '';
+      } catch (_) {}
+      return;
+    }
+    paintRecoveryBody(false);
     if (isGatewayOrFormVisible()) return;
 
     wrapAllCommandCards();

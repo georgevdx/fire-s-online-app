@@ -93,6 +93,18 @@
     }
   }
 
+  function paintRecoveryClass(on, win) {
+    try {
+      var doc = (win && win.document) || (typeof document !== 'undefined' ? document : null);
+      if (!doc) return;
+      var root = doc.documentElement;
+      var body = doc.body;
+      var method = on ? 'add' : 'remove';
+      if (root && root.classList) root.classList[method]('fire-s-password-recovery');
+      if (body && body.classList) body.classList[method]('fire-s-password-recovery');
+    } catch (_) {}
+  }
+
   function captureFromLocation(loc, storage, win, keepFlag) {
     var parsed = parseAuthParams(loc && loc.search, loc && loc.hash);
     if (parsed.isRecovery) {
@@ -103,6 +115,7 @@
       writeStore(storage, TOKEN_KEY, parsed.tokenHash);
       writeStore(storage, ACCESS_KEY, parsed.accessToken);
       writeStore(storage, REFRESH_KEY, parsed.refreshToken);
+      paintRecoveryClass(true, win);
       return parsed;
     }
     // A leftover / stale recovery flag without a token keeps "Choose a new password"
@@ -115,6 +128,9 @@
       try {
         if (storage && storage.removeItem) storage.removeItem(FLAG_KEY);
       } catch (_) {}
+      paintRecoveryClass(false, win);
+    } else if (readStore(storage, TOKEN_KEY) || readStore(storage, ACCESS_KEY) || keepFlag) {
+      paintRecoveryClass(true, win);
     }
     return parsed;
   }
@@ -147,6 +163,7 @@
         storage.removeItem(REFRESH_KEY);
       }
     } catch (_) {}
+    paintRecoveryClass(false, win);
   }
 
   function recoveryLinkError() {
@@ -208,6 +225,7 @@
     accessRedirectUrl: accessRedirectUrl,
     captureFromLocation: captureFromLocation,
     isCaptured: isCaptured,
+    paintRecoveryClass: paintRecoveryClass,
     readTokenHash: function (storage) {
       return readStore(storage, TOKEN_KEY);
     },

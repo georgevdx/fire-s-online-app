@@ -20,10 +20,10 @@ const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.31'/.test(liveEnv),
-  'Live Fire-S must be 1.3.31'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.32'/.test(liveEnv),
+  'Live Fire-S must be 1.3.32'
 );
-assert.ok(/1\.3\.37-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.37-toets');
+assert.ok(/1\.3\.38-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.38-toets');
 
 assert.ok(
   /fire-s-password-reset\.js/.test(liveHtml) && /fire-s-password-reset\.js/.test(stagingHtml),
@@ -255,6 +255,28 @@ async function main() {
     /stale recovery flag/.test(read('fire-s-password-reset.js')) &&
       /stale recovery flag/.test(stagingHelperSrc),
     'Live and toets helpers must drop a leftover recovery flag without a token'
+  );
+  assert.ok(
+    /isPasswordRecoveryNow/.test(read('fire-s-clean-home-roles.js')) &&
+      /isPasswordRecoveryNow/.test(read('staging/fire-s-clean-home-roles.js')) &&
+      /applyGuestHome\(\)/.test(read('fire-s-clean-home-roles.js')),
+    'A recovery session must not open the owner Home before Save'
+  );
+  assert.ok(
+    /fire-s-password-recovery #fireSGetStarted/.test(read('fire-s-get-started.css')) &&
+      /fire-s-password-recovery #fireSGetStarted/.test(read('staging/fire-s-get-started.css')),
+    'CSS must keep Choose a new password on screen while the recovery class is on'
+  );
+  assert.ok(
+    /if \(isPasswordRecovery\(\)\) \{\s*showAccess\(\);/.test(liveStarted) &&
+      /if \(isPasswordRecovery\(\)\) \{\s*showAccess\(\);/.test(stagingStarted),
+    'hideAccess must not close the reset form during recovery'
+  );
+  assert.ok(
+    /auth\.signOut/.test(liveStarted) &&
+      /auth\.signOut/.test(stagingStarted) &&
+      /Password saved\. Login with the new password/.test(liveStarted),
+    'After Save, Fire-S must sign out the recovery session so Login is required'
   );
   console.log('password-reset-accurate.test.js: ok');
 }

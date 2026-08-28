@@ -301,6 +301,10 @@
   }
 
   function hideAccess() {
+    if (isPasswordRecovery()) {
+      showAccess();
+      return;
+    }
     if (root) root.style.display = 'none';
     try {
       if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
@@ -1012,10 +1016,20 @@
         byId('fireSResetPassword').value = '';
         byId('fireSResetPassword2').value = '';
       } catch (_) {}
-      clearPasswordRecovery();
       try {
         if (byId('fireSLoginPassword')) byId('fireSLoginPassword').value = '';
       } catch (_) {}
+      try {
+        if (sb.auth && typeof sb.auth.signOut === 'function') {
+          await Promise.race([
+            Promise.resolve(sb.auth.signOut()),
+            new Promise(function (resolve) {
+              setTimeout(resolve, 1200);
+            })
+          ]);
+        }
+      } catch (_) {}
+      clearPasswordRecovery();
       showLogin();
       setStatus('Password saved. Login with the new password.');
     } catch (e) {

@@ -121,6 +121,11 @@ if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthSt
       sessionStorage.setItem('fireS.passwordRecovery', '1');
     } catch (_) {}
     try {
+      if (window.fireSPasswordReset && typeof window.fireSPasswordReset.paintRecoveryClass === 'function') {
+        window.fireSPasswordReset.paintRecoveryClass(true, window);
+      }
+    } catch (_) {}
+    try {
       document.dispatchEvent(new CustomEvent('fire-s:password-recovery'));
     } catch (_) {}
   });
