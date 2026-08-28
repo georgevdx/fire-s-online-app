@@ -16,12 +16,12 @@ const getStarted = read('staging/fire-s-get-started.js');
 const app = read('staging/app.js');
 const css = read('staging/fire-s-get-started.css');
 
-assert.ok(/1\.3\.35-toets/.test(env), 'Toets-blad version must be 1.3.35-toets');
+assert.ok(/1\.3\.36-toets/.test(env), 'Toets-blad version must be 1.3.36-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.29'/.test(liveEnv) &&
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.30'/.test(liveEnv) &&
     /bounceLegacyToetsQuery/.test(liveEnv) &&
     /function paintVersion\(/.test(liveEnv),
-  'Live Fire-S must be 1.3.29, bounce old toets links, and paint the version'
+  'Live Fire-S must be 1.3.30, bounce old toets links, and paint the version'
 );
 
 assert.ok(

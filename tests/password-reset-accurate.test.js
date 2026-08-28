@@ -20,10 +20,10 @@ const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.29'/.test(liveEnv),
-  'Live Fire-S must be 1.3.29'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.30'/.test(liveEnv),
+  'Live Fire-S must be 1.3.30'
 );
-assert.ok(/1\.3\.35-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.35-toets');
+assert.ok(/1\.3\.36-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.36-toets');
 
 assert.ok(
   /fire-s-password-reset\.js/.test(liveHtml) && /fire-s-password-reset\.js/.test(stagingHtml),
@@ -65,11 +65,42 @@ assert.ok(fromEmail.isRecovery);
 assert.strictEqual(fromEmail.tokenHash, 'abc123');
 assert.strictEqual(fromEmail.type, 'recovery');
 
-const fromHash = helper.parseAuthParams('', '#access_token=xyz&type=recovery');
+const fromHash = helper.parseAuthParams(
+  '',
+  '#access_token=xyz-token&refresh_token=xyz-refresh&type=recovery'
+);
 assert.ok(fromHash.isRecovery);
 assert.strictEqual(fromHash.type, 'recovery');
 assert.strictEqual(fromHash.tokenHash, '');
+assert.strictEqual(fromHash.accessToken, 'xyz-token');
+assert.strictEqual(fromHash.refreshToken, 'xyz-refresh');
 
+const hashStore = {};
+const hashStorage = {
+  getItem: function (key) {
+    return Object.prototype.hasOwnProperty.call(hashStore, key) ? hashStore[key] : null;
+  },
+  setItem: function (key, value) {
+    hashStore[key] = String(value);
+  },
+  removeItem: function (key) {
+    delete hashStore[key];
+  }
+};
+helper.captureFromLocation(
+  {
+    search: '',
+    hash: '#access_token=keep-access&refresh_token=keep-refresh&type=recovery'
+  },
+  hashStorage,
+  {}
+);
+assert.strictEqual(hashStorage.getItem(helper.ACCESS_KEY), 'keep-access');
+assert.strictEqual(hashStorage.getItem(helper.REFRESH_KEY), 'keep-refresh');
+assert.ok(
+  helper.isCaptured(hashStorage, {}, { search: '', hash: '#' }),
+  'After the cloud strips the hash, Save must still have the access token'
+);
 const store = {};
 const storage = {
   getItem: function (key) {
@@ -114,6 +145,24 @@ async function main() {
   await helper.ensureRecoverySession(fakeSb, storage);
   assert.strictEqual(verifyCalls, 1);
   assert.strictEqual(storage.getItem(helper.TOKEN_KEY), null);
+
+  let setSessionCalls = 0;
+  const hashSb = {
+    auth: {
+      setSession: async function (session) {
+        setSessionCalls += 1;
+        assert.strictEqual(session.access_token, 'keep-access');
+        assert.strictEqual(session.refresh_token, 'keep-refresh');
+        return { data: { session: session }, error: null };
+      },
+      getSession: async function () {
+        throw new Error('getSession must not run when an access token is waiting');
+      }
+    }
+  };
+  await helper.ensureRecoverySession(hashSb, hashStorage);
+  assert.strictEqual(setSessionCalls, 1);
+  assert.strictEqual(hashStorage.getItem(helper.ACCESS_KEY), null);
 
   const emptyStorage = {
     getItem: function () {
