@@ -879,19 +879,19 @@
       (low.indexOf('invalid') >= 0 && low.indexOf('token') >= 0) ||
       low.indexOf('otp_expired') >= 0
     ) {
-      return 'That reset link is no longer valid. Tap Forgot password once more, wait a minute, and open the new email. The link must open Fire-S, not localhost:3000.';
+      return 'That reset link is no longer valid. Tap Forgot password once more, wait a minute, and open the new email.';
     }
     if (
       low.indexOf('no longer has the reset code') >= 0 ||
       low.indexOf('keep #access_token=') >= 0
     ) {
-      return 'This page no longer has the reset code. Close the tab. Open the newest email, change only localhost:3000 to https://georgevdx.github.io/fire-s-online-app/ and keep #access_token= plus everything after it. Then Save.';
+      return 'This page no longer has the reset code. Close the tab. Open the newest email and use that link. Then Save.';
     }
     if (low.indexOf('open the reset link') >= 0) {
-      return 'This page no longer has the reset code. Close the tab. Open the newest email, change only localhost:3000 to https://georgevdx.github.io/fire-s-online-app/ and keep #access_token= plus everything after it. Then Save.';
+      return 'This page no longer has the reset code. Close the tab. Open the newest email and use that link. Then Save.';
     }
     if (low.indexOf('localhost:3000') >= 0) {
-      return 'The email is still pointing at localhost:3000. On the live cloud, Site URL must be the Fire-S web address, not localhost.';
+      return 'Close that page. Open the newest email and tap the link there. Fire-S must open by itself.';
     }
     if (
       low.indexOf('already registered') >= 0 ||
@@ -977,7 +977,7 @@
       setStatus(
         'Check Inbox AND Junk for ' +
           email +
-          '. The email is from Supabase, not Fire-S. The link must open Fire-S on the web (georgevdx.github.io), not localhost:3000. If the email still shows localhost:3000, the cloud Site URL is still wrong. Open the new link, then choose a new password. Tap Forgot password only once, then wait a minute.'
+          '. The email is from Supabase, not Fire-S. Open the link in that email — Fire-S opens on Choose a new password. Tap Forgot password only once, then wait a minute.'
       );
     } catch (e) {
       setStatus(authErrorMessage(e), true);

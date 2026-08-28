@@ -207,9 +207,9 @@
           <li>Tap <strong>Login</strong>.</li>
           <li>If you forgot the password, type your email, then tap <strong>Forgot password</strong>.</li>
           <li>Check Inbox and Junk. The email is often from Supabase. Outlook and Live hide it.</li>
-          <li>The link in that email must open Fire-S on the web, not localhost:3000. If it still says localhost:3000, the live cloud Site URL is still wrong.</li>
+          <li>Open the link in that email. Fire-S opens on <strong>Choose a new password</strong>.</li>
           <li>Wait one minute before you tap Forgot password again.</li>
-          <li>Open the <strong>new</strong> link in the email. Access then shows <strong>Choose a new password</strong>. Save, then Login.</li>
+          <li>Type a new password twice, tap <strong>Save</strong>, then <strong>Login</strong>.</li>
         </ol>
         <h3>Create password (staff, first time)</h3>
         <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>

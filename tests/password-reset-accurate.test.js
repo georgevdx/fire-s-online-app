@@ -20,10 +20,10 @@ const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.32'/.test(liveEnv),
-  'Live Fire-S must be 1.3.32'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.33'/.test(liveEnv),
+  'Live Fire-S must be 1.3.33'
 );
-assert.ok(/1\.3\.38-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.38-toets');
+assert.ok(/1\.3\.39-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.39-toets');
 
 assert.ok(
   /fire-s-password-reset\.js/.test(liveHtml) && /fire-s-password-reset\.js/.test(stagingHtml),
@@ -215,8 +215,7 @@ async function main() {
     );
   } catch (err) {
     failed = true;
-    assert.ok(/localhost:3000/.test(String(err && err.message)));
-    assert.ok(/keep #access_token=/.test(String(err && err.message)));
+    assert.ok(/newest email/.test(String(err && err.message)));
     assert.ok(/no longer has the reset code/.test(String(err && err.message)));
   }
   assert.ok(failed, 'Save without a reset session must fail');
@@ -230,8 +229,8 @@ async function main() {
     'The app must notice token_hash and type=recovery before the cloud client starts'
   );
   assert.ok(
-    /not localhost:3000/.test(liveStarted) && /not localhost:3000/.test(stagingStarted),
-    'Forgot password copy must say the email link cannot be localhost:3000'
+    /Fire-S opens/.test(liveStarted) && /Fire-S opens/.test(stagingStarted),
+    'Forgot password copy must tell people to open the email link, not edit the address bar'
   );
   assert.ok(/open the reset link/.test(liveStarted) && /open the reset link/.test(stagingStarted));
   assert.ok(

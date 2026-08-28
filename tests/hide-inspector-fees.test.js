@@ -18,10 +18,10 @@ const manual = read('staging/fire-s-user-manual.js');
 const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.38-toets/.test(env), 'Toets-blad version must be 1.3.38-toets');
+assert.ok(/1\.3\.39-toets/.test(env), 'Toets-blad version must be 1.3.39-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.32'/.test(liveEnv),
-  'Live Fire-S must be 1.3.32 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.33'/.test(liveEnv),
+  'Live Fire-S must be 1.3.33 after sit dit live'
 );
 
 const choice = html.match(/id="fireSChoiceCompany"[\s\S]*?<\/button>/);

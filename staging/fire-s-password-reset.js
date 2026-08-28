@@ -168,7 +168,7 @@
 
   function recoveryLinkError() {
     return new Error(
-      'This page no longer has the reset code. Close the tab. Open the newest email, change only localhost:3000 to https://georgevdx.github.io/fire-s-online-app/ and keep #access_token= plus everything after it. Then Save.'
+      'This page no longer has the reset code. Close the tab. Open the newest email and use that link. Then Save.'
     );
   }
 
