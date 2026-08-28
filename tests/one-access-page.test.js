@@ -122,5 +122,10 @@ assert.ok(
   /min-height: 52px/.test(css) && /min-height: 52px/.test(liveCss),
   'Phone Subscribe button must be tall enough to see and tap'
 );
+assert.ok(
+  /#fireSGetStartedLoginFields > \.fire-s-get-started-note:first-of-type \{[\s\S]*?display: none;/.test(css) &&
+    /#fireSGetStartedLoginFields > \.fire-s-get-started-note:first-of-type \{[\s\S]*?display: none;/.test(liveCss),
+  'Phone Access must hide the long first note so Subscribe fits without scrolling'
+);
 
 console.log('one-access-page.test.js: ok');
