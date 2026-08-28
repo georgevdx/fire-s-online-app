@@ -677,7 +677,7 @@
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
         ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
-        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R349 / month (or R3 490 / year) per subscription. Inspectors do not pay. Phone and desktop share that email. No card is taken yet.';
+        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R250 / month (or R2 500 / year) per subscription. Inspectors do not pay. Phone and desktop share that email. No card is taken yet.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';
@@ -766,7 +766,7 @@
       'Subscribe',
       isStagingEnv()
         ? 'One Subscribe. Type a company name and the same email you already use for Supabase.'
-        : 'You become the Owner of this company name. One person is one company. If you already belong to a company, only that Owner can remove you first. You pay R349 per subscription per month, or R3 490 per year. Inspectors do not pay. Next you manage personnel.'
+        : 'You become the Owner of this company name. One person is one company. If you already belong to a company, only that Owner can remove you first. You pay R250 per subscription per month, or R2 500 per year. Inspectors do not pay. Next you manage personnel.'
     );
     showPanel('fireSGetStartedGuestFields');
     fillBillingPicker('fireSRegisterBillingOptions', 'monthly');
@@ -787,7 +787,7 @@
     hidePanels();
     setTitle(
       'Name your company',
-      'You are signed in. You pay monthly (R349) or annual (R3 490) per subscription. Inspectors do not pay. Then manage personnel.'
+      'You are signed in. You pay monthly (R250) or annual (R2 500) per subscription. Inspectors do not pay. Then manage personnel.'
     );
     showPanel('fireSGetStartedCompanyOnly');
     fillBillingPicker('fireSCompanyOnlyBillingOptions', 'monthly');

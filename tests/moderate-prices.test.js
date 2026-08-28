@@ -20,8 +20,8 @@ const liveTerms = read('terms.html');
 
 assert.ok(/1\.3\.42-toets/.test(env), 'Toets-blad version must be 1.3.42-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.36'/.test(liveEnv),
-  'Live Fire-S must be 1.3.36 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.37'/.test(liveEnv),
+  'Live Fire-S must be 1.3.37 after sit dit live'
 );
 
 assert.ok(
@@ -29,8 +29,8 @@ assert.ok(
   'Toets price list must be R250 / R2 500'
 );
 assert.ok(
-  /SEAT_PRICE_MONTHLY = 349/.test(liveCatalog) && /SEAT_PRICE_ANNUAL = 3490/.test(liveCatalog),
-  'Live price list must stay R349 / R3 490 until sit dit live'
+  /SEAT_PRICE_MONTHLY = 250/.test(liveCatalog) && /SEAT_PRICE_ANNUAL = 2500/.test(liveCatalog),
+  'Live price list must be R250 / R2 500'
 );
 
 const store = {};
@@ -60,12 +60,12 @@ assert.ok(
   'Toets terms must show the moderate prices'
 );
 assert.ok(
-  /R349 per month/.test(liveHtml) && /R3 490 per year/.test(liveHtml),
-  'Live Subscribe copy must stay R349 until sit dit live'
+  /R250 per month/.test(liveHtml) && /R2 500 per year/.test(liveHtml),
+  'Live Subscribe copy must show R250 / R2 500'
 );
 assert.ok(
-  /R349 per month/.test(liveTerms) && /R3 490/.test(liveTerms),
-  'Live terms must stay R349 until sit dit live'
+  /R250 per month/.test(liveTerms) && /R2 500/.test(liveTerms),
+  'Live terms must show R250 / R2 500'
 );
 
 const subscriberFacing = [

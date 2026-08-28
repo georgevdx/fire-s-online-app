@@ -20,8 +20,8 @@ const liveHtml = read('index.html');
 
 assert.ok(/1\.3\.42-toets/.test(env), 'Toets-blad version must be 1.3.42-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.36'/.test(liveEnv),
-  'Live Fire-S must be 1.3.36 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.37'/.test(liveEnv),
+  'Live Fire-S must be 1.3.37 after sit dit live'
 );
 
 const choice = html.match(/id="fireSChoiceCompany"[\s\S]*?<\/button>/);
@@ -124,8 +124,8 @@ assert.strictEqual(
 
 assert.ok(
   /staff never Subscribe/.test(liveHtml) &&
-    !/you pay R349 per subscription · staff never Subscribe/.test(liveHtml) &&
-    /R349 per month/.test(liveHtml),
+    !/you pay R250 per subscription · staff never Subscribe/.test(liveHtml) &&
+    /R250 per month/.test(liveHtml),
   'Live Access choice must hide fees; Subscribe form must still show them'
 );
 
