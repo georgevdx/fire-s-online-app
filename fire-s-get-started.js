@@ -121,11 +121,8 @@
   function markPasswordRecovery() {
     var api = resetApi();
     if (api && typeof api.captureFromLocation === 'function') {
-      api.captureFromLocation(window.location, window.sessionStorage, window);
-      try {
-        window.__fireSPasswordRecovery = true;
-        sessionStorage.setItem(RECOVERY_KEY, '1');
-      } catch (_) {}
+      // keepFlag: do not wipe a live PASSWORD_RECOVERY flag after the hash was cleaned
+      api.captureFromLocation(window.location, window.sessionStorage, window, true);
       return;
     }
     window.__fireSPasswordRecovery = true;
@@ -880,8 +877,14 @@
     ) {
       return 'That reset link is no longer valid. Tap Forgot password once more, wait a minute, and open the new email. The link must open Fire-S, not localhost:3000.';
     }
+    if (
+      low.indexOf('no longer has the reset code') >= 0 ||
+      low.indexOf('keep #access_token=') >= 0
+    ) {
+      return 'This page no longer has the reset code. Close the tab. Open the newest email, change only localhost:3000 to https://georgevdx.github.io/fire-s-online-app/ and keep #access_token= plus everything after it. Then Save.';
+    }
     if (low.indexOf('open the reset link') >= 0) {
-      return 'Open the reset link from the new email. The link must open Fire-S on the web, not localhost:3000.';
+      return 'This page no longer has the reset code. Close the tab. Open the newest email, change only localhost:3000 to https://georgevdx.github.io/fire-s-online-app/ and keep #access_token= plus everything after it. Then Save.';
     }
     if (low.indexOf('localhost:3000') >= 0) {
       return 'The email is still pointing at localhost:3000. On the live cloud, Site URL must be the Fire-S web address, not localhost.';

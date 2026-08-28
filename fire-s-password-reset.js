@@ -4,8 +4,8 @@
  * - Email links must open Fire-S on GitHub Pages, never localhost:3000.
  * - token_hash in the query is stored only. Outlook Safe Links may open the
  *   page in the background; we must NOT verify that token until Save.
- * - #access_token=...&type=recovery is stored before the cloud client strips
- *   the hash. Save then restores that session and sets the new password.
+ * - A leftover / stale recovery flag without a token must not keep "Choose a new
+ *   password" on a dead page (address bar only #).
  */
 (function fireSPasswordReset(root) {
   'use strict';
@@ -93,31 +93,46 @@
     }
   }
 
-  function captureFromLocation(loc, storage, win) {
+  function captureFromLocation(loc, storage, win, keepFlag) {
     var parsed = parseAuthParams(loc && loc.search, loc && loc.hash);
-    if (!parsed.isRecovery) return parsed;
-    try {
-      if (win) win.__fireSPasswordRecovery = true;
-    } catch (_) {}
-    writeStore(storage, FLAG_KEY, '1');
-    writeStore(storage, TOKEN_KEY, parsed.tokenHash);
-    writeStore(storage, ACCESS_KEY, parsed.accessToken);
-    writeStore(storage, REFRESH_KEY, parsed.refreshToken);
+    if (parsed.isRecovery) {
+      try {
+        if (win) win.__fireSPasswordRecovery = true;
+      } catch (_) {}
+      writeStore(storage, FLAG_KEY, '1');
+      writeStore(storage, TOKEN_KEY, parsed.tokenHash);
+      writeStore(storage, ACCESS_KEY, parsed.accessToken);
+      writeStore(storage, REFRESH_KEY, parsed.refreshToken);
+      return parsed;
+    }
+    // A leftover / stale recovery flag without a token keeps "Choose a new password"
+    // on a dead page (address bar only #). Clear it on first load. Later
+    // PASSWORD_RECOVERY may set the flag again; callers pass keepFlag then.
+    if (!keepFlag && !readStore(storage, TOKEN_KEY) && !readStore(storage, ACCESS_KEY)) {
+      try {
+        if (win) win.__fireSPasswordRecovery = false;
+      } catch (_) {}
+      try {
+        if (storage && storage.removeItem) storage.removeItem(FLAG_KEY);
+      } catch (_) {}
+    }
     return parsed;
   }
 
   function isCaptured(storage, win, loc) {
     try {
-      if (win && win.__fireSPasswordRecovery) return true;
-      if (readStore(storage, FLAG_KEY) === '1') return true;
-      if (readStore(storage, TOKEN_KEY)) return true;
-      if (readStore(storage, ACCESS_KEY)) return true;
+      if (readStore(storage, TOKEN_KEY) || readStore(storage, ACCESS_KEY)) return true;
     } catch (_) {}
     try {
-      return parseAuthParams(loc && loc.search, loc && loc.hash).isRecovery;
-    } catch (_) {
-      return false;
-    }
+      if (parseAuthParams(loc && loc.search, loc && loc.hash).isRecovery) return true;
+    } catch (_) {}
+    try {
+      if (readStore(storage, FLAG_KEY) === '1') return true;
+    } catch (_) {}
+    try {
+      if (win && win.__fireSPasswordRecovery) return true;
+    } catch (_) {}
+    return false;
   }
 
   function clear(storage, win) {
@@ -136,7 +151,7 @@
 
   function recoveryLinkError() {
     return new Error(
-      'Open the reset link from the new email. The link must open Fire-S on the web, not localhost:3000.'
+      'This page no longer has the reset code. Close the tab. Open the newest email, change only localhost:3000 to https://georgevdx.github.io/fire-s-online-app/ and keep #access_token= plus everything after it. Then Save.'
     );
   }
 

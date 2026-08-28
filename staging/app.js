@@ -80,9 +80,21 @@ try {
     window.fireSPasswordReset.captureFromLocation(location, sessionStorage, window);
   } else {
     var fireSUrlBits = String(location.hash || '') + String(location.search || '');
-    if (/type=recovery/i.test(fireSUrlBits) || /token_hash=/i.test(fireSUrlBits)) {
+    if (/type=recovery/i.test(fireSUrlBits) || /token_hash=/i.test(fireSUrlBits) || /access_token=/i.test(fireSUrlBits)) {
       window.__fireSPasswordRecovery = true;
       sessionStorage.setItem('fireS.passwordRecovery', '1');
+    } else {
+      var fireSHasResetToken = false;
+      try {
+        fireSHasResetToken = !!(
+          sessionStorage.getItem('fireS.recoveryAccessToken') ||
+          sessionStorage.getItem('fireS.recoveryTokenHash')
+        );
+      } catch (_) {}
+      if (!fireSHasResetToken) {
+        window.__fireSPasswordRecovery = false;
+        sessionStorage.removeItem('fireS.passwordRecovery');
+      }
     }
   }
 } catch (_) {}

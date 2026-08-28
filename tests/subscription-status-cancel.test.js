@@ -21,10 +21,10 @@ const manual = read('staging/fire-s-user-manual.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.36-toets/.test(env), 'Toets-blad version must be 1.3.36-toets');
+assert.ok(/1\.3\.37-toets/.test(env), 'Toets-blad version must be 1.3.37-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.30'/.test(liveEnv),
-  'Live Fire-S must be 1.3.30 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.31'/.test(liveEnv),
+  'Live Fire-S must be 1.3.31 after sit dit live'
 );
 assert.ok(!/fireSSubscribeCancelBtn/.test(liveHtml), 'Live root must not gain cancel UI until sit dit live');
 

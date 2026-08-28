@@ -20,10 +20,10 @@ const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.30'/.test(liveEnv),
-  'Live Fire-S must be 1.3.30'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.31'/.test(liveEnv),
+  'Live Fire-S must be 1.3.31'
 );
-assert.ok(/1\.3\.36-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.36-toets');
+assert.ok(/1\.3\.37-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.37-toets');
 
 assert.ok(
   /fire-s-password-reset\.js/.test(liveHtml) && /fire-s-password-reset\.js/.test(stagingHtml),
@@ -100,6 +100,42 @@ assert.strictEqual(hashStorage.getItem(helper.REFRESH_KEY), 'keep-refresh');
 assert.ok(
   helper.isCaptured(hashStorage, {}, { search: '', hash: '#' }),
   'After the cloud strips the hash, Save must still have the access token'
+);
+
+function makeMemoryStorage(initial) {
+  const mem = Object.assign({}, initial || {});
+  return {
+    getItem: function (key) {
+      return Object.prototype.hasOwnProperty.call(mem, key) ? mem[key] : null;
+    },
+    setItem: function (key, value) {
+      mem[key] = String(value);
+    },
+    removeItem: function (key) {
+      delete mem[key];
+    }
+  };
+}
+
+const staleStorage = makeMemoryStorage();
+staleStorage.setItem(helper.FLAG_KEY, '1');
+const staleWin = { __fireSPasswordRecovery: true };
+helper.captureFromLocation({ search: '', hash: '#' }, staleStorage, staleWin);
+assert.strictEqual(staleStorage.getItem(helper.FLAG_KEY), null, 'stale recovery flag without a token must be cleared');
+assert.strictEqual(staleWin.__fireSPasswordRecovery, false);
+assert.ok(
+  !helper.isCaptured(staleStorage, staleWin, { search: '', hash: '#' }),
+  'Choose a new password must not stay open on a dead # page'
+);
+
+const liveFlagStorage = makeMemoryStorage();
+liveFlagStorage.setItem(helper.FLAG_KEY, '1');
+const liveFlagWin = { __fireSPasswordRecovery: true };
+helper.captureFromLocation({ search: '', hash: '#' }, liveFlagStorage, liveFlagWin, true);
+assert.strictEqual(liveFlagStorage.getItem(helper.FLAG_KEY), '1');
+assert.ok(
+  helper.isCaptured(liveFlagStorage, liveFlagWin, { search: '', hash: '#' }),
+  'A live PASSWORD_RECOVERY flag must still show Choose a new password after the hash is cleaned'
 );
 const store = {};
 const storage = {
@@ -180,6 +216,8 @@ async function main() {
   } catch (err) {
     failed = true;
     assert.ok(/localhost:3000/.test(String(err && err.message)));
+    assert.ok(/keep #access_token=/.test(String(err && err.message)));
+    assert.ok(/no longer has the reset code/.test(String(err && err.message)));
   }
   assert.ok(failed, 'Save without a reset session must fail');
 
@@ -196,6 +234,20 @@ async function main() {
     'Forgot password copy must say the email link cannot be localhost:3000'
   );
   assert.ok(/open the reset link/.test(liveStarted) && /open the reset link/.test(stagingStarted));
+  assert.ok(
+    /no longer has the reset code/.test(liveStarted) && /no longer has the reset code/.test(stagingStarted),
+    'Save on a dead reset page must tell the owner to keep #access_token='
+  );
+  assert.ok(
+    /captureFromLocation\(window.location, window.sessionStorage, window, true\)/.test(liveStarted) &&
+      /captureFromLocation\(window.location, window.sessionStorage, window, true\)/.test(stagingStarted),
+    'Showing Choose a new password must not wipe a live recovery flag'
+  );
+  assert.ok(
+    /stale recovery flag/.test(read('fire-s-password-reset.js')) &&
+      /stale recovery flag/.test(stagingHelperSrc),
+    'Live and toets helpers must drop a leftover recovery flag without a token'
+  );
   console.log('password-reset-accurate.test.js: ok');
 }
 
