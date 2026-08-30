@@ -6109,16 +6109,19 @@ function canUseAdminSyncTools(emailOverride) {
   );
 }
 
-function canViewServiceRequests(emailOverride) {
-  const currentEmail =
-    emailOverride ||
-    currentUserProfile?.email ||
-    '';
+const FIRE_S_SERVICE_REQUEST_SUPER_USER = 'georgevdx@gmail.com';
 
-  return (
-    isSuperAdmin() ||
-    isAllowedAdminEmail(currentEmail)
-  );
+function isServiceRequestSuperUser(emailOverride) {
+  const currentEmail = String(
+    emailOverride ||
+      currentUserProfile?.email ||
+      ''
+  ).toLowerCase();
+  return currentEmail === FIRE_S_SERVICE_REQUEST_SUPER_USER;
+}
+
+function canViewServiceRequests(emailOverride) {
+  return isServiceRequestSuperUser(emailOverride);
 }
 
 function withTimeout(promise, timeoutMs = 5000) {
@@ -9459,7 +9462,14 @@ const canViewAdminSupport =
   canViewServiceRequests();
 
 if (viewServiceRequestsBtn) {
-  viewServiceRequestsBtn.style.display = 'block';
+  viewServiceRequestsBtn.style.display =
+    canViewAdminSupport ? 'block' : 'none';
+}
+const serviceRequestsSuperUserNote =
+  document.getElementById('serviceRequestsSuperUserNote');
+if (serviceRequestsSuperUserNote) {
+  serviceRequestsSuperUserNote.style.display =
+    canViewAdminSupport ? '' : 'none';
 }
 
 if (viewBetaFeedbackBtn) {
@@ -9911,7 +9921,28 @@ if (autoFillHint) {
   }
 }
 
+function readLocalServiceRequestsFallback() {
+  if (typeof window.fireSListLocalServiceRequests === 'function') {
+    try {
+      return window.fireSListLocalServiceRequests() || [];
+    } catch (_) {}
+  }
+  try {
+    const raw = localStorage.getItem('fireS.serviceRequests.v1');
+    const list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) return [];
+    return list.filter(row => row && String(row.status || '') !== 'followed_up');
+  } catch (_) {
+    return [];
+  }
+}
+
 async function renderServiceRequestsList() {
+  if (!canViewServiceRequests()) {
+    alert('Saved service requests are super user only. Only georgevdx@gmail.com can open this list.');
+    return;
+  }
+
   const list = document.getElementById('serviceRequestsList');
 
   if (!list) return;
@@ -9933,10 +9964,15 @@ async function renderServiceRequestsList() {
 
   let cloudRows = [];
   let cloudError = null;
-  try {
-    const { data, error } = await supabaseClient
+  async function loadCloudServiceRequests(columns) {
+    return supabaseClient
       .from('service_requests')
-      .select(`
+      .select(columns)
+      .neq('status', 'followed_up')
+      .order('created_at', { ascending: false });
+  }
+  try {
+    let result = await loadCloudServiceRequests(`
         id,
         selected_service,
         client_name,
@@ -9947,11 +9983,22 @@ async function renderServiceRequestsList() {
         created_at,
         followed_up_at,
         created_by_email
-      `)
-      .neq('status', 'followed_up')
-      .order('created_at', { ascending: false });
-    if (error) cloudError = error;
-    else cloudRows = data || [];
+      `);
+    if (result && result.error) {
+      result = await loadCloudServiceRequests(`
+        id,
+        selected_service,
+        client_name,
+        client_phone,
+        client_email,
+        message,
+        status,
+        created_at,
+        created_by_email
+      `);
+    }
+    if (result && result.error) cloudError = result.error;
+    else cloudRows = (result && result.data) || [];
   } catch (error) {
     cloudError = error;
   }
@@ -9959,7 +10006,7 @@ async function renderServiceRequestsList() {
   const activeRequests =
     typeof window.fireSMergeServiceRequests === 'function'
       ? window.fireSMergeServiceRequests(cloudRows)
-      : cloudRows;
+      : cloudRows.concat(readLocalServiceRequestsFallback());
 
   if (!activeRequests.length && cloudError) {
     console.error('Service requests load failed:', cloudError);

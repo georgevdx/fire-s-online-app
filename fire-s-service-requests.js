@@ -76,16 +76,19 @@
   }
 
   function cloudPayload(row) {
-    return {
+    var payload = {
       selected_service: row.selected_service,
       client_name: row.client_name,
       client_phone: row.client_phone || null,
       client_email: row.client_email || null,
       message: row.message || null,
       status: row.status || 'new',
-      created_by_user_id: row.created_by_user_id || null,
       created_by_email: row.created_by_email || null
     };
+    if (row.created_by_user_id) {
+      payload.created_by_user_id = row.created_by_user_id;
+    }
+    return payload;
   }
 
   function insertCloud(row) {

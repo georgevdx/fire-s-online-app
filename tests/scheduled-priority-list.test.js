@@ -16,10 +16,10 @@ const liveEnv = read('fire-s-env.js');
 const assign = read('staging/fire-s-schedule-assign.js');
 const manual = read('staging/fire-s-user-manual.js');
 
-assert.ok(/1\.3\.45-toets/.test(env), 'Toets-blad version must stay on 1.3.45-toets');
+assert.ok(/1\.3\.46-toets/.test(env), 'Toets-blad version must stay on 1.3.46-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.40'/.test(liveEnv),
-  'Live Fire-S must be 1.3.40 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.41'/.test(liveEnv),
+  'Live Fire-S must be 1.3.41 after sit dit live'
 );
 assert.ok(
   /Scheduled priority/.test(read('inspector-v4.js')) &&

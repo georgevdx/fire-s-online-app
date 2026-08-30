@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-12-svc-save';
+const CACHE = 'fire-s-108-13-super-svc';
 const PRECACHE = [
   './',
   './index.html',

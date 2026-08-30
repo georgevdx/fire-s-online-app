@@ -39,8 +39,12 @@ assert.ok(
   /fireSSaveServiceRequest/.test(liveApp) &&
     /fireSMergeServiceRequests/.test(liveApp) &&
     /fireSMergeServiceRequests/.test(stagingApp) &&
-    /viewServiceRequestsBtn\.style\.display = 'block'/.test(liveApp),
-  'Additional Services must save every service and show View Saved Service Requests'
+    /FIRE_S_SERVICE_REQUEST_SUPER_USER = 'georgevdx@gmail.com'/.test(liveApp) &&
+    /FIRE_S_SERVICE_REQUEST_SUPER_USER = 'georgevdx@gmail.com'/.test(stagingApp) &&
+    /return isServiceRequestSuperUser\(emailOverride\)/.test(liveApp) &&
+    /Only <strong>georgevdx@gmail.com<\/strong> can open this list/.test(liveHtml) &&
+    /Only <strong>georgevdx@gmail.com<\/strong> can open this list/.test(stagingHtml),
+  'View Saved Service Requests is super user only for georgevdx@gmail.com'
 );
 
 const memory = { store: null };
