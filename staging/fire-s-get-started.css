@@ -151,6 +151,51 @@
   font-size: 0.9rem;
 }
 
+.fire-s-access-extra-services {
+  width: 100%;
+  margin: 2px 0 0;
+}
+
+.fire-s-access-extra-services summary {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  list-style: none;
+}
+
+.fire-s-access-extra-services summary::-webkit-details-marker {
+  display: none;
+}
+
+.fire-s-access-extra-services[open] summary {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.fire-s-access-extra-services ul {
+  margin: 8px 0 0;
+  padding: 10px 16px 10px 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.fire-s-access-extra-services li + li {
+  margin-top: 6px;
+}
+
 .fire-s-legal-agree {
   display: flex;
   align-items: flex-start;

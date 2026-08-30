@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.42-toets/.test(env), 'Toets-blad version must be 1.3.42-toets');
+assert.ok(/1\.3\.43-toets/.test(env), 'Toets-blad version must be 1.3.43-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -143,6 +143,28 @@ assert.ok(
     liveStarted.match(/function showRegister\(\) \{[\s\S]*?function showCompanyOnly/)[0]
   ),
   'Live Subscribe tap must show the Subscribe fields'
+);
+
+function extraServices(src, label) {
+  const block = src.match(
+    /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
+  );
+  assert.ok(block, label + ' must keep Access login fields');
+  assert.ok(
+    /id="fireSAccessExtraServices"/.test(block[0]) &&
+      /Additional services/.test(block[0]) &&
+      /Fire consultancy/.test(block[0]) &&
+      /Rational Fire Design Support/.test(block[0]) &&
+      /Fire Plan Assistance \(Approval to Local Government\)/.test(block[0]),
+    label + ' must list the three extra services on Access before Login'
+  );
+}
+extraServices(html, 'Toets Access');
+extraServices(liveHtml, 'Live Access');
+assert.ok(
+  /\.fire-s-access-extra-services summary/.test(css) &&
+    /\.fire-s-access-extra-services summary/.test(liveCss),
+  'Access extra services must be styled as a tappable list'
 );
 
 console.log('one-access-page.test.js: ok');
