@@ -1395,6 +1395,154 @@
     }, 120);
   }
 
+  var accessServiceName = '';
+
+  function accessServiceEls() {
+    return {
+      wrap: byId('fireSAccessExtraServices'),
+      toggle: byId('fireSAccessExtraServicesBtn'),
+      panel: byId('fireSAccessExtraServicesPanel'),
+      form: byId('fireSAccessServiceForm'),
+      picked: byId('fireSAccessServicePicked'),
+      name: byId('fireSAccessServiceName'),
+      phone: byId('fireSAccessServicePhone'),
+      email: byId('fireSAccessServiceEmail'),
+      message: byId('fireSAccessServiceMessage'),
+      status: byId('fireSAccessServiceStatus')
+    };
+  }
+
+  function setAccessServiceStatus(msg, isError) {
+    var els = accessServiceEls();
+    if (!els.status) return;
+    els.status.textContent = msg || '';
+    els.status.className =
+      'fire-s-get-started-note fire-s-access-service-status' +
+      (isError ? ' is-error' : '');
+  }
+
+  function isAccessServicesOpen() {
+    var els = accessServiceEls();
+    return !!(els.wrap && els.wrap.classList.contains('is-open'));
+  }
+
+  function setAccessServicesOpen(open) {
+    var els = accessServiceEls();
+    if (!els.wrap || !els.toggle || !els.panel) return;
+    els.wrap.classList.toggle('is-open', !!open);
+    els.toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      els.panel.removeAttribute('hidden');
+    } else {
+      els.panel.setAttribute('hidden', '');
+      hideAccessServiceForm();
+    }
+  }
+
+  function hideAccessServiceForm() {
+    var els = accessServiceEls();
+    accessServiceName = '';
+    if (els.form) els.form.setAttribute('hidden', '');
+    if (els.picked) els.picked.textContent = '';
+    setAccessServiceStatus('', false);
+    try {
+      root.querySelectorAll('[data-access-service]').forEach(function (btn) {
+        btn.classList.remove('is-selected');
+      });
+    } catch (_) {}
+  }
+
+  function pickAccessService(name, button) {
+    var els = accessServiceEls();
+    accessServiceName = text(name);
+    if (!els.form) return;
+    els.form.removeAttribute('hidden');
+    if (els.picked) {
+      els.picked.textContent = 'Request: ' + accessServiceName;
+    }
+    setAccessServiceStatus('', false);
+    try {
+      root.querySelectorAll('[data-access-service]').forEach(function (btn) {
+        btn.classList.toggle('is-selected', btn === button);
+      });
+    } catch (_) {}
+    if (els.name) els.name.focus();
+  }
+
+  function sendAccessServiceRequest() {
+    var els = accessServiceEls();
+    var name = text(els.name && els.name.value);
+    var phone = text(els.phone && els.phone.value);
+    var email = text(els.email && els.email.value).toLowerCase();
+    var message = text(els.message && els.message.value);
+    if (!accessServiceName) {
+      setAccessServiceStatus('Tap a service first.', true);
+      return;
+    }
+    if (!name || (!phone && !email)) {
+      setAccessServiceStatus(
+        'Type your name and a phone number or email.',
+        true
+      );
+      return;
+    }
+    setAccessServiceStatus('Sending request…', false);
+    var notify = window.fireSNotifyServiceRequest;
+    var done = function (result) {
+      if (result && result.skipped === 'staging') {
+        setAccessServiceStatus(
+          'Request noted on the toets-blad. Live Access emails Fire-S.',
+          false
+        );
+        return;
+      }
+      setAccessServiceStatus('Request sent. Fire-S will contact you.', false);
+      if (els.name) els.name.value = '';
+      if (els.phone) els.phone.value = '';
+      if (els.email) els.email.value = '';
+      if (els.message) els.message.value = '';
+    };
+    if (typeof notify !== 'function') {
+      done({ ok: true });
+      return;
+    }
+    Promise.resolve(
+      notify({
+        service: accessServiceName,
+        name: name,
+        phone: phone,
+        email: email,
+        message: message
+      })
+    )
+      .then(done)
+      .catch(function () {
+        setAccessServiceStatus(
+          'Could not send now. Try again or email johandb@live.com.',
+          true
+        );
+      });
+  }
+
+  function wireAccessExtraServices() {
+    var els = accessServiceEls();
+    if (!els.toggle || !els.panel) return;
+    els.toggle.addEventListener('click', function () {
+      setAccessServicesOpen(!isAccessServicesOpen());
+    });
+    root.querySelectorAll('[data-access-service]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        pickAccessService(btn.getAttribute('data-access-service'), btn);
+      });
+    });
+    var sendBtn = byId('fireSAccessServiceSendBtn');
+    var cancelBtn = byId('fireSAccessServiceCancelBtn');
+    if (sendBtn) sendBtn.addEventListener('click', sendAccessServiceRequest);
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', hideAccessServiceForm);
+    }
+  }
+
   var deferredInstall = null;
 
   function installHelp() {
@@ -1505,6 +1653,8 @@
         tryInstallApp();
       });
     }
+
+    wireAccessExtraServices();
 
     var openAccessBtn = byId('cloudOpenAccessBtn');
     if (openAccessBtn) {

@@ -154,46 +154,76 @@
 .fire-s-access-extra-services {
   width: 100%;
   margin: 2px 0 0;
+  display: grid;
+  gap: 8px;
 }
 
-.fire-s-access-extra-services summary {
-  display: block;
+#fireSAccessExtraServicesBtn.fire-s-access-extra-services-btn {
   width: 100%;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #fff;
-  color: #0f172a;
+  min-height: 48px;
   font-weight: 700;
-  text-align: center;
   cursor: pointer;
   touch-action: manipulation;
-  list-style: none;
 }
 
-.fire-s-access-extra-services summary::-webkit-details-marker {
-  display: none;
-}
-
-.fire-s-access-extra-services[open] summary {
+.fire-s-access-extra-services.is-open #fireSAccessExtraServicesBtn {
   border-color: #94a3b8;
   background: #f8fafc;
 }
 
-.fire-s-access-extra-services ul {
-  margin: 8px 0 0;
-  padding: 10px 16px 10px 28px;
+.fire-s-access-extra-services-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.fire-s-access-extra-services-panel[hidden],
+.fire-s-access-service-form[hidden] {
+  display: none !important;
+}
+
+.fire-s-access-service-btn {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid #2563eb;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  line-height: 1.35;
+}
+
+.fire-s-access-service-btn:hover,
+.fire-s-access-service-btn.is-selected {
+  border-color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.fire-s-access-service-form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: #fff;
-  color: #334155;
-  font-size: 0.95rem;
-  line-height: 1.45;
 }
 
-.fire-s-access-extra-services li + li {
-  margin-top: 6px;
+.fire-s-access-service-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.fire-s-access-service-status.is-error {
+  color: #9f1239;
 }
 
 .fire-s-legal-agree {

@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.43-toets/.test(env), 'Toets-blad version must be 1.3.43-toets');
+assert.ok(/1\.3\.44-toets/.test(env), 'Toets-blad version must be 1.3.44-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -151,20 +151,36 @@ function extraServices(src, label) {
   );
   assert.ok(block, label + ' must keep Access login fields');
   assert.ok(
-    /id="fireSAccessExtraServices"/.test(block[0]) &&
+    /id="fireSAccessExtraServicesBtn"/.test(block[0]) &&
       /Additional services/.test(block[0]) &&
-      /Fire consultancy/.test(block[0]) &&
-      /Rational Fire Design Support/.test(block[0]) &&
-      /Fire Plan Assistance \(Approval to Local Government\)/.test(block[0]),
-    label + ' must list the three extra services on Access before Login'
+      /data-access-service="Fire consultancy"/.test(block[0]) &&
+      /data-access-service="Rational Fire Design Support"/.test(block[0]) &&
+      /data-access-service="Fire Plan Assistance \(Assist with approval from Local Government\)/.test(
+        block[0]
+      ) &&
+      /id="fireSAccessServiceSendBtn"/.test(block[0]),
+    label + ' must use an Additional services button with three request buttons'
+  );
+  assert.ok(
+    !/<summary>/.test(block[0]) && !/<details/.test(block[0]),
+    label + ' must not keep the old static extra-services list'
   );
 }
 extraServices(html, 'Toets Access');
 extraServices(liveHtml, 'Live Access');
 assert.ok(
-  /\.fire-s-access-extra-services summary/.test(css) &&
-    /\.fire-s-access-extra-services summary/.test(liveCss),
-  'Access extra services must be styled as a tappable list'
+  /#fireSAccessExtraServicesBtn\.fire-s-access-extra-services-btn/.test(css) &&
+    /#fireSAccessExtraServicesBtn\.fire-s-access-extra-services-btn/.test(liveCss) &&
+    /\.fire-s-access-service-btn/.test(css) &&
+    /\.fire-s-access-service-btn/.test(liveCss),
+  'Access extra services must style the parent button and the three service buttons'
+);
+assert.ok(
+  /function wireAccessExtraServices\(/.test(getStarted) &&
+    /function wireAccessExtraServices\(/.test(liveStarted) &&
+    /fireSNotifyServiceRequest/.test(getStarted) &&
+    /fireSNotifyServiceRequest/.test(liveStarted),
+  'Access extra services must open a request form from each sub-button'
 );
 
 console.log('one-access-page.test.js: ok');

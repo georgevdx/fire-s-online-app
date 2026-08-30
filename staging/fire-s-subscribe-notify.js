@@ -91,6 +91,53 @@
   root.fireSNotifyCompanySBuildBody = buildBody;
   root.fireSNotifyCompanySAddress = COMPANY_S_EMAIL;
 
+  function serviceRequestBody(info) {
+    var service = text(info && info.service) || '(not given)';
+    return {
+      _subject: 'Fire-S: additional service request — ' + service,
+      _template: 'table',
+      _captcha: 'false',
+      event: 'Additional service request',
+      service: service,
+      name: text(info && info.name) || '(not given)',
+      phone: text(info && info.phone) || '(not given)',
+      email: text(info && info.email) || '(not given)',
+      message: text(info && info.message) || '(none)',
+      note: 'Guest request from Access. Follow up by phone or email.'
+    };
+  }
+
+  function notifyServiceRequest(info) {
+    try {
+      if (root.FIRE_S_ENV && root.FIRE_S_ENV.notifyCompanyS === false) {
+        return Promise.resolve({ ok: false, skipped: 'staging' });
+      }
+    } catch (_) {}
+    var body;
+    try {
+      body = serviceRequestBody(info || {});
+    } catch (_) {
+      return Promise.resolve({ ok: false });
+    }
+    return fetch(FORM_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+      .then(function () {
+        return { ok: true };
+      })
+      .catch(function () {
+        return { ok: false };
+      });
+  }
+
+  root.fireSNotifyServiceRequest = notifyServiceRequest;
+  root.fireSNotifyServiceRequestBuildBody = serviceRequestBody;
+
   function assignmentBody(info) {
     var company = text(info && info.company) || '(not given)';
     var organisation = text(info && info.organisation) || '(not given)';
