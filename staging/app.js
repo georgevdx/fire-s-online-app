@@ -9459,8 +9459,7 @@ const canViewAdminSupport =
   canViewServiceRequests();
 
 if (viewServiceRequestsBtn) {
-  viewServiceRequestsBtn.style.display =
-    canViewAdminSupport ? 'block' : 'none';
+  viewServiceRequestsBtn.style.display = 'block';
 }
 
 if (viewBetaFeedbackBtn) {
@@ -9578,30 +9577,52 @@ async function submitServiceRequest() {
     console.warn('Could not read logged-in user for service request:', error);
   }
 
-  const requestPayload = {
-    selected_service: selectedService,
-    client_name: clientName,
-    client_phone: clientPhone || null,
-    client_email: clientEmail || null,
-    message: message || null,
-    status: 'new',
-    created_by_user_id: authUser?.id || null,
-    created_by_email: authUser?.email || clientEmail || null
-  };
-
-  const { error } = await supabaseClient
-    .from('service_requests')
-    .insert(requestPayload);
-
-  if (error) {
-    console.error('Service request cloud save failed:', error);
-
-    if (status) {
-      status.textContent =
-        `Service request could not be saved: ${error.message}`;
+  if (typeof window.fireSSaveServiceRequest === 'function') {
+    const saved = await window.fireSSaveServiceRequest({
+      service: selectedService,
+      name: clientName,
+      phone: clientPhone,
+      email: clientEmail,
+      message,
+      userId: authUser?.id || null,
+      userEmail: authUser?.email || clientEmail || null,
+      source: 'app'
+    });
+    if (!saved || !saved.ok) {
+      if (status) {
+        status.textContent =
+          saved && saved.error
+            ? saved.error
+            : 'Service request could not be saved.';
+      }
+      return;
     }
+  } else {
+    const requestPayload = {
+      selected_service: selectedService,
+      client_name: clientName,
+      client_phone: clientPhone || null,
+      client_email: clientEmail || null,
+      message: message || null,
+      status: 'new',
+      created_by_user_id: authUser?.id || null,
+      created_by_email: authUser?.email || clientEmail || null
+    };
 
-    return;
+    const { error } = await supabaseClient
+      .from('service_requests')
+      .insert(requestPayload);
+
+    if (error) {
+      console.error('Service request cloud save failed:', error);
+
+      if (status) {
+        status.textContent =
+          `Service request could not be saved: ${error.message}`;
+      }
+
+      return;
+    }
   }
 
   if (status) {
@@ -9891,11 +9912,6 @@ if (autoFillHint) {
 }
 
 async function renderServiceRequestsList() {
-  if (!canViewServiceRequests()) {
-    alert('Service requests are only available to Fire-S admin.');
-    return;
-  }
-
   const list = document.getElementById('serviceRequestsList');
 
   if (!list) return;
@@ -9909,33 +9925,50 @@ async function renderServiceRequestsList() {
   list.innerHTML =
     '<div class="empty-state">Loading service requests...</div>';
 
-  const { data, error } = await supabaseClient
-    .from('service_requests')
-    .select(`
-      id,
-      selected_service,
-      client_name,
-      client_phone,
-      client_email,
-      message,
-      status,
-      created_at,
-      followed_up_at,
-      created_by_email
-    `)
-    .neq('status', 'followed_up')
-    .order('created_at', { ascending: false });
+  try {
+    if (window.fireSFlushServiceRequests) {
+      await window.fireSFlushServiceRequests();
+    }
+  } catch (_) {}
 
-  if (error) {
-    console.error('Service requests load failed:', error);
+  let cloudRows = [];
+  let cloudError = null;
+  try {
+    const { data, error } = await supabaseClient
+      .from('service_requests')
+      .select(`
+        id,
+        selected_service,
+        client_name,
+        client_phone,
+        client_email,
+        message,
+        status,
+        created_at,
+        followed_up_at,
+        created_by_email
+      `)
+      .neq('status', 'followed_up')
+      .order('created_at', { ascending: false });
+    if (error) cloudError = error;
+    else cloudRows = data || [];
+  } catch (error) {
+    cloudError = error;
+  }
+
+  const activeRequests =
+    typeof window.fireSMergeServiceRequests === 'function'
+      ? window.fireSMergeServiceRequests(cloudRows)
+      : cloudRows;
+
+  if (!activeRequests.length && cloudError) {
+    console.error('Service requests load failed:', cloudError);
 
     list.innerHTML =
-      `<div class="empty-state">Could not load service requests: ${escapeHtml(error.message)}</div>`;
+      `<div class="empty-state">Could not load service requests: ${escapeHtml(cloudError.message || String(cloudError))}</div>`;
 
     return;
   }
-
-  const activeRequests = data || [];
 
   if (activeRequests.length === 0) {
     list.innerHTML =

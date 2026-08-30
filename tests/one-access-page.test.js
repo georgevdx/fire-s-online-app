@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.44-toets/.test(env), 'Toets-blad version must be 1.3.44-toets');
+assert.ok(/1\.3\.45-toets/.test(env), 'Toets-blad version must be 1.3.45-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -153,12 +153,13 @@ function extraServices(src, label) {
   assert.ok(
     /id="fireSAccessExtraServicesBtn"/.test(block[0]) &&
       /Additional services/.test(block[0]) &&
-      /data-access-service="Fire consultancy"/.test(block[0]) &&
+      /data-access-service="Fire Safety Consultancy"/.test(block[0]) &&
       /data-access-service="Rational Fire Design Support"/.test(block[0]) &&
       /data-access-service="Fire Plan Assistance \(Assist with approval from Local Government\)/.test(
         block[0]
       ) &&
-      /id="fireSAccessServiceSendBtn"/.test(block[0]),
+      /id="fireSAccessServiceSendBtn"/.test(block[0]) &&
+      /id="fireSAccessServiceViewBtn"/.test(block[0]),
     label + ' must use an Additional services button with three request buttons'
   );
   assert.ok(

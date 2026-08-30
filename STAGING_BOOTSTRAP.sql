@@ -697,6 +697,10 @@ create policy "fire_s_inspections_delete"
 create policy "fire_s_service_requests_all"
   on public.service_requests for all to authenticated
   using (true) with check (true);
+drop policy if exists "fire_s_service_requests_guest_insert" on public.service_requests;
+create policy "fire_s_service_requests_guest_insert"
+  on public.service_requests for insert to anon
+  with check (true);
 create policy "fire_s_beta_feedback_all"
   on public.beta_feedback for all to authenticated
   using (true) with check (true);

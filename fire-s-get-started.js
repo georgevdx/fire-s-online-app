@@ -918,6 +918,11 @@
   }
 
   async function finishSignedInSession(successMsg) {
+    try {
+      if (window.fireSFlushServiceRequests) {
+        await window.fireSFlushServiceRequests();
+      }
+    } catch (_) {}
     var claimed = await joinCompanyAfterLogin();
     mode = 'login';
     refreshHomeChrome();
@@ -1469,6 +1474,41 @@
     if (els.name) els.name.focus();
   }
 
+  function renderAccessSavedList(forceOpen) {
+    var list = byId('fireSAccessServiceSavedList');
+    if (!list) return;
+    var rows =
+      (window.fireSListLocalServiceRequests &&
+        window.fireSListLocalServiceRequests()) ||
+      [];
+    if (!rows.length) {
+      list.innerHTML = '<p class="fire-s-get-started-note">No saved requests on this phone yet.</p>';
+    } else {
+      list.innerHTML = rows
+        .map(function (row) {
+          var when = row.created_at
+            ? new Date(row.created_at).toLocaleString()
+            : '';
+          return (
+            '<div class="fire-s-access-service-saved-item">' +
+            '<strong>' +
+            String(row.selected_service || 'Service request') +
+            '</strong>' +
+            '<span>' +
+            String(row.client_name || '') +
+            (row.client_phone || row.client_email
+              ? ' · ' + String(row.client_phone || row.client_email)
+              : '') +
+            '</span>' +
+            (when ? '<span>' + when + '</span>' : '') +
+            '</div>'
+          );
+        })
+        .join('');
+    }
+    if (forceOpen) list.removeAttribute('hidden');
+  }
+
   function sendAccessServiceRequest() {
     var els = accessServiceEls();
     var name = text(els.name && els.name.value);
@@ -1486,39 +1526,53 @@
       );
       return;
     }
-    setAccessServiceStatus('Sending request…', false);
+    setAccessServiceStatus('Saving request…', false);
+    var save =
+      window.fireSSaveServiceRequest ||
+      function () {
+        return Promise.resolve({ ok: false, error: 'Save is not ready.' });
+      };
     var notify = window.fireSNotifyServiceRequest;
-    var done = function (result) {
-      if (result && result.skipped === 'staging') {
-        setAccessServiceStatus(
-          'Request noted on the toets-blad. Live Access emails Fire-S.',
-          false
-        );
-        return;
-      }
-      setAccessServiceStatus('Request sent. Fire-S will contact you.', false);
-      if (els.name) els.name.value = '';
-      if (els.phone) els.phone.value = '';
-      if (els.email) els.email.value = '';
-      if (els.message) els.message.value = '';
-    };
-    if (typeof notify !== 'function') {
-      done({ ok: true });
-      return;
-    }
     Promise.resolve(
-      notify({
+      save({
         service: accessServiceName,
         name: name,
         phone: phone,
         email: email,
-        message: message
+        message: message,
+        source: 'access'
       })
     )
-      .then(done)
+      .then(function (saved) {
+        if (!saved || !saved.ok) {
+          setAccessServiceStatus(
+            (saved && saved.error) || 'Could not save this request.',
+            true
+          );
+          return;
+        }
+        if (els.name) els.name.value = '';
+        if (els.phone) els.phone.value = '';
+        if (els.email) els.email.value = '';
+        if (els.message) els.message.value = '';
+        renderAccessSavedList(true);
+        setAccessServiceStatus(
+          'Request saved. You can view it below, and later under Additional Services.',
+          false
+        );
+        if (typeof notify === 'function') {
+          notify({
+            service: accessServiceName,
+            name: name,
+            phone: phone,
+            email: email,
+            message: message
+          });
+        }
+      })
       .catch(function () {
         setAccessServiceStatus(
-          'Could not send now. Try again or email johandb@live.com.',
+          'Could not save now. Try again or email johandb@live.com.',
           true
         );
       });
@@ -1537,10 +1591,23 @@
     });
     var sendBtn = byId('fireSAccessServiceSendBtn');
     var cancelBtn = byId('fireSAccessServiceCancelBtn');
+    var viewBtn = byId('fireSAccessServiceViewBtn');
     if (sendBtn) sendBtn.addEventListener('click', sendAccessServiceRequest);
     if (cancelBtn) {
       cancelBtn.addEventListener('click', hideAccessServiceForm);
     }
+    if (viewBtn) {
+      viewBtn.addEventListener('click', function () {
+        var list = byId('fireSAccessServiceSavedList');
+        var open = list && !list.hasAttribute('hidden');
+        if (open) {
+          list.setAttribute('hidden', '');
+        } else {
+          renderAccessSavedList(true);
+        }
+      });
+    }
+    renderAccessSavedList(false);
   }
 
   var deferredInstall = null;
