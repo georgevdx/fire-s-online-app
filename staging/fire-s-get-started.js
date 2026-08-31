@@ -916,7 +916,17 @@
     return msg || 'Something went wrong.';
   }
 
+  async function claimThisInstrument(sb) {
+    try {
+      var api = window.fireSOneInstrument;
+      if (!api || typeof api.claim !== 'function') return;
+      await api.claim(sb || getSb());
+      if (typeof api.start === 'function') api.start(sb || getSb());
+    } catch (_) {}
+  }
+
   async function finishSignedInSession(successMsg) {
+    await claimThisInstrument(getSb());
     try {
       if (window.fireSFlushServiceRequests) {
         await window.fireSFlushServiceRequests();
@@ -1724,6 +1734,21 @@
     if (!ensureEls()) return;
     showAccess();
     showResetPassword();
+  });
+  document.addEventListener('fire-s:instrument-taken', function (ev) {
+    var msg =
+      (ev && ev.detail && ev.detail.message) ||
+      (window.fireSOneInstrument && window.fireSOneInstrument.TAKEN_MESSAGE) ||
+      'This subscribed email is already in use on another instrument. Only one instrument at a time.';
+    try {
+      if (window.fireSOneInstrument && typeof window.fireSOneInstrument.stop === 'function') {
+        window.fireSOneInstrument.stop();
+      }
+    } catch (_) {}
+    showLogin();
+    setTimeout(function () {
+      setStatus(msg, true);
+    }, 80);
   });
   document.addEventListener('fire-s:auth-changed', function () {
     if (isPasswordRecovery()) {

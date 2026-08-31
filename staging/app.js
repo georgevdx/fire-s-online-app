@@ -115,7 +115,7 @@ window.supabaseClient = supabaseClient;
 
 if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthStateChange === 'function') {
   supabaseClient.auth.onAuthStateChange(function (event) {
-    if (event !== 'PASSWORD_RECOVERY') return;
+    if (event === 'PASSWORD_RECOVERY') {
     window.__fireSPasswordRecovery = true;
     try {
       sessionStorage.setItem('fireS.passwordRecovery', '1');
@@ -127,6 +127,16 @@ if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthSt
     } catch (_) {}
     try {
       document.dispatchEvent(new CustomEvent('fire-s:password-recovery'));
+    } catch (_) {}
+      return;
+    }
+    try {
+      if (window.fireSOneInstrument) {
+        if (event === 'SIGNED_OUT') window.fireSOneInstrument.stop();
+        else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+          if (!window.__fireSPasswordRecovery) window.fireSOneInstrument.start(supabaseClient);
+        }
+      }
     } catch (_) {}
   });
 }
@@ -156,6 +166,11 @@ window.fireSMarkAuthSettled = function fireSMarkAuthSettled() {
       var session = res && res.data && res.data.session;
       if (session) {
         window.__fireSSessionPending = true;
+        try {
+          if (window.fireSOneInstrument && typeof window.fireSOneInstrument.start === 'function') {
+            window.fireSOneInstrument.start(supabaseClient);
+          }
+        } catch (_) {}
         return;
       }
       window.fireSMarkAuthSettled();
@@ -3955,6 +3970,12 @@ function applyLoggedOutUi() {
     syncStatus.textContent = 'Logged out. Use Access to sign in again.';
   }
 }
+
+document.addEventListener('fire-s:instrument-taken', function () {
+  try {
+    applyLoggedOutUi();
+  } catch (_) {}
+});
 
 async function saveOwnWorkBeforeLogout() {
   window.__fireSQuietCloudUpload = true;

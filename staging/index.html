@@ -263,7 +263,7 @@
     </div>
 
     <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields">
-      <p class="fire-s-get-started-note">Use the same email on phone and desktop. One email is one login. The owner pays for that email.</p>
+      <p class="fire-s-get-started-note">Use the same email on phone and desktop. One email is one paid login. Only one instrument at a time. Login on a second phone or computer signs the first one out.</p>
       <input id="fireSLoginEmail" type="email" placeholder="Email" autocomplete="username">
       <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
@@ -750,7 +750,7 @@
     <h3 id="fireSSubscribeTitle">Subscribe to Fire-S</h3>
     <p id="fireSSubscribeIntroCopy">
       Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free).
-      Phone and desktop with the same email count as one login. Each extra person is another subscription.
+      Phone and desktop with the same email count as one login. Only one instrument at a time may use that email. Each extra person is another subscription.
       The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.
       After Subscribe, pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money).
       Read the
@@ -1753,9 +1753,10 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-48-toets"></script>
+  <script src="fire-s-env.js?v=1-3-49-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
+  <script src="fire-s-one-instrument.js?v=1-0-one-instrument"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
   <script src="building-passport.js?v=104-5-hide-during-fill"></script>
@@ -1767,7 +1768,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-1-super-svc"></script>
-  <script src="app.js?v=1-3-46-super-svc"></script>
+  <script src="app.js?v=1-3-49-one"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-35-invite"></script>
@@ -1778,14 +1779,14 @@
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-14-invite"></script>
+  <script src="fire-s-subscriptions.js?v=1-15-one"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
-  <script src="fire-s-subscribe.js?v=1-13-invite"></script>
-  <script src="fire-s-user-manual.js?v=1-35-invite"></script>
+  <script src="fire-s-subscribe.js?v=1-14-one"></script>
+  <script src="fire-s-user-manual.js?v=1-36-one"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-39-invite"></script>
+  <script src="fire-s-get-started.js?v=2-40-one"></script>
   <script src="fire-s-startup-stability.js?v=1-6-startup"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
@@ -1799,7 +1800,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-15-invite')
+        navigator.serviceWorker.register('./service-worker.js?v=108-16-one')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

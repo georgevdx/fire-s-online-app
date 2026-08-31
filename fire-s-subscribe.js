@@ -155,7 +155,7 @@
     if (intro) {
       intro.innerHTML = isSeat
         ? 'Choose monthly or annual first (annual is 2 months free). Then type their email, choose Inspector or Manager, and tap <strong>Subscribe this email</strong>. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. They never open this page.'
-        : 'You (the owner) pay <strong>R250 per month</strong> or <strong>R2 500 per year</strong> per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Phone and desktop share that login. The app does not take a card yet — Fire-S invoices you. No VAT is added (Fire-S is not registered for VAT). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
+        : 'You (the owner) pay <strong>R250 per month</strong> or <strong>R2 500 per year</strong> per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Phone and desktop share that login. Only one instrument at a time may use that email. The app does not take a card yet — Fire-S invoices you. No VAT is added (Fire-S is not registered for VAT). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
   }
 

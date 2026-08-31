@@ -206,6 +206,7 @@
         <ol>
           <li>On Access, type your email and password.</li>
           <li>Tap <strong>Login</strong>.</li>
+          <li>Only one instrument at a time may use that subscribed email. If you Login on a second phone or computer, the first one is signed out. Same email is still one paid subscription — do not Subscribe twice.</li>
           <li>If you forgot the password, type your email, then tap <strong>Forgot password</strong>.</li>
           <li>Check Inbox and Junk. The email is often from Supabase. Outlook and Live hide it.</li>
           <li>Open the link in that email. Fire-S opens on <strong>Choose a new password</strong>.</li>

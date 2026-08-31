@@ -500,7 +500,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. R250 per month or R2 500 per year per subscription. Each new email is a new subscription. No VAT — Company S is not VAT-registered. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
-    billingNote: 'R250 / month or R2 500 / year per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. R250 per month or R2 500 per year per subscription. Each new email is a new subscription. No VAT — Company S is not VAT-registered. Phone and desktop share that login. Only one instrument at a time may use that email. The app does not take a card yet; Company S invoices the owner.',
+    billingNote: 'R250 / month or R2 500 / year per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Only one instrument at a time. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
   };
 })(window);
