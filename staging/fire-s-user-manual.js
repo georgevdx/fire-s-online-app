@@ -227,7 +227,7 @@
           showFees()
             ? `<ol>
           <li>On Access tap <strong>Subscribing New Company</strong>.</li>
-          <li>Type the company name, your email and a password. Subscription per month per login is R250. Per year per login is R2 500.</li>
+          <li>Type the company name, your email and a password. Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
           <li>Tap <strong>Subscribe</strong>, then pay on PayFast. Card details stay with PayFast.</li>
@@ -354,7 +354,7 @@
         <h2>11. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
         ${
           showFees()
-            ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. Each extra person is another subscription.</p>
+            ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
         <p>New companies: only the owner taps <strong>Subscribing New Company</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date, and that it renews automatically until you cancel.</p>

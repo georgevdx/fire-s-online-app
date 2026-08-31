@@ -158,13 +158,13 @@
           (interval === 'annual' ? lines.annual : lines.monthly) +
           '. ' +
           lines.saveNote +
-          ' Phone and desktop with the same email count as one login. Each extra person is another subscription. Pay on PayFast.</span>';
+          ' Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast.</span>';
       } else {
         var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R250 per month per login';
         current.innerHTML =
           '<strong>Fire-S seat · ' +
           price +
-          '</strong><span>Subscription per month per login is R250. Phone and desktop with the same email count as one login. Each extra person is another subscription. Pay on PayFast.</span>';
+          '</strong><span>Subscription per month per login is R250. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast.</span>';
       }
     }
     paintSubscribeStatus();
@@ -297,8 +297,8 @@
     }
     if (intro) {
       intro.innerHTML = isSeat
-        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. After you tap Subscribe this email, pay that extra login on PayFast. They never open this page.'
-        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Each extra person is another subscription. Pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
+        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. After you tap Subscribe this email, pay that extra login on PayFast. They never open this page.'
+        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
     paintSubscribeStatus();
   }

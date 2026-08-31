@@ -33,15 +33,38 @@ function checkTree(dir) {
       !/Inspectors do not pay/.test(catalog) && !/Inspectors and other staff do not pay/.test(html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/)[0]),
       label + ': Subscription page must not say inspectors do not pay'
     );
-  } else {
     assert.ok(
-      /Inspectors and other staff do not pay/.test(html) &&
-        /Each new email is a new subscription/.test(html),
-      label + ': Subscribe and Personnel copy must say the owner pays for each new email'
+      /The main subscriber \(owner\) may invite inspectors to subscribe under the main company/.test(catalog) &&
+        /Please see the user manual in Fire-S/.test(catalog),
+      label + ': price list must invite inspectors under the company and point to the user manual'
+    );
+  } else {
+    const subscribeSection = html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/);
+    assert.ok(subscribeSection, label + ': Subscription page must exist');
+    assert.ok(
+      /The main subscriber \(owner\) may invite inspectors to subscribe under the main company/.test(subscribeSection[0]) &&
+        /Please see the user manual in Fire-S/.test(subscribeSection[0]) &&
+        !/Inspectors do not pay/.test(subscribeSection[0]) &&
+        !/Inspectors and other staff do not pay/.test(subscribeSection[0]),
+      label + ': Subscribe page must invite inspectors under the company, not say they do not pay'
     );
     assert.ok(
-      /The owner pays/.test(catalog) && /Inspectors do not pay/.test(catalog),
-      label + ': price list must say the owner pays'
+      /Each new email is a new subscription/.test(html),
+      label + ': Personnel copy must still say each new email is a new subscription'
+    );
+    const guest = html.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
+    assert.ok(
+      guest &&
+        /The main subscriber \(owner\) may invite inspectors to subscribe under the main company/.test(guest[0]) &&
+        /Please see the user manual in Fire-S/.test(guest[0]) &&
+        !/Inspectors do not pay/.test(guest[0]),
+      label + ': Access Subscribe form must invite inspectors under the company, not say they do not pay'
+    );
+    assert.ok(
+      /The main subscriber \(owner\) may invite inspectors to subscribe under the main company/.test(catalog) &&
+        /Please see the user manual in Fire-S/.test(catalog) &&
+        !/Inspectors do not pay/.test(catalog),
+      label + ': price list must invite inspectors under the company, not say they do not pay'
     );
   }
   assert.ok(

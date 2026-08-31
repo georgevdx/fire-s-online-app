@@ -16,12 +16,12 @@
     {
       id: 'monthly',
       name: 'Monthly · R250 per subscription',
-      summary: 'R250 every month, per subscription. The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
+      summary: 'R250 every month, per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Same email on phone and desktop is one login.'
     },
     {
       id: 'annual',
       name: 'Annual · R2 500 per subscription · 2 months free',
-      summary: 'R2 500 once a year, per subscription. That is 2 months free (you save R500). The owner pays. Inspectors do not pay. Same email on phone and desktop is one login.'
+      summary: 'R2 500 once a year, per subscription. That is 2 months free (you save R500). The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Same email on phone and desktop is one login.'
     }
   ];
 
@@ -31,7 +31,7 @@
       name: 'Fire-S seat',
       audience: 'Every email',
       seats: 'One subscription, paid by the owner',
-      summary: 'R250 per month or R2 500 per year, per subscription. The owner pays for every subscription. Inspectors and other staff do not pay.',
+      summary: 'R250 per month or R2 500 per year, per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.',
       includes: [
         'One login on phone and desktop',
         'Inspection Gateway, Q&A, photos, GPS and client PDF',
@@ -500,7 +500,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'The owner pays R250 per month or R2 500 per year per subscription. Inspectors and other staff do not pay. Each new email is a new subscription, invoiced to the owner. No VAT — Company S is not VAT-registered. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
-    billingNote: 'The owner pays R250 / month or R2 500 / year per subscription. Inspectors do not pay. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. R250 per month or R2 500 per year per subscription. Each new email is a new subscription. No VAT — Company S is not VAT-registered. Phone and desktop share that login. The app does not take a card yet; Company S invoices the owner.',
+    billingNote: 'R250 / month or R2 500 / year per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
   };
 })(window);

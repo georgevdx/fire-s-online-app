@@ -913,7 +913,7 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Subscription per month per login is R250. Per year per login is R2 500. Pay on PayFast.');
+    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
     setText('#mainCommandCentre .main-command-top h3', 'Subscribe');
     setText(

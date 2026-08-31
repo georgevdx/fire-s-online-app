@@ -227,13 +227,13 @@
           showFees()
             ? `<ol>
           <li>On Access tap <strong>Subscribing New Company</strong>.</li>
-          <li>Type the company name, your email and a password. You pay R250 / month (or R2 500 / year) for that subscription. Inspectors do not pay.</li>
+          <li>Type the company name, your email and a password. You pay R250 / month (or R2 500 / year) for that subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
           <li>Tap <strong>Subscribe</strong>.</li>
           <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S invoices the owner R250 per subscription per month, or R2 500 per year. Inspectors do not pay. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>No card is taken in the app yet. Company S invoices the owner R250 per subscription per month, or R2 500 per year. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
             : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
         }
@@ -354,7 +354,7 @@
         <h2>11. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
         ${
           showFees()
-            ? `<p>Fire-S is a paid subscription: <strong>R250 per month</strong> or <strong>R2 500 per year</strong> (2 months free), per subscription. The owner pays for every subscription. Inspectors and other staff do not pay. Phone and desktop share that login — do not enter the same email twice.</p>
+            ? `<p>Fire-S is a paid subscription: <strong>R250 per month</strong> or <strong>R2 500 per year</strong> (2 months free), per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Phone and desktop share that login — do not enter the same email twice.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
         <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No VAT is added. No card is taken in the app yet.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free). One month before the due date, Owner and Manager Home shows a reminder. Tap <strong>Close</strong> if it is in the way. It comes back for the next due date.</p>
