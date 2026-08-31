@@ -1745,8 +1745,12 @@
     } catch (_) {}
     showLogin();
     setTimeout(function () {
-      setStatus(msg, true);
-    }, 80);
+      if (typeof window.fireSShowAccessLogin === 'function') {
+        window.fireSShowAccessLogin(msg, true);
+      } else {
+        setStatus(msg, true);
+      }
+    }, 200);
   });
   document.addEventListener('fire-s:auth-changed', function () {
     if (isPasswordRecovery()) {

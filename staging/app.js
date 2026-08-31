@@ -3897,7 +3897,7 @@ function hideLogoutWait() {
   if (homeBtn) homeBtn.disabled = false;
 }
 
-function applyLoggedOutUi() {
+function applyLoggedOutUi(accessNote) {
   try {
     const keys = [];
     for (let i = 0; i < localStorage.length; i += 1) {
@@ -3963,7 +3963,7 @@ function applyLoggedOutUi() {
   } catch (_) {}
   try {
     if (typeof window.fireSShowAccessLogin === 'function') {
-      window.fireSShowAccessLogin();
+      window.fireSShowAccessLogin(accessNote, !!accessNote);
     } else {
       const access = document.getElementById('fireSGetStarted');
       if (access) access.style.display = '';
@@ -3984,9 +3984,13 @@ function applyLoggedOutUi() {
   }
 }
 
-document.addEventListener('fire-s:instrument-taken', function () {
+document.addEventListener('fire-s:instrument-taken', function (ev) {
+  var msg =
+    (ev && ev.detail && ev.detail.message) ||
+    (window.fireSOneInstrument && window.fireSOneInstrument.TAKEN_MESSAGE) ||
+    '';
   try {
-    applyLoggedOutUi();
+    applyLoggedOutUi(msg);
   } catch (_) {}
 });
 

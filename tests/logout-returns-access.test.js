@@ -51,7 +51,10 @@ Object.keys(files).forEach(function (name) {
   }
   if (/App$/.test(name)) {
     assert.ok(
-      /fireSClearStickyHomeRole/.test(src) && /fireSShowAccessLogin/.test(src),
+      /fireSClearStickyHomeRole/.test(src) &&
+        /fireSShowAccessLogin\(accessNote/.test(src) &&
+        /applyLoggedOutUi\(accessNote\)/.test(src) &&
+        /applyLoggedOutUi\(msg\)/.test(src),
       name + ': applyLoggedOutUi must clear the sticky role and show Access'
     );
   }
