@@ -225,6 +225,8 @@
   var STARTED_KEY = 'fireS.billingStartedOn';
   var RENEWS_KEY = 'fireS.billingRenewsOn';
   var DISMISS_KEY = 'fireS.expiryReminderDismissed';
+  var STATUS_KEY = 'fireS.billingStatus';
+  var CANCELLED_ON_KEY = 'fireS.billingCancelledOn';
 
   function pad2(n) {
     return (n < 10 ? '0' : '') + n;
@@ -277,6 +279,116 @@
       localStorage.setItem(STARTED_KEY, key);
     } catch (_) {}
     return key;
+  }
+
+  function rememberStatus(status) {
+    var value = text(status).toLowerCase() || 'unpaid';
+    if (value !== 'active' && value !== 'cancelled' && value !== 'unpaid') value = 'unpaid';
+    try {
+      localStorage.setItem(STATUS_KEY, value);
+    } catch (_) {}
+    try {
+      if (root.currentCompanyAccess) root.currentCompanyAccess.billingStatus = value;
+    } catch (_) {}
+    return value;
+  }
+
+  function billingStatus() {
+    try {
+      var live = root.currentCompanyAccess && root.currentCompanyAccess.billingStatus;
+      if (live) return text(live).toLowerCase();
+    } catch (_) {}
+    var stored = text(readStored(STATUS_KEY)).toLowerCase();
+    if (stored) return stored;
+    // Live invoices the owner — a company with a due date is billed until cancelled.
+    return currentRenewsOn() ? 'active' : 'unpaid';
+  }
+
+  function persistBillingMeta() {
+    var sb = getSb();
+    var cid = companyId();
+    if (!sb || !cid) return Promise.resolve({ ok: true, local: true });
+    var payload = {
+      billing_interval: currentIntervalId(),
+      billing_status: billingStatus(),
+      billing_renews_on: currentRenewsOn() || null
+    };
+    return sb
+      .from('companies')
+      .update(payload)
+      .eq('id', cid)
+      .then(function (res) {
+        if (res && res.error) {
+          // Live companies table may not have billing_status yet. Keep local data.
+          return { ok: true, local: true };
+        }
+        return { ok: true };
+      })
+      .catch(function () {
+        return { ok: true, local: true };
+      });
+  }
+
+  function markPaid(intervalId) {
+    if (intervalId) rememberInterval(intervalId);
+    startBillingPeriod(intervalId);
+    rememberStatus('active');
+    persistBillingMeta();
+    return billingStatus();
+  }
+
+  function markUnpaid() {
+    if (billingStatus() === 'cancelled') return billingStatus();
+    rememberStatus('unpaid');
+    persistBillingMeta();
+    return billingStatus();
+  }
+
+  function cancelBilling() {
+    // Never delete companies, inspections, or people. Cancel only stops invoices.
+    ensureRenewsOn();
+    rememberStatus('cancelled');
+    try {
+      localStorage.setItem(CANCELLED_ON_KEY, todayKey());
+    } catch (_) {}
+    persistBillingMeta();
+    return billingStatus();
+  }
+
+  function reactivateBilling(intervalId) {
+    markPaid(intervalId);
+    try {
+      localStorage.removeItem(CANCELLED_ON_KEY);
+    } catch (_) {}
+    return billingStatus();
+  }
+
+  function statusHeadline() {
+    var interval = currentIntervalId();
+    var when = formatLongDate(ensureRenewsOn(interval));
+    var period = interval === 'annual' ? 'year' : 'month';
+    var status = billingStatus();
+    if (status === 'cancelled') {
+      return 'Cancelled. This login stays until ' + when + '. Company S will not invoice for the next period.';
+    }
+    if (status === 'active') {
+      return (
+        'This login is active for one ' +
+        period +
+        ' until ' +
+        when +
+        '. Company S invoices you until you cancel.'
+      );
+    }
+    return 'This company and its inspections stay saved.';
+  }
+
+  function statusKeepDataNote() {
+    return 'Cancelling a subscription does not delete the company name or inspections. That data stays in the cloud.';
+  }
+
+  function statusCopy() {
+    return statusHeadline() + ' ' + statusKeepDataNote();
   }
 
   function rememberRenewsOn(dateKey) {
@@ -441,6 +553,8 @@
     var id = rememberPlan(planId);
     var interval = rememberInterval(intervalId);
     startBillingPeriod(interval);
+    if (billingStatus() !== 'cancelled') rememberStatus('active');
+    persistBillingMeta();
     var sb = getSb();
     var cid = companyId();
     if (!sb || !cid) return { ok: true, local: true, plan: id, interval: interval };
@@ -491,6 +605,14 @@
     shouldShowExpiryReminder: shouldShowExpiryReminder,
     dismissExpiryReminder: dismissExpiryReminder,
     formatLongDate: formatLongDate,
+    billingStatus: billingStatus,
+    markPaid: markPaid,
+    markUnpaid: markUnpaid,
+    cancelBilling: cancelBilling,
+    reactivateBilling: reactivateBilling,
+    statusHeadline: statusHeadline,
+    statusKeepDataNote: statusKeepDataNote,
+    statusCopy: statusCopy,
     bothPriceLines: bothPriceLines,
     duplicateSeatMessage: duplicateSeatMessage,
     formatRand: formatRand,

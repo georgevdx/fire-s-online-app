@@ -133,8 +133,14 @@ if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthSt
     try {
       if (window.fireSOneInstrument) {
         if (event === 'SIGNED_OUT') window.fireSOneInstrument.stop();
-        else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-          if (!window.__fireSPasswordRecovery) window.fireSOneInstrument.start(supabaseClient);
+        else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+          if (
+            !window.__fireSPasswordRecovery &&
+            !window.__fireSLoggingIn &&
+            !window.__fireSClaimingInstrument
+          ) {
+            window.fireSOneInstrument.start(supabaseClient);
+          }
         }
       }
     } catch (_) {}

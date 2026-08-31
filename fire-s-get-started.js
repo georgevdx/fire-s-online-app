@@ -920,10 +920,30 @@
 
   async function claimThisInstrument(sb) {
     try {
+      window.__fireSClaimingInstrument = true;
+    } catch (_) {}
+    try {
       var api = window.fireSOneInstrument;
       if (!api || typeof api.claim !== 'function') return;
       await api.claim(sb || getSb());
       if (typeof api.start === 'function') api.start(sb || getSb());
+    } catch (_) {
+    } finally {
+      try {
+        window.__fireSClaimingInstrument = false;
+      } catch (_) {}
+    }
+  }
+
+  function beginLoginInFlight() {
+    try {
+      window.__fireSLoggingIn = true;
+    } catch (_) {}
+  }
+
+  function endLoginInFlight() {
+    try {
+      window.__fireSLoggingIn = false;
     } catch (_) {}
   }
 
@@ -1107,6 +1127,7 @@
       setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
       return;
     }
+    beginLoginInFlight();
     setStatus('Signing in…');
     try {
       var res = await sb.auth.signInWithPassword({ email: email, password: password });
@@ -1114,6 +1135,8 @@
       await finishSignedInSession('Signed in.');
     } catch (e) {
       setStatus(authErrorMessage(e), true);
+    } finally {
+      endLoginInFlight();
     }
   }
 
@@ -1137,6 +1160,7 @@
     }
     setStatus('Creating your login…');
     markJoiningAsStaff();
+    beginLoginInFlight();
     try {
       var res = await sb.auth.signUp({ email: email, password: password });
       if (res.error) {
@@ -1177,6 +1201,8 @@
       await finishSignedInSession('Login created.');
     } catch (e) {
       setStatus(authErrorMessage(e), true);
+    } finally {
+      endLoginInFlight();
     }
   }
 
@@ -1277,6 +1303,7 @@
     var intervalId = chosenInterval('fireSRegisterBillingOptions');
     savePendingSubscribe(company, email, intervalId);
     setStatus('Creating owner account…');
+    beginLoginInFlight();
     try {
       var redirectTo = accessRedirectUrl();
       var signUpOpts = redirectTo ? { emailRedirectTo: redirectTo } : undefined;
@@ -1331,6 +1358,8 @@
       await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions', intervalId);
     } catch (e) {
       setStatus(authErrorMessage(e), true);
+    } finally {
+      endLoginInFlight();
     }
   }
 

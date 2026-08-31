@@ -10,12 +10,16 @@ function read(name) {
 }
 
 const html = read('staging/index.html');
+const liveHtml = read('index.html');
 const subscribe = read('staging/fire-s-subscribe.js');
+const liveSubscribe = read('fire-s-subscribe.js');
 const catalogSrc = read('staging/fire-s-subscriptions.js');
 const css = read('staging/fire-s-subscribe.css');
+const liveCss = read('fire-s-subscribe.css');
 const env = read('staging/fire-s-env.js');
 const roles = read('staging/fire-s-clean-home-roles.js');
 const manual = read('staging/fire-s-user-manual.js');
+const liveManual = read('fire-s-user-manual.js');
 const liveEnv = read('fire-s-env.js');
 
 assert.ok(
@@ -36,24 +40,33 @@ assert.ok(
 );
 assert.ok(
   /id="fireSExpiryReminder"/.test(html) &&
-    /fireSExpiryReminderCloseBtn/.test(html) &&
-    /function paintExpiryReminder\(/.test(subscribe) &&
-    /fireSPaintExpiryReminder/.test(roles),
-  'Owner and Manager Home must show a closable one-month expiry reminder'
+    /id="fireSExpiryReminder"/.test(liveHtml) &&
+    /function paintExpiryReminder\(\) \{\s*var box = byId\('fireSExpiryReminder'\);\s*if \(box\) box.hidden = true;\s*\}/.test(
+      subscribe
+    ) &&
+    /function paintExpiryReminder\(\) \{\s*var box = byId\('fireSExpiryReminder'\);\s*if \(box\) box.hidden = true;\s*\}/.test(
+      liveSubscribe
+    ),
+  'Home must keep the reminder hidden — do not show subscription due soon'
 );
 assert.ok(
-  /\.fire-s-expiry-reminder/.test(css),
-  'Expiry reminder must be styled so it stands out on Home'
+  /#fireSExpiryReminder/.test(css) && /display: none !important/.test(css),
+  'Toets CSS must hide the expiry reminder'
+);
+assert.ok(
+  /#fireSExpiryReminder/.test(liveCss) && /display: none !important/.test(liveCss),
+  'Live CSS must hide the expiry reminder'
 );
 assert.ok(
   /2 months free/.test(manual) &&
-    /One month before the due date/.test(manual),
-  'User manual must mention annual discount and the Home reminder'
+    !/One month before the due date/.test(manual) &&
+    !/One month before the due date/.test(liveManual),
+  'User manual must mention annual discount and must not mention the Home reminder'
 );
 assert.ok(/1\.3\.[2-9]\d-toets/.test(env), 'Toets-blad version must stay on 1.3.21-toets or newer');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.45'/.test(liveEnv),
-  'Live Fire-S must be 1.3.45 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
+  'Live Fire-S must be 1.3.46 after sit dit live'
 );
 
 const store = {};
@@ -78,12 +91,12 @@ const monthlyRenews = cat.startBillingPeriod('monthly');
 assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(monthlyRenews));
 assert.ok(
   cat.shouldShowExpiryReminder('monthly'),
-  'Monthly due date is about one month away, so the reminder must show'
+  'Catalog may still compute a due date; Home must not show the reminder'
 );
 cat.dismissExpiryReminder();
 assert.ok(
   !cat.shouldShowExpiryReminder('monthly'),
-  'Close must hide the reminder until the next due date'
+  'Dismiss still stores the due date even though Home no longer shows the reminder'
 );
 
 console.log('annual-and-expiry-reminder.test.js: ok');

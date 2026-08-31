@@ -225,15 +225,9 @@
   color: #64748b;
 }
 
-.fire-s-expiry-reminder {
-  display: grid;
-  gap: 10px;
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 2px solid #b45309;
-  background: #fff7ed;
-  color: #7c2d12;
+.fire-s-expiry-reminder,
+#fireSExpiryReminder {
+  display: none !important;
 }
 
 .fire-s-expiry-reminder[hidden] {

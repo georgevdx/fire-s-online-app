@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-14-hide-saved">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-3-hide-fees">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-4-cancel">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -764,6 +764,22 @@
     <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
   </div>
   <div id="fireSSubscribeCurrent" class="fire-s-subscribe-current"></div>
+  <div id="fireSSubscribeStatus" class="fire-s-subscribe-status" hidden>
+    <strong id="fireSSubscribeStatusTitle">Subscription status</strong>
+    <p id="fireSSubscribeStatusCopy"></p>
+    <p id="fireSSubscribeStatusKeep" class="fire-s-subscribe-status-keep"></p>
+  </div>
+  <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel" hidden>
+    <h4>Cancel this subscription</h4>
+    <ol>
+      <li>Only the Owner can cancel.</li>
+      <li>Tap <strong>Cancel subscription</strong>.</li>
+      <li>Confirm. Company S stops invoicing for the next period.</li>
+      <li>The company name and inspections stay in the cloud.</li>
+      <li>You can subscribe again later. Company S will invoice you.</li>
+    </ol>
+    <button id="fireSSubscribeCancelBtn" type="button" class="secondary-btn">Cancel subscription</button>
+  </div>
   <div id="fireSSubscribeSeatPanel" class="fire-s-subscribe-seat" style="display:none;">
     <label class="fire-s-subscribe-seat-label" for="fireSSeatEmail">Their email</label>
     <input id="fireSSeatEmail" type="email" placeholder="inspector@company.com" autocomplete="off">
@@ -967,7 +983,7 @@
   <div id="companyTeamAddPanel" class="company-team-add">
     <div class="cloud-section-title">Add people</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Each new email is a new subscription under this company name. You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email, choose Inspector or Manager, and see the fees. One person is one company. Only you (the owner) can Remove someone. That deletes their email and password from the cloud. Then they can Subscribe under another company name.
+      Each new email is a new subscription under this company name. You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email, choose Inspector or Manager, and see the fees. One person is one company. Only you (the owner) can Remove someone. That deletes their email and password from the cloud. Then they can Subscribe under another company name. Cancelling a subscription does not delete this company or its inspections.
     </p>
     <button id="companyTeamStartSeatBtn" type="button" class="cloud-primary-btn" style="width:100%; margin-top:10px;">
       Add inspector / manager
@@ -1735,10 +1751,10 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-45-live"></script>
+  <script src="fire-s-env.js?v=1-3-46-live"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="fire-s-one-instrument.js?v=1-0-one-instrument"></script>
+  <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
   <script src="building-passport.js?v=104-5-hide-during-fill"></script>
@@ -1750,10 +1766,10 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-1-super-svc"></script>
-  <script src="app.js?v=1-3-45-access"></script>
+  <script src="app.js?v=1-3-46-login"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-37-access"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-38-login"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-7-svc-req"></script>
@@ -1761,12 +1777,12 @@
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-12-one"></script>
-  <script src="fire-s-subscribe.js?v=1-11-one"></script>
-  <script src="fire-s-user-manual.js?v=1-33-one"></script>
+  <script src="fire-s-subscriptions.js?v=1-13-cancel"></script>
+  <script src="fire-s-subscribe.js?v=1-12-cancel"></script>
+  <script src="fire-s-user-manual.js?v=1-34-cancel"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-38-access"></script>
+  <script src="fire-s-get-started.js?v=2-39-login"></script>
   <script src="fire-s-startup-stability.js?v=1-6-startup"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
@@ -1780,7 +1796,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-23-1-3-45')
+        navigator.serviceWorker.register('./service-worker.js?v=108-24-1-3-46')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

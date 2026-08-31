@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-14-hide-saved">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-5-status">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-6-hide-reminder">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -1753,10 +1753,10 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-50-toets"></script>
+  <script src="fire-s-env.js?v=1-3-51-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="fire-s-one-instrument.js?v=1-0-one-instrument"></script>
+  <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
   <script src="building-passport.js?v=104-5-hide-during-fill"></script>
@@ -1768,10 +1768,10 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-1-super-svc"></script>
-  <script src="app.js?v=1-3-50-access"></script>
+  <script src="app.js?v=1-3-51-login"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-36-access"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-37-login"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-1-menu-on-screen"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
@@ -1779,14 +1779,14 @@
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
-  <script src="fire-s-subscriptions.js?v=1-15-one"></script>
+  <script src="fire-s-subscriptions.js?v=1-16-cancel"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
-  <script src="fire-s-subscribe.js?v=1-14-one"></script>
-  <script src="fire-s-user-manual.js?v=1-36-one"></script>
+  <script src="fire-s-subscribe.js?v=1-15-hide-reminder"></script>
+  <script src="fire-s-user-manual.js?v=1-37-cancel"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-41-access"></script>
+  <script src="fire-s-get-started.js?v=2-42-login"></script>
   <script src="fire-s-startup-stability.js?v=1-6-startup"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
@@ -1800,7 +1800,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-17-access')
+        navigator.serviceWorker.register('./service-worker.js?v=108-18-login-once')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

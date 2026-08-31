@@ -33,6 +33,13 @@
     return false;
   }
 
+  function isLoginInFlight() {
+    try {
+      if (root.__fireSLoggingIn || root.__fireSClaimingInstrument) return true;
+    } catch (_) {}
+    return claiming;
+  }
+
   function storageOf(storage) {
     return storage || root.localStorage;
   }
@@ -89,6 +96,7 @@
     if (!sb || !sb.auth || isRecovery()) {
       return { claimed: false, skipped: true };
     }
+    claiming = true;
     var id = localId(storage);
     var updateErr = null;
     try {
@@ -96,17 +104,18 @@
       if (updated && updated.error) updateErr = updated.error;
     } catch (err) {
       updateErr = err;
+    } finally {
+      claiming = false;
     }
-    try {
-      if (typeof sb.auth.signOut === 'function') {
-        await sb.auth.signOut({ scope: 'others' });
-      }
-    } catch (_) {}
+    // Do not revoke other sessions from this phone. That can fire SIGNED_OUT
+    // here and bounce Login back to Access. Other instruments leave when
+    // their heartbeat sees a different instrument id.
     return { claimed: !updateErr, instrumentId: id, error: updateErr || null };
   }
 
   async function kick(sb, reason) {
     if (kicking) return { ok: false, kicked: true, reason: reason };
+    if (isLoginInFlight()) return { ok: true, skipped: true, reason: reason || 'login' };
     kicking = true;
     stop();
     try {
@@ -128,7 +137,7 @@
   }
 
   async function check(sb, storage) {
-    if (kicking || claiming || isRecovery()) return { ok: true, skipped: true };
+    if (kicking || claiming || isLoginInFlight() || isRecovery()) return { ok: true, skipped: true };
     if (!sb || !sb.auth) return { ok: true, skipped: true };
     var id = localId(storage);
     var res;
@@ -164,7 +173,7 @@
 
   function start(sb, storage) {
     stop();
-    if (!sb) return;
+    if (!sb || isLoginInFlight()) return;
     Promise.resolve(check(sb, storage)).catch(function () {});
     if (typeof root.setInterval !== 'function') return;
     timer = root.setInterval(function () {

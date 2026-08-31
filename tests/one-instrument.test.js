@@ -20,10 +20,10 @@ const stagingApp = read('staging/app.js');
 const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
-assert.ok(/1\.3\.50-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.50-toets');
+assert.ok(/1\.3\.51-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.51-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.45'/.test(liveEnv),
-  'Live Fire-S must be 1.3.45'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
+  'Live Fire-S must be 1.3.46'
 );
 
 assert.strictEqual(src, stagingSrc, 'Live and toets must share the one-instrument module');
@@ -41,8 +41,17 @@ assert.ok(
   'Login must claim this instrument'
 );
 assert.ok(
-  /scope: 'others'/.test(src) && /scope: 'local'/.test(src),
-  'A second login must revoke other sessions, then the old instrument must sign out locally'
+  /beginLoginInFlight/.test(liveStarted) && /__fireSLoggingIn/.test(liveStarted),
+  'Login must mark in-flight so Access does not bounce back'
+);
+assert.ok(
+  !/scope: 'others'/.test(src) && /scope: 'local'/.test(src),
+  'Claim must not sign other sessions out on this phone; the old instrument signs out locally when ids differ'
+);
+assert.ok(
+  /event === 'INITIAL_SESSION'/.test(liveApp) &&
+    !/event === 'SIGNED_IN' \|\| event === 'INITIAL_SESSION'/.test(liveApp),
+  'SIGNED_IN must not start the heartbeat before this phone claims the email'
 );
 assert.ok(
   /fire-s:instrument-taken/.test(liveApp) && /fire-s:instrument-taken/.test(stagingApp),
@@ -111,9 +120,10 @@ function loadModule() {
   assert.strictEqual(claimed.instrumentId, 'instrument-aaa-111');
   assert.strictEqual(calls.update[0].data.fire_s_instrument_id, 'instrument-aaa-111');
   assert.ok(
-    calls.signOut.some(opts => opts && opts.scope === 'others'),
-    'Claim must sign other instruments out'
+    !calls.signOut.some(opts => opts && opts.scope === 'others'),
+    'Claim must not sign this phone out while logging in'
   );
+  assert.strictEqual(calls.signOut.length, 0, 'Claim must not call signOut');
 
   const second = loadModule();
   second.sandbox.crypto.randomUUID = () => 'instrument-bbb-222';
@@ -155,6 +165,25 @@ function loadModule() {
   );
   assert.strictEqual(stay.ok, true);
   assert.ok(!stay.kicked);
+
+  const duringLogin = loadModule();
+  duringLogin.sandbox.__fireSLoggingIn = true;
+  duringLogin.sandbox.crypto.randomUUID = () => 'instrument-ccc-333';
+  const skipped = await duringLogin.api.check(
+    {
+      auth: {
+        getUser: async () => ({
+          data: { user: { user_metadata: { fire_s_instrument_id: 'instrument-aaa-111' } } },
+          error: null
+        }),
+        signOut: async () => {
+          throw new Error('must not sign out during login');
+        }
+      }
+    },
+    duringLogin.sandbox.localStorage
+  );
+  assert.strictEqual(skipped.skipped, true, 'Heartbeat must wait until Login has claimed this phone');
 
   console.log('one-instrument.test.js: ok');
 })().catch(err => {

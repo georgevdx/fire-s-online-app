@@ -1261,6 +1261,11 @@
     if (client && client.auth && typeof client.auth.onAuthStateChange === 'function') {
       client.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') {
+          try {
+            if (window.__fireSLoggingIn || window.__fireSClaimingInstrument) {
+              return;
+            }
+          } catch (_) {}
           lastRole = '';
           try {
             window.currentUserProfile = null;

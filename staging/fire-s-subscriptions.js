@@ -315,7 +315,10 @@
       .update(payload)
       .eq('id', cid)
       .then(function (res) {
-        if (res && res.error) return { ok: false, error: res.error };
+        if (res && res.error) {
+          // Live companies table may not have billing_status yet. Keep local data.
+          return { ok: true, local: true };
+        }
         return { ok: true };
       })
       .catch(function () {

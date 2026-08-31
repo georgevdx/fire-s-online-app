@@ -124,6 +124,65 @@
   font-size: 0.9rem;
 }
 
+.fire-s-subscribe-status {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.fire-s-subscribe-status.is-unpaid {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.fire-s-subscribe-status.is-cancelled {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.fire-s-subscribe-status strong {
+  display: block;
+  font-size: 1.02rem;
+}
+
+.fire-s-subscribe-status p {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.fire-s-subscribe-status-keep {
+  font-weight: 600;
+}
+
+.fire-s-subscribe-cancel {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  background: #fff;
+}
+
+.fire-s-subscribe-cancel h4 {
+  margin: 0 0 8px;
+  color: #7f1d1d;
+}
+
+.fire-s-subscribe-cancel ol {
+  margin: 0 0 12px;
+  padding-left: 1.25rem;
+  color: #334155;
+}
+
+.fire-s-subscribe-cancel li {
+  margin: 4px 0;
+}
+
 .fire-s-subscribe-message {
   margin: 10px 0;
   padding: 10px 12px;
@@ -166,15 +225,9 @@
   color: #64748b;
 }
 
-.fire-s-expiry-reminder {
-  display: grid;
-  gap: 10px;
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 2px solid #b45309;
-  background: #fff7ed;
-  color: #7c2d12;
+.fire-s-expiry-reminder,
+#fireSExpiryReminder {
+  display: none !important;
 }
 
 .fire-s-expiry-reminder[hidden] {

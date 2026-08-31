@@ -20,13 +20,29 @@ const terms = read('staging/terms.html');
 const manual = read('staging/fire-s-user-manual.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
+const liveSubscribe = read('fire-s-subscribe.js');
+const liveCatalogSrc = read('fire-s-subscriptions.js');
+const liveCss = read('fire-s-subscribe.css');
+const liveManual = read('fire-s-user-manual.js');
+const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.50-toets/.test(env), 'Toets-blad version must be 1.3.50-toets');
+assert.ok(/1\.3\.51-toets/.test(env), 'Toets-blad version must be 1.3.51-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.45'/.test(liveEnv),
-  'Live Fire-S must be 1.3.45 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
+  'Live Fire-S must be 1.3.46 after sit dit live'
 );
-assert.ok(!/fireSSubscribeCancelBtn/.test(liveHtml), 'Live root must not gain cancel UI until sit dit live');
+assert.ok(/fireSSubscribeCancelBtn/.test(liveHtml), 'Live Subscription must offer Cancel subscription');
+
+const livePage = liveHtml.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/);
+assert.ok(livePage, 'Live Subscription page must exist');
+assert.ok(
+  /id="fireSSubscribeStatus"/.test(livePage[0]) &&
+    /id="fireSSubscribeCancelPanel"/.test(livePage[0]) &&
+    /Only the Owner can cancel/.test(livePage[0]) &&
+    /company name and inspections stay/.test(livePage[0]) &&
+    !/PayFast/.test(livePage[0]),
+  'Live cancel copy must keep company data and must not mention PayFast'
+);
 
 const page = html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/);
 assert.ok(page, 'Subscription page must exist');
@@ -107,6 +123,37 @@ assert.ok(
   'User manual must show active-until-date, auto-renew, and how the owner cancels'
 );
 
+assert.ok(
+  /function paintSubscribeStatus\(/.test(liveSubscribe) &&
+    /function cancelSubscription\(/.test(liveSubscribe) &&
+    /Company name and inspections stay in the cloud/.test(liveSubscribe) &&
+    !/PayFast/.test(liveSubscribe),
+  'Live cancel must keep company data and stay on invoices, not PayFast'
+);
+assert.ok(
+  /Never delete companies, inspections, or people/.test(liveCatalogSrc) &&
+    /does not delete the company name or inspections/.test(liveCatalogSrc),
+  'Live billing catalog must keep company data on cancel'
+);
+assert.ok(
+  /\.fire-s-subscribe-status/.test(liveCss) && /\.fire-s-subscribe-cancel/.test(liveCss),
+  'Live status and cancel panels must be styled'
+);
+assert.ok(
+  /taps <strong>Cancel subscription<\/strong>/.test(liveManual) &&
+    /does not delete the company name or inspections/.test(liveManual) &&
+    !/One month before the due date/.test(liveManual),
+  'Live user manual must show how the owner cancels and must not mention the Home reminder'
+);
+assert.ok(
+  /taps Cancel subscription/.test(liveTerms) && /does not delete the company name/.test(liveTerms),
+  'Live terms must describe in-app cancel and keep company data'
+);
+assert.ok(
+  /Cancelling a subscription does not delete this company or its inspections/.test(liveHtml),
+  'Live Personnel must say cancel keeps company inspections'
+);
+
 const store = {};
 const sandbox = {
   window: {},
@@ -152,5 +199,36 @@ cat.markUnpaid();
 assert.strictEqual(cat.billingStatus(), 'unpaid');
 assert.ok(/Payment is not through yet/.test(cat.statusHeadline()));
 assert.ok(/stay saved/.test(cat.statusHeadline()));
+
+const liveStore = {};
+const liveSandbox = {
+  window: {},
+  console,
+  localStorage: {
+    getItem: key => (Object.prototype.hasOwnProperty.call(liveStore, key) ? liveStore[key] : null),
+    setItem: (key, value) => {
+      liveStore[key] = String(value);
+    },
+    removeItem: key => {
+      delete liveStore[key];
+    }
+  }
+};
+liveSandbox.window = liveSandbox;
+vm.runInNewContext(liveCatalogSrc, liveSandbox);
+const liveCat = liveSandbox.fireSSubscriptionCatalog;
+assert.ok(liveCat && liveCat.cancelBilling && liveCat.statusKeepDataNote);
+liveCat.rememberInterval('monthly');
+liveCat.markPaid('monthly');
+assert.strictEqual(liveCat.billingStatus(), 'active');
+assert.ok(/invoices you until you cancel/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
+assert.ok(/does not delete the company name or inspections/.test(liveCat.statusKeepDataNote()));
+const liveCancelFn = liveCatalogSrc.match(/function cancelBilling\(\)[\s\S]*?function reactivateBilling/);
+assert.ok(liveCancelFn && !/\.delete\(/.test(liveCancelFn[0]) && !/from\('inspections'\)/.test(liveCancelFn[0]));
+liveCat.cancelBilling();
+assert.strictEqual(liveCat.billingStatus(), 'cancelled');
+assert.ok(/Cancelled/.test(liveCat.statusHeadline()));
+assert.ok(liveStore['fireS.billingRenewsOn'], 'live cancel must keep the expiry date');
+assert.ok(!('inspections' in liveStore) && liveStore['fireS.billingStatus'] === 'cancelled');
 
 console.log('subscription-status-cancel.test.js: ok');

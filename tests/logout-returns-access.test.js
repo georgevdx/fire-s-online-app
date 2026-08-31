@@ -20,10 +20,10 @@ const files = {
 };
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.45'/.test(liveEnv),
-  'Live Fire-S must be 1.3.45 so signed-out Access is shown'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
+  'Live Fire-S must be 1.3.46 so signed-out Access is shown'
 );
-assert.ok(/1\.3\.50-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.50-toets');
+assert.ok(/1\.3\.51-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.51-toets');
 
 Object.keys(files).forEach(function (name) {
   const src = files[name];
@@ -35,8 +35,10 @@ Object.keys(files).forEach(function (name) {
       name + ': sticky Owner Home must not survive after the auth token is gone'
     );
     assert.ok(
-      /event === 'SIGNED_OUT'/.test(src) && /fireSShowAccessLogin/.test(src),
-      name + ': SIGNED_OUT must open Access / Login'
+      /event === 'SIGNED_OUT'/.test(src) &&
+        /fireSShowAccessLogin/.test(src) &&
+        /__fireSLoggingIn/.test(src),
+      name + ': SIGNED_OUT must open Access / Login, except while Login is in flight'
     );
   }
   if (/Started$/.test(name)) {

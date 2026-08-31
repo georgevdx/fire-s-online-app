@@ -437,47 +437,9 @@
     paintExpiryReminder();
   }
 
-  function reminderRole() {
-    var role = homeRole();
-    return role === 'company_owner' || role === 'owner' || role === 'super_admin' || role === 'manager';
-  }
-
   function paintExpiryReminder() {
     var box = byId('fireSExpiryReminder');
-    if (!box) return;
-    var cat = catalog();
-    if (!reminderRole() || !cat || !cat.shouldShowExpiryReminder) {
-      box.hidden = true;
-      return;
-    }
-    if (!cat.shouldShowExpiryReminder()) {
-      box.hidden = true;
-      return;
-    }
-    var days = cat.daysUntilRenewal ? cat.daysUntilRenewal() : 0;
-    var when = cat.formatLongDate ? cat.formatLongDate(cat.currentRenewsOn()) : cat.currentRenewsOn();
-    var title = byId('fireSExpiryReminderTitle');
-    var text = byId('fireSExpiryReminderText');
-    var openBtn = byId('fireSExpiryReminderOpenBtn');
-    if (title) {
-      title.textContent = days < 0 ? 'Subscription overdue' : days === 0 ? 'Subscription due today' : 'Subscription due in one month';
-    }
-    if (text) {
-      var catStatus = cat.billingStatus ? cat.billingStatus() : '';
-      if (catStatus === 'cancelled') {
-        text.textContent =
-          'Cancelled. This login stays until ' + when + '. Company name and inspections stay saved.';
-      } else {
-        text.textContent =
-          (days < 0
-            ? 'Due date was ' + when + '. Open Subscription to pay on PayFast. Company data stays saved.'
-            : days === 0
-              ? 'Due today (' + when + '). Open Subscription to pay on PayFast. Company data stays saved.'
-              : 'Due on ' + when + '. It renews automatically until you cancel. Close this if it is in the way.');
-      }
-    }
-    if (openBtn) openBtn.style.display = canManage() ? '' : 'none';
-    box.hidden = false;
+    if (box) box.hidden = true;
   }
 
   function closeExpiryReminder() {
