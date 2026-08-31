@@ -200,7 +200,7 @@
           <li>Type your email and password, then tap <strong>Login</strong>.</li>
           <li>Or tap <strong>First time? Create password</strong> if your owner already added your email.</li>
           <li>Or tap <strong>Subscribing New Company</strong> if you are a new business owner.</li>
-          <li>Or tap <strong>Additional services</strong>, then tap a service such as <strong>Fire Safety Consultancy</strong>, <strong>Rational Fire Design Support</strong>, or <strong>Fire Plan Assistance (Assist with approval from Local Government)</strong>. Send the request, then tap <strong>View saved requests</strong>. After Login, the same requests sit under Additional Services → View Saved Service Requests.</li>
+          <li>Or tap <strong>Additional services</strong>, then tap a service such as <strong>Fire Safety Consultancy</strong>, <strong>Rational Fire Design Support</strong>, or <strong>Fire Plan Assistance (Assist with approval from Local Government)</strong> and send the request. After Login, the super user sees those requests under Additional Services → View Saved Service Requests.</li>
         </ol>
         <h3>Login</h3>
         <ol>

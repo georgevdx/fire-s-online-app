@@ -1483,41 +1483,6 @@
     if (els.name) els.name.focus();
   }
 
-  function renderAccessSavedList(forceOpen) {
-    var list = byId('fireSAccessServiceSavedList');
-    if (!list) return;
-    var rows =
-      (window.fireSListLocalServiceRequests &&
-        window.fireSListLocalServiceRequests()) ||
-      [];
-    if (!rows.length) {
-      list.innerHTML = '<p class="fire-s-get-started-note">No saved requests on this phone yet.</p>';
-    } else {
-      list.innerHTML = rows
-        .map(function (row) {
-          var when = row.created_at
-            ? new Date(row.created_at).toLocaleString()
-            : '';
-          return (
-            '<div class="fire-s-access-service-saved-item">' +
-            '<strong>' +
-            String(row.selected_service || 'Service request') +
-            '</strong>' +
-            '<span>' +
-            String(row.client_name || '') +
-            (row.client_phone || row.client_email
-              ? ' · ' + String(row.client_phone || row.client_email)
-              : '') +
-            '</span>' +
-            (when ? '<span>' + when + '</span>' : '') +
-            '</div>'
-          );
-        })
-        .join('');
-    }
-    if (forceOpen) list.removeAttribute('hidden');
-  }
-
   function sendAccessServiceRequest() {
     var els = accessServiceEls();
     var name = text(els.name && els.name.value);
@@ -1564,9 +1529,8 @@
         if (els.phone) els.phone.value = '';
         if (els.email) els.email.value = '';
         if (els.message) els.message.value = '';
-        renderAccessSavedList(true);
         setAccessServiceStatus(
-          'Request saved. You can view it below, and later under Additional Services.',
+          'Request saved. After Login it is under Additional Services.',
           false
         );
         if (typeof notify === 'function') {
@@ -1600,23 +1564,10 @@
     });
     var sendBtn = byId('fireSAccessServiceSendBtn');
     var cancelBtn = byId('fireSAccessServiceCancelBtn');
-    var viewBtn = byId('fireSAccessServiceViewBtn');
     if (sendBtn) sendBtn.addEventListener('click', sendAccessServiceRequest);
     if (cancelBtn) {
       cancelBtn.addEventListener('click', hideAccessServiceForm);
     }
-    if (viewBtn) {
-      viewBtn.addEventListener('click', function () {
-        var list = byId('fireSAccessServiceSavedList');
-        var open = list && !list.hasAttribute('hidden');
-        if (open) {
-          list.setAttribute('hidden', '');
-        } else {
-          renderAccessSavedList(true);
-        }
-      });
-    }
-    renderAccessSavedList(false);
   }
 
   var deferredInstall = null;

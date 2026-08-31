@@ -30,10 +30,13 @@ assert.ok(
 assert.ok(
   /fireSSaveServiceRequest/.test(liveStarted) &&
     /fireSSaveServiceRequest/.test(stagingStarted) &&
-    /fireSListLocalServiceRequests/.test(liveStarted) &&
-    /View saved requests/.test(liveHtml) &&
-    /View saved requests/.test(stagingHtml),
-  'Access must save each service request and let guests view it before Login'
+    /Request saved\. After Login it is under Additional Services/.test(liveStarted) &&
+    /Request saved\. After Login it is under Additional Services/.test(stagingStarted) &&
+    !/View saved requests/.test(liveHtml) &&
+    !/View saved requests/.test(stagingHtml) &&
+    !/id="fireSAccessServiceViewBtn"/.test(liveHtml) &&
+    !/id="fireSAccessServiceViewBtn"/.test(stagingHtml),
+  'Access must save each service request without showing a public saved-request list'
 );
 assert.ok(
   /fireSSaveServiceRequest/.test(liveApp) &&
