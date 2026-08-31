@@ -19,10 +19,10 @@ const getStarted = read('staging/fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.51-toets/.test(envSrc), 'Toets-blad version must be 1.3.51-toets');
+assert.ok(/1\.3\.52-toets/.test(envSrc), 'Toets-blad version must be 1.3.52-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
-  'Live Fire-S must be 1.3.46 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.47'/.test(liveEnv),
+  'Live Fire-S must be 1.3.47 after sit dit live'
 );
 assert.ok(!/fire-s-payfast\.js/.test(liveHtml), 'Live root must not load PayFast until sit dit live');
 assert.ok(/fire-s-payfast\.js/.test(html), 'Toets-blad must load the PayFast module');

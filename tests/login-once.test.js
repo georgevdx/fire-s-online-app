@@ -22,10 +22,10 @@ const files = {
 };
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
-  'Live Fire-S must be 1.3.46 so one Login tap signs in'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.47'/.test(liveEnv),
+  'Live Fire-S must be 1.3.47 so one Login tap signs in'
 );
-assert.ok(/1\.3\.51-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.51-toets');
+assert.ok(/1\.3\.52-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.52-toets');
 
 Object.keys(files).forEach(function (name) {
   const src = files[name];

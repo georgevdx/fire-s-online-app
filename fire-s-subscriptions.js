@@ -227,6 +227,7 @@
   var DISMISS_KEY = 'fireS.expiryReminderDismissed';
   var STATUS_KEY = 'fireS.billingStatus';
   var CANCELLED_ON_KEY = 'fireS.billingCancelledOn';
+  var REMINDER_DAYS = 7;
 
   function pad2(n) {
     return (n < 10 ? '0' : '') + n;
@@ -372,12 +373,17 @@
       return 'Cancelled. This login stays until ' + when + '. Company S will not invoice for the next period.';
     }
     if (status === 'active') {
+      if (interval === 'annual') {
+        return (
+          'This login is active for one year until ' +
+          when +
+          '. An annual subscription renews automatically until you cancel.'
+        );
+      }
       return (
-        'This login is active for one ' +
-        period +
-        ' until ' +
+        'This login is active for one month until ' +
         when +
-        '. Company S invoices you until you cancel.'
+        '. It renews automatically until you cancel. Company S invoices you.'
       );
     }
     return 'This company and its inspections stay saved.';
@@ -441,8 +447,9 @@
   }
 
   function shouldShowExpiryReminder(intervalId) {
+    if (billingStatus() === 'cancelled') return false;
     var days = daysUntilRenewal(intervalId);
-    if (days > 31) return false;
+    if (days > REMINDER_DAYS) return false;
     var renews = currentRenewsOn();
     return readStored(DISMISS_KEY) !== renews;
   }
@@ -604,6 +611,7 @@
     daysUntilRenewal: daysUntilRenewal,
     shouldShowExpiryReminder: shouldShowExpiryReminder,
     dismissExpiryReminder: dismissExpiryReminder,
+    reminderDays: REMINDER_DAYS,
     formatLongDate: formatLongDate,
     billingStatus: billingStatus,
     markPaid: markPaid,

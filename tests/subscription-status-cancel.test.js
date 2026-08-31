@@ -26,10 +26,10 @@ const liveCss = read('fire-s-subscribe.css');
 const liveManual = read('fire-s-user-manual.js');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.51-toets/.test(env), 'Toets-blad version must be 1.3.51-toets');
+assert.ok(/1\.3\.52-toets/.test(env), 'Toets-blad version must be 1.3.52-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.46'/.test(liveEnv),
-  'Live Fire-S must be 1.3.46 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.47'/.test(liveEnv),
+  'Live Fire-S must be 1.3.47 after sit dit live'
 );
 assert.ok(/fireSSubscribeCancelBtn/.test(liveHtml), 'Live Subscription must offer Cancel subscription');
 
@@ -106,11 +106,9 @@ assert.ok(
   'Personnel must hide Remove on the Owner and let the Owner remove a Manager'
 );
 
-assert.ok(
-  /Home → Subscription → Cancel subscription/.test(terms) ||
-    /taps Cancel subscription/.test(terms),
-  'Terms must describe in-app cancel, not only Support'
-);
+assert.ok(/Home → Subscription → Cancel subscription/.test(terms) || /taps Cancel subscription/.test(terms));
+assert.ok(/Seven days before the expiry date/.test(terms));
+assert.ok(/An annual subscription renews automatically/.test(terms));
 assert.ok(
   /does not delete the company name/.test(terms),
   'Terms must say cancel or failed payment keeps company and inspections'
@@ -119,8 +117,9 @@ assert.ok(
 assert.ok(
   /renews automatically until you cancel/.test(manual) &&
     /taps <strong>Cancel subscription<\/strong>/.test(manual) &&
-    /does not delete the company name or inspections/.test(manual),
-  'User manual must show active-until-date, auto-renew, and how the owner cancels'
+    /does not delete the company name or inspections/.test(manual) &&
+    /Seven days before the expiry date/.test(manual),
+  'User manual must show auto-renew, the 7-day reminder, and how the owner cancels'
 );
 
 assert.ok(
@@ -142,12 +141,16 @@ assert.ok(
 assert.ok(
   /taps <strong>Cancel subscription<\/strong>/.test(liveManual) &&
     /does not delete the company name or inspections/.test(liveManual) &&
-    !/One month before the due date/.test(liveManual),
-  'Live user manual must show how the owner cancels and must not mention the Home reminder'
+    /Seven days before the expiry date/.test(liveManual) &&
+    /An annual subscription renews automatically until you cancel/.test(liveManual),
+  'Live user manual must show 7-day renew/cancel reminder and annual auto-renew'
 );
 assert.ok(
-  /taps Cancel subscription/.test(liveTerms) && /does not delete the company name/.test(liveTerms),
-  'Live terms must describe in-app cancel and keep company data'
+  /taps Cancel subscription/.test(liveTerms) &&
+    /does not delete the company name/.test(liveTerms) &&
+    /Seven days before the expiry date/.test(liveTerms) &&
+    /An annual subscription renews automatically/.test(liveTerms),
+  'Live terms must describe in-app cancel, the 7-day reminder, and annual auto-renew'
 );
 assert.ok(
   /Cancelling a subscription does not delete this company or its inspections/.test(liveHtml),
@@ -194,6 +197,10 @@ assert.strictEqual(cat.billingStatus(), 'cancelled', 'unpaid return must not wip
 cat.reactivateBilling('annual');
 assert.strictEqual(cat.billingStatus(), 'active');
 assert.ok(/active for one year until/.test(cat.statusHeadline()));
+assert.ok(
+  /An annual subscription renews automatically until you cancel/.test(cat.statusHeadline()),
+  cat.statusHeadline()
+);
 
 cat.markUnpaid();
 assert.strictEqual(cat.billingStatus(), 'unpaid');
@@ -221,7 +228,8 @@ assert.ok(liveCat && liveCat.cancelBilling && liveCat.statusKeepDataNote);
 liveCat.rememberInterval('monthly');
 liveCat.markPaid('monthly');
 assert.strictEqual(liveCat.billingStatus(), 'active');
-assert.ok(/invoices you until you cancel/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
+assert.ok(/renews automatically until you cancel/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
+assert.ok(/invoices you/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
 assert.ok(/does not delete the company name or inspections/.test(liveCat.statusKeepDataNote()));
 const liveCancelFn = liveCatalogSrc.match(/function cancelBilling\(\)[\s\S]*?function reactivateBilling/);
 assert.ok(liveCancelFn && !/\.delete\(/.test(liveCancelFn[0]) && !/from\('inspections'\)/.test(liveCancelFn[0]));

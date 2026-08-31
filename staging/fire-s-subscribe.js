@@ -233,6 +233,7 @@
     paintSubscribeStatus();
     paintPayfastControls();
     refreshCardCopy();
+    paintExpiryReminder();
   }
 
   function hideOtherSections() {
@@ -437,9 +438,49 @@
     paintExpiryReminder();
   }
 
+  function reminderRole() {
+    var role = homeRole();
+    return role === 'company_owner' || role === 'owner' || role === 'super_admin' || role === 'manager';
+  }
+
   function paintExpiryReminder() {
     var box = byId('fireSExpiryReminder');
-    if (box) box.hidden = true;
+    if (!box) return;
+    var cat = catalog();
+    var renewBtn = byId('fireSExpiryReminderRenewBtn');
+    var cancelBtn = byId('fireSExpiryReminderCancelBtn');
+    if (!reminderRole() || !cat || !cat.shouldShowExpiryReminder) {
+      box.hidden = true;
+      return;
+    }
+    if (cat.billingStatus && cat.billingStatus() === 'cancelled') {
+      box.hidden = true;
+      return;
+    }
+    if (!cat.shouldShowExpiryReminder()) {
+      box.hidden = true;
+      return;
+    }
+    var days = cat.daysUntilRenewal ? cat.daysUntilRenewal() : 0;
+    var when = cat.formatLongDate ? cat.formatLongDate(cat.currentRenewsOn()) : cat.currentRenewsOn();
+    var title = byId('fireSExpiryReminderTitle');
+    var text = byId('fireSExpiryReminderText');
+    if (title) {
+      title.textContent =
+        days <= 0
+          ? 'Subscription due today'
+          : days === 1
+            ? 'Subscription renews tomorrow'
+            : 'Subscription renews in ' + days + ' days';
+    }
+    if (text) {
+      text.textContent =
+        (days <= 0 ? 'Due today (' + when + '). ' : 'Due on ' + when + '. ') +
+        'An annual subscription renews automatically until you cancel. Tap Renew to keep this login, or Cancel subscription to stop. Company name and inspections stay saved.';
+    }
+    if (renewBtn) renewBtn.style.display = canManage() ? '' : 'none';
+    if (cancelBtn) cancelBtn.style.display = canManage() ? '' : 'none';
+    box.hidden = false;
   }
 
   function closeExpiryReminder() {
@@ -449,6 +490,22 @@
     } catch (_) {}
     var box = byId('fireSExpiryReminder');
     if (box) box.hidden = true;
+  }
+
+  function renewFromReminder() {
+    var cat = catalog();
+    if (!canManage()) {
+      setMessage('Only the Owner can renew this subscription.', true);
+      return;
+    }
+    if (cat && cat.reactivateBilling) {
+      cat.reactivateBilling(cat.currentIntervalId ? cat.currentIntervalId() : 'monthly');
+    }
+    closeExpiryReminder();
+    openSubscribe();
+    setMessage('Renewed. An annual subscription renews automatically until you cancel. Pay on PayFast if payment is due.');
+    paintSubscribeStatus();
+    paintPayfastControls();
   }
 
   function refreshCardCopy() {
@@ -475,7 +532,8 @@
     var btn = byId('cmdSubscribeBtn');
     var seatBtn = byId('fireSSubscribeSeatBtn');
     var reminderClose = byId('fireSExpiryReminderCloseBtn');
-    var reminderOpen = byId('fireSExpiryReminderOpenBtn');
+    var reminderRenew = byId('fireSExpiryReminderRenewBtn');
+    var reminderCancel = byId('fireSExpiryReminderCancelBtn');
     var cancelBtn = byId('fireSSubscribeCancelBtn');
     if (back) back.addEventListener('click', goHome);
     if (save) save.addEventListener('click', savePlan);
@@ -483,11 +541,8 @@
     if (cancelBtn) cancelBtn.addEventListener('click', cancelSubscription);
     if (seatBtn) seatBtn.addEventListener('click', subscribeSeat);
     if (reminderClose) reminderClose.addEventListener('click', closeExpiryReminder);
-    if (reminderOpen) {
-      reminderOpen.addEventListener('click', function () {
-        openSubscribe();
-      });
-    }
+    if (reminderRenew) reminderRenew.addEventListener('click', renewFromReminder);
+    if (reminderCancel) reminderCancel.addEventListener('click', cancelSubscription);
     if (btn) {
       btn.addEventListener('click', function (event) {
         event.preventDefault();
