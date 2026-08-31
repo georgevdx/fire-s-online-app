@@ -705,6 +705,7 @@
 
   function showLogin() {
     mode = 'login';
+    showAccess();
     hidePanels();
     paintLoginForm();
     setTitle(
@@ -1703,6 +1704,12 @@
   };
   window.fireSSyncGetStarted = window.refreshFireSGetStarted;
   window.fireSOpenAccess = openAccess;
+  window.fireSShowAccessLogin = function fireSShowAccessLogin(msg, isError) {
+    if (!ensureEls()) return;
+    showAccess();
+    showLogin();
+    if (msg) setStatus(msg, !!isError);
+  };
   window.fireSClaimInvitesQuiet = claimInvitesQuiet;
   window.fireSGetStartedPhoneBack = function fireSGetStartedPhoneBack() {
     if (!root || !shouldShowAccess()) return false;

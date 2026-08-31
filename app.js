@@ -3918,6 +3918,11 @@ function applyLoggedOutUi() {
   window.currentUserProfile = null;
   window.currentCompanyAccess = null;
   try {
+    if (typeof window.fireSClearStickyHomeRole === 'function') {
+      window.fireSClearStickyHomeRole();
+    }
+  } catch (_) {}
+  try {
     localStorage.removeItem('fireS.forceNewCompanySetup');
   } catch (_) {}
 
@@ -3954,6 +3959,14 @@ function applyLoggedOutUi() {
       window.fireSOpenAccess('login');
     } else if (typeof window.fireSSyncGetStarted === 'function') {
       window.fireSSyncGetStarted();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSShowAccessLogin === 'function') {
+      window.fireSShowAccessLogin();
+    } else {
+      const access = document.getElementById('fireSGetStarted');
+      if (access) access.style.display = '';
     }
   } catch (_) {}
   try {

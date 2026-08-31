@@ -303,15 +303,39 @@
     return 'guest';
   }
 
+  function hasStoredAuthSession() {
+    try {
+      const storage = window.localStorage;
+      if (!storage) return false;
+      for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i);
+        if (!key || key.indexOf('auth-token') < 0) continue;
+        if (key.indexOf('sb-') !== 0 && key.indexOf('sb:') !== 0) continue;
+        const raw = String(storage.getItem(key) || '');
+        if (raw && raw !== 'null' && raw.indexOf('access_token') >= 0) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function clearStickyHomeRole() {
+    lastRole = '';
+  }
+
+  window.fireSClearStickyHomeRole = clearStickyHomeRole;
+
   const STICKY_COMMAND_ROLES = ['company_owner', 'manager', 'super_admin'];
 
   function resolveHomeRole() {
     const role = readRole();
     // Token refresh / profile reload can briefly look like a guest. Keep the
     // Owner Command Centre cards up until a real SIGNED_OUT clears lastRole.
+    // After logout the auth token is gone — do not keep Owner Home, or Access
+    // (Login) stays hidden on the signed-out instrument.
     if (
       !roleTestActive() &&
       STICKY_COMMAND_ROLES.includes(lastRole) &&
+      hasStoredAuthSession() &&
       (!role || role === 'guest' || role === 'pending_member')
     ) {
       return lastRole;
@@ -1236,8 +1260,23 @@
     const client = window.supabaseClient;
     if (client && client.auth && typeof client.auth.onAuthStateChange === 'function') {
       client.auth.onAuthStateChange((event) => {
-        if (event === 'SIGNED_OUT') lastRole = '';
+        if (event === 'SIGNED_OUT') {
+          lastRole = '';
+          try {
+            window.currentUserProfile = null;
+            window.currentCompanyAccess = null;
+          } catch (_) {}
+        }
         window.fireSApplyCleanHomeRoles();
+        if (event === 'SIGNED_OUT') {
+          try {
+            if (typeof window.fireSShowAccessLogin === 'function') {
+              window.fireSShowAccessLogin();
+            } else if (typeof window.fireSOpenAccess === 'function') {
+              window.fireSOpenAccess('login');
+            }
+          } catch (_) {}
+        }
       });
     }
   } catch (_) {}
