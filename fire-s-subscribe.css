@@ -183,6 +183,29 @@
   margin: 4px 0;
 }
 
+.fire-s-subscribe-again {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+}
+
+.fire-s-subscribe-again h4 {
+  margin: 0 0 8px;
+  color: #14532d;
+}
+
+.fire-s-subscribe-again ol {
+  margin: 0 0 12px;
+  padding-left: 1.25rem;
+  color: #334155;
+}
+
+.fire-s-subscribe-again li {
+  margin: 4px 0;
+}
+
 .fire-s-subscribe-message {
   margin: 10px 0;
   padding: 10px 12px;

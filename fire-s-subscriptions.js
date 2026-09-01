@@ -370,7 +370,11 @@
     var period = interval === 'annual' ? 'year' : 'month';
     var status = billingStatus();
     if (status === 'cancelled') {
-      return 'Cancelled. This login stays until ' + when + '. Company S will not invoice for the next period.';
+      return (
+        'Cancelled. This login stays until ' +
+        when +
+        '. Company S will not invoice for the next period. Subscribe again with this same company name — do not choose a new name on Access.'
+      );
     }
     if (status === 'active') {
       if (interval === 'annual') {

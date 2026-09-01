@@ -102,29 +102,38 @@
     var keep = byId('fireSSubscribeStatusKeep');
     var cancelPanel = byId('fireSSubscribeCancelPanel');
     var cancelBtn = byId('fireSSubscribeCancelBtn');
+    var againPanel = byId('fireSSubscribeAgainPanel');
+    var save = byId('fireSSubscribeSaveBtn');
     if (!box) return;
     if (mode === 'seat' || !cat || !cat.statusHeadline) {
       box.hidden = true;
       if (cancelPanel) cancelPanel.hidden = true;
+      if (againPanel) againPanel.hidden = true;
       return;
     }
     var status = cat.billingStatus ? cat.billingStatus() : 'unpaid';
+    var cancelled = status === 'cancelled';
     box.hidden = false;
     box.className = 'fire-s-subscribe-status is-' + status;
     if (title) {
       title.textContent =
         status === 'active'
           ? 'Active subscription'
-          : status === 'cancelled'
+          : cancelled
             ? 'Cancelled'
             : 'Not paid yet';
     }
     if (copy) copy.textContent = cat.statusHeadline();
     if (keep) keep.textContent = cat.statusKeepDataNote();
-    if (cancelPanel) cancelPanel.hidden = !canManage();
+    if (cancelPanel) cancelPanel.hidden = !canManage() || cancelled;
+    if (againPanel) againPanel.hidden = !(canManage() && cancelled);
     if (cancelBtn) {
-      cancelBtn.disabled = status === 'cancelled';
-      cancelBtn.textContent = status === 'cancelled' ? 'Already cancelled' : 'Cancel subscription';
+      cancelBtn.disabled = cancelled;
+      cancelBtn.textContent = cancelled ? 'Already cancelled' : 'Cancel subscription';
+    }
+    if (save && mode !== 'seat') {
+      save.style.display = cancelled ? 'none' : '';
+      save.hidden = cancelled;
     }
   }
 
@@ -149,14 +158,66 @@
         (when || 'the paid end date') +
         '.\n' +
         '4. Company name and inspections stay in the cloud.\n' +
-        '5. You can subscribe again later. Company S will invoice you.'
+        '5. You can subscribe again later on this page. Company S will invoice you.'
     );
     if (!ok) return;
     cat.cancelBilling();
-    setMessage('Cancelled. Company S will not invoice for the next period. Company name and inspections stay saved.');
+    setMessage('Cancelled. Company S will not invoice for the next period. Company name and inspections stay saved. Login with this same email to subscribe again.');
     paintSubscribeStatus();
     refreshCardCopy();
     paintExpiryReminder();
+  }
+
+  function companyDisplayName() {
+    try {
+      return String(
+        (window.currentUserProfile &&
+          (window.currentUserProfile.companyName || window.currentUserProfile.company)) ||
+          ''
+      ).trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async function subscribeAgain() {
+    var cat = catalog();
+    if (!canManage()) {
+      setMessage('Only the Owner can subscribe again.', true);
+      return;
+    }
+    if (!cat || !cat.reactivateBilling) return;
+    if (cat.billingStatus && cat.billingStatus() !== 'cancelled') {
+      setMessage('This subscription is already active.');
+      paintSubscribeStatus();
+      return;
+    }
+    var intervalId = selectedInterval();
+    var company = companyDisplayName();
+    var ok = window.confirm(
+      'Subscribe again with this same company name' +
+        (company ? ' (' + company + ')' : '') +
+        '?\n\n' +
+        '1. The company name stays. Do not type a new name on Access.\n' +
+        '2. Inspections stay in this same company.\n' +
+        '3. Company S invoices you (the owner).\n' +
+        '4. Status becomes Active.'
+    );
+    if (!ok) return;
+    cat.reactivateBilling(intervalId);
+    setMessage('Subscribing again with this same company name…');
+    try {
+      if (cat.persistCompanyPlan) {
+        await cat.persistCompanyPlan('standard', intervalId);
+      }
+    } catch (_) {}
+    paintCurrent();
+    paintSubscribeStatus();
+    refreshCardCopy();
+    paintExpiryReminder();
+    setMessage(
+      'Subscribed again with this same company name. Company S invoices you. Inspections stay saved. Do not Subscribe on Access with a new name.'
+    );
   }
 
   function reminderRole() {
@@ -279,8 +340,9 @@
     if (seat) seat.style.display = isSeat ? '' : 'none';
     if (billingWrap) billingWrap.style.display = '';
     if (save) {
-      save.style.display = isSeat ? 'none' : '';
-      save.hidden = isSeat;
+      var cancelled = catalog() && catalog().billingStatus && catalog().billingStatus() === 'cancelled';
+      save.style.display = isSeat || cancelled ? 'none' : '';
+      save.hidden = isSeat || cancelled;
     }
     if (back) back.textContent = isSeat ? 'Back to Personnel' : 'Back Home';
     if (heading) heading.textContent = isSeat ? 'New subscription' : 'Subscription';
@@ -421,8 +483,14 @@
     if (!btn) return;
     var title = btn.querySelector('.command-title');
     var copy = btn.querySelector('.command-copy');
+    var cat = catalog();
+    var cancelled = cat && cat.billingStatus && cat.billingStatus() === 'cancelled';
     if (title) title.textContent = 'Subscription';
-    if (copy) copy.textContent = 'View or change monthly or annual billing. You (the owner) pay.';
+    if (copy) {
+      copy.textContent = cancelled
+        ? 'Cancelled. Subscribe again with this same company name. Do not type a new name on Access.'
+        : 'View or change monthly or annual billing. You (the owner) pay.';
+    }
   }
 
   function wire() {
@@ -436,10 +504,12 @@
     var reminderRenew = byId('fireSExpiryReminderRenewBtn');
     var reminderCancel = byId('fireSExpiryReminderCancelBtn');
     var cancelBtn = byId('fireSSubscribeCancelBtn');
+    var againBtn = byId('fireSSubscribeAgainBtn');
     if (back) back.addEventListener('click', goHome);
     if (save) save.addEventListener('click', savePlan);
     if (seatBtn) seatBtn.addEventListener('click', subscribeSeat);
     if (cancelBtn) cancelBtn.addEventListener('click', cancelSubscription);
+    if (againBtn) againBtn.addEventListener('click', subscribeAgain);
     if (reminderClose) reminderClose.addEventListener('click', closeExpiryReminder);
     if (reminderRenew) reminderRenew.addEventListener('click', renewFromReminder);
     if (reminderCancel) reminderCancel.addEventListener('click', cancelSubscription);

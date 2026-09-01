@@ -367,7 +367,11 @@
     var period = interval === 'annual' ? 'year' : 'month';
     var status = billingStatus();
     if (status === 'cancelled') {
-      return 'Cancelled. This login stays until ' + when + '. It will not auto-renew.';
+      return (
+        'Cancelled. This login stays until ' +
+        when +
+        '. It will not auto-renew. Subscribe again with this same company name — do not choose a new name on Access.'
+      );
     }
     if (status === 'active') {
       if (interval === 'annual') {

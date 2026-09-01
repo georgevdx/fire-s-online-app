@@ -360,7 +360,8 @@
         <p>New companies: only the owner taps <strong>Subscribing New Company</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date. An annual subscription renews automatically until you cancel.</p>
         <p>Seven days before the expiry date, Owner Home shows a reminder. Tap <strong>Renew</strong> to keep this login, or <strong>Cancel subscription</strong> to stop. Close hides the reminder until the next expiry date.</p>
-        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops. The login stays until the expiry date already shown. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud. Pay on PayFast later to make it active again.</p>
+        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops. The login stays until the expiry date already shown. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud.</p>
+        <p>To subscribe again: Login with the <strong>same owner email</strong>. Do not tap Subscribing New Company on Access and do not type a new company name. Open Home → <strong>Subscription</strong>, choose Monthly or Annual, tap <strong>Subscribe again</strong>, then pay on PayFast. Inspections stay in this same company.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}

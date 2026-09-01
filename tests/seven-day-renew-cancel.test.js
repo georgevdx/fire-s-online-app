@@ -22,10 +22,10 @@ const liveCatalog = read('fire-s-subscriptions.js');
 const stagingCatalog = read('staging/fire-s-subscriptions.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.47'/.test(liveEnv),
-  'Live Fire-S must be 1.3.47'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.48'/.test(liveEnv),
+  'Live Fire-S must be 1.3.48'
 );
-assert.ok(/1\.3\.52-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.52-toets');
+assert.ok(/1\.3\.53-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.53-toets');
 
 [liveHtml, stagingHtml].forEach(function (html, i) {
   const name = i === 0 ? 'live' : 'toets';

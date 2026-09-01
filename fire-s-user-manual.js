@@ -360,7 +360,8 @@
         <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No VAT is added. No card is taken in the app yet.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free). An annual subscription renews automatically until you cancel.</p>
         <p>Seven days before the expiry date, Owner Home shows a reminder. Tap <strong>Renew</strong> to keep this login, or <strong>Cancel subscription</strong> to stop. Close hides the reminder until the next expiry date.</p>
-        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Invoices for the next period stop. The login stays until the expiry date already shown. Cancelling does not delete the company name or inspections — that data stays in the cloud. Company S can invoice you later if you subscribe again.</p>
+        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Invoices for the next period stop. The login stays until the expiry date already shown. Cancelling does not delete the company name or inspections — that data stays in the cloud.</p>
+        <p>To subscribe again: Login with the <strong>same owner email</strong>. Do not tap Subscribe on Access and do not type a new company name. Open Home → <strong>Subscription</strong>, choose Monthly or Annual, tap <strong>Subscribe again</strong>. Company S invoices you. Inspections stay in this same company.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
