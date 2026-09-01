@@ -33,28 +33,29 @@
 
 -- =============================================================================
 -- A) PREVIEW — read-only
+-- Paste ONLY this select. Clear the editor first. Do not paste comments.
 -- =============================================================================
 
 select
   c.name as company_name,
-  case
-    when lower(trim(c.name)) = 'fire-s' then 'KEEP + receive Great Sample Co inspections'
-    when lower(trim(c.name)) = 'great sample co' then 'MERGE into Fire-S, then remove this name'
-    when lower(trim(c.name)) = 'secure' then 'KEEP'
-    when lower(trim(c.name)) in (
-      'test company demo',
-      'johandb fire safety',
-      'fire-s company',
-      'co1',
-      '1co',
-      'co2',
-      'test fire safety company'
-    ) then 'DELETE'
-    else 'LEAVE (not on Johan list)'
-  end as action,
+  coalesce(a.action, 'LEAVE (not on Johan list)') as action,
   (select count(*) from public.company_members m where m.company_id = c.id) as people,
   (select count(*) from public.inspections i where i.company_id = c.id) as inspections
 from public.companies c
+left join (
+  values
+    (concat('Fire', '-', 'S'), 'KEEP and receive Great Sample Co inspections'),
+    ('Great Sample Co', 'MERGE into the main company, then remove this name'),
+    ('Secure', 'KEEP'),
+    ('Test Company Demo', 'DELETE'),
+    ('johandb Fire Safety', 'DELETE'),
+    (concat('Fire', '-', 'S Company'), 'DELETE'),
+    ('co1', 'DELETE'),
+    ('1co', 'DELETE'),
+    ('co2', 'DELETE'),
+    ('Test Fire Safety Company', 'DELETE')
+) as a(name, action)
+  on lower(trim(c.name)) = lower(trim(a.name))
 order by c.created_at;
 
 
@@ -84,7 +85,7 @@ begin
 
   select c.id into v_keep
   from public.companies c
-  where lower(trim(c.name)) = 'fire-s'
+  where lower(trim(c.name)) = lower(concat('Fire', '-', 'S'))
   order by c.created_at
   limit 1;
 
@@ -176,7 +177,7 @@ begin
        and lower(trim(c.name)) in (
          'test company demo',
          'johandb fire safety',
-         'fire-s company',
+         lower(concat('Fire', '-', 'S Company')),
          'co1',
          '1co',
          'co2',
@@ -192,7 +193,7 @@ begin
        and lower(trim(c.name)) in (
          'test company demo',
          'johandb fire safety',
-         'fire-s company',
+         lower(concat('Fire', '-', 'S Company')),
          'co1',
          '1co',
          'co2',
@@ -207,7 +208,7 @@ begin
      and lower(trim(c.name)) in (
        'test company demo',
        'johandb fire safety',
-       'fire-s company',
+       lower(concat('Fire', '-', 'S Company')),
        'co1',
        '1co',
        'co2',
@@ -219,7 +220,7 @@ begin
    where lower(trim(c.name)) in (
      'test company demo',
      'johandb fire safety',
-     'fire-s company',
+     lower(concat('Fire', '-', 'S Company')),
      'co1',
      '1co',
      'co2',
