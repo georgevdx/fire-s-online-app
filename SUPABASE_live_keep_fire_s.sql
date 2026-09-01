@@ -33,29 +33,22 @@
 
 -- =============================================================================
 -- A) PREVIEW — read-only
--- Paste ONLY this select. Clear the editor first. Do not paste comments.
+-- Paste ONLY the select below. No comments. No action sentences.
 -- =============================================================================
 
 select
   c.name as company_name,
-  coalesce(a.action, 'LEAVE (not on Johan list)') as action,
-  (select count(*) from public.company_members m where m.company_id = c.id) as people,
-  (select count(*) from public.inspections i where i.company_id = c.id) as inspections
+  (
+    select count(*)
+    from public.company_members m
+    where m.company_id = c.id
+  ) as people,
+  (
+    select count(*)
+    from public.inspections i
+    where i.company_id = c.id
+  ) as inspections
 from public.companies c
-left join (
-  values
-    (concat('Fire', '-', 'S'), 'KEEP and receive Great Sample Co inspections'),
-    ('Great Sample Co', 'MERGE into the main company, then remove this name'),
-    ('Secure', 'KEEP'),
-    ('Test Company Demo', 'DELETE'),
-    ('johandb Fire Safety', 'DELETE'),
-    (concat('Fire', '-', 'S Company'), 'DELETE'),
-    ('co1', 'DELETE'),
-    ('1co', 'DELETE'),
-    ('co2', 'DELETE'),
-    ('Test Fire Safety Company', 'DELETE')
-) as a(name, action)
-  on lower(trim(c.name)) = lower(trim(a.name))
 order by c.created_at;
 
 
