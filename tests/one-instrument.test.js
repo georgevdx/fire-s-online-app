@@ -22,8 +22,8 @@ const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(/1\.3\.55-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.55-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.49'/.test(liveEnv),
-  'Live Fire-S must be 1.3.49'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.50'/.test(liveEnv),
+  'Live Fire-S must be 1.3.50'
 );
 
 assert.strictEqual(src, stagingSrc, 'Live and toets must share the one-instrument module');

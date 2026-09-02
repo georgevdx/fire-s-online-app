@@ -1733,6 +1733,7 @@
   };
   window.fireSSyncGetStarted = window.refreshFireSGetStarted;
   window.fireSOpenAccess = openAccess;
+  window.fireSShouldShowAccess = shouldShowAccess;
   window.fireSShowAccessLogin = function fireSShowAccessLogin(msg, isError) {
     if (!ensureEls()) return;
     showAccess();

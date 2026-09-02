@@ -8092,25 +8092,20 @@ function showProjectList() {
   if (inspectionHistoryViewMode) {
     exitInspectionHistoryViewMode();
   }
-   if (!currentUserProfile) {
-  currentUserProfile = {
-    id: 'local-user',
-    email: 'local@fire-s.app',
-    fullName: 'Local User',
-    role: 'guest',
-    companyId: null,
-    companyName: 'Local / Personal Workspace'
-  };
 
-  currentCompanyAccess = {
-    status: 'active',
-    plan: 'local',
-    source: 'local-fallback'
-  };
-
-  updateAccessUI();
-  updateHomeAccessCards();
-}
+  const profile = currentUserProfile || window.currentUserProfile;
+  const isLocalFallback =
+    !profile ||
+    !profile.id ||
+    profile.id === 'local-user' ||
+    String(profile.email || '').toLowerCase() === 'local@fire-s.app';
+  if (isLocalFallback) {
+    try { showHome(); } catch (_) {}
+    try {
+      if (typeof window.fireSOpenAccess === 'function') window.fireSOpenAccess('login');
+    } catch (_) {}
+    return;
+  }
 
   setCloudMenuVisible(false);
 
@@ -25500,8 +25495,8 @@ function openOverdueCommand() {
 
 function openInspectionsCommand() {
   fsDashboardOpenGateway(
-    'month',
-    'Inspections This Month filter active in the Inspection Gateway.'
+    'all',
+    'Inspection Gateway opened.'
   );
 }
 
@@ -33019,12 +33014,12 @@ function fireSApplyLifecycleUxLabels() {
     setButtonLabel('cmdFindingsBtn', 'Premises Requiring Action');
     setButtonLabel('cmdOverdueBtn', 'Overdue Inspections');
     setButtonLabel('cmdDashboardBtn', 'Compliant Sites');
-    setButtonLabel('cmdInspectionsBtn', 'Inspections This Month');
+    setButtonLabel('cmdInspectionsBtn', 'Inspection Gateway');
 
     bindClick('cmdFindingsBtn', () => openGateway('inspection-attention', 'Showing premises requiring action.'));
     bindClick('cmdOverdueBtn', () => openGateway('inspection-warning', 'Showing overdue inspections.'));
     bindClick('cmdDashboardBtn', () => openGateway('inspection-complete', 'Showing compliant/closed inspections.'));
-    bindClick('cmdInspectionsBtn', () => openGateway('month', 'Showing inspections from this month.'));
+    bindClick('cmdInspectionsBtn', () => openGateway('all', 'Inspection Gateway opened.'));
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
@@ -33270,7 +33265,7 @@ function fireSApplyLifecycleUxLabels() {
     setLabel('cmdFindingsBtn', 'Premises Requiring Action');
     setLabel('cmdOverdueBtn', 'Overdue Inspections');
     setLabel('cmdDashboardBtn', 'Compliant Sites');
-    setLabel('cmdInspectionsBtn', 'Inspections This Month');
+    setLabel('cmdInspectionsBtn', 'Inspection Gateway');
 
     // Executive Compliance cards, if present
     setText('cmdComplianceOpenFindings', requiringAction);
@@ -33305,7 +33300,7 @@ function fireSApplyLifecycleUxLabels() {
     bindClick('cmdFindingsBtn', 'inspection-attention', 'Premises Requiring Action filter active in the Inspection Gateway.');
     bindClick('cmdOverdueBtn', 'overdue', 'Overdue Inspections filter active in the Inspection Gateway.');
     bindClick('cmdDashboardBtn', 'compliant', 'Compliant Sites filter active in the Inspection Gateway.');
-    bindClick('cmdInspectionsBtn', 'month', 'Inspections This Month filter active in the Inspection Gateway.');
+    bindClick('cmdInspectionsBtn', 'all', 'Inspection Gateway opened.');
 
     bindClick('cmdComplianceFindingsBtn', 'inspection-attention', 'Premises Requiring Action filter active in the Inspection Gateway.');
     bindClick('cmdComplianceOverdueBtn', 'overdue', 'Overdue Inspections filter active in the Inspection Gateway.');
@@ -33536,7 +33531,7 @@ function fireSApplyLifecycleUxLabels() {
     setLabel('cmdFindingsBtn', 'Premises Requiring Action');
     setLabel('cmdOverdueBtn', 'Scheduled Inspections');
     setLabel('cmdDashboardBtn', 'Compliant Sites');
-    setLabel('cmdInspectionsBtn', 'Inspections This Month');
+    setLabel('cmdInspectionsBtn', 'Inspection Gateway');
 
     setText('cmdComplianceOpenFindings', requiringAction);
     setText('cmdComplianceOverdueActions', scheduled);
@@ -33551,7 +33546,7 @@ function fireSApplyLifecycleUxLabels() {
     bindHard('cmdFindingsBtn', 'inspection-attention', 'Showing premises requiring action.');
     bindHard('cmdOverdueBtn', 'scheduled', 'Showing scheduled inspections.');
     bindHard('cmdDashboardBtn', 'compliant', 'Showing compliant sites.');
-    bindHard('cmdInspectionsBtn', 'month', 'Showing inspections from this month.');
+    bindHard('cmdInspectionsBtn', 'all', 'Inspection Gateway opened.');
 
     bindHard('cmdComplianceFindingsBtn', 'inspection-attention', 'Showing premises requiring action.');
     bindHard('cmdComplianceOverdueBtn', 'scheduled', 'Showing scheduled inspections.');
@@ -33569,20 +33564,14 @@ function fireSApplyLifecycleUxLabels() {
     }
   }
 
-  // Capture click fallback: prevents older handlers from winning after re-render.
+  // Capture click fallback: KPI month card only.
+  // Inspection Gateway must stay "all premises" (RC 1.3.5). Do not steal that tap.
   document.addEventListener('click', function(event){
-    const btn = event.target && event.target.closest && event.target.closest('#cmdInspectionsBtn, #cmdComplianceInspectionsBtn, #cmdOverdueBtn, #cmdComplianceOverdueBtn');
+    const btn = event.target && event.target.closest && event.target.closest('#cmdComplianceInspectionsBtn');
     if (!btn || viewAsRole() === 'inspector') return;
-    if (btn.id === 'cmdInspectionsBtn' || btn.id === 'cmdComplianceInspectionsBtn') {
-      event.preventDefault(); event.stopPropagation();
-      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-      showGatewayWithFilter('month', 'Showing inspections from this month.');
-    }
-    if (btn.id === 'cmdOverdueBtn' || btn.id === 'cmdComplianceOverdueBtn') {
-      event.preventDefault(); event.stopPropagation();
-      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-      showGatewayWithFilter('scheduled', 'Showing scheduled inspections.');
-    }
+    event.preventDefault(); event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+    showGatewayWithFilter('month', 'Showing inspections from this month.');
   }, true);
 
   const previousController = window.fireSRenderHomeController130;

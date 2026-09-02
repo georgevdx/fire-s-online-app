@@ -28,8 +28,8 @@ const liveTerms = read('terms.html');
 
 assert.ok(/1\.3\.55-toets/.test(env), 'Toets-blad version must be 1.3.55-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.49'/.test(liveEnv),
-  'Live Fire-S must be 1.3.49 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.50'/.test(liveEnv),
+  'Live Fire-S must be 1.3.50 after sit dit live'
 );
 assert.ok(/fireSSubscribeCancelBtn/.test(liveHtml), 'Live Subscription must offer Cancel subscription');
 
