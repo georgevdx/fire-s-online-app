@@ -23,7 +23,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.49'/.test(liveEnv),
   'Live Fire-S must be 1.3.49'
 );
-assert.ok(/1\.3\.54-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.54-toets');
+assert.ok(/1\.3\.55-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.55-toets');
 
 assert.ok(
   /fire-s-password-reset\.js/.test(liveHtml) && /fire-s-password-reset\.js/.test(stagingHtml),

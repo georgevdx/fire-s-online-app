@@ -61,6 +61,13 @@
       if (typeof window.fireSInspectorV4 === 'function') {
         window.fireSInspectorV4();
       }
+      if (
+        typeof window.fireSShouldShowAccess === 'function' &&
+        window.fireSShouldShowAccess() &&
+        typeof window.fireSOpenAccess === 'function'
+      ) {
+        window.fireSOpenAccess('login');
+      }
     } catch (_) {}
 
     document.documentElement.classList.remove('fire-s-booting');
