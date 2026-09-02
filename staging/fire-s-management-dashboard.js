@@ -1487,6 +1487,11 @@
   }
 
   function goHome() {
+    try {
+      if (typeof window.fireSLeaveDesktopDashboard === 'function') {
+        window.fireSLeaveDesktopDashboard();
+      }
+    } catch (_) {}
     const section = byId('managementDashboardSection');
     if (section) section.style.display = 'none';
     try {

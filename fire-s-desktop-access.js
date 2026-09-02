@@ -8,7 +8,7 @@
   'use strict';
 
   const LIVE_URL = 'https://georgevdx.github.io/fire-s-online-app/';
-  let openedThisLoad = false;
+  let leftByUser = false;
   let painting = false;
 
   function byId(id) {
@@ -92,23 +92,47 @@
     return true;
   }
 
-  function maybeOpenDesktopWorkspace() {
-    applyDesktopMode();
+  function landingShouldHold() {
     if (!wantsDesktop()) return false;
-    if (openedThisLoad) return false;
-    if (isBooting()) return false;
+    if (leftByUser) return false;
     if (!isManagement()) return false;
     if (accessGateOpen()) return false;
     if (isBusyAwayFromHome()) return false;
+    return true;
+  }
+
+  function maybeOpenDesktopWorkspace() {
+    applyDesktopMode();
+    if (isBooting()) return false;
+    if (!landingShouldHold()) return false;
     if (typeof window.fireSOpenManagementDashboard !== 'function') return false;
-    openedThisLoad = true;
+    const section = byId('managementDashboardSection');
+    if (isShown(section)) return true;
     try {
       window.fireSOpenManagementDashboard();
       return true;
     } catch (_) {
-      openedThisLoad = false;
       return false;
     }
+  }
+
+  function leaveDesktopDashboard() {
+    leftByUser = true;
+  }
+
+  function wrapShowHome() {
+    const previous = window.showHome;
+    if (typeof previous !== 'function' || previous.__fireSDesktopShowHome) return;
+    const wrapped = function fireSDesktopShowHome() {
+      const result = previous.apply(this, arguments);
+      if (!leftByUser) maybeOpenDesktopWorkspace();
+      return result;
+    };
+    wrapped.__fireSDesktopShowHome = true;
+    window.showHome = wrapped;
+    try {
+      showHome = wrapped;
+    } catch (_) {}
   }
 
   function paint() {
@@ -201,22 +225,34 @@
       });
       htmlWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     } catch (_) {}
+    try {
+      if (document.body) {
+        const bodyWatch = new MutationObserver(paint);
+        bodyWatch.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
+    } catch (_) {}
   }
 
   function boot() {
     applyDesktopMode();
     bind();
     wrapReveal();
+    wrapShowHome();
     paint();
     watch();
-    [400, 900, 2000].forEach(ms => {
-      setTimeout(paint, ms);
+    [400, 900, 2000, 3200, 5000].forEach(ms => {
+      setTimeout(function () {
+        wrapShowHome();
+        paint();
+      }, ms);
     });
   }
 
   window.fireSDesktopAddress = desktopAddress;
   window.fireSRefreshDesktopAccess = paint;
   window.fireSMaybeOpenDesktopWorkspace = maybeOpenDesktopWorkspace;
+  window.fireSDesktopLandingActive = landingShouldHold;
+  window.fireSLeaveDesktopDashboard = leaveDesktopDashboard;
   window.fireSWantsDesktop = wantsDesktop;
 
   if (document.readyState === 'loading') {

@@ -18,7 +18,10 @@
   }
 
   function forceHomeOnly() {
-    const show = new Set(['homeSection']);
+    const keepDash =
+      typeof window.fireSDesktopLandingActive === 'function' &&
+      window.fireSDesktopLandingActive();
+    const show = new Set(keepDash ? ['managementDashboardSection'] : ['homeSection']);
     [
       'homeSection',
       'testSamplesSection',

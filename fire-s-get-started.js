@@ -357,11 +357,21 @@
     try {
       if (typeof window.showHome === 'function') window.showHome();
     } catch (_) {}
+    try {
+      if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
+        window.fireSMaybeOpenDesktopWorkspace();
+      }
+    } catch (_) {}
     refreshHomeChrome();
     setTimeout(function () {
       hideAccess();
       try {
         if (typeof window.showHome === 'function') window.showHome();
+      } catch (_) {}
+      try {
+        if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
+          window.fireSMaybeOpenDesktopWorkspace();
+        }
       } catch (_) {}
       refreshHomeChrome();
       try {
