@@ -1677,6 +1677,16 @@
     var doCreateBtn = byId('fireSDoCreateBtn');
     var doResetBtn = byId('fireSDoResetBtn');
     var resetBackBtn = byId('fireSResetBackBtn');
+    var showLoginPasswordBtn = byId('fireSShowLoginPasswordBtn');
+    var loginPasswordInput = byId('fireSLoginPassword');
+    if (showLoginPasswordBtn && loginPasswordInput) {
+      showLoginPasswordBtn.addEventListener('click', function () {
+        var showing = loginPasswordInput.getAttribute('type') === 'text';
+        loginPasswordInput.setAttribute('type', showing ? 'password' : 'text');
+        showLoginPasswordBtn.textContent = showing ? 'Show password' : 'Hide password';
+        showLoginPasswordBtn.setAttribute('aria-pressed', showing ? 'false' : 'true');
+      });
+    }
     var registerBtn = byId('fireSGetStartedCreateBtn');
     var finishBtn = byId('fireSGetStartedFinishBtn');
     var checkBtn = byId('fireSWaitingCheckBtn');

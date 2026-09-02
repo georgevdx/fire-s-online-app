@@ -82,6 +82,35 @@
   margin: 0;
 }
 
+.fire-s-password-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+  max-width: 420px;
+}
+
+.fire-s-get-started-fields .fire-s-password-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+}
+
+.fire-s-get-started-fields .fire-s-show-password-btn {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 7.6rem;
+  white-space: normal;
+  line-height: 1.15;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #334155;
+  color: #fff;
+  border: 1px solid #1e293b;
+}
+
 #fireSLoginSubscribeBtn.fire-s-access-subscribe-btn {
   -webkit-appearance: none;
   appearance: none;
@@ -117,6 +146,10 @@
 
   .fire-s-get-started-fields {
     gap: 8px;
+  }
+
+  .fire-s-password-row {
+    max-width: none;
   }
 
   #fireSGetStartedLoginFields .fire-s-access-forgot-note {

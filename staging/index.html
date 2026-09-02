@@ -67,7 +67,7 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-14-hide-saved">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-15-show-pw">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-8-subscribe-again">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
@@ -266,7 +266,16 @@
     <div id="fireSGetStartedLoginFields" class="fire-s-get-started-fields">
       <p class="fire-s-get-started-note">Use the same email on phone and desktop. One email is one paid login. Only one instrument at a time. Login on a second phone or computer signs the first one out.</p>
       <input id="fireSLoginEmail" type="email" placeholder="Email" autocomplete="username">
-      <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+      <div class="fire-s-password-row">
+        <input id="fireSLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+        <button
+          id="fireSShowLoginPasswordBtn"
+          type="button"
+          class="secondary-btn fire-s-show-password-btn"
+          aria-pressed="false"
+          aria-controls="fireSLoginPassword"
+        >Show password</button>
+      </div>
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
       <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
       <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
@@ -1773,7 +1782,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-57-toets"></script>
+  <script src="fire-s-env.js?v=1-3-58-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1806,7 +1815,7 @@
   <script src="fire-s-user-manual.js?v=1-39-subscribe-again"></script>
   <script src="fire-s-management-dashboard.js?v=1-6-subscribe"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-43-global"></script>
+  <script src="fire-s-get-started.js?v=2-44-show-pw"></script>
   <script src="fire-s-startup-stability.js?v=1-7-global"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>

@@ -52,12 +52,12 @@ assert.ok(
   'Hotmail must also count as an allowed admin email'
 );
 assert.ok(/1\.3\.52/.test(liveEnv), 'Live Fire-S must be 1.3.52');
-assert.ok(/1\.3\.57-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.57-toets');
+assert.ok(/1\.3\.58-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.58-toets');
 assert.ok(
   /app\.js\?v=1-3-52-hotmail/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-52-live/.test(liveHtml) &&
     /app\.js\?v=1-3-57-hotmail/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-57-toets/.test(stagingHtml),
+    /fire-s-env\.js\?v=1-3-58-toets/.test(stagingHtml),
   'Live and toets must cache-bust the Hotmail super-user app'
 );
 
