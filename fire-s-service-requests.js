@@ -2,11 +2,13 @@
    Fire-S — save and view Additional services requests.
    Works before login (this phone) and after login (cloud + this phone).
    All three Access services use the same store.
+   Followed-up rows leave the active list and stay in archive for 6 months.
    ============================================================ */
 (function fireSServiceRequests(root) {
   'use strict';
 
   var KEY = 'fireS.serviceRequests.v1';
+  var ARCHIVE_MONTHS = 6;
 
   function text(value) {
     return String(value == null ? '' : value).trim();
@@ -152,15 +154,107 @@
     });
   }
 
-  function listLocalActive() {
-    return loadLocal().filter(function (row) {
-      return row && text(row.status) !== 'followed_up';
+  function statusOf(row) {
+    return text(row && row.status).toLowerCase();
+  }
+
+  function isFollowedUp(row) {
+    return statusOf(row) === 'followed_up';
+  }
+
+  function isClosedIssue(row) {
+    var status = statusOf(row);
+    return status === 'closed' || status === 'followed_up';
+  }
+
+  function archiveCutoff(now) {
+    var cut = now ? new Date(now) : new Date();
+    cut.setMonth(cut.getMonth() - ARCHIVE_MONTHS);
+    return cut;
+  }
+
+  function archiveTime(row) {
+    return (
+      Date.parse((row && (row.followed_up_at || row.archived_at || row.created_at)) || '') || 0
+    );
+  }
+
+  function isExpiredArchive(row, now) {
+    var when = archiveTime(row);
+    if (!when) return false;
+    return when < archiveCutoff(now).getTime();
+  }
+
+  function sameRequest(a, b) {
+    if (!a || !b) return false;
+    if (text(a.id) && text(a.id) === text(b.id)) return true;
+    return (
+      text(a.selected_service || a.selectedService) ===
+        text(b.selected_service || b.selectedService) &&
+      text(a.client_name || a.clientName).toLowerCase() ===
+        text(b.client_name || b.clientName).toLowerCase() &&
+      text(a.client_email || a.clientEmail).toLowerCase() ===
+        text(b.client_email || b.clientEmail).toLowerCase() &&
+      text(a.message) === text(b.message)
+    );
+  }
+
+  function purgeExpiredLocal(now) {
+    var kept = loadLocal().filter(function (row) {
+      if (!row) return false;
+      if (!isFollowedUp(row)) return true;
+      return !isExpiredArchive(row, now);
     });
+    saveLocal(kept);
+    return kept;
+  }
+
+  function listLocalActive() {
+    purgeExpiredLocal();
+    return loadLocal().filter(function (row) {
+      return row && !isFollowedUp(row);
+    });
+  }
+
+  function listLocalArchived(now) {
+    purgeExpiredLocal(now);
+    return loadLocal()
+      .filter(function (row) {
+        return row && isFollowedUp(row) && !isExpiredArchive(row, now);
+      })
+      .sort(function (a, b) {
+        return String(b.followed_up_at || b.created_at || '').localeCompare(
+          String(a.followed_up_at || a.created_at || '')
+        );
+      });
+  }
+
+  function markFollowedUpLocal(match, extra) {
+    extra = extra || {};
+    var nowIso = extra.followed_up_at || new Date().toISOString();
+    var list = loadLocal();
+    var changed = false;
+    list.forEach(function (row) {
+      if (!sameRequest(row, match)) return;
+      row.status = 'followed_up';
+      row.followed_up_at = nowIso;
+      if (extra.followup_note) row.followup_note = extra.followup_note;
+      changed = true;
+    });
+    if (changed) saveLocal(list);
+    purgeExpiredLocal();
+    return changed;
   }
 
   function mergeRows(cloudRows) {
     var out = [];
     var seen = {};
+    var followed = loadLocal().filter(isFollowedUp);
+    function locallyFollowed(row) {
+      return followed.some(function (local) {
+        return sameRequest(local, row);
+      });
+    }
     function keyOf(row) {
       return [
         text(row.selected_service),
@@ -171,7 +265,7 @@
       ].join('|');
     }
     function add(row) {
-      if (!row) return;
+      if (!row || isFollowedUp(row) || locallyFollowed(row)) return;
       var id = text(row.id);
       var key = keyOf(row);
       if ((id && seen[id]) || seen[key]) return;
@@ -187,9 +281,36 @@
     return out;
   }
 
+  function mergeArchivedRows(cloudRows, now) {
+    var out = [];
+    var seen = {};
+    function add(row) {
+      if (!row || !isFollowedUp(row) || isExpiredArchive(row, now)) return;
+      var id = text(row.id);
+      var key = [
+        text(row.selected_service),
+        text(row.client_name).toLowerCase(),
+        text(row.message),
+        String(row.followed_up_at || row.created_at || '').slice(0, 16)
+      ].join('|');
+      if ((id && seen[id]) || seen[key]) return;
+      if (id) seen[id] = true;
+      seen[key] = true;
+      out.push(row);
+    }
+    (cloudRows || []).forEach(add);
+    listLocalArchived(now).forEach(add);
+    out.sort(function (a, b) {
+      return String(b.followed_up_at || b.created_at || '').localeCompare(
+        String(a.followed_up_at || a.created_at || '')
+      );
+    });
+    return out;
+  }
+
   function flushLocalToCloud() {
     var pending = loadLocal().filter(function (row) {
-      return row && !row.cloud && text(row.status) !== 'followed_up';
+      return row && !row.cloud && !isFollowedUp(row);
     });
     var chain = Promise.resolve();
     pending.forEach(function (row) {
@@ -210,6 +331,14 @@
   root.fireSNormalizeServiceName = normalizeService;
   root.fireSSaveServiceRequest = saveRequest;
   root.fireSListLocalServiceRequests = listLocalActive;
+  root.fireSListLocalArchivedServiceRequests = listLocalArchived;
+  root.fireSMarkServiceRequestFollowedUp = markFollowedUpLocal;
   root.fireSMergeServiceRequests = mergeRows;
+  root.fireSMergeArchivedServiceRequests = mergeArchivedRows;
   root.fireSFlushServiceRequests = flushLocalToCloud;
+  root.fireSPurgeExpiredServiceRequests = purgeExpiredLocal;
+  root.fireSSupportArchiveCutoff = archiveCutoff;
+  root.fireSIsExpiredSupportArchive = isExpiredArchive;
+  root.fireSIsClosedSupportIssue = isClosedIssue;
+  root.fireSSupportArchiveMonths = ARCHIVE_MONTHS;
 })(window);

@@ -2251,6 +2251,40 @@ button.readiness-chip:focus {
   background: #2e7d32;
 }
 
+.service-requests-admin .secondary-btn.is-open {
+  background: #1565c0;
+  color: #fff;
+  border-color: #1565c0;
+}
+
+.support-archive-item {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.support-archive-kind {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #eceff1;
+}
+
+.support-archive-kind-request {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.support-archive-kind-issue {
+  background: #fff3e0;
+  color: #e65100;
+}
+
 .service-request-detail-card {
   margin-top: 12px;
 }

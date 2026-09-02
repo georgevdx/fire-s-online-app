@@ -21,7 +21,7 @@ const liveStartup = read('fire-s-startup-stability.js');
 const liveGetStarted = read('fire-s-get-started.js');
 const liveFlow = read('fire-s-global-flow.js');
 
-assert.ok(/1\.3\.55-toets/.test(env), 'Toets-blad version must be 1.3.55-toets');
+assert.ok(/1\.3\.56-toets/.test(env), 'Toets-blad version must be 1.3.56-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.50'/.test(liveEnv),
   'Live Fire-S must be 1.3.50 after sit dit live'
@@ -33,8 +33,8 @@ assert.ok(
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-0-global/.test(html) &&
-    /app\.js\?v=1-3-55-global/.test(html) &&
-    /fire-s-env\.js\?v=1-3-55-toets/.test(html),
+    /app\.js\?v=1-3-56-archive/.test(html) &&
+    /fire-s-env\.js\?v=1-3-56-toets/.test(html),
   'Toets-blad must load the global-flow script with a fresh cache tag'
 );
 
