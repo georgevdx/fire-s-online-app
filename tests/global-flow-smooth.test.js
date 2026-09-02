@@ -23,12 +23,12 @@ const liveFlow = read('fire-s-global-flow.js');
 
 assert.ok(/1\.3\.56-toets/.test(env), 'Toets-blad version must be 1.3.56-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.50'/.test(liveEnv),
-  'Live Fire-S must be 1.3.50 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.51'/.test(liveEnv),
+  'Live Fire-S must be 1.3.51 after sit dit live'
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-0-global/.test(liveHtml) &&
-    /app\.js\?v=1-3-50-global/.test(liveHtml),
+    /app\.js\?v=1-3-51-archive/.test(liveHtml),
   'Live must load the global-flow script'
 );
 assert.ok(

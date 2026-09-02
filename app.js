@@ -5644,13 +5644,25 @@ function initApp() {
   const viewServiceRequestsBtn = document.getElementById('viewServiceRequestsBtn');
 
   if (viewServiceRequestsBtn) {
-    viewServiceRequestsBtn.addEventListener('click', renderServiceRequestsList);
+    viewServiceRequestsBtn.addEventListener('click', function () {
+      renderServiceRequestsList();
+    });
   }
 
   const viewBetaFeedbackBtn = document.getElementById('viewBetaFeedbackBtn');
 
   if (viewBetaFeedbackBtn) {
-    viewBetaFeedbackBtn.addEventListener('click', renderBetaFeedbackList);
+    viewBetaFeedbackBtn.addEventListener('click', function () {
+      renderBetaFeedbackList();
+    });
+  }
+
+  const viewSupportArchiveBtn = document.getElementById('viewSupportArchiveBtn');
+
+  if (viewSupportArchiveBtn) {
+    viewSupportArchiveBtn.addEventListener('click', function () {
+      renderSupportArchiveList();
+    });
   }
 
   const cancelServiceRequestBtn = document.getElementById('cancelServiceRequestBtn');
@@ -9504,11 +9516,17 @@ function showServices() {
 const viewBetaFeedbackBtn =
   document.getElementById('viewBetaFeedbackBtn');
 
+const viewSupportArchiveBtn =
+  document.getElementById('viewSupportArchiveBtn');
+
 const serviceRequestsList =
   document.getElementById('serviceRequestsList');
 
 const betaFeedbackList =
   document.getElementById('betaFeedbackList');
+
+const supportArchiveList =
+  document.getElementById('supportArchiveList');
 
 const canViewAdminSupport =
   canViewServiceRequests();
@@ -9529,12 +9547,30 @@ if (viewBetaFeedbackBtn) {
     canViewAdminSupport ? 'block' : 'none';
 }
 
+if (viewSupportArchiveBtn) {
+  viewSupportArchiveBtn.style.display =
+    canViewAdminSupport ? 'block' : 'none';
+}
+const supportArchiveNote =
+  document.getElementById('supportArchiveNote');
+if (supportArchiveNote) {
+  supportArchiveNote.style.display =
+    canViewAdminSupport ? '' : 'none';
+}
+
 if (serviceRequestsList && !canViewAdminSupport) {
   serviceRequestsList.style.display = 'none';
 }
 
 if (betaFeedbackList && !canViewAdminSupport) {
   betaFeedbackList.style.display = 'none';
+}
+
+if (supportArchiveList && !canViewAdminSupport) {
+  supportArchiveList.style.display = 'none';
+}
+if (typeof hideSupportAdminPanels === 'function') {
+  hideSupportAdminPanels();
 }
   updateFloatingBackButton();
 }
@@ -9700,9 +9736,8 @@ async function submitServiceRequest() {
   const serviceRequestsList =
     document.getElementById('serviceRequestsList');
 
-  if (serviceRequestsList && serviceRequestsList.style.display !== 'none') {
-    serviceRequestsList.style.display = 'none';
-    renderServiceRequestsList();
+  if (serviceRequestsList && serviceRequestsList.style.display === 'block') {
+    renderServiceRequestsList(true);
   }
 }
 
@@ -9989,7 +10024,105 @@ function readLocalServiceRequestsFallback() {
   }
 }
 
-async function renderServiceRequestsList() {
+const SUPPORT_ADMIN_PANEL_IDS = [
+  'serviceRequestsList',
+  'betaFeedbackList',
+  'supportArchiveList'
+];
+
+function setSupportAdminButtonState(openId) {
+  const map = {
+    serviceRequestsList: 'viewServiceRequestsBtn',
+    betaFeedbackList: 'viewBetaFeedbackBtn',
+    supportArchiveList: 'viewSupportArchiveBtn'
+  };
+  Object.keys(map).forEach(panelId => {
+    const btn = document.getElementById(map[panelId]);
+    if (!btn) return;
+    if (openId && panelId === openId) btn.classList.add('is-open');
+    else btn.classList.remove('is-open');
+  });
+}
+
+function hideSupportAdminPanels(exceptId) {
+  SUPPORT_ADMIN_PANEL_IDS.forEach(id => {
+    if (exceptId && id === exceptId) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'none';
+    el.innerHTML = '';
+  });
+  setSupportAdminButtonState(exceptId || '');
+}
+
+function supportAdminPanelIsOpen(id) {
+  const el = document.getElementById(id);
+  return !!(el && el.style.display === 'block');
+}
+
+function isArchivedSupportIssue(item) {
+  if (typeof window.fireSIsClosedSupportIssue === 'function') {
+    return window.fireSIsClosedSupportIssue(item);
+  }
+  const status = String((item && item.status) || '').toLowerCase();
+  return status === 'closed' || status === 'followed_up';
+}
+
+function formatSupportArchiveDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString();
+}
+
+async function purgeExpiredSupportArchiveCloud() {
+  try {
+    if (typeof window.fireSPurgeExpiredServiceRequests === 'function') {
+      window.fireSPurgeExpiredServiceRequests();
+    }
+  } catch (_) {}
+
+  if (!supabaseClient || !supabaseClient.from) return;
+
+  const expired = row => {
+    if (typeof window.fireSIsExpiredSupportArchive === 'function') {
+      return window.fireSIsExpiredSupportArchive(row);
+    }
+    const when = Date.parse((row && (row.followed_up_at || row.created_at)) || '') || 0;
+    if (!when) return false;
+    const cut = new Date();
+    cut.setMonth(cut.getMonth() - 6);
+    return when < cut.getTime();
+  };
+
+  async function deleteExpired(table, rows) {
+    const ids = (rows || []).filter(expired).map(row => row && row.id).filter(Boolean);
+    if (!ids.length) return;
+    try {
+      await supabaseClient.from(table).delete().in('id', ids);
+    } catch (_) {}
+  }
+
+  try {
+    const req = await supabaseClient
+      .from('service_requests')
+      .select('id, status, followed_up_at, created_at')
+      .eq('status', 'followed_up');
+    await deleteExpired('service_requests', (req && req.data) || []);
+  } catch (_) {}
+
+  try {
+    const issues = await supabaseClient
+      .from('beta_feedback')
+      .select('id, status, followed_up_at, created_at');
+    await deleteExpired(
+      'beta_feedback',
+      ((issues && issues.data) || []).filter(isArchivedSupportIssue)
+    );
+  } catch (_) {}
+}
+
+async function renderServiceRequestsList(forceOpen) {
   if (!canViewServiceRequests()) {
     alert('Saved service requests are super user only. Only georgevdx@gmail.com can open this list.');
     return;
@@ -9999,12 +10132,14 @@ async function renderServiceRequestsList() {
 
   if (!list) return;
 
-  if (list.style.display === 'block') {
-    list.style.display = 'none';
+  if (supportAdminPanelIsOpen('serviceRequestsList') && !forceOpen) {
+    hideSupportAdminPanels();
     return;
   }
 
+  hideSupportAdminPanels('serviceRequestsList');
   list.style.display = 'block';
+  setSupportAdminButtonState('serviceRequestsList');
   list.innerHTML =
     '<div class="empty-state">Loading service requests...</div>';
 
@@ -10130,27 +10265,24 @@ function setBetaFeedbackFilter(filter) {
   renderBetaFeedbackList(true);
 }
 
-async function renderBetaFeedbackList() {
+async function renderBetaFeedbackList(forceOpen) {
   if (!canViewServiceRequests()) {
     alert('Beta feedback is only available to Fire-S admin.');
     return;
   }
 
   const list = document.getElementById('betaFeedbackList');
-  const serviceRequestsList = document.getElementById('serviceRequestsList');
 
   if (!list) return;
 
-  if (serviceRequestsList) {
-    serviceRequestsList.style.display = 'none';
+  if (supportAdminPanelIsOpen('betaFeedbackList') && !forceOpen) {
+    hideSupportAdminPanels();
+    return;
   }
 
-  if (list.style.display === 'block' && !arguments[0]) {
-  list.style.display = 'none';
-  return;
-}
-
+  hideSupportAdminPanels('betaFeedbackList');
   list.style.display = 'block';
+  setSupportAdminButtonState('betaFeedbackList');
   list.innerHTML =
     '<div class="empty-state">Loading beta feedback...</div>';
 
@@ -10184,7 +10316,11 @@ async function renderBetaFeedbackList() {
     return;
   }
 
-  const allFeedbackItems = data || [];
+  const allFeedbackItems = (data || []).filter(item => !isArchivedSupportIssue(item));
+
+  if (currentBetaFeedbackFilter === 'closed' || currentBetaFeedbackFilter === 'followed_up') {
+    currentBetaFeedbackFilter = 'all';
+  }
 
 const feedbackItems =
   allFeedbackItems.filter(item => {
@@ -10224,14 +10360,6 @@ const feedbackItems =
       onclick="setBetaFeedbackFilter('reviewed')"
     >
       Reviewed (${allFeedbackItems.filter(item => String(item.status || '').toLowerCase() === 'reviewed').length})
-    </button>
-
-    <button
-      type="button"
-      class="${currentBetaFeedbackFilter === 'closed' ? 'active' : ''}"
-      onclick="setBetaFeedbackFilter('closed')"
-    >
-      Closed (${allFeedbackItems.filter(item => String(item.status || '').toLowerCase() === 'closed').length})
     </button>
 
     <button
@@ -10389,15 +10517,33 @@ async function updateBetaFeedbackStatus(feedbackId) {
   });
 
   try {
-    const { data, error } = await supabaseClient
+    const payload = {
+      status: status,
+      followup_note: followupNote
+    };
+    if (status === 'closed' || status === 'followed_up') {
+      payload.followed_up_at = new Date().toISOString();
+    }
+
+    let data;
+    let error;
+    let result = await supabaseClient
       .from('beta_feedback')
-      .update({
-        status: status,
-        followup_note: followupNote
-      })
+      .update(payload)
       .eq('id', feedbackId)
       .select('id, status, followup_note')
       .maybeSingle();
+    if (result && result.error && payload.followed_up_at) {
+      delete payload.followed_up_at;
+      result = await supabaseClient
+        .from('beta_feedback')
+        .update(payload)
+        .eq('id', feedbackId)
+        .select('id, status, followup_note')
+        .maybeSingle();
+    }
+    data = result && result.data;
+    error = result && result.error;
 
     if (error) {
       console.error('Beta feedback update failed:', error);
@@ -10414,15 +10560,13 @@ async function updateBetaFeedbackStatus(feedbackId) {
 
     console.log('Beta feedback updated:', data);
 
-    alert('Beta feedback updated.');
-
-    const list = document.getElementById('betaFeedbackList');
-
-    if (list) {
-      list.style.display = 'none';
+    if (status === 'closed' || status === 'followed_up') {
+      alert('Issue moved to Request / issue archive for 6 months.');
+    } else {
+      alert('Beta feedback updated.');
     }
 
-    renderBetaFeedbackList();
+    await renderBetaFeedbackList(true);
 
   } catch (error) {
     console.error('Beta feedback update crashed:', error);
@@ -10563,34 +10707,265 @@ async function markServiceRequestFollowedUp(requestId) {
 
   if (!confirmed) return;
 
+  const nowIso = new Date().toISOString();
   const updatePayload = {
     status: 'followed_up',
-    followed_up_at: new Date().toISOString()
+    followed_up_at: nowIso
   };
 
   if (followupNote) {
     updatePayload.followup_note = followupNote;
   }
 
-  const { error } = await supabaseClient
-    .from('service_requests')
-    .update(updatePayload)
-    .eq('id', requestId);
+  const viewRow = (window.currentServiceRequestsView || []).find(
+    request => String(request && request.id) === String(requestId)
+  );
+  const localMatch = {
+    id: requestId,
+    selected_service: viewRow && viewRow.selectedService,
+    selectedService: viewRow && viewRow.selectedService,
+    client_name: viewRow && viewRow.clientName,
+    clientName: viewRow && viewRow.clientName,
+    client_email: viewRow && viewRow.clientEmail,
+    clientEmail: viewRow && viewRow.clientEmail,
+    message: viewRow && viewRow.message
+  };
 
-  if (error) {
-    console.error('Follow-up update failed:', error);
-    alert(`Could not update service request: ${error.message}`);
+  let localMarked = false;
+  try {
+    if (typeof window.fireSMarkServiceRequestFollowedUp === 'function') {
+      localMarked = !!window.fireSMarkServiceRequestFollowedUp(localMatch, updatePayload);
+    }
+  } catch (_) {}
+
+  let cloudError = null;
+  if (supabaseClient && supabaseClient.from) {
+    try {
+      async function updateBy(payload, filter) {
+        let query = supabaseClient.from('service_requests').update(payload);
+        if (filter.id) query = query.eq('id', filter.id);
+        return query.select('id');
+      }
+
+      let result = await updateBy(updatePayload, { id: requestId });
+      if (result && result.error && updatePayload.followup_note) {
+        const withoutNote = {
+          status: 'followed_up',
+          followed_up_at: nowIso
+        };
+        result = await updateBy(withoutNote, { id: requestId });
+      }
+      if (result && result.error && updatePayload.followed_up_at) {
+        result = await updateBy({ status: 'followed_up' }, { id: requestId });
+      }
+
+      const updatedRows = (result && result.data) || [];
+      if ((!updatedRows.length || (result && result.error)) && viewRow) {
+        const matches = await supabaseClient
+          .from('service_requests')
+          .select('id, selected_service, client_name, client_email, message, status')
+          .neq('status', 'followed_up');
+        const ids = ((matches && matches.data) || [])
+          .filter(row => {
+            return (
+              String(row.selected_service || '') === String(viewRow.selectedService || '') &&
+              String(row.client_name || '').toLowerCase() === String(viewRow.clientName || '').toLowerCase() &&
+              String(row.message || '') === String(viewRow.message || '')
+            );
+          })
+          .map(row => row.id)
+          .filter(Boolean);
+        if (ids.length) {
+          result = await supabaseClient
+            .from('service_requests')
+            .update({
+              status: 'followed_up',
+              followed_up_at: nowIso
+            })
+            .in('id', ids)
+            .select('id');
+        }
+      }
+
+      if (result && result.error) cloudError = result.error;
+    } catch (error) {
+      cloudError = error;
+    }
+  }
+
+  if (cloudError && !localMarked) {
+    console.error('Follow-up update failed:', cloudError);
+    alert(`Could not update service request: ${cloudError.message || String(cloudError)}`);
     return;
   }
 
-  const list = document.getElementById('serviceRequestsList');
+  await renderServiceRequestsList(true);
+}
 
-  if (list) {
-    list.style.display = 'none';
+async function renderSupportArchiveList(forceOpen) {
+  if (!canViewServiceRequests()) {
+    alert('The request / issue archive is super user only.');
+    return;
   }
 
-  renderServiceRequestsList();
+  const list = document.getElementById('supportArchiveList');
+  if (!list) return;
+
+  if (supportAdminPanelIsOpen('supportArchiveList') && !forceOpen) {
+    hideSupportAdminPanels();
+    return;
+  }
+
+  hideSupportAdminPanels('supportArchiveList');
+  list.style.display = 'block';
+  setSupportAdminButtonState('supportArchiveList');
+  list.innerHTML = '<div class="empty-state">Loading archive...</div>';
+
+  try {
+    await purgeExpiredSupportArchiveCloud();
+  } catch (_) {}
+
+  let requestRows = [];
+  let issueRows = [];
+
+  if (supabaseClient && supabaseClient.from) {
+    try {
+      let result = await supabaseClient
+        .from('service_requests')
+        .select(`
+          id,
+          selected_service,
+          client_name,
+          client_phone,
+          client_email,
+          message,
+          status,
+          created_at,
+          followed_up_at,
+          followup_note,
+          created_by_email
+        `)
+        .eq('status', 'followed_up')
+        .order('followed_up_at', { ascending: false });
+      if (result && result.error) {
+        result = await supabaseClient
+          .from('service_requests')
+          .select(`
+            id,
+            selected_service,
+            client_name,
+            client_phone,
+            client_email,
+            message,
+            status,
+            created_at,
+            created_by_email
+          `)
+          .eq('status', 'followed_up')
+          .order('created_at', { ascending: false });
+      }
+      requestRows = (result && result.data) || [];
+    } catch (_) {
+      requestRows = [];
+    }
+
+    try {
+      const result = await supabaseClient
+        .from('beta_feedback')
+        .select(`
+          id,
+          created_at,
+          app_version,
+          issue_type,
+          priority,
+          what_happened,
+          expected_result,
+          reported_by_email,
+          status,
+          followup_note,
+          followed_up_at
+        `)
+        .order('created_at', { ascending: false });
+      if (result && !result.error) {
+        issueRows = ((result && result.data) || []).filter(isArchivedSupportIssue);
+      }
+    } catch (_) {
+      issueRows = [];
+    }
+  }
+
+  const archivedRequests =
+    typeof window.fireSMergeArchivedServiceRequests === 'function'
+      ? window.fireSMergeArchivedServiceRequests(requestRows)
+      : requestRows.concat(
+          typeof window.fireSListLocalArchivedServiceRequests === 'function'
+            ? window.fireSListLocalArchivedServiceRequests()
+            : []
+        );
+
+  const keptRequests = archivedRequests.filter(row => {
+    return typeof window.fireSIsExpiredSupportArchive === 'function'
+      ? !window.fireSIsExpiredSupportArchive(row)
+      : true;
+  });
+  const keptIssues = issueRows.filter(row => {
+    return typeof window.fireSIsExpiredSupportArchive === 'function'
+      ? !window.fireSIsExpiredSupportArchive(row)
+      : true;
+  });
+
+  if (!keptRequests.length && !keptIssues.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        No archived requests or issues. Followed-up items stay here for 6 months, then they are deleted.
+      </div>
+    `;
+    return;
+  }
+
+  const requestHtml = keptRequests.map(row => `
+    <div class="support-archive-item">
+      <span class="support-archive-kind support-archive-kind-request">Request</span>
+      <strong>${escapeHtml(row.selected_service || 'Service request')}</strong>
+      <div class="note">
+        ${escapeHtml(row.client_name || 'Unknown client')}
+        · Followed up ${escapeHtml(formatSupportArchiveDate(row.followed_up_at || row.created_at))}
+      </div>
+      <div>${escapeHtml(row.message || '')}</div>
+      ${
+        row.followup_note
+          ? `<div class="note">Follow-up: ${escapeHtml(row.followup_note)}</div>`
+          : ''
+      }
+    </div>
+  `).join('');
+
+  const issueHtml = keptIssues.map(row => `
+    <div class="support-archive-item">
+      <span class="support-archive-kind support-archive-kind-issue">Issue</span>
+      <strong>${escapeHtml(row.issue_type || 'Reported issue')}</strong>
+      <div class="note">
+        ${escapeHtml(row.reported_by_email || 'Unknown')}
+        · Closed ${escapeHtml(formatSupportArchiveDate(row.followed_up_at || row.created_at))}
+      </div>
+      <div>${escapeHtml(row.what_happened || '')}</div>
+      ${
+        row.followup_note
+          ? `<div class="note">Follow-up: ${escapeHtml(row.followup_note)}</div>`
+          : ''
+      }
+    </div>
+  `).join('');
+
+  list.innerHTML = `
+    <div class="note">
+      Archive keeps followed-up requests and closed issues for 6 months, then deletes them.
+    </div>
+    ${requestHtml}
+    ${issueHtml}
+  `;
 }
+
 
 
 function getFollowUpStatus(project) {

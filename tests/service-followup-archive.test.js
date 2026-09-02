@@ -14,6 +14,9 @@ const stagingStoreSrc = read('staging/fire-s-service-requests.js');
 const stagingHtml = read('staging/index.html');
 const stagingApp = read('staging/app.js');
 const stagingEnv = read('staging/fire-s-env.js');
+const liveHtml = read('index.html');
+const liveApp = read('app.js');
+const liveEnv = read('fire-s-env.js');
 
 assert.ok(
   storeSrc === stagingStoreSrc,
@@ -21,10 +24,22 @@ assert.ok(
 );
 assert.ok(/1\.3\.56-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.56-toets');
 assert.ok(
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.51'/.test(liveEnv),
+  'Live Fire-S must be 1.3.51 after sit dit live'
+);
+assert.ok(
   /app\.js\?v=1-3-56-archive/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-56-toets/.test(stagingHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(stagingHtml),
   'Toets-blad must cache-bust the archive follow-up files'
+);
+assert.ok(
+  /app\.js\?v=1-3-51-archive/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-51-live/.test(liveHtml) &&
+    /fire-s-service-requests\.js\?v=1-2-archive/.test(liveHtml) &&
+    /id="viewSupportArchiveBtn"/.test(liveHtml) &&
+    /Request \/ issue archive/.test(liveHtml),
+  'Live must load the same follow-up archive UI'
 );
 assert.ok(
   /id="viewSupportArchiveBtn"/.test(stagingHtml) &&
