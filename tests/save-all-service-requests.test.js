@@ -42,12 +42,16 @@ assert.ok(
   /fireSSaveServiceRequest/.test(liveApp) &&
     /fireSMergeServiceRequests/.test(liveApp) &&
     /fireSMergeServiceRequests/.test(stagingApp) &&
-    /FIRE_S_SERVICE_REQUEST_SUPER_USER = 'georgevdx@gmail.com'/.test(liveApp) &&
-    /FIRE_S_SERVICE_REQUEST_SUPER_USER = 'georgevdx@gmail.com'/.test(stagingApp) &&
+    /FIRE_S_SERVICE_REQUEST_SUPER_USERS/.test(liveApp) &&
+    /FIRE_S_SERVICE_REQUEST_SUPER_USERS/.test(stagingApp) &&
+    /georgevdx@gmail\.com/.test(liveApp) &&
+    /georgevdx@hotmail\.com/.test(liveApp) &&
+    /georgevdx@hotmail\.com/.test(stagingApp) &&
     /return isServiceRequestSuperUser\(emailOverride\)/.test(liveApp) &&
-    /Only <strong>georgevdx@gmail.com<\/strong> can open this list/.test(liveHtml) &&
-    /Only <strong>georgevdx@gmail.com<\/strong> can open this list/.test(stagingHtml),
-  'View Saved Service Requests is super user only for georgevdx@gmail.com'
+    /georgevdx@gmail\.com/.test(liveHtml) &&
+    /georgevdx@hotmail\.com/.test(liveHtml) &&
+    /georgevdx@hotmail\.com/.test(stagingHtml),
+  'View Saved Service Requests is super user only for georgevdx@gmail.com and georgevdx@hotmail.com'
 );
 
 const memory = { store: null };

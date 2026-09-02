@@ -26,10 +26,10 @@ const liveCss = read('fire-s-subscribe.css');
 const liveManual = read('fire-s-user-manual.js');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.56-toets/.test(env), 'Toets-blad version must be 1.3.56-toets');
+assert.ok(/1\.3\.57-toets/.test(env), 'Toets-blad version must be 1.3.57-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.51'/.test(liveEnv),
-  'Live Fire-S must be 1.3.51 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.52'/.test(liveEnv),
+  'Live Fire-S must be 1.3.52 after sit dit live'
 );
 assert.ok(/fireSSubscribeCancelBtn/.test(liveHtml), 'Live Subscription must offer Cancel subscription');
 

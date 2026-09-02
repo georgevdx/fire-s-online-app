@@ -6150,10 +6150,12 @@ function canEditCompanyDetails() {
 }
 
 window.canEditCompanyDetails = canEditCompanyDetails;
+window.isAllowedAdminEmail = isAllowedAdminEmail;
 
 function isAllowedAdminEmail(email) {
   const allowedEmails = [
     'georgevdx@gmail.com',
+    'georgevdx@hotmail.com',
     'johandb1974ik@gmail.com',
     'johandb@live.com'
   ];
@@ -6177,7 +6179,10 @@ function canUseAdminSyncTools(emailOverride) {
   );
 }
 
-const FIRE_S_SERVICE_REQUEST_SUPER_USER = 'georgevdx@gmail.com';
+const FIRE_S_SERVICE_REQUEST_SUPER_USERS = [
+  'georgevdx@gmail.com',
+  'georgevdx@hotmail.com'
+];
 
 function isServiceRequestSuperUser(emailOverride) {
   const currentEmail = String(
@@ -6185,7 +6190,7 @@ function isServiceRequestSuperUser(emailOverride) {
       currentUserProfile?.email ||
       ''
   ).toLowerCase();
-  return currentEmail === FIRE_S_SERVICE_REQUEST_SUPER_USER;
+  return FIRE_S_SERVICE_REQUEST_SUPER_USERS.indexOf(currentEmail) !== -1;
 }
 
 function canViewServiceRequests(emailOverride) {
@@ -10124,7 +10129,7 @@ async function purgeExpiredSupportArchiveCloud() {
 
 async function renderServiceRequestsList(forceOpen) {
   if (!canViewServiceRequests()) {
-    alert('Saved service requests are super user only. Only georgevdx@gmail.com can open this list.');
+    alert('Saved service requests are super user only. Only georgevdx@gmail.com and georgevdx@hotmail.com can open this list.');
     return;
   }
 

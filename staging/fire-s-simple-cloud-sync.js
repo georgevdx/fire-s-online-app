@@ -60,6 +60,7 @@
     } catch (_) {}
     const allowed = [
       'georgevdx@gmail.com',
+      'georgevdx@hotmail.com',
       'johandb1974ik@gmail.com',
       'johandb@live.com'
     ];
