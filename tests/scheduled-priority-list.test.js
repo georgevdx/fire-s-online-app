@@ -18,8 +18,8 @@ const manual = read('staging/fire-s-user-manual.js');
 
 assert.ok(/1\.3\.54-toets/.test(env), 'Toets-blad version must stay on 1.3.54-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.48'/.test(liveEnv),
-  'Live Fire-S must be 1.3.48 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.49'/.test(liveEnv),
+  'Live Fire-S must be 1.3.49 after sit dit live'
 );
 assert.ok(
   /Scheduled priority/.test(read('inspector-v4.js')) &&

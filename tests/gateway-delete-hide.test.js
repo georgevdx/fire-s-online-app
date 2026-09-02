@@ -11,8 +11,14 @@ function read(name) {
 
 const app = read('staging/app.js');
 const env = read('staging/fire-s-env.js');
+const liveApp = read('app.js');
+const liveEnv = read('fire-s-env.js');
 
 assert.ok(/1\.3\.54-toets/.test(env), 'Toets-blad version must be 1.3.54-toets');
+assert.ok(
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.49'/.test(liveEnv),
+  'Live Fire-S must be 1.3.49 after sit dit live'
+);
 
 assert.ok(
   /function fireSIsEmptyRecycleLeftoverPremises\(project\)/.test(app),
@@ -107,5 +113,13 @@ assert.strictEqual(result.withHistory, false, 'Premises with History must stay a
 assert.strictEqual(result.live, false, 'A live current inspection must stay on Gateway');
 assert.strictEqual(result.scheduled, false, 'A scheduled new premises must stay on Gateway');
 assert.strictEqual(result.plain, false, 'An untouched premises card must stay on Gateway');
+
+assert.ok(
+  /function fireSIsEmptyRecycleLeftoverPremises\(project\)/.test(liveApp) &&
+    /!fireSIsEmptyRecycleLeftoverPremises\(project\)/.test(liveApp) &&
+    /Never bring a locally deleted premises or empty Recycle leftover back/.test(liveApp) &&
+    /removeInspectionFromUploadQueue\(idToDelete\)/.test(liveApp),
+  'Live must ship the same Gateway delete-hide rules as the toets-blad'
+);
 
 console.log('gateway-delete-hide.test.js: ok');
