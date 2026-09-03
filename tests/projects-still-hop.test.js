@@ -109,4 +109,90 @@ assert.ok(
   'Toets-blad must load the still script and cache-bust the hop fix'
 );
 
+const vm = require('vm');
+
+function makeEl(id, opts) {
+  return {
+    id,
+    hidden: false,
+    style: { display: (opts && opts.display) || '' },
+    dataset: Object.assign({}, (opts && opts.dataset) || {}),
+    value: (opts && opts.value) || '',
+    querySelector() {
+      return opts && opts.hasCards ? { className: 'fire-s-136a8-card' } : null;
+    }
+  };
+}
+
+function runStillCase(label, setup, call, expectCalls) {
+  const els = {
+    projectListSection: makeEl('projectListSection', { display: 'block' }),
+    projectFormSection: makeEl('projectFormSection', { display: 'none' }),
+    projectsList: makeEl('projectsList', {
+      hasCards: true,
+      dataset: { fireSGatewayPaint: 'all::1::2::a|b' }
+    }),
+    projectSearch: makeEl('projectSearch'),
+    premisesQuickSelect: makeEl('premisesQuickSelect')
+  };
+  let paints = 0;
+  const context = {
+    window: {},
+    document: {
+      getElementById(id) {
+        return els[id] || null;
+      },
+      activeElement: null
+    },
+    Date,
+    setTimeout() {
+      return 1;
+    },
+    setInterval() {
+      return 1;
+    }
+  };
+  context.window = context;
+  context.getComputedStyle = function (el) {
+    return { display: el.style.display || 'block', visibility: 'visible' };
+  };
+  context.window.renderProjectsList = function () {
+    paints += 1;
+  };
+  vm.createContext(context);
+  vm.runInContext(liveStill, context);
+  setup(context, els);
+  call(context);
+  assert.strictEqual(paints, expectCalls, label);
+}
+
+runStillCase(
+  'open gateway must ignore leftover background paints',
+  function () {},
+  function (ctx) {
+    ctx.window.renderProjectsList();
+    ctx.window.renderProjectsList();
+    ctx.window.renderProjectsList();
+  },
+  0
+);
+runStillCase(
+  'Sync Now must still paint',
+  function () {},
+  function (ctx) {
+    ctx.window.renderProjectsList({ forcePaint: true });
+  },
+  1
+);
+runStillCase(
+  'search typing must still paint',
+  function (ctx, els) {
+    ctx.document.activeElement = els.projectSearch;
+  },
+  function (ctx) {
+    ctx.window.renderProjectsList();
+  },
+  1
+);
+
 console.log('projects-still-hop.test.js: ok');

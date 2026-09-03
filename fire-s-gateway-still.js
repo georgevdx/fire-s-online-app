@@ -54,8 +54,9 @@
       const force = !!(options && (options.force === true || options.forcePaint === true));
       const typing = userIsTypingSearch();
       const sig = readFilterSig();
-      const filterChanged = sig !== fireSGatewayStill._filterSig;
+      const filterChanged = fireSGatewayStill._filterSig != null && sig !== fireSGatewayStill._filterSig;
       if (!force && !typing && !filterChanged && gatewayOpen() && listAlreadyPainted()) {
+        fireSGatewayStill._filterSig = sig;
         return;
       }
       fireSGatewayStill._filterSig = sig;
