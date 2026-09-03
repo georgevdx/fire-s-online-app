@@ -4089,6 +4089,30 @@ function setSyncStatusMessage(message) {
   }
 }
 
+function isInspectionGatewayVisible() {
+  try {
+    const list = document.getElementById('projectListSection');
+    const form = document.getElementById('projectFormSection');
+    if (!list) return false;
+    const listStyle = window.getComputedStyle ? getComputedStyle(list) : null;
+    if (list.style.display === 'none' || list.hidden) return false;
+    if (listStyle && (listStyle.display === 'none' || listStyle.visibility === 'hidden')) {
+      return false;
+    }
+    if (!form) return true;
+    const formStyle = window.getComputedStyle ? getComputedStyle(form) : null;
+    if (form.style.display === 'none' || form.hidden) return true;
+    if (formStyle && formStyle.display === 'none') return true;
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
+function shouldPaintProjectsAfterSync(forcePaint) {
+  return forcePaint === true || !isInspectionGatewayVisible();
+}
+
 async function runBackgroundSync(reason = 'background') {
   if (backgroundSyncInProgress) return;
 
@@ -4124,16 +4148,8 @@ async function runBackgroundSync(reason = 'background') {
     // Replacing the complete premises list while the user is scrolling
     // resets layout/scroll anchoring on mobile and causes the page to jump
     // back to the top. Cloud data still syncs normally; the Gateway refreshes
-    // on the next deliberate filter, navigation or manual refresh action.
-    const projectListSection = document.getElementById('projectListSection');
-    const projectFormSection = document.getElementById('projectFormSection');
-    const gatewayVisible = Boolean(
-      projectListSection &&
-      getComputedStyle(projectListSection).display !== 'none' &&
-      (!projectFormSection || getComputedStyle(projectFormSection).display === 'none')
-    );
-
-    if (!gatewayVisible) {
+    // on the next deliberate filter, navigation or manual Sync Now.
+    if (shouldPaintProjectsAfterSync(false)) {
       renderProjectsList();
     }
 
@@ -4168,7 +4184,8 @@ function reloadCurrentOpenInspectionAfterSync() {
   
 }
 
-async function refreshSyncData() {
+async function refreshSyncData(options) {
+  const forcePaint = !!(options && options.forcePaint === true);
   const syncStatus = document.getElementById('syncStatus');
 
   if (syncStatus) {
@@ -4177,10 +4194,12 @@ async function refreshSyncData() {
 
   try {
     await uploadPendingInspections();
-    await safeDownloadNewerCloudInspections();
+    await safeDownloadNewerCloudInspections({ forcePaint: forcePaint });
     await uploadPendingInspections();
 
-    renderProjectsList();
+    if (shouldPaintProjectsAfterSync(forcePaint)) {
+      renderProjectsList();
+    }
     reloadCurrentOpenInspectionAfterSync();
 
     if (syncStatus) {
@@ -4726,7 +4745,7 @@ function showSyncTools() {
   // Old top-page backup tools must stay hidden.
 }
 
-async function safeDownloadNewerCloudInspections() {
+async function safeDownloadNewerCloudInspections(options) {
   if (!navigator.onLine) return;
   if (typeof supabaseClient === 'undefined') return;
 
@@ -4829,7 +4848,9 @@ if (cloudTime > localTime) {
    const mergedProjects = Array.from(mergedMap.values());
 
     setProjects(mergedProjects);
-    renderProjectsList();
+    if (shouldPaintProjectsAfterSync(options && options.forcePaint === true)) {
+      renderProjectsList();
+    }
 
     if (syncStatus) {
       syncStatus.textContent = 'Cloud download check complete.';
@@ -5597,7 +5618,9 @@ function initApp() {
   const refreshSyncBtn = document.getElementById('refreshSyncBtn');
 
   if (refreshSyncBtn) {
-    refreshSyncBtn.addEventListener('click', refreshSyncData);
+    refreshSyncBtn.addEventListener('click', function () {
+      refreshSyncData({ forcePaint: true });
+    });
   }
 
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');

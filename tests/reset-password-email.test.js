@@ -17,7 +17,7 @@ const liveStarted = read('fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveApp = read('app.js');
 
-assert.ok(/1\.3\.59-toets/.test(env), 'Toets-blad version must be 1.3.59-toets');
+assert.ok(/1\.3\.60-toets/.test(env), 'Toets-blad version must be 1.3.60-toets');
 
 assert.ok(
   /id="fireSForgotPasswordBtn"/.test(html) &&
