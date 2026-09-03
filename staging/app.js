@@ -4673,7 +4673,9 @@ async function restoreCloudSession() {
     try {
       await loadUserAccessProfile();
       try {
-        renderProjectsList();
+        if (typeof shouldPaintProjectsAfterSync !== 'function' || shouldPaintProjectsAfterSync(false)) {
+          renderProjectsList();
+        }
       } catch (_) {}
       try {
         if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
@@ -27514,7 +27516,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     const data = calc(projects);
     const healthTone = data.avg >= 90 ? 'good' : data.avg >= 75 ? 'watch' : data.avg ? 'risk' : 'neutral';
 
-    panel.innerHTML = `
+    const nextHtml = `
       <div class="fire-s-exec-head">
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
@@ -27533,6 +27535,9 @@ if (!window.fireSMobileSmartCardsApplied) {
       <div class="fire-s-exec-bar"><i style="width:${Math.max(0, Math.min(100, data.avg || 0))}%"></i></div>
       <div id="fireSExecSnapshotMessage" class="fire-s-exec-message">${esc(activeFilterLabel(window.fireSExecSnapshotActiveFilter))}</div>
     `;
+    if (panel.getAttribute('data-fire-s-exec-html') === nextHtml) return;
+    panel.setAttribute('data-fire-s-exec-html', nextHtml);
+    panel.innerHTML = nextHtml;
   }
 
   function install() {
@@ -30866,9 +30871,6 @@ if (!window.fireSMobileSmartCardsApplied) {
     showProjectList = function fireSStableShowProjectList() {
       const result = originalShowProjectList.apply(this, arguments);
       state.pendingListRender = false;
-      setTimeout(() => {
-        if (typeof renderProjectsList === 'function') renderProjectsList({ force: true });
-      }, 0);
       return result;
     };
     window.showProjectList = showProjectList;
@@ -31523,7 +31525,10 @@ if (!window.fireSMobileSmartCardsApplied) {
         const sameSignature = signature && signature === state.lastSignature;
         const rapidInitialRender = booting && !state.userInteracted && now - state.lastRenderAt < 450;
 
-        if (sameSignature || rapidInitialRender) {
+        if (sameSignature) {
+          return;
+        }
+        if (rapidInitialRender) {
           if (!state.renderQueued) {
             state.renderQueued = true;
             window.requestAnimationFrame(() => {
@@ -38063,10 +38068,17 @@ function fireSApplyLifecycleUxLabels() {
     window.__fireSAuthoritativeFilteredProjects = filtered;
 
     const paging = document.getElementById('projectPagingControls');
-    if (paging) {
-      paging.innerHTML = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
+    const nextPaging = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
+    const nextHtml = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    const paintKey = [key, page, total, visible.map(p => p && p.id).join('|')].join('::');
+    if (container.dataset.fireSGatewayPaint === paintKey) {
+      return true;
     }
-    container.innerHTML = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    container.dataset.fireSGatewayPaint = paintKey;
+    if (paging && paging.innerHTML !== nextPaging) {
+      paging.innerHTML = nextPaging;
+    }
+    container.innerHTML = nextHtml;
     try { if (typeof window.fireSProductionRenderKpis === 'function') window.fireSProductionRenderKpis(); } catch (_) {}
     return true;
   }
@@ -38083,11 +38095,8 @@ function fireSApplyLifecycleUxLabels() {
     window.currentProjectPage = 1;
     try { currentProjectPage = 1; } catch (_) {}
     if (!alreadyInProjects) openProjects();
-    [0, 60, 180, 420].forEach(delay => setTimeout(() => {
-      setActiveFilter(key);
-      renderProjects();
-      try { document.getElementById('projectListSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
-    }, delay));
+    setActiveFilter(key);
+    renderProjects();
   };
 
   // Make older calls land on the final renderer.
