@@ -19,7 +19,7 @@ assert.ok(
   /id="testSamplesRecycle10MinBtn"/.test(html) &&
     /Load 10-min Recycle Bin sample/.test(html) &&
     /fire-s-test-samples\.js\?v=1-5-recycle10/.test(html) &&
-    /app\.js\?v=1-3-62-recycle10/.test(html),
+    /app\.js\?v=1-3-63-login-fast/.test(html),
   'Toets-blad must offer the 10-min Recycle Bin sample'
 );
 assert.ok(

@@ -4184,7 +4184,17 @@ function reloadCurrentOpenInspectionAfterSync() {
   
 }
 
+let refreshSyncInFlight = null;
+
 async function refreshSyncData(options) {
+  if (refreshSyncInFlight) return refreshSyncInFlight;
+  refreshSyncInFlight = runRefreshSyncData(options).finally(() => {
+    refreshSyncInFlight = null;
+  });
+  return refreshSyncInFlight;
+}
+
+async function runRefreshSyncData(options) {
   const forcePaint = !!(options && options.forcePaint === true);
   const syncStatus = document.getElementById('syncStatus');
 
@@ -4193,7 +4203,15 @@ async function refreshSyncData(options) {
   }
 
   try {
-    await uploadPendingInspections();
+    let pendingCount = 0;
+    try {
+      pendingCount = (getPendingUploadQueue() || []).length;
+    } catch (_) {
+      pendingCount = 1;
+    }
+    if (pendingCount > 0) {
+      await uploadPendingInspections();
+    }
     await safeDownloadNewerCloudInspections({ forcePaint: forcePaint });
     await uploadPendingInspections();
 

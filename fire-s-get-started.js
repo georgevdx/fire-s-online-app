@@ -552,6 +552,8 @@
   async function joinCompanyAfterLogin() {
     var claimed = 0;
     var i;
+    await refreshMembership();
+    if (hasCompany()) return 1;
     for (i = 0; i < 3; i += 1) {
       claimed = await claimInvitesQuiet();
       await refreshMembership();
@@ -958,22 +960,24 @@
   }
 
   async function finishSignedInSession(successMsg) {
-    await claimThisInstrument(getSb());
+    var sb = getSb();
+    var jobs = [claimThisInstrument(sb)];
     try {
       if (window.fireSFlushServiceRequests) {
-        await window.fireSFlushServiceRequests();
+        jobs.push(Promise.resolve(window.fireSFlushServiceRequests()).catch(function () {}));
       }
     } catch (_) {}
+    await Promise.all(jobs);
     var claimed = await joinCompanyAfterLogin();
     mode = 'login';
     refreshHomeChrome();
     if (claimed > 0 || hasCompany()) {
       clearPendingSubscribe();
       clearJoiningAsStaff();
-      await syncCloudAfterAuth();
       enterAppHome(
         successMsg || (claimed > 0 ? 'You are on the team. You do not Subscribe — your owner pays.' : 'Signed in.')
       );
+      Promise.resolve(syncCloudAfterAuth()).catch(function () {});
       return;
     }
     if (await finishPendingSubscribeIfAny()) return;
@@ -1403,8 +1407,8 @@
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
         clearJoiningAsStaff();
-        await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Access updated.');
+        Promise.resolve(syncCloudAfterAuth()).catch(function () {});
         return;
       }
       setStatus(

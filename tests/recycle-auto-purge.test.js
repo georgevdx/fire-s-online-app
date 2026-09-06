@@ -17,19 +17,19 @@ const liveEnv = read('fire-s-env.js');
 
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.62-toets/.test(env), 'Toets-blad version must be 1.3.62-toets');
+assert.ok(/1\.3\.63-toets/.test(env), 'Toets-blad version must be 1.3.63-toets');
 assert.ok(
-  /app\.js\?v=1-3-62-recycle/.test(html) &&
-    /fire-s-env\.js\?v=1-3-62-toets/.test(html),
+  /app\.js\?v=1-3-63-login-fast/.test(html) &&
+    /fire-s-env\.js\?v=1-3-63-toets/.test(html),
   'Toets-blad must cache-bust the recycle auto-purge files'
 );
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.56'/.test(liveEnv),
-  'Live Fire-S must be 1.3.56 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.57'/.test(liveEnv),
+  'Live Fire-S must be 1.3.57 after sit dit live'
 );
 assert.ok(
-  /app\.js\?v=1-3-56-recycle/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-56-live/.test(liveHtml),
+  /app\.js\?v=1-3-57-login-fast/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-57-live/.test(liveHtml),
   'Live must cache-bust the Recycle Bin auto-purge files'
 );
 
