@@ -3,6 +3,7 @@
    - Hide multi-page flicker while modules fight on boot
    - Reveal one stable Home view
    - Keep full sync in the background after first paint
+   - Keep the Fire-S splash up from Login tap until the session is fully in
    ============================================================ */
 (function fireSStartupStability() {
   'use strict';
@@ -15,6 +16,14 @@
 
   function byId(id) {
     return document.getElementById(id);
+  }
+
+  function loginHoldsBoot() {
+    try {
+      return !!window.__fireSLoggingIn;
+    } catch (_) {
+      return false;
+    }
   }
 
   function forceHomeOnly() {
@@ -42,8 +51,56 @@
     });
   }
 
+  function setBootCopy(text) {
+    const boot = byId('fireSBootScreen');
+    const copy = boot && boot.querySelector('p');
+    if (copy && text) copy.textContent = text;
+  }
+
+  function holdBootForLogin() {
+    revealed = false;
+    clearTimeout(revealTimer);
+    try {
+      document.documentElement.classList.add('fire-s-booting');
+      document.documentElement.classList.remove('fire-s-ready');
+    } catch (_) {}
+    const boot = byId('fireSBootScreen');
+    if (boot) boot.style.display = '';
+    setBootCopy('Signing in…');
+    const app = document.querySelector('.app');
+    if (app) {
+      app.style.opacity = '0';
+      app.style.pointerEvents = 'none';
+    }
+  }
+
+  function hideSplashOverlay(reason) {
+    document.documentElement.classList.remove('fire-s-booting');
+    document.documentElement.classList.add('fire-s-ready');
+    const boot = byId('fireSBootScreen');
+    if (boot) boot.style.display = 'none';
+    setBootCopy('Loading…');
+
+    const app = document.querySelector('.app');
+    if (app) {
+      app.style.opacity = '1';
+      app.style.pointerEvents = '';
+    }
+
+    try {
+      document.documentElement.dataset.fireSBootReason = String(reason || 'ready');
+    } catch (_) {}
+  }
+
   function revealApp(reason) {
-    if (revealed) return;
+    if (loginHoldsBoot() && reason !== 'login-done') return;
+    if (revealed && reason !== 'login-done') return;
+    if (reason === 'login-done') {
+      revealed = true;
+      clearTimeout(revealTimer);
+      hideSplashOverlay('login-done');
+      return;
+    }
     const elapsed = Date.now() - startedAt;
     const authReady = !!window.__fireSAuthSettled;
     if (reason !== 'timeout' && reason !== 'auth-settled' && !authReady) {
@@ -73,35 +130,24 @@
       }
     } catch (_) {}
 
-    document.documentElement.classList.remove('fire-s-booting');
-    document.documentElement.classList.add('fire-s-ready');
-    const boot = byId('fireSBootScreen');
-    if (boot) boot.style.display = 'none';
-
-    const app = document.querySelector('.app');
-    if (app) {
-      app.style.opacity = '1';
-      app.style.pointerEvents = '';
-    }
-
-    try {
-      document.documentElement.dataset.fireSBootReason = String(reason || 'ready');
-    } catch (_) {}
+    hideSplashOverlay(reason);
   }
 
   function scheduleReveal(reason, delay) {
+    if (loginHoldsBoot()) return;
     clearTimeout(revealTimer);
     revealTimer = setTimeout(() => revealApp(reason), delay || 0);
   }
 
-  // Background sync should never block first paint.
+  // Background sync should never block first paint — except during Login,
+  // when the splash stays up until the cloud inspections have arrived.
   function deferStartupSync() {
     if (typeof window.refreshSyncData !== 'function') return;
     if (window.refreshSyncData.__fireSStartupWrapped) return;
 
     const original = window.refreshSyncData;
     const wrapped = function fireSStartupAwareRefreshSyncData() {
-      if (document.documentElement.classList.contains('fire-s-booting')) {
+      if (document.documentElement.classList.contains('fire-s-booting') && !loginHoldsBoot()) {
         setTimeout(() => {
           try {
             original.apply(this, arguments);
@@ -125,7 +171,7 @@
     const wrapped = function fireSStartupShowHome() {
       const result = previous.apply(this, arguments);
       forceHomeOnly();
-      scheduleReveal('showHome', 180);
+      if (!loginHoldsBoot()) scheduleReveal('showHome', 180);
       return result;
     };
     wrapped.__fireSStartupWrapped = true;
@@ -144,14 +190,18 @@
       document.addEventListener(
         'fire-s:auth-settled',
         function () {
+          if (loginHoldsBoot()) return;
           scheduleReveal('auth-settled', 80);
         },
         { once: true }
       );
     } catch (_) {}
 
-    // Hard stop: never keep the splash longer than this.
-    setTimeout(() => revealApp('timeout'), BOOT_MAX_MS);
+    // Hard stop for cold start only. Login keeps the splash until the session is in.
+    setTimeout(() => {
+      if (loginHoldsBoot()) return;
+      revealApp('timeout');
+    }, BOOT_MAX_MS);
 
     // Prefer reveal after role home settles — only if auth already knows.
     setTimeout(() => {
@@ -160,13 +210,15 @@
           window.fireSApplyCleanHomeRoles();
         }
       } catch (_) {}
-      if (window.__fireSAuthSettled) scheduleReveal('settled', 120);
+      if (window.__fireSAuthSettled && !loginHoldsBoot()) scheduleReveal('settled', 120);
     }, 700);
 
-    if (window.__fireSAuthSettled) scheduleReveal('auth-settled', 80);
+    if (window.__fireSAuthSettled && !loginHoldsBoot()) scheduleReveal('auth-settled', 80);
   }
 
   window.fireSRevealApp = revealApp;
+  window.fireSHoldBoot = holdBootForLogin;
+  window.fireSSetBootCopy = setBootCopy;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });

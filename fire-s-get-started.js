@@ -945,16 +945,68 @@
     }
   }
 
+  function setLoginSplashCopy(text) {
+    try {
+      if (typeof window.fireSSetBootCopy === 'function') {
+        window.fireSSetBootCopy(text);
+        return;
+      }
+      var p = document.querySelector('#fireSBootScreen p');
+      if (p && text) p.textContent = text;
+    } catch (_) {}
+  }
+
+  function showLoginSplash(copy) {
+    try {
+      if (typeof window.fireSHoldBoot === 'function') {
+        window.fireSHoldBoot();
+      } else {
+        var html = document.documentElement;
+        html.classList.add('fire-s-booting');
+        html.classList.remove('fire-s-ready');
+        var boot = document.getElementById('fireSBootScreen');
+        if (boot) boot.style.display = '';
+        var app = document.querySelector('.app');
+        if (app) {
+          app.style.opacity = '0';
+          app.style.pointerEvents = 'none';
+        }
+      }
+      setLoginSplashCopy(copy || 'Signing in…');
+    } catch (_) {}
+  }
+
+  function hideLoginSplash() {
+    try {
+      setLoginSplashCopy('Loading…');
+      if (typeof window.fireSRevealApp === 'function') {
+        window.fireSRevealApp('login-done');
+        return;
+      }
+      document.documentElement.classList.remove('fire-s-booting');
+      document.documentElement.classList.add('fire-s-ready');
+      var boot = document.getElementById('fireSBootScreen');
+      if (boot) boot.style.display = 'none';
+      var app = document.querySelector('.app');
+      if (app) {
+        app.style.opacity = '1';
+        app.style.pointerEvents = '';
+      }
+    } catch (_) {}
+  }
+
   function beginLoginInFlight() {
     try {
       window.__fireSLoggingIn = true;
     } catch (_) {}
+    showLoginSplash('Signing in…');
   }
 
   function endLoginInFlight() {
     try {
       window.__fireSLoggingIn = false;
     } catch (_) {}
+    hideLoginSplash();
   }
 
   async function finishSignedInSession(successMsg) {
@@ -970,6 +1022,7 @@
     if (claimed > 0 || hasCompany()) {
       clearPendingSubscribe();
       clearJoiningAsStaff();
+      setLoginSplashCopy('Loading your inspections…');
       await syncCloudAfterAuth();
       enterAppHome(
         successMsg || (claimed > 0 ? 'You are on the team. You do not Subscribe — your owner pays.' : 'Signed in.')
@@ -1397,12 +1450,15 @@
   }
 
   async function doCheckAgain() {
+    beginLoginInFlight();
+    setLoginSplashCopy('Joining the company…');
     setStatus('Joining the company…');
     try {
       var claimed = await joinCompanyAfterLogin();
       refreshHomeChrome();
       if (claimed > 0 || hasCompany()) {
         clearJoiningAsStaff();
+        setLoginSplashCopy('Loading your inspections…');
         await syncCloudAfterAuth();
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Access updated.');
         return;
@@ -1415,6 +1471,8 @@
       showWaiting();
     } catch (e) {
       setStatus((e && e.message) || 'Could not refresh access.', true);
+    } finally {
+      endLoginInFlight();
     }
   }
 
