@@ -22,8 +22,8 @@ const files = {
 };
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.55'/.test(liveEnv),
-  'Live Fire-S must be 1.3.55 so one Login tap signs in'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.56'/.test(liveEnv),
+  'Live Fire-S must be 1.3.56 so one Login tap signs in'
 );
 assert.ok(/1\.3\.62-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.62-toets');
 

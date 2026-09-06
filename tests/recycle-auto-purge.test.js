@@ -15,6 +15,8 @@ const env = read('staging/fire-s-env.js');
 const html = read('staging/index.html');
 const liveEnv = read('fire-s-env.js');
 
+const liveHtml = read('index.html');
+
 assert.ok(/1\.3\.62-toets/.test(env), 'Toets-blad version must be 1.3.62-toets');
 assert.ok(
   /app\.js\?v=1-3-62-recycle/.test(html) &&
@@ -22,50 +24,61 @@ assert.ok(
   'Toets-blad must cache-bust the recycle auto-purge files'
 );
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.55'/.test(liveEnv),
-  'Live Fire-S must stay on 1.3.55 until this is sat live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.56'/.test(liveEnv),
+  'Live Fire-S must be 1.3.56 after sit dit live'
+);
+assert.ok(
+  /app\.js\?v=1-3-56-recycle/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-56-live/.test(liveHtml),
+  'Live must cache-bust the Recycle Bin auto-purge files'
 );
 
+function assertAutoPurgeSource(src, label) {
+  assert.ok(
+    /delete-data-management-v15/.test(src) &&
+      /function isRetentionExpired\(item\)/.test(src) &&
+      /function purgeExpiredRecycleEntries\(\)/.test(src) &&
+      /await purgeExpiredRecycleEntries\(\)/.test(src) &&
+      /scheduleExpiredRecyclePurge\(\)/.test(src),
+    label + ' Recycle Bin must auto-purge expired inspections on day 0'
+  );
+  assert.ok(
+    /On day 0 the item is deleted automatically/.test(src) &&
+      /The owner may permanently delete it immediately/.test(src) &&
+      /Owner may delete immediately/.test(src),
+    label + ' Recycle Bin copy must explain automatic day-0 delete and owner immediate delete'
+  );
+  assert.ok(
+    /currentRole === 'company_owner'/.test(src) &&
+      /typeof isCompanyOwner === 'function' && isCompanyOwner\(\)/.test(src),
+    label + ' owner must be allowed to permanently delete immediately'
+  );
+  assert.ok(
+    /!automatic && !canPurgeBeforeExpiry\(\)/.test(src),
+    label + ' manual permanent delete must stay owner-only; day-0 purge is automatic'
+  );
+  assert.ok(
+    !/After expiry, a Company Admin or Super Admin may permanently delete the item/.test(src),
+    label + ' Recycle Bin must not ask an admin to delete expired inspections by hand'
+  );
+}
+
+assertAutoPurgeSource(app, 'Toets');
+assertAutoPurgeSource(liveApp, 'Live');
 assert.ok(
-  /delete-data-management-v15/.test(app) &&
-    /function isRetentionExpired\(item\)/.test(app) &&
-    /function purgeExpiredRecycleEntries\(\)/.test(app) &&
-    /await purgeExpiredRecycleEntries\(\)/.test(app) &&
-    /scheduleExpiredRecyclePurge\(\)/.test(app),
-  'Toets Recycle Bin must auto-purge expired inspections on day 0'
-);
-assert.ok(
-  /On day 0 the item is deleted automatically/.test(app) &&
-    /The owner may permanently delete it immediately/.test(app) &&
-    /Owner may delete immediately/.test(app),
-  'Toets Recycle Bin copy must explain automatic day-0 delete and owner immediate delete'
-);
-assert.ok(
-  /currentRole === 'company_owner'/.test(app) &&
-    /typeof isCompanyOwner === 'function' && isCompanyOwner\(\)/.test(app),
-  'Owner must be allowed to permanently delete immediately'
-);
-assert.ok(
-  /!automatic && !canPurgeBeforeExpiry\(\)/.test(app),
-  'Manual permanent delete must stay owner-only; day-0 purge is automatic'
-);
-assert.ok(
-  !/After expiry, a Company Admin or Super Admin may permanently delete the item/.test(app),
-  'Toets Recycle Bin must not ask an admin to delete expired inspections by hand'
+  !/Load 10-min expiry sample/.test(liveApp),
+  'Live Recycle Bin must not include the toets 10-min sample button'
 );
 
-assert.ok(
-  /After expiry, a Company Admin or Super Admin may permanently delete the item/.test(liveApp) &&
-    /Only the Super Admin may permanently delete it before expiry/.test(liveApp) &&
-    !/function isRetentionExpired\(item\)/.test(liveApp) &&
-    !/function purgeExpiredRecycleEntries\(\)/.test(liveApp),
-  'Live Recycle Bin must keep the current manual expiry delete until this is sat live'
-);
+function extractInstaller(src, label) {
+  const start = src.indexOf('(function installFireSDataManagementV12(){');
+  const end = src.indexOf('})();', src.lastIndexOf('window.FireSDataManagementV12'));
+  assert.ok(start >= 0 && end > start, label + ' data management installer must be present');
+  return src.slice(start, end + 5);
+}
 
-const start = app.indexOf('(function installFireSDataManagementV12(){');
-const end = app.indexOf('})();', app.lastIndexOf('window.FireSDataManagementV12'));
-assert.ok(start >= 0 && end > start, 'Data management installer must be present');
-const installer = app.slice(start, end + 5);
+const installer = extractInstaller(app, 'Toets');
+const liveInstaller = extractInstaller(liveApp, 'Live');
 
 function isoDaysAgo(days) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
@@ -92,7 +105,7 @@ function makeElement() {
   };
 }
 
-function loadManager(projects, roleName) {
+function loadManager(projects, roleName, installerSrc) {
   const store = {
     fireyeProjects: JSON.stringify(projects),
     fireSDataManagementAuditV12: '[]'
@@ -153,7 +166,7 @@ function loadManager(projects, roleName) {
   };
   sandbox.window.document = document;
   sandbox.global = sandbox;
-  vm.runInNewContext(installer, sandbox, { timeout: 3000 });
+  vm.runInNewContext(installerSrc || installer, sandbox, { timeout: 3000 });
   return sandbox;
 }
 
@@ -279,6 +292,28 @@ const seed = [
     ownerKept.recycleBin.currentInspections.length,
     0,
     'Owner immediate delete must remove the recoverable current inspection'
+  );
+
+  const liveBox = loadManager(seed, 'company_owner', liveInstaller);
+  const liveApi = liveBox.window.FireSDataManagementV12;
+  await liveApi.purgeExpiredRecycleEntries();
+  const liveAfter = readProjects(liveBox);
+  const liveExpired = liveAfter.find(project => project.id === 'expired-inspections');
+  const liveKept = liveAfter.find(project => project.id === 'keep-live');
+  assert.strictEqual(
+    liveExpired.recycleBin.currentInspections.length,
+    0,
+    'Live must auto-purge expired current inspections after 30 days'
+  );
+  assert.strictEqual(
+    liveExpired.recycleBin.historyInspections.length,
+    0,
+    'Live must auto-purge expired history inspections after 30 days'
+  );
+  assert.strictEqual(
+    liveKept.recycleBin.currentInspections.length,
+    1,
+    'Live must keep recoverable inspections during the 30-day window'
   );
 
   console.log('recycle-auto-purge.test.js: ok');

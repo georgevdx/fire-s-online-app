@@ -43,9 +43,10 @@ assert.ok(
   'Toets Recycle Bin must show a minute countdown and auto-refresh before 10-min expiry'
 );
 assert.ok(
-  !/function armSoonExpireWatcher\(\)/.test(liveApp) &&
-    !/Load 10-min expiry sample/.test(liveApp),
-  'Live Recycle Bin must not include the 10-min sample watcher'
+  /function armSoonExpireWatcher\(\)/.test(liveApp) &&
+    !/Load 10-min expiry sample/.test(liveApp) &&
+    !/fireSLoadRecycle10MinSample/.test(liveApp),
+  'Live Recycle Bin auto-purges after 30 days, but must not include the 10-min toets sample'
 );
 
 const samples = require(path.join(__dirname, '..', 'staging', 'fire-s-test-samples.js'));

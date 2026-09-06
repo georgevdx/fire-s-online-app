@@ -18,8 +18,8 @@ const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.55'/.test(liveEnv),
-  'Live Fire-S must stay 1.3.55'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.56'/.test(liveEnv),
+  'Live Fire-S must stay 1.3.56'
 );
 assert.ok(/1\.3\.62-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.62-toets');
 
@@ -68,7 +68,7 @@ assert.ok(
 assert.ok(
   /fire-s-get-started\.css\?v=2-14-hide-saved/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-45-desktop/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-55-live/.test(liveHtml),
+    /fire-s-env\.js\?v=1-3-56-live/.test(liveHtml),
   'Live cache tags must stay on the previous Access files'
 );
 
