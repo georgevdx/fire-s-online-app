@@ -78,24 +78,24 @@ assertEnterHome(liveStarted, 'Live Access');
 assertEnterHome(stagingStarted, 'Toets Access');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.55'/.test(liveEnv),
-  'Live Fire-S must be 1.3.55'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.57'/.test(liveEnv),
+  'Live Fire-S must be 1.3.57'
 );
-assert.ok(/1\.3\.61-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.61-toets');
+assert.ok(/1\.3\.63-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.63-toets');
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-3-keep-dash/.test(liveHtml) &&
     /fire-s-startup-stability\.js\?v=1-8-desktop/.test(liveHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(liveHtml) &&
-    /fire-s-get-started\.js\?v=2-45-desktop/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-55-live/.test(liveHtml),
+    /fire-s-get-started\.js\?v=2-46-login-fast/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-57-live/.test(liveHtml),
   'Live must cache-bust the desktop landing fix'
 );
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-3-keep-dash/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-8-desktop/.test(stagingHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(stagingHtml) &&
-    /fire-s-get-started\.js\?v=2-45-desktop/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-61-toets/.test(stagingHtml),
+    /fire-s-get-started\.js\?v=2-46-login-fast/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-63-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
 );
 
