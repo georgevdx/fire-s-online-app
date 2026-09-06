@@ -723,6 +723,23 @@
     </div>
     <ul id="testSamplesInspectorList" class="test-samples-inspectors"></ul>
   </div>
+
+  <div class="test-samples-intro" style="margin-top:22px;">
+    <div class="test-samples-kicker">30-Day Recycle Bin</div>
+    <h3>10-minute expiry sample</h3>
+    <p>
+      Loads one TEST inspection into the Recycle Bin with a 10-minute countdown,
+      as if the 30-day restore period is ending. It permanently deletes automatically when the timer reaches 0.
+      Open Recycle Bin and leave it open to watch it vanish.
+    </p>
+  </div>
+
+  <div class="test-samples-panel">
+    <div id="testSamplesRecycleMeta" class="test-samples-meta">No 10-minute Recycle Bin sample loaded.</div>
+    <div class="test-samples-actions">
+      <button id="testSamplesRecycle10MinBtn" type="button" class="cloud-primary-btn">Load 10-min Recycle Bin sample</button>
+    </div>
+  </div>
 </section>
 <section id="userManualSection" class="card user-manual-section" style="display:none;">
   <div class="toolbar">
@@ -1797,7 +1814,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-62-recycle"></script>
+  <script src="app.js?v=1-3-62-recycle10"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-37-login"></script>
@@ -1807,7 +1824,7 @@
   <script src="fire-s-company-team.js?v=2-19-one-page"></script>
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
-  <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
+  <script src="fire-s-test-samples.js?v=1-5-recycle10"></script>
   <script src="fire-s-subscriptions.js?v=1-18-subscribe-again"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>

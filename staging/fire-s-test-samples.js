@@ -7,6 +7,8 @@
   'use strict';
 
   const BATCH_ID = 'fires-test-sample-v1';
+  const RECYCLE_10MIN_ID = 'fires-test-sample-recycle-10min';
+  const RECYCLE_10MIN_MS = 10 * 60 * 1000;
   const WORKSPACE_IDS = [
     'homeSection',
     'servicesSection',
@@ -306,6 +308,52 @@
     return projects;
   }
 
+  function buildRecycle10MinSample(options) {
+    const live = buildOneProject(6, options || {});
+    const recycled = buildOneProject(18, options || {});
+    const now = Date.now();
+    const deletedAt = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const purgeAfter = new Date(now + RECYCLE_10MIN_MS).toISOString();
+    live.id = RECYCLE_10MIN_ID;
+    live.organisationName = 'TEST · Recycle 10-min expiry';
+    live.siteName = 'Expiry lab';
+    live.projectName = live.organisationName + ' · ' + live.siteName;
+    live.premisesIdentityName = live.organisationName;
+    live.premisesIdentitySite = live.siteName;
+    live.inspectionNumber = 'TEST-2026-KEEP';
+    live.finalComments = 'Premises stays after the Recycle Bin sample expires.';
+    live.inspectionHistory = [{
+      inspectionNumber: live.inspectionNumber,
+      inspectionDate: live.inspectionDate,
+      completedAt: live.completedAt,
+      inspectorName: live.inspectorName,
+      occupancy: live.occupancy
+    }];
+    live.recycleBin = {
+      currentInspections: [],
+      historyInspections: [{
+        recycleId: RECYCLE_10MIN_ID + '-hist',
+        deleteType: 'history_inspection',
+        deletedAt,
+        purgeAfter,
+        inspectionLabel: 'TEST-2026-30DAY · deletes in 10 min',
+        originalHistoryIndex: 0,
+        snapshot: {
+          inspectionNumber: 'TEST-2026-30DAY',
+          inspectionDate: deletedAt.slice(0, 10),
+          completedAt: deletedAt,
+          inspectorName: recycled.inspectorName,
+          occupancy: recycled.occupancy,
+          answers: recycled.answers,
+          photos: recycled.photos,
+          finalComments:
+            'TEST Recycle Bin item. Treated as if the 30-day restore window ends in 10 minutes.'
+        }
+      }]
+    };
+    return live;
+  }
+
   function canManage() {
     try {
       if (typeof window.canEditCompanyDetails === 'function') {
@@ -350,12 +398,25 @@
 
   function paintStatus() {
     const meta = byId('testSamplesMeta');
+    const recycleMeta = byId('testSamplesRecycleMeta');
     const list = byId('testSamplesInspectorList');
     const count = existingTestCount();
+    let recycleLoaded = false;
+    try {
+      const projects = typeof getProjects === 'function' ? getProjects() : [];
+      recycleLoaded = (projects || []).some(function (project) {
+        return String(project && project.id) === RECYCLE_10MIN_ID;
+      });
+    } catch (_) {}
     if (meta) {
       meta.textContent = count
         ? count + ' test inspections are loaded right now.'
         : 'No test inspections loaded yet.';
+    }
+    if (recycleMeta) {
+      recycleMeta.textContent = recycleLoaded
+        ? '10-min Recycle Bin sample is loaded. Open Recycle Bin — it permanently deletes after 10 minutes.'
+        : 'No 10-minute Recycle Bin sample loaded.';
     }
     if (list) {
       list.innerHTML = TEST_INSPECTORS.map(function (person) {
@@ -494,6 +555,46 @@
     setMessage('All TEST sample inspections are deleted.');
   }
 
+  async function loadRecycle10MinSample() {
+    if (!canManage()) {
+      setMessage('Only the owner or manager can load the Recycle Bin sample.', true);
+      alert('Only the owner or manager can load the Recycle Bin sample.');
+      return false;
+    }
+    if (typeof getProjects !== 'function' || typeof setProjects !== 'function') {
+      setMessage('Could not reach inspection storage on this phone.', true);
+      return false;
+    }
+    const confirmed = window.confirm(
+      'Load one TEST inspection into the Recycle Bin? It permanently deletes after 10 minutes, as if the 30-day restore period has just ended.'
+    );
+    if (!confirmed) return false;
+
+    const current = getProjects() || [];
+    const kept = current.filter(function (project) {
+      return String(project && project.id) !== RECYCLE_10MIN_ID;
+    });
+    const sample = buildRecycle10MinSample({
+      companyId: window.currentUserProfile && window.currentUserProfile.companyId,
+      companyName:
+        (window.currentUserProfile && window.currentUserProfile.companyName) ||
+        'Company S',
+      userId: window.currentUserProfile && window.currentUserProfile.id,
+      userEmail: window.currentUserProfile && window.currentUserProfile.email
+    });
+    setProjects(kept.concat([sample]));
+    refreshViews();
+    setMessage(
+      '10-min Recycle Bin sample is loaded. Keep Recycle Bin open — it permanently deletes after 10 minutes.'
+    );
+    try {
+      if (typeof window.fireSOpenRecycleBinV12 === 'function') {
+        window.fireSOpenRecycleBinV12();
+      }
+    } catch (_) {}
+    return true;
+  }
+
   function openSamples() {
     if (!canManage()) {
       alert('Only the owner or manager can load or delete test inspections.');
@@ -508,7 +609,7 @@
       }
     } catch (_) {}
     paintStatus();
-    setMessage('Use Load to fill 50 sample inspections, or Delete when testing is finished.');
+    setMessage('Use Load for 50 samples, or load the 10-min Recycle Bin expiry sample.');
   }
 
   function goHome() {
@@ -523,6 +624,7 @@
     const back = byId('testSamplesBackBtn');
     const loadBtn = byId('testSamplesLoadBtn');
     const deleteBtn = byId('testSamplesDeleteBtn');
+    const recycleBtn = byId('testSamplesRecycle10MinBtn');
     const homeBtn = byId('cmdTestSamplesBtn');
     if (back && !back.__fireSBound) {
       back.__fireSBound = true;
@@ -544,6 +646,14 @@
         });
       });
     }
+    if (recycleBtn && !recycleBtn.__fireSBound) {
+      recycleBtn.__fireSBound = true;
+      recycleBtn.addEventListener('click', function () {
+        loadRecycle10MinSample().catch(function (error) {
+          setMessage((error && error.message) || 'Could not load the Recycle Bin sample.', true);
+        });
+      });
+    }
     if (homeBtn && !homeBtn.__fireSBound) {
       homeBtn.__fireSBound = true;
       homeBtn.addEventListener('click', function (event) {
@@ -561,6 +671,8 @@
   root.fireSTestInspectors = TEST_INSPECTORS;
   root.fireSIsTestSample = isTestSample;
   root.fireSBuildTestSampleProjects = buildTestSampleProjects;
+  root.fireSBuildRecycle10MinSample = buildRecycle10MinSample;
+  root.fireSLoadRecycle10MinSample = loadRecycle10MinSample;
   root.fireSOpenTestSamples = openSamples;
 
   if (typeof document !== 'undefined') {
@@ -574,9 +686,12 @@
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       BATCH_ID,
+      RECYCLE_10MIN_ID,
+      RECYCLE_10MIN_MS,
       TEST_INSPECTORS,
       isTestSample,
       buildTestSampleProjects,
+      buildRecycle10MinSample,
       testPhotoSrc
     };
   }

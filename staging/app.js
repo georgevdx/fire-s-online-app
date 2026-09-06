@@ -41597,6 +41597,35 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return Math.max(0, Math.ceil((expiry - Date.now()) / (24 * 60 * 60 * 1000)));
   }
 
+  function retentionRemainingText(item){
+    if (!isWithinRetention(item)) {
+      return '0 days remaining · deleting automatically';
+    }
+    const expiry = new Date(item?.purgeAfter || 0).getTime();
+    const ms = expiry - Date.now();
+    if (ms < 60 * 60 * 1000) {
+      const minutes = Math.max(1, Math.ceil(ms / 60000));
+      return `${minutes} min remaining`;
+    }
+    if (ms < 24 * 60 * 60 * 1000) {
+      const hours = Math.max(1, Math.ceil(ms / 3600000));
+      return `${hours} hour${hours === 1 ? '' : 's'} remaining`;
+    }
+    const remaining = daysRemaining(item);
+    return `${remaining} day${remaining === 1 ? '' : 's'} remaining`;
+  }
+
+  function msUntilSoonestExpiry(){
+    let soonest = Infinity;
+    recycleEntries().forEach(entry => {
+      const expiry = new Date(entry?.purgeAfter || 0).getTime();
+      if (Number.isFinite(expiry) && expiry > Date.now()) {
+        soonest = Math.min(soonest, expiry - Date.now());
+      }
+    });
+    return Number.isFinite(soonest) ? soonest : null;
+  }
+
   function restorePremises(projectId){
     if (!canAdminDelete()) return false;
     const projects = rawProjects();
@@ -41939,10 +41968,34 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return autoPurgePromise;
   }
 
+  let recycleWatchTimer = null;
+
+  function armSoonExpireWatcher(){
+    if (recycleWatchTimer) {
+      window.clearTimeout(recycleWatchTimer);
+      recycleWatchTimer = null;
+    }
+    const remaining = msUntilSoonestExpiry();
+    if (remaining == null || remaining > 15 * 60 * 1000) return;
+    const delay = Math.max(1000, Math.min(10000, remaining + 80));
+    recycleWatchTimer = window.setTimeout(() => {
+      Promise.resolve(purgeExpiredRecycleEntries())
+        .then(() => {
+          ensureRecycleBinButton();
+          if (document.getElementById(RECYCLE_MODAL_ID)) showRecycleBin();
+          else armSoonExpireWatcher();
+        })
+        .catch(() => {
+          armSoonExpireWatcher();
+        });
+    }, delay);
+  }
+
   function scheduleExpiredRecyclePurge(){
     Promise.resolve(purgeExpiredRecycleEntries())
       .then(() => {
         ensureRecycleBinButton();
+        armSoonExpireWatcher();
       })
       .catch(() => {
         ensureRecycleBinButton();
@@ -42269,11 +42322,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const rows = entries.length
       ? entries.map(entry => {
           const active = isWithinRetention(entry);
-          const remaining = daysRemaining(entry);
+          const statusText = retentionRemainingText(entry);
           const canPermanentlyDelete = canPermanentlyDeleteEntry(entry);
-          const statusText = active
-            ? `${remaining} day${remaining === 1 ? '' : 's'} remaining`
-            : '0 days remaining · deleting automatically';
           const permanentButton = canPermanentlyDelete
             ? `
                 <button
@@ -42325,6 +42375,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
           <div class="fire-s-data-v12-safety">
             Restore is available for 30 days. On day 0 the item is deleted automatically. The owner may permanently delete it immediately.
           </div>
+          ${
+            (typeof fireSIsStaging === 'function' && fireSIsStaging()) ||
+            (typeof FIRE_S_ENV !== 'undefined' && FIRE_S_ENV?.isStaging)
+              ? '<button type="button" class="fire-s-data-v12-recycle-button" id="fireSLoadRecycle10MinV15">Load 10-min expiry sample</button>'
+              : ''
+          }
           <div class="fire-s-recycle-v12-list">${rows}</div>
         </div>
       </div>
@@ -42404,6 +42460,14 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         showRecycleBin();
       });
     });
+    backdrop.querySelector('#fireSLoadRecycle10MinV15')?.addEventListener('click', () => {
+      if (typeof window.fireSLoadRecycle10MinSample === 'function') {
+        window.fireSLoadRecycle10MinSample();
+        return;
+      }
+      alert('The 10-minute Recycle Bin sample is not available on this page.');
+    });
+    armSoonExpireWatcher();
   }
 
   function ensureRecycleBinButton(){
@@ -42622,6 +42686,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     canPermanentlyDeleteEntry,
     canPurgeBeforeExpiry,
     isRetentionExpired,
+    retentionRemainingText,
     purgeExpiredRecycleEntries,
     recycleEntries
   };
