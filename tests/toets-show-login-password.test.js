@@ -21,7 +21,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.55'/.test(liveEnv),
   'Live Fire-S must stay 1.3.55'
 );
-assert.ok(/1\.3\.61-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.61-toets');
+assert.ok(/1\.3\.62-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.62-toets');
 
 const stagingLogin = stagingHtml.match(
   /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
@@ -47,7 +47,7 @@ assert.ok(
 assert.ok(
   /fire-s-get-started\.css\?v=2-15-show-pw/.test(stagingHtml) &&
     /fire-s-get-started\.js\?v=2-45-desktop/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-61-toets/.test(stagingHtml),
+    /fire-s-env\.js\?v=1-3-62-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the show-password Access files'
 );
 

@@ -18,7 +18,7 @@ const liveHtml = read('index.html');
 const terms = read('staging/terms.html');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.61-toets/.test(env), 'Toets-blad version must be 1.3.61-toets');
+assert.ok(/1\.3\.62-toets/.test(env), 'Toets-blad version must be 1.3.62-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.55'/.test(liveEnv),
   'Live Fire-S must be 1.3.55 after sit dit live'
