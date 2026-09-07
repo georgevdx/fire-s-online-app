@@ -222,7 +222,7 @@
     if (roleSelect) roleSelect.value = 'inspector';
     if (status === 'invited' || status === 'reopened') {
       setMessage(
-        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → First time? Create password once, then Login. They must not Subscribe.`
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → type that email → First time? Create password appears if they have no password yet, then Login. They must not Subscribe.`
       );
     } else {
       setMessage(

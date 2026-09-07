@@ -918,7 +918,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'Use Access: First time? Create password, then Login. You do not Subscribe. Your owner pays for this email.'
+      'Use Access: type your email. First time? Create password appears if this email has no password yet, then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);

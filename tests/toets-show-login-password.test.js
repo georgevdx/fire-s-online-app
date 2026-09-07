@@ -45,8 +45,8 @@ assert.ok(
   'Toets Access CSS must keep Show password beside the field, not as a full-width Access button'
 );
 assert.ok(
-  /fire-s-get-started\.css\?v=2-15-show-pw/.test(stagingHtml) &&
-    /fire-s-get-started\.js\?v=2-48-splash/.test(stagingHtml) &&
+  /fire-s-get-started\.css\?v=2-16-create-pw/.test(stagingHtml) &&
+    /fire-s-get-started\.js\?v=2-49-create-pw/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-61-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the show-password Access files'
 );

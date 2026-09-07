@@ -19,6 +19,8 @@
   var wired = false;
   var root = null;
   var loginReachedHome = false;
+  var createPasswordKnown = {};
+  var createPasswordTimer = null;
 
   function byId(id) {
     return document.getElementById(id);
@@ -698,6 +700,80 @@
     if (loginLink) loginLink.style.display = '';
   }
 
+  function loginEmailValue() {
+    return text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
+  }
+
+  function looksLikeEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function setCreatePasswordVisible(show) {
+    var btn = byId('fireSSwitchToCreateBtn');
+    if (!btn) return;
+    if (show) {
+      btn.hidden = false;
+      btn.removeAttribute('hidden');
+      btn.style.display = '';
+    } else {
+      btn.hidden = true;
+      btn.setAttribute('hidden', '');
+      btn.style.display = 'none';
+    }
+  }
+
+  function rememberEmailHasPassword(email, hasPassword) {
+    var key = text(email).toLowerCase();
+    if (!looksLikeEmail(key)) return;
+    createPasswordKnown[key] = !!hasPassword;
+  }
+
+  async function emailHasRegisteredPassword(email) {
+    var key = text(email).toLowerCase();
+    if (!looksLikeEmail(key)) return true;
+    if (Object.prototype.hasOwnProperty.call(createPasswordKnown, key)) {
+      return createPasswordKnown[key];
+    }
+    var sb = getSb();
+    if (!sb) return null;
+    try {
+      if (typeof sb.rpc === 'function') {
+        var rpc = await sb.rpc('fire_s_email_has_login', { p_email: key });
+        if (!rpc.error && typeof rpc.data === 'boolean') {
+          createPasswordKnown[key] = rpc.data;
+          return rpc.data;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  async function refreshCreatePasswordButton() {
+    var email = loginEmailValue();
+    if (!looksLikeEmail(email)) {
+      setCreatePasswordVisible(false);
+      return;
+    }
+    if (createPasswordKnown[email] === true) {
+      setCreatePasswordVisible(false);
+      return;
+    }
+    var hasPassword = await emailHasRegisteredPassword(email);
+    if (loginEmailValue() !== email) return;
+    if (hasPassword === true) {
+      setCreatePasswordVisible(false);
+      return;
+    }
+    setCreatePasswordVisible(true);
+  }
+
+  function scheduleCreatePasswordCheck() {
+    if (createPasswordTimer) clearTimeout(createPasswordTimer);
+    createPasswordTimer = setTimeout(function () {
+      refreshCreatePasswordButton();
+    }, 280);
+  }
+
   function paintLoginForm() {
     paintAccessKicker();
     var loginBack =
@@ -725,11 +801,10 @@
     paintLoginForm();
     setTitle(
       'Access',
-      'Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.'
+      'Type your email and password, then Login. First time on this email: Create password appears if no password is registered yet. New company: Subscribe under Forgot password.'
     );
     showPanel('fireSGetStartedLoginFields');
-    var createToggle = byId('fireSSwitchToCreateBtn');
-    if (createToggle) createToggle.style.display = '';
+    refreshCreatePasswordButton();
     setStatus('');
   }
 
@@ -759,6 +834,13 @@
       'Use the email your owner added under Personnel. You do not Subscribe. Your owner already pays for this email. This is only needed once.'
     );
     showPanel('fireSGetStartedCreateFields');
+    try {
+      var fromLogin = loginEmailValue();
+      var createEmail = byId('fireSCreateEmail');
+      if (createEmail && looksLikeEmail(fromLogin) && !text(createEmail.value)) {
+        createEmail.value = fromLogin;
+      }
+    } catch (_) {}
     setStatus('');
   }
 
@@ -1215,6 +1297,7 @@
           low.indexOf('user already exists') >= 0 ||
           low.indexOf('email address is already') >= 0;
         if (already) {
+          rememberEmailHasPassword(email, true);
           setStatus('This email already exists. Trying Login with that password…');
           var loginTry = await sb.auth.signInWithPassword({
             email: email,
@@ -1713,6 +1796,14 @@
     var switchCreate = byId('fireSSwitchToCreateBtn');
     if (switchCreate) {
       switchCreate.addEventListener('click', showCreatePassword);
+    }
+    var loginEmail = byId('fireSLoginEmail');
+    if (loginEmail) {
+      loginEmail.addEventListener('input', scheduleCreatePasswordCheck);
+      loginEmail.addEventListener('change', scheduleCreatePasswordCheck);
+      loginEmail.addEventListener('blur', function () {
+        refreshCreatePasswordButton();
+      });
     }
     var switchLogin = byId('fireSSwitchToLoginBtn');
     if (switchLogin) {
