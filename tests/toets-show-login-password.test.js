@@ -44,7 +44,7 @@ function assertShowPassword(html, started, css, label) {
     /\.fire-s-password-row \{/.test(css) &&
       /max-width: 100%/.test(css.match(/\.fire-s-password-row \{[\s\S]*?\}/)[0]) &&
       /\.fire-s-show-password-btn \{/.test(css) &&
-      /overflow: hidden/.test(css) &&
+      /overflow-x: hidden/.test(css) &&
       /grid-template-columns: minmax\(0, 1fr\)/.test(css),
     label + ' phone Access must keep Show password inside the card'
   );
@@ -54,13 +54,13 @@ assertShowPassword(stagingHtml, stagingStarted, stagingCss, 'Toets');
 assertShowPassword(liveHtml, liveStarted, liveCss, 'Live');
 
 assert.ok(
-  /fire-s-get-started\.css\?v=2-17-phone-pw/.test(stagingHtml) &&
+  /fire-s-get-started\.css\?v=2-18-phone-pw/.test(stagingHtml) &&
     /fire-s-get-started\.js\?v=2-51-show-pw/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
   'Toets-blad must cache-bust the phone Access files'
 );
 assert.ok(
-  /fire-s-get-started\.css\?v=2-17-phone-pw/.test(liveHtml) &&
+  /fire-s-get-started\.css\?v=2-18-phone-pw/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-51-show-pw/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-58-pw/.test(liveHtml),
   'Live must cache-bust Show password Access files'

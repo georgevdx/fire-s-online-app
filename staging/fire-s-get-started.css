@@ -79,7 +79,9 @@
 .fire-s-get-started-fields input,
 .fire-s-get-started-fields button {
   width: 100%;
+  max-width: 100%;
   margin: 0;
+  box-sizing: border-box;
 }
 
 .fire-s-password-row {
@@ -135,7 +137,8 @@
   .fire-s-get-started {
     margin: 0 0 12px;
     padding: 12px 12px 14px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
     max-width: 100%;
     box-sizing: border-box;
   }
