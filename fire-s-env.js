@@ -52,7 +52,7 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.27-toets' : '1.3.56',
+    appVersion: staging ? '1.3.27-toets' : '1.3.57',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,
@@ -68,6 +68,8 @@
       for (var i = 0; i < nodes.length; i += 1) {
         if (nodes[i]) nodes[i].textContent = label;
       }
+      var cloudVersion = root.document.getElementById('cloudVersion');
+      if (cloudVersion) cloudVersion.textContent = env.appVersion;
     } catch (_) {}
   }
 
@@ -99,6 +101,7 @@
   root.fireSIsStaging = function () {
     return !!env.isStaging;
   };
+  root.fireSPaintVersion = paintVersion;
 
   if (root.document && root.document.body) {
     paintBanner();

@@ -651,7 +651,7 @@
     cardText(
       'cmdScheduleBtn',
       'Schedule',
-      'Bookings, follow-ups and new-site planning.'
+      'Book an existing site or a new site, and review follow-ups.'
     );
     cardText(
       'cmdReportsBtn',
@@ -768,7 +768,7 @@
     cardText(
       'cmdScheduleBtn',
       'Schedule',
-      'Portfolio bookings and follow-up planning.'
+      'Book an existing site or a new site, and review follow-ups.'
     );
     cardText(
       'cmdReportsBtn',

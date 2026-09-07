@@ -70,7 +70,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-56-archive">
+  <link rel="stylesheet" href="styles.css?v=1-3-63-exist-sched">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-23-lists">
@@ -116,7 +116,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version loading...</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.63-toets</p></div>
   </div>
 
   <div class="cloud-menu">
@@ -186,7 +186,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">Loading...</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.63-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -566,7 +566,7 @@
         <span class="command-icon">📅</span>
         <span class="command-text">
           <span class="command-title">Schedule</span>
-          <span class="command-copy">Create new-site bookings and review follow-ups.</span>
+          <span class="command-copy">Book an existing site or a new site, and review follow-ups.</span>
         </span>
       </button>
 
@@ -1324,19 +1324,53 @@
           <button id="scheduleNewInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
             Schedule Inspection for New Site
           </button>
+
+          <button id="scheduleExistingInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
+            Schedule Inspection for Existing Site
+          </button>
         </div>
         <div id="scheduleNewPanel" class="schedule-new-panel" style="display:none;">
-  <h3>Schedule New Inspection</h3>
+  <h3 id="schedulePanelTitle">Schedule Inspection</h3>
 
-  <p class="form-help-text">
-    Book a future inspection for a new site. Pick the inspector who must visit. They get an email with the premises details.
+  <p class="form-help-text" id="schedulePanelHelp">
+    Book a future inspection for a new site or for a site that already exists. Pick the inspector who must visit. They get an email with the premises details.
   </p>
 
-  <label for="scheduleOrganisationName">Client / Organisation</label>
-  <input id="scheduleOrganisationName" type="text" placeholder="Example: ABC Stores">
+  <div class="schedule-mode-toggle" role="tablist" aria-label="Schedule new or existing site">
+    <button type="button" id="scheduleModeNewBtn" class="schedule-mode-btn is-active">
+      New site
+    </button>
+    <button type="button" id="scheduleModeExistingBtn" class="schedule-mode-btn">
+      Existing site
+    </button>
+  </div>
 
-  <label for="scheduleSiteName">Site / Premises</label>
-  <input id="scheduleSiteName" type="text" placeholder="Example: Shop 12">
+  <div id="scheduleExistingFields" class="schedule-existing-fields" hidden>
+    <label for="scheduleExistingPremisesSearch">Find existing site</label>
+    <input
+      id="scheduleExistingPremisesSearch"
+      type="search"
+      placeholder="Type organisation, site or address"
+      autocomplete="off"
+    >
+
+    <label for="scheduleExistingPremisesSelect">Existing site / premises</label>
+    <select id="scheduleExistingPremisesSelect">
+      <option value="">Select a site already on Fire-S</option>
+    </select>
+    <p class="form-help-text" id="scheduleExistingPremisesHint">
+      Book the next inspection on a site that already exists. You do not open a new inspection form first.
+    </p>
+    <div id="scheduleExistingPremisesSummary" class="schedule-existing-summary" hidden></div>
+  </div>
+
+  <div id="scheduleNewSiteFields">
+    <label for="scheduleOrganisationName">Client / Organisation</label>
+    <input id="scheduleOrganisationName" type="text" placeholder="Example: ABC Stores">
+
+    <label for="scheduleSiteName">Site / Premises</label>
+    <input id="scheduleSiteName" type="text" placeholder="Example: Shop 12">
+  </div>
 
   <label for="scheduleDate">Scheduled Date</label>
   <input id="scheduleDate" type="date">
@@ -1352,17 +1386,19 @@
   <label for="scheduleInspectionType">Inspection Type</label>
   <input id="scheduleInspectionType" type="text" value="General Fire Inspection">
 
-  <label for="scheduleOccupancy">Occupancy, if known</label>
-  <input id="scheduleOccupancy" type="text" placeholder="Example: H4">
+  <div id="scheduleNewSiteExtraFields">
+    <label for="scheduleOccupancy">Occupancy, if known</label>
+    <input id="scheduleOccupancy" type="text" placeholder="Example: H4">
 
-  <label for="scheduleAddress">Address / Location, if known</label>
-  <input id="scheduleAddress" type="text">
+    <label for="scheduleAddress">Address / Location, if known</label>
+    <input id="scheduleAddress" type="text">
 
-  <label for="scheduleContactPerson">Contact Person, if known</label>
-  <input id="scheduleContactPerson" type="text">
+    <label for="scheduleContactPerson">Contact Person, if known</label>
+    <input id="scheduleContactPerson" type="text">
 
-  <label for="scheduleContactTel">Contact Telephone, if known</label>
-  <input id="scheduleContactTel" type="text">
+    <label for="scheduleContactTel">Contact Telephone, if known</label>
+    <input id="scheduleContactTel" type="text">
+  </div>
 
   <div class="schedule-new-actions">
     <button id="saveScheduledInspectionBtn" type="button" class="compact-action-btn">
@@ -1795,7 +1831,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-62-toets"></script>
+  <script src="fire-s-env.js?v=1-3-63-paint"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1810,22 +1846,22 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-62-insp"></script>
+  <script src="app.js?v=1-3-63-paint"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-39-new-insp"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-40-exist-sched"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-20-create-pw"></script>
-  <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
+  <script src="fire-s-schedule-assign.js?v=1-2-exist-sched"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-18-subscribe-again"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
   <script src="fire-s-subscribe.js?v=1-17-subscribe-again"></script>
-  <script src="fire-s-user-manual.js?v=1-40-create-pw"></script>
+  <script src="fire-s-user-manual.js?v=1-41-exist-sched"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-50-logo-splash"></script>
@@ -1844,7 +1880,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-22-logo-splash')
+        navigator.serviceWorker.register('./service-worker.js?v=108-24-version-paint')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

@@ -262,7 +262,7 @@
           <li>Search by site, address, inspector, number or date.</li>
           <li>Use filters such as overdue, this month, or completed.</li>
           <li>Tap a card to open that inspection.</li>
-          <li>Use <strong>Schedule</strong> when you must book a new site or follow-up. Owner and Manager pick the inspector who must visit. That inspector gets an email with the premises details.</li>
+          <li>Use <strong>Schedule</strong> to book a future inspection. Owner and Manager can pick an <strong>existing site</strong> or a <strong>new site</strong>, then pick the inspector who must visit. You do not have to open a new inspection form first for a site that already exists. That inspector gets an email with the premises details.</li>
         </ol>
       </article>
 
@@ -299,7 +299,7 @@
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
-          <li><strong>Schedule</strong> — Owner/Manager: book a new site, pick the inspector who must visit, Save. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
+          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — Home → Reports. This list is completed inspections. Open one, then tap Export PDF.</li>
           <li><strong>Support</strong> — request help or send a review request.</li>
         </ul>
