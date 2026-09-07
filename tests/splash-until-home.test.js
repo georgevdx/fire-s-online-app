@@ -36,6 +36,7 @@ function assertSplash(html, startup, started, label) {
     /window\.fireSShowSplash\('Signing in…'\)/.test(started) &&
       /beginLoginInFlight\(\);/.test(started) &&
       /if \(!loginReachedHome\) hideLoginSplash\(\)/.test(started) &&
+      /await paintSplashFrame\(\)/.test(started) &&
       /function enterAppHome\(msg\) \{[\s\S]*fireSRevealApp\('home'\)/.test(started),
     label + ': Login tap must show the splash until Home opens'
   );

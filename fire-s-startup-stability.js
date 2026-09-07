@@ -48,7 +48,10 @@
     if (boot) {
       boot.classList.add('is-on');
       boot.hidden = false;
-      boot.style.display = 'flex';
+      boot.style.setProperty('display', 'flex', 'important');
+      try {
+        document.body.appendChild(boot);
+      } catch (_) {}
     }
     setSplashCopy(message || 'Loading…');
     const app = document.querySelector('.app');
@@ -65,7 +68,7 @@
     const boot = byId('fireSBootScreen');
     if (boot) {
       boot.classList.remove('is-on');
-      boot.style.display = 'none';
+      boot.style.setProperty('display', 'none', 'important');
     }
     const app = document.querySelector('.app');
     if (app) {

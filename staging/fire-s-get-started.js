@@ -1143,6 +1143,20 @@
     } catch (_) {}
   }
 
+  function paintSplashFrame() {
+    return new Promise(function (resolve) {
+      try {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            setTimeout(resolve, 50);
+          });
+        });
+      } catch (_) {
+        setTimeout(resolve, 50);
+      }
+    });
+  }
+
   async function doLogin() {
     var email = text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
     var password = (byId('fireSLoginPassword') && byId('fireSLoginPassword').value) || '';
@@ -1157,6 +1171,7 @@
     }
     beginLoginInFlight();
     setStatus('Signing in…');
+    await paintSplashFrame();
     try {
       var res = await sb.auth.signInWithPassword({ email: email, password: password });
       if (res.error) throw res.error;
@@ -1189,6 +1204,7 @@
     setStatus('Creating your login…');
     markJoiningAsStaff();
     beginLoginInFlight();
+    await paintSplashFrame();
     try {
       var res = await sb.auth.signUp({ email: email, password: password });
       if (res.error) {
@@ -1342,6 +1358,7 @@
     savePendingSubscribe(company, email, intervalId);
     setStatus('Creating owner account…');
     beginLoginInFlight();
+    await paintSplashFrame();
     try {
       var redirectTo = accessRedirectUrl();
       var signUpOpts = redirectTo ? { emailRedirectTo: redirectTo } : undefined;
