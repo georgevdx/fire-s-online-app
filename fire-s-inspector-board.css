@@ -254,22 +254,9 @@
   background: #b71c1c;
 }
 
-body.fire-s-clean-home.fire-s-role-inspector #inspectorBoardHomeBar,
-body.fire-s-clean-home.fire-s-role-guest #inspectorBoardHomeBar,
-body.fire-s-clean-home.fire-s-role-pending-member #inspectorBoardHomeBar,
-body.fire-s-clean-home.fire-s-role-new-company #inspectorBoardHomeBar,
-body.fire-s-clean-home.fire-s-role-inspector #cmdInspectorsBtn,
-body.fire-s-clean-home.fire-s-role-guest #cmdInspectorsBtn,
-body.fire-s-clean-home.fire-s-role-pending-member #cmdInspectorsBtn,
-body.fire-s-clean-home.fire-s-role-new-company #cmdInspectorsBtn,
-body.fire-s-clean-home.fire-s-role-viewer #cmdInspectorsBtn {
+body.fire-s-clean-home #inspectorBoardHomeBar,
+body.fire-s-clean-home #cmdInspectorsBtn,
+#inspectorBoardHomeBar,
+#cmdInspectorsBtn {
   display: none !important;
-}
-
-body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
-body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
 }

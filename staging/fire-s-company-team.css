@@ -213,3 +213,35 @@
     grid-template-columns: 1fr;
   }
 }
+
+.company-personnel-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.company-personnel-tabs button {
+  min-height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.company-personnel-tabs button.is-active {
+  background: #b71c1c;
+  border-color: #b71c1c;
+  color: #fff;
+}
+
+.company-personnel-panel[hidden] {
+  display: none !important;
+}
+
+.inspector-board-embed {
+  margin-top: 4px;
+}

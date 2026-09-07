@@ -255,6 +255,12 @@ body.fire-s-clean-home.fire-s-role-owner #cmdSubscribeBtn {
   display: block !important;
 }
 
+body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn,
+body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
+body.fire-s-clean-home #inspectorBoardHomeBar {
+  display: none !important;
+}
+
 body.fire-s-clean-home.fire-s-role-owner #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-viewer #cmdReportsBtn {

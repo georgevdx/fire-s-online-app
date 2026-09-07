@@ -545,7 +545,7 @@
         </span>
       </button>
 
-      <button type="button" class="main-command-card" id="cmdInspectorsBtn">
+      <button type="button" class="main-command-card" id="cmdInspectorsBtn" hidden>
         <span class="command-icon">👷</span>
         <span class="command-text">
           <span class="command-title">Inspectors</span>
@@ -580,8 +580,8 @@
       <button type="button" class="main-command-card" id="cmdCompanyBtn">
         <span class="command-icon">🏢</span>
         <span class="command-text">
-          <span class="command-title">Personnel</span>
-          <span class="command-copy">Add people, change roles, or remove staff.</span>
+          <span class="command-title">Company personnel</span>
+          <span class="command-copy">Add, remove or edit staff, and check inspector stats.</span>
         </span>
       </button>
 
@@ -968,7 +968,7 @@
 </section>
 <section id="companyTeamSection" class="card company-team-section" style="display:none;">
   <div class="toolbar">
-    <h2 id="companyTeamHeading">Personnel</h2>
+    <h2 id="companyTeamHeading">Company personnel</h2>
     <button id="companyTeamBackBtn" type="button" class="back-home-btn">
       Back Home
     </button>
@@ -978,7 +978,7 @@
     <div class="company-team-kicker" id="companyTeamKicker">Company</div>
     <h3 id="companyTeamTitle">Your company</h3>
     <p id="companyTeamSubtitle">
-      Add people, change roles, or remove staff.
+      Add, remove or edit people, and check inspector stats.
     </p>
     <div id="companyTeamMeta" class="company-team-meta">Loading company…</div>
   </div>
@@ -991,6 +991,12 @@
     <button id="companyTeamExitFreshBtn" type="button" class="secondary-btn">Exit</button>
   </div>
 
+  <div id="companyPersonnelTabs" class="company-personnel-tabs" role="tablist" aria-label="Company personnel">
+    <button type="button" id="companyPersonnelPeopleTab" class="is-active" data-personnel-tab="people" role="tab" aria-selected="true">People</button>
+    <button type="button" id="companyPersonnelStatsTab" data-personnel-tab="stats" role="tab" aria-selected="false">Stats</button>
+  </div>
+
+  <div id="companyPersonnelPeoplePanel" class="company-personnel-panel" role="tabpanel" aria-labelledby="companyPersonnelPeopleTab">
   <div id="companyTeamSetupPanel" class="company-team-add" style="display:none;">
     <div class="cloud-section-title">Name your company</div>
     <p class="company-team-hint" style="margin-top:0;">
@@ -1037,31 +1043,29 @@
   <div id="companyTeamList" class="company-team-list">
     <div class="company-team-empty">Loading personnel…</div>
   </div>
-</section>
-<section id="inspectorBoardSection" class="card inspector-board-section" style="display:none;">
-  <div class="toolbar">
-    <h2>Inspectors</h2>
-    <button id="inspectorBoardBackBtn" type="button" class="back-home-btn">
-      Back Home
-    </button>
   </div>
 
-  <div class="inspector-board-kicker">Field team</div>
-  <h3 id="inspectorBoardTitle">All inspectors</h3>
-  <p id="inspectorBoardSubtitle">Collective inspection stats and status for the whole field team.</p>
-  <div id="inspectorBoardMeta" class="inspector-board-meta"></div>
+  <div id="companyPersonnelStatsPanel" class="company-personnel-panel inspector-board-embed" role="tabpanel" aria-labelledby="companyPersonnelStatsTab" hidden>
+    <div class="inspector-board-kicker">Field team</div>
+    <h3 id="inspectorBoardTitle">All inspectors</h3>
+    <p id="inspectorBoardSubtitle">Collective inspection stats and status for the whole field team.</p>
+    <div id="inspectorBoardMeta" class="inspector-board-meta"></div>
 
-  <div class="inspector-board-toolbar">
-    <select id="inspectorBoardSelect" aria-label="Select inspector">
-      <option value="all">All inspectors</option>
-    </select>
-    <div class="inspector-board-modes">
-      <button type="button" data-inspector-mode="team">Team / inspector</button>
-      <button type="button" data-inspector-mode="compare">Compare</button>
+    <div class="inspector-board-toolbar">
+      <select id="inspectorBoardSelect" aria-label="Select inspector">
+        <option value="all">All inspectors</option>
+      </select>
+      <div class="inspector-board-modes">
+        <button type="button" data-inspector-mode="team">Team / inspector</button>
+        <button type="button" data-inspector-mode="compare">Compare</button>
+      </div>
     </div>
-  </div>
 
-  <div id="inspectorBoardBody"></div>
+    <div id="inspectorBoardBody"></div>
+  </div>
+</section>
+<section id="inspectorBoardSection" class="card inspector-board-section" style="display:none;" hidden>
+  <button id="inspectorBoardBackBtn" type="button" class="back-home-btn" hidden>Back Home</button>
 </section>
 <section id="servicesSection" class="card services-section" style="display:none;">
   <div class="toolbar">

@@ -73,7 +73,7 @@
         'Schedule follow-ups',
         'Add Inspectors and Managers',
         'Edit company details for the PDF',
-        'Open Inspectors board and compare',
+        'Open Company personnel to add people and check inspector stats',
         'Open the Management dashboard on tablet or PC'
       ],
       cannot: [

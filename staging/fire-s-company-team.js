@@ -787,7 +787,8 @@
       'companyLetterheadSection',
       'userManualSection',
       'fireSSubscribeSection',
-      'managementDashboardSection'
+      'managementDashboardSection',
+      'inspectorBoardSection'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.display = 'none';
@@ -797,12 +798,46 @@
   function showCompanyTeamSection() {
     hideOtherSections();
     const section = byId('companyTeamSection');
-    if (section) section.style.display = 'block';
+    if (section) {
+      section.hidden = false;
+      section.style.display = 'block';
+    }
+    const board = byId('inspectorBoardSection');
+    if (board) {
+      board.hidden = true;
+      board.style.display = 'none';
+    }
     try {
       if (typeof window.updateFloatingBackButton === 'function') {
         window.updateFloatingBackButton();
       }
     } catch (_) {}
+  }
+
+  function setPersonnelTab(tab) {
+    const next = tab === 'stats' ? 'stats' : 'people';
+    const people = byId('companyPersonnelPeoplePanel');
+    const stats = byId('companyPersonnelStatsPanel');
+    document.querySelectorAll('[data-personnel-tab]').forEach(btn => {
+      const active = btn.getAttribute('data-personnel-tab') === next;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    if (people) {
+      people.hidden = next === 'stats';
+      people.style.display = next === 'stats' ? 'none' : '';
+    }
+    if (stats) {
+      stats.hidden = next !== 'stats';
+      stats.style.display = next === 'stats' ? '' : 'none';
+    }
+    if (next === 'stats') {
+      try {
+        if (typeof window.fireSRefreshInspectorBoard === 'function') {
+          window.fireSRefreshInspectorBoard();
+        }
+      } catch (_) {}
+    }
   }
 
   function setLaterButtonVisible(visible) {
@@ -826,7 +861,7 @@
         !isSetup && !isGenericCompanyName(displayName)
       );
     }
-    if (heading) heading.textContent = isSetup ? 'Company' : 'People';
+    if (heading) heading.textContent = 'Company personnel';
     if (kicker) {
       kicker.textContent = isSetup
         ? 'First step'
@@ -841,8 +876,8 @@
     }
     if (subtitle) {
       subtitle.textContent = isSetup
-        ? 'Save once. After that you only add people here.'
-        : 'Add Inspectors and Managers. Change roles or remove people when needed.';
+        ? 'Save once. After that you add, remove or edit people here, and check inspector stats.'
+        : 'Add, remove or edit people. Check inspector stats on the Stats tab.';
     }
     updateDangerControls();
   }
@@ -1588,12 +1623,12 @@
     const subtitle = byId('companyTeamSubtitle');
     const intro = document.querySelector('#companyTeamSection .company-team-intro');
     if (intro) intro.classList.add('is-setup');
-    if (heading) heading.textContent = 'Personnel';
+    if (heading) heading.textContent = 'Company personnel';
     if (kicker) kicker.textContent = 'Get started';
     if (title) title.textContent = 'Name your company';
     if (subtitle) {
       subtitle.textContent =
-        'Save the company name once. Then you add people, change roles, or remove staff.';
+        'Save the company name once. Then you add, remove or edit people, and check inspector stats.';
     }
     const meta = byId('companyTeamMeta');
     if (meta) {
@@ -1789,6 +1824,7 @@
       window.__fireSTeamAfterCreate = false;
     }
     showCompanyTeamSection();
+    setPersonnelTab(options && options.tab === 'stats' ? 'stats' : 'people');
     updateFreshBanner();
     // Paint something immediately so the screen never looks frozen.
     const ctx = companyContext();
@@ -1875,6 +1911,14 @@
       back.__fireSCompanyBound = true;
       back.addEventListener('click', goHome);
     }
+
+    document.querySelectorAll('[data-personnel-tab]').forEach(btn => {
+      if (btn.__fireSPersonnelTabBound) return;
+      btn.__fireSPersonnelTabBound = true;
+      btn.addEventListener('click', () => {
+        setPersonnelTab(btn.getAttribute('data-personnel-tab') || 'people');
+      });
+    });
 
     const startSeatBtn = byId('companyTeamStartSeatBtn');
     if (startSeatBtn && !startSeatBtn.__fireSCompanyBound) {
@@ -2018,6 +2062,7 @@
 
   window.fireSOpenCompanyTeam = openCompanyTeam;
   window.openCompanyTeamOverlay = openCompanyTeam;
+  window.fireSSetCompanyPersonnelTab = setPersonnelTab;
   window.fireSAddPersonnelSeat = addMember;
   window.fireSRefreshCompanyTeam = refreshTeam;
   window.fireSRefreshCompanyTeamChrome = refreshPersonnelChrome;
