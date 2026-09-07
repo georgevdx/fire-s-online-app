@@ -64,6 +64,16 @@ function assertExistingScheduleUi(html, css, app, assign, manual, label) {
 }
 
 assertExistingScheduleUi(liveHtml, liveCss, liveApp, liveAssign, liveManual, 'Live');
+assert.ok(
+  /id="appVersion" class="brand-version">Version 1\.3\.57</.test(liveHtml) &&
+    /id="cloudVersion">1\.3\.57</.test(liveHtml),
+  'Live must show Version 1.3.57 in the header without waiting for a script'
+);
+assert.ok(
+  /id="appVersion" class="brand-version">Version 1\.3\.63-toets</.test(stagingHtml) &&
+    /id="cloudVersion">1\.3\.63-toets</.test(stagingHtml),
+  'Toets-blad must show Version 1.3.63-toets in the header without waiting for a script'
+);
 assertExistingScheduleUi(
   stagingHtml,
   stagingCss,

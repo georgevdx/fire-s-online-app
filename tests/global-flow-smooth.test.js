@@ -28,13 +28,13 @@ assert.ok(
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-0-global/.test(liveHtml) &&
-    /app\.js\?v=1-3-57-exist-sched/.test(liveHtml),
+    /app\.js\?v=1-3-57-paint/.test(liveHtml),
   'Live must load the global-flow script'
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-0-global/.test(html) &&
-    /app\.js\?v=1-3-63-exist/.test(html) &&
-    /fire-s-env\.js\?v=1-3-63-toets/.test(html),
+    /app\.js\?v=1-3-63-paint/.test(html) &&
+    /fire-s-env\.js\?v=1-3-63-paint/.test(html),
   'Toets-blad must load the global-flow script with a fresh cache tag'
 );
 

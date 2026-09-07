@@ -47,7 +47,7 @@ assert.ok(
 assert.ok(
   /fire-s-get-started\.css\?v=2-16-create-pw/.test(stagingHtml) &&
     /fire-s-get-started\.js\?v=2-50-logo-splash/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-63-toets/.test(stagingHtml),
+    /fire-s-env\.js\?v=1-3-63-paint/.test(stagingHtml),
   'Toets-blad must cache-bust the show-password Access files'
 );
 
@@ -68,7 +68,7 @@ assert.ok(
 assert.ok(
   /fire-s-get-started\.css\?v=2-14-hide-saved/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-50-logo-splash/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-57-live/.test(liveHtml),
+    /fire-s-env\.js\?v=1-3-57-paint/.test(liveHtml),
   'Live cache tags must stay on the previous Access files'
 );
 

@@ -87,7 +87,7 @@ assert.ok(
     /fire-s-startup-stability\.js\?v=1-13-logo-splash/.test(liveHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-50-logo-splash/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-57-live/.test(liveHtml),
+    /fire-s-env\.js\?v=1-3-57-paint/.test(liveHtml),
   'Live must cache-bust the desktop landing fix'
 );
 assert.ok(
@@ -95,7 +95,7 @@ assert.ok(
     /fire-s-startup-stability\.js\?v=1-13-logo-splash/.test(stagingHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(stagingHtml) &&
     /fire-s-get-started\.js\?v=2-50-logo-splash/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-63-toets/.test(stagingHtml),
+    /fire-s-env\.js\?v=1-3-63-paint/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
 );
 

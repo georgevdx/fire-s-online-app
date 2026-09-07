@@ -68,6 +68,8 @@
       for (var i = 0; i < nodes.length; i += 1) {
         if (nodes[i]) nodes[i].textContent = label;
       }
+      var cloudVersion = root.document.getElementById('cloudVersion');
+      if (cloudVersion) cloudVersion.textContent = env.appVersion;
     } catch (_) {}
   }
 
@@ -99,6 +101,7 @@
   root.fireSIsStaging = function () {
     return !!env.isStaging;
   };
+  root.fireSPaintVersion = paintVersion;
 
   if (root.document && root.document.body) {
     paintBanner();

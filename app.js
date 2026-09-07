@@ -4900,23 +4900,24 @@ async function loadData() {
 
 
 function updateAppInfo() {
-  const versionLabel = `Version ${APP_VERSION}`;
+  const version =
+    (window.FIRE_S_ENV && window.FIRE_S_ENV.appVersion) || APP_VERSION;
+  const versionLabel = `Version ${version}`;
   const versionNodes = [
     document.getElementById('appVersion'),
     document.getElementById('Version'),
+    document.getElementById('cloudVersion'),
+    document.getElementById('cloudAppVersion'),
     ...document.querySelectorAll('.brand-version')
   ];
   const seen = new Set();
   versionNodes.forEach((node) => {
     if (!node || seen.has(node)) return;
     seen.add(node);
-    node.textContent = versionLabel;
+    node.textContent = node.id === 'cloudVersion' || node.id === 'cloudAppVersion'
+      ? version
+      : versionLabel;
   });
-
-  const cloudAppVersion = document.getElementById('cloudAppVersion');
-  if (cloudAppVersion) {
-    cloudAppVersion.textContent = APP_VERSION;
-  }
 
   const cloudProjectCount = document.getElementById('cloudProjectCount');
   if (cloudProjectCount) {

@@ -29,6 +29,17 @@ assert.ok(
   'Version must paint as soon as the environment fence loads'
 );
 assert.ok(
+  /id="appVersion" class="brand-version">Version 1\.3\.63-toets</.test(html) &&
+    /id="cloudVersion">1\.3\.63-toets</.test(html) &&
+    /getElementById\('cloudVersion'\)/.test(env),
+  'Toets-blad HTML must show 1.3.63-toets before scripts run'
+);
+assert.ok(
+  /id="appVersion" class="brand-version">Version 1\.3\.57</.test(read('index.html')) &&
+    /id="cloudVersion">1\.3\.57</.test(read('index.html')),
+  'Live HTML must show 1.3.57 before scripts run'
+);
+assert.ok(
   /fireSMarkAuthSettled/.test(app) && /__fireSAuthSettled/.test(startup),
   'Splash must wait until the cloud session check has settled'
 );
