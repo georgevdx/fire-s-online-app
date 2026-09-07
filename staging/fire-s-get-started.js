@@ -18,6 +18,9 @@
   var mode = 'login';
   var wired = false;
   var root = null;
+  var loginReachedHome = false;
+  var createPasswordKnown = {};
+  var createPasswordTimer = null;
 
   function byId(id) {
     return document.getElementById(id);
@@ -348,7 +351,24 @@
     } catch (_) {}
   }
 
+  function userLeftHome() {
+    try {
+      var form = document.getElementById('projectFormSection');
+      var list = document.getElementById('projectListSection');
+      var open = function (el) {
+        if (!el || !el.style) return false;
+        var display = String(el.style.display || '').toLowerCase();
+        return display === 'block' || display === 'flex' || display === 'grid';
+      };
+      if (open(form) || open(list)) return true;
+      if (document.body && document.body.classList.contains('fire-s-filling-inspection')) return true;
+      if (document.body && document.body.classList.contains('fire-s-away-from-home')) return true;
+    } catch (_) {}
+    return false;
+  }
+
   function enterAppHome(msg) {
+    loginReachedHome = true;
     clearJoiningAsStaff();
     if (msg) setStatus(msg);
     hideAccess();
@@ -362,8 +382,13 @@
       }
     } catch (_) {}
     refreshHomeChrome();
+    try {
+      if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('home');
+      else if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
+    } catch (_) {}
     setTimeout(function () {
       hideAccess();
+      if (userLeftHome()) return;
       try {
         if (typeof window.showHome === 'function') window.showHome();
       } catch (_) {}
@@ -692,6 +717,80 @@
     if (loginLink) loginLink.style.display = '';
   }
 
+  function loginEmailValue() {
+    return text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
+  }
+
+  function looksLikeEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function setCreatePasswordVisible(show) {
+    var btn = byId('fireSSwitchToCreateBtn');
+    if (!btn) return;
+    if (show) {
+      btn.hidden = false;
+      btn.removeAttribute('hidden');
+      btn.style.display = '';
+    } else {
+      btn.hidden = true;
+      btn.setAttribute('hidden', '');
+      btn.style.display = 'none';
+    }
+  }
+
+  function rememberEmailHasPassword(email, hasPassword) {
+    var key = text(email).toLowerCase();
+    if (!looksLikeEmail(key)) return;
+    createPasswordKnown[key] = !!hasPassword;
+  }
+
+  async function emailHasRegisteredPassword(email) {
+    var key = text(email).toLowerCase();
+    if (!looksLikeEmail(key)) return true;
+    if (Object.prototype.hasOwnProperty.call(createPasswordKnown, key)) {
+      return createPasswordKnown[key];
+    }
+    var sb = getSb();
+    if (!sb) return null;
+    try {
+      if (typeof sb.rpc === 'function') {
+        var rpc = await sb.rpc('fire_s_email_has_login', { p_email: key });
+        if (!rpc.error && typeof rpc.data === 'boolean') {
+          createPasswordKnown[key] = rpc.data;
+          return rpc.data;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  async function refreshCreatePasswordButton() {
+    var email = loginEmailValue();
+    if (!looksLikeEmail(email)) {
+      setCreatePasswordVisible(false);
+      return;
+    }
+    if (createPasswordKnown[email] === true) {
+      setCreatePasswordVisible(false);
+      return;
+    }
+    var hasPassword = await emailHasRegisteredPassword(email);
+    if (loginEmailValue() !== email) return;
+    if (hasPassword === true) {
+      setCreatePasswordVisible(false);
+      return;
+    }
+    setCreatePasswordVisible(true);
+  }
+
+  function scheduleCreatePasswordCheck() {
+    if (createPasswordTimer) clearTimeout(createPasswordTimer);
+    createPasswordTimer = setTimeout(function () {
+      refreshCreatePasswordButton();
+    }, 280);
+  }
+
   function paintLoginForm() {
     paintAccessKicker();
     var loginBack =
@@ -719,11 +818,10 @@
     paintLoginForm();
     setTitle(
       'Access',
-      'Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.'
+      'Type your email and password, then Login. First time on this email: Create password appears if no password is registered yet. New company: Subscribe under Forgot password.'
     );
     showPanel('fireSGetStartedLoginFields');
-    var createToggle = byId('fireSSwitchToCreateBtn');
-    if (createToggle) createToggle.style.display = '';
+    refreshCreatePasswordButton();
     setStatus('');
   }
 
@@ -753,6 +851,13 @@
       'Use the email your owner added under Personnel. You do not Subscribe. Your owner already pays for this email. This is only needed once.'
     );
     showPanel('fireSGetStartedCreateFields');
+    try {
+      var fromLogin = loginEmailValue();
+      var createEmail = byId('fireSCreateEmail');
+      if (createEmail && looksLikeEmail(fromLogin) && !text(createEmail.value)) {
+        createEmail.value = fromLogin;
+      }
+    } catch (_) {}
     setStatus('');
   }
 
@@ -944,15 +1049,56 @@
     }
   }
 
+  function paintBootSplashNow(message) {
+    try {
+      document.documentElement.classList.add('fire-s-booting');
+      document.documentElement.classList.remove('fire-s-ready');
+    } catch (_) {}
+    var boot = byId('fireSBootScreen');
+    if (boot) {
+      boot.classList.add('is-on');
+      boot.hidden = false;
+      boot.removeAttribute('hidden');
+      boot.style.setProperty('display', 'flex', 'important');
+      boot.style.setProperty('z-index', '200000', 'important');
+      boot.style.setProperty('opacity', '1', 'important');
+      boot.style.setProperty('visibility', 'visible', 'important');
+      try {
+        document.body.appendChild(boot);
+      } catch (_) {}
+    }
+    var line = byId('fireSBootStatus');
+    if (line && message) line.textContent = message;
+    var app = document.querySelector('.app');
+    if (app) {
+      app.style.opacity = '0';
+      app.style.pointerEvents = 'none';
+    }
+  }
+
   function beginLoginInFlight() {
+    loginReachedHome = false;
     try {
       window.__fireSLoggingIn = true;
+    } catch (_) {}
+    paintBootSplashNow('Signing in…');
+    try {
+      if (typeof window.fireSShowSplash === 'function') {
+        window.fireSShowSplash('Signing in…');
+      }
     } catch (_) {}
   }
 
   function endLoginInFlight() {
     try {
       window.__fireSLoggingIn = false;
+    } catch (_) {}
+    if (!loginReachedHome) hideLoginSplash();
+  }
+
+  function hideLoginSplash() {
+    try {
+      if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
     } catch (_) {}
   }
 
@@ -1124,6 +1270,20 @@
     } catch (_) {}
   }
 
+  function paintSplashFrame() {
+    return new Promise(function (resolve) {
+      try {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            setTimeout(resolve, 50);
+          });
+        });
+      } catch (_) {
+        setTimeout(resolve, 50);
+      }
+    });
+  }
+
   async function doLogin() {
     var email = text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
     var password = (byId('fireSLoginPassword') && byId('fireSLoginPassword').value) || '';
@@ -1138,6 +1298,7 @@
     }
     beginLoginInFlight();
     setStatus('Signing in…');
+    await paintSplashFrame();
     try {
       var res = await sb.auth.signInWithPassword({ email: email, password: password });
       if (res.error) throw res.error;
@@ -1170,6 +1331,7 @@
     setStatus('Creating your login…');
     markJoiningAsStaff();
     beginLoginInFlight();
+    await paintSplashFrame();
     try {
       var res = await sb.auth.signUp({ email: email, password: password });
       if (res.error) {
@@ -1180,6 +1342,7 @@
           low.indexOf('user already exists') >= 0 ||
           low.indexOf('email address is already') >= 0;
         if (already) {
+          rememberEmailHasPassword(email, true);
           setStatus('This email already exists. Trying Login with that password…');
           var loginTry = await sb.auth.signInWithPassword({
             email: email,
@@ -1323,6 +1486,7 @@
     savePendingSubscribe(company, email, intervalId);
     setStatus('Creating owner account…');
     beginLoginInFlight();
+    await paintSplashFrame();
     try {
       var redirectTo = accessRedirectUrl();
       var signUpOpts = redirectTo ? { emailRedirectTo: redirectTo } : undefined;
@@ -1677,6 +1841,14 @@
     var switchCreate = byId('fireSSwitchToCreateBtn');
     if (switchCreate) {
       switchCreate.addEventListener('click', showCreatePassword);
+    }
+    var loginEmail = byId('fireSLoginEmail');
+    if (loginEmail) {
+      loginEmail.addEventListener('input', scheduleCreatePasswordCheck);
+      loginEmail.addEventListener('change', scheduleCreatePasswordCheck);
+      loginEmail.addEventListener('blur', function () {
+        refreshCreatePasswordButton();
+      });
     }
     var switchLogin = byId('fireSSwitchToLoginBtn');
     if (switchLogin) {

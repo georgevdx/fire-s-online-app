@@ -19,6 +19,7 @@
   var mode = 'login';
   var wired = false;
   var root = null;
+  var loginReachedHome = false;
 
   function byId(id) {
     return document.getElementById(id);
@@ -350,6 +351,7 @@
   }
 
   function enterAppHome(msg) {
+    loginReachedHome = true;
     clearJoiningAsStaff();
     if (msg) setStatus(msg);
     hideAccess();
@@ -363,6 +365,10 @@
       }
     } catch (_) {}
     refreshHomeChrome();
+    try {
+      if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('home');
+      else if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
+    } catch (_) {}
     setTimeout(function () {
       hideAccess();
       try {
@@ -945,15 +951,56 @@
     }
   }
 
+  function paintBootSplashNow(message) {
+    try {
+      document.documentElement.classList.add('fire-s-booting');
+      document.documentElement.classList.remove('fire-s-ready');
+    } catch (_) {}
+    var boot = byId('fireSBootScreen');
+    if (boot) {
+      boot.classList.add('is-on');
+      boot.hidden = false;
+      boot.removeAttribute('hidden');
+      boot.style.setProperty('display', 'flex', 'important');
+      boot.style.setProperty('z-index', '200000', 'important');
+      boot.style.setProperty('opacity', '1', 'important');
+      boot.style.setProperty('visibility', 'visible', 'important');
+      try {
+        document.body.appendChild(boot);
+      } catch (_) {}
+    }
+    var line = byId('fireSBootStatus');
+    if (line && message) line.textContent = message;
+    var app = document.querySelector('.app');
+    if (app) {
+      app.style.opacity = '0';
+      app.style.pointerEvents = 'none';
+    }
+  }
+
   function beginLoginInFlight() {
+    loginReachedHome = false;
     try {
       window.__fireSLoggingIn = true;
+    } catch (_) {}
+    paintBootSplashNow('Signing in…');
+    try {
+      if (typeof window.fireSShowSplash === 'function') {
+        window.fireSShowSplash('Signing in…');
+      }
     } catch (_) {}
   }
 
   function endLoginInFlight() {
     try {
       window.__fireSLoggingIn = false;
+    } catch (_) {}
+    if (!loginReachedHome) hideLoginSplash();
+  }
+
+  function hideLoginSplash() {
+    try {
+      if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
     } catch (_) {}
   }
 
@@ -1125,6 +1172,20 @@
     } catch (_) {}
   }
 
+  function paintSplashFrame() {
+    return new Promise(function (resolve) {
+      try {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            setTimeout(resolve, 50);
+          });
+        });
+      } catch (_) {
+        setTimeout(resolve, 50);
+      }
+    });
+  }
+
   async function doLogin() {
     var email = text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
     var password = (byId('fireSLoginPassword') && byId('fireSLoginPassword').value) || '';
@@ -1139,6 +1200,7 @@
     }
     beginLoginInFlight();
     setStatus('Signing in…');
+    await paintSplashFrame();
     try {
       var res = await sb.auth.signInWithPassword({ email: email, password: password });
       if (res.error) throw res.error;
@@ -1171,6 +1233,7 @@
     setStatus('Creating your login…');
     markJoiningAsStaff();
     beginLoginInFlight();
+    await paintSplashFrame();
     try {
       var res = await sb.auth.signUp({ email: email, password: password });
       if (res.error) {
@@ -1314,6 +1377,7 @@
     savePendingSubscribe(company, email, intervalId);
     setStatus('Creating owner account…');
     beginLoginInFlight();
+    await paintSplashFrame();
     try {
       var redirectTo = accessRedirectUrl();
       var signUpOpts = redirectTo ? { emailRedirectTo: redirectTo } : undefined;

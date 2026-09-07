@@ -640,16 +640,13 @@
     ALL_CMD_IDS.forEach(show);
     hide('cmdTestSamplesBtn');
     hide('cmdSubscribeBtn');
+    hide('cmdInspectorsBtn');
+    hide('inspectorBoardHomeBar');
 
     cardText(
       'cmdInspectionsBtn',
       'Inspection Gateway',
       'Open, continue and review field inspections.'
-    );
-    cardText(
-      'cmdInspectorsBtn',
-      'Inspectors',
-      'Select an inspector, view the whole team, or compare them.'
     );
     cardText(
       'cmdScheduleBtn',
@@ -668,8 +665,8 @@
     );
     cardText(
       'cmdCompanyBtn',
-      'People',
-      'Add Inspectors and Managers, or change roles.'
+      'Company personnel',
+      'Add, remove or edit staff, and check inspector stats.'
     );
     cardText(
       'cmdTestSamplesBtn',
@@ -755,6 +752,8 @@
 
     ALL_CMD_IDS.forEach(show);
     hide('cmdTestSamplesBtn');
+    hide('cmdInspectorsBtn');
+    hide('inspectorBoardHomeBar');
 
     // Force Gateway visible even if older inspector CSS left it hidden.
     const grid = document.querySelector('#mainCommandCentre .main-command-grid');
@@ -765,11 +764,6 @@
     showGatewayCard(
       'Inspection Gateway',
       'Company-wide inspection search and oversight.'
-    );
-    cardText(
-      'cmdInspectorsBtn',
-      'Inspectors',
-      'Select an inspector, view the whole team, or compare them.'
     );
     cardText(
       'cmdScheduleBtn',
@@ -788,8 +782,8 @@
     );
     cardText(
       'cmdCompanyBtn',
-      'People',
-      'Add Inspectors and Managers, or change roles.'
+      'Company personnel',
+      'Add, remove or edit staff, and check inspector stats.'
     );
     cardText(
       'cmdTestSamplesBtn',
@@ -924,7 +918,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'Use Access: First time? Create password, then Login. You do not Subscribe. Your owner pays for this email.'
+      'Use Access: type your email. First time? Create password appears if this email has no password yet, then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);
@@ -956,8 +950,11 @@
     const list = byId('projectListSection');
     const form = byId('projectFormSection');
     const shown = el => {
-      if (!el || el.hidden) return false;
-      if (el.style.display === 'none') return false;
+      if (!el) return false;
+      const inline = String((el.style && el.style.display) || '').toLowerCase();
+      if (inline === 'block' || inline === 'flex' || inline === 'grid') return true;
+      if (el.hidden) return false;
+      if (inline === 'none') return false;
       try {
         const style = window.getComputedStyle(el);
         return style.display !== 'none' && style.visibility !== 'hidden';
@@ -1040,7 +1037,7 @@
 
     assertGatewayOnFrontPage(role);
 
-    // Keep Personnel / Inspectors cards wired after other Home controllers rebind clicks.
+    // Keep Company personnel wired after other Home controllers rebind clicks.
     try {
       if (
         (role === 'company_owner' || role === 'super_admin' || role === 'manager') &&
@@ -1081,6 +1078,13 @@
             window.fireSOpenCompanyTeam();
           };
         }
+        const inspectorsBtn = byId('cmdInspectorsBtn');
+        if (inspectorsBtn) {
+          inspectorsBtn.onclick = function (event) {
+            if (event) event.preventDefault();
+            window.fireSOpenCompanyTeam({ tab: 'stats' });
+          };
+        }
       }
     } catch (_) {}
 
@@ -1090,7 +1094,7 @@
         typeof window.fireSOpenInspectorBoard === 'function'
       ) {
         const btn = byId('cmdInspectorsBtn');
-        if (btn) {
+        if (btn && typeof window.fireSOpenCompanyTeam !== 'function') {
           btn.onclick = function (event) {
             if (event) event.preventDefault();
             window.fireSOpenInspectorBoard();

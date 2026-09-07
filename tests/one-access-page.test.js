@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.61-toets/.test(env), 'Toets-blad version must be 1.3.61-toets');
+assert.ok(/1\.3\.62-toets/.test(env), 'Toets-blad version must be 1.3.62-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -93,7 +93,7 @@ assert.ok(
   'Live root must use the same one Access page after sit dit live'
 );
 
-function loginOrder(src, label) {
+function loginOrder(src, label, subscribeBeforeForgotNote) {
   const block = src.match(
     /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
   );
@@ -102,14 +102,26 @@ function loginOrder(src, label) {
   const login = fields.indexOf('id="fireSDoLoginBtn"');
   const create = fields.indexOf('First time? Create password');
   const sub = fields.indexOf('id="fireSLoginSubscribeBtn"');
+  const forgot = fields.indexOf('id="fireSForgotPasswordBtn"');
   const forgotNote = fields.indexOf('Forgot password: check Inbox');
+  if (subscribeBeforeForgotNote) {
+    assert.ok(
+      login >= 0 && create > login && sub > create && forgotNote > sub,
+      label + ' must put Subscribing New Company after Login and before the Forgot note'
+    );
+    return;
+  }
   assert.ok(
-    login >= 0 && create > login && sub > create && forgotNote > sub,
-    label + ' must put Subscribing New Company after Login and before the Forgot note'
+    login >= 0 &&
+      create > login &&
+      forgot > create &&
+      forgotNote > forgot &&
+      sub > forgotNote,
+    label + ' must put Subscribing New Company under Forgot password'
   );
 }
-loginOrder(html, 'Toets Access');
-loginOrder(liveHtml, 'Live Access');
+loginOrder(html, 'Toets Access', false);
+loginOrder(liveHtml, 'Live Access', true);
 
 assert.ok(
   /subscribeBtn\.style\.display = ''/.test(getStarted) &&

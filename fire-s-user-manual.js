@@ -315,18 +315,18 @@
           <li>Tap <strong>Choose logo picture</strong>, or <strong>Sit sample Company S logo in</strong>.</li>
           <li>Tap <strong>Save company details</strong>.</li>
         </ol>
-        <h3>Personnel</h3>
-        <p>Adding a person is a subscription you (the owner) place. The inspector or manager does not Subscribe and does not pay. They can work remotely.</p>
+        <h3>Company personnel</h3>
+        <p>Adding a person is a subscription you (the owner) place. The inspector or manager does not Subscribe and does not pay. They can work remotely. Inspector stats live on the same card.</p>
         <ol>
-          <li>Home → <strong>Personnel</strong> / <strong>People</strong>.</li>
-          <li>Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
+          <li>Home → <strong>Company personnel</strong>.</li>
+          <li>On the <strong>People</strong> tab: Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
           <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
           <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe on Access.</li>
+          <li>Change a role or Remove a person on the same People list.</li>
+          <li>Tap <strong>Stats</strong> to select an inspector, view the whole team, or Compare volume, completion and overdue work.</li>
           <li>To send someone to a premises: Home → <strong>Schedule</strong> → fill the site → <strong>Assign to inspector</strong> → Save. They get an email with the address and date.</li>
           <li>A second phone or a desktop uses <strong>Login</strong> with that same email. Do not add the email again.</li>
         </ol>
-        <h3>Inspectors board</h3>
-        <p>Select one inspector, view the whole team, or Compare.</p>
         <h3>Test samples</h3>
         <p>Test samples is a training tool. It is hidden on Home so clients do not see it.</p>
       </article>

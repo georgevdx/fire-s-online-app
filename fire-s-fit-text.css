@@ -225,7 +225,6 @@ body.fire-s-clean-home.fire-s-role-manager #mainCommandCentre .main-command-top,
 
 #mainCommandCentre .main-command-card,
 body.fire-s-clean-home #cmdInspectionsBtn,
-body.fire-s-clean-home #cmdInspectorsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdCompanyDetailsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdTestSamplesBtn,
@@ -236,9 +235,7 @@ body.fire-s-clean-home.fire-s-role-manager #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-owner #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-inspector #cmdUserManualBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdCompanyBtn,
-body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn,
-body.fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
-body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
+body.fire-s-clean-home.fire-s-role-owner #cmdCompanyBtn {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
@@ -424,11 +421,8 @@ body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
 
   body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card,
   body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectionsBtn,
-  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectorsBtn,
   body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-owner #cmdInspectionsBtn,
   body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-manager #cmdInspectionsBtn,
-  body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn,
-  body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-manager #cmdInspectorsBtn,
   body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-owner #cmdCompanyDetailsBtn,
   body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-manager #cmdCompanyDetailsBtn,
   body:not(.fire-s-inspector-v4).fire-s-clean-home.fire-s-role-owner #cmdTestSamplesBtn,
@@ -580,8 +574,7 @@ body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
   }
 
   body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card,
-  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectionsBtn,
-  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectorsBtn {
+  body:not(.fire-s-inspector-v4).fire-s-clean-home #cmdInspectionsBtn {
     gap: 10px !important;
     padding: 12px 10px !important;
   }
@@ -599,4 +592,11 @@ body.fire-s-clean-home.fire-s-role-owner #cmdInspectorsBtn {
   body:not(.fire-s-inspector-v4) #mainCommandCentre .main-command-card .command-copy {
     font-size: 12px !important;
   }
+}
+
+#cmdInspectorsBtn,
+#inspectorBoardHomeBar,
+body.fire-s-clean-home #cmdInspectorsBtn,
+body.fire-s-clean-home #inspectorBoardHomeBar {
+  display: none !important;
 }

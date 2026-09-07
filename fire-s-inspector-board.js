@@ -499,30 +499,36 @@
     return { allProjects, groups, filter, mode, selected, scoped, stats, compareRows, label };
   }
 
+  function isStatsSurfaceOpen() {
+    const team = byId('companyTeamSection');
+    const stats = byId('companyPersonnelStatsPanel');
+    if (
+      team &&
+      stats &&
+      team.style.display !== 'none' &&
+      !team.hidden &&
+      !stats.hidden &&
+      stats.style.display !== 'none'
+    ) {
+      return true;
+    }
+    const section = byId('inspectorBoardSection');
+    return !!(section && section.style.display !== 'none' && !section.hidden);
+  }
+
   function paintHome(state) {
     const bar = byId('inspectorBoardHomeBar');
-    const select = byId('inspectorBoardHomeSelect');
-    if (!isManagementRole()) {
-      if (bar) {
-        bar.hidden = true;
-        bar.style.setProperty('display', 'none', 'important');
-      }
-      return;
-    }
     if (bar) {
-      bar.hidden = false;
-      bar.removeAttribute('aria-hidden');
-      bar.removeAttribute('tabindex');
-      bar.style.removeProperty('display');
+      bar.hidden = true;
+      bar.setAttribute('aria-hidden', 'true');
+      bar.style.setProperty('display', 'none', 'important');
     }
-    fillSelect(select, state.groups, state.filter);
+    if (!isManagementRole()) return;
     applyHomeKpis(state.stats);
-    renderHomeStatus(state.stats, state.label);
   }
 
   function paintBoard(state) {
-    const section = byId('inspectorBoardSection');
-    if (!section || section.style.display === 'none') return;
+    if (!isStatsSurfaceOpen()) return;
     const title = byId('inspectorBoardTitle');
     const subtitle = byId('inspectorBoardSubtitle');
     const meta = byId('inspectorBoardMeta');
@@ -596,9 +602,22 @@
   function openBoard(mode) {
     if (!isManagementRole()) return;
     if (mode) setStoredMode(mode);
+    if (typeof window.fireSOpenCompanyTeam === 'function') {
+      Promise.resolve(window.fireSOpenCompanyTeam({ tab: 'stats' }))
+        .then(() => {
+          refresh();
+          return loadDirectory();
+        })
+        .then(refresh)
+        .catch(() => {});
+      return;
+    }
     hideOtherSections();
     const section = byId('inspectorBoardSection');
-    if (section) section.style.display = 'block';
+    if (section) {
+      section.hidden = false;
+      section.style.display = 'block';
+    }
     try {
       if (typeof window.updateFloatingBackButton === 'function') {
         window.updateFloatingBackButton();

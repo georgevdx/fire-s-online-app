@@ -16,31 +16,38 @@
   <meta name="googlebot" content="index, follow">
   <meta name="google-extended" content="unavailable">
   <link rel="license" href="terms.html">
+  <link rel="preload" href="fire-s-logo.png" as="image">
   <style id="fire-s-boot-style">
     html.fire-s-booting body { background: #0b0b0b; }
     html.fire-s-booting .app { opacity: 0; pointer-events: none; }
-    html.fire-s-booting #fireSBootScreen {
-      position: fixed; inset: 0; z-index: 99999;
-      display: flex; align-items: center; justify-content: center;
+    #fireSBootScreen {
+      display: none;
+      position: fixed; inset: 0; z-index: 200000;
+      align-items: center; justify-content: center;
       background: linear-gradient(180deg, #111 0%, #1a0505 100%);
       color: #fff; font-family: Arial, sans-serif;
     }
-    html.fire-s-booting #fireSBootScreen .boot-card {
-      text-align: center; padding: 28px 22px; max-width: 280px;
+    html.fire-s-booting #fireSBootScreen,
+    #fireSBootScreen.is-on {
+      display: flex !important;
     }
-    html.fire-s-booting #fireSBootScreen .boot-mark {
-      width: 72px; height: 72px; border-radius: 16px; display: block; margin: 0 auto 10px;
+    #fireSBootScreen .boot-card {
+      text-align: center; padding: 28px 22px; max-width: 320px;
     }
-    html.fire-s-booting #fireSBootScreen .boot-kicker {
+    #fireSBootScreen .boot-mark {
+      width: 196px; height: 196px; object-fit: contain;
+      display: block; margin: 0 auto 14px;
+    }
+    #fireSBootScreen .boot-kicker {
       letter-spacing: .18em; text-transform: uppercase; opacity: .7; font-size: .75rem;
     }
-    html.fire-s-booting #fireSBootScreen h1 {
+    #fireSBootScreen h1 {
       margin: 8px 0 6px; font-size: 2rem;
     }
-    html.fire-s-booting #fireSBootScreen p {
-      margin: 0; opacity: .75; font-size: .95rem;
+    #fireSBootScreen p,
+    #fireSBootScreen #fireSBootStatus {
+      margin: 0; opacity: .8; font-size: 1rem;
     }
-    html:not(.fire-s-booting) #fireSBootScreen { display: none !important; }
     html.fire-s-ready .app { opacity: 1; transition: opacity .18s ease; }
     #fireSLogoutScreen {
       display: none;
@@ -59,6 +66,10 @@
     #fireSLogoutScreen h1 { margin: 8px 0 6px; font-size: 2rem; }
     #fireSLogoutScreen p { margin: 0; opacity: .75; font-size: .95rem; }
   </style>
+  <script>
+    document.documentElement.classList.add('fire-s-booting');
+    document.documentElement.classList.remove('fire-s-ready');
+  </script>
   <link rel="stylesheet" href="styles.css?v=1-3-56-archive">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
@@ -67,7 +78,7 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-15-show-pw">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-16-create-pw">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-8-subscribe-again">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-11-space">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
@@ -78,12 +89,10 @@
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
 </head>
 <body>
-  <div id="fireSBootScreen" aria-live="polite">
+  <div id="fireSBootScreen" class="is-on" aria-live="polite">
     <div class="boot-card">
-      <img class="boot-mark" src="icon-192.png" alt="">
-      <div class="boot-kicker">Fire-S</div>
-      <h1>Fire-S</h1>
-      <p>Loading…</p>
+      <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
+      <p id="fireSBootStatus">Loading…</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -241,7 +250,7 @@
     <div class="fire-s-get-started-kicker">Fire-S Access</div>
     <h3 id="fireSGetStartedTitle">Access</h3>
     <p id="fireSGetStartedHelp">
-      Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.
+      Type your email and password, then Login. First time on this email: Create password appears if no password is registered yet. New business owner: Subscribe under Forgot password.
     </p>
 
     <div id="fireSGetStartedChoices" class="fire-s-get-started-choices" hidden>
@@ -277,10 +286,10 @@
         >Show password</button>
       </div>
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
-      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
-      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
+      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn" hidden>First time? Create password</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
       <p class="fire-s-get-started-note fire-s-access-forgot-note">Forgot password: check Inbox and Junk. The email is often from Supabase. Open the link — Fire-S opens. Tap Forgot password once, then wait a minute.</p>
+      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
       <button id="fireSLoginInstallBtn" type="button" class="secondary-btn">Install on this phone</button>
       <div id="fireSAccessExtraServices" class="fire-s-access-extra-services">
         <button
@@ -545,7 +554,7 @@
         </span>
       </button>
 
-      <button type="button" class="main-command-card" id="cmdInspectorsBtn">
+      <button type="button" class="main-command-card" id="cmdInspectorsBtn" hidden>
         <span class="command-icon">👷</span>
         <span class="command-text">
           <span class="command-title">Inspectors</span>
@@ -580,8 +589,8 @@
       <button type="button" class="main-command-card" id="cmdCompanyBtn">
         <span class="command-icon">🏢</span>
         <span class="command-text">
-          <span class="command-title">Personnel</span>
-          <span class="command-copy">Add people, change roles, or remove staff.</span>
+          <span class="command-title">Company personnel</span>
+          <span class="command-copy">Add, remove or edit staff, and check inspector stats.</span>
         </span>
       </button>
 
@@ -968,7 +977,7 @@
 </section>
 <section id="companyTeamSection" class="card company-team-section" style="display:none;">
   <div class="toolbar">
-    <h2 id="companyTeamHeading">Personnel</h2>
+    <h2 id="companyTeamHeading">Company personnel</h2>
     <button id="companyTeamBackBtn" type="button" class="back-home-btn">
       Back Home
     </button>
@@ -978,7 +987,7 @@
     <div class="company-team-kicker" id="companyTeamKicker">Company</div>
     <h3 id="companyTeamTitle">Your company</h3>
     <p id="companyTeamSubtitle">
-      Add people, change roles, or remove staff.
+      Add, remove or edit people, and check inspector stats.
     </p>
     <div id="companyTeamMeta" class="company-team-meta">Loading company…</div>
   </div>
@@ -991,6 +1000,12 @@
     <button id="companyTeamExitFreshBtn" type="button" class="secondary-btn">Exit</button>
   </div>
 
+  <div id="companyPersonnelTabs" class="company-personnel-tabs" role="tablist" aria-label="Company personnel">
+    <button type="button" id="companyPersonnelPeopleTab" class="is-active" data-personnel-tab="people" role="tab" aria-selected="true">People</button>
+    <button type="button" id="companyPersonnelStatsTab" data-personnel-tab="stats" role="tab" aria-selected="false">Stats</button>
+  </div>
+
+  <div id="companyPersonnelPeoplePanel" class="company-personnel-panel" role="tabpanel" aria-labelledby="companyPersonnelPeopleTab">
   <div id="companyTeamSetupPanel" class="company-team-add" style="display:none;">
     <div class="cloud-section-title">Name your company</div>
     <p class="company-team-hint" style="margin-top:0;">
@@ -1037,31 +1052,29 @@
   <div id="companyTeamList" class="company-team-list">
     <div class="company-team-empty">Loading personnel…</div>
   </div>
-</section>
-<section id="inspectorBoardSection" class="card inspector-board-section" style="display:none;">
-  <div class="toolbar">
-    <h2>Inspectors</h2>
-    <button id="inspectorBoardBackBtn" type="button" class="back-home-btn">
-      Back Home
-    </button>
   </div>
 
-  <div class="inspector-board-kicker">Field team</div>
-  <h3 id="inspectorBoardTitle">All inspectors</h3>
-  <p id="inspectorBoardSubtitle">Collective inspection stats and status for the whole field team.</p>
-  <div id="inspectorBoardMeta" class="inspector-board-meta"></div>
+  <div id="companyPersonnelStatsPanel" class="company-personnel-panel inspector-board-embed" role="tabpanel" aria-labelledby="companyPersonnelStatsTab" hidden>
+    <div class="inspector-board-kicker">Field team</div>
+    <h3 id="inspectorBoardTitle">All inspectors</h3>
+    <p id="inspectorBoardSubtitle">Collective inspection stats and status for the whole field team.</p>
+    <div id="inspectorBoardMeta" class="inspector-board-meta"></div>
 
-  <div class="inspector-board-toolbar">
-    <select id="inspectorBoardSelect" aria-label="Select inspector">
-      <option value="all">All inspectors</option>
-    </select>
-    <div class="inspector-board-modes">
-      <button type="button" data-inspector-mode="team">Team / inspector</button>
-      <button type="button" data-inspector-mode="compare">Compare</button>
+    <div class="inspector-board-toolbar">
+      <select id="inspectorBoardSelect" aria-label="Select inspector">
+        <option value="all">All inspectors</option>
+      </select>
+      <div class="inspector-board-modes">
+        <button type="button" data-inspector-mode="team">Team / inspector</button>
+        <button type="button" data-inspector-mode="compare">Compare</button>
+      </div>
     </div>
-  </div>
 
-  <div id="inspectorBoardBody"></div>
+    <div id="inspectorBoardBody"></div>
+  </div>
+</section>
+<section id="inspectorBoardSection" class="card inspector-board-section" style="display:none;" hidden>
+  <button id="inspectorBoardBackBtn" type="button" class="back-home-btn" hidden>Back Home</button>
 </section>
 <section id="servicesSection" class="card services-section" style="display:none;">
   <div class="toolbar">
@@ -1782,7 +1795,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-61-toets"></script>
+  <script src="fire-s-env.js?v=1-3-62-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1797,14 +1810,14 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-61-gateway"></script>
+  <script src="app.js?v=1-3-62-insp"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-37-login"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-39-new-insp"></script>
   <script src="fire-s-owner-lists.js?v=1-1-space"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
-  <script src="fire-s-company-team.js?v=2-19-one-page"></script>
+  <script src="fire-s-company-team.js?v=2-20-create-pw"></script>
   <script src="fire-s-schedule-assign.js?v=1-1-priority"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
@@ -1812,12 +1825,12 @@
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
   <script src="fire-s-subscribe.js?v=1-17-subscribe-again"></script>
-  <script src="fire-s-user-manual.js?v=1-39-subscribe-again"></script>
+  <script src="fire-s-user-manual.js?v=1-40-create-pw"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-45-desktop"></script>
-  <script src="fire-s-startup-stability.js?v=1-8-desktop"></script>
-  <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
+  <script src="fire-s-get-started.js?v=2-50-logo-splash"></script>
+  <script src="fire-s-startup-stability.js?v=1-13-logo-splash"></script>
+  <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
   <script src="fire-s-global-flow.js?v=1-0-global"></script>
   <script src="fire-s-desktop-access.js?v=1-3-keep-dash"></script>
@@ -1831,7 +1844,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-20-subscribe-again')
+        navigator.serviceWorker.register('./service-worker.js?v=108-22-logo-splash')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

@@ -1,10 +1,11 @@
-const CACHE = 'fire-s-108-20-subscribe-again';
+const CACHE = 'fire-s-108-22-logo-splash';
 const PRECACHE = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './fire-s-logo.png',
   './privacy.html',
   './terms.html'
 ];
