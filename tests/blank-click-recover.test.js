@@ -183,6 +183,30 @@ staleSync.sandbox.fireSApplyScreenLock();
 assert.strictEqual(staleSync.els.homeSection.style.display, 'block');
 assert.ok(!staleSync.bodyClasses.has('fire-s-premises-render-lock'));
 
+const newInspection = loadLock();
+hideAll(newInspection.els);
+newInspection.els.projectFormSection.style.display = 'block';
+newInspection.els.projectFormSection.hidden = true;
+newInspection.bodyClasses.add('fire-s-premises-render-lock');
+assert.strictEqual(
+  newInspection.sandbox.fireSRecoverHomeIfBlank(),
+  false,
+  'a new inspection must not be replaced with Home while the form is opening'
+);
+assert.strictEqual(newInspection.els.projectFormSection.style.display, 'block');
+assert.strictEqual(newInspection.els.homeSection.style.display, 'none');
+
+const openingFlag = loadLock();
+hideAll(openingFlag.els);
+openingFlag.sandbox.window.__fireSOpeningInspection = Date.now();
+openingFlag.bodyClasses.add('fire-s-premises-render-lock');
+assert.strictEqual(
+  openingFlag.sandbox.fireSRecoverHomeIfBlank(),
+  false,
+  'blank-home recover must wait while + New inspection at New Site is opening'
+);
+assert.strictEqual(openingFlag.els.homeSection.style.display, 'none');
+
 assert.ok(typeof blank.listeners.visibilitychange === 'function');
 
 console.log('blank-click-recover.test.js ok');

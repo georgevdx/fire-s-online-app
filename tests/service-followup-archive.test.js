@@ -28,13 +28,13 @@ assert.ok(
   'Live Fire-S must be 1.3.55 after sit dit live'
 );
 assert.ok(
-  /app\.js\?v=1-3-61-gateway/.test(stagingHtml) &&
+  /app\.js\?v=1-3-61-new-insp/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-61-toets/.test(stagingHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(stagingHtml),
   'Toets-blad must cache-bust the archive follow-up files'
 );
 assert.ok(
-  /app\.js\?v=1-3-55-gateway/.test(liveHtml) &&
+  /app\.js\?v=1-3-55-new-insp/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-55-live/.test(liveHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(liveHtml) &&
     /id="viewSupportArchiveBtn"/.test(liveHtml) &&

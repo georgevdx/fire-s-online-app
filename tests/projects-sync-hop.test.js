@@ -18,6 +18,7 @@ const stagingEnv = read('staging/fire-s-env.js');
 function assertNoSyncHop(src, label) {
   assert.ok(
     /function isInspectionGatewayVisible\(/.test(src) &&
+      /function isInspectionFormOpen\(/.test(src) &&
       /function shouldPaintProjectsAfterSync\(/.test(src),
     label + ': must know when the projects page is on screen'
   );
@@ -61,12 +62,12 @@ assert.ok(
 );
 assert.ok(/1\.3\.61-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.61-toets');
 assert.ok(
-  /app\.js\?v=1-3-55-gateway/.test(liveHtml) &&
+  /app\.js\?v=1-3-55-new-insp/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-55-live/.test(liveHtml),
   'Live must cache-bust the projects sync-hop fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-61-gateway/.test(stagingHtml) &&
+  /app\.js\?v=1-3-61-new-insp/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-61-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the projects sync-hop fix'
 );

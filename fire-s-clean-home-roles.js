@@ -956,8 +956,11 @@
     const list = byId('projectListSection');
     const form = byId('projectFormSection');
     const shown = el => {
-      if (!el || el.hidden) return false;
-      if (el.style.display === 'none') return false;
+      if (!el) return false;
+      const inline = String((el.style && el.style.display) || '').toLowerCase();
+      if (inline === 'block' || inline === 'flex' || inline === 'grid') return true;
+      if (el.hidden) return false;
+      if (inline === 'none') return false;
       try {
         const style = window.getComputedStyle(el);
         return style.display !== 'none' && style.visibility !== 'hidden';

@@ -17,7 +17,19 @@
     return document.getElementById(id);
   }
 
+  function inspectionWorkspaceOpen() {
+    const list = byId('projectListSection');
+    const form = byId('projectFormSection');
+    const open = el => {
+      if (!el || !el.style) return false;
+      const display = String(el.style.display || '').toLowerCase();
+      return display === 'block' || display === 'flex' || display === 'grid';
+    };
+    return open(list) || open(form);
+  }
+
   function forceHomeOnly() {
+    if (inspectionWorkspaceOpen()) return;
     const keepDash =
       typeof window.fireSDesktopLandingActive === 'function' &&
       window.fireSDesktopLandingActive();
@@ -123,9 +135,10 @@
     if (window.showHome.__fireSStartupWrapped) return;
     const previous = window.showHome;
     const wrapped = function fireSStartupShowHome() {
+      const stayOnInspection = inspectionWorkspaceOpen();
       const result = previous.apply(this, arguments);
-      forceHomeOnly();
-      scheduleReveal('showHome', 180);
+      if (!stayOnInspection) forceHomeOnly();
+      if (!stayOnInspection) scheduleReveal('showHome', 180);
       return result;
     };
     wrapped.__fireSStartupWrapped = true;
