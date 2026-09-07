@@ -19,6 +19,7 @@
   var mode = 'login';
   var wired = false;
   var root = null;
+  var loginReachedHome = false;
 
   function byId(id) {
     return document.getElementById(id);
@@ -350,6 +351,7 @@
   }
 
   function enterAppHome(msg) {
+    loginReachedHome = true;
     clearJoiningAsStaff();
     if (msg) setStatus(msg);
     hideAccess();
@@ -364,8 +366,8 @@
     } catch (_) {}
     refreshHomeChrome();
     try {
-      if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
-      else if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('home');
+      if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('home');
+      else if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
     } catch (_) {}
     setTimeout(function () {
       hideAccess();
@@ -950,6 +952,7 @@
   }
 
   function beginLoginInFlight() {
+    loginReachedHome = false;
     try {
       window.__fireSLoggingIn = true;
     } catch (_) {}
@@ -964,7 +967,7 @@
     try {
       window.__fireSLoggingIn = false;
     } catch (_) {}
-    hideLoginSplash();
+    if (!loginReachedHome) hideLoginSplash();
   }
 
   function hideLoginSplash() {
@@ -1161,7 +1164,6 @@
       await finishSignedInSession('Signed in.');
     } catch (e) {
       setStatus(authErrorMessage(e), true);
-      hideLoginSplash();
     } finally {
       endLoginInFlight();
     }

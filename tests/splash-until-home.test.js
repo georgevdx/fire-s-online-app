@@ -12,7 +12,9 @@ function assertSplash(html, startup, started, label) {
   assert.ok(
     /src="fire-s-logo\.png"/.test(html) &&
       /id="fireSBootScreen"/.test(html) &&
-      /id="fireSBootStatus"/.test(html),
+      /id="fireSBootStatus"/.test(html) &&
+      /rel="preload" href="fire-s-logo\.png"/.test(html) &&
+      /z-index: 200000/.test(html),
     label + ': splash must show the Fire-S logo'
   );
   assert.ok(
@@ -24,15 +26,17 @@ function assertSplash(html, startup, started, label) {
     /window\.fireSShowSplash = showSplash/.test(startup) &&
       /window\.fireSHideSplash = hideSplash/.test(startup) &&
       /function sessionStillRestoring\(/.test(startup) &&
-      /__fireSSessionPending && !window\.__fireSAuthSettled/.test(startup) &&
-      /BOOT_SESSION_MAX_MS/.test(startup),
+      /!window\.__fireSAuthSettled/.test(startup) &&
+      /BOOT_SESSION_MAX_MS/.test(startup) &&
+      /SPLASH_HOLD_MS/.test(startup) &&
+      /reason !== 'home' &&/.test(startup),
     label + ': splash must stay up while a previous login session restores Home'
   );
   assert.ok(
     /window\.fireSShowSplash\('Signing in…'\)/.test(started) &&
       /beginLoginInFlight\(\);/.test(started) &&
-      /fireSHideSplash/.test(started) &&
-      /function enterAppHome\(msg\) \{[\s\S]*fireSHideSplash/.test(started),
+      /if \(!loginReachedHome\) hideLoginSplash\(\)/.test(started) &&
+      /function enterAppHome\(msg\) \{[\s\S]*fireSRevealApp\('home'\)/.test(started),
     label + ': Login tap must show the splash until Home opens'
   );
 }

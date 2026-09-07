@@ -16,12 +16,13 @@
   <meta name="googlebot" content="index, follow">
   <meta name="google-extended" content="unavailable">
   <link rel="license" href="terms.html">
+  <link rel="preload" href="fire-s-logo.png" as="image">
   <style id="fire-s-boot-style">
     html.fire-s-booting body { background: #0b0b0b; }
     html.fire-s-booting .app { opacity: 0; pointer-events: none; }
     #fireSBootScreen {
       display: none;
-      position: fixed; inset: 0; z-index: 99999;
+      position: fixed; inset: 0; z-index: 200000;
       align-items: center; justify-content: center;
       background: linear-gradient(180deg, #111 0%, #1a0505 100%);
       color: #fff; font-family: Arial, sans-serif;
@@ -86,7 +87,7 @@
 <body>
   <div id="fireSBootScreen" aria-live="polite">
     <div class="boot-card">
-      <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S">
+      <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
     </div>
   </div>
@@ -1823,8 +1824,8 @@
   <script src="fire-s-user-manual.js?v=1-39-subscribe-again"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-46-splash"></script>
-  <script src="fire-s-startup-stability.js?v=1-9-splash"></script>
+  <script src="fire-s-get-started.js?v=2-47-splash"></script>
+  <script src="fire-s-startup-stability.js?v=1-11-splash"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
   <script src="fire-s-global-flow.js?v=1-0-global"></script>

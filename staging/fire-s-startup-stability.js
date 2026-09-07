@@ -11,9 +11,12 @@
   const BOOT_MIN_MS = 1800;
   const BOOT_MAX_MS = 3200;
   const BOOT_SESSION_MAX_MS = 12000;
+  const SPLASH_HOLD_MS = 1800;
   let revealed = false;
   let revealTimer = null;
   let hardStopTimer = null;
+  let splashGen = 0;
+  let splashShownAt = 0;
   const startedAt = Date.now();
 
   function byId(id) {
@@ -28,12 +31,16 @@
   function sessionStillRestoring() {
     try {
       if (window.__fireSLoggingIn) return true;
+      // Cover the gap before getSession returns: neither pending nor settled yet.
+      if (!window.__fireSAuthSettled) return true;
       if (window.__fireSSessionPending && !window.__fireSAuthSettled) return true;
     } catch (_) {}
     return false;
   }
 
   function showSplash(message) {
+    splashGen += 1;
+    splashShownAt = Date.now();
     revealed = false;
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
@@ -51,7 +58,8 @@
     }
   }
 
-  function hideSplash() {
+  function hideSplashNow() {
+    revealed = true;
     document.documentElement.classList.remove('fire-s-booting');
     document.documentElement.classList.add('fire-s-ready');
     const boot = byId('fireSBootScreen');
@@ -64,6 +72,20 @@
       app.style.opacity = '1';
       app.style.pointerEvents = '';
     }
+  }
+
+  function hideSplash() {
+    const gen = splashGen;
+    const shown = splashShownAt ? Date.now() - splashShownAt : SPLASH_HOLD_MS;
+    const wait = Math.max(0, SPLASH_HOLD_MS - shown);
+    if (wait > 0) {
+      setTimeout(function () {
+        if (gen !== splashGen) return;
+        hideSplashNow();
+      }, wait);
+      return;
+    }
+    hideSplashNow();
   }
 
   function forceHomeOnly() {
@@ -119,6 +141,8 @@
         window.fireSInspectorV4();
       }
       if (
+        reason !== 'home' &&
+        !sessionStillRestoring() &&
         typeof window.fireSShouldShowAccess === 'function' &&
         window.fireSShouldShowAccess() &&
         typeof window.fireSOpenAccess === 'function'
