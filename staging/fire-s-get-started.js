@@ -362,6 +362,10 @@
       }
     } catch (_) {}
     refreshHomeChrome();
+    try {
+      if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
+      else if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('home');
+    } catch (_) {}
     setTimeout(function () {
       hideAccess();
       try {
@@ -948,11 +952,23 @@
     try {
       window.__fireSLoggingIn = true;
     } catch (_) {}
+    try {
+      if (typeof window.fireSShowSplash === 'function') {
+        window.fireSShowSplash('Signing in…');
+      }
+    } catch (_) {}
   }
 
   function endLoginInFlight() {
     try {
       window.__fireSLoggingIn = false;
+    } catch (_) {}
+    hideLoginSplash();
+  }
+
+  function hideLoginSplash() {
+    try {
+      if (typeof window.fireSHideSplash === 'function') window.fireSHideSplash();
     } catch (_) {}
   }
 
@@ -1144,6 +1160,7 @@
       await finishSignedInSession('Signed in.');
     } catch (e) {
       setStatus(authErrorMessage(e), true);
+      hideLoginSplash();
     } finally {
       endLoginInFlight();
     }

@@ -19,28 +19,34 @@
   <style id="fire-s-boot-style">
     html.fire-s-booting body { background: #0b0b0b; }
     html.fire-s-booting .app { opacity: 0; pointer-events: none; }
-    html.fire-s-booting #fireSBootScreen {
+    #fireSBootScreen {
+      display: none;
       position: fixed; inset: 0; z-index: 99999;
-      display: flex; align-items: center; justify-content: center;
+      align-items: center; justify-content: center;
       background: linear-gradient(180deg, #111 0%, #1a0505 100%);
       color: #fff; font-family: Arial, sans-serif;
     }
-    html.fire-s-booting #fireSBootScreen .boot-card {
-      text-align: center; padding: 28px 22px; max-width: 280px;
+    html.fire-s-booting #fireSBootScreen,
+    #fireSBootScreen.is-on {
+      display: flex !important;
     }
-    html.fire-s-booting #fireSBootScreen .boot-mark {
-      width: 72px; height: 72px; border-radius: 16px; display: block; margin: 0 auto 10px;
+    #fireSBootScreen .boot-card {
+      text-align: center; padding: 28px 22px; max-width: 320px;
     }
-    html.fire-s-booting #fireSBootScreen .boot-kicker {
+    #fireSBootScreen .boot-mark {
+      width: 196px; height: 196px; object-fit: contain;
+      display: block; margin: 0 auto 14px;
+    }
+    #fireSBootScreen .boot-kicker {
       letter-spacing: .18em; text-transform: uppercase; opacity: .7; font-size: .75rem;
     }
-    html.fire-s-booting #fireSBootScreen h1 {
+    #fireSBootScreen h1 {
       margin: 8px 0 6px; font-size: 2rem;
     }
-    html.fire-s-booting #fireSBootScreen p {
-      margin: 0; opacity: .75; font-size: .95rem;
+    #fireSBootScreen p,
+    #fireSBootScreen #fireSBootStatus {
+      margin: 0; opacity: .8; font-size: 1rem;
     }
-    html:not(.fire-s-booting) #fireSBootScreen { display: none !important; }
     html.fire-s-ready .app { opacity: 1; transition: opacity .18s ease; }
     #fireSLogoutScreen {
       display: none;
@@ -80,10 +86,8 @@
 <body>
   <div id="fireSBootScreen" aria-live="polite">
     <div class="boot-card">
-      <img class="boot-mark" src="icon-192.png" alt="">
-      <div class="boot-kicker">Fire-S</div>
-      <h1>Fire-S</h1>
-      <p>Loading…</p>
+      <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S">
+      <p id="fireSBootStatus">Loading…</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -1806,8 +1810,8 @@
   <script src="fire-s-user-manual.js?v=1-36-subscribe-again"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-45-desktop"></script>
-  <script src="fire-s-startup-stability.js?v=1-8-desktop"></script>
+  <script src="fire-s-get-started.js?v=2-46-splash"></script>
+  <script src="fire-s-startup-stability.js?v=1-9-splash"></script>
   <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
   <script src="fire-s-global-flow.js?v=1-0-global"></script>

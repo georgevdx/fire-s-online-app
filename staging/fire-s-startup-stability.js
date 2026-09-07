@@ -1,20 +1,69 @@
 /* ============================================================
    Fire-S Startup Stability
    - Hide multi-page flicker while modules fight on boot
-   - Reveal one stable Home view
+   - Keep the Fire-S logo splash until Access (signed out) or Home (signed in)
+   - Show the same splash again from the Login tap until Home opens
    - Keep full sync in the background after first paint
    ============================================================ */
 (function fireSStartupStability() {
   'use strict';
 
-  const BOOT_MIN_MS = 1100;
-  const BOOT_MAX_MS = 2800;
+  const BOOT_MIN_MS = 1800;
+  const BOOT_MAX_MS = 3200;
+  const BOOT_SESSION_MAX_MS = 12000;
   let revealed = false;
   let revealTimer = null;
+  let hardStopTimer = null;
   const startedAt = Date.now();
 
   function byId(id) {
     return document.getElementById(id);
+  }
+
+  function setSplashCopy(message) {
+    const line = byId('fireSBootStatus') || document.querySelector('#fireSBootScreen p');
+    if (line && message) line.textContent = message;
+  }
+
+  function sessionStillRestoring() {
+    try {
+      if (window.__fireSLoggingIn) return true;
+      if (window.__fireSSessionPending && !window.__fireSAuthSettled) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function showSplash(message) {
+    revealed = false;
+    document.documentElement.classList.add('fire-s-booting');
+    document.documentElement.classList.remove('fire-s-ready');
+    const boot = byId('fireSBootScreen');
+    if (boot) {
+      boot.classList.add('is-on');
+      boot.hidden = false;
+      boot.style.display = 'flex';
+    }
+    setSplashCopy(message || 'Loading…');
+    const app = document.querySelector('.app');
+    if (app) {
+      app.style.opacity = '0';
+      app.style.pointerEvents = 'none';
+    }
+  }
+
+  function hideSplash() {
+    document.documentElement.classList.remove('fire-s-booting');
+    document.documentElement.classList.add('fire-s-ready');
+    const boot = byId('fireSBootScreen');
+    if (boot) {
+      boot.classList.remove('is-on');
+      boot.style.display = 'none';
+    }
+    const app = document.querySelector('.app');
+    if (app) {
+      app.style.opacity = '1';
+      app.style.pointerEvents = '';
+    }
   }
 
   function forceHomeOnly() {
@@ -44,17 +93,22 @@
 
   function revealApp(reason) {
     if (revealed) return;
-    const elapsed = Date.now() - startedAt;
-    const authReady = !!window.__fireSAuthSettled;
-    if (reason !== 'timeout' && reason !== 'auth-settled' && !authReady) {
+    if (sessionStillRestoring() && reason !== 'home') {
+      scheduleReveal(reason || 'wait', 400);
       return;
     }
-    if (elapsed < BOOT_MIN_MS && reason !== 'timeout') {
+    const elapsed = Date.now() - startedAt;
+    const authReady = !!window.__fireSAuthSettled;
+    if (reason !== 'timeout' && reason !== 'auth-settled' && reason !== 'home' && !authReady) {
+      return;
+    }
+    if (elapsed < BOOT_MIN_MS && reason !== 'timeout' && reason !== 'home') {
       scheduleReveal(reason || 'min', BOOT_MIN_MS - elapsed);
       return;
     }
     revealed = true;
     clearTimeout(revealTimer);
+    clearTimeout(hardStopTimer);
 
     try {
       forceHomeOnly();
@@ -73,16 +127,7 @@
       }
     } catch (_) {}
 
-    document.documentElement.classList.remove('fire-s-booting');
-    document.documentElement.classList.add('fire-s-ready');
-    const boot = byId('fireSBootScreen');
-    if (boot) boot.style.display = 'none';
-
-    const app = document.querySelector('.app');
-    if (app) {
-      app.style.opacity = '1';
-      app.style.pointerEvents = '';
-    }
+    hideSplash();
 
     try {
       document.documentElement.dataset.fireSBootReason = String(reason || 'ready');
@@ -92,6 +137,14 @@
   function scheduleReveal(reason, delay) {
     clearTimeout(revealTimer);
     revealTimer = setTimeout(() => revealApp(reason), delay || 0);
+  }
+
+  function hardStop() {
+    if (sessionStillRestoring() && Date.now() - startedAt < BOOT_SESSION_MAX_MS) {
+      hardStopTimer = setTimeout(hardStop, 400);
+      return;
+    }
+    revealApp('timeout');
   }
 
   // Background sync should never block first paint.
@@ -125,6 +178,7 @@
     const wrapped = function fireSStartupShowHome() {
       const result = previous.apply(this, arguments);
       forceHomeOnly();
+      if (window.__fireSLoggingIn) return result;
       scheduleReveal('showHome', 180);
       return result;
     };
@@ -139,6 +193,7 @@
     deferStartupSync();
     wrapShowHome();
     forceHomeOnly();
+    showSplash('Loading…');
 
     try {
       document.addEventListener(
@@ -150,8 +205,7 @@
       );
     } catch (_) {}
 
-    // Hard stop: never keep the splash longer than this.
-    setTimeout(() => revealApp('timeout'), BOOT_MAX_MS);
+    hardStopTimer = setTimeout(hardStop, BOOT_MAX_MS);
 
     // Prefer reveal after role home settles — only if auth already knows.
     setTimeout(() => {
@@ -160,13 +214,19 @@
           window.fireSApplyCleanHomeRoles();
         }
       } catch (_) {}
-      if (window.__fireSAuthSettled) scheduleReveal('settled', 120);
+      if (window.__fireSAuthSettled && !sessionStillRestoring()) {
+        scheduleReveal('settled', 120);
+      }
     }, 700);
 
-    if (window.__fireSAuthSettled) scheduleReveal('auth-settled', 80);
+    if (window.__fireSAuthSettled && !sessionStillRestoring()) {
+      scheduleReveal('auth-settled', 80);
+    }
   }
 
   window.fireSRevealApp = revealApp;
+  window.fireSShowSplash = showSplash;
+  window.fireSHideSplash = hideSplash;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
