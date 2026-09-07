@@ -348,6 +348,22 @@
     } catch (_) {}
   }
 
+  function userLeftHome() {
+    try {
+      var form = document.getElementById('projectFormSection');
+      var list = document.getElementById('projectListSection');
+      var open = function (el) {
+        if (!el || !el.style) return false;
+        var display = String(el.style.display || '').toLowerCase();
+        return display === 'block' || display === 'flex' || display === 'grid';
+      };
+      if (open(form) || open(list)) return true;
+      if (document.body && document.body.classList.contains('fire-s-filling-inspection')) return true;
+      if (document.body && document.body.classList.contains('fire-s-away-from-home')) return true;
+    } catch (_) {}
+    return false;
+  }
+
   function enterAppHome(msg) {
     clearJoiningAsStaff();
     if (msg) setStatus(msg);
@@ -364,6 +380,7 @@
     refreshHomeChrome();
     setTimeout(function () {
       hideAccess();
+      if (userLeftHome()) return;
       try {
         if (typeof window.showHome === 'function') window.showHome();
       } catch (_) {}

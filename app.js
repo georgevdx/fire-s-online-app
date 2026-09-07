@@ -4109,8 +4109,29 @@ function isInspectionGatewayVisible() {
   }
 }
 
+function isInspectionFormOpen() {
+  try {
+    const form = document.getElementById('projectFormSection');
+    if (!form) return false;
+    const inline = String(form.style.display || '').toLowerCase();
+    if (inline === 'none') return false;
+    if (inline === 'block' || inline === 'flex' || inline === 'grid') return true;
+    if (form.hidden) return false;
+    const formStyle = window.getComputedStyle ? getComputedStyle(form) : null;
+    if (formStyle && (formStyle.display === 'none' || formStyle.visibility === 'hidden')) {
+      return false;
+    }
+    return inline !== '';
+  } catch (_) {
+    return false;
+  }
+}
+
 function shouldPaintProjectsAfterSync(forcePaint) {
-  return forcePaint === true || !isInspectionGatewayVisible();
+  if (forcePaint === true) return true;
+  if (isInspectionGatewayVisible()) return false;
+  if (isInspectionFormOpen()) return false;
+  return true;
 }
 
 async function runBackgroundSync(reason = 'background') {
@@ -7712,6 +7733,7 @@ function cancelScheduleNewInspection() {
 }
 
 function createNewProject() {
+  try { window.__fireSOpeningInspection = Date.now(); } catch (_) {}
 
   currentInspectionSessionSnapshot = null;
   currentInspectionSessionWasNew = true;
@@ -8451,14 +8473,26 @@ function showProjectForm() {
 
   updateInspectionCommandHeader();
 
+  try { window.__fireSOpeningInspection = Date.now(); } catch (_) {}
+
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
   if (homeSection) homeSection.style.display = 'none';
   if (servicesSection) servicesSection.style.display = 'none';
 
-  getEl('projectListSection').style.display = 'none';
-  getEl('projectFormSection').style.display = 'block';
+  const list = getEl('projectListSection');
+  const form = getEl('projectFormSection');
+  if (list) {
+    list.style.display = 'none';
+  }
+  if (form) {
+    form.hidden = false;
+    form.style.display = 'block';
+    form.style.visibility = '';
+    form.style.opacity = '';
+    form.removeAttribute('aria-hidden');
+  }
 
   ensureInspectionQuickActions();
 ensureNextInspectionCardId();

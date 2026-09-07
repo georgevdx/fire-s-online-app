@@ -64,13 +64,17 @@ assertGoHome(liveDash, 'Live dashboard');
 assertGoHome(stagingDash, 'Toets dashboard');
 
 function assertEnterHome(src, label) {
-  const block = src.slice(src.indexOf('function enterAppHome'), src.indexOf('async function hasPendingInviteQuiet'));
+  const block = src.slice(src.indexOf('function userLeftHome'), src.indexOf('async function hasPendingInviteQuiet'));
   assert.ok(block.length > 50, label + ': enterAppHome must exist');
   const firstShow = block.indexOf("window.showHome === 'function'");
   const reopen = block.indexOf('fireSMaybeOpenDesktopWorkspace', firstShow);
   assert.ok(
     firstShow >= 0 && reopen > firstShow,
     label + ': after Access closes, desktop=1 must open the dashboard after showHome, not before'
+  );
+  assert.ok(
+    /function userLeftHome\(/.test(block) && /if \(userLeftHome\(\)\) return;/.test(block),
+    label + ': the delayed Home paint after login must not run if Gateway or a new inspection is already open'
   );
 }
 
@@ -84,17 +88,17 @@ assert.ok(
 assert.ok(/1\.3\.61-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.61-toets');
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-3-keep-dash/.test(liveHtml) &&
-    /fire-s-startup-stability\.js\?v=1-8-desktop/.test(liveHtml) &&
+    /fire-s-startup-stability\.js\?v=1-9-new-insp/.test(liveHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(liveHtml) &&
-    /fire-s-get-started\.js\?v=2-45-desktop/.test(liveHtml) &&
+    /fire-s-get-started\.js\?v=2-46-new-insp/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-55-live/.test(liveHtml),
   'Live must cache-bust the desktop landing fix'
 );
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-3-keep-dash/.test(stagingHtml) &&
-    /fire-s-startup-stability\.js\?v=1-8-desktop/.test(stagingHtml) &&
+    /fire-s-startup-stability\.js\?v=1-9-new-insp/.test(stagingHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(stagingHtml) &&
-    /fire-s-get-started\.js\?v=2-45-desktop/.test(stagingHtml) &&
+    /fire-s-get-started\.js\?v=2-46-new-insp/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-61-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
 );
