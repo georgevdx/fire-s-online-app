@@ -367,7 +367,7 @@
   }
 
   function bindNewInspectionCleanStart() {
-    ['newProjectBtn', 'scheduleNewInspectionBtn'].forEach(id => {
+    ['newProjectBtn', 'scheduleInspectionBtn'].forEach(id => {
       const button = document.getElementById(id);
       if (!button || button.dataset.rcCleanStartBound === 'true') return;
       button.dataset.rcCleanStartBound = 'true';

@@ -116,7 +116,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.63-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.65-toets</p></div>
   </div>
 
   <div class="cloud-menu">
@@ -186,7 +186,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.63-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.65-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -1321,16 +1321,12 @@
             + New
           </button>
 
-          <button id="scheduleNewInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
-            Schedule Inspection for New Site
-          </button>
-
-          <button id="scheduleExistingInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
-            Schedule Inspection for Existing Site
+          <button id="scheduleInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
+            Schedule an Inspection
           </button>
         </div>
         <div id="scheduleNewPanel" class="schedule-new-panel" style="display:none;">
-  <h3 id="schedulePanelTitle">Schedule Inspection</h3>
+  <h3 id="schedulePanelTitle">Schedule an Inspection</h3>
 
   <p class="form-help-text" id="schedulePanelHelp">
     Book a future inspection for a new site or for a site that already exists. Pick the inspector who must visit. They get an email with the premises details.
@@ -1831,7 +1827,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-63-paint"></script>
+  <script src="fire-s-env.js?v=1-3-65-one"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1846,7 +1842,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-63-paint"></script>
+  <script src="app.js?v=1-3-65-one"></script>
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-40-exist-sched"></script>
@@ -1854,14 +1850,14 @@
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-20-create-pw"></script>
-  <script src="fire-s-schedule-assign.js?v=1-2-exist-sched"></script>
+  <script src="fire-s-schedule-assign.js?v=1-4-one-btn"></script>
   <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-18-subscribe-again"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-1-status"></script>
   <script src="fire-s-subscribe.js?v=1-17-subscribe-again"></script>
-  <script src="fire-s-user-manual.js?v=1-41-exist-sched"></script>
+  <script src="fire-s-user-manual.js?v=1-42-sched-btn"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-50-logo-splash"></script>
@@ -1880,7 +1876,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-24-version-paint')
+        navigator.serviceWorker.register('./service-worker.js?v=108-26-one-btn')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

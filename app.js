@@ -5824,18 +5824,11 @@ function initApp() {
   getEl('deleteBtn').addEventListener('click', deleteProject);
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   
-  const scheduleNewInspectionBtn =
-    document.getElementById('scheduleNewInspectionBtn');
+  const scheduleInspectionBtn =
+    document.getElementById('scheduleInspectionBtn');
 
-  if (scheduleNewInspectionBtn) {
-    scheduleNewInspectionBtn.addEventListener('click', scheduleNewInspection);
-  }
-
-  const scheduleExistingInspectionBtn =
-    document.getElementById('scheduleExistingInspectionBtn');
-
-  if (scheduleExistingInspectionBtn) {
-    scheduleExistingInspectionBtn.addEventListener('click', scheduleExistingInspection);
+  if (scheduleInspectionBtn) {
+    scheduleInspectionBtn.addEventListener('click', scheduleAnInspection);
   }
 
   const scheduleModeNewBtn = document.getElementById('scheduleModeNewBtn');
@@ -7622,9 +7615,7 @@ function setSchedulePanelMode(mode) {
   const existingBtn = document.getElementById('scheduleModeExistingBtn');
 
   if (title) {
-    title.textContent = schedulePanelMode === 'existing'
-      ? 'Schedule Inspection for Existing Site'
-      : 'Schedule Inspection for New Site';
+    title.textContent = 'Schedule an Inspection';
   }
 
   if (help) {
@@ -7698,6 +7689,13 @@ function scheduleNewInspection() {
 
 function scheduleExistingInspection() {
   openSchedulePanel('existing');
+}
+
+function scheduleAnInspection() {
+  const premises = typeof listSchedulablePremises === 'function'
+    ? listSchedulablePremises()
+    : [];
+  openSchedulePanel(premises.length ? 'existing' : 'new');
 }
 
 function saveScheduledExistingInspection() {
@@ -8054,6 +8052,7 @@ function saveScheduledNewInspection() {
 window.saveScheduledNewInspection = saveScheduledNewInspection;
 window.saveScheduledExistingInspection = saveScheduledExistingInspection;
 window.scheduleExistingInspection = scheduleExistingInspection;
+window.scheduleAnInspection = scheduleAnInspection;
 window.openSchedulePanel = openSchedulePanel;
 
 function clearScheduleNewInspectionForm() {

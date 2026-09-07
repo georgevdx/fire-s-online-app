@@ -301,13 +301,13 @@
     wrapOpener('openScheduleCommand');
     wrapOpener('scheduleNewInspection');
     wrapOpener('scheduleExistingInspection');
+    wrapOpener('scheduleAnInspection');
     wrapOpener('openSchedulePanel');
     var doc = root.document;
     if (!doc) return;
     [
       'cmdScheduleBtn',
-      'scheduleNewInspectionBtn',
-      'scheduleExistingInspectionBtn',
+      'scheduleInspectionBtn',
       'scheduleModeNewBtn',
       'scheduleModeExistingBtn'
     ].forEach(function (id) {

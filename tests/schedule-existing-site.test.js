@@ -22,20 +22,23 @@ const stagingManual = read('staging/fire-s-user-manual.js');
 const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
-assert.ok(/1\.3\.63-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.63-toets');
+assert.ok(/1\.3\.65-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.65-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.57'/.test(liveEnv),
-  'Live Fire-S must be 1.3.57'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.59'/.test(liveEnv),
+  'Live Fire-S must be 1.3.59'
 );
 
 function assertExistingScheduleUi(html, css, app, assign, manual, label) {
   assert.ok(
-    /id="scheduleExistingInspectionBtn"/.test(html) &&
-      /Schedule Inspection for Existing Site/.test(html) &&
+    /id="scheduleInspectionBtn"/.test(html) &&
+      /Schedule an Inspection/.test(html) &&
+      !/Schedule Inspection for New Site/.test(html) &&
+      !/id="scheduleNewInspectionBtn"/.test(html) &&
       /id="scheduleExistingPremisesSelect"/.test(html) &&
       /id="scheduleModeExistingBtn"/.test(html) &&
+      /id="scheduleModeNewBtn"/.test(html) &&
       /id="scheduleNewSiteFields"/.test(html),
-    label + ' must have an existing-site schedule picker on the Gateway'
+    label + ' must have one Schedule an Inspection button with New site and Existing site tabs'
   );
   assert.ok(
     /schedule-mode-btn/.test(css) && /schedule-existing-summary/.test(css),
@@ -43,6 +46,7 @@ function assertExistingScheduleUi(html, css, app, assign, manual, label) {
   );
   assert.ok(
     /function saveScheduledExistingInspection\(/.test(app) &&
+      /function scheduleAnInspection\(/.test(app) &&
       /function listSchedulablePremises\(/.test(app) &&
       /schedulePanelMode === 'existing'/.test(app) &&
       /fireSStampExistingSiteSchedule/.test(app) &&
@@ -58,6 +62,7 @@ function assertExistingScheduleUi(html, css, app, assign, manual, label) {
   );
   assert.ok(
     /existing site/.test(manual) &&
+      /Schedule an Inspection/.test(manual) &&
       /do not have to open a new inspection form first/.test(manual),
     label + ' user manual must say existing sites can be booked without opening a new inspection'
   );
@@ -65,14 +70,14 @@ function assertExistingScheduleUi(html, css, app, assign, manual, label) {
 
 assertExistingScheduleUi(liveHtml, liveCss, liveApp, liveAssign, liveManual, 'Live');
 assert.ok(
-  /id="appVersion" class="brand-version">Version 1\.3\.57</.test(liveHtml) &&
-    /id="cloudVersion">1\.3\.57</.test(liveHtml),
-  'Live must show Version 1.3.57 in the header without waiting for a script'
+  /id="appVersion" class="brand-version">Version 1\.3\.59</.test(liveHtml) &&
+    /id="cloudVersion">1\.3\.59</.test(liveHtml),
+  'Live must show Version 1.3.59 in the header without waiting for a script'
 );
 assert.ok(
-  /id="appVersion" class="brand-version">Version 1\.3\.63-toets</.test(stagingHtml) &&
-    /id="cloudVersion">1\.3\.63-toets</.test(stagingHtml),
-  'Toets-blad must show Version 1.3.63-toets in the header without waiting for a script'
+  /id="appVersion" class="brand-version">Version 1\.3\.65-toets</.test(stagingHtml) &&
+    /id="cloudVersion">1\.3\.65-toets</.test(stagingHtml),
+  'Toets-blad must show Version 1.3.65-toets in the header without waiting for a script'
 );
 assertExistingScheduleUi(
   stagingHtml,
