@@ -19,6 +19,7 @@ function assertSplash(html, startup, started, label) {
   );
   assert.ok(
     /#fireSBootScreen\.is-on/.test(html) &&
+      /id="fireSBootScreen" class="is-on"/.test(html) &&
       !/html:not\(\.fire-s-booting\) #fireSBootScreen \{ display: none !important; \}/.test(html),
     label + ': splash must be able to show again after first boot (Login tap)'
   );
@@ -27,13 +28,16 @@ function assertSplash(html, startup, started, label) {
       /window\.fireSHideSplash = hideSplash/.test(startup) &&
       /function sessionStillRestoring\(/.test(startup) &&
       /!window\.__fireSAuthSettled/.test(startup) &&
+      /window\.__fireSSessionPending/.test(startup) &&
       /BOOT_SESSION_MAX_MS/.test(startup) &&
       /SPLASH_HOLD_MS/.test(startup) &&
-      /reason !== 'home' &&/.test(startup),
+      /reason !== 'home' &&/.test(startup) &&
+      /scheduleReveal\('home', 180\)/.test(startup),
     label + ': splash must stay up while a previous login session restores Home'
   );
   assert.ok(
-    /window\.fireSShowSplash\('Signing in…'\)/.test(started) &&
+    /paintBootSplashNow\('Signing in…'\)/.test(started) &&
+      /window\.fireSShowSplash\('Signing in…'\)/.test(started) &&
       /beginLoginInFlight\(\);/.test(started) &&
       /if \(!loginReachedHome\) hideLoginSplash\(\)/.test(started) &&
       /await paintSplashFrame\(\)/.test(started) &&

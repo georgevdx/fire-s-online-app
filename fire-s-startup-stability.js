@@ -8,10 +8,10 @@
 (function fireSStartupStability() {
   'use strict';
 
-  const BOOT_MIN_MS = 1800;
-  const BOOT_MAX_MS = 3200;
+  const BOOT_MIN_MS = 2200;
+  const BOOT_MAX_MS = 4000;
   const BOOT_SESSION_MAX_MS = 12000;
-  const SPLASH_HOLD_MS = 1800;
+  const SPLASH_HOLD_MS = 2200;
   let revealed = false;
   let revealTimer = null;
   let hardStopTimer = null;
@@ -33,7 +33,8 @@
       if (window.__fireSLoggingIn) return true;
       // Cover the gap before getSession returns: neither pending nor settled yet.
       if (!window.__fireSAuthSettled) return true;
-      if (window.__fireSSessionPending && !window.__fireSAuthSettled) return true;
+      // A previous login is restoring Home — keep the logo up until reveal('home').
+      if (window.__fireSSessionPending) return true;
     } catch (_) {}
     return false;
   }
@@ -48,7 +49,11 @@
     if (boot) {
       boot.classList.add('is-on');
       boot.hidden = false;
+      boot.removeAttribute('hidden');
       boot.style.setProperty('display', 'flex', 'important');
+      boot.style.setProperty('z-index', '200000', 'important');
+      boot.style.setProperty('opacity', '1', 'important');
+      boot.style.setProperty('visibility', 'visible', 'important');
       try {
         document.body.appendChild(boot);
       } catch (_) {}
@@ -131,6 +136,9 @@
       scheduleReveal(reason || 'min', BOOT_MIN_MS - elapsed);
       return;
     }
+    try {
+      if (reason === 'home') window.__fireSSessionPending = false;
+    } catch (_) {}
     revealed = true;
     clearTimeout(revealTimer);
     clearTimeout(hardStopTimer);
@@ -206,7 +214,8 @@
       const result = previous.apply(this, arguments);
       forceHomeOnly();
       if (window.__fireSLoggingIn) return result;
-      scheduleReveal('showHome', 180);
+      try { window.__fireSSessionPending = false; } catch (_) {}
+      scheduleReveal('home', 180);
       return result;
     };
     wrapped.__fireSStartupWrapped = true;
@@ -220,7 +229,7 @@
     deferStartupSync();
     wrapShowHome();
     forceHomeOnly();
-    showSplash('Loading…');
+    showSplash(window.__fireSLoggingIn ? 'Signing in…' : 'Loading…');
 
     try {
       document.addEventListener(
@@ -254,6 +263,10 @@
   window.fireSRevealApp = revealApp;
   window.fireSShowSplash = showSplash;
   window.fireSHideSplash = hideSplash;
+
+  try {
+    showSplash('Loading…');
+  } catch (_) {}
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });

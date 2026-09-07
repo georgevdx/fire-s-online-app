@@ -155,7 +155,8 @@ window.fireSMarkAuthSettled = function fireSMarkAuthSettled() {
     document.dispatchEvent(new CustomEvent('fire-s:auth-settled'));
   } catch (_) {}
   try {
-    if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp('auth-settled');
+    var reason = window.__fireSSessionPending ? 'home' : 'auth-settled';
+    if (typeof window.fireSRevealApp === 'function') window.fireSRevealApp(reason);
   } catch (_) {}
   try {
     if (typeof window.refreshFireSGetStarted === 'function') window.refreshFireSGetStarted();
