@@ -182,6 +182,109 @@
       });
   }
 
+  function premisesScheduleLabel(project) {
+    var org = text(project && (project.organisationName || project.organizationName));
+    var site = text(project && project.siteName);
+    var address = text(
+      project && (project.addressLine || project.projectAddress)
+    );
+    var title =
+      [org, site].filter(Boolean).join(' — ') ||
+      text(project && project.projectName) ||
+      'Untitled site';
+    return address ? title + ' · ' + address : title;
+  }
+
+  function premisesIdentityKey(project) {
+    var org = lower(
+      project &&
+        (project.organisationName ||
+          project.organizationName ||
+          project.premisesName)
+    );
+    var site = lower(project && project.siteName);
+    if (!org && !site) org = lower(project && project.projectName);
+    return org + '|' + site;
+  }
+
+  function uniqueSchedulablePremises(projects) {
+    var map = {};
+    (Array.isArray(projects) ? projects : []).forEach(function (project) {
+      if (!project || !text(project.id)) return;
+      var key = premisesIdentityKey(project);
+      if (key === '|') return;
+      var prev = map[key];
+      var time = Date.parse(project.lastSaved || project.completedAt || '') || 0;
+      var prevTime = prev
+        ? Date.parse(prev.lastSaved || prev.completedAt || '') || 0
+        : -1;
+      if (!prev || time >= prevTime) map[key] = project;
+    });
+    return Object.keys(map)
+      .map(function (key) {
+        return map[key];
+      })
+      .sort(function (a, b) {
+        return premisesScheduleLabel(a).localeCompare(premisesScheduleLabel(b));
+      });
+  }
+
+  function hasInspectionWorkStarted(project) {
+    if (!project) return false;
+    var answers = Array.isArray(project.answers) ? project.answers : [];
+    var answered = answers.some(function (answer) {
+      var value = lower(answer && answer.answer);
+      return value === 'yes' || value === 'no' || value === 'n/a' || value === 'na';
+    });
+    var photos = Array.isArray(project.photos) && project.photos.length > 0;
+    return answered || photos || !!text(project.finalComments);
+  }
+
+  function canBookExistingPremises(project) {
+    if (!project) return { ok: false, reason: 'missing' };
+    var scheduled = lower(project.scheduledStatus) === 'scheduled';
+    var fresh = project.scheduleFreshInspection === true;
+    if (
+      hasInspectionWorkStarted(project) &&
+      !isFinalizedInspection(project) &&
+      !(scheduled && fresh)
+    ) {
+      return { ok: false, reason: 'in_progress' };
+    }
+    return { ok: true, alreadyBooked: scheduled };
+  }
+
+  function stampExistingSiteSchedule(project, fields) {
+    var details = fields || {};
+    var assigned = details.assigned || {};
+    var next = {};
+    Object.keys(project || {}).forEach(function (key) {
+      next[key] = project[key];
+    });
+    var started = hasInspectionWorkStarted(project);
+    var finalized = isFinalizedInspection(project);
+    next.scheduledDate = text(details.date).slice(0, 10);
+    next.scheduledStatus = 'scheduled';
+    next.scheduleType = 'existing_site';
+    next.scheduledReason = 'existing_site';
+    next.scheduledNote = 'Inspection booked for existing site';
+    next.scheduleFreshInspection = !!(started || finalized);
+    next.completedAt = null;
+    next.archiveStatus = '';
+    next.archivedAt = null;
+    if (text(details.inspectionType)) {
+      next.inspectionType = text(details.inspectionType);
+    }
+    next.assignedInspectorEmail = lower(assigned.email);
+    next.assignedInspectorName = text(assigned.name);
+    next.assignedInspectorUserId = text(assigned.userId);
+    if (text(assigned.name)) next.inspectorName = text(assigned.name);
+    next.syncPending = true;
+    next.syncError = false;
+    next.lastSaved = new Date().toISOString();
+    return next;
+  }
+
   function wrapOpener(name) {
     var orig = root[name];
     if (typeof orig !== 'function' || orig.__fireSAssignWrapped) return;
@@ -197,9 +300,17 @@
   function bind() {
     wrapOpener('openScheduleCommand');
     wrapOpener('scheduleNewInspection');
+    wrapOpener('scheduleExistingInspection');
+    wrapOpener('openSchedulePanel');
     var doc = root.document;
     if (!doc) return;
-    ['cmdScheduleBtn', 'scheduleNewInspectionBtn'].forEach(function (id) {
+    [
+      'cmdScheduleBtn',
+      'scheduleNewInspectionBtn',
+      'scheduleExistingInspectionBtn',
+      'scheduleModeNewBtn',
+      'scheduleModeExistingBtn'
+    ].forEach(function (id) {
       var btn = doc.getElementById(id);
       if (!btn || btn.__fireSAssignBound) return;
       btn.__fireSAssignBound = true;
@@ -215,6 +326,10 @@
   root.fireSScheduledPriorityList = scheduledPriorityList;
   root.fireSReadScheduleAssignee = readScheduleAssignee;
   root.fireSFillScheduleInspectorSelect = fillInspectorSelect;
+  root.fireSPremisesScheduleLabel = premisesScheduleLabel;
+  root.fireSUniqueSchedulablePremises = uniqueSchedulablePremises;
+  root.fireSCanBookExistingPremises = canBookExistingPremises;
+  root.fireSStampExistingSiteSchedule = stampExistingSiteSchedule;
 
   if (root.document) {
     if (root.document.readyState === 'loading') {

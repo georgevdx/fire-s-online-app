@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-28-logo-splash';
+const CACHE = 'fire-s-108-29-exist-sched';
 const PRECACHE = [
   './',
   './index.html',

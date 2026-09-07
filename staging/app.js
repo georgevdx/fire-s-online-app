@@ -1272,6 +1272,13 @@ function getProjectScheduleType(project) {
   }
 
   if (
+    rawType === 'existing_site' ||
+    rawType === 'existing'
+  ) {
+    return 'existing_site';
+  }
+
+  if (
     rawType === 'recurring_cycle' ||
     rawType === 'cycle' ||
     rawType === 'recurring'
@@ -5163,10 +5170,15 @@ function openInspectionsCommand() {
 
 function openScheduleCommand() {
   showProjectList();
-
   setTimeout(() => {
+    const premises = typeof listSchedulablePremises === 'function'
+      ? listSchedulablePremises()
+      : [];
+    if (typeof openSchedulePanel === 'function') {
+      openSchedulePanel(premises.length ? 'existing' : 'new');
+      return;
+    }
     const panel = document.getElementById('scheduleNewPanel');
-
     if (panel) {
       panel.style.display = 'block';
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5347,6 +5359,13 @@ function openInspectionsCommand() {
 function openScheduleCommand() {
   showProjectList();
   setTimeout(() => {
+    const premises = typeof listSchedulablePremises === 'function'
+      ? listSchedulablePremises()
+      : [];
+    if (typeof openSchedulePanel === 'function') {
+      openSchedulePanel(premises.length ? 'existing' : 'new');
+      return;
+    }
     const panel = document.getElementById('scheduleNewPanel');
     if (panel) {
       panel.style.display = 'block';
@@ -5830,6 +5849,43 @@ function initApp() {
 
   if (scheduleNewInspectionBtn) {
     scheduleNewInspectionBtn.addEventListener('click', scheduleNewInspection);
+  }
+
+  const scheduleExistingInspectionBtn =
+    document.getElementById('scheduleExistingInspectionBtn');
+
+  if (scheduleExistingInspectionBtn) {
+    scheduleExistingInspectionBtn.addEventListener('click', scheduleExistingInspection);
+  }
+
+  const scheduleModeNewBtn = document.getElementById('scheduleModeNewBtn');
+  if (scheduleModeNewBtn) {
+    scheduleModeNewBtn.addEventListener('click', () => {
+      const panel = document.getElementById('scheduleNewPanel');
+      setSchedulePanelMode('new');
+      if (panel) panel.style.display = 'block';
+    });
+  }
+
+  const scheduleModeExistingBtn = document.getElementById('scheduleModeExistingBtn');
+  if (scheduleModeExistingBtn) {
+    scheduleModeExistingBtn.addEventListener('click', () => {
+      const panel = document.getElementById('scheduleNewPanel');
+      setSchedulePanelMode('existing');
+      if (panel) panel.style.display = 'block';
+    });
+  }
+
+  const scheduleExistingPremisesSearch =
+    document.getElementById('scheduleExistingPremisesSearch');
+  if (scheduleExistingPremisesSearch) {
+    scheduleExistingPremisesSearch.addEventListener('input', fillExistingPremisesSelect);
+  }
+
+  const scheduleExistingPremisesSelect =
+    document.getElementById('scheduleExistingPremisesSelect');
+  if (scheduleExistingPremisesSelect) {
+    scheduleExistingPremisesSelect.addEventListener('change', updateExistingPremisesSummary);
   }
   const saveScheduledInspectionBtn =
   document.getElementById('saveScheduledInspectionBtn');
@@ -7465,7 +7521,162 @@ function migrateLegacyProductTypes() {
   }
 }
 
-function scheduleNewInspection() {
+var schedulePanelMode = 'new';
+
+function listSchedulablePremises(filterText) {
+  const accessMetadata = getAccessMetadata();
+  const raw = typeof filterDeletedProjects === 'function'
+    ? filterDeletedProjects(getProjects())
+    : getProjects();
+  const scoped = (raw || []).filter(project =>
+    typeof isProjectInPremisesCompanyScope === 'function'
+      ? isProjectInPremisesCompanyScope(project, accessMetadata)
+      : true
+  );
+  const unique = typeof window.fireSUniqueSchedulablePremises === 'function'
+    ? window.fireSUniqueSchedulablePremises(scoped)
+    : scoped;
+  const needle = String(filterText || '').trim().toLowerCase();
+  if (!needle) return unique;
+  return unique.filter(project => {
+    const hay = [
+      project.organisationName,
+      project.siteName,
+      project.projectName,
+      project.addressLine,
+      project.projectAddress,
+      project.inspectionNumber
+    ].join(' ').toLowerCase();
+    return hay.indexOf(needle) !== -1;
+  });
+}
+
+function fillExistingPremisesSelect() {
+  const select = document.getElementById('scheduleExistingPremisesSelect');
+  if (!select) return;
+
+  const previous = select.value;
+  const search =
+    document.getElementById('scheduleExistingPremisesSearch')?.value || '';
+  const premises = listSchedulablePremises(search);
+  const escape = typeof escapeHtml === 'function'
+    ? escapeHtml
+    : value => String(value || '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
+  const labelFn = typeof window.fireSPremisesScheduleLabel === 'function'
+    ? window.fireSPremisesScheduleLabel
+    : project =>
+        [project.organisationName, project.siteName].filter(Boolean).join(' — ') ||
+        project.projectName ||
+        'Untitled site';
+
+  let html = '<option value="">Select a site already on Fire-S</option>';
+  premises.forEach(project => {
+    const id = String(project.id || '');
+    if (!id) return;
+    html += `<option value="${escape(id)}"${id === previous ? ' selected' : ''}>${escape(labelFn(project))}</option>`;
+  });
+  select.innerHTML = html;
+  if (previous && premises.some(project => String(project.id) === previous)) {
+    select.value = previous;
+  }
+
+  const hint = document.getElementById('scheduleExistingPremisesHint');
+  if (hint) {
+    hint.textContent = !premises.length
+      ? (search
+        ? 'No existing site matches that search.'
+        : 'No existing sites yet. Use New site to book a first inspection.')
+      : 'Book the next inspection on a site that already exists. You do not open a new inspection form first.';
+  }
+
+  updateExistingPremisesSummary();
+}
+
+function updateExistingPremisesSummary() {
+  const box = document.getElementById('scheduleExistingPremisesSummary');
+  const select = document.getElementById('scheduleExistingPremisesSelect');
+  if (!box) return;
+
+  const projectId = select?.value || '';
+  const project = projectId
+    ? getProjects().find(item => String(item.id) === String(projectId))
+    : null;
+
+  if (!project) {
+    box.hidden = true;
+    box.textContent = '';
+    return;
+  }
+
+  const address = project.addressLine || project.projectAddress || '';
+  const booked =
+    project.scheduledDate &&
+    String(project.scheduledStatus || '').toLowerCase() === 'scheduled'
+      ? `Currently booked for ${String(project.scheduledDate).slice(0, 10)}.`
+      : '';
+
+  box.hidden = false;
+  box.textContent = [
+    [project.organisationName, project.siteName].filter(Boolean).join(' — '),
+    address,
+    project.occupancy ? `Occupancy ${project.occupancy}` : '',
+    booked
+  ].filter(Boolean).join(' · ');
+}
+
+function setSchedulePanelMode(mode) {
+  schedulePanelMode = mode === 'existing' ? 'existing' : 'new';
+
+  const title = document.getElementById('schedulePanelTitle');
+  const help = document.getElementById('schedulePanelHelp');
+  const existingFields = document.getElementById('scheduleExistingFields');
+  const newFields = document.getElementById('scheduleNewSiteFields');
+  const extraFields = document.getElementById('scheduleNewSiteExtraFields');
+  const newBtn = document.getElementById('scheduleModeNewBtn');
+  const existingBtn = document.getElementById('scheduleModeExistingBtn');
+
+  if (title) {
+    title.textContent = schedulePanelMode === 'existing'
+      ? 'Schedule Inspection for Existing Site'
+      : 'Schedule Inspection for New Site';
+  }
+
+  if (help) {
+    help.textContent = schedulePanelMode === 'existing'
+      ? 'Pick a site that already exists. Book the date without opening a new inspection form. The assigned inspector gets an email with the premises details.'
+      : 'Book a future inspection for a new site. Pick the inspector who must visit. They get an email with the premises details.';
+  }
+
+  if (existingFields) {
+    existingFields.hidden = schedulePanelMode !== 'existing';
+    existingFields.style.display = schedulePanelMode === 'existing' ? 'block' : 'none';
+  }
+
+  if (newFields) {
+    newFields.hidden = schedulePanelMode === 'existing';
+    newFields.style.display = schedulePanelMode === 'existing' ? 'none' : 'block';
+  }
+
+  if (extraFields) {
+    extraFields.hidden = schedulePanelMode === 'existing';
+    extraFields.style.display = schedulePanelMode === 'existing' ? 'none' : 'block';
+  }
+
+  if (newBtn) newBtn.classList.toggle('is-active', schedulePanelMode === 'new');
+  if (existingBtn) existingBtn.classList.toggle('is-active', schedulePanelMode === 'existing');
+
+  if (schedulePanelMode === 'existing') {
+    fillExistingPremisesSelect();
+  }
+}
+
+function openSchedulePanel(mode) {
   const panel = document.getElementById('scheduleNewPanel');
 
   if (!panel) {
@@ -7473,26 +7684,185 @@ function scheduleNewInspection() {
     return;
   }
 
-  panel.style.display =
-    panel.style.display === 'none' || panel.style.display === ''
-      ? 'block'
-      : 'none';
+  const nextMode = mode === 'existing' ? 'existing' : 'new';
+  const isOpen = panel.style.display === 'block';
 
-  if (panel.style.display === 'block') {
-    const dateField = document.getElementById('scheduleDate');
+  if (isOpen && schedulePanelMode === nextMode) {
+    panel.style.display = 'none';
+    return;
+  }
 
-    if (dateField && !dateField.value) {
-      dateField.value = new Date().toISOString().slice(0, 10);
+  setSchedulePanelMode(nextMode);
+  panel.style.display = 'block';
+
+  const dateField = document.getElementById('scheduleDate');
+  if (dateField && !dateField.value) {
+    dateField.value = new Date().toISOString().slice(0, 10);
+  }
+
+  try {
+    if (typeof window.fireSFillScheduleInspectorSelect === 'function') {
+      window.fireSFillScheduleInspectorSelect();
     }
+  } catch (_) {}
 
-    panel.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
+  panel.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function scheduleNewInspection() {
+  openSchedulePanel('new');
+}
+
+function scheduleExistingInspection() {
+  openSchedulePanel('existing');
+}
+
+function saveScheduledExistingInspection() {
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow scheduling inspections. Please contact your company admin or Fire-S support.'
+    );
+    return;
+  }
+
+  const projectId =
+    document.getElementById('scheduleExistingPremisesSelect')?.value || '';
+
+  if (!projectId) {
+    alert('Select an existing site before scheduling the inspection.');
+    document.getElementById('scheduleExistingPremisesSelect')?.focus();
+    return;
+  }
+
+  const scheduledDate =
+    document.getElementById('scheduleDate')?.value || '';
+
+  if (!scheduledDate) {
+    alert('Select a scheduled inspection date.');
+    return;
+  }
+
+  const inspectionType =
+    document.getElementById('scheduleInspectionType')?.value.trim() ||
+    'General Fire Inspection';
+
+  const projects = getProjects();
+  const index = projects.findIndex(
+    project => String(project.id) === String(projectId)
+  );
+
+  if (index === -1) {
+    alert('The existing premises could not be found. Refresh or sync and try again.');
+    return;
+  }
+
+  const original = projects[index];
+  const gate = typeof window.fireSCanBookExistingPremises === 'function'
+    ? window.fireSCanBookExistingPremises(original)
+    : { ok: true };
+
+  if (!gate.ok) {
+    alert(
+      gate.reason === 'in_progress'
+        ? 'This site has an inspection in progress. Open it to continue, or finish it before booking the next inspection.'
+        : 'This site cannot be booked right now.'
+    );
+    return;
+  }
+
+  const currentBookedDate = String(original.scheduledDate || '').slice(0, 10);
+  if (gate.alreadyBooked && currentBookedDate && currentBookedDate !== scheduledDate) {
+    const okReplace = confirm(
+      `This site is already booked for ${currentBookedDate}. Replace that date with ${scheduledDate}?`
+    );
+    if (!okReplace) return;
+  }
+
+  let assigned = { email: '', name: '', userId: '' };
+  try {
+    if (typeof window.fireSReadScheduleAssignee === 'function') {
+      assigned = window.fireSReadScheduleAssignee() || assigned;
+    }
+  } catch (_) {}
+  assigned = {
+    email: String(assigned.email || '').trim().toLowerCase(),
+    name: String(assigned.name || '').trim(),
+    userId: String(assigned.userId || '').trim()
+  };
+
+  const stamped = typeof window.fireSStampExistingSiteSchedule === 'function'
+    ? window.fireSStampExistingSiteSchedule(original, {
+        date: scheduledDate,
+        inspectionType,
+        assigned
+      })
+    : {
+        ...original,
+        scheduledDate,
+        scheduledStatus: 'scheduled',
+        scheduleType: 'existing_site',
+        scheduleFreshInspection: true,
+        completedAt: null
+      };
+
+  projects[index] = stamped;
+  setProjects(projects);
+  clearScheduleNewInspectionForm();
+
+  const panel = document.getElementById('scheduleNewPanel');
+  if (panel) panel.style.display = 'none';
+
+  currentFilter = 'scheduled-new';
+  currentProjectPage = 1;
+
+  renderProjectsList();
+  updateDashboardSelection();
+
+  uploadSingleInspection(stamped)
+    .catch(error => {
+      console.warn('Scheduled existing inspection upload failed:', error);
     });
+
+  try {
+    if (assigned.email && typeof window.fireSNotifyInspectorAssignment === 'function') {
+      const accessMetadata = getAccessMetadata();
+      window.fireSNotifyInspectorAssignment({
+        email: assigned.email,
+        inspectorName: assigned.name,
+        organisation: stamped.organisationName,
+        site: stamped.siteName,
+        address: stamped.addressLine || stamped.projectAddress,
+        date: scheduledDate,
+        contactName: stamped.contactPerson,
+        contactTel: stamped.contactTel,
+        inspectionType,
+        occupancy: stamped.occupancy,
+        scheduledBy: accessMetadata.createdByEmail,
+        company: stamped.companyName || accessMetadata.companyName
+      });
+    }
+  } catch (_) {}
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    const siteLabel =
+      [stamped.organisationName, stamped.siteName].filter(Boolean).join(' ') ||
+      'Existing site';
+    saveMessage.textContent = assigned.email
+      ? `${siteLabel} scheduled for ${scheduledDate}. ${assigned.name || assigned.email} gets an email with the premises details.`
+      : `${siteLabel} scheduled for ${scheduledDate}.`;
   }
 }
 
 function saveScheduledNewInspection() {
+  if (schedulePanelMode === 'existing') {
+    saveScheduledExistingInspection();
+    return;
+  }
+
   if (!canCreateInspection()) {
     alert(
       'Your company access does not allow scheduling new inspections. Please contact your company admin or Fire-S support.'
@@ -7702,6 +8072,9 @@ function saveScheduledNewInspection() {
 }
 
 window.saveScheduledNewInspection = saveScheduledNewInspection;
+window.saveScheduledExistingInspection = saveScheduledExistingInspection;
+window.scheduleExistingInspection = scheduleExistingInspection;
+window.openSchedulePanel = openSchedulePanel;
 
 function clearScheduleNewInspectionForm() {
   [
@@ -7711,7 +8084,8 @@ function clearScheduleNewInspectionForm() {
     'scheduleOccupancy',
     'scheduleAddress',
     'scheduleContactPerson',
-    'scheduleContactTel'
+    'scheduleContactTel',
+    'scheduleExistingPremisesSearch'
   ].forEach(id => {
     const field = document.getElementById(id);
     if (field) field.value = '';
@@ -7719,6 +8093,15 @@ function clearScheduleNewInspectionForm() {
 
   const inspectorSelect = document.getElementById('scheduleInspectorSelect');
   if (inspectorSelect) inspectorSelect.value = '';
+
+  const premisesSelect = document.getElementById('scheduleExistingPremisesSelect');
+  if (premisesSelect) premisesSelect.value = '';
+
+  const summary = document.getElementById('scheduleExistingPremisesSummary');
+  if (summary) {
+    summary.hidden = true;
+    summary.textContent = '';
+  }
 
   const typeField = document.getElementById('scheduleInspectionType');
   if (typeField) typeField.value = 'General Fire Inspection';
@@ -11369,6 +11752,13 @@ function getActiveScheduleLabel(project) {
   }
 
   if (
+    project.scheduleType === 'existing_site' ||
+    project.scheduledReason === 'existing_site'
+  ) {
+    return `Scheduled inspection: ${activeScheduledDate}`;
+  }
+
+  if (
     project.scheduledReason === 'follow_up' ||
     project.followUpRequired === 'Yes'
   ) {
@@ -11383,10 +11773,15 @@ function getActiveScheduleLabel(project) {
 }
 
 function getProjectInspectionStatus(project) {
+  const bookingType = String(project.scheduleType || '').toLowerCase();
   if (
   project.scheduledStatus === 'scheduled' &&
-  project.scheduleType === 'new_site' &&
-  !project.completedAt
+  !project.completedAt &&
+  (
+    bookingType === 'new_site' ||
+    bookingType === 'existing_site' ||
+    bookingType === 'new_inspection'
+  )
 ) {
   return {
     label: 'Scheduled',
@@ -24832,6 +25227,7 @@ function fireSIsScheduledNewPremisesOnly(project) {
   return (
     status === 'scheduled' ||
     type === 'new_site' ||
+    type === 'existing_site' ||
     project?.scheduleFreshInspection === true
   );
 }
@@ -31640,7 +32036,14 @@ function fireSHasPreviousCycles(project) {
 }
 
 function fireSIsScheduledNewPremises(project) {
-  return project?.scheduledStatus === 'scheduled' && project?.scheduleType === 'new_site' && !project?.completedAt;
+  if (!project || project.completedAt) return false;
+  if (String(project.scheduledStatus || '').toLowerCase() !== 'scheduled') return false;
+  const type = String(project.scheduleType || '').toLowerCase();
+  return (
+    type === 'new_site' ||
+    type === 'existing_site' ||
+    type === 'new_inspection'
+  );
 }
 
 function fireSIsNewPremises(project) {
@@ -33127,7 +33530,7 @@ function fireSApplyLifecycleUxLabels() {
 
     ['cmdInspectionsBtn','cmdScheduleBtn','cmdCompanyBtn','cmdServicesBtn','cmdDashboardBtn','cmdFindingsBtn','cmdOverdueBtn'].forEach(show);
     cardText('cmdInspectionsBtn','Inspection Gateway','Open, continue, search and manage inspections.');
-    cardText('cmdScheduleBtn','Schedule','Create new-site bookings and review follow-ups.');
+    cardText('cmdScheduleBtn','Schedule','Book an existing site or a new site, and review follow-ups.');
   }
 
   function renderHomeController(){
