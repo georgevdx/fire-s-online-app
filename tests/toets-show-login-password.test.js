@@ -18,58 +18,52 @@ const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.57'/.test(liveEnv),
-  'Live Fire-S must stay 1.3.57'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.58'/.test(liveEnv),
+  'Live Fire-S must be 1.3.58'
 );
-assert.ok(/1\.3\.63-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.63-toets');
+assert.ok(/1\.3\.64-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.64-toets');
 
-const stagingLogin = stagingHtml.match(
-  /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
-);
-assert.ok(stagingLogin, 'Toets Access login block must exist');
-assert.ok(
-  /id="fireSLoginPassword"[\s\S]*id="fireSShowLoginPasswordBtn"/.test(stagingLogin[0]) &&
-    /Show password/.test(stagingLogin[0]) &&
-    /class="[^"]*fire-s-password-row/.test(stagingLogin[0]),
-  'Toets email login must offer Show password next to the password field'
-);
-assert.ok(
-  /fireSShowLoginPasswordBtn/.test(stagingStarted) &&
-    /Hide password/.test(stagingStarted) &&
-    /setAttribute\('type', showing \? 'password' : 'text'\)/.test(stagingStarted),
-  'Toets Access JS must toggle the login password between hidden and visible'
-);
-assert.ok(
-  /\.fire-s-password-row \{/.test(stagingCss) &&
-    /\.fire-s-show-password-btn \{/.test(stagingCss),
-  'Toets Access CSS must keep Show password beside the field, not as a full-width Access button'
-);
-assert.ok(
-  /fire-s-get-started\.css\?v=2-16-create-pw/.test(stagingHtml) &&
-    /fire-s-get-started\.js\?v=2-50-logo-splash/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-63-paint/.test(stagingHtml),
-  'Toets-blad must cache-bust the show-password Access files'
-);
+function assertShowPassword(html, started, css, label) {
+  const login = html.match(
+    /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
+  );
+  assert.ok(login, label + ' Access login block must exist');
+  assert.ok(
+    /id="fireSLoginPassword"[\s\S]*id="fireSShowLoginPasswordBtn"/.test(login[0]) &&
+      /Show password/.test(login[0]) &&
+      /class="[^"]*fire-s-password-row/.test(login[0]),
+    label + ' email login must offer Show password next to the password field'
+  );
+  assert.ok(
+    /fireSShowLoginPasswordBtn/.test(started) &&
+      /Hide password/.test(started) &&
+      /setAttribute\('type', showing \? 'password' : 'text'\)/.test(started),
+    label + ' Access JS must toggle the login password between hidden and visible'
+  );
+  assert.ok(
+    /\.fire-s-password-row \{/.test(css) &&
+      /max-width: 100%/.test(css.match(/\.fire-s-password-row \{[\s\S]*?\}/)[0]) &&
+      /\.fire-s-show-password-btn \{/.test(css) &&
+      /overflow-x: hidden/.test(css) &&
+      /grid-template-columns: minmax\(0, 1fr\)/.test(css),
+    label + ' phone Access must keep Show password inside the card'
+  );
+}
+
+assertShowPassword(stagingHtml, stagingStarted, stagingCss, 'Toets');
+assertShowPassword(liveHtml, liveStarted, liveCss, 'Live');
 
 assert.ok(
-  !/fireSShowLoginPasswordBtn/.test(liveHtml) &&
-    !/fire-s-password-row/.test(liveHtml) &&
-    !/Show password/.test(
-      liveHtml.match(/id="fireSGetStartedLoginFields"[\s\S]*?id="fireSDoLoginBtn"/)[0]
-    ),
-  'Live email login must not show a password-visibility option'
+  /fire-s-get-started\.css\?v=2-18-phone-pw/.test(stagingHtml) &&
+    /fire-s-get-started\.js\?v=2-51-show-pw/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
+  'Toets-blad must cache-bust the phone Access files'
 );
 assert.ok(
-  !/fireSShowLoginPasswordBtn/.test(liveStarted) &&
-    !/Hide password/.test(liveStarted) &&
-    !/\.fire-s-password-row \{/.test(liveCss),
-  'Live Access scripts and styles must not include the toets show-password control'
-);
-assert.ok(
-  /fire-s-get-started\.css\?v=2-14-hide-saved/.test(liveHtml) &&
-    /fire-s-get-started\.js\?v=2-50-logo-splash/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-57-paint/.test(liveHtml),
-  'Live cache tags must stay on the previous Access files'
+  /fire-s-get-started\.css\?v=2-18-phone-pw/.test(liveHtml) &&
+    /fire-s-get-started\.js\?v=2-51-show-pw/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-58-pw/.test(liveHtml),
+  'Live must cache-bust Show password Access files'
 );
 
 console.log('toets-show-login-password.test.js: ok');

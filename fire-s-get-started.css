@@ -79,7 +79,40 @@
 .fire-s-get-started-fields input,
 .fire-s-get-started-fields button {
   width: 100%;
+  max-width: 100%;
   margin: 0;
+  box-sizing: border-box;
+}
+
+.fire-s-password-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.fire-s-get-started-fields .fire-s-password-row input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
+}
+
+.fire-s-get-started-fields .fire-s-show-password-btn {
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0;
+  white-space: nowrap;
+  line-height: 1.15;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #334155;
+  color: #fff;
+  border: 1px solid #1e293b;
 }
 
 #fireSLoginSubscribeBtn.fire-s-access-subscribe-btn {
@@ -100,7 +133,10 @@
   .fire-s-get-started {
     margin: 0 0 12px;
     padding: 12px 12px 14px;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .fire-s-get-started > p {
@@ -117,6 +153,17 @@
 
   .fire-s-get-started-fields {
     gap: 8px;
+  }
+
+  .fire-s-password-row {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 100%;
+  }
+
+  .fire-s-get-started-fields .fire-s-show-password-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px;
   }
 
   #fireSGetStartedLoginFields .fire-s-access-forgot-note {
