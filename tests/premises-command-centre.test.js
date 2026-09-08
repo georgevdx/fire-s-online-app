@@ -56,6 +56,22 @@ function assertCentre(src, engine, label, options) {
     !/Audit Trail/.test(block),
     label + ': Audit Trail must stay out of Quick Actions'
   );
+  assert.ok(
+    /openLatestPremisesReport\(project\)/.test(block),
+    label + ': Latest Report must open the premises report, not only close Command Centre'
+  );
+  assert.ok(
+    /function openLatestPremisesReport\(/.test(src) &&
+      /bypassOpenGate: true/.test(src.slice(src.indexOf('function openLatestPremisesReport('), src.indexOf('function generateArchivedInspectionReport('))) &&
+      /revealInspectionReportSection\(\)/.test(src),
+    label + ': Latest Report must show the inspection form so reportSection is visible'
+  );
+  assert.ok(
+    /openLatestPremisesReport\(project\)/.test(
+      src.slice(src.indexOf('data-command="latest-report"'), src.indexOf('function fireSSprint21MorePanelGate'))
+    ),
+    label + ': More-panel Latest Report must use the same premises report opener'
+  );
 
   const dataFn = src.slice(
     src.indexOf('function decorateCommandCentre(projectIdentifier)'),
@@ -136,11 +152,11 @@ function assertCentre(src, engine, label, options) {
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-home/.test(liveHtml),
-  'Live must cache-bust Command Centre close-and-delete'
+  /app\.js\?v=1-3-58-report/.test(liveHtml),
+  'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-home/.test(stagingHtml) &&
+  /app\.js\?v=1-3-64-report/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must keep the Command Centre close-and-delete actions'
 );
@@ -226,5 +242,91 @@ function assertActionClosesFirst(label) {
 }
 
 assertActionClosesFirst('Close-then-act');
+
+function assertRevealReportFromGateway(src, label) {
+  const start = src.indexOf('function revealInspectionReportSection()');
+  const end = src.indexOf('function latestInspectionHistoryIndex(project)', start);
+  assert.ok(start > 0 && end > start, label + ': revealInspectionReportSection must exist');
+  const homeSection = { style: { display: 'block' } };
+  const projectListSection = { style: { display: 'block' } };
+  const projectFormSection = { style: { display: 'none' } };
+  const reportSection = { style: { display: 'none' } };
+  const reveal = new Function(
+    'document',
+    src.slice(start, end) + '\nreturn revealInspectionReportSection;'
+  )({
+    getElementById(id) {
+      if (id === 'homeSection') return homeSection;
+      if (id === 'projectListSection') return projectListSection;
+      if (id === 'projectFormSection') return projectFormSection;
+      if (id === 'reportSection') return reportSection;
+      return null;
+    }
+  });
+  reveal();
+  assert.strictEqual(homeSection.style.display, 'none', label + ': Home must hide when Latest Report opens');
+  assert.strictEqual(
+    projectListSection.style.display,
+    'none',
+    label + ': Inspection Gateway must hide when Latest Report opens'
+  );
+  assert.strictEqual(projectFormSection.style.display, 'block', label + ': inspection form must become visible');
+  assert.strictEqual(reportSection.style.display, 'block', label + ': report section must become visible');
+}
+
+function assertLatestHistoryIndex(src, label) {
+  const start = src.indexOf('function latestInspectionHistoryIndex(project)');
+  const end = src.indexOf('function openLatestPremisesReport(project, focusMode)', start);
+  assert.ok(start > 0 && end > start, label + ': latestInspectionHistoryIndex must exist');
+  const latestIndex = new Function(
+    'getInspectionHistoryTimestamp',
+    src.slice(start, end) + '\nreturn latestInspectionHistoryIndex;'
+  )(function (inspection) {
+    return Number(inspection && inspection.ts) || 0;
+  });
+  assert.strictEqual(
+    latestIndex({ inspectionHistory: [{ ts: 10 }, { ts: 40 }, { ts: 20 }] }),
+    1,
+    label + ': Latest Report must use the newest archived inspection, not the last array slot'
+  );
+}
+
+function assertLatestReportOpensPremises(src, label) {
+  const start = src.indexOf('function openLatestPremisesReport(project, focusMode)');
+  const end = src.indexOf('function generateArchivedInspectionReport(projectId, historyIndex)', start);
+  assert.ok(start > 0 && end > start, label + ': openLatestPremisesReport must exist');
+  const calls = [];
+  const openLatest = new Function(
+    'closeInspectionOpenGate',
+    'openProject',
+    'generateArchivedInspectionReport',
+    'revealInspectionReportSection',
+    'latestInspectionHistoryIndex',
+    'window',
+    src.slice(start, end) + '\nreturn openLatestPremisesReport;'
+  )(
+    function () { calls.push('close'); },
+    function (id, focus, options) {
+      calls.push(['open', id, options && options.bypassOpenGate]);
+    },
+    function (id, index) { calls.push(['report', id, index]); },
+    function () { calls.push('reveal'); },
+    function () { return 1; },
+    { setTimeout(fn) { fn(); } }
+  );
+  openLatest({ id: 'prem-9', inspectionHistory: [{}, {}] });
+  assert.deepStrictEqual(
+    calls,
+    ['close', ['open', 'prem-9', true], 'reveal', ['report', 'prem-9', 1]],
+    label + ': Latest Report must close Command Centre, open the premises, then show the report'
+  );
+}
+
+assertRevealReportFromGateway(liveApp, 'Live reveal');
+assertRevealReportFromGateway(stagingApp, 'Toets reveal');
+assertLatestHistoryIndex(liveApp, 'Live latest index');
+assertLatestHistoryIndex(stagingApp, 'Toets latest index');
+assertLatestReportOpensPremises(liveApp, 'Live opener');
+assertLatestReportOpensPremises(stagingApp, 'Toets opener');
 
 console.log('premises-command-centre.test.js: ok');

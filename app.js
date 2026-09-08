@@ -21692,6 +21692,57 @@ function getClientPhotoAppendixFooter(project) {
   return `${letterhead.companyName} Fire Safety Inspection Report | Photographic Evidence`;
 }
 
+function revealInspectionReportSection() {
+  const homeSection = document.getElementById('homeSection');
+  const listSection = document.getElementById('projectListSection');
+  const formSection = document.getElementById('projectFormSection');
+  if (homeSection) homeSection.style.display = 'none';
+  if (listSection) listSection.style.display = 'none';
+  if (formSection) formSection.style.display = 'block';
+  const reportSection = document.getElementById('reportSection');
+  if (reportSection) reportSection.style.display = 'block';
+  return reportSection;
+}
+
+function latestInspectionHistoryIndex(project) {
+  const history = Array.isArray(project && project.inspectionHistory)
+    ? project.inspectionHistory
+    : [];
+  if (!history.length) return -1;
+  let latestIndex = history.length - 1;
+  let latestTs = -1;
+  history.forEach((inspection, historyIndex) => {
+    const ts = typeof getInspectionHistoryTimestamp === 'function'
+      ? getInspectionHistoryTimestamp(inspection)
+      : 0;
+    if (ts >= latestTs) {
+      latestTs = ts;
+      latestIndex = historyIndex;
+    }
+  });
+  return latestIndex;
+}
+
+function openLatestPremisesReport(project, focusMode) {
+  if (!project || !project.id) return;
+  const latestIndex = latestInspectionHistoryIndex(project);
+  if (latestIndex < 0) {
+    alert('No finalised inspection is available for this premises yet.');
+    return;
+  }
+  if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+  const launchReport = function () {
+    revealInspectionReportSection();
+    generateArchivedInspectionReport(project.id, latestIndex);
+  };
+  if (typeof openProject === 'function') {
+    openProject(project.id, focusMode, { bypassOpenGate: true });
+    window.setTimeout(launchReport, 250);
+    return;
+  }
+  launchReport();
+}
+
 function generateArchivedInspectionReport(projectId, historyIndex) {
   if (!canViewReports()) {
     alert(
@@ -22213,7 +22264,7 @@ reportContent.innerHTML = `
 ${photosHtml}
 `;
 
-  getEl('reportSection').style.display = 'block';
+  revealInspectionReportSection();
 
   reportContent.scrollIntoView({
     behavior: 'smooth',
@@ -23336,6 +23387,8 @@ window.openProject = openProject;
 window.viewArchivedInspection = viewArchivedInspection;
 window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
 window.generateArchivedInspectionReport = generateArchivedInspectionReport;
+window.openLatestPremisesReport = openLatestPremisesReport;
+window.revealInspectionReportSection = revealInspectionReportSection;
 window.downloadArchivedInspectionPhotos = downloadArchivedInspectionPhotos;
 window.consolidateDuplicateSiteCards = consolidateDuplicateSiteCards;
 window.scheduleAutoSave = scheduleAutoSave;
@@ -41019,14 +41072,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
     wrap.querySelector('[data-command="latest-report"]')?.addEventListener('click', () => {
       if (latestIndex < 0) return;
-      const backdrop = document.getElementById('inspectionOpenGateBackdrop');
-      if (backdrop) backdrop.remove();
-        if (typeof window.generateArchivedInspectionReport === 'function') {
-          window.generateArchivedInspectionReport(project.id, latestIndex);
-        } else if (typeof generateArchivedInspectionReport === 'function') {
-          generateArchivedInspectionReport(project.id, latestIndex);
-        }
-      });
+      if (typeof window.openLatestPremisesReport === 'function') {
+        window.openLatestPremisesReport(project);
+      } else {
+        openLatestPremisesReport(project);
+      }
+    });
   }
 
   const wrapped = function fireSSprint21MorePanelGate(projectIdentifier){
@@ -41815,12 +41866,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       reportBtn.type = 'button';
       reportBtn.textContent = 'Latest Report';
       reportBtn.addEventListener('click', () => {
-        closeCentre();
-        const latestIndex = history.length - 1;
-        if (typeof window.generateArchivedInspectionReport === 'function') {
-          window.generateArchivedInspectionReport(project.id, latestIndex);
-        } else if (typeof generateArchivedInspectionReport === 'function') {
-          generateArchivedInspectionReport(project.id, latestIndex);
+        if (typeof window.openLatestPremisesReport === 'function') {
+          window.openLatestPremisesReport(project);
+        } else {
+          openLatestPremisesReport(project);
         }
       });
       quick.appendChild(reportBtn);

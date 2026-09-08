@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-58-home',
+  '1-3-58-report',
   '1-1-home',
-  '108-43-home',
-  'fire-s-108-43-home'
+  '108-44-report',
+  'fire-s-108-44-report'
 );
 assertPullSource(
   stagingApp,
@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-home',
+  '1-3-64-report',
   '1-1-home',
-  '108-37-home',
-  'fire-s-108-37-home'
+  '108-38-report',
+  'fire-s-108-38-report'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
