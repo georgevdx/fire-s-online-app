@@ -27,7 +27,10 @@ function assertPullSource(app, html, sw, lists, label, appTag, listTag, swFile, 
     label + ': must not pretend a partial pull is complete'
   );
   assert.ok(/Loading inspections…/.test(app), label + ': progress status');
-  assert.ok(/Still catching up/.test(app), label + ': incomplete status');
+  assert.ok(/fireSCloudPullGeneration/.test(app), label + ': overlapping pulls must not rewind the Home count');
+  assert.ok(/fireSCloudPullInFlight/.test(app), label + ': a second cloud pull must not start while one is in flight');
+  assert.ok(/incomplete && localBefore > 0/.test(app), label + ': background sync must not flash a loading building count');
+  assert.ok(/pullState\.done && !nextDone/.test(lists), label + ': a finished Home count must ignore a later loading flash');
   assert.ok(/fireSSetOwnerListsPullProgress/.test(app), label + ': owner-list progress hook');
   assert.ok(new RegExp('app\\.js\\?v=' + appTag).test(html), label + ': app cache tag');
   assert.ok(new RegExp('fire-s-owner-lists\\.js\\?v=' + listTag).test(html), label + ': owner-list cache tag');
@@ -35,7 +38,7 @@ function assertPullSource(app, html, sw, lists, label, appTag, listTag, swFile, 
   assert.ok(new RegExp(swCache).test(sw), label + ': service worker cache name');
   assert.ok(/fireSSetOwnerListsPullProgress/.test(lists), label + ': owner-list progress API');
   assert.ok(/Loading buildings…/.test(lists), label + ': loading label');
-  assert.ok(/Still catching up/.test(lists), label + ': catching-up label');
+  assert.ok(!/Still catching up/.test(lists), label + ': Home must not flicker between catching-up and a final count');
 }
 
 assertPullSource(
@@ -44,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-58-close',
-  '1-1-count',
-  '108-42-close',
-  'fire-s-108-42-close'
+  '1-3-58-home',
+  '1-1-home',
+  '108-43-home',
+  'fire-s-108-43-home'
 );
 assertPullSource(
   stagingApp,
@@ -55,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-count',
-  '1-1-count',
-  '108-36-count',
-  'fire-s-108-36-count'
+  '1-3-64-home',
+  '1-1-home',
+  '108-37-home',
+  'fire-s-108-37-home'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
@@ -245,13 +248,20 @@ async function runFetchCases(appSrc, label) {
   };
   vm.runInNewContext(liveLists, listSandbox);
   listSandbox.fireSSetOwnerListsPullProgress(0, 124, false);
-  assert.strictEqual(countEl.textContent, 'Loading 124 buildings…');
+  assert.strictEqual(countEl.textContent, 'Loading buildings…');
   listSandbox.fireSSetOwnerListsPullProgress(40, 124, false);
-  assert.strictEqual(countEl.textContent, 'Loading buildings… 40 of 124');
-  listSandbox.fireSSetOwnerListsPullProgress(40, 124, true);
-  assert.strictEqual(countEl.textContent, '40 of 124 buildings loaded. Still catching up.');
-  listSandbox.fireSSetOwnerListsPullProgress(124, 124, true);
-  assert.strictEqual(countEl.textContent, '124 buildings on your inspection list');
+  assert.strictEqual(countEl.textContent, 'Loading buildings… 40');
+  listSandbox.fireSSetOwnerListsPullProgress(110, 124, true);
+  assert.strictEqual(countEl.textContent, '110 buildings on your inspection list');
+  listSandbox.fireSSetOwnerListsPullProgress(86, 124, false);
+  assert.strictEqual(
+    countEl.textContent,
+    '110 buildings on your inspection list',
+    'a stale Loading 86 of 124 update must not replace the finished Home count'
+  );
+  assert.ok(!/ of /.test(countEl.textContent), 'Home must never show an inventory total such as 124');
+  listSandbox.fireSSetOwnerListsPullProgress(110, 110, true);
+  assert.strictEqual(countEl.textContent, '110 buildings on your inspection list');
 
   console.log('cloud-pull-full.test.js: ok');
 })().catch(function (err) {

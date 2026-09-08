@@ -21,18 +21,17 @@
   const pullState = { loaded: 0, total: 0, loading: false, done: false };
 
   function applyPullProgress(loaded, total, done) {
-    pullState.loaded = Math.max(0, Number(loaded) || 0);
-    pullState.total = Math.max(0, Number(total) || 0);
-    pullState.done = !!done;
-    if (done) {
-      pullState.loading = pullState.total > 0 && pullState.loaded < pullState.total;
-    } else {
-      pullState.loading = pullState.total > 0;
-    }
+    const nextLoaded = Math.max(0, Number(loaded) || 0);
+    const nextDone = !!done;
+    if (pullState.done && !nextDone) return;
+    pullState.loaded = nextLoaded;
+    pullState.done = nextDone;
+    pullState.loading = !nextDone;
+    pullState.total = 0;
     if (typeof root !== 'undefined') {
       root.__fireSOwnerListsPullProgress = {
         loaded: pullState.loaded,
-        total: pullState.total,
+        total: 0,
         loading: pullState.loading,
         done: pullState.done
       };
@@ -43,27 +42,13 @@
   }
 
   function writeCount(countEl, visibleCount) {
-    if (!pullState.done && pullState.loading && pullState.total > 0 && pullState.loaded <= 0) {
-      countEl.textContent =
-        'Loading ' +
-        pullState.total +
-        (pullState.total === 1 ? ' building…' : ' buildings…');
-      return;
-    }
-    if (!pullState.done && pullState.loading && pullState.total > 0) {
+    if (pullState.loading && !pullState.done) {
       const shown = Math.max(visibleCount || 0, pullState.loaded);
-      if (shown < pullState.total) {
-        countEl.textContent =
-          'Loading buildings… ' + shown + ' of ' + pullState.total;
+      if (shown <= 0) {
+        countEl.textContent = 'Loading buildings…';
         return;
       }
-    }
-    if (pullState.total > 0 && pullState.loaded < pullState.total) {
-      countEl.textContent =
-        pullState.loaded +
-        ' of ' +
-        pullState.total +
-        ' buildings loaded. Still catching up.';
+      countEl.textContent = 'Loading buildings… ' + shown;
       return;
     }
     const n = visibleCount || 0;
@@ -233,16 +218,8 @@
 
   function isRecycleLeftover(project) {
     try {
-      if (
-        typeof root.fireSHasRecycledCurrentInspection === 'function' &&
-        typeof root.fireSHasLiveCurrentInspection === 'function' &&
-        typeof root.fireSIsScheduledNewPremisesOnly === 'function'
-      ) {
-        return (
-          !!root.fireSHasRecycledCurrentInspection(project) &&
-          !root.fireSHasLiveCurrentInspection(project) &&
-          !root.fireSIsScheduledNewPremisesOnly(project)
-        );
+      if (typeof root.fireSIsEmptyRecycleLeftoverPremises === 'function') {
+        return !!root.fireSIsEmptyRecycleLeftoverPremises(project);
       }
     } catch (_) {}
     const bin = project && project.recycleBin;

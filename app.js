@@ -4858,9 +4858,15 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
   return Array.from(mergedMap.values());
 }
 
+let fireSCloudPullInFlight = false;
+let fireSCloudPullGeneration = 0;
+
 async function safeDownloadNewerCloudInspections(options) {
   if (!navigator.onLine) return;
   if (typeof supabaseClient === 'undefined') return;
+  if (fireSCloudPullInFlight) return;
+  fireSCloudPullInFlight = true;
+  const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
 
@@ -4911,26 +4917,47 @@ async function safeDownloadNewerCloudInspections(options) {
     }
 
     function reportPremisesProgress(incomplete) {
+      if (pullToken !== fireSCloudPullGeneration) return;
       const visibleCount = visiblePremises(mergedProjects).length;
-      const total = incomplete ? expectedTotal : visibleCount;
+      if (incomplete && localBefore > 0) return;
       try {
         if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
-          window.fireSSetOwnerListsPullProgress(visibleCount, total, !incomplete);
-        } else if (total) {
+          window.fireSSetOwnerListsPullProgress(visibleCount, visibleCount, !incomplete);
+        } else if (visibleCount) {
           window.__fireSOwnerListsPullProgress = {
             loaded: visibleCount,
-            total: total,
-            loading: incomplete
+            total: visibleCount,
+            loading: incomplete,
+            done: !incomplete
           };
         }
       } catch (_) {}
-      if (syncStatus && expectedTotal && incomplete) {
-        syncStatus.textContent =
-          `Loading inspections… ${visibleCount} of ${expectedTotal}`;
+      if (syncStatus && incomplete && localBefore === 0) {
+        syncStatus.textContent = visibleCount
+          ? `Loading inspections… ${visibleCount}`
+          : 'Loading inspections…';
       }
     }
 
+    function finishPremisesProgress() {
+      if (pullToken !== fireSCloudPullGeneration) return;
+      const visibleCount = visiblePremises(mergedProjects).length;
+      try {
+        if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
+          window.fireSSetOwnerListsPullProgress(visibleCount, visibleCount, true);
+        } else {
+          window.__fireSOwnerListsPullProgress = {
+            loaded: visibleCount,
+            total: visibleCount,
+            loading: false,
+            done: true
+          };
+        }
+      } catch (_) {}
+    }
+
     function applyCloudRows(cloudRows, meta) {
+      if (pullToken !== fireSCloudPullGeneration) return;
       if (meta && typeof meta.expectedTotal === 'number') {
         expectedTotal = meta.expectedTotal;
       }
@@ -4958,11 +4985,7 @@ async function safeDownloadNewerCloudInspections(options) {
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
-      try {
-        if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
-          reportPremisesProgress(false);
-        }
-      } catch (_) {}
+      finishPremisesProgress();
       return;
     }
 
@@ -4970,22 +4993,21 @@ async function safeDownloadNewerCloudInspections(options) {
       expectedTotal: pulled && pulled.expectedTotal,
       incomplete: !!(pulled && pulled.incomplete)
     });
+    if (pullToken !== fireSCloudPullGeneration) return;
     setProjects(mergedProjects);
     paintHome(true);
-    reportPremisesProgress(!!(pulled && pulled.incomplete));
+    finishPremisesProgress();
 
     if (syncStatus) {
-      const visibleCount = visiblePremises(mergedProjects).length;
-      if (pulled && pulled.incomplete && expectedTotal && visibleCount < expectedTotal) {
-        syncStatus.textContent =
-          `Loaded ${visibleCount} of ${expectedTotal} inspections. Still catching up.`;
-      } else {
-        syncStatus.textContent = 'Cloud download check complete.';
-      }
+      syncStatus.textContent = 'Cloud download check complete.';
     }
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
+  } finally {
+    if (pullToken === fireSCloudPullGeneration) {
+      fireSCloudPullInFlight = false;
+    }
   }
 }
 
