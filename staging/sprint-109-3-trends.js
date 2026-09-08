@@ -12,7 +12,7 @@
 
   function projects() {
     try {
-      return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem((window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) || 'fireyeProjectsStaging') || '[]');
     } catch (err) {
       console.warn('Sprint 109.3 could not read projects', err);
       return [];

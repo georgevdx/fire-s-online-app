@@ -6,7 +6,7 @@
   'use strict';
 
   const VERSION = 'v119-rc-core-stability';
-  const PROJECTS_KEY = 'fireyeProjects';
+  const PROJECTS_KEY = (window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) || 'fireyeProjectsStaging';
 
   function log(...args) {
     console.log('[Fire-S RC Stability]', ...args);

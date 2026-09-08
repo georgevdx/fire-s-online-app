@@ -3621,7 +3621,7 @@ function createBackupTextSnapshot() {
 
 function saveBackupSnapshot(backupJson, filename, count, source) {
   localStorage.setItem(
-    'fireyesaLastBackup',
+    fireSLastBackupKey(),
     JSON.stringify({
       filename,
       exportedAt: new Date().toISOString(),
@@ -3629,7 +3629,7 @@ function saveBackupSnapshot(backupJson, filename, count, source) {
       source
     })
   );
-  localStorage.setItem('fireyesaLastBackupJson', backupJson);
+  localStorage.setItem(fireSLastBackupJsonKey(), backupJson);
   updateAppInfo();
   updateRcBackupReminderPanel();
 updateReleaseCandidatePanel();
@@ -3674,7 +3674,7 @@ function downloadProjectsBackup(projects, filename) {
 }
 
 async function copyLastBackup() {
-  const backupJson = localStorage.getItem('fireyesaLastBackupJson');
+  const backupJson = localStorage.getItem(fireSLastBackupJsonKey());
   const syncStatus = document.getElementById('syncStatus');
 
   if (!backupJson) {
@@ -3697,7 +3697,7 @@ async function copyLastBackup() {
 }
 
 function showLastBackupText() {
-  const backupJson = localStorage.getItem('fireyesaLastBackupJson');
+  const backupJson = localStorage.getItem(fireSLastBackupJsonKey());
   const syncStatus = document.getElementById('syncStatus');
 
   if (!backupJson) {
@@ -5096,7 +5096,7 @@ function updateAppInfo() {
 
   const cloudLastBackup = document.getElementById('cloudLastBackup');
   if (cloudLastBackup) {
-    const saved = localStorage.getItem('fireyesaLastBackup');
+    const saved = localStorage.getItem(fireSLastBackupKey());
 
     if (!saved) {
       cloudLastBackup.textContent = 'Not exported yet';
@@ -5118,7 +5118,7 @@ function updateAppInfo() {
 
   const cloudBackupTextStatus = document.getElementById('cloudBackupTextStatus');
   if (cloudBackupTextStatus) {
-    const backupJson = localStorage.getItem('fireyesaLastBackupJson');
+    const backupJson = localStorage.getItem(fireSLastBackupJsonKey());
     cloudBackupTextStatus.textContent = backupJson
       ? `Ready (${formatBytes(backupJson.length)})`
       : 'Not created yet';
@@ -7446,7 +7446,52 @@ function applyInspectionDeleteFilter(query, userId) {
   return query.eq('user_id', userId);
 }
 
-const FIRE_S_PENDING_UPLOAD_QUEUE_KEY = 'fireS_pending_upload_queue';
+function fireSProjectsStorageKey() {
+  try {
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) {
+      return String(window.FIRE_S_ENV.projectsStorageKey);
+    }
+  } catch (_) {}
+  return 'fireyeProjectsStaging';
+}
+
+function fireSDeletedProjectIdsKey() {
+  try {
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.deletedProjectIdsKey) {
+      return String(window.FIRE_S_ENV.deletedProjectIdsKey);
+    }
+  } catch (_) {}
+  return 'fireyeDeletedProjectIdsStaging';
+}
+
+function fireSLastBackupKey() {
+  try {
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.lastBackupKey) {
+      return String(window.FIRE_S_ENV.lastBackupKey);
+    }
+  } catch (_) {}
+  return 'fireyesaLastBackupStaging';
+}
+
+function fireSLastBackupJsonKey() {
+  try {
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.lastBackupJsonKey) {
+      return String(window.FIRE_S_ENV.lastBackupJsonKey);
+    }
+  } catch (_) {}
+  return 'fireyesaLastBackupJsonStaging';
+}
+
+function fireSPendingUploadQueueKey() {
+  try {
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.pendingUploadQueueKey) {
+      return String(window.FIRE_S_ENV.pendingUploadQueueKey);
+    }
+  } catch (_) {}
+  return 'fireS_pending_upload_queue_staging';
+}
+
+const FIRE_S_PENDING_UPLOAD_QUEUE_KEY = fireSPendingUploadQueueKey();
 const FIRE_S_PENDING_UPLOAD_BATCH_SIZE = 10;
 
 function getPendingUploadQueue() {
@@ -7591,7 +7636,8 @@ function getQueuedProjects(batchSize = FIRE_S_PENDING_UPLOAD_BATCH_SIZE) {
 }
 
 function getProjects() {
-  const saved = localStorage.getItem('fireyeProjects');
+  // Toets uses fireyeProjectsStaging. Never read or copy live fireyeProjects.
+  const saved = localStorage.getItem(fireSProjectsStorageKey());
   return saved ? JSON.parse(saved) : [];
 }
 
@@ -7599,7 +7645,7 @@ function setProjects(projects) {
   const previousProjects = getProjects();
 
   try {
-    localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    localStorage.setItem(fireSProjectsStorageKey(), JSON.stringify(projects));
     capturePendingUploadQueueChanges(previousProjects, projects);
   } catch (error) {
     if (error && error.name === 'QuotaExceededError') {
@@ -7607,7 +7653,7 @@ function setProjects(projects) {
         stripHeavyPhotoDataFromProjects(projects);
 
       localStorage.setItem(
-        'fireyeProjects',
+        fireSProjectsStorageKey(),
         JSON.stringify(compactProjects)
       );
       capturePendingUploadQueueChanges(previousProjects, compactProjects);
@@ -7633,7 +7679,7 @@ function setProjects(projects) {
 
 function getDeletedProjectIds() {
   try {
-    const raw = localStorage.getItem('fireyeDeletedProjectIds');
+    const raw = localStorage.getItem(fireSDeletedProjectIdsKey());
     return raw ? JSON.parse(raw) : {};
   } catch (error) {
     console.warn('Could not read deleted inspection register:', error);
@@ -7657,7 +7703,7 @@ function markProjectDeleted(projectId) {
 
   const deleted = getDeletedProjectIds();
   deleted[projectId] = new Date().toISOString();
-  localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+  localStorage.setItem(fireSDeletedProjectIdsKey(), JSON.stringify(deleted));
 }
 
 function isProjectDeleted(projectId) {
@@ -9533,7 +9579,7 @@ function getCloudSessionDetailForRc() {
 
 function getLastBackupInfo() {
   const lastBackupRaw =
-    localStorage.getItem('fireyesaLastBackup');
+    localStorage.getItem(fireSLastBackupKey());
 
   if (!lastBackupRaw) {
     return {
@@ -9754,7 +9800,7 @@ function getReleaseCandidateChecks() {
     projects.filter(project => project.syncPending).length;
 
   const lastBackupRaw =
-    localStorage.getItem('fireyesaLastBackup');
+    localStorage.getItem(fireSLastBackupKey());
 
   let lastBackupText = 'No backup exported yet';
   let hasBackup = false;
@@ -20667,7 +20713,7 @@ function handleAnswerChange(selectEl, options = {}) {
       }
     } catch (_) {}
     try {
-      const projects = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const projects = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       return Array.isArray(projects) ? projects : [];
     } catch (_) {
       return [];
@@ -20975,7 +21021,7 @@ function handleAnswerChange(selectEl, options = {}) {
       }
     } catch (_) {}
     try {
-      const projects = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const projects = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       return Array.isArray(projects) ? projects : [];
     } catch (_) {
       return [];
@@ -27856,7 +27902,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function readProjects() {
     try {
       if (typeof window.getProjects === 'function') return window.getProjects();
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) {
       return [];
     }
@@ -28153,7 +28199,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     try {
       const all = typeof window.getProjects === 'function'
         ? window.getProjects()
-        : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+        : JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       return Array.isArray(all) ? all : [];
     } catch (error) {
       console.warn('Fire-S Executive Snapshot could not read premises:', error);
@@ -28633,7 +28679,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function readProjects() {
     try {
       if (typeof getProjects === 'function') return getProjects();
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) {
       return [];
     }
@@ -29207,7 +29253,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function getProjectsSafe() {
     try {
       if (typeof window.getProjects === 'function') return window.getProjects() || [];
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) {
       return [];
     }
@@ -30231,7 +30277,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
   }
   function projects(){
-    try { return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]'); }
+    try { return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]'); }
     catch(_) { return []; }
   }
   function ans(p){ return Array.isArray(p?.answers) ? p.answers : []; }
@@ -31266,8 +31312,8 @@ if (!window.fireSMobileSmartCardsApplied) {
   const VERSION='rc-1-1-17-smart-action-engine';
   function norm(v){return String(v||'').trim().toLowerCase();}
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
-  function projects(){try{return typeof getProjects==='function'?getProjects():JSON.parse(localStorage.getItem('fireyeProjects')||'[]');}catch(e){return [];}}
-  function save(list){if(typeof setProjects==='function') setProjects(list); else localStorage.setItem('fireyeProjects',JSON.stringify(list));}
+  function projects(){try{return typeof getProjects==='function'?getProjects():JSON.parse(localStorage.getItem(fireSProjectsStorageKey())||'[]');}catch(e){return [];}}
+  function save(list){if(typeof setProjects==='function') setProjects(list); else localStorage.setItem(fireSProjectsStorageKey(),JSON.stringify(list));}
   function current(){const id=window.currentProjectId||window.currentProject?.id;return projects().find(p=>String(p.id)===String(id))||window.currentProject||null;}
   function checklist(){try{if(typeof getActiveTemplateChecklist==='function'){const c=getActiveTemplateChecklist(); if(Array.isArray(c)&&c.length) return c;}}catch(e){} return Array.isArray(window.checklists)?window.checklists:[];}
   function catFromText(text){const t=norm(text); if(/escape|egress|exit|stair|corridor|route/.test(t))return 'Means of Escape'; if(/sprinkler|pump|hydrant|hose reel|water|booster|valve/.test(t))return 'Fire Water / Protection'; if(/alarm|detect|detector|mcp|call point|sounder|panel/.test(t))return 'Fire Detection and Alarm'; if(/extinguisher|fire equipment|service tag/.test(t))return 'Fire Equipment'; if(/emergency light|lighting|exit sign|signage/.test(t))return 'Emergency Lighting / Signage'; if(/door|self closing|fire door|smoke seal/.test(t))return 'Fire Doors'; if(/hazard|flammable|chemical|substance|fuel|gas/.test(t))return 'Hazardous Substances'; if(/electrical|db|distribution board|cable|generator/.test(t))return 'Electrical'; if(/housekeeping|storage|combustible|waste/.test(t))return 'Housekeeping'; if(/document|certificate|coc|logbook|record|drill|plan/.test(t))return 'Documentation'; return 'General Fire Safety';}
@@ -31318,7 +31364,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function readProjects() {
     try {
       if (typeof getProjects === 'function') return getProjects();
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (error) {
       console.warn('Live Inspection Engine could not read projects:', error);
       return [];
@@ -31328,7 +31374,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function writeProjects(projects) {
     if (!Array.isArray(projects)) return;
     if (typeof setProjects === 'function') setProjects(projects);
-    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    else localStorage.setItem(fireSProjectsStorageKey(), JSON.stringify(projects));
   }
 
   function checklist() {
@@ -31806,7 +31852,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function readProjects() {
     try {
       if (typeof getProjects === 'function') return getProjects();
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) {
       return [];
     }
@@ -31816,7 +31862,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (!Array.isArray(projects)) return;
     try {
       if (typeof setProjects === 'function') setProjects(projects);
-      else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+      else localStorage.setItem(fireSProjectsStorageKey(), JSON.stringify(projects));
     } catch (_) {}
   }
 
@@ -36027,7 +36073,7 @@ function fireSApplyLifecycleUxLabels() {
 
   function visibleProjects(){
     try {
-      const all = typeof window.getProjects === 'function' ? window.getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const all = typeof window.getProjects === 'function' ? window.getProjects() : JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       return typeof window.getVisibleProjectsForCurrentUser === 'function' ? window.getVisibleProjectsForCurrentUser(all) : all;
     } catch (_) { return []; }
   }
@@ -36308,7 +36354,7 @@ function fireSApplyLifecycleUxLabels() {
 
   function getVisibleCountForCurrentFilter(){
     try {
-      const projects = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const projects = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       const visible = (typeof getVisibleProjectsForCurrentUser === 'function') ? getVisibleProjectsForCurrentUser(projects) : projects;
       const key = getCurrentFilter();
       const matcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
@@ -36604,7 +36650,7 @@ function fireSApplyLifecycleUxLabels() {
 
   function getProjectsSafe(){
     try {
-      const list = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const list = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       const safe = Array.isArray(list) ? list : [];
       return typeof getVisibleProjectsForCurrentUser === 'function' ? (getVisibleProjectsForCurrentUser(safe) || []) : safe;
     } catch (_) { return []; }
@@ -37007,7 +37053,7 @@ function fireSApplyLifecycleUxLabels() {
 
   function getVisibleProjects(){
     let list = [];
-    try { list = typeof window.getProjects === 'function' ? window.getProjects() : (typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]')); }
+    try { list = typeof window.getProjects === 'function' ? window.getProjects() : (typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]')); }
     catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
@@ -37350,7 +37396,7 @@ function fireSApplyLifecycleUxLabels() {
     try {
       if (typeof window.getProjects === 'function') list = window.getProjects();
       else if (typeof getProjects === 'function') list = getProjects();
-      else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      else list = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
@@ -37715,7 +37761,7 @@ function fireSApplyLifecycleUxLabels() {
     try {
       if (typeof window.getProjects === 'function') list = window.getProjects();
       else if (typeof getProjects === 'function') list = getProjects();
-      else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      else list = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
@@ -38033,7 +38079,7 @@ function fireSApplyLifecycleUxLabels() {
     try {
       if (typeof window.getProjects === 'function') list = window.getProjects();
       else if (typeof getProjects === 'function') list = getProjects();
-      else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      else list = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
@@ -38369,7 +38415,7 @@ function fireSApplyLifecycleUxLabels() {
   }
   function getProjects(){
     let list = [];
-    try { if (typeof window.getProjects === 'function') list = window.getProjects(); else if (typeof getProjects === 'function') list = getProjects(); else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]'); } catch(_) { list = []; }
+    try { if (typeof window.getProjects === 'function') list = window.getProjects(); else if (typeof getProjects === 'function') list = getProjects(); else list = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]'); } catch(_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || []; } catch(_) {}
     if (typeof window.fireSIsDeletedPremises === 'function') {
@@ -38531,7 +38577,7 @@ function fireSApplyLifecycleUxLabels() {
     try {
       if (typeof window.getProjects === 'function') list = window.getProjects();
       else if (typeof getProjects === 'function') list = getProjects();
-      else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      else list = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch (_) {}
@@ -38756,7 +38802,7 @@ function fireSApplyLifecycleUxLabels() {
     try {
       if (typeof window.getProjects === 'function') list = window.getProjects();
       else if (typeof getProjects === 'function') list = getProjects();
-      else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      else list = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
@@ -39484,7 +39530,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
   function readProjects() {
     try {
       if (typeof getProjects === 'function') return getProjects();
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
     } catch (_) {
       return [];
     }
@@ -39493,7 +39539,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
   function writeProjects(projects) {
     if (!Array.isArray(projects)) return;
     if (typeof setProjects === 'function') setProjects(projects);
-    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    else localStorage.setItem(fireSProjectsStorageKey(), JSON.stringify(projects));
   }
 
   function getCurrentProject() {
@@ -42040,7 +42086,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   function rawProjects(){
     try {
-      const parsed = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const parsed = JSON.parse(localStorage.getItem(fireSProjectsStorageKey()) || '[]');
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) {
       return [];
@@ -42049,7 +42095,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   function writeProjects(projects){
     if (typeof setProjects === 'function') setProjects(projects);
-    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    else localStorage.setItem(fireSProjectsStorageKey(), JSON.stringify(projects));
   }
 
   function role(){
@@ -42450,7 +42496,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : {};
       if (deleted && deleted[projectId]) {
         delete deleted[projectId];
-        localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+        localStorage.setItem(fireSDeletedProjectIdsKey(), JSON.stringify(deleted));
       }
     } catch (_) {}
     writeProjects(projects);

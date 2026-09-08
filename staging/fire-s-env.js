@@ -44,6 +44,15 @@
     cloudReady: staging ? stagingCloudReady : true,
     notifyCompanyS: !staging,
     storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth',
+    // Live and toets share the GitHub Pages origin, so they share localStorage.
+    // Never reuse live inspection keys on toets, and never copy fireyeProjects into these.
+    projectsStorageKey: staging ? 'fireyeProjectsStaging' : 'fireyeProjects',
+    deletedProjectIdsKey: staging ? 'fireyeDeletedProjectIdsStaging' : 'fireyeDeletedProjectIds',
+    pendingUploadQueueKey: staging
+      ? 'fireS_pending_upload_queue_staging'
+      : 'fireS_pending_upload_queue',
+    lastBackupKey: staging ? 'fireyesaLastBackupStaging' : 'fireyesaLastBackup',
+    lastBackupJsonKey: staging ? 'fireyesaLastBackupJsonStaging' : 'fireyesaLastBackupJson',
     payfast: staging
       ? {
           enabled: true,
@@ -101,6 +110,21 @@
   root.FIRE_S_ENV = env;
   root.fireSIsStaging = function () {
     return !!env.isStaging;
+  };
+  root.fireSProjectsStorageKey = function () {
+    return env.projectsStorageKey;
+  };
+  root.fireSDeletedProjectIdsKey = function () {
+    return env.deletedProjectIdsKey;
+  };
+  root.fireSPendingUploadQueueKey = function () {
+    return env.pendingUploadQueueKey;
+  };
+  root.fireSLastBackupKey = function () {
+    return env.lastBackupKey;
+  };
+  root.fireSLastBackupJsonKey = function () {
+    return env.lastBackupJsonKey;
   };
   root.fireSPaintVersion = paintVersion;
 

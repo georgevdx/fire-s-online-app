@@ -33,8 +33,8 @@ assert.ok(
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-1-copy/.test(html) &&
-    /app\.js\?v=1-3-64-count/.test(html) &&
-    /fire-s-env\.js\?v=1-3-64-pw/.test(html),
+    /app\.js\?v=1-3-64-split/.test(html) &&
+    /fire-s-env\.js\?v=1-3-64-split/.test(html),
   'Toets-blad must load the global-flow script with a fresh cache tag'
 );
 
