@@ -23,6 +23,9 @@ assert.ok(/notify pgrst/i.test(repair));
 assert.ok(/still_null_company/.test(repair));
 assert.ok(/disable trigger fire_s_inspections_entitlement_guard/.test(repair));
 assert.ok(/trial_started_at is null/.test(repair));
+assert.ok(/join public.companies c on c.id = m.company_id/.test(repair));
+assert.ok(/inspections_company_id_fkey/.test(repair));
+assert.ok(!/set company_id = nullif\(trim\(coalesce\(\s*i\.inspection_data->>'companyId'/.test(repair));
 assert.ok(/auth\.uid\(\) is null/.test(sql));
 assert.ok(/fire_s_inspections_select/.test(sql));
 

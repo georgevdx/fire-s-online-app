@@ -5,6 +5,10 @@
 -- The entitlement SQL never truncated inspections either. Rows are almost
 -- always still in public.inspections; they were hidden by RLS / company_id
 -- / a stale PostgREST schema cache.
+--
+-- Fire-S Test hit inspections_company_id_fkey because inspection JSON still
+-- named company 5b59914c-… after that company was deleted. This script skips
+-- dead company ids and commits the SELECT policy before backfill.
 
 begin;
 
@@ -176,34 +180,56 @@ create trigger fire_s_inspections_entitlement_guard
   for each row
   execute procedure public.fire_s_inspections_entitlement_guard();
 
--- 3) Stamp orphan inspections onto the creator's active company.
---    Disable the guard so SQL Editor (auth.uid() null) cannot fail the UPDATE.
+commit;
+
+-- 3) Stamp orphan inspections onto a company that STILL EXISTS.
+--    Fire-S Test failed here before: inspection JSON still had
+--    companyId 5b59914c-… after that company was deleted, and the
+--    foreign key rolled back the whole script (including SELECT).
+--    Never copy a dead UUID onto inspections.company_id.
+begin;
+
 alter table public.inspections disable trigger fire_s_inspections_entitlement_guard;
 
 update public.inspections i
-   set company_id = m.company_id,
+   set company_id = x.company_id,
        inspection_data = coalesce(i.inspection_data, '{}'::jsonb)
          || jsonb_build_object(
-              'companyId', m.company_id,
-              'company_id', m.company_id
+              'companyId', x.company_id,
+              'company_id', x.company_id
             )
-  from public.company_members m
+  from (
+    select distinct on (m.user_id)
+           m.user_id,
+           m.company_id
+      from public.company_members m
+      join public.companies c on c.id = m.company_id
+     where coalesce(m.status, 'active') = 'active'
+     order by m.user_id,
+              (
+                select count(*)::int
+                from public.inspections i2
+                where i2.company_id = m.company_id
+              ) desc,
+              m.company_id
+  ) x
  where i.company_id is null
-   and m.user_id = i.user_id
-   and coalesce(m.status, 'active') = 'active';
+   and i.user_id = x.user_id;
 
 update public.inspections i
-   set company_id = nullif(trim(coalesce(
+   set company_id = c.id
+  from public.companies c
+ where i.company_id is null
+   and c.id::text = nullif(trim(coalesce(
          i.inspection_data->>'companyId',
          i.inspection_data->>'company_id',
          ''
-       )), '')::uuid
- where i.company_id is null
+       )), '')
    and nullif(trim(coalesce(
          i.inspection_data->>'companyId',
          i.inspection_data->>'company_id',
          ''
-       )), '') is not null;
+       )), '') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 alter table public.inspections enable trigger fire_s_inspections_entitlement_guard;
 
@@ -231,4 +257,8 @@ select
   (select count(*) from pg_policies
      where schemaname = 'public'
        and tablename = 'inspections'
-       and cmd = 'SELECT') as inspection_select_policies;
+       and cmd = 'SELECT') as inspection_select_policies,
+  exists (
+    select 1 from public.companies c
+    where c.id = '5b59914c-58c3-4eed-ba88-48573020b26e'
+  ) as deleted_test_company_still_present;
