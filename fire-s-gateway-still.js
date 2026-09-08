@@ -23,10 +23,12 @@
   function listAlreadyPainted() {
     const list = byId('projectsList');
     if (!list) return false;
-    return !!(
-      list.dataset.fireSGatewayPaint ||
-      list.querySelector('[data-project-id], .fire-s-136a8-card, .project-card, .empty-state')
-    );
+    if (list.querySelector('[data-project-id], .fire-s-136a8-card, .project-card')) {
+      return true;
+    }
+    // A zero-inspection placeholder is not a painted list. Phone/cloud
+    // inspections must be allowed to replace it.
+    return false;
   }
 
   function userIsTypingSearch() {

@@ -33,8 +33,10 @@ function assertStillScript(src, label) {
     label + ': typing in search or premises must still rebuild the list'
   );
   assert.ok(
-    /function fireSGatewayStillKpiRefresh/.test(src),
-    label + ': KPI refresh must not wipe the open gateway'
+    !/empty-state/.test(
+      src.slice(src.indexOf('function listAlreadyPainted'), src.indexOf('function userIsTypingSearch'))
+    ),
+    label + ': an empty-state placeholder must not count as a painted list'
   );
   assert.ok(
     /setInterval\(install, 2500\)/.test(src) &&
@@ -97,13 +99,13 @@ assert.ok(
 );
 assert.ok(/1\.3\.64-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.64-toets');
 assert.ok(
-  /fire-s-gateway-still\.js\?v=1-0-still/.test(liveHtml) &&
+  /fire-s-gateway-still\.js\?v=1-0-phone/.test(liveHtml) &&
     /app\.js\?v=1-3-58-pw/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-58-pw/.test(liveHtml),
   'Live must load the still script and cache-bust the hop fix'
 );
 assert.ok(
-  /fire-s-gateway-still\.js\?v=1-0-still/.test(stagingHtml) &&
+  /fire-s-gateway-still\.js\?v=1-0-phone/.test(stagingHtml) &&
     /app\.js\?v=1-3-64-pw/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
   'Toets-blad must load the still script and cache-bust the hop fix'
@@ -188,6 +190,20 @@ runStillCase(
   'search typing must still paint',
   function (ctx, els) {
     ctx.document.activeElement = els.projectSearch;
+  },
+  function (ctx) {
+    ctx.window.renderProjectsList();
+  },
+  1
+);
+
+runStillCase(
+  'empty gateway must paint when cloud inspections arrive',
+  function (ctx, els) {
+    els.projectsList.dataset = {};
+    els.projectsList.querySelector = function () {
+      return null;
+    };
   },
   function (ctx) {
     ctx.window.renderProjectsList();

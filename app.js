@@ -4786,6 +4786,7 @@ async function safeDownloadNewerCloudInspections(options) {
     }
 
     const localProjects = getProjects();
+    const localBefore = localProjects.length;
     const mergedMap = new Map();
 
     localProjects.forEach(project => {
@@ -4857,8 +4858,9 @@ if (cloudTime > localTime) {
    const mergedProjects = Array.from(mergedMap.values());
 
     setProjects(mergedProjects);
-    if (shouldPaintProjectsAfterSync(options && options.forcePaint === true)) {
-      renderProjectsList();
+    const filledEmptyDevice = localBefore === 0 && mergedProjects.length > 0;
+    if (shouldPaintProjectsAfterSync(options && options.forcePaint === true) || filledEmptyDevice) {
+      renderProjectsList(filledEmptyDevice ? { forcePaint: true } : undefined);
     }
 
     if (syncStatus) {
@@ -6488,7 +6490,7 @@ window.fireSPickPrimaryMembership = fireSPickPrimaryMembership;
 
 async function fireSRpcMyCompanyFallback() {
   try {
-    const rpc = await withTimeout(supabaseClient.rpc('fire_s_my_company'), 3000);
+    const rpc = await withTimeout(supabaseClient.rpc('fire_s_my_company'), 8000);
     if (rpc?.error || !rpc?.data) return null;
     const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
     const companyId = row?.out_company_id || row?.company_id || null;
@@ -6524,7 +6526,7 @@ async function fireSLoadActiveCompanyMembership(userId) {
       .eq('user_id', userId)
       .eq('status', 'active');
 
-    const result = await withTimeout(query, 3000).catch(() => ({
+    const result = await withTimeout(query, 10000).catch(() => ({
       data: [],
       error: null
     }));
@@ -6705,8 +6707,8 @@ async function loadUserAccessProfile() {
       if (companyId) {
         fireSResolveCompanyNameLazy(companyId);
         restampLocalInspectionsWithCompany(companyId, immediateName);
-        scheduleCompanyCloudRefresh('membership');
       }
+      scheduleCompanyCloudRefresh('membership');
       try {
         if (typeof window.fireSEntitlement !== 'undefined' && window.fireSEntitlement.refresh) {
           window.fireSEntitlement.refresh();
@@ -6759,8 +6761,8 @@ async function loadUserAccessProfile() {
 
     if (companyId) {
       restampLocalInspectionsWithCompany(companyId, immediateName);
-      scheduleCompanyCloudRefresh('membership');
     }
+    scheduleCompanyCloudRefresh('membership');
 
     try {
       if (typeof window.fireSEntitlement !== 'undefined' && window.fireSEntitlement.refresh) {
@@ -6839,7 +6841,8 @@ window.fireSApplyUserProfilePatch = function fireSApplyUserProfilePatch(patch) {
 };
 
 function scheduleCompanyCloudRefresh(reason) {
-  if (!currentUserProfile?.companyId) return;
+  const emptyDevice =
+    typeof getProjects === 'function' && getProjects().length === 0;
   try {
     if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
       window.fireSRefreshCompanyPersonnelStats();
@@ -6848,7 +6851,7 @@ function scheduleCompanyCloudRefresh(reason) {
   setTimeout(() => {
     try {
       if (typeof refreshSyncData === 'function') {
-        Promise.resolve(refreshSyncData())
+        Promise.resolve(refreshSyncData({ forcePaint: emptyDevice }))
           .then(() => {
             try {
               if (typeof renderHomeCommandCentre === 'function') {
@@ -7091,22 +7094,24 @@ function applyInspectionAccessFilter(query, userId) {
   if (companyId) {
     return query.eq('company_id', companyId);
   }
-  return query.eq('user_id', userId);
+  return query;
 }
 
 async function fetchCompanyInspectionsFromCloud(userId, columns) {
   const selectCols = columns || 'inspection_data, updated_at, company_id';
-  let query = supabaseClient.from('inspections').select(selectCols);
-  query = applyInspectionAccessFilter(query, userId);
-  const first = await query;
-  if (first.error) return first;
-  if (Array.isArray(first.data) && first.data.length > 0) return first;
-
-  // RLS already limits rows to the caller. If the company_id filter hid
-  // orphan inspections, retry without it so Gateway is not emptied.
-  const fallback = await supabaseClient.from('inspections').select(selectCols);
-  if (fallback.error) return first;
-  return fallback;
+  const open = await supabaseClient.from('inspections').select(selectCols);
+  if (!open.error && Array.isArray(open.data) && open.data.length > 0) {
+    return open;
+  }
+  if (currentUserProfile?.companyId) {
+    let query = supabaseClient.from('inspections').select(selectCols);
+    query = applyInspectionAccessFilter(query, userId);
+    const filtered = await query;
+    if (!filtered.error && Array.isArray(filtered.data) && filtered.data.length > 0) {
+      return filtered;
+    }
+  }
+  return open;
 }
 
 function applyInspectionDeleteFilter(query, userId) {
