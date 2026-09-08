@@ -682,7 +682,7 @@
     var cat = catalog();
     if (!cat || !cat.persistCompanyPlan) return;
     try {
-      await cat.persistCompanyPlan(planId, intervalId);
+      await cat.persistCompanyPlan(planId, intervalId, { markPaid: false });
     } catch (_) {}
     try {
       if (typeof window.fireSRefreshSubscribeCard === 'function') {
@@ -1419,9 +1419,14 @@
       });
       return;
     }
-    setStatus('Subscribed. Opening Personnel…');
+    setStatus('Free trial started. Opening Fire-S…');
     mode = 'choices';
     refreshHomeChrome();
+    try {
+      if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
+        window.fireSEntitlement.refresh(true);
+      }
+    } catch (_) {}
     setTimeout(openPersonnelAfterCreate, 200);
   }
 
@@ -1835,6 +1840,35 @@
           if (event) event.preventDefault();
         } catch (_) {}
         showRegister();
+      });
+    }
+    function openPlansFromAccess() {
+      try {
+        if (window.fireSEntitlement && window.fireSEntitlement.openPlans) {
+          window.fireSEntitlement.openPlans();
+          return;
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.fireSOpenSubscribe === 'function') window.fireSOpenSubscribe();
+      } catch (_) {}
+    }
+    var loginViewPlans = byId('fireSLoginViewPlansBtn');
+    if (loginViewPlans) {
+      loginViewPlans.addEventListener('click', function (event) {
+        try {
+          if (event) event.preventDefault();
+        } catch (_) {}
+        openPlansFromAccess();
+      });
+    }
+    var registerViewPlans = byId('fireSRegisterViewPlansBtn');
+    if (registerViewPlans) {
+      registerViewPlans.addEventListener('click', function (event) {
+        try {
+          if (event) event.preventDefault();
+        } catch (_) {}
+        openPlansFromAccess();
       });
     }
 

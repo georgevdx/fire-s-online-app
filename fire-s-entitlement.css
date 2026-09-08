@@ -1,0 +1,173 @@
+/* Fire-S trial / entitlement display */
+
+.fire-s-trial-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #dbe4f0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.fire-s-trial-banner[hidden] {
+  display: none !important;
+}
+
+.fire-s-trial-banner-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fire-s-trial-banner-copy strong {
+  font-size: 0.98rem;
+}
+
+.fire-s-trial-banner-copy span {
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.fire-s-trial-banner-cta {
+  white-space: nowrap;
+}
+
+.fire-s-trial-banner.is-mid {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.fire-s-trial-banner.is-high,
+.fire-s-trial-banner.is-block {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.fire-s-entitlement-blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 12050;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.fire-s-entitlement-blocker[hidden] {
+  display: none !important;
+}
+
+.fire-s-entitlement-blocker-card {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  display: grid;
+  gap: 12px;
+}
+
+.fire-s-entitlement-blocker-card h3 {
+  margin: 0;
+}
+
+.fire-s-entitlement-blocker-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.fire-s-entitlement-blocker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.fire-s-trial-subscribe-note {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  line-height: 1.45;
+}
+
+.fire-s-trial-subscribe-note[hidden] {
+  display: none !important;
+}
+
+.fire-s-admin-entitlement {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  display: grid;
+  gap: 10px;
+}
+
+.fire-s-admin-entitlement h4 {
+  margin: 0;
+}
+
+.fire-s-admin-entitlement-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.fire-s-admin-entitlement-stats div {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-admin-entitlement-stats strong {
+  display: block;
+  font-size: 1.15rem;
+}
+
+.fire-s-admin-entitlement-stats span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.fire-s-admin-entitlement-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  background: #fff;
+}
+
+.fire-s-admin-entitlement-table th,
+.fire-s-admin-entitlement-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.fire-s-access-trial-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#fireSLoginViewPlansBtn {
+  width: 100%;
+}
+
+body.fire-s-entitlement-blocked #fireSSubscribeSection,
+body.fire-s-entitlement-blocked #fireSGetStarted,
+body.fire-s-entitlement-blocked #companyLetterheadSection,
+body.fire-s-entitlement-blocked #logoutBtn {
+  pointer-events: auto;
+}

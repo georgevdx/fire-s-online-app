@@ -426,6 +426,19 @@
       setMessage('Only the owner or manager can load test inspections.', true);
       return;
     }
+    try {
+      const role = String(window.currentUserProfile && window.currentUserProfile.role || '').toLowerCase();
+      if (role !== 'super_admin' && window.fireSEntitlement && window.fireSEntitlement.hasSnapshot()) {
+        const snap = window.fireSEntitlement.snapshot();
+        if (snap && snap.status === 'trial_active') {
+          setMessage(
+            'Test samples are not loaded during a free trial. They would consume the included inspections.',
+            true
+          );
+          return;
+        }
+      }
+    } catch (_) {}
     if (typeof getProjects !== 'function' || typeof setProjects !== 'function') {
       setMessage('Could not reach inspection storage on this phone.', true);
       return;

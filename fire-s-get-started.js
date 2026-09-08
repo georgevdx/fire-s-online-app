@@ -664,7 +664,7 @@
     var cat = catalog();
     if (!cat || !cat.persistCompanyPlan) return;
     try {
-      await cat.persistCompanyPlan(planId, intervalId);
+      await cat.persistCompanyPlan(planId, intervalId, { markPaid: false });
     } catch (_) {}
     try {
       if (typeof window.fireSRefreshSubscribeCard === 'function') {
@@ -693,7 +693,7 @@
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
         ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
-        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R250 / month (or R2 500 / year) per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Phone and desktop share that email. No card is taken yet.';
+        : 'Start a 14-day free trial. Creates your owner login and this company name. No card is required to begin. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R250 / month (or R2 500 / year) per subscription after the trial. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Phone and desktop share that email.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';
@@ -726,7 +726,7 @@
     paintLoginForm();
     setTitle(
       'Access',
-      'Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.'
+      'Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Start Free Trial.'
     );
     showPanel('fireSGetStartedLoginFields');
     var createToggle = byId('fireSSwitchToCreateBtn');
@@ -1310,9 +1310,14 @@
     await saveChosenPlan(planId, intervalId);
     notifySubscribe(company, email, intervalId);
     clearPendingSubscribe();
-    setStatus('Subscribed. Opening Personnel…');
+    setStatus('Free trial started. Opening Fire-S…');
     mode = 'login';
     refreshHomeChrome();
+    try {
+      if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
+        window.fireSEntitlement.refresh(true);
+      }
+    } catch (_) {}
     setTimeout(openPersonnelAfterCreate, 200);
   }
 
@@ -1726,6 +1731,35 @@
           if (event) event.preventDefault();
         } catch (_) {}
         showRegister();
+      });
+    }
+    function openPlansFromAccess() {
+      try {
+        if (window.fireSEntitlement && window.fireSEntitlement.openPlans) {
+          window.fireSEntitlement.openPlans();
+          return;
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.fireSOpenSubscribe === 'function') window.fireSOpenSubscribe();
+      } catch (_) {}
+    }
+    var loginViewPlans = byId('fireSLoginViewPlansBtn');
+    if (loginViewPlans) {
+      loginViewPlans.addEventListener('click', function (event) {
+        try {
+          if (event) event.preventDefault();
+        } catch (_) {}
+        openPlansFromAccess();
+      });
+    }
+    var registerViewPlans = byId('fireSRegisterViewPlansBtn');
+    if (registerViewPlans) {
+      registerViewPlans.addEventListener('click', function (event) {
+        try {
+          if (event) event.preventDefault();
+        } catch (_) {}
+        openPlansFromAccess();
       });
     }
 

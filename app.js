@@ -6192,12 +6192,26 @@ function hasActiveCompanyAccess() {
     currentCompanyAccess?.status === 'trial';
 }
 
+function fireSEntitlementGate(kind) {
+  try {
+    if (typeof window.fireSEntitlement === 'undefined' || !window.fireSEntitlement.hasSnapshot()) {
+      return null;
+    }
+    if (kind === 'create') return window.fireSEntitlement.canCreate();
+    if (kind === 'finalise') return window.fireSEntitlement.canFinalise();
+    if (kind === 'allowed') return window.fireSEntitlement.operationallyAllowed();
+  } catch (_) {}
+  return null;
+}
+
 function canCreateInspection() {
   if (!currentUserProfile) return false;
 
   if (isSuperAdmin()) return true;
 
   if (!hasActiveCompanyAccess()) return false;
+
+  if (fireSEntitlementGate('create') === false) return false;
 
   return ['company_owner', 'manager', 'inspector']
     .includes(getCurrentUserRole());
@@ -6209,6 +6223,13 @@ function canEditInspection() {
   if (isSuperAdmin()) return true;
 
   if (!hasActiveCompanyAccess()) return false;
+
+  try {
+    var snap = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
+    if (snap && snap.backendReady && snap.can_write_draft === false && snap.allowed === false) {
+      return false;
+    }
+  } catch (_) {}
 
   return ['company_owner', 'manager', 'inspector']
     .includes(getCurrentUserRole());
@@ -6682,6 +6703,11 @@ async function loadUserAccessProfile() {
         restampLocalInspectionsWithCompany(companyId, immediateName);
         scheduleCompanyCloudRefresh('membership');
       }
+      try {
+        if (typeof window.fireSEntitlement !== 'undefined' && window.fireSEntitlement.refresh) {
+          window.fireSEntitlement.refresh();
+        }
+      } catch (_) {}
       return;
     }
 
@@ -6731,6 +6757,12 @@ async function loadUserAccessProfile() {
       restampLocalInspectionsWithCompany(companyId, immediateName);
       scheduleCompanyCloudRefresh('membership');
     }
+
+    try {
+      if (typeof window.fireSEntitlement !== 'undefined' && window.fireSEntitlement.refresh) {
+        window.fireSEntitlement.refresh();
+      }
+    } catch (_) {}
 
   } catch (error) {
     console.error('Access profile load failed:', error);
@@ -16182,11 +16214,27 @@ async function uploadSingleInspection(project) {
 
       const msg = String(rpc.error.message || rpc.error);
       const missingFn = /could not find the function|schema cache|PGRST202|404/i.test(msg);
+      let entitlementMsg = '';
+      try {
+        if (window.fireSEntitlement && window.fireSEntitlement.parseRpcError) {
+          const parsed = window.fireSEntitlement.parseRpcError(rpc.error);
+          if (parsed && parsed.entitlement) entitlementMsg = parsed.message;
+        }
+      } catch (_) {}
 
       if (syncStatus) {
-        syncStatus.textContent = missingFn
+        syncStatus.textContent = entitlementMsg
+          ? entitlementMsg
+          : missingFn
           ? 'Cloud save needs SQL setup. In Supabase run SUPABASE_inspections_rls.sql, then Sync Now.'
           : `Cloud upload failed: ${msg}`;
+      }
+      if (entitlementMsg) {
+        try {
+          if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
+            window.fireSEntitlement.refresh(true);
+          }
+        } catch (_) {}
       }
       return;
     }

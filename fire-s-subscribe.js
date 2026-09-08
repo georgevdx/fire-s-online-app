@@ -111,7 +111,16 @@
       if (againPanel) againPanel.hidden = true;
       return;
     }
+    var entitlement = null;
+    try {
+      entitlement = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
+    } catch (_) {}
     var status = cat.billingStatus ? cat.billingStatus() : 'unpaid';
+    if (entitlement && entitlement.backendReady) {
+      if (entitlement.status === 'subscription_active') status = 'active';
+      else if (entitlement.status === 'subscription_cancelled') status = 'cancelled';
+      else if (entitlement.status === 'trial_active') status = 'trial';
+    }
     var cancelled = status === 'cancelled';
     box.hidden = false;
     box.className = 'fire-s-subscribe-status is-' + status;
@@ -121,9 +130,18 @@
           ? 'Active subscription'
           : cancelled
             ? 'Cancelled'
+            : status === 'trial'
+              ? 'Free trial'
             : 'Not paid yet';
     }
-    if (copy) copy.textContent = cat.statusHeadline();
+    if (copy) {
+      if (entitlement && entitlement.backendReady && window.fireSEntitlement && window.fireSEntitlement.displayCopy) {
+        var shown = window.fireSEntitlement.displayCopy(entitlement);
+        copy.textContent = shown.detail || shown.headline || cat.statusHeadline();
+      } else {
+        copy.textContent = cat.statusHeadline();
+      }
+    }
     if (keep) keep.textContent = cat.statusKeepDataNote();
     if (cancelPanel) cancelPanel.hidden = !canManage() || cancelled;
     if (againPanel) againPanel.hidden = !(canManage() && cancelled);
@@ -162,6 +180,21 @@
     );
     if (!ok) return;
     cat.cancelBilling();
+    try {
+      var sb = window.supabaseClient;
+      if (sb && sb.rpc) {
+        sb.rpc('fire_s_cancel_company_subscription').then(function (res) {
+          if (res && res.error) {
+            console.warn('Cancel subscription RPC', res.error);
+          }
+          try {
+            if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
+              window.fireSEntitlement.refresh(true);
+            }
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
     setMessage('Cancelled. Company S will not invoice for the next period. Company name and inspections stay saved. Login with this same email to subscribe again.');
     paintSubscribeStatus();
     refreshCardCopy();
@@ -204,11 +237,10 @@
         '4. Status becomes Active.'
     );
     if (!ok) return;
-    cat.reactivateBilling(intervalId);
-    setMessage('Subscribing again with this same company name…');
+    setMessage('Saving the same company plan…');
     try {
       if (cat.persistCompanyPlan) {
-        await cat.persistCompanyPlan('standard', intervalId);
+        await cat.persistCompanyPlan('standard', intervalId, { markPaid: false });
       }
     } catch (_) {}
     paintCurrent();
@@ -216,7 +248,7 @@
     refreshCardCopy();
     paintExpiryReminder();
     setMessage(
-      'Subscribed again with this same company name. Company S invoices you. Inspections stay saved. Do not Subscribe on Access with a new name.'
+      'Plan saved for this same company name. Paid access activates after a verified payment. Inspections stay saved. Do not Subscribe on Access with a new name.'
     );
   }
 
@@ -235,6 +267,13 @@
       box.hidden = true;
       return;
     }
+    try {
+      var ent = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
+      if (ent && ent.backendReady && ent.status === 'trial_active') {
+        box.hidden = true;
+        return;
+      }
+    } catch (_) {}
     if (cat.billingStatus && cat.billingStatus() === 'cancelled') {
       box.hidden = true;
       return;
@@ -376,8 +415,7 @@
         return;
       }
     } else if (!canManage()) {
-      alert('Only the Owner can open Subscription.');
-      return;
+      // Company members may VIEW plans. Only the Owner can change billing.
     }
     hideOtherSections();
     var section = byId('fireSSubscribeSection');
@@ -460,15 +498,15 @@
       return;
     }
     var intervalId = cat.selectedIntervalFrom ? cat.selectedIntervalFrom(billing) : 'monthly';
-    setMessage('Saving billing…');
-    var result = await cat.persistCompanyPlan('standard', intervalId);
+    setMessage('Saving billing preference…');
+    var result = await cat.persistCompanyPlan('standard', intervalId, { markPaid: false });
     paintCurrent();
     if (result && result.ok === false) {
-      setMessage('Choice saved on this phone. Cloud save can wait — Company S still has the request.', true);
+      setMessage('Choice saved on this phone. Cloud save can wait.', true);
       return;
     }
     var price = cat.priceLabel ? cat.priceLabel(intervalId) : '';
-    setMessage('Saved: ' + price + '. Company S invoices you (the owner). The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. No card was taken.');
+    setMessage('Saved: ' + price + '. Paid access activates only after a verified payment. This screen does not grant access by itself.');
     try {
       if (typeof window.fireSApplyCleanHomeRoles === 'function') {
         window.fireSApplyCleanHomeRoles();
