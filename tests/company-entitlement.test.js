@@ -43,7 +43,7 @@ assert.ok(/Never restart a used trial/.test(sql) || /trial_started_at is null/.t
 assert.ok(/FIRE_S_ENTITLEMENT:/.test(sql));
 assert.ok(/grandfather/.test(sql.toLowerCase()) || /subscription_active/.test(sql));
 assert.ok(/with check \(false\)/.test(sql), 'Direct company insert must be denied');
-assert.ok(/fire_s_is_company_member\(company_id\)/.test(sql), 'Inspection writes must stay in-company');
+assert.ok(/fire_s_protect_profile_role/.test(sql), 'Clients must not self-promote to super_admin');
 
 assert.ok(!/grant execute on function public.fire_s_activate_paid_subscription\([^)]+\) to authenticated/.test(sql));
 

@@ -816,6 +816,35 @@ create trigger fire_s_companies_after_insert_trial
   for each row
   execute procedure public.fire_s_companies_after_insert_trial();
 
+-- Clients must not promote themselves to super_admin (that would bypass entitlement).
+-- Ordinary role changes (inspector/manager/owner) still go through existing RPCs.
+create or replace function public.fire_s_protect_profile_role()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if public.fire_s_entitlement_write_enabled() then
+    return NEW;
+  end if;
+  if lower(coalesce(NEW.role, '')) = 'super_admin' then
+    if tg_op = 'INSERT' then
+      NEW.role := 'inspector';
+    elsif lower(coalesce(OLD.role, '')) is distinct from 'super_admin' then
+      NEW.role := OLD.role;
+    end if;
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists fire_s_protect_profile_role on public.profiles;
+create trigger fire_s_protect_profile_role
+  before insert or update on public.profiles
+  for each row
+  execute procedure public.fire_s_protect_profile_role();
+
 -- ---------------------------------------------------------------------------
 -- 6) Inspection finalise guard (RPC and direct table writes)
 -- ---------------------------------------------------------------------------
