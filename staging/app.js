@@ -4313,7 +4313,16 @@ async function debugSyncCounts() {
         userData.user.id
       );
 
-      const { data, error } = await query;
+      let { data, error } = await query;
+
+      if ((!error && (!data || !data.length)) && typeof fetchCompanyInspectionsFromCloud === 'function') {
+        const fallback = await fetchCompanyInspectionsFromCloud(
+          userData.user.id,
+          'id, user_id, company_id, created_by_email, updated_at'
+        );
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error) {
         cloudError = error.message;
@@ -4381,17 +4390,10 @@ if (!confirmed) return;
 
   exportEmergencyBackup('cloud-download');
 
-  let query = supabaseClient
-  .from('inspections')
-  .select('inspection_data, updated_at, company_id')
-  .order('updated_at', { ascending: false });
-
-  query = applyInspectionAccessFilter(
-    query,
-    userData.user.id
+  const { data, error } = await fetchCompanyInspectionsFromCloud(
+    userData.user.id,
+    'inspection_data, updated_at, company_id'
   );
-
-  const { data, error } = await query;
 
   if (error) {
     getEl('syncStatus').textContent = `Download failed: ${error.message}`;
@@ -4399,8 +4401,17 @@ if (!confirmed) return;
   }
 
   const projects = filterDeletedProjects(
-    data.map(row => normaliseCloudSyncedProject(row))
+    (Array.isArray(data) ? data : []).map(row => normaliseCloudSyncedProject(row))
   );
+
+  if (!projects.length && getProjects().length) {
+    getEl('syncStatus').textContent =
+      'Cloud returned 0 inspections. Local inspections were kept.';
+    try {
+      alert('Cloud returned no inspections. Your local inspections were not replaced.');
+    } catch (_) {}
+    return;
+  }
 
   setProjects(projects);
   currentProjectId = null;
@@ -4429,16 +4440,10 @@ if (!confirmed) return;
 
   const localProjects = getProjects();
 
-  let query = supabaseClient
-  .from('inspections')
-  .select('inspection_data, updated_at, company_id');
-
-  query = applyInspectionAccessFilter(
-    query,
-    userData.user.id
+  const { data, error } = await fetchCompanyInspectionsFromCloud(
+    userData.user.id,
+    'inspection_data, updated_at, company_id'
   );
-
-  const { data, error } = await query;
 
   if (error) {
     getEl('syncStatus').textContent = `Merge failed: ${error.message}`;
@@ -4446,7 +4451,7 @@ if (!confirmed) return;
   }
 
   const cloudProjects = filterDeletedProjects(
-    data.map(row => normaliseCloudSyncedProject(row))
+    (Array.isArray(data) ? data : []).map(row => normaliseCloudSyncedProject(row))
   );
 
   const mergedMap = new Map();
@@ -4790,16 +4795,10 @@ async function safeDownloadNewerCloudInspections(options) {
       return;
     }
 
-    let query = supabaseClient
-      .from('inspections')
-      .select('inspection_data, updated_at, company_id');
-
-    query = applyInspectionAccessFilter(
-      query,
-      userData.user.id
+    const { data, error } = await fetchCompanyInspectionsFromCloud(
+      userData.user.id,
+      'inspection_data, updated_at, company_id'
     );
-
-    const { data, error } = await query;
 
     if (error) {
       console.error('Safe download failed:', error);
@@ -4814,7 +4813,7 @@ async function safeDownloadNewerCloudInspections(options) {
       mergedMap.set(project.id, project);
     });
 
-    data.forEach(row => {
+    (Array.isArray(data) ? data : []).forEach(row => {
       const cloudProject = normaliseCloudSyncedProject(row);
       if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
       const localProject = mergedMap.get(cloudProject.id);
@@ -6891,6 +6890,7 @@ function scheduleCompanyCloudRefresh(reason) {
 
 window.loadUserAccessProfile = loadUserAccessProfile;
 window.getVisibleProjectsForCurrentUser = getVisibleProjectsForCurrentUser;
+window.fireSFilterProjectsForProfile = fireSFilterProjectsForProfile;
 
 function getAccessMetadata() {
   return {
@@ -6995,36 +6995,65 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
   return changed;
 }
 
-function getVisibleProjectsForCurrentUser(projects) {
-  if (!currentUserProfile) {
-    return [];
-  }
+function fireSIsLocalProfileFallback(profile) {
+  if (!profile) return true;
+  const id = String(profile.id || '');
+  const email = String(profile.email || '').toLowerCase();
+  return id === 'local-user' || email === 'local@fire-s.app';
+}
 
+function fireSProjectOwnedByProfile(project, profile) {
+  if (!project || !profile) return false;
+  const uid = String(profile.id || '');
+  const email = String(profile.email || '').toLowerCase();
+  if (
+    uid &&
+    (String(project.createdByUserId || '') === uid ||
+      String(project.user_id || '') === uid)
+  ) {
+    return true;
+  }
+  if (email && String(project.createdByEmail || '').toLowerCase() === email) {
+    return true;
+  }
+  return false;
+}
+
+function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
   const activeProjects = (Array.isArray(projects) ? projects : []).filter(project =>
     !fireSIsDeletedPremises(project) &&
     !fireSIsEmptyRecycleLeftoverPremises(project)
   );
 
-  if (isSuperAdmin()) {
-    return activeProjects;
-  }
+  if (isAdmin) return activeProjects;
+  if (fireSIsLocalProfileFallback(profile)) return activeProjects;
 
-  const profileCompanyId = String(currentUserProfile.companyId || '').trim();
+  const profileCompanyId = String(profile.companyId || '').trim();
+  const mine = project => fireSProjectOwnedByProfile(project, profile);
+
   if (profileCompanyId) {
-    return activeProjects.filter(project => {
+    const matched = activeProjects.filter(project => {
       const projectCompanyId = String(
         project.companyId || project.company_id || ''
       ).trim();
-      return projectCompanyId === profileCompanyId;
+      if (projectCompanyId === profileCompanyId) return true;
+      if (!projectCompanyId && mine(project)) return true;
+      return false;
     });
+    if (matched.length) return matched;
+    const owned = activeProjects.filter(mine);
+    return owned.length ? owned : activeProjects;
   }
 
-  const currentEmail =
-    String(currentUserProfile.email || '').toLowerCase();
+  const owned = activeProjects.filter(mine);
+  return owned.length ? owned : activeProjects;
+}
 
-  return activeProjects.filter(project =>
-    project.createdByUserId === currentUserProfile.id ||
-    String(project.createdByEmail || '').toLowerCase() === currentEmail
+function getVisibleProjectsForCurrentUser(projects) {
+  return fireSFilterProjectsForProfile(
+    projects,
+    currentUserProfile,
+    typeof isSuperAdmin === 'function' && isSuperAdmin()
   );
 }
 
@@ -7065,11 +7094,35 @@ function getProjectCloudMetadata(project, userId) {
 }
 
 function applyInspectionAccessFilter(query, userId) {
-  if (currentUserProfile?.companyId) {
-    return query.eq('company_id', currentUserProfile.companyId);
+  const companyId = currentUserProfile?.companyId;
+  if (companyId && userId) {
+    const cid = String(companyId).replace(/[^a-zA-Z0-9-]/g, '');
+    const uid = String(userId).replace(/[^a-zA-Z0-9-]/g, '');
+    if (cid && uid) {
+      return query.or(
+        `company_id.eq.${cid},and(company_id.is.null,user_id.eq.${uid})`
+      );
+    }
   }
-
+  if (companyId) {
+    return query.eq('company_id', companyId);
+  }
   return query.eq('user_id', userId);
+}
+
+async function fetchCompanyInspectionsFromCloud(userId, columns) {
+  const selectCols = columns || 'inspection_data, updated_at, company_id';
+  let query = supabaseClient.from('inspections').select(selectCols);
+  query = applyInspectionAccessFilter(query, userId);
+  const first = await query;
+  if (first.error) return first;
+  if (Array.isArray(first.data) && first.data.length > 0) return first;
+
+  // RLS already limits rows to the caller. If the company_id filter hid
+  // orphan inspections, retry without it so Gateway is not emptied.
+  const fallback = await supabaseClient.from('inspections').select(selectCols);
+  if (fallback.error) return first;
+  return fallback;
 }
 
 function applyInspectionDeleteFilter(query, userId) {

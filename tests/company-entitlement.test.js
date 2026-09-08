@@ -44,6 +44,9 @@ assert.ok(/FIRE_S_ENTITLEMENT:/.test(sql));
 assert.ok(/grandfather/.test(sql.toLowerCase()) || /subscription_active/.test(sql));
 assert.ok(/with check \(false\)/.test(sql), 'Direct company insert must be denied');
 assert.ok(/fire_s_protect_profile_role/.test(sql), 'Clients must not self-promote to super_admin');
+assert.ok(/fire_s_inspections_select/.test(sql), 'SELECT policy must be recreated so inspections stay visible');
+assert.ok(/auth\.uid\(\) is null/.test(sql), 'SQL Editor must not block existing inspection rows');
+assert.ok(/notify pgrst/i.test(sql), 'PostgREST schema cache must reload after DDL');
 
 assert.ok(!/grant execute on function public.fire_s_activate_paid_subscription\([^)]+\) to authenticated/.test(sql));
 

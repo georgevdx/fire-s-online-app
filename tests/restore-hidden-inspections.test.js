@@ -1,0 +1,115 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const vm = require('vm');
+
+function read(name) {
+  return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
+}
+
+const repair = read('SUPABASE_repair_hidden_inspections.sql');
+const sql = read('SUPABASE_company_entitlement.sql');
+const liveApp = read('app.js');
+const stagingApp = read('staging/app.js');
+const js = read('fire-s-entitlement.js');
+
+assert.ok(!/delete from public\.inspections/i.test(repair), 'repair must not delete inspections');
+assert.ok(!/truncate\s+table\s+public\.inspections/i.test(repair), 'repair must not truncate inspections');
+assert.ok(!/drop table\s+public\.inspections/i.test(repair), 'repair must not drop inspections');
+assert.ok(/fire_s_inspections_select/.test(repair));
+assert.ok(/notify pgrst/i.test(repair));
+assert.ok(/still_null_company/.test(repair));
+assert.ok(/disable trigger fire_s_inspections_entitlement_guard/.test(repair));
+assert.ok(/trial_started_at is null/.test(repair));
+assert.ok(/auth\.uid\(\) is null/.test(sql));
+assert.ok(/fire_s_inspections_select/.test(sql));
+
+assert.ok(/fireSFilterProjectsForProfile/.test(liveApp));
+assert.ok(/fireSFilterProjectsForProfile/.test(stagingApp));
+assert.ok(/fetchCompanyInspectionsFromCloud/.test(liveApp));
+assert.ok(/fetchCompanyInspectionsFromCloud/.test(stagingApp));
+assert.ok(/Local inspections were kept/.test(liveApp));
+assert.ok(/Local inspections were kept/.test(stagingApp));
+assert.ok(/last\.backendReady === true/.test(js));
+
+const start = liveApp.indexOf('function fireSIsLocalProfileFallback');
+const end = liveApp.indexOf('\nfunction getProjectCloudMetadata');
+assert.ok(start > 0 && end > start, 'visibility helpers must sit next to getVisibleProjectsForCurrentUser');
+
+const sandbox = {
+  fireSIsDeletedPremises: function () { return false; },
+  fireSIsEmptyRecycleLeftoverPremises: function () { return false; }
+};
+vm.runInNewContext(liveApp.slice(start, end), sandbox);
+
+const owned = {
+  id: 'insp-1',
+  createdByUserId: 'user-1',
+  createdByEmail: 'owner@example.com'
+};
+const unstamped = {
+  id: 'insp-2',
+  createdByUserId: 'user-1',
+  createdByEmail: 'owner@example.com'
+};
+const otherCompany = {
+  id: 'insp-3',
+  companyId: 'other-co',
+  createdByUserId: 'user-1',
+  createdByEmail: 'owner@example.com'
+};
+const stranger = {
+  id: 'insp-4',
+  companyId: 'co-1',
+  createdByUserId: 'user-2'
+};
+
+const profile = {
+  id: 'user-1',
+  email: 'owner@example.com',
+  companyId: 'co-1'
+};
+
+let visible = sandbox.fireSFilterProjectsForProfile(
+  [owned, unstamped, otherCompany, stranger],
+  profile,
+  false
+);
+assert.deepStrictEqual(
+  visible.map(function (row) { return row.id; }).sort(),
+  ['insp-1', 'insp-2', 'insp-4'],
+  'company filter must keep unstamped own rows and matching company rows'
+);
+
+visible = sandbox.fireSFilterProjectsForProfile(
+  [
+    { id: 'insp-1', companyId: 'wrong-co', createdByUserId: 'user-1', createdByEmail: 'owner@example.com' },
+    { id: 'insp-2', companyId: 'also-wrong', createdByUserId: 'user-1', createdByEmail: 'owner@example.com' },
+    { id: 'insp-3', companyId: 'wrong-co', createdByUserId: 'user-2' }
+  ],
+  profile,
+  false
+);
+assert.deepStrictEqual(
+  visible.map(function (row) { return row.id; }).sort(),
+  ['insp-1', 'insp-2'],
+  'if company stamps mismatch, keep the user own inspections instead of an empty Gateway'
+);
+
+visible = sandbox.fireSFilterProjectsForProfile(
+  [owned, stranger],
+  { id: 'local-user', email: 'local@fire-s.app' },
+  false
+);
+assert.strictEqual(visible.length, 2, 'local fallback profile must not hide stored inspections');
+
+visible = sandbox.fireSFilterProjectsForProfile(
+  [owned, stranger],
+  null,
+  false
+);
+assert.strictEqual(visible.length, 2, 'missing profile must not empty the list');
+
+console.log('restore-hidden-inspections.test.js: ok');

@@ -396,6 +396,7 @@
         copy.urgency === 'block' &&
         !isSuperAdmin() &&
         last &&
+        last.backendReady === true &&
         last.can_create === false;
       document.body.classList.toggle('fire-s-entitlement-blocked', fullyBlocked);
     } catch (_) {}
