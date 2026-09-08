@@ -790,6 +790,7 @@
     setStatus('');
     try {
       var form = byId('fireSGetStartedGuestFields');
+      if (root) root.scrollTop = 0;
       if (form && form.scrollIntoView) form.scrollIntoView({ block: 'start' });
     } catch (_) {}
   }

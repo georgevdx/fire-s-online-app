@@ -115,11 +115,21 @@
     try {
       entitlement = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
     } catch (_) {}
-    var status = cat.billingStatus ? cat.billingStatus() : 'unpaid';
+    var status = 'unpaid';
     if (entitlement && entitlement.backendReady) {
       if (entitlement.status === 'subscription_active') status = 'active';
       else if (entitlement.status === 'subscription_cancelled') status = 'cancelled';
       else if (entitlement.status === 'trial_active') status = 'trial';
+      else if (entitlement.reason === 'trial_limit_reached') status = 'trial';
+      else if (entitlement.reason === 'trial_expired') status = 'unpaid';
+    } else {
+      try {
+        var signedIn =
+          window.currentUserProfile &&
+          window.currentUserProfile.id &&
+          window.currentUserProfile.id !== 'local-user';
+        if (signedIn && cat.billingStatus) status = cat.billingStatus();
+      } catch (_) {}
     }
     var cancelled = status === 'cancelled';
     box.hidden = false;
