@@ -53,8 +53,13 @@ function assertCentre(src, engine, label) {
     label + ': leftover More / Data / Audit cards must stay hidden'
   );
   assert.ok(
-    !/Delete \/ Data Management/.test(block) && !/Audit Trail/.test(block),
-    label + ': Delete / Data Management and Audit Trail must not appear in Quick Actions'
+    /function closeCentre\(/.test(block) &&
+      /closeCentre\(\);\s*if \(target\) target\.click\(\)/.test(block),
+    label + ': Quick Actions must close Command Centre before running the chosen action'
+  );
+  assert.ok(
+    !/Audit Trail/.test(block),
+    label + ': Audit Trail must stay out of Quick Actions'
   );
 
   const dataFn = src.slice(
@@ -66,8 +71,11 @@ function assertCentre(src, engine, label) {
     label + ': data-management decorator must exist'
   );
   assert.ok(
-    !/Delete \/ Data Management/.test(dataFn) && !/fire-s-cc-data-v12/.test(dataFn),
-    label + ': data-management decorator must not inject a Quick Action'
+    /Delete \/ Data Management/.test(dataFn) &&
+      /fire-s-cc-data-v12/.test(dataFn) &&
+      /closeInspectionOpenGate/.test(dataFn) &&
+      /showDataManagement/.test(dataFn),
+    label + ': Delete / Data Management must return to Quick Actions and close Command Centre first'
   );
 
   const auditFn = src.slice(
@@ -120,14 +128,14 @@ function assertCentre(src, engine, label) {
 assertCentre(liveApp, liveEngine, 'Live');
 assertCentre(stagingApp, stagingEngine, 'Toets');
 assert.ok(
-  /app\.js\?v=1-3-58-place/.test(liveHtml) &&
+  /app\.js\?v=1-3-58-close/.test(liveHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(liveHtml),
-  'Live must cache-bust the Premises Command Centre place layout'
+  'Live must cache-bust the Command Centre close-and-delete actions'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-place/.test(stagingHtml) &&
+  /app\.js\?v=1-3-64-close/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
-  'Toets-blad must cache-bust the Premises Command Centre place layout'
+  'Toets-blad must cache-bust the Command Centre close-and-delete actions'
 );
 
 function loadRuntime(src) {
@@ -184,5 +192,32 @@ function assertRuntime(src, label) {
 
 assertRuntime(liveApp, 'Live runtime');
 assertRuntime(stagingApp, 'Toets runtime');
+
+function assertActionClosesFirst(label) {
+  let closed = false;
+  let actionSawClosed = false;
+  const closeInspectionOpenGate = () => {
+    closed = true;
+  };
+  const closeCentre = new Function(
+    'closeInspectionOpenGate',
+    'return function closeCentre(){ if (typeof closeInspectionOpenGate === "function") closeInspectionOpenGate(); }'
+  )(closeInspectionOpenGate);
+  const target = {
+    click() {
+      actionSawClosed = closed;
+    }
+  };
+  closeCentre();
+  if (target) target.click();
+  assert.strictEqual(closed, true, label + ': Command Centre close must run');
+  assert.strictEqual(
+    actionSawClosed,
+    true,
+    label + ': the chosen action must run only after Command Centre has closed'
+  );
+}
+
+assertActionClosesFirst('Close-then-act');
 
 console.log('premises-command-centre.test.js: ok');
