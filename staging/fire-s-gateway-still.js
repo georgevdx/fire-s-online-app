@@ -20,15 +20,39 @@
     return isShown(byId('projectListSection')) && !isShown(byId('projectFormSection'));
   }
 
-  function listAlreadyPainted() {
+  function paintedCardCount() {
     const list = byId('projectsList');
-    if (!list) return false;
-    if (list.querySelector('[data-project-id], .fire-s-136a8-card, .project-card')) {
-      return true;
+    if (!list) return 0;
+    try {
+      if (typeof list.querySelectorAll === 'function') {
+        return list.querySelectorAll('[data-project-id], .fire-s-136a8-card, .project-card').length;
+      }
+    } catch (_) {}
+    try {
+      return list.querySelector('[data-project-id], .fire-s-136a8-card, .project-card') ? 1 : 0;
+    } catch (_) {
+      return 0;
     }
-    // A zero-inspection placeholder is not a painted list. Phone/cloud
-    // inspections must be allowed to replace it.
-    return false;
+  }
+
+  function storedProjectCount() {
+    try {
+      const all = typeof window.getProjects === 'function' ? window.getProjects() : [];
+      const visible =
+        typeof window.getVisibleProjectsForCurrentUser === 'function'
+          ? window.getVisibleProjectsForCurrentUser(all)
+          : all;
+      return Array.isArray(visible) ? visible.length : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function listAlreadyPainted() {
+    const painted = paintedCardCount();
+    if (!painted) return false;
+    if (storedProjectCount() > painted) return false;
+    return true;
   }
 
   function userIsTypingSearch() {
