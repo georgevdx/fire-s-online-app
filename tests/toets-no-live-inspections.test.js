@@ -132,10 +132,17 @@ vm.runInNewContext(stagingApp.slice(helperStart, helperEnd), sandbox);
 store.fireyeProjects = JSON.stringify([
   { id: 'live-1', projectName: 'Live premises from production' }
 ]);
-assert.deepStrictEqual(
-  sandbox.getProjects(),
-  [],
+const ignored = sandbox.getProjects();
+assert.ok(Array.isArray(ignored), 'Toets getProjects must return a list');
+assert.strictEqual(
+  ignored.length,
+  0,
   'Toets getProjects must ignore live fireyeProjects on the same origin'
+);
+assert.strictEqual(
+  sandbox.fireSProjectsStorageKey(),
+  'fireyeProjectsStaging',
+  'Toets storage helper must not fall back to the live key'
 );
 
 store.fireyeProjectsStaging = JSON.stringify([
