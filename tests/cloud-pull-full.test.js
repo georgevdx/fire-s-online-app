@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-copy',
+  '1-3-64-match',
   '1-1-home',
-  '108-39-copy',
-  'fire-s-108-39-copy'
+  '108-40-match',
+  'fire-s-108-40-match'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));

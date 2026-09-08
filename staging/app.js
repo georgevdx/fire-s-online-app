@@ -40124,6 +40124,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       document.getElementById('phase5StartNewBtn')?.addEventListener('click', () => {
         const latest = (typeof getProjects === 'function' ? getProjects() : []).find(item => String(item.id) === String(project.id)) || project;
         if (typeof hasCurrentIncompleteInspection === 'function' && hasCurrentIncompleteInspection(latest)) {
+          alert('An unfinished current inspection already exists. Fire-S will open it in Edit mode. Complete or delete it before starting a new inspection.');
           close();
           openProject(project.id, focusMode, { bypassOpenGate: true });
           return;
