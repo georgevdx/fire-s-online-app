@@ -10,6 +10,7 @@ function read(name) {
 }
 
 const repair = read('SUPABASE_repair_hidden_inspections.sql');
+const liveRestore = read('SUPABASE_live_restore_inspections.sql');
 const sql = read('SUPABASE_company_entitlement.sql');
 const liveApp = read('app.js');
 const stagingApp = read('staging/app.js');
@@ -28,6 +29,14 @@ assert.ok(/inspections_company_id_fkey/.test(repair));
 assert.ok(!/set company_id = nullif\(trim\(coalesce\(\s*i\.inspection_data->>'companyId'/.test(repair));
 assert.ok(/auth\.uid\(\) is null/.test(sql));
 assert.ok(/fire_s_inspections_select/.test(sql));
+
+assert.ok(!/delete from public\.inspections/i.test(liveRestore));
+assert.ok(/fire_s_inspections_select/.test(liveRestore));
+assert.ok(/from public.inspections i/.test(liveRestore) && /order by \(\s*select count\(\*\)::int\s*from public.inspections i/.test(liveRestore.replace(/\n/g, '\n')));
+assert.ok(/set status = 'inactive'/.test(liveRestore));
+assert.ok(/set status = 'active'/.test(liveRestore));
+assert.ok(/notify pgrst/i.test(liveRestore));
+assert.ok(/company s/.test(liveRestore.toLowerCase()));
 
 assert.ok(/fireSFilterProjectsForProfile/.test(liveApp));
 assert.ok(/fireSFilterProjectsForProfile/.test(stagingApp));
