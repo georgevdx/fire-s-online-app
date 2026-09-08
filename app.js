@@ -8833,7 +8833,6 @@ function openInspectionCommandSection(sectionId) {
   const target = document.getElementById(sectionId);
 
   if (!target) {
-    alert('This inspection section is not available yet.');
     return;
   }
 
@@ -20623,35 +20622,29 @@ function handleAnswerChange(selectEl, options = {}) {
     const backdrop = document.getElementById('inspectionOpenGateBackdrop');
     const shell = backdrop?.querySelector('.fire-s-cc-shell');
     const projectId = backdrop?.dataset?.fireSDataProjectIdV13;
-    if (!shell || !projectId || shell.querySelector('.fire-s-cc-audit-section-v15')) {
+    if (!shell || !projectId || shell.querySelector('.fire-s-cc-audit-v15')) {
       return;
     }
 
     const project = findProject(projectId);
     if (!project) return;
-    const count = auditEntries(projectId).length;
-    const section = document.createElement('section');
-    section.className = 'fire-s-cc-audit-section-v15';
-    section.setAttribute('aria-label', 'Data Management Audit Trail');
-    section.innerHTML = `
-      <div>
-        <strong>Data Management Audit Trail</strong>
-        <span>${count} recorded delete, restore or permanent-delete event${count === 1 ? '' : 's'} for this premises.</span>
-      </div>
-      <button type="button">View Audit Trail</button>
-    `;
-    section.querySelector('button')?.addEventListener('click', event => {
+    backdrop.querySelectorAll('.fire-s-cc-audit-section-v15').forEach(node => node.remove());
+    const quick = backdrop.querySelector('.fire-s-cc-quick');
+    if (!quick || quick.querySelector('.fire-s-cc-audit-v15')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'fire-s-cc-audit-v15';
+    button.textContent = 'Audit Trail';
+    button.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
       showAudit(projectId);
     });
-
-    const dataSection = shell.querySelector('.fire-s-cc-data-section-v13');
-    if (dataSection?.parentNode === shell) {
-      dataSection.insertAdjacentElement('afterend', section);
-    } else {
-      shell.appendChild(section);
-    }
+    const returnBtn = Array.from(quick.querySelectorAll('button')).find(btn =>
+      /return to projects/i.test(btn.textContent || '')
+    );
+    if (returnBtn) quick.insertBefore(button, returnBtn);
+    else quick.appendChild(button);
   }
 
   function scheduleDecorate(){
@@ -23459,7 +23452,6 @@ function handleCommandCentreCard(sectionId) {
   const target = document.getElementById(sectionId);
 
   if (!target) {
-    alert('This section is not available yet.');
     return;
   }
 
@@ -29407,7 +29399,7 @@ if (!window.fireSMobileSmartCardsApplied) {
       if (historyTarget) historyTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
       else {
         const message = document.getElementById('saveMessage');
-        if (message) message.textContent = 'Inspection History will show here once archived inspections are available.';
+        if (message) message.textContent = 'No inspection history for this premises.';
         scrollToTarget('inspectionQuickActions');
       }
       return;
@@ -40812,7 +40804,6 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         <div class="fire-s-command-premises-details">
           ${premisesDetails(project).map(([label, value]) => `<div class="fire-s-command-detail-row"><span>${label}</span><strong>${value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong></div>`).join('')}
         </div>
-        <p class="fire-s-command-more-note">Documents and Analytics remain outside this foundation patch until their data routes are standardised.</p>
       </div>
     `;
 
@@ -40833,14 +40824,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       if (latestIndex < 0) return;
       const backdrop = document.getElementById('inspectionOpenGateBackdrop');
       if (backdrop) backdrop.remove();
-      if (typeof window.generateArchivedInspectionReport === 'function') {
-        window.generateArchivedInspectionReport(project.id, latestIndex);
-      } else if (typeof generateArchivedInspectionReport === 'function') {
-        generateArchivedInspectionReport(project.id, latestIndex);
-      } else {
-        alert('Latest report is not available in this build.');
-      }
-    });
+        if (typeof window.generateArchivedInspectionReport === 'function') {
+          window.generateArchivedInspectionReport(project.id, latestIndex);
+        } else if (typeof generateArchivedInspectionReport === 'function') {
+          generateArchivedInspectionReport(project.id, latestIndex);
+        }
+      });
   }
 
   const wrapped = function fireSSprint21MorePanelGate(projectIdentifier){
@@ -41242,7 +41231,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function fireSSprint21CommandCentreV1(){
   'use strict';
 
-  const VERSION = '1.2.2-sprint-2.1-patch-9';
+  const VERSION = '1.3.58-cc-actions-top';
   const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
     (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
   if (typeof previousShowInspectionOpenGate !== 'function') return;
@@ -41463,20 +41452,37 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   }
 
   function ensureStyles(){
-    if (document.getElementById('fireSSprint21CommandCentreV1Styles')) return;
-    const style = document.createElement('style');
-    style.id = 'fireSSprint21CommandCentreV1Styles';
+    let style = document.getElementById('fireSSprint21CommandCentreV1Styles');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'fireSSprint21CommandCentreV1Styles';
+      document.head.appendChild(style);
+    }
     style.textContent = `
       .fire-s-command-centre-modal.fire-s-command-v1 { max-width:900px; }
       .fire-s-command-v1 .fire-s-command-metrics,
       .fire-s-command-v1 .fire-s-command-intelligence,
       .fire-s-command-v1 .fire-s-command-alert,
       .fire-s-command-v1 .fire-s-command-health-detail,
-      .fire-s-command-v1 .fire-s-command-more { display:none !important; }
+      .fire-s-command-v1 .fire-s-command-more,
+      .fire-s-command-v1 .fire-s-command-more-wrap,
+      .fire-s-command-v1 .fire-s-command-exit-row,
+      .fire-s-command-v1 .fire-s-command-context,
+      .fire-s-command-v1 .fire-s-command-action-label,
+      .fire-s-command-v1 .inspection-open-gate-question,
+      .fire-s-command-v1 .inspection-open-gate-actions,
+      .fire-s-command-v1 .fire-s-cc-data-section-v13,
+      .fire-s-command-v1 .fire-s-cc-audit-section-v15 { display:none !important; }
       .fire-s-command-v1 .inspection-open-gate-header { padding-bottom:12px; }
       .fire-s-command-v1 .inspection-open-gate-header p { margin-bottom:0; }
       .fire-s-cc-shell { display:grid; gap:13px; }
-      .fire-s-cc-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:center; padding:18px; border-radius:17px; border:1px solid #d8e2ea; background:linear-gradient(135deg,#f7fafc 0%,#eef5f8 100%); }
+      .fire-s-cc-actions { padding:14px; border-radius:16px; border:1px solid #c5d6e3; background:#fff; }
+      .fire-s-cc-hero,
+      .fire-s-cc-today,
+      .fire-s-cc-grid,
+      .fire-s-cc-card,
+      .fire-s-cc-activity { pointer-events:none; cursor:default; box-shadow:none; }
+      .fire-s-cc-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:center; padding:18px; border-radius:17px; border:1px solid #d8e2ea; background:#f4f7f9; }
       .fire-s-cc-hero h4 { margin:0; color:#142b3e; font-size:20px; line-height:1.2; }
       .fire-s-cc-hero p { margin:5px 0 0; color:#647684; font-size:12px; }
       .fire-s-cc-health { min-width:145px; padding:12px 14px; border-radius:14px; text-align:center; border:1px solid transparent; }
@@ -41486,31 +41492,31 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-cc-health.attention { color:#7b5900; background:#fff6da; border-color:#ead48a; }
       .fire-s-cc-health.high { color:#922525; background:#fde9e9; border-color:#ecb5b5; }
       .fire-s-cc-health.unassessed { color:#475569; background:#f1f5f9; border-color:#cbd5e1; }
-      .fire-s-cc-today { padding:15px; border-radius:15px; border:1px solid #cddbe5; background:#fff; box-shadow:0 4px 14px rgba(18,42,61,.06); }
+      .fire-s-cc-today { padding:15px; border-radius:15px; border:1px solid #dce5ec; background:#f8fafb; }
       .fire-s-cc-eyebrow { color:#71818e; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
-      .fire-s-cc-today-row { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:8px; }
+      .fire-s-cc-today-copy { margin-top:8px; }
       .fire-s-cc-today-copy strong { display:block; color:#172e42; font-size:16px; }
       .fire-s-cc-today-copy span { display:block; margin-top:3px; color:#667886; font-size:12px; }
-      .fire-s-cc-primary { border:0; border-radius:11px; padding:11px 15px; background:#176fb2; color:#fff; font-weight:900; cursor:pointer; white-space:nowrap; }
-      .fire-s-cc-primary:disabled { opacity:.45; cursor:not-allowed; }
       .fire-s-cc-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
-      .fire-s-cc-card { min-width:0; padding:14px; border-radius:14px; border:1px solid #dce5ec; background:#fff; }
+      .fire-s-cc-card { min-width:0; padding:14px; border-radius:14px; border:1px solid #e3eaef; background:#fbfcfd; }
       .fire-s-cc-card .label { display:block; color:#70808d; font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
       .fire-s-cc-card .value { display:block; margin-top:7px; color:#172e42; font-size:19px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .fire-s-cc-card .meta { display:block; margin-top:4px; color:#6b7c89; font-size:11px; line-height:1.35; }
       .fire-s-cc-progress { height:6px; margin-top:9px; overflow:hidden; border-radius:999px; background:#e8edf1; }
       .fire-s-cc-progress > span { display:block; height:100%; border-radius:inherit; background:#2781bf; }
-      .fire-s-cc-activity { padding:14px 15px; border-radius:14px; border:1px solid #dce5ec; background:#fff; }
+      .fire-s-cc-activity { padding:14px 15px; border-radius:14px; border:1px solid #e3eaef; background:#fbfcfd; }
       .fire-s-cc-activity-list { display:grid; gap:9px; margin-top:10px; }
       .fire-s-cc-activity-item { display:grid; grid-template-columns:9px minmax(0,1fr) auto; gap:9px; align-items:center; color:#31495c; font-size:12px; }
       .fire-s-cc-dot { width:8px; height:8px; border-radius:50%; background:#6f8595; }
       .fire-s-cc-activity-item time { color:#7a8995; font-size:11px; }
-      .fire-s-cc-quick { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+      .fire-s-cc-quick { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:10px; pointer-events:auto; }
       .fire-s-cc-quick button { min-height:48px; padding:10px 11px; border:1px solid #d6e1e9; border-radius:12px; background:#f8fafb; color:#29465c; font-size:12px; font-weight:900; cursor:pointer; }
       .fire-s-cc-quick button:hover:not(:disabled) { border-color:#9ebbd0; background:#eff6fa; }
       .fire-s-cc-quick button:disabled { opacity:.42; cursor:not-allowed; }
-      .fire-s-command-v1 .inspection-open-gate-actions { display:none !important; }
-      .fire-s-command-v1 .fire-s-command-context { margin-bottom:13px; }
+      .fire-s-cc-quick button.fire-s-cc-quick-primary { background:#176fb2; color:#fff; border-color:#176fb2; }
+      .fire-s-cc-quick button.fire-s-cc-quick-primary:hover:not(:disabled) { background:#125e96; border-color:#125e96; }
+      .fire-s-cc-quick button.fire-s-cc-data-v12 { border-color:#e0b0b0; background:#fff8f8; color:#952525; }
+      .fire-s-cc-quick button.fire-s-cc-audit-v15 { border-color:#b8c9d6; background:#f4f7f9; }
       @media (max-width:760px) {
         .fire-s-cc-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .fire-s-cc-quick { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -41519,11 +41525,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         .fire-s-cc-hero { grid-template-columns:1fr; align-items:start; }
         .fire-s-cc-health { min-width:0; text-align:left; }
         .fire-s-cc-health span { font-size:21px; }
-        .fire-s-cc-today-row { display:block; }
-        .fire-s-cc-primary { width:100%; margin-top:12px; }
       }
     `;
-    document.head.appendChild(style);
   }
 
   function copyButton(button, label, className){
@@ -41599,6 +41602,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     shell.className = 'fire-s-cc-shell';
     shell.setAttribute('aria-label', 'Premises Command Centre');
     shell.innerHTML = `
+      <div class="fire-s-cc-actions">
+        <span class="fire-s-cc-eyebrow">Quick Actions</span>
+        <div class="fire-s-cc-quick"></div>
+      </div>
       <div class="fire-s-cc-hero">
         <div>
           <span class="fire-s-cc-eyebrow">Premises Snapshot</span>
@@ -41611,20 +41618,17 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         </div>
       </div>
       <div class="fire-s-cc-today">
-        <span class="fire-s-cc-eyebrow">Today</span>
-        <div class="fire-s-cc-today-row">
-          <div class="fire-s-cc-today-copy">
-            <strong>${escapeHtml(recommended.label)}</strong>
-            <span>${escapeHtml(recommended.reason)}</span>
-          </div>
-          <div class="fire-s-cc-primary-host"></div>
+        <span class="fire-s-cc-eyebrow">Status</span>
+        <div class="fire-s-cc-today-copy">
+          <strong>${escapeHtml(recommended.label)}</strong>
+          <span>${escapeHtml(recommended.reason)}</span>
         </div>
       </div>
       <div class="fire-s-cc-grid">
         <article class="fire-s-cc-card">
           <span class="label">Current Inspection</span>
           <span class="value">${escapeHtml(workspace.label)}</span>
-          <span class="meta">${workspace.hasCurrent ? `${workspace.answered || 0} of ${workspace.total || 0} questions answered · ${workspace.photos} photo${workspace.photos === 1 ? '' : 's'}` : 'Ready when the next inspection starts'}</span>
+          <span class="meta">${workspace.hasCurrent ? `${workspace.answered || 0} of ${workspace.total || 0} questions answered · ${workspace.photos} photo${workspace.photos === 1 ? '' : 's'}` : 'No current inspection in progress'}</span>
           <div class="fire-s-cc-progress"><span style="width:${Math.max(0, Math.min(100, workspace.percentage))}%"></span></div>
         </article>
         <article class="fire-s-cc-card">
@@ -41647,19 +41651,11 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         <span class="fire-s-cc-eyebrow">Premises Activity</span>
         <div class="fire-s-cc-activity-list">
           <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${workspace.lifecycle === 'CREATED' ? 'Current inspection is ready to start' : (workspace.hasCurrent ? 'Current inspection workspace is active' : 'No current inspection workspace')}</span><time>${workspace.hasCurrent ? `${workspace.percentage}%` : '—'}</time></div>
-          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${history.length ? 'Latest inspection finalised' : 'No finalised inspection history yet'}</span><time>${history.length ? escapeHtml(dateLabel(latest?.completedAt || latest?.finalisedAt || latest?.inspectionDate || latest?.date)) : '—'}</time></div>
+          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${history.length ? 'Latest inspection finalised' : 'No finalised inspection history'}</span><time>${history.length ? escapeHtml(dateLabel(latest?.completedAt || latest?.finalisedAt || latest?.inspectionDate || latest?.date)) : '—'}</time></div>
           <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>Next inspection date</span><time>${escapeHtml(dateLabel(nextDate))}</time></div>
         </div>
       </div>
-      <div>
-        <span class="fire-s-cc-eyebrow">Quick Actions</span>
-        <div class="fire-s-cc-quick"></div>
-      </div>
     `;
-
-    const primaryHost = shell.querySelector('.fire-s-cc-primary-host');
-    const primarySource = recommended.target === 'latest' ? latestButton : startButton;
-    primaryHost.appendChild(copyButton(primarySource, recommended.label, 'fire-s-cc-primary'));
 
     const quick = shell.querySelector('.fire-s-cc-quick');
     const quickInspectionLabel = workspace.lifecycle === 'CREATED'
@@ -41669,9 +41665,25 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : workspace.lifecycle === 'READY_FOR_REVIEW'
           ? 'Review & Finalise'
           : 'New Inspection';
-    quick.appendChild(copyButton(startButton, quickInspectionLabel));
+    quick.appendChild(copyButton(startButton, quickInspectionLabel, 'fire-s-cc-quick-primary'));
     quick.appendChild(copyButton(latestButton, 'Latest Inspection'));
     quick.appendChild(copyButton(historyButton, 'Inspection History'));
+    if (history.length) {
+      const reportBtn = document.createElement('button');
+      reportBtn.type = 'button';
+      reportBtn.textContent = 'Latest Report';
+      reportBtn.addEventListener('click', () => {
+        const backdrop = document.getElementById('inspectionOpenGateBackdrop');
+        if (backdrop) backdrop.remove();
+        const latestIndex = history.length - 1;
+        if (typeof window.generateArchivedInspectionReport === 'function') {
+          window.generateArchivedInspectionReport(project.id, latestIndex);
+        } else if (typeof generateArchivedInspectionReport === 'function') {
+          generateArchivedInspectionReport(project.id, latestIndex);
+        }
+      });
+      quick.appendChild(reportBtn);
+    }
     quick.appendChild(copyButton(closeButton, 'Return to Projects'));
 
     question.insertAdjacentElement('beforebegin', shell);
@@ -42901,41 +42913,23 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     if (!project || !backdrop) return;
 
     backdrop.dataset.fireSDataProjectIdV13 = String(project.id);
+    backdrop.querySelectorAll('.fire-s-cc-data-section-v13').forEach(node => node.remove());
 
-    if (shell && !shell.querySelector('.fire-s-cc-data-section-v13')) {
-      const section = document.createElement('section');
-      section.className = 'fire-s-cc-data-section-v13';
-      section.setAttribute('aria-label', 'Delete and Data Management');
-      section.innerHTML = `
-        <div>
-          <strong>Delete / Data Management</strong>
-          <span>Delete an incomplete inspection, one History record, or the entire premises. Deleted data remains recoverable for 30 days.</span>
-        </div>
-        <button type="button">Open Data Management</button>
-      `;
-      section.querySelector('button')?.addEventListener('click', event => {
-        event.preventDefault();
-        event.stopPropagation();
-        showDataManagement(project.id);
-      });
-      shell.appendChild(section);
-      return;
-    }
-
-    const host = quick || moreActions;
-    if (!host || host.querySelector('.fire-s-cc-data-v12')) return;
+    if (!quick || quick.querySelector('.fire-s-cc-data-v12')) return;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = quick
-      ? 'fire-s-cc-data-v12'
-      : 'fire-s-command-more-action fire-s-cc-data-v12';
+    button.className = 'fire-s-cc-data-v12';
     button.textContent = 'Delete / Data Management';
     button.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
       showDataManagement(project.id);
     });
-    host.appendChild(button);
+    const returnBtn = Array.from(quick.querySelectorAll('button')).find(btn =>
+      /return to projects/i.test(btn.textContent || '')
+    );
+    if (returnBtn) quick.insertBefore(button, returnBtn);
+    else quick.appendChild(button);
   }
 
   function wrapCommandCentre(){
