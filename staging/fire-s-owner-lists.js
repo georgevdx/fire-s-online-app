@@ -473,6 +473,7 @@
   }
 
   function refresh() {
+    if (root.__fireSHomeCountsFrozen) return;
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);
@@ -489,6 +490,7 @@
     const wrapped = function fireSOwnerListsAfter() {
       const result = original.apply(this, arguments);
       const after = function fireSOwnerListsAfterSync() {
+        if (root.__fireSHomeCountsFrozen) return;
         try { refresh(); } catch (_) {}
         if (name !== 'setProjects' || wrapped.__fireSOwnerListsRefreshing) return;
         wrapped.__fireSOwnerListsRefreshing = true;

@@ -58,12 +58,14 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-match',
-  '1-1-home',
-  '108-40-match',
-  'fire-s-108-40-match'
+  '1-3-64-count',
+  '1-1-count',
+  '108-41-count',
+  'fire-s-108-41-count'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
+assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
+assert.ok(/__fireSHomeCountsFrozen/.test(stagingLists));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
 assert.ok(
   /fireSIsEmptyRecycleLeftoverPremises\(cloudProject\)/.test(liveApp) &&

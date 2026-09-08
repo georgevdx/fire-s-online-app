@@ -45,7 +45,7 @@ assert.ok(
   'Toets blank-home recover must keep a new inspection on screen'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-match/.test(stagingHtml) &&
+  /app\.js\?v=1-3-64-count/.test(stagingHtml) &&
     /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(stagingHtml),
   'Toets-blad must cache-bust the new-inspection stay fix'
 );

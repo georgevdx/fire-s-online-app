@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-40-match';
+const CACHE = 'fire-s-108-41-count';
 const PRECACHE = [
   './',
   './index.html',

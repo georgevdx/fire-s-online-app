@@ -4901,6 +4901,10 @@ async function safeDownloadNewerCloudInspections(options) {
 
     const localProjects = getProjects();
     const localBefore = localProjects.length;
+    const freezeHomeCounts = localBefore > 0;
+    if (freezeHomeCounts) {
+      try { window.__fireSHomeCountsFrozen = true; } catch (_) {}
+    }
     let mergedProjects = localProjects;
     let lastPaintAt = 0;
     let expectedTotal = null;
@@ -4992,6 +4996,7 @@ async function safeDownloadNewerCloudInspections(options) {
       if (!shouldPersist) return;
       lastPaintAt = now;
       setProjects(mergedProjects);
+      if (incomplete && freezeHomeCounts) return;
       paintHome(false);
     }
 
@@ -5015,6 +5020,7 @@ async function safeDownloadNewerCloudInspections(options) {
       incomplete: !!(pulled && pulled.incomplete)
     });
     if (pullToken !== fireSCloudPullGeneration) return;
+    try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
     paintHome(true);
     finishPremisesProgress();
@@ -5028,6 +5034,7 @@ async function safeDownloadNewerCloudInspections(options) {
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
+      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     }
   }
 }
@@ -38399,6 +38406,7 @@ function fireSApplyLifecycleUxLabels() {
     if (numeric) numeric.textContent = String(value);
   }
   function sync(){
+    try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -38585,6 +38593,7 @@ function fireSApplyLifecycleUxLabels() {
     stats.style.setProperty('display', 'none', 'important');
   }
   function renderKpis(){
+    try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
