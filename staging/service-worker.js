@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-30-home';
+const CACHE = 'fire-s-108-31-pull';
 const PRECACHE = [
   './',
   './index.html',

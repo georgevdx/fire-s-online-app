@@ -4760,6 +4760,78 @@ function showSyncTools() {
   // Old top-page backup tools must stay hidden.
 }
 
+function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
+  const mergedMap = new Map();
+
+  (Array.isArray(localProjects) ? localProjects : []).forEach(project => {
+    if (project && project.id) mergedMap.set(project.id, project);
+  });
+
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const cloudProject = normaliseCloudSyncedProject(row);
+    if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
+    const localProject = mergedMap.get(cloudProject.id);
+
+    // Never bring a locally deleted premises or empty Recycle leftover back.
+    if (localProject && typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(localProject)) {
+      return;
+    }
+    if (
+      localProject &&
+      typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
+      fireSIsEmptyRecycleLeftoverPremises(localProject)
+    ) {
+      const cloudLive =
+        typeof fireSHasLiveCurrentInspection === 'function' &&
+        fireSHasLiveCurrentInspection(cloudProject);
+      const localTime = localProject.lastSaved ? new Date(localProject.lastSaved).getTime() : 0;
+      const cloudTime = cloudProject.lastSaved ? new Date(cloudProject.lastSaved).getTime() : 0;
+      if (!(cloudLive && cloudTime > localTime)) return;
+    }
+
+    if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(cloudProject)) {
+      const localDeleted = mergedMap.get(cloudProject.id);
+      if (!localDeleted || fireSIsDeletedPremises(localDeleted)) {
+        mergedMap.set(cloudProject.id, cloudProject);
+      }
+      return;
+    }
+
+    if (!localProject) {
+      mergedMap.set(cloudProject.id, cloudProject);
+      return;
+    }
+
+    const localHasStrippedPhotos =
+      (localProject.photos || []).some(photo => !photo.src);
+
+    const cloudHasRealPhotos =
+      (cloudProject.photos || []).some(photo => photo.src);
+
+    if (localHasStrippedPhotos && cloudHasRealPhotos) {
+      mergedMap.set(cloudProject.id, {
+        ...localProject,
+        photos: cloudProject.photos
+      });
+      return;
+    }
+
+    const localTime = localProject.lastSaved
+      ? new Date(localProject.lastSaved).getTime()
+      : 0;
+
+    const cloudTime = cloudProject.lastSaved
+      ? new Date(cloudProject.lastSaved).getTime()
+      : 0;
+
+    if (cloudTime > localTime) {
+      mergedMap.set(cloudProject.id, cloudProject);
+    }
+  });
+
+  return Array.from(mergedMap.values());
+}
+
 async function safeDownloadNewerCloudInspections(options) {
   if (!navigator.onLine) return;
   if (typeof supabaseClient === 'undefined') return;
@@ -4774,94 +4846,47 @@ async function safeDownloadNewerCloudInspections(options) {
       return;
     }
 
+    const localProjects = getProjects();
+    const localBefore = localProjects.length;
+    let mergedProjects = localProjects;
+
+    function applyCloudRows(cloudRows) {
+      mergedProjects = mergeCloudRowsIntoProjects(localProjects, cloudRows);
+      setProjects(mergedProjects);
+      const filledEmptyDevice = localBefore === 0 && mergedProjects.length > 0;
+      if (shouldPaintProjectsAfterSync(options && options.forcePaint === true) || filledEmptyDevice) {
+        renderProjectsList(filledEmptyDevice ? { forcePaint: true } : undefined);
+      }
+      try {
+        if (filledEmptyDevice && typeof window.fireSRefreshOwnerLists === 'function') {
+          window.fireSRefreshOwnerLists();
+        }
+      } catch (_) {}
+      try {
+        if (filledEmptyDevice && typeof window.fireSProductionRenderKpis === 'function') {
+          window.fireSProductionRenderKpis();
+        }
+      } catch (_) {}
+      try {
+        if (filledEmptyDevice && typeof renderHomeCommandCentre === 'function') {
+          renderHomeCommandCentre();
+        }
+      } catch (_) {}
+    }
+
     const { data, error } = await fetchCompanyInspectionsFromCloud(
       userData.user.id,
-      'inspection_data, updated_at, company_id'
+      'inspection_data, updated_at, company_id',
+      localBefore === 0 ? applyCloudRows : null
     );
 
-    if (error) {
+    if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
       return;
     }
 
-    const localProjects = getProjects();
-    const localBefore = localProjects.length;
-    const mergedMap = new Map();
-
-    localProjects.forEach(project => {
-      mergedMap.set(project.id, project);
-    });
-
-    (Array.isArray(data) ? data : []).forEach(row => {
-      const cloudProject = normaliseCloudSyncedProject(row);
-      if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
-      const localProject = mergedMap.get(cloudProject.id);
-
-      // Never bring a locally deleted premises or empty Recycle leftover back.
-      if (localProject && typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(localProject)) {
-        return;
-      }
-      if (
-        localProject &&
-        typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
-        fireSIsEmptyRecycleLeftoverPremises(localProject)
-      ) {
-        const cloudLive =
-          typeof fireSHasLiveCurrentInspection === 'function' &&
-          fireSHasLiveCurrentInspection(cloudProject);
-        const localTime = localProject.lastSaved ? new Date(localProject.lastSaved).getTime() : 0;
-        const cloudTime = cloudProject.lastSaved ? new Date(cloudProject.lastSaved).getTime() : 0;
-        if (!(cloudLive && cloudTime > localTime)) return;
-      }
-
-      if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(cloudProject)) {
-        const localDeleted = mergedMap.get(cloudProject.id);
-        if (!localDeleted || fireSIsDeletedPremises(localDeleted)) {
-          mergedMap.set(cloudProject.id, cloudProject);
-        }
-        return;
-      }
-
-      if (!localProject) {
-  mergedMap.set(cloudProject.id, cloudProject);
-  return;
-}
-
-const localHasStrippedPhotos =
-  (localProject.photos || []).some(photo => !photo.src);
-
-const cloudHasRealPhotos =
-  (cloudProject.photos || []).some(photo => photo.src);
-
-if (localHasStrippedPhotos && cloudHasRealPhotos) {
-  mergedMap.set(cloudProject.id, {
-    ...localProject,
-    photos: cloudProject.photos
-  });
-  return;
-}
-
-const localTime = localProject.lastSaved
-  ? new Date(localProject.lastSaved).getTime()
-  : 0;
-
-const cloudTime = cloudProject.lastSaved
-  ? new Date(cloudProject.lastSaved).getTime()
-  : 0;
-
-if (cloudTime > localTime) {
-  mergedMap.set(cloudProject.id, cloudProject);
-}
-    });
-
-   const mergedProjects = Array.from(mergedMap.values());
-
-    setProjects(mergedProjects);
-    const filledEmptyDevice = localBefore === 0 && mergedProjects.length > 0;
-    if (shouldPaintProjectsAfterSync(options && options.forcePaint === true) || filledEmptyDevice) {
-      renderProjectsList(filledEmptyDevice ? { forcePaint: true } : undefined);
-    }
+    applyCloudRows(Array.isArray(data) ? data : []);
 
     if (syncStatus) {
       syncStatus.textContent = 'Cloud download check complete.';
@@ -7097,16 +7122,72 @@ function applyInspectionAccessFilter(query, userId) {
   return query;
 }
 
-async function fetchCompanyInspectionsFromCloud(userId, columns) {
+async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   const selectCols = columns || 'inspection_data, updated_at, company_id';
-  const open = await supabaseClient.from('inspections').select(selectCols);
+  const pageSize = 6;
+  const maxPages = 80;
+  const timeoutMs = 25000;
+
+  function timed(query) {
+    return withTimeout(query, timeoutMs).catch(error => ({
+      data: null,
+      error: error && error.message ? error : { message: 'Request timed out' }
+    }));
+  }
+
+  async function fetchPage(makeQuery, from, size) {
+    return timed(makeQuery().range(from, from + size - 1));
+  }
+
+  async function fetchAll(makeQuery) {
+    const rows = [];
+    let size = pageSize;
+    for (let page = 0; page < maxPages; page += 1) {
+      const from = rows.length;
+      let result = await fetchPage(makeQuery, from, size);
+      if (result.error && from === 0 && size > 1) {
+        size = 1;
+        result = await fetchPage(makeQuery, 0, 1);
+      }
+      if (result.error) {
+        if (rows.length) return { data: rows, error: null };
+        return result;
+      }
+      const chunk = Array.isArray(result.data) ? result.data : [];
+      for (let i = 0; i < chunk.length; i += 1) rows.push(chunk[i]);
+      if (typeof onChunk === 'function' && rows.length) {
+        try {
+          onChunk(rows);
+        } catch (_) {}
+      }
+      if (chunk.length < size) break;
+    }
+    return { data: rows, error: null };
+  }
+
+  function openQuery() {
+    return supabaseClient
+      .from('inspections')
+      .select(selectCols)
+      .order('updated_at', { ascending: false });
+  }
+
+  function filteredQuery() {
+    return applyInspectionAccessFilter(
+      supabaseClient
+        .from('inspections')
+        .select(selectCols)
+        .order('updated_at', { ascending: false }),
+      userId
+    );
+  }
+
+  const open = await fetchAll(openQuery);
   if (!open.error && Array.isArray(open.data) && open.data.length > 0) {
     return open;
   }
   if (currentUserProfile?.companyId) {
-    let query = supabaseClient.from('inspections').select(selectCols);
-    query = applyInspectionAccessFilter(query, userId);
-    const filtered = await query;
+    const filtered = await fetchAll(filteredQuery);
     if (!filtered.error && Array.isArray(filtered.data) && filtered.data.length > 0) {
       return filtered;
     }
