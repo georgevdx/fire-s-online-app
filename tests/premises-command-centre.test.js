@@ -29,7 +29,7 @@ function gateFn(src) {
   return src.slice(start, end);
 }
 
-function assertCentre(src, engine, label) {
+function assertCentre(src, engine, label, options) {
   const block = v1Block(src);
   const actions = block.indexOf('class="fire-s-cc-actions"');
   const quick = block.indexOf('class="fire-s-cc-quick"');
@@ -53,11 +53,6 @@ function assertCentre(src, engine, label) {
     label + ': leftover More / Data / Audit cards must stay hidden'
   );
   assert.ok(
-    /function closeCentre\(/.test(block) &&
-      /closeCentre\(\);\s*if \(target\) target\.click\(\)/.test(block),
-    label + ': Quick Actions must close Command Centre before running the chosen action'
-  );
-  assert.ok(
     !/Audit Trail/.test(block),
     label + ': Audit Trail must stay out of Quick Actions'
   );
@@ -70,13 +65,26 @@ function assertCentre(src, engine, label) {
     dataFn.includes('function decorateCommandCentre(projectIdentifier)'),
     label + ': data-management decorator must exist'
   );
-  assert.ok(
-    /Delete \/ Data Management/.test(dataFn) &&
-      /fire-s-cc-data-v12/.test(dataFn) &&
-      /closeInspectionOpenGate/.test(dataFn) &&
-      /showDataManagement/.test(dataFn),
-    label + ': Delete / Data Management must return to Quick Actions and close Command Centre first'
-  );
+
+  if (options && options.closeAndDelete) {
+    assert.ok(
+      /function closeCentre\(/.test(block) &&
+        /closeCentre\(\);\s*if \(target\) target\.click\(\)/.test(block),
+      label + ': Quick Actions must close Command Centre before running the chosen action'
+    );
+    assert.ok(
+      /Delete \/ Data Management/.test(dataFn) &&
+        /fire-s-cc-data-v12/.test(dataFn) &&
+        /closeInspectionOpenGate/.test(dataFn) &&
+        /showDataManagement/.test(dataFn),
+      label + ': Delete / Data Management must return to Quick Actions and close Command Centre first'
+    );
+  } else {
+    assert.ok(
+      !/function closeCentre\(/.test(block),
+      label + ': live must stay on the previous Command Centre until it is sat live'
+    );
+  }
 
   const auditFn = src.slice(
     src.indexOf('function decorateCommandCentre(){'),
@@ -125,12 +133,11 @@ function assertCentre(src, engine, label) {
   );
 }
 
-assertCentre(liveApp, liveEngine, 'Live');
-assertCentre(stagingApp, stagingEngine, 'Toets');
+assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: false });
+assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-close/.test(liveHtml) &&
-    /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(liveHtml),
-  'Live must cache-bust the Command Centre close-and-delete actions'
+  /app\.js\?v=1-3-58-place/.test(liveHtml),
+  'Live must stay on the previous Premises Command Centre cache tag'
 );
 assert.ok(
   /app\.js\?v=1-3-64-close/.test(stagingHtml) &&

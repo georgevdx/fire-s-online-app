@@ -15715,7 +15715,6 @@ function showInspectionOpenGate(projectId, focusMode) {
         return;
       }
 
-      closeInspectionOpenGate();
       const confirmed = confirm(
         'Start a clean new inspection for this premises? Previous finalised inspection records will remain available in Inspection History.'
       );
@@ -15724,6 +15723,7 @@ function showInspectionOpenGate(projectId, focusMode) {
       const started = archiveProjectCurrentInspectionAndStartBlank(project.id);
       if (!started) return;
 
+      closeInspectionOpenGate();
       renderProjectsList();
       openProject(project.id, focusMode, { bypassOpenGate: true });
     });
@@ -39837,11 +39837,11 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       document.getElementById('phase5StartNewBtn')?.addEventListener('click', () => {
         const latest = (typeof getProjects === 'function' ? getProjects() : []).find(item => String(item.id) === String(project.id)) || project;
         if (typeof hasCurrentIncompleteInspection === 'function' && hasCurrentIncompleteInspection(latest)) {
+          alert('An unfinished current inspection already exists. Fire-S will open it in Edit mode. Complete or delete it before starting a new inspection.');
           close();
           openProject(project.id, focusMode, { bypassOpenGate: true });
           return;
         }
-        close();
         const confirmed = confirm('Start a clean new inspection for this premises? The completed inspection history will remain protected.');
         if (!confirmed) return;
         const started = typeof archiveProjectCurrentInspectionAndStartBlank === 'function'
@@ -39855,13 +39855,13 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       document.getElementById('phase5LatestBtn')?.addEventListener('click', () => {
         if (!hasHistory) return;
-        close();
         window.fireSHistoryLaunchContext = {
           mode: 'latest',
           projectId: String(project.id),
           focusMode: focusMode || '',
           capturedAt: Date.now()
         };
+        close();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         window.setTimeout(() => {
           if (typeof openInspectionArchiveFromMore === 'function') openInspectionArchiveFromMore();
@@ -39873,13 +39873,13 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       document.getElementById('phase5HistoryBtn')?.addEventListener('click', () => {
         if (!hasHistory) return;
-        close();
         window.fireSHistoryLaunchContext = {
           mode: 'history',
           projectId: String(project.id),
           focusMode: focusMode || '',
           capturedAt: Date.now()
         };
+        close();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         window.setTimeout(() => {
           if (typeof openInspectionArchiveFromMore === 'function') openInspectionArchiveFromMore();
@@ -41228,7 +41228,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function fireSSprint21CommandCentreV1(){
   'use strict';
 
-  const VERSION = '1.3.58-cc-close';
+  const VERSION = '1.3.58-cc-place';
   const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
     (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
   if (typeof previousShowInspectionOpenGate !== 'function') return;
@@ -41486,16 +41486,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-cc-quick button:disabled { opacity:.42; cursor:not-allowed; }
       .fire-s-cc-quick button.fire-s-cc-quick-primary { background:#176fb2; color:#fff; border-color:#176fb2; }
       .fire-s-cc-quick button.fire-s-cc-quick-primary:hover:not(:disabled) { background:#125e96; border-color:#125e96; }
-      .fire-s-cc-quick button.fire-s-cc-data-v12 { border-color:#e0b0b0; background:#fff8f8; color:#952525; }
       @media (max-width:760px) {
         .fire-s-cc-quick { grid-template-columns:repeat(2,minmax(0,1fr)); }
       }
     `;
-  }
-
-  function closeCentre(){
-    if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
-    else document.getElementById('inspectionOpenGateBackdrop')?.remove();
   }
 
   function copyButton(button, label, className){
@@ -41504,12 +41498,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     clone.className = className || '';
     clone.textContent = label;
     clone.disabled = Boolean(button?.disabled);
-    clone.addEventListener('click', () => {
-      if (clone.disabled) return;
-      const target = button;
-      closeCentre();
-      if (target) target.click();
-    });
+    if (button) clone.addEventListener('click', () => button.click());
     return clone;
   }
 
@@ -41615,7 +41604,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       reportBtn.type = 'button';
       reportBtn.textContent = 'Latest Report';
       reportBtn.addEventListener('click', () => {
-        closeCentre();
+        const backdrop = document.getElementById('inspectionOpenGateBackdrop');
+        if (backdrop) backdrop.remove();
         const latestIndex = history.length - 1;
         if (typeof window.generateArchivedInspectionReport === 'function') {
           window.generateArchivedInspectionReport(project.id, latestIndex);
@@ -42851,29 +42841,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : projectIdentifier
     );
     const backdrop = document.getElementById('inspectionOpenGateBackdrop');
-    const quick = backdrop?.querySelector('.fire-s-cc-quick');
     if (!project || !backdrop) return;
 
     backdrop.dataset.fireSDataProjectIdV13 = String(project.id);
     backdrop.querySelectorAll('.fire-s-cc-data-section-v13').forEach(node => node.remove());
-
-    if (!quick || quick.querySelector('.fire-s-cc-data-v12')) return;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'fire-s-cc-data-v12';
-    button.textContent = 'Delete / Data Management';
-    button.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
-      else backdrop.remove();
-      showDataManagement(project.id);
-    });
-    const returnBtn = Array.from(quick.querySelectorAll('button')).find(btn =>
-      /return to projects/i.test(btn.textContent || '')
-    );
-    if (returnBtn) quick.insertBefore(button, returnBtn);
-    else quick.appendChild(button);
   }
 
   function wrapCommandCentre(){
