@@ -133,16 +133,16 @@ function assertCentre(src, engine, label, options) {
   );
 }
 
-assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: false });
+assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-count/.test(liveHtml),
-  'Live must cache-bust the faster inspection pull'
+  /app\.js\?v=1-3-58-close/.test(liveHtml),
+  'Live must cache-bust Command Centre close-and-delete'
 );
 assert.ok(
   /app\.js\?v=1-3-64-count/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
-  'Toets-blad must cache-bust the Command Centre close-and-delete actions'
+  'Toets-blad must keep the Command Centre close-and-delete actions'
 );
 
 function loadRuntime(src) {
