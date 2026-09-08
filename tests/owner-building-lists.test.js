@@ -105,7 +105,7 @@ assert.ok(
   'Home building count and KPI cards must refresh after cloud setProjects'
 );
 assert.ok(
-  /fire-s-owner-lists\.js\?v=1-1-pull/.test(html),
+  /fire-s-owner-lists\.js\?v=1-1-count/.test(html),
   'Home must cache-bust the phone owner-list refresh'
 );
 
@@ -223,14 +223,13 @@ const model = build([
   }
 ], today);
 
-assert.equal(model.count, 6, 'Deleted buildings must not count on the inspection list');
+assert.equal(model.count, 5, 'Deleted and recycle leftover premises must not count on the inspection list');
 assert.deepStrictEqual(
   model.all.map(row => row.name),
   [
     'Far Site',
     'Greenfield School',
     'Late Hall',
-    'Recycle Leftover',
     'River Clinic',
     'West End Mall – Shop 12'
   ]
@@ -261,6 +260,10 @@ assert.deepStrictEqual(
 assert.ok(
   !model.all.some(row => row.id === 'deleted'),
   'Deleted buildings must not appear on the name list'
+);
+assert.ok(
+  !model.all.some(row => row.id === 'recycle'),
+  'Empty Recycle leftover premises must not count as buildings'
 );
 
 const stored = [];

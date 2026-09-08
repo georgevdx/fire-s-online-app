@@ -284,7 +284,7 @@
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
     const active = (Array.isArray(projects) ? projects : []).filter(project =>
-      !isDeleted(project)
+      !isDeleted(project) && !isRecycleLeftover(project)
     );
 
     const all = active

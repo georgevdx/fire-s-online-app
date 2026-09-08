@@ -61,12 +61,12 @@ assert.ok(
 );
 assert.ok(/1\.3\.64-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.64-toets');
 assert.ok(
-  /app\.js\?v=1-3-58-pull/.test(liveHtml) &&
+  /app\.js\?v=1-3-58-count/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-58-pw/.test(liveHtml),
   'Live must cache-bust the projects sync-hop fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-pull/.test(stagingHtml) &&
+  /app\.js\?v=1-3-64-count/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
   'Toets-blad must cache-bust the projects sync-hop fix'
 );

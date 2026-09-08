@@ -136,11 +136,11 @@ function assertCentre(src, engine, label, options) {
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: false });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-pull/.test(liveHtml),
+  /app\.js\?v=1-3-58-count/.test(liveHtml),
   'Live must cache-bust the faster inspection pull'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-pull/.test(stagingHtml) &&
+  /app\.js\?v=1-3-64-count/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must cache-bust the Command Centre close-and-delete actions'
 );

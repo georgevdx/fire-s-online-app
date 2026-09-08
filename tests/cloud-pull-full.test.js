@@ -44,10 +44,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-58-pull',
-  '1-1-pull',
-  '108-40-pull',
-  'fire-s-108-40-pull'
+  '1-3-58-count',
+  '1-1-count',
+  '108-41-count',
+  'fire-s-108-41-count'
 );
 assertPullSource(
   stagingApp,
@@ -55,10 +55,22 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-pull',
-  '1-1-pull',
-  '108-35-pull',
-  'fire-s-108-35-pull'
+  '1-3-64-count',
+  '1-1-count',
+  '108-36-count',
+  'fire-s-108-36-count'
+);
+assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
+assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
+assert.ok(
+  /fireSIsEmptyRecycleLeftoverPremises\(cloudProject\)/.test(liveApp) &&
+    /fireSIsEmptyRecycleLeftoverPremises\(cloudProject\)/.test(stagingApp),
+  'Cloud pull must not import empty Recycle leftover premises'
+);
+assert.ok(
+  /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(liveLists) &&
+    /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(stagingLists),
+  'Home building count must match Gateway visible premises'
 );
 
 function rowsFor(count, prefix) {

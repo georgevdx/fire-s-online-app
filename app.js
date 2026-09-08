@@ -4792,6 +4792,17 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
       return;
     }
     if (
+      typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
+      fireSIsEmptyRecycleLeftoverPremises(cloudProject) &&
+      !(
+        localProject &&
+        typeof fireSHasLiveCurrentInspection === 'function' &&
+        fireSHasLiveCurrentInspection(localProject)
+      )
+    ) {
+      return;
+    }
+    if (
       localProject &&
       typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
       fireSIsEmptyRecycleLeftoverPremises(localProject)
@@ -4889,6 +4900,36 @@ async function safeDownloadNewerCloudInspections(options) {
       } catch (_) {}
     }
 
+    function visiblePremises(list) {
+      try {
+        if (typeof getVisibleProjectsForCurrentUser === 'function') {
+          const visible = getVisibleProjectsForCurrentUser(list);
+          if (Array.isArray(visible)) return visible;
+        }
+      } catch (_) {}
+      return Array.isArray(list) ? list : [];
+    }
+
+    function reportPremisesProgress(incomplete) {
+      const visibleCount = visiblePremises(mergedProjects).length;
+      const total = incomplete ? expectedTotal : visibleCount;
+      try {
+        if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
+          window.fireSSetOwnerListsPullProgress(visibleCount, total, !incomplete);
+        } else if (total) {
+          window.__fireSOwnerListsPullProgress = {
+            loaded: visibleCount,
+            total: total,
+            loading: incomplete
+          };
+        }
+      } catch (_) {}
+      if (syncStatus && expectedTotal && incomplete) {
+        syncStatus.textContent =
+          `Loading inspections… ${visibleCount} of ${expectedTotal}`;
+      }
+    }
+
     function applyCloudRows(cloudRows, meta) {
       if (meta && typeof meta.expectedTotal === 'number') {
         expectedTotal = meta.expectedTotal;
@@ -4897,25 +4938,7 @@ async function safeDownloadNewerCloudInspections(options) {
       if (Array.isArray(cloudRows) && cloudRows.length) {
         mergedProjects = mergeCloudRowsIntoProjects(localProjects, cloudRows);
       }
-      try {
-        if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
-          window.fireSSetOwnerListsPullProgress(
-            mergedProjects.length,
-            expectedTotal,
-            !incomplete
-          );
-        } else if (expectedTotal) {
-          window.__fireSOwnerListsPullProgress = {
-            loaded: mergedProjects.length,
-            total: expectedTotal,
-            loading: incomplete
-          };
-        }
-      } catch (_) {}
-      if (syncStatus && expectedTotal && incomplete) {
-        syncStatus.textContent =
-          `Loading inspections… ${mergedProjects.length} of ${expectedTotal}`;
-      }
+      reportPremisesProgress(incomplete);
       const now = Date.now();
       const shouldPersist = !incomplete || now - lastPaintAt > 1200;
       if (!shouldPersist) return;
@@ -4937,7 +4960,7 @@ async function safeDownloadNewerCloudInspections(options) {
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
       try {
         if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
-          window.fireSSetOwnerListsPullProgress(mergedProjects.length, expectedTotal, true);
+          reportPremisesProgress(false);
         }
       } catch (_) {}
       return;
@@ -4949,20 +4972,13 @@ async function safeDownloadNewerCloudInspections(options) {
     });
     setProjects(mergedProjects);
     paintHome(true);
-    try {
-      if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
-        window.fireSSetOwnerListsPullProgress(
-          mergedProjects.length,
-          expectedTotal,
-          !(pulled && pulled.incomplete)
-        );
-      }
-    } catch (_) {}
+    reportPremisesProgress(!!(pulled && pulled.incomplete));
 
     if (syncStatus) {
-      if (pulled && pulled.incomplete && expectedTotal && mergedProjects.length < expectedTotal) {
+      const visibleCount = visiblePremises(mergedProjects).length;
+      if (pulled && pulled.incomplete && expectedTotal && visibleCount < expectedTotal) {
         syncStatus.textContent =
-          `Loaded ${mergedProjects.length} of ${expectedTotal} inspections. Still catching up.`;
+          `Loaded ${visibleCount} of ${expectedTotal} inspections. Still catching up.`;
       } else {
         syncStatus.textContent = 'Cloud download check complete.';
       }
