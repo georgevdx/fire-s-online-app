@@ -1499,6 +1499,48 @@
     } catch (_) {}
   }
 
+  function paintTrialAnalytics() {
+    const box = byId('fireSDashboardTrialAnalytics');
+    if (!box) return;
+    const isSuper =
+      currentRole() === 'super_admin' ||
+      lower(window.currentUserProfile?.role) === 'super_admin';
+    if (!isSuper || !window.fireSEntitlement || !window.fireSEntitlement.analytics) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = '<h4>Trial analytics</h4><p>Loading…</p>';
+    window.fireSEntitlement.analytics().then(function (stats) {
+      if (!stats) {
+        box.innerHTML = '<h4>Trial analytics</h4><p>Run SUPABASE_company_entitlement.sql to measure trials.</p>';
+        return;
+      }
+      box.innerHTML =
+        '<h4>Trial analytics</h4>' +
+        '<div class="fire-s-admin-entitlement-stats">' +
+        [
+          ['Total trials', stats.total_trials],
+          ['Active trials', stats.active_trials],
+          ['Expired trials', stats.expired_trials],
+          ['Converted to paid', stats.converted_to_paid],
+          ['Conversion rate', stats.conversion_rate == null ? '—' : stats.conversion_rate + '%'],
+          ['Avg inspections in trial', stats.average_inspections_during_trial]
+        ]
+          .map(function (item) {
+            return (
+              '<div><strong>' +
+              String(item[1] == null ? '—' : item[1]) +
+              '</strong><span>' +
+              item[0] +
+              '</span></div>'
+            );
+          })
+          .join('') +
+        '</div>';
+    });
+  }
+
   function openDashboard() {
     if (!canOpen()) {
       alert('Only the owner or manager can open the Management dashboard.');
@@ -1509,6 +1551,7 @@
     const section = byId('managementDashboardSection');
     if (section) section.style.display = 'block';
     render();
+    paintTrialAnalytics();
     const count = projects().length;
     setMessage(
       count

@@ -560,11 +560,14 @@
     return normalizeInterval(checked && checked.value);
   }
 
-  async function persistCompanyPlan(planId, intervalId) {
+  async function persistCompanyPlan(planId, intervalId, options) {
     var id = rememberPlan(planId);
     var interval = rememberInterval(intervalId);
-    startBillingPeriod(interval);
-    if (billingStatus() !== 'cancelled') rememberStatus('active');
+    var markPaid = options && options.markPaid === true;
+    if (markPaid) {
+      startBillingPeriod(interval);
+      if (billingStatus() !== 'cancelled') rememberStatus('active');
+    }
     persistBillingMeta();
     var sb = getSb();
     var cid = companyId();

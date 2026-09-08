@@ -880,6 +880,120 @@
         : 'Add, remove or edit people. Check inspector stats on the Stats tab.';
     }
     updateDangerControls();
+    paintAdminEntitlement();
+  }
+
+  function escapeEntitlement(value) {
+    return text(value).replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
+  function paintAdminEntitlement() {
+    const panel = byId('fireSAdminEntitlementPanel');
+    if (!panel) return;
+    const show = actualMembershipRole() === 'super_admin';
+    panel.hidden = !show;
+    if (!show) return;
+    const api = window.fireSEntitlement;
+    if (!api) return;
+    const statsEl = byId('fireSAdminEntitlementStats');
+    const tableWrap = byId('fireSAdminEntitlementTableWrap');
+    const msg = byId('fireSAdminEntitlementMessage');
+    Promise.all([api.analytics(), api.listCompanies()])
+      .then(function (parts) {
+        const stats = parts[0] || {};
+        const rows = parts[1] || [];
+        if (statsEl) {
+          statsEl.innerHTML = [
+            ['Total trials', stats.total_trials],
+            ['Active trials', stats.active_trials],
+            ['Expired trials', stats.expired_trials],
+            ['Converted to paid', stats.converted_to_paid],
+            ['Conversion rate', stats.conversion_rate == null ? '' : stats.conversion_rate + '%'],
+            ['Avg inspections in trial', stats.average_inspections_during_trial]
+          ]
+            .map(function (item) {
+              return (
+                '<div><strong>' +
+                escapeEntitlement(item[1] == null ? '—' : item[1]) +
+                '</strong><span>' +
+                escapeEntitlement(item[0]) +
+                '</span></div>'
+              );
+            })
+            .join('');
+        }
+        if (tableWrap) {
+          if (!rows.length) {
+            tableWrap.innerHTML = '<p class="company-team-hint">No entitlement rows yet. Run SUPABASE_company_entitlement.sql.</p>';
+          } else {
+            tableWrap.innerHTML =
+              '<table class="fire-s-admin-entitlement-table"><thead><tr>' +
+              '<th>Company</th><th>Status</th><th>Trial start</th><th>Trial expiry</th>' +
+              '<th>Days left</th><th>Used</th><th>Limit</th><th>Subscription</th><th></th>' +
+              '</tr></thead><tbody>' +
+              rows
+                .map(function (row) {
+                  const id = escapeEntitlement(row.company_id || '');
+                  return (
+                    '<tr data-company-id="' +
+                    id +
+                    '">' +
+                    '<td>' +
+                    escapeEntitlement(row.company_name || id) +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.status || row.reason || '') +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.trial_started_at || '') +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.trial_expires_at || '') +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.trial_days_remaining) +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.trial_inspections_used) +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.trial_inspection_limit) +
+                    '</td>' +
+                    '<td>' +
+                    escapeEntitlement(row.subscription_status || '') +
+                    '</td>' +
+                    '<td><button type="button" class="secondary-btn fire-s-extend-trial-btn" data-company-id="' +
+                    id +
+                    '">Extend trial</button></td>' +
+                    '</tr>'
+                  );
+                })
+                .join('') +
+              '</tbody></table>';
+            tableWrap.querySelectorAll('.fire-s-extend-trial-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                const company = btn.getAttribute('data-company-id');
+                const extra = window.prompt('Extra trial days to add (server-side, audit logged):', '14');
+                const days = Number(extra);
+                if (!company || !days || days < 1) return;
+                api.extendTrial(company, days).then(function (res) {
+                  if (msg) {
+                    msg.textContent = res && res.ok
+                      ? 'Trial extended. This is audit logged.'
+                      : (res && res.error) || 'Could not extend trial';
+                  }
+                  paintAdminEntitlement();
+                });
+              });
+            });
+          }
+        }
+      })
+      .catch(function () {
+        if (msg) msg.textContent = 'Entitlement analytics need SUPABASE_company_entitlement.sql in Supabase.';
+      });
   }
 
   function countMembersByRole(members) {

@@ -557,10 +557,11 @@
     return normalizeInterval(checked && checked.value);
   }
 
-  async function persistCompanyPlan(planId, intervalId) {
+  async function persistCompanyPlan(planId, intervalId, options) {
     var id = rememberPlan(planId);
     var interval = rememberInterval(intervalId);
-    startBillingPeriod(interval);
+    var markPaid = options && options.markPaid === true;
+    if (markPaid) startBillingPeriod(interval);
     var sb = getSb();
     var cid = companyId();
     if (!sb || !cid) return { ok: true, local: true, plan: id, interval: interval };

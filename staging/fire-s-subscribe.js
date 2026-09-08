@@ -240,6 +240,19 @@
     );
     if (!ok) return;
     cat.cancelBilling();
+    try {
+      var sb = window.supabaseClient;
+      if (sb && sb.rpc) {
+        sb.rpc('fire_s_cancel_company_subscription').then(function (res) {
+          if (res && res.error) console.warn('Cancel subscription RPC', res.error);
+          try {
+            if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
+              window.fireSEntitlement.refresh(true);
+            }
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
     setMessage('Cancelled. Auto-renew is off. Company name and inspections stay saved. Login with this same email to subscribe again.');
     paintSubscribeStatus();
     paintPayfastControls();
@@ -383,8 +396,7 @@
         return;
       }
     } else if (!canManage()) {
-      alert('Only the Owner can open Subscription.');
-      return;
+      // Company members may VIEW plans. Only the Owner can change billing.
     }
     hideOtherSections();
     var section = byId('fireSSubscribeSection');
@@ -480,7 +492,7 @@
     }
     var intervalId = cat.selectedIntervalFrom ? cat.selectedIntervalFrom(billing) : 'monthly';
     setMessage('Saving billing…');
-    var result = await cat.persistCompanyPlan('standard', intervalId);
+    var result = await cat.persistCompanyPlan('standard', intervalId, { markPaid: false });
     paintCurrent();
     paintPayfastControls();
     if (result && result.ok === false) {
