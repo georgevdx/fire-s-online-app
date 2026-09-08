@@ -25,6 +25,8 @@
     } catch (_) {}
   }
 
+  const GATEWAY_COPY = 'Open, continue, search and manage inspections.';
+
   function assertGatewayLabel() {
     const btn = document.getElementById('cmdInspectionsBtn');
     if (!btn) return;
@@ -33,8 +35,11 @@
       title.textContent = 'Inspection Gateway';
     }
     const copy = btn.querySelector('.command-copy');
-    if (copy && /this month/i.test(copy.textContent || '')) {
-      copy.textContent = 'Open, continue, search and manage inspections.';
+    if (copy) {
+      const text = String(copy.textContent || '').trim();
+      if (/this month/i.test(text) || /^Search, open/i.test(text)) {
+        copy.textContent = GATEWAY_COPY;
+      }
     }
     btn.setAttribute('aria-label', 'Inspection Gateway');
     btn.title = 'Inspection Gateway';

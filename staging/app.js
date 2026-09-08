@@ -33930,7 +33930,7 @@ function fireSApplyLifecycleUxLabels() {
     ['cmdInspectionsBtn','cmdScheduleBtn'].forEach(show);
     ['cmdReportsBtn','cmdCompanyBtn','cmdServicesBtn','cmdDashboardBtn','cmdFindingsBtn','cmdOverdueBtn'].forEach(hide);
 
-    cardText('cmdInspectionsBtn','Inspection Gateway','Search, open or continue inspection work.');
+    cardText('cmdInspectionsBtn','Inspection Gateway','Find, continue or start an inspection.');
     cardText('cmdScheduleBtn','Schedule / New Site','Schedule or start a new inspection at a new site.');
     closeCloud();
   }
@@ -35125,7 +35125,7 @@ function fireSApplyLifecycleUxLabels() {
     if (gatewayBtn) {
       gatewayBtn.hidden = false;
       gatewayBtn.style.removeProperty('display');
-      setLabel(gatewayBtn, 'Inspection Gateway', 'Search, open, continue or manage inspections.');
+      setLabel(gatewayBtn, 'Inspection Gateway', 'Open, continue, search and manage inspections.');
       bind(gatewayBtn, 'all', 'Inspection Gateway opened.');
     }
 
@@ -35388,7 +35388,7 @@ function fireSApplyLifecycleUxLabels() {
     const compliant = count(FILTERS.compliant);
     const month = count(FILTERS.month);
 
-    label('cmdInspectionsBtn', 'Inspection Gateway', 'Search, open and manage inspections.');
+    label('cmdInspectionsBtn', 'Inspection Gateway', 'Open, continue, search and manage inspections.');
     label('cmdFindingsBtn', 'Premises Requiring Action', 'Open items requiring attention.');
     label('cmdOverdueBtn', 'Overdue Inspections', 'Scheduled inspections past due.');
     label('cmdDashboardBtn', 'Compliant Sites', 'Closed/compliant premises.');
