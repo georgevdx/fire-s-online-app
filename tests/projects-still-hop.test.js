@@ -33,8 +33,16 @@ function assertStillScript(src, label) {
     label + ': typing in search or premises must still rebuild the list'
   );
   assert.ok(
-    /function fireSGatewayStillKpiRefresh/.test(src),
-    label + ': KPI refresh must not wipe the open gateway'
+    !/empty-state/.test(
+      src.slice(src.indexOf('function listAlreadyPainted'), src.indexOf('function userIsTypingSearch'))
+    ),
+    label + ': an empty-state placeholder must not count as a painted list'
+  );
+  assert.ok(
+    /function paintedCardCount\(/.test(src) &&
+      /function storedProjectCount\(/.test(src) &&
+      /if \(storedProjectCount\(\) > painted\) return false;/.test(src),
+    label + ': a phone with leftover cards must still paint when more inspections are stored'
   );
   assert.ok(
     /setInterval\(install, 2500\)/.test(src) &&
@@ -97,13 +105,13 @@ assert.ok(
 );
 assert.ok(/1\.3\.64-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.64-toets');
 assert.ok(
-  /fire-s-gateway-still\.js\?v=1-0-still/.test(liveHtml) &&
+  /fire-s-gateway-still\.js\?v=1-0-sync/.test(liveHtml) &&
     /app\.js\?v=1-3-58-pw/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-58-pw/.test(liveHtml),
   'Live must load the still script and cache-bust the hop fix'
 );
 assert.ok(
-  /fire-s-gateway-still\.js\?v=1-0-still/.test(stagingHtml) &&
+  /fire-s-gateway-still\.js\?v=1-0-sync/.test(stagingHtml) &&
     /app\.js\?v=1-3-64-pw/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
   'Toets-blad must load the still script and cache-bust the hop fix'
@@ -112,6 +120,11 @@ assert.ok(
 const vm = require('vm');
 
 function makeEl(id, opts) {
+  const cardCount = (opts && opts.cardCount) || ((opts && opts.hasCards) ? 1 : 0);
+  const cards = [];
+  for (let i = 0; i < cardCount; i += 1) {
+    cards.push({ className: 'fire-s-136a8-card' });
+  }
   return {
     id,
     hidden: false,
@@ -119,7 +132,10 @@ function makeEl(id, opts) {
     dataset: Object.assign({}, (opts && opts.dataset) || {}),
     value: (opts && opts.value) || '',
     querySelector() {
-      return opts && opts.hasCards ? { className: 'fire-s-136a8-card' } : null;
+      return cards[0] || null;
+    },
+    querySelectorAll() {
+      return cards;
     }
   };
 }
@@ -188,6 +204,50 @@ runStillCase(
   'search typing must still paint',
   function (ctx, els) {
     ctx.document.activeElement = els.projectSearch;
+  },
+  function (ctx) {
+    ctx.window.renderProjectsList();
+  },
+  1
+);
+
+runStillCase(
+  'empty gateway must paint when cloud inspections arrive',
+  function (ctx, els) {
+    els.projectsList.dataset = {};
+    els.projectsList.querySelector = function () {
+      return null;
+    };
+    els.projectsList.querySelectorAll = function () {
+      return [];
+    };
+  },
+  function (ctx) {
+    ctx.window.renderProjectsList();
+  },
+  1
+);
+
+runStillCase(
+  'phone with 2 leftover cards must paint when 98 inspections are stored',
+  function (ctx, els) {
+    const leftover = [{ className: 'fire-s-136a8-card' }, { className: 'fire-s-136a8-card' }];
+    els.projectsList.querySelector = function () {
+      return leftover[0];
+    };
+    els.projectsList.querySelectorAll = function () {
+      return leftover;
+    };
+    const stored = [];
+    for (let i = 0; i < 98; i += 1) {
+      stored.push({ id: 'b' + i });
+    }
+    ctx.window.getProjects = function () {
+      return stored;
+    };
+    ctx.window.getVisibleProjectsForCurrentUser = function (all) {
+      return all;
+    };
   },
   function (ctx) {
     ctx.window.renderProjectsList();

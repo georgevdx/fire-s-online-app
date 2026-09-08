@@ -44,6 +44,9 @@ assert.ok(/FIRE_S_ENTITLEMENT:/.test(sql));
 assert.ok(/grandfather/.test(sql.toLowerCase()) || /subscription_active/.test(sql));
 assert.ok(/with check \(false\)/.test(sql), 'Direct company insert must be denied');
 assert.ok(/fire_s_protect_profile_role/.test(sql), 'Clients must not self-promote to super_admin');
+assert.ok(/fire_s_inspections_select/.test(sql), 'SELECT policy must be recreated so inspections stay visible');
+assert.ok(/auth\.uid\(\) is null/.test(sql), 'SQL Editor must not block existing inspection rows');
+assert.ok(/notify pgrst/i.test(sql), 'PostgREST schema cache must reload after DDL');
 
 assert.ok(!/grant execute on function public.fire_s_activate_paid_subscription\([^)]+\) to authenticated/.test(sql));
 
@@ -55,6 +58,7 @@ assert.ok(/VIEW PLANS \/ SUBSCRIBE/.test(js));
 assert.ok(/Your Fire-S trial ends tomorrow/.test(js));
 assert.ok(/Your Fire-S free trial has ended/.test(js));
 assert.ok(/You have completed the inspections included in your Fire-S free trial/.test(js));
+assert.ok(/projectListSection: true/.test(js), 'Existing inspections list must stay visible during a billing block');
 assert.ok(js === stagingJs, 'Live and toets entitlement clients must match');
 
 assert.ok(/fire-s-entitlement\.css/.test(liveHtml) && /fire-s-entitlement\.js/.test(liveHtml));

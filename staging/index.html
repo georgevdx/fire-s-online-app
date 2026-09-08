@@ -430,17 +430,6 @@
       <div class="main-command-status" id="mainCommandAccessStatus">Checking access...</div>
     </div>
 
-    <div id="fireSDesktopAccess" class="fire-s-desktop-access" hidden>
-      <div class="fire-s-desktop-access-kicker">Desktop / PC</div>
-      <h4>Open the Owner / Manager dashboard on a computer</h4>
-      <p>Type this address in Chrome on a laptop, PC or wide tablet. Use the same login. It opens the Management dashboard in a wide desktop layout.</p>
-      <code id="fireSDesktopAccessUrl" class="fire-s-desktop-access-url"></code>
-      <div class="fire-s-desktop-access-actions">
-        <button id="fireSDesktopAccessCopyBtn" type="button" class="cloud-primary-btn">Copy address</button>
-      </div>
-      <p id="fireSDesktopAccessNote" class="fire-s-desktop-access-note"></p>
-    </div>
-
     <div id="fireSOwnerKpiRow" class="fire-s-owner-kpi-row fs-prod-kpi-row" aria-label="Fire-S dashboard summary" hidden></div>
 
     <section id="fireSOwnerLists" class="fire-s-owner-lists" hidden aria-label="Building inspection lists">
@@ -492,6 +481,17 @@
         <p class="fire-s-owner-lists-hint">Tap a row to open that building.</p>
       </div>
     </section>
+
+    <div id="fireSDesktopAccess" class="fire-s-desktop-access" hidden>
+      <div class="fire-s-desktop-access-kicker">Desktop / PC</div>
+      <h4>Open the Owner / Manager dashboard on a computer</h4>
+      <p>Type this address in Chrome on a laptop, PC or wide tablet. Use the same login. It opens the Management dashboard in a wide desktop layout.</p>
+      <code id="fireSDesktopAccessUrl" class="fire-s-desktop-access-url"></code>
+      <div class="fire-s-desktop-access-actions">
+        <button id="fireSDesktopAccessCopyBtn" type="button" class="cloud-primary-btn">Copy address</button>
+      </div>
+      <p id="fireSDesktopAccessNote" class="fire-s-desktop-access-note"></p>
+    </div>
 
     <div class="main-command-stats" aria-label="Fire-S dashboard summary">
       <button type="button" class="main-stat-card" id="cmdDashboardBtn">
@@ -1863,7 +1863,7 @@
   <script src="inspection-lifecycle-engine.js?v=1-0"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-40-exist-sched"></script>
-  <script src="fire-s-owner-lists.js?v=1-1-space"></script>
+  <script src="fire-s-owner-lists.js?v=1-1-phone"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-20-create-pw"></script>
@@ -1883,10 +1883,10 @@
   <script src="fire-s-phone-back.js?v=1-3-seat"></script>
   <script src="fire-s-global-flow.js?v=1-0-global"></script>
   <script src="fire-s-desktop-access.js?v=1-3-keep-dash"></script>
-  <script src="fire-s-gateway-still.js?v=1-0-still"></script>
+  <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-0-finish-click"></script>
-  <script src="fire-s-entitlement.js?v=1-0-trial"></script>
+  <script src="fire-s-entitlement.js?v=1-0-open"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

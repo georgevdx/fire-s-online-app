@@ -25,7 +25,9 @@
     fireSSubscribeSection: true,
     fireSGetStarted: true,
     companyLetterheadSection: true,
-    userManualSection: true
+    userManualSection: true,
+    projectListSection: true,
+    homeSection: true
   };
 
   function text(value) {
@@ -362,7 +364,11 @@
     var blocker = ensureBlocker();
     if (!blocker) return;
     var space = visibleWorkspaceId();
-    var lockedOp = copy.urgency === 'block' && !ALLOWED_WHEN_LOCKED[space] && space !== 'homeSection';
+    var lockedOp =
+      copy.urgency === 'block' &&
+      !ALLOWED_WHEN_LOCKED[space] &&
+      space !== 'homeSection' &&
+      space !== 'projectListSection';
     if (!lockedOp) {
       blocker.hidden = true;
       return;
@@ -396,6 +402,7 @@
         copy.urgency === 'block' &&
         !isSuperAdmin() &&
         last &&
+        last.backendReady === true &&
         last.can_create === false;
       document.body.classList.toggle('fire-s-entitlement-blocked', fullyBlocked);
     } catch (_) {}

@@ -449,28 +449,59 @@
     if (typeof original !== 'function' || original.__fireSOwnerListsWrapped) return;
     const wrapped = function fireSOwnerListsAfter() {
       const result = original.apply(this, arguments);
-      Promise.resolve(result).finally(() => {
+      const after = function fireSOwnerListsAfterSync() {
         try { refresh(); } catch (_) {}
-      });
+        if (name !== 'setProjects' || wrapped.__fireSOwnerListsRefreshing) return;
+        wrapped.__fireSOwnerListsRefreshing = true;
+        try {
+          if (typeof root.fireSProductionRenderKpis === 'function') {
+            root.fireSProductionRenderKpis();
+          }
+        } catch (_) {}
+        try {
+          if (typeof root.renderHomeCommandCentre === 'function') {
+            root.renderHomeCommandCentre();
+          }
+        } catch (_) {}
+        wrapped.__fireSOwnerListsRefreshing = false;
+      };
+      if (result && typeof result.then === 'function') {
+        Promise.resolve(result).finally(after);
+      } else {
+        after();
+      }
       return result;
     };
     wrapped.__fireSOwnerListsWrapped = true;
     root[name] = wrapped;
+    try {
+      if (name === 'setProjects') setProjects = wrapped;
+    } catch (_) {}
+  }
+
+  function wrapRefreshTargets() {
+    wrapRefresh('fireSApplyCleanHomeRoles');
+    wrapRefresh('fireSProductionRenderKpis');
+    wrapRefresh('renderHomeCommandCentre');
+    wrapRefresh('setProjects');
   }
 
   root.fireSBuildOwnerListModel = buildModel;
   root.fireSOwnerListBuildingName = buildingName;
   root.fireSRefreshOwnerLists = refresh;
 
-  wrapRefresh('fireSApplyCleanHomeRoles');
-  wrapRefresh('fireSProductionRenderKpis');
-  wrapRefresh('renderHomeCommandCentre');
+  wrapRefreshTargets();
 
   if (root.document && root.document.readyState === 'loading') {
     root.document.addEventListener('DOMContentLoaded', refresh, { once: true });
   } else {
     try { refresh(); } catch (_) {}
   }
+  [0, 250, 800, 1600, 3200, 5000].forEach(ms => {
+    try {
+      root.setTimeout(wrapRefreshTargets, ms);
+    } catch (_) {}
+  });
   [200, 800, 1600].forEach(ms => {
     try {
       root.setTimeout(refresh, ms);

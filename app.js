@@ -4292,7 +4292,16 @@ async function debugSyncCounts() {
         userData.user.id
       );
 
-      const { data, error } = await query;
+      let { data, error } = await query;
+
+      if ((!error && (!data || !data.length)) && typeof fetchCompanyInspectionsFromCloud === 'function') {
+        const fallback = await fetchCompanyInspectionsFromCloud(
+          userData.user.id,
+          'id, user_id, company_id, created_by_email, updated_at'
+        );
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error) {
         cloudError = error.message;
@@ -4360,17 +4369,10 @@ if (!confirmed) return;
 
   exportEmergencyBackup('cloud-download');
 
-  let query = supabaseClient
-  .from('inspections')
-  .select('inspection_data, updated_at, company_id')
-  .order('updated_at', { ascending: false });
-
-  query = applyInspectionAccessFilter(
-    query,
-    userData.user.id
+  const { data, error } = await fetchCompanyInspectionsFromCloud(
+    userData.user.id,
+    'inspection_data, updated_at, company_id'
   );
-
-  const { data, error } = await query;
 
   if (error) {
     getEl('syncStatus').textContent = `Download failed: ${error.message}`;
@@ -4378,8 +4380,17 @@ if (!confirmed) return;
   }
 
   const projects = filterDeletedProjects(
-    data.map(row => normaliseCloudSyncedProject(row))
+    (Array.isArray(data) ? data : []).map(row => normaliseCloudSyncedProject(row))
   );
+
+  if (!projects.length && getProjects().length) {
+    getEl('syncStatus').textContent =
+      'Cloud returned 0 inspections. Local inspections were kept.';
+    try {
+      alert('Cloud returned no inspections. Your local inspections were not replaced.');
+    } catch (_) {}
+    return;
+  }
 
   setProjects(projects);
   currentProjectId = null;
@@ -4408,16 +4419,10 @@ if (!confirmed) return;
 
   const localProjects = getProjects();
 
-  let query = supabaseClient
-  .from('inspections')
-  .select('inspection_data, updated_at, company_id');
-
-  query = applyInspectionAccessFilter(
-    query,
-    userData.user.id
+  const { data, error } = await fetchCompanyInspectionsFromCloud(
+    userData.user.id,
+    'inspection_data, updated_at, company_id'
   );
-
-  const { data, error } = await query;
 
   if (error) {
     getEl('syncStatus').textContent = `Merge failed: ${error.message}`;
@@ -4425,7 +4430,7 @@ if (!confirmed) return;
   }
 
   const cloudProjects = filterDeletedProjects(
-    data.map(row => normaliseCloudSyncedProject(row))
+    (Array.isArray(data) ? data : []).map(row => normaliseCloudSyncedProject(row))
   );
 
   const mergedMap = new Map();
@@ -4769,16 +4774,10 @@ async function safeDownloadNewerCloudInspections(options) {
       return;
     }
 
-    let query = supabaseClient
-      .from('inspections')
-      .select('inspection_data, updated_at, company_id');
-
-    query = applyInspectionAccessFilter(
-      query,
-      userData.user.id
+    const { data, error } = await fetchCompanyInspectionsFromCloud(
+      userData.user.id,
+      'inspection_data, updated_at, company_id'
     );
-
-    const { data, error } = await query;
 
     if (error) {
       console.error('Safe download failed:', error);
@@ -4787,13 +4786,14 @@ async function safeDownloadNewerCloudInspections(options) {
     }
 
     const localProjects = getProjects();
+    const localBefore = localProjects.length;
     const mergedMap = new Map();
 
     localProjects.forEach(project => {
       mergedMap.set(project.id, project);
     });
 
-    data.forEach(row => {
+    (Array.isArray(data) ? data : []).forEach(row => {
       const cloudProject = normaliseCloudSyncedProject(row);
       if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
       const localProject = mergedMap.get(cloudProject.id);
@@ -4858,8 +4858,9 @@ if (cloudTime > localTime) {
    const mergedProjects = Array.from(mergedMap.values());
 
     setProjects(mergedProjects);
-    if (shouldPaintProjectsAfterSync(options && options.forcePaint === true)) {
-      renderProjectsList();
+    const filledEmptyDevice = localBefore === 0 && mergedProjects.length > 0;
+    if (shouldPaintProjectsAfterSync(options && options.forcePaint === true) || filledEmptyDevice) {
+      renderProjectsList(filledEmptyDevice ? { forcePaint: true } : undefined);
     }
 
     if (syncStatus) {
@@ -6153,6 +6154,11 @@ const FIRE_S_CANONICAL_TEAM_ROLES = {
 };
 const FIRE_S_PREFERRED_COMPANY_NAME = 'company s';
 
+function fireSIsPreferredCompanyName(name) {
+  const n = String(name || '').trim().toLowerCase();
+  return n === 'company s' || n === 'fire-s' || n === 'fire s';
+}
+
 function fireSCanonicalTeamRole(email, fallback) {
   const key = String(email || '').trim().toLowerCase();
   return FIRE_S_CANONICAL_TEAM_ROLES[key] || fallback || '';
@@ -6466,7 +6472,7 @@ function fireSPickPrimaryMembership(rows, countByCompany) {
   };
   const preferredNameScore = row => {
     const name = fireSMembershipCompanyName(row).toLowerCase();
-    return name === FIRE_S_PREFERRED_COMPANY_NAME ? 0 : 1;
+    return fireSIsPreferredCompanyName(name) ? 0 : 1;
   };
 
   list.sort((a, b) => {
@@ -6484,7 +6490,7 @@ window.fireSPickPrimaryMembership = fireSPickPrimaryMembership;
 
 async function fireSRpcMyCompanyFallback() {
   try {
-    const rpc = await withTimeout(supabaseClient.rpc('fire_s_my_company'), 3000);
+    const rpc = await withTimeout(supabaseClient.rpc('fire_s_my_company'), 8000);
     if (rpc?.error || !rpc?.data) return null;
     const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
     const companyId = row?.out_company_id || row?.company_id || null;
@@ -6520,7 +6526,7 @@ async function fireSLoadActiveCompanyMembership(userId) {
       .eq('user_id', userId)
       .eq('status', 'active');
 
-    const result = await withTimeout(query, 3000).catch(() => ({
+    const result = await withTimeout(query, 10000).catch(() => ({
       data: [],
       error: null
     }));
@@ -6701,8 +6707,8 @@ async function loadUserAccessProfile() {
       if (companyId) {
         fireSResolveCompanyNameLazy(companyId);
         restampLocalInspectionsWithCompany(companyId, immediateName);
-        scheduleCompanyCloudRefresh('membership');
       }
+      scheduleCompanyCloudRefresh('membership');
       try {
         if (typeof window.fireSEntitlement !== 'undefined' && window.fireSEntitlement.refresh) {
           window.fireSEntitlement.refresh();
@@ -6755,8 +6761,8 @@ async function loadUserAccessProfile() {
 
     if (companyId) {
       restampLocalInspectionsWithCompany(companyId, immediateName);
-      scheduleCompanyCloudRefresh('membership');
     }
+    scheduleCompanyCloudRefresh('membership');
 
     try {
       if (typeof window.fireSEntitlement !== 'undefined' && window.fireSEntitlement.refresh) {
@@ -6835,7 +6841,8 @@ window.fireSApplyUserProfilePatch = function fireSApplyUserProfilePatch(patch) {
 };
 
 function scheduleCompanyCloudRefresh(reason) {
-  if (!currentUserProfile?.companyId) return;
+  const emptyDevice =
+    typeof getProjects === 'function' && getProjects().length === 0;
   try {
     if (typeof window.fireSRefreshCompanyPersonnelStats === 'function') {
       window.fireSRefreshCompanyPersonnelStats();
@@ -6844,7 +6851,7 @@ function scheduleCompanyCloudRefresh(reason) {
   setTimeout(() => {
     try {
       if (typeof refreshSyncData === 'function') {
-        Promise.resolve(refreshSyncData())
+        Promise.resolve(refreshSyncData({ forcePaint: emptyDevice }))
           .then(() => {
             try {
               if (typeof renderHomeCommandCentre === 'function') {
@@ -6870,6 +6877,7 @@ function scheduleCompanyCloudRefresh(reason) {
 
 window.loadUserAccessProfile = loadUserAccessProfile;
 window.getVisibleProjectsForCurrentUser = getVisibleProjectsForCurrentUser;
+window.fireSFilterProjectsForProfile = fireSFilterProjectsForProfile;
 
 function getAccessMetadata() {
   return {
@@ -6974,36 +6982,65 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
   return changed;
 }
 
-function getVisibleProjectsForCurrentUser(projects) {
-  if (!currentUserProfile) {
-    return [];
-  }
+function fireSIsLocalProfileFallback(profile) {
+  if (!profile) return true;
+  const id = String(profile.id || '');
+  const email = String(profile.email || '').toLowerCase();
+  return id === 'local-user' || email === 'local@fire-s.app';
+}
 
+function fireSProjectOwnedByProfile(project, profile) {
+  if (!project || !profile) return false;
+  const uid = String(profile.id || '');
+  const email = String(profile.email || '').toLowerCase();
+  if (
+    uid &&
+    (String(project.createdByUserId || '') === uid ||
+      String(project.user_id || '') === uid)
+  ) {
+    return true;
+  }
+  if (email && String(project.createdByEmail || '').toLowerCase() === email) {
+    return true;
+  }
+  return false;
+}
+
+function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
   const activeProjects = (Array.isArray(projects) ? projects : []).filter(project =>
     !fireSIsDeletedPremises(project) &&
     !fireSIsEmptyRecycleLeftoverPremises(project)
   );
 
-  if (isSuperAdmin()) {
-    return activeProjects;
-  }
+  if (isAdmin) return activeProjects;
+  if (fireSIsLocalProfileFallback(profile)) return activeProjects;
 
-  const profileCompanyId = String(currentUserProfile.companyId || '').trim();
+  const profileCompanyId = String(profile.companyId || '').trim();
+  const mine = project => fireSProjectOwnedByProfile(project, profile);
+
   if (profileCompanyId) {
-    return activeProjects.filter(project => {
+    const matched = activeProjects.filter(project => {
       const projectCompanyId = String(
         project.companyId || project.company_id || ''
       ).trim();
-      return projectCompanyId === profileCompanyId;
+      if (projectCompanyId === profileCompanyId) return true;
+      if (!projectCompanyId && mine(project)) return true;
+      return false;
     });
+    if (matched.length) return matched;
+    const owned = activeProjects.filter(mine);
+    return owned.length ? owned : activeProjects;
   }
 
-  const currentEmail =
-    String(currentUserProfile.email || '').toLowerCase();
+  const owned = activeProjects.filter(mine);
+  return owned.length ? owned : activeProjects;
+}
 
-  return activeProjects.filter(project =>
-    project.createdByUserId === currentUserProfile.id ||
-    String(project.createdByEmail || '').toLowerCase() === currentEmail
+function getVisibleProjectsForCurrentUser(projects) {
+  return fireSFilterProjectsForProfile(
+    projects,
+    currentUserProfile,
+    typeof isSuperAdmin === 'function' && isSuperAdmin()
   );
 }
 
@@ -7044,11 +7081,37 @@ function getProjectCloudMetadata(project, userId) {
 }
 
 function applyInspectionAccessFilter(query, userId) {
-  if (currentUserProfile?.companyId) {
-    return query.eq('company_id', currentUserProfile.companyId);
+  const companyId = currentUserProfile?.companyId;
+  if (companyId && userId) {
+    const cid = String(companyId).replace(/[^a-zA-Z0-9-]/g, '');
+    const uid = String(userId).replace(/[^a-zA-Z0-9-]/g, '');
+    if (cid && uid) {
+      return query.or(
+        `company_id.eq.${cid},and(company_id.is.null,user_id.eq.${uid})`
+      );
+    }
   }
+  if (companyId) {
+    return query.eq('company_id', companyId);
+  }
+  return query;
+}
 
-  return query.eq('user_id', userId);
+async function fetchCompanyInspectionsFromCloud(userId, columns) {
+  const selectCols = columns || 'inspection_data, updated_at, company_id';
+  const open = await supabaseClient.from('inspections').select(selectCols);
+  if (!open.error && Array.isArray(open.data) && open.data.length > 0) {
+    return open;
+  }
+  if (currentUserProfile?.companyId) {
+    let query = supabaseClient.from('inspections').select(selectCols);
+    query = applyInspectionAccessFilter(query, userId);
+    const filtered = await query;
+    if (!filtered.error && Array.isArray(filtered.data) && filtered.data.length > 0) {
+      return filtered;
+    }
+  }
+  return open;
 }
 
 function applyInspectionDeleteFilter(query, userId) {
@@ -38158,10 +38221,10 @@ function fireSApplyLifecycleUxLabels() {
     row.id = 'fireSOwnerKpiRow';
     row.className = 'fire-s-owner-kpi-row fs-prod-kpi-row';
     row.setAttribute('aria-label', 'Fire-S dashboard summary');
+    const lists = document.getElementById('fireSOwnerLists');
     const stats = centre.querySelector('.main-command-stats');
-    const desktop = document.getElementById('fireSDesktopAccess');
-    if (stats) centre.insertBefore(row, stats);
-    else if (desktop && desktop.parentNode === centre) desktop.after(row);
+    if (lists && lists.parentNode === centre) centre.insertBefore(row, lists);
+    else if (stats) centre.insertBefore(row, stats);
     else centre.appendChild(row);
     return row;
   }

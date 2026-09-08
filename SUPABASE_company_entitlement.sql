@@ -1,6 +1,11 @@
 -- Fire-S company trial + subscription entitlement
 -- Run once in Supabase SQL Editor on LIVE and on Fire-S Test.
 --
+-- If inspections disappeared after this script, run
+--   SUPABASE_repair_hidden_inspections.sql
+-- It does not delete data. It restores SELECT, stamps company_id, and
+-- reloads the PostgREST schema cache.
+--
 -- Source of truth for trial length and inspection limit:
 --   public.fire_s_entitlement_config (one row, id = 1)
 -- Change trial_inspection_limit / trial_days there. Do not scatter those
@@ -862,11 +867,19 @@ declare
   v_id text;
   v_reason text;
 begin
+  -- SQL Editor / maintenance (no JWT): never block existing rows.
+  if auth.uid() is null then
+    return NEW;
+  end if;
+
   if public.fire_s_is_super_admin() then
     return NEW;
   end if;
 
-  v_company := coalesce(NEW.company_id, OLD.company_id);
+  v_company := coalesce(
+    NEW.company_id,
+    case when tg_op = 'UPDATE' then OLD.company_id else null end
+  );
 
   if v_company is null then
     select m.company_id into v_company
@@ -874,7 +887,14 @@ begin
     where m.user_id = auth.uid()
       and coalesce(m.status, 'active') = 'active'
     limit 1;
-    NEW.company_id := v_company;
+    if v_company is not null then
+      NEW.company_id := v_company;
+    end if;
+  end if;
+
+  -- Keep existing inspections writable even when company_id is still null.
+  if tg_op = 'UPDATE' and v_company is null then
+    return NEW;
   end if;
 
   if v_company is null then
@@ -884,7 +904,11 @@ begin
   if NEW.company_id is not null
      and not public.fire_s_is_company_member(NEW.company_id)
      and not public.fire_s_is_super_admin() then
-    raise exception 'FIRE_S_ENTITLEMENT:subscription_required:Not a member of this company';
+    if tg_op = 'INSERT' then
+      raise exception 'FIRE_S_ENTITLEMENT:subscription_required:Not a member of this company';
+    elsif tg_op = 'UPDATE' and OLD.user_id is distinct from auth.uid() then
+      raise exception 'FIRE_S_ENTITLEMENT:subscription_required:Not a member of this company';
+    end if;
   end if;
 
   if tg_op = 'UPDATE'
@@ -1098,6 +1122,17 @@ create policy "fire_s_companies_insert"
   on public.companies for insert to authenticated
   with check (false);
 
+-- Members must always be able to READ inspections. Recreate SELECT even if
+-- an earlier repair script dropped every inspections policy.
+drop policy if exists "fire_s_inspections_select" on public.inspections;
+create policy "fire_s_inspections_select"
+  on public.inspections for select to authenticated
+  using (
+    user_id = auth.uid()
+    or public.fire_s_is_company_member(company_id)
+    or public.fire_s_is_super_admin()
+  );
+
 -- Tighten inspection write so company_id cannot be swapped to another tenant.
 drop policy if exists "fire_s_inspections_insert" on public.inspections;
 create policy "fire_s_inspections_insert"
@@ -1117,6 +1152,15 @@ create policy "fire_s_inspections_update"
   with check (
     user_id = auth.uid()
     or public.fire_s_is_company_member(company_id)
+  );
+
+drop policy if exists "fire_s_inspections_delete" on public.inspections;
+create policy "fire_s_inspections_delete"
+  on public.inspections for delete to authenticated
+  using (
+    user_id = auth.uid()
+    or public.fire_s_is_company_member(company_id)
+    or public.fire_s_is_super_admin()
   );
 
 -- ---------------------------------------------------------------------------
@@ -1172,5 +1216,7 @@ revoke insert, update, delete on table public.fire_s_entitlement_audit from anon
 grant select on table public.fire_s_entitlement_audit to authenticated;
 
 commit;
+
+notify pgrst, 'reload schema';
 
 select 'fire_s company entitlement ready' as status;

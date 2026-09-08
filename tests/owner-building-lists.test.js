@@ -98,6 +98,31 @@ assert.ok(
   /1\.3\.\d+/.test(env),
   'App version must stay on 1.3.12 or newer for the list spacing fix'
 );
+assert.ok(
+  /wrapRefresh\('setProjects'\)/.test(js) &&
+    /fireSProductionRenderKpis/.test(js) &&
+    /wrapRefreshTargets/.test(js),
+  'Home building count and KPI cards must refresh after cloud setProjects'
+);
+assert.ok(
+  /fire-s-owner-lists\.js\?v=1-1-phone/.test(html),
+  'Home must cache-bust the phone owner-list refresh'
+);
+
+function homeBlockIndex(src, id) {
+  return src.indexOf('id="' + id + '"');
+}
+function assertPhoneHomeOrder(src, label) {
+  const kpi = homeBlockIndex(src, 'fireSOwnerKpiRow');
+  const lists = homeBlockIndex(src, 'fireSOwnerLists');
+  const desktop = homeBlockIndex(src, 'fireSDesktopAccess');
+  assert.ok(
+    kpi > 0 && lists > kpi && desktop > lists,
+    label + ': phone Home must show KPI cards and buildings before the Desktop / PC card'
+  );
+}
+assertPhoneHomeOrder(html, 'Live');
+assertPhoneHomeOrder(read('staging/index.html'), 'Toets');
 
 const elements = {};
 function el(id) {
@@ -236,6 +261,83 @@ assert.deepStrictEqual(
 assert.ok(
   !model.all.some(row => row.id === 'deleted'),
   'Deleted buildings must not appear on the name list'
+);
+
+const stored = [];
+const phoneElements = {};
+function phoneEl(id) {
+  if (!phoneElements[id]) {
+    phoneElements[id] = {
+      id,
+      hidden: true,
+      style: {
+        setProperty(name, value) {
+          this[name] = value;
+        }
+      },
+      innerHTML: '',
+      textContent: '',
+      setAttribute() {},
+      removeAttribute() {},
+      addEventListener() {},
+      classList: { contains() { return false; } }
+    };
+  }
+  return phoneElements[id];
+}
+
+const phoneSandbox = {
+  window: {},
+  document: {
+    readyState: 'complete',
+    getElementById(id) {
+      return phoneEl(id);
+    },
+    addEventListener() {},
+    body: {
+      classList: {
+        contains(name) {
+          return name === 'fire-s-role-owner';
+        }
+      }
+    }
+  },
+  setTimeout() {},
+  getProjects() {
+    return stored.slice();
+  },
+  setProjects(list) {
+    stored.splice(0, stored.length);
+    (list || []).forEach(function (row) {
+      stored.push(row);
+    });
+  }
+};
+phoneSandbox.window = phoneSandbox;
+phoneSandbox.global = phoneSandbox;
+vm.createContext(phoneSandbox);
+vm.runInContext(js, phoneSandbox);
+
+stored.push({
+  id: 'cemetery',
+  organisationName: 'Cemetary view',
+  completedAt: '2026-07-17'
+});
+phoneSandbox.fireSRefreshOwnerLists();
+assert.equal(
+  phoneEl('fireSOwnerListsCount').textContent,
+  '1 building on your inspection list',
+  'phone Home must show leftover local buildings'
+);
+
+phoneSandbox.setProjects([
+  { id: 'cemetery', organisationName: 'Cemetary view', completedAt: '2026-07-17' },
+  { id: 'mall', organisationName: 'West End Mall', completedAt: '2026-06-01' }
+]);
+assert.equal(
+  phoneEl('fireSOwnerListsCount').textContent,
+  '2 buildings on your inspection list',
+  'cloud setProjects must refresh the Home building count'
 );
 
 console.log('owner-building-lists.test.js: ok');
