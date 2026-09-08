@@ -19,6 +19,14 @@ Do not wipe toets-only files or behaviour to match live:
 
 Do not run `scripts/sync-toets-blad.sh` as a blanket copy. That overwrites toets extras.
 
+## Never copy live inspections onto the toets-blad
+
+Do not import, dump, migrate, or upload live production inspections, premises, or photos into the toets-blad or Fire-S Test Supabase.
+
+Matching **code/workflow** between live and toets is required. Matching **live inspection data** is not.
+
+Live and toets share the GitHub Pages origin, so they share the browser `localStorage`. The toets-blad must keep its own keys (`fireyeProjectsStaging` and related staging keys). Never copy `fireyeProjects` into those keys. Toets starts empty on the device and may pull only from Fire-S Test.
+
 ## Live constraints
 
 - Displayed live version stays **1.3.58** unless the user asks to bump it.

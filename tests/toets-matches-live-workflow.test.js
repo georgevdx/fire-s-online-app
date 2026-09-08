@@ -55,7 +55,8 @@ assert.ok(
 
 assert.ok(
   /Toetsblad first, live only when asked/.test(agents) &&
-    /Do \*\*not\*\* sit live until the user says so/.test(agents),
+    /Do \*\*not\*\* sit live until the user says so/.test(agents) &&
+    /Never copy live inspections onto the toets-blad/.test(agents),
   'AGENTS.md must keep forward work on the toets-blad until sit live is asked'
 );
 

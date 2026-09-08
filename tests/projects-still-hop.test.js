@@ -112,8 +112,8 @@ assert.ok(
 );
 assert.ok(
   /fire-s-gateway-still\.js\?v=1-0-sync/.test(stagingHtml) &&
-    /app\.js\?v=1-3-64-count/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
+    /app\.js\?v=1-3-64-split/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-64-split/.test(stagingHtml),
   'Toets-blad must load the still script and cache-bust the hop fix'
 );
 

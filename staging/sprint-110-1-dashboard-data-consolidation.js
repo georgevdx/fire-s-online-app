@@ -14,7 +14,7 @@
   function readProjects() {
     try {
       if (typeof getProjects === 'function') return getProjects();
-      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return JSON.parse(localStorage.getItem((window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) || 'fireyeProjectsStaging') || '[]');
     } catch (err) {
       console.warn('Sprint 110.1 could not read projects', err);
       return [];

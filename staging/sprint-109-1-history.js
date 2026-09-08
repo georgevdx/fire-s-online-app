@@ -25,7 +25,7 @@
 
   function projects() {
     try {
-      return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem((window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) || 'fireyeProjectsStaging') || '[]');
     } catch (err) {
       console.warn('Sprint 109.1 could not read projects', err);
       return [];
@@ -34,7 +34,7 @@
 
   function saveProjects(list) {
     if (typeof setProjects === 'function') return setProjects(list);
-    localStorage.setItem('fireyeProjects', JSON.stringify(list || []));
+    localStorage.setItem((window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) || 'fireyeProjectsStaging', JSON.stringify(list || []));
   }
 
   function findProject(projectId) {

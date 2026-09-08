@@ -6,7 +6,7 @@
   'use strict';
 
   const VERSION = 'rc-1-1-4-action-register-polish';
-  const PROJECTS_KEY = 'fireyeProjects';
+  const PROJECTS_KEY = (window.FIRE_S_ENV && window.FIRE_S_ENV.projectsStorageKey) || 'fireyeProjectsStaging';
   const GENERIC = /^(inspection|general|uncategorised|uncategorized|checklist|)$/i;
 
   const CATEGORY_RULES = [
