@@ -58,6 +58,7 @@ assert.ok(/VIEW PLANS \/ SUBSCRIBE/.test(js));
 assert.ok(/Your Fire-S trial ends tomorrow/.test(js));
 assert.ok(/Your Fire-S free trial has ended/.test(js));
 assert.ok(/You have completed the inspections included in your Fire-S free trial/.test(js));
+assert.ok(/projectListSection: true/.test(js), 'Existing inspections list must stay visible during a billing block');
 assert.ok(js === stagingJs, 'Live and toets entitlement clients must match');
 
 assert.ok(/fire-s-entitlement\.css/.test(liveHtml) && /fire-s-entitlement\.js/.test(liveHtml));

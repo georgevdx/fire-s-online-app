@@ -6173,6 +6173,11 @@ const FIRE_S_CANONICAL_TEAM_ROLES = {
 };
 const FIRE_S_PREFERRED_COMPANY_NAME = 'company s';
 
+function fireSIsPreferredCompanyName(name) {
+  const n = String(name || '').trim().toLowerCase();
+  return n === 'company s' || n === 'fire-s' || n === 'fire s';
+}
+
 function fireSCanonicalTeamRole(email, fallback) {
   const key = String(email || '').trim().toLowerCase();
   return FIRE_S_CANONICAL_TEAM_ROLES[key] || fallback || '';
@@ -6486,7 +6491,7 @@ function fireSPickPrimaryMembership(rows, countByCompany) {
   };
   const preferredNameScore = row => {
     const name = fireSMembershipCompanyName(row).toLowerCase();
-    return name === FIRE_S_PREFERRED_COMPANY_NAME ? 0 : 1;
+    return fireSIsPreferredCompanyName(name) ? 0 : 1;
   };
 
   list.sort((a, b) => {

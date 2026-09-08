@@ -36,7 +36,11 @@ assert.ok(/from public.inspections i/.test(liveRestore) && /order by \(\s*select
 assert.ok(/set status = 'inactive'/.test(liveRestore));
 assert.ok(/set status = 'active'/.test(liveRestore));
 assert.ok(/notify pgrst/i.test(liveRestore));
-assert.ok(/company s/.test(liveRestore.toLowerCase()));
+const liveOpen = read('SUPABASE_live_open_inspections.sql');
+assert.ok(/authenticated_can_select/.test(liveOpen));
+assert.ok(/grant select on table public.inspections to authenticated/.test(liveOpen));
+assert.ok(!/delete from public\.inspections/i.test(liveOpen));
+assert.ok(/fire-s/.test(liveOpen.toLowerCase()));
 
 assert.ok(/fireSFilterProjectsForProfile/.test(liveApp));
 assert.ok(/fireSFilterProjectsForProfile/.test(stagingApp));
@@ -44,7 +48,8 @@ assert.ok(/fetchCompanyInspectionsFromCloud/.test(liveApp));
 assert.ok(/fetchCompanyInspectionsFromCloud/.test(stagingApp));
 assert.ok(/Local inspections were kept/.test(liveApp));
 assert.ok(/Local inspections were kept/.test(stagingApp));
-assert.ok(/last\.backendReady === true/.test(js));
+assert.ok(/fireSIsPreferredCompanyName/.test(liveApp));
+assert.ok(/fireSIsPreferredCompanyName/.test(stagingApp));
 
 const start = liveApp.indexOf('function fireSIsLocalProfileFallback');
 const end = liveApp.indexOf('\nfunction getProjectCloudMetadata');
