@@ -406,6 +406,21 @@ function getProjectPremisesSite(project) {
   ).trim();
 }
 
+function getProjectPremisesAddress(project) {
+  const combined = combineStreetAddress(
+    project?.streetNumber,
+    project?.addressLine || project?.streetName || ''
+  );
+  return String(
+    project?.projectAddress ||
+    combined ||
+    project?.address ||
+    project?.formattedAddress ||
+    getProjectPremisesSite(project) ||
+    ''
+  ).trim();
+}
+
 function isProjectInPremisesCompanyScope(project, accessMetadata = getAccessMetadata()) {
   const activeCompanyId = String(accessMetadata?.companyId || '').trim();
   const projectCompanyId = String(
@@ -15064,21 +15079,14 @@ function hasCurrentIncompleteInspection(project) {
 }
 
 function shouldShowInspectionOpenGate(project, focusMode) {
-  if (!project) return false;
+  if (!project || !project.id) return false;
 
   // Specialist jump modes must open directly so Findings / Dashboard routing stays usable.
   if (focusMode) return false;
 
-  // Scheduled fresh inspections already have a specific workflow.
-  if (project.scheduleFreshInspection === true) return false;
-
-  // Phase 1 lifecycle rule: an unfinished current inspection resumes immediately.
-  // The user must complete or delete it before a new cycle can be started.
-  if (hasCurrentIncompleteInspection(project)) return false;
-
-  // Completed premises/history may still show the workflow choice screen.
-  return hasActiveInspectionDataForOpenGate(project) ||
-    (Array.isArray(project.inspectionHistory) && project.inspectionHistory.length > 0);
+  // Every saved premises opens Command Centre first so the workflow is chosen
+  // before the inspection form. New premises (no id) still skip this gate.
+  return true;
 }
 
 function ensureInspectionOpenGateStyles() {
@@ -15644,12 +15652,15 @@ function showInspectionOpenGate(projectId, focusMode) {
   backdrop.id = 'inspectionOpenGateBackdrop';
   backdrop.className = 'inspection-open-gate-backdrop';
 
+  const premisesName = getProjectPremisesName(project) || project.projectName || project.siteName || 'Selected premises';
+  const premisesAddress = getProjectPremisesAddress(project);
+
   backdrop.innerHTML = `
     <div class="inspection-open-gate-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
       <div class="inspection-open-gate-header">
-        <div class="inspection-open-gate-kicker">▦ Premises Workflow</div>
-        <h3 id="inspectionOpenGateTitle">${escapeHtml(project.projectName || project.siteName || 'Selected premises')}</h3>
-        <p>Choose the next logical step for this premises.</p>
+        <div class="inspection-open-gate-kicker">Premises Command Centre</div>
+        <h3 id="inspectionOpenGateTitle">${escapeHtml(premisesName)}</h3>
+        <p>${premisesAddress ? escapeHtml(premisesAddress) : 'Choose the next step for this premises.'}</p>
       </div>
 
       <div class="inspection-open-gate-body">
@@ -20654,31 +20665,9 @@ function handleAnswerChange(selectEl, options = {}) {
   function decorateCommandCentre(){
     if (!canViewAudit()) return;
     const backdrop = document.getElementById('inspectionOpenGateBackdrop');
-    const shell = backdrop?.querySelector('.fire-s-cc-shell');
     const projectId = backdrop?.dataset?.fireSDataProjectIdV13;
-    if (!shell || !projectId || shell.querySelector('.fire-s-cc-audit-v15')) {
-      return;
-    }
-
-    const project = findProject(projectId);
-    if (!project) return;
+    if (!backdrop || !projectId) return;
     backdrop.querySelectorAll('.fire-s-cc-audit-section-v15').forEach(node => node.remove());
-    const quick = backdrop.querySelector('.fire-s-cc-quick');
-    if (!quick || quick.querySelector('.fire-s-cc-audit-v15')) return;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'fire-s-cc-audit-v15';
-    button.textContent = 'Audit Trail';
-    button.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      showAudit(projectId);
-    });
-    const returnBtn = Array.from(quick.querySelectorAll('button')).find(btn =>
-      /return to projects/i.test(btn.textContent || '')
-    );
-    if (returnBtn) quick.insertBefore(button, returnBtn);
-    else quick.appendChild(button);
   }
 
   function scheduleDecorate(){
@@ -39803,8 +39792,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     window.generateReport = generateReport;
   }
 
-  // Existing premises workflow: only actions that are valid after a completed cycle are shown.
-  // An unfinished current inspection still bypasses this gate and opens directly in Edit mode.
+  // Existing premises workflow: Command Centre chooses the next step before the form opens.
   if (typeof showInspectionOpenGate === 'function') {
     showInspectionOpenGate = function fireSPhase5ShowInspectionOpenGate(projectIdentifier, focusMode){
       const project = typeof resolveProjectOpenIdentifier === 'function'
@@ -39832,15 +39820,25 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
               return dateDifference || b.historyIndex - a.historyIndex;
             })[0].historyIndex
         : -1;
+      const premisesName = (typeof getProjectPremisesName === 'function'
+        ? getProjectPremisesName(project)
+        : (project.organisationName || project.projectName || project.siteName)
+      ) || 'Selected premises';
+      const premisesAddress = typeof getProjectPremisesAddress === 'function'
+        ? getProjectPremisesAddress(project)
+        : (project.projectAddress || project.siteName || '');
+      const escapePremises = typeof escapeHtml === 'function'
+        ? escapeHtml
+        : value => String(value || '');
       const backdrop = document.createElement('div');
       backdrop.id = 'inspectionOpenGateBackdrop';
       backdrop.className = 'inspection-open-gate-backdrop';
       backdrop.innerHTML = `
-        <div class="inspection-open-gate-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
+        <div class="inspection-open-gate-modal fire-s-command-v1" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
           <div class="inspection-open-gate-header">
-            <div class="inspection-open-gate-kicker">Existing premises found</div>
-            <h3 id="inspectionOpenGateTitle">Choose the next valid workflow</h3>
-            <p>The previous completed inspection is protected. Select what you need to do next.</p>
+            <div class="inspection-open-gate-kicker">Premises Command Centre</div>
+            <h3 id="inspectionOpenGateTitle">${escapePremises(premisesName)}</h3>
+            <p>${premisesAddress ? escapePremises(premisesAddress) : 'Choose the next step for this premises.'}</p>
           </div>
           <div class="inspection-open-gate-body">
             <div class="inspection-open-gate-summary">
@@ -40526,8 +40524,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const paragraph = header?.querySelector('p');
     const body = modal.querySelector('.inspection-open-gate-body');
     const question = body?.querySelector('.inspection-open-gate-question');
-    if (kicker) kicker.textContent = '▦ Premises Command Centre';
-    if (paragraph) paragraph.textContent = 'Premises status, inspection history and the next valid action in one place.';
+    if (kicker) kicker.textContent = 'Premises Command Centre';
 
     const state = health(project);
     if (title && !header.querySelector('.fire-s-command-centre-title-row')) {
@@ -41265,7 +41262,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function fireSSprint21CommandCentreV1(){
   'use strict';
 
-  const VERSION = '1.3.58-cc-actions-top';
+  const VERSION = '1.3.58-cc-place';
   const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
     (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
   if (typeof previousShowInspectionOpenGate !== 'function') return;
@@ -41497,6 +41494,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-command-v1 .fire-s-command-metrics,
       .fire-s-command-v1 .fire-s-command-intelligence,
       .fire-s-command-v1 .fire-s-command-alert,
+      .fire-s-command-v1 .fire-s-command-health,
       .fire-s-command-v1 .fire-s-command-health-detail,
       .fire-s-command-v1 .fire-s-command-more,
       .fire-s-command-v1 .fire-s-command-more-wrap,
@@ -41505,60 +41503,25 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-command-v1 .fire-s-command-action-label,
       .fire-s-command-v1 .inspection-open-gate-question,
       .fire-s-command-v1 .inspection-open-gate-actions,
+      .fire-s-command-v1 .inspection-open-gate-summary,
+      .fire-s-command-v1 .inspection-open-gate-data-note,
+      .fire-s-command-v1 .inspection-open-gate-footer,
       .fire-s-command-v1 .fire-s-cc-data-section-v13,
       .fire-s-command-v1 .fire-s-cc-audit-section-v15 { display:none !important; }
       .fire-s-command-v1 .inspection-open-gate-header { padding-bottom:12px; }
-      .fire-s-command-v1 .inspection-open-gate-header p { margin-bottom:0; }
+      .fire-s-command-v1 .inspection-open-gate-header h3 { margin:0; color:#142b3e; font-size:22px; line-height:1.25; }
+      .fire-s-command-v1 .inspection-open-gate-header p { margin:6px 0 0; color:#647684; font-size:13px; line-height:1.4; }
       .fire-s-cc-shell { display:grid; gap:13px; }
       .fire-s-cc-actions { padding:14px; border-radius:16px; border:1px solid #c5d6e3; background:#fff; }
-      .fire-s-cc-hero,
-      .fire-s-cc-today,
-      .fire-s-cc-grid,
-      .fire-s-cc-card,
-      .fire-s-cc-activity { pointer-events:none; cursor:default; box-shadow:none; }
-      .fire-s-cc-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:center; padding:18px; border-radius:17px; border:1px solid #d8e2ea; background:#f4f7f9; }
-      .fire-s-cc-hero h4 { margin:0; color:#142b3e; font-size:20px; line-height:1.2; }
-      .fire-s-cc-hero p { margin:5px 0 0; color:#647684; font-size:12px; }
-      .fire-s-cc-health { min-width:145px; padding:12px 14px; border-radius:14px; text-align:center; border:1px solid transparent; }
-      .fire-s-cc-health strong { display:block; font-size:13px; }
-      .fire-s-cc-health span { display:block; margin-top:3px; font-size:24px; font-weight:900; }
-      .fire-s-cc-health.healthy { color:#146538; background:#e8f7ed; border-color:#b8e2c6; }
-      .fire-s-cc-health.attention { color:#7b5900; background:#fff6da; border-color:#ead48a; }
-      .fire-s-cc-health.high { color:#922525; background:#fde9e9; border-color:#ecb5b5; }
-      .fire-s-cc-health.unassessed { color:#475569; background:#f1f5f9; border-color:#cbd5e1; }
-      .fire-s-cc-today { padding:15px; border-radius:15px; border:1px solid #dce5ec; background:#f8fafb; }
       .fire-s-cc-eyebrow { color:#71818e; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
-      .fire-s-cc-today-copy { margin-top:8px; }
-      .fire-s-cc-today-copy strong { display:block; color:#172e42; font-size:16px; }
-      .fire-s-cc-today-copy span { display:block; margin-top:3px; color:#667886; font-size:12px; }
-      .fire-s-cc-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
-      .fire-s-cc-card { min-width:0; padding:14px; border-radius:14px; border:1px solid #e3eaef; background:#fbfcfd; }
-      .fire-s-cc-card .label { display:block; color:#70808d; font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
-      .fire-s-cc-card .value { display:block; margin-top:7px; color:#172e42; font-size:19px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-      .fire-s-cc-card .meta { display:block; margin-top:4px; color:#6b7c89; font-size:11px; line-height:1.35; }
-      .fire-s-cc-progress { height:6px; margin-top:9px; overflow:hidden; border-radius:999px; background:#e8edf1; }
-      .fire-s-cc-progress > span { display:block; height:100%; border-radius:inherit; background:#2781bf; }
-      .fire-s-cc-activity { padding:14px 15px; border-radius:14px; border:1px solid #e3eaef; background:#fbfcfd; }
-      .fire-s-cc-activity-list { display:grid; gap:9px; margin-top:10px; }
-      .fire-s-cc-activity-item { display:grid; grid-template-columns:9px minmax(0,1fr) auto; gap:9px; align-items:center; color:#31495c; font-size:12px; }
-      .fire-s-cc-dot { width:8px; height:8px; border-radius:50%; background:#6f8595; }
-      .fire-s-cc-activity-item time { color:#7a8995; font-size:11px; }
       .fire-s-cc-quick { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:10px; pointer-events:auto; }
       .fire-s-cc-quick button { min-height:48px; padding:10px 11px; border:1px solid #d6e1e9; border-radius:12px; background:#f8fafb; color:#29465c; font-size:12px; font-weight:900; cursor:pointer; }
       .fire-s-cc-quick button:hover:not(:disabled) { border-color:#9ebbd0; background:#eff6fa; }
       .fire-s-cc-quick button:disabled { opacity:.42; cursor:not-allowed; }
       .fire-s-cc-quick button.fire-s-cc-quick-primary { background:#176fb2; color:#fff; border-color:#176fb2; }
       .fire-s-cc-quick button.fire-s-cc-quick-primary:hover:not(:disabled) { background:#125e96; border-color:#125e96; }
-      .fire-s-cc-quick button.fire-s-cc-data-v12 { border-color:#e0b0b0; background:#fff8f8; color:#952525; }
-      .fire-s-cc-quick button.fire-s-cc-audit-v15 { border-color:#b8c9d6; background:#f4f7f9; }
       @media (max-width:760px) {
-        .fire-s-cc-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .fire-s-cc-quick { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      }
-      @media (max-width:560px) {
-        .fire-s-cc-hero { grid-template-columns:1fr; align-items:start; }
-        .fire-s-cc-health { min-width:0; text-align:left; }
-        .fire-s-cc-health span { font-size:21px; }
       }
     `;
   }
@@ -41604,6 +41567,24 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return { label:'Start New Inspection', reason:'No current inspection is in progress.', target:'start' };
   }
 
+  function premisesName(project){
+    if (typeof getProjectPremisesName === 'function') {
+      return text(getProjectPremisesName(project)) || 'Selected premises';
+    }
+    return text(project?.organisationName || project?.premisesName || project?.projectName || project?.siteName) || 'Selected premises';
+  }
+
+  function premisesAddress(project){
+    if (typeof getProjectPremisesAddress === 'function') {
+      return text(getProjectPremisesAddress(project));
+    }
+    return text(
+      project?.projectAddress ||
+      [project?.streetNumber, project?.addressLine || project?.streetName].filter(Boolean).join(' ') ||
+      project?.address
+    );
+  }
+
   function decorate(project){
     ensureStyles();
     const modal = document.querySelector('#inspectionOpenGateBackdrop .inspection-open-gate-modal');
@@ -41621,16 +41602,15 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const closeButton = modal.querySelector('#phase5CloseBtn');
 
     const workspace = workspaceSummary(project);
-    const open = openActionItems(project);
-    const critical = criticalOpenActions(project);
-    const service = serviceSummary(project);
     const history = inspectionHistory(project);
-    const health = healthSnapshot(project);
-    const recommended = recommendation(project, workspace, open.length, service);
-    const latest = latestHistoryRecord(project);
-    const nextDate = project?.nextInspectionDate || project?.followUpDate || project?.scheduledDate || project?.nextDueDate || project?.dueDate;
-    const premisesName = text(project?.premisesName || project?.projectName || project?.siteName || project?.name) || 'Selected Premises';
-    const occupancy = text(project?.occupancy || project?.occupancyClass || project?.buildingOccupancy || project?.premisesType) || 'Occupancy not recorded';
+    const name = premisesName(project);
+    const address = premisesAddress(project);
+    const kicker = modal.querySelector('.inspection-open-gate-kicker');
+    const title = modal.querySelector('#inspectionOpenGateTitle') || modal.querySelector('.inspection-open-gate-header h3');
+    const paragraph = modal.querySelector('.inspection-open-gate-header p');
+    if (kicker) kicker.textContent = 'Premises Command Centre';
+    if (title) title.textContent = name;
+    if (paragraph) paragraph.textContent = address || 'Choose the next step for this premises.';
 
     const shell = document.createElement('section');
     shell.className = 'fire-s-cc-shell';
@@ -41639,55 +41619,6 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       <div class="fire-s-cc-actions">
         <span class="fire-s-cc-eyebrow">Quick Actions</span>
         <div class="fire-s-cc-quick"></div>
-      </div>
-      <div class="fire-s-cc-hero">
-        <div>
-          <span class="fire-s-cc-eyebrow">Premises Snapshot</span>
-          <h4>${escapeHtml(premisesName)}</h4>
-          <p>${escapeHtml(occupancy)} · Last inspection: ${escapeHtml(dateLabel(latestInspectionDate(project)))}</p>
-        </div>
-        <div class="fire-s-cc-health ${health.tone}">
-          <strong>${escapeHtml(health.label)}</strong>
-          <span>${health.score == null ? '—' : `${health.score}/100`}</span>
-        </div>
-      </div>
-      <div class="fire-s-cc-today">
-        <span class="fire-s-cc-eyebrow">Status</span>
-        <div class="fire-s-cc-today-copy">
-          <strong>${escapeHtml(recommended.label)}</strong>
-          <span>${escapeHtml(recommended.reason)}</span>
-        </div>
-      </div>
-      <div class="fire-s-cc-grid">
-        <article class="fire-s-cc-card">
-          <span class="label">Current Inspection</span>
-          <span class="value">${escapeHtml(workspace.label)}</span>
-          <span class="meta">${workspace.hasCurrent ? `${workspace.answered || 0} of ${workspace.total || 0} questions answered · ${workspace.photos} photo${workspace.photos === 1 ? '' : 's'}` : 'No current inspection in progress'}</span>
-          <div class="fire-s-cc-progress"><span style="width:${Math.max(0, Math.min(100, workspace.percentage))}%"></span></div>
-        </article>
-        <article class="fire-s-cc-card">
-          <span class="label">Action Items</span>
-          <span class="value">${open.length} open</span>
-          <span class="meta">${critical.length} critical / high priority</span>
-        </article>
-        <article class="fire-s-cc-card">
-          <span class="label">Reports & History</span>
-          <span class="value">${history.length} record${history.length === 1 ? '' : 's'}</span>
-          <span class="meta">Latest: ${escapeHtml(dateLabel(latest?.completedAt || latest?.finalisedAt || latest?.inspectionDate || latest?.date))}</span>
-        </article>
-        <article class="fire-s-cc-card">
-          <span class="label">Services</span>
-          <span class="value">${service.overdue + service.dueSoon} due</span>
-          <span class="meta">${service.overdue} overdue · ${service.dueSoon} within 30 days</span>
-        </article>
-      </div>
-      <div class="fire-s-cc-activity">
-        <span class="fire-s-cc-eyebrow">Premises Activity</span>
-        <div class="fire-s-cc-activity-list">
-          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${workspace.lifecycle === 'CREATED' ? 'Current inspection is ready to start' : (workspace.hasCurrent ? 'Current inspection workspace is active' : 'No current inspection workspace')}</span><time>${workspace.hasCurrent ? `${workspace.percentage}%` : '—'}</time></div>
-          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>${history.length ? 'Latest inspection finalised' : 'No finalised inspection history'}</span><time>${history.length ? escapeHtml(dateLabel(latest?.completedAt || latest?.finalisedAt || latest?.inspectionDate || latest?.date)) : '—'}</time></div>
-          <div class="fire-s-cc-activity-item"><span class="fire-s-cc-dot"></span><span>Next inspection date</span><time>${escapeHtml(dateLabel(nextDate))}</time></div>
-        </div>
       </div>
     `;
 
@@ -41723,9 +41654,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     question.insertAdjacentElement('beforebegin', shell);
   }
 
+  ensureStyles();
+
   const wrapped = function fireSSprint21CommandCentreV1Gate(projectIdentifier){
     const project = resolveProject(projectIdentifier);
     const result = previousShowInspectionOpenGate.apply(this, arguments);
+    decorate(resolveProject(projectIdentifier) || project);
     window.setTimeout(() => decorate(resolveProject(projectIdentifier) || project), 40);
     return result;
   };
@@ -42941,29 +42875,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : projectIdentifier
     );
     const backdrop = document.getElementById('inspectionOpenGateBackdrop');
-    const shell = backdrop?.querySelector('.fire-s-cc-shell');
-    const quick = backdrop?.querySelector('.fire-s-cc-quick');
-    const moreActions = backdrop?.querySelector('.fire-s-command-more-actions');
     if (!project || !backdrop) return;
 
     backdrop.dataset.fireSDataProjectIdV13 = String(project.id);
     backdrop.querySelectorAll('.fire-s-cc-data-section-v13').forEach(node => node.remove());
-
-    if (!quick || quick.querySelector('.fire-s-cc-data-v12')) return;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'fire-s-cc-data-v12';
-    button.textContent = 'Delete / Data Management';
-    button.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      showDataManagement(project.id);
-    });
-    const returnBtn = Array.from(quick.querySelectorAll('button')).find(btn =>
-      /return to projects/i.test(btn.textContent || '')
-    );
-    if (returnBtn) quick.insertBefore(button, returnBtn);
-    else quick.appendChild(button);
   }
 
   function wrapCommandCentre(){

@@ -3,7 +3,7 @@
  * - Draft inspections may be saved at any stage.
  * - Action Items / Inspection Review unlock only when every checklist item is answered.
  * - Incomplete inspections cannot be finalised or moved to Inspection History.
- * - Reopening an incomplete premises inspection goes directly into edit mode.
+ * - Reopening an existing premises always shows Premises Command Centre first.
  * - Photos remain optional and do not affect checklist completion.
  */
 (function () {
@@ -295,10 +295,6 @@
     if (typeof window.shouldShowInspectionOpenGate === 'function' && !window.shouldShowInspectionOpenGate.__lifecycleWrapped) {
       const originalOpenGate = window.shouldShowInspectionOpenGate;
       const wrappedOpenGate = function (project, focusMode) {
-        const completion = getProjectCompletion(project);
-        if (!project?.completedAt && !completion.complete) {
-          return false;
-        }
         return originalOpenGate.apply(this, arguments);
       };
       wrappedOpenGate.__lifecycleWrapped = true;
