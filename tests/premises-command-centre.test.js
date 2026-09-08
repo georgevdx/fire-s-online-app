@@ -140,7 +140,7 @@ assert.ok(
   'Live must stay on the previous Premises Command Centre cache tag'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-close/.test(stagingHtml) &&
+  /app\.js\?v=1-3-64-pull/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must cache-bust the Command Centre close-and-delete actions'
 );
