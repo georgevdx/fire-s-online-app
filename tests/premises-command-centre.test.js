@@ -136,8 +136,8 @@ function assertCentre(src, engine, label, options) {
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: false });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-place/.test(liveHtml),
-  'Live must stay on the previous Premises Command Centre cache tag'
+  /app\.js\?v=1-3-58-pull/.test(liveHtml),
+  'Live must cache-bust the faster inspection pull'
 );
 assert.ok(
   /app\.js\?v=1-3-64-pull/.test(stagingHtml) &&

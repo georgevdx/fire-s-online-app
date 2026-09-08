@@ -18,6 +18,62 @@
     viewer: true
   };
 
+  const pullState = { loaded: 0, total: 0, loading: false, done: false };
+
+  function applyPullProgress(loaded, total, done) {
+    pullState.loaded = Math.max(0, Number(loaded) || 0);
+    pullState.total = Math.max(0, Number(total) || 0);
+    pullState.done = !!done;
+    if (done) {
+      pullState.loading = pullState.total > 0 && pullState.loaded < pullState.total;
+    } else {
+      pullState.loading = pullState.total > 0;
+    }
+    if (typeof root !== 'undefined') {
+      root.__fireSOwnerListsPullProgress = {
+        loaded: pullState.loaded,
+        total: pullState.total,
+        loading: pullState.loading,
+        done: pullState.done
+      };
+    }
+    const countEl = byId('fireSOwnerListsCount');
+    if (!countEl) return;
+    writeCount(countEl, pullState.loaded);
+  }
+
+  function writeCount(countEl, visibleCount) {
+    if (!pullState.done && pullState.loading && pullState.total > 0 && pullState.loaded <= 0) {
+      countEl.textContent =
+        'Loading ' +
+        pullState.total +
+        (pullState.total === 1 ? ' building…' : ' buildings…');
+      return;
+    }
+    if (!pullState.done && pullState.loading && pullState.total > 0) {
+      const shown = Math.max(visibleCount || 0, pullState.loaded);
+      if (shown < pullState.total) {
+        countEl.textContent =
+          'Loading buildings… ' + shown + ' of ' + pullState.total;
+        return;
+      }
+    }
+    if (pullState.total > 0 && pullState.loaded < pullState.total) {
+      countEl.textContent =
+        pullState.loaded +
+        ' of ' +
+        pullState.total +
+        ' buildings loaded. Still catching up.';
+      return;
+    }
+    const n = visibleCount || 0;
+    countEl.textContent = n
+      ? n + (n === 1 ? ' building on your inspection list' : ' buildings on your inspection list')
+      : 'No buildings on your inspection list yet.';
+  }
+
+  root.fireSSetOwnerListsPullProgress = applyPullProgress;
+
   function byId(id) {
     try {
       return root.document && root.document.getElementById(id);
@@ -363,10 +419,16 @@
     const allBody = byId('fireSOwnerListsAllBody');
     const upcomingBody = byId('fireSOwnerListsUpcomingBody');
     const deficiencyBody = byId('fireSOwnerListsDeficiencyBody');
-    const buildingWord = model.count === 1 ? 'building' : 'buildings';
+
+    if (root.__fireSOwnerListsPullProgress) {
+      pullState.loaded = root.__fireSOwnerListsPullProgress.loaded || 0;
+      pullState.total = root.__fireSOwnerListsPullProgress.total || 0;
+      pullState.loading = !!root.__fireSOwnerListsPullProgress.loading;
+      pullState.done = !!root.__fireSOwnerListsPullProgress.done;
+    }
 
     if (countEl) {
-      countEl.textContent = `${model.count} ${buildingWord} on your inspection list`;
+      writeCount(countEl, model.count);
     }
 
     if (allBody) {

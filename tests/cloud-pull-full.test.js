@@ -13,33 +13,53 @@ const liveApp = read('app.js');
 const stagingApp = read('staging/app.js');
 const stagingHtml = read('staging/index.html');
 const liveHtml = read('index.html');
+const liveLists = read('fire-s-owner-lists.js');
 const stagingLists = read('staging/fire-s-owner-lists.js');
+const liveSw = read('service-worker.js');
 const stagingSw = read('staging/service-worker.js');
 
-assert.ok(/const pageSize = 6/.test(liveApp), 'Live pull must stay on pages of 6 until sit-live');
-assert.ok(
-  /if \(rows\.length\) return \{ data: rows, error: null \}/.test(liveApp),
-  'Live still treats a mid-pull error as a complete list'
-);
-assert.ok(/app\.js\?v=1-3-58-place/.test(liveHtml), 'Live cache tag must stay 1-3-58-place');
+function assertPullSource(app, html, sw, lists, label, appTag, listTag, swFile, swCache) {
+  assert.ok(/const pageSizes = \[100, 40, 10, 1\]/.test(app), label + ': pages of 100 with phone fallback');
+  assert.ok(/select\('id, updated_at, company_id', \{ count: 'exact' \}\)/.test(app), label + ': cheap inventory count');
+  assert.ok(/incomplete: true/.test(app), label + ': incomplete flag');
+  assert.ok(
+    !/if \(rows\.length\) return \{ data: rows, error: null \}/.test(app),
+    label + ': must not pretend a partial pull is complete'
+  );
+  assert.ok(/Loading inspections…/.test(app), label + ': progress status');
+  assert.ok(/Still catching up/.test(app), label + ': incomplete status');
+  assert.ok(/fireSSetOwnerListsPullProgress/.test(app), label + ': owner-list progress hook');
+  assert.ok(new RegExp('app\\.js\\?v=' + appTag).test(html), label + ': app cache tag');
+  assert.ok(new RegExp('fire-s-owner-lists\\.js\\?v=' + listTag).test(html), label + ': owner-list cache tag');
+  assert.ok(new RegExp('service-worker\\.js\\?v=' + swFile).test(html), label + ': service worker file tag');
+  assert.ok(new RegExp(swCache).test(sw), label + ': service worker cache name');
+  assert.ok(/fireSSetOwnerListsPullProgress/.test(lists), label + ': owner-list progress API');
+  assert.ok(/Loading buildings…/.test(lists), label + ': loading label');
+  assert.ok(/Still catching up/.test(lists), label + ': catching-up label');
+}
 
-assert.ok(/const pageSizes = \[100, 40, 10, 1\]/.test(stagingApp));
-assert.ok(/select\('id, updated_at, company_id', \{ count: 'exact' \}\)/.test(stagingApp));
-assert.ok(/incomplete: true/.test(stagingApp));
-assert.ok(
-  !/if \(rows\.length\) return \{ data: rows, error: null \}/.test(stagingApp),
-  'Toets-blad must not pretend a partial pull is complete'
+assertPullSource(
+  liveApp,
+  liveHtml,
+  liveSw,
+  liveLists,
+  'Live',
+  '1-3-58-pull',
+  '1-1-pull',
+  '108-40-pull',
+  'fire-s-108-40-pull'
 );
-assert.ok(/Loading inspections…/.test(stagingApp));
-assert.ok(/Still catching up/.test(stagingApp));
-assert.ok(/fireSSetOwnerListsPullProgress/.test(stagingApp));
-assert.ok(/app\.js\?v=1-3-64-pull/.test(stagingHtml));
-assert.ok(/fire-s-owner-lists\.js\?v=1-1-pull/.test(stagingHtml));
-assert.ok(/service-worker\.js\?v=108-35-pull/.test(stagingHtml));
-assert.ok(/fire-s-108-35-pull/.test(stagingSw));
-assert.ok(/fireSSetOwnerListsPullProgress/.test(stagingLists));
-assert.ok(/Loading buildings…/.test(stagingLists));
-assert.ok(/Still catching up/.test(stagingLists));
+assertPullSource(
+  stagingApp,
+  stagingHtml,
+  stagingSw,
+  stagingLists,
+  'Toets',
+  '1-3-64-pull',
+  '1-1-pull',
+  '108-35-pull',
+  'fire-s-108-35-pull'
+);
 
 function rowsFor(count, prefix) {
   const rows = [];
@@ -54,9 +74,9 @@ function rowsFor(count, prefix) {
   return rows;
 }
 
-function loadFetch(spec) {
-  const start = stagingApp.indexOf('function applyInspectionAccessFilter');
-  const end = stagingApp.indexOf('function applyInspectionDeleteFilter');
+function loadFetch(appSrc, spec) {
+  const start = appSrc.indexOf('function applyInspectionAccessFilter');
+  const end = appSrc.indexOf('function applyInspectionDeleteFilter');
   assert.ok(start > 0 && end > start, 'cloud pull helpers must exist');
   const calls = [];
   function query() {
@@ -99,13 +119,13 @@ function loadFetch(spec) {
       }
     }
   };
-  vm.runInNewContext(stagingApp.slice(start, end), sandbox);
+  vm.runInNewContext(appSrc.slice(start, end), sandbox);
   return { fetch: sandbox.fetchCompanyInspectionsFromCloud, calls: calls };
 }
 
-(async function runFetchTests() {
+async function runFetchCases(appSrc, label) {
   const twelve = rowsFor(12, 'insp');
-  const complete = loadFetch(function spec(args) {
+  const complete = loadFetch(appSrc, function spec(args) {
     return {
       data: twelve.slice(args.from, args.to + 1),
       count: twelve.length,
@@ -139,7 +159,7 @@ function loadFetch(spec) {
   );
 
   const eighty = rowsFor(80, 'big');
-  const shrink = loadFetch(function spec(args) {
+  const shrink = loadFetch(appSrc, function spec(args) {
     if (!args.isIndex && args.size >= 100) {
       return { data: null, count: eighty.length, error: { message: 'payload too large' } };
     }
@@ -159,7 +179,7 @@ function loadFetch(spec) {
   );
 
   const partial = rowsFor(80, 'part');
-  const broken = loadFetch(function spec(args) {
+  const broken = loadFetch(appSrc, function spec(args) {
     if (!args.isIndex && args.size >= 100) {
       return { data: null, count: partial.length, error: { message: 'payload too large' } };
     }
@@ -179,7 +199,7 @@ function loadFetch(spec) {
   assert.strictEqual(brokenResult.expectedTotal, 80);
 
   const twenty = rowsFor(20, 'short');
-  const shortPage = loadFetch(function spec(args) {
+  const shortPage = loadFetch(appSrc, function spec(args) {
     if (!args.isIndex && args.from === 0 && args.size >= 100) {
       return { data: twenty.slice(0, 10), count: twenty.length, error: null };
     }
@@ -190,8 +210,13 @@ function loadFetch(spec) {
     };
   });
   const shortResult = await shortPage.fetch('user-1');
-  assert.strictEqual(shortResult.incomplete, false);
-  assert.strictEqual(shortResult.data.length, 20, 'a short first page must not stop the pull when more rows remain');
+  assert.strictEqual(shortResult.incomplete, false, label + ': short first page must continue');
+  assert.strictEqual(shortResult.data.length, 20, label + ': a short first page must not stop the pull when more rows remain');
+}
+
+(async function runFetchTests() {
+  await runFetchCases(liveApp, 'Live');
+  await runFetchCases(stagingApp, 'Toets');
 
   const countEl = { textContent: '' };
   const listSandbox = {
@@ -206,7 +231,7 @@ function loadFetch(spec) {
     setTimeout() {},
     getProjects() { return []; }
   };
-  vm.runInNewContext(stagingLists, listSandbox);
+  vm.runInNewContext(liveLists, listSandbox);
   listSandbox.fireSSetOwnerListsPullProgress(0, 124, false);
   assert.strictEqual(countEl.textContent, 'Loading 124 buildings…');
   listSandbox.fireSSetOwnerListsPullProgress(40, 124, false);

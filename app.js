@@ -4864,47 +4864,108 @@ async function safeDownloadNewerCloudInspections(options) {
     const localProjects = getProjects();
     const localBefore = localProjects.length;
     let mergedProjects = localProjects;
+    let lastPaintAt = 0;
+    let expectedTotal = null;
 
-    function applyCloudRows(cloudRows) {
-      mergedProjects = mergeCloudRowsIntoProjects(localProjects, cloudRows);
-      setProjects(mergedProjects);
+    function paintHome(force) {
       const filledEmptyDevice = localBefore === 0 && mergedProjects.length > 0;
-      if (shouldPaintProjectsAfterSync(options && options.forcePaint === true) || filledEmptyDevice) {
-        renderProjectsList(filledEmptyDevice ? { forcePaint: true } : undefined);
+      if (shouldPaintProjectsAfterSync(options && options.forcePaint === true) || filledEmptyDevice || force) {
+        renderProjectsList(filledEmptyDevice || force ? { forcePaint: true } : undefined);
       }
       try {
-        if (filledEmptyDevice && typeof window.fireSRefreshOwnerLists === 'function') {
+        if (typeof window.fireSRefreshOwnerLists === 'function') {
           window.fireSRefreshOwnerLists();
         }
       } catch (_) {}
       try {
-        if (filledEmptyDevice && typeof window.fireSProductionRenderKpis === 'function') {
+        if (typeof window.fireSProductionRenderKpis === 'function') {
           window.fireSProductionRenderKpis();
         }
       } catch (_) {}
       try {
-        if (filledEmptyDevice && typeof renderHomeCommandCentre === 'function') {
+        if (typeof renderHomeCommandCentre === 'function') {
           renderHomeCommandCentre();
         }
       } catch (_) {}
     }
 
-    const { data, error } = await fetchCompanyInspectionsFromCloud(
+    function applyCloudRows(cloudRows, meta) {
+      if (meta && typeof meta.expectedTotal === 'number') {
+        expectedTotal = meta.expectedTotal;
+      }
+      const incomplete = !!(meta && meta.incomplete);
+      if (Array.isArray(cloudRows) && cloudRows.length) {
+        mergedProjects = mergeCloudRowsIntoProjects(localProjects, cloudRows);
+      }
+      try {
+        if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
+          window.fireSSetOwnerListsPullProgress(
+            mergedProjects.length,
+            expectedTotal,
+            !incomplete
+          );
+        } else if (expectedTotal) {
+          window.__fireSOwnerListsPullProgress = {
+            loaded: mergedProjects.length,
+            total: expectedTotal,
+            loading: incomplete
+          };
+        }
+      } catch (_) {}
+      if (syncStatus && expectedTotal && incomplete) {
+        syncStatus.textContent =
+          `Loading inspections… ${mergedProjects.length} of ${expectedTotal}`;
+      }
+      const now = Date.now();
+      const shouldPersist = !incomplete || now - lastPaintAt > 1200;
+      if (!shouldPersist) return;
+      lastPaintAt = now;
+      setProjects(mergedProjects);
+      paintHome(false);
+    }
+
+    const pulled = await fetchCompanyInspectionsFromCloud(
       userData.user.id,
       'inspection_data, updated_at, company_id',
-      localBefore === 0 ? applyCloudRows : null
+      applyCloudRows
     );
+    const data = pulled && pulled.data;
+    const error = pulled && pulled.error;
 
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
+      try {
+        if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
+          window.fireSSetOwnerListsPullProgress(mergedProjects.length, expectedTotal, true);
+        }
+      } catch (_) {}
       return;
     }
 
-    applyCloudRows(Array.isArray(data) ? data : []);
+    applyCloudRows(Array.isArray(data) ? data : [], {
+      expectedTotal: pulled && pulled.expectedTotal,
+      incomplete: !!(pulled && pulled.incomplete)
+    });
+    setProjects(mergedProjects);
+    paintHome(true);
+    try {
+      if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
+        window.fireSSetOwnerListsPullProgress(
+          mergedProjects.length,
+          expectedTotal,
+          !(pulled && pulled.incomplete)
+        );
+      }
+    } catch (_) {}
 
     if (syncStatus) {
-      syncStatus.textContent = 'Cloud download check complete.';
+      if (pulled && pulled.incomplete && expectedTotal && mergedProjects.length < expectedTotal) {
+        syncStatus.textContent =
+          `Loaded ${mergedProjects.length} of ${expectedTotal} inspections. Still catching up.`;
+      } else {
+        syncStatus.textContent = 'Cloud download check complete.';
+      }
     }
   } catch (err) {
     console.error('Safe download failed:', err);
@@ -7139,45 +7200,121 @@ function applyInspectionAccessFilter(query, userId) {
 
 async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   const selectCols = columns || 'inspection_data, updated_at, company_id';
-  const pageSize = 6;
-  const maxPages = 80;
-  const timeoutMs = 25000;
+  const pageSizes = [100, 40, 10, 1];
+  const maxPages = 400;
+  const timeoutMs = 15000;
+  const retriesPerPage = 1;
 
   function timed(query) {
     return withTimeout(query, timeoutMs).catch(error => ({
       data: null,
+      count: null,
       error: error && error.message ? error : { message: 'Request timed out' }
     }));
   }
 
-  async function fetchPage(makeQuery, from, size) {
-    return timed(makeQuery().range(from, from + size - 1));
+  function report(rows, expectedTotal, incomplete) {
+    if (typeof onChunk !== 'function') return;
+    try {
+      onChunk(rows, { expectedTotal: expectedTotal, incomplete: incomplete });
+    } catch (_) {}
   }
 
-  async function fetchAll(makeQuery) {
+  async function fetchInventory(makeQuery) {
     const rows = [];
-    let size = pageSize;
+    const size = 500;
+    let count = null;
+    for (let page = 0; page < 8; page += 1) {
+      const from = rows.length;
+      const result = await timed(makeQuery().range(from, from + size - 1));
+      if (result.error) {
+        return { rows: rows, count: count, error: result.error };
+      }
+      if (typeof result.count === 'number') count = result.count;
+      const chunk = Array.isArray(result.data) ? result.data : [];
+      for (let i = 0; i < chunk.length; i += 1) rows.push(chunk[i]);
+      if (chunk.length < size) {
+        return {
+          rows: rows,
+          count: count == null ? rows.length : count,
+          error: null
+        };
+      }
+    }
+    return {
+      rows: rows,
+      count: count == null ? rows.length : count,
+      error: null
+    };
+  }
+
+  async function fetchPage(makeQuery, from, size) {
+    let last = { data: null, error: { message: 'Request failed' } };
+    for (let attempt = 0; attempt <= retriesPerPage; attempt += 1) {
+      last = await timed(makeQuery().range(from, from + size - 1));
+      if (!last.error) return last;
+    }
+    return last;
+  }
+
+  async function fetchAll(makeQuery, expectedTotal) {
+    const rows = [];
+    let sizeIndex = 0;
+    let size = pageSizes[sizeIndex];
     for (let page = 0; page < maxPages; page += 1) {
       const from = rows.length;
       let result = await fetchPage(makeQuery, from, size);
-      if (result.error && from === 0 && size > 1) {
-        size = 1;
-        result = await fetchPage(makeQuery, 0, 1);
+      while (result.error && sizeIndex < pageSizes.length - 1) {
+        sizeIndex += 1;
+        size = pageSizes[sizeIndex];
+        result = await fetchPage(makeQuery, from, size);
       }
       if (result.error) {
-        if (rows.length) return { data: rows, error: null };
-        return result;
+        return {
+          data: rows,
+          error: rows.length ? null : result.error,
+          incomplete: true,
+          expectedTotal: expectedTotal
+        };
       }
       const chunk = Array.isArray(result.data) ? result.data : [];
       for (let i = 0; i < chunk.length; i += 1) rows.push(chunk[i]);
-      if (typeof onChunk === 'function' && rows.length) {
-        try {
-          onChunk(rows);
-        } catch (_) {}
+      const haveAll = !!(expectedTotal && rows.length >= expectedTotal);
+      const emptyPage = chunk.length === 0;
+      const reachedEnd = haveAll || emptyPage || (!expectedTotal && chunk.length < size);
+      report(rows, expectedTotal, !reachedEnd);
+      if (reachedEnd) {
+        return {
+          data: rows,
+          error: null,
+          incomplete: !!(expectedTotal && rows.length < expectedTotal),
+          expectedTotal: expectedTotal
+        };
       }
-      if (chunk.length < size) break;
     }
-    return { data: rows, error: null };
+    return {
+      data: rows,
+      error: null,
+      incomplete: !(expectedTotal && rows.length >= expectedTotal),
+      expectedTotal: expectedTotal
+    };
+  }
+
+  function openIndexQuery() {
+    return supabaseClient
+      .from('inspections')
+      .select('id, updated_at, company_id', { count: 'exact' })
+      .order('updated_at', { ascending: false });
+  }
+
+  function filteredIndexQuery() {
+    return applyInspectionAccessFilter(
+      supabaseClient
+        .from('inspections')
+        .select('id, updated_at, company_id', { count: 'exact' })
+        .order('updated_at', { ascending: false }),
+      userId
+    );
   }
 
   function openQuery() {
@@ -7197,17 +7334,42 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     );
   }
 
-  const open = await fetchAll(openQuery);
-  if (!open.error && Array.isArray(open.data) && open.data.length > 0) {
-    return open;
-  }
-  if (currentUserProfile?.companyId) {
-    const filtered = await fetchAll(filteredQuery);
-    if (!filtered.error && Array.isArray(filtered.data) && filtered.data.length > 0) {
-      return filtered;
+  const preferFiltered = !!(currentUserProfile && currentUserProfile.companyId);
+  let inventoryMode = preferFiltered ? 'filtered' : 'open';
+  let inventory = await fetchInventory(
+    inventoryMode === 'filtered' ? filteredIndexQuery : openIndexQuery
+  );
+  if (inventory.error || !inventory.rows.length) {
+    const other = inventoryMode === 'filtered' ? 'open' : 'filtered';
+    const fallbackInventory = await fetchInventory(
+      other === 'filtered' ? filteredIndexQuery : openIndexQuery
+    );
+    if (!fallbackInventory.error && fallbackInventory.rows.length) {
+      inventory = fallbackInventory;
+      inventoryMode = other;
     }
   }
-  return open;
+  const expectedTotal = inventory.count || inventory.rows.length || null;
+  report([], expectedTotal, true);
+
+  const primaryQuery = inventoryMode === 'filtered' ? filteredQuery : openQuery;
+  const secondaryQuery = inventoryMode === 'filtered' ? openQuery : filteredQuery;
+  const primary = await fetchAll(primaryQuery, expectedTotal);
+  if (!primary.error && !primary.incomplete) {
+    return primary;
+  }
+  if (Array.isArray(primary.data) && primary.data.length > 0) {
+    return primary;
+  }
+  const secondary = await fetchAll(secondaryQuery, expectedTotal);
+  if (
+    !secondary.error &&
+    Array.isArray(secondary.data) &&
+    secondary.data.length >= (Array.isArray(primary.data) ? primary.data.length : 0)
+  ) {
+    return secondary;
+  }
+  return primary;
 }
 
 function applyInspectionDeleteFilter(query, userId) {
