@@ -38221,10 +38221,10 @@ function fireSApplyLifecycleUxLabels() {
     row.id = 'fireSOwnerKpiRow';
     row.className = 'fire-s-owner-kpi-row fs-prod-kpi-row';
     row.setAttribute('aria-label', 'Fire-S dashboard summary');
+    const lists = document.getElementById('fireSOwnerLists');
     const stats = centre.querySelector('.main-command-stats');
-    const desktop = document.getElementById('fireSDesktopAccess');
-    if (stats) centre.insertBefore(row, stats);
-    else if (desktop && desktop.parentNode === centre) desktop.after(row);
+    if (lists && lists.parentNode === centre) centre.insertBefore(row, lists);
+    else if (stats) centre.insertBefore(row, stats);
     else centre.appendChild(row);
     return row;
   }

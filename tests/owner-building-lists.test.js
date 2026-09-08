@@ -109,6 +109,21 @@ assert.ok(
   'Home must cache-bust the phone owner-list refresh'
 );
 
+function homeBlockIndex(src, id) {
+  return src.indexOf('id="' + id + '"');
+}
+function assertPhoneHomeOrder(src, label) {
+  const kpi = homeBlockIndex(src, 'fireSOwnerKpiRow');
+  const lists = homeBlockIndex(src, 'fireSOwnerLists');
+  const desktop = homeBlockIndex(src, 'fireSDesktopAccess');
+  assert.ok(
+    kpi > 0 && lists > kpi && desktop > lists,
+    label + ': phone Home must show KPI cards and buildings before the Desktop / PC card'
+  );
+}
+assertPhoneHomeOrder(html, 'Live');
+assertPhoneHomeOrder(read('staging/index.html'), 'Toets');
+
 const elements = {};
 function el(id) {
   if (!elements[id]) {
