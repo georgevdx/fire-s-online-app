@@ -13051,14 +13051,23 @@ function fireSRemoveMoreFiltersDrawer() {
     datePanel.insertAdjacentElement('afterend', activeStatus);
   }
 
-  const toggle = document.getElementById('toggleFiltersBtn');
-  if (toggle) toggle.remove();
-  const panel = document.getElementById('filterPanel');
-  if (panel) {
-    panel.querySelectorAll('.metric-card, .metric-row, .metric-section-title, .metric-group').forEach(node => node.remove());
-    panel.remove();
-  }
-  document.querySelectorAll('.fire-s-advanced-toggle, .fire-s-choice-more-control, .fire-s-advanced-note, #fireSWorkspaceFilterTitle1112').forEach(node => node.remove());
+  [
+    'toggleFiltersBtn',
+    'filterPanel',
+    'dashboardMetrics',
+    'fireSWorkspaceFilterTitle1112',
+    'fireSFilterDrawer',
+    'fireSFilterDrawerToggle'
+  ].forEach(id => {
+    const node = document.getElementById(id);
+    if (node) node.remove();
+  });
+  document.querySelectorAll(
+    '.fire-s-advanced-toggle, .fire-s-choice-more-control, .fire-s-advanced-note, .fire-s-filter-drawer, .fire-s-workspace-filter-title-v1112'
+  ).forEach(node => node.remove());
+  document.querySelectorAll(
+    '#projectListSection .metric-section-title, #projectListSection .metric-row, #projectListSection .metric-card, #projectListSection .metric-group'
+  ).forEach(node => node.remove());
   if (typeof fireSHideMoreFiltersNonDateTiles === 'function') fireSHideMoreFiltersNonDateTiles();
 }
 
@@ -32615,7 +32624,8 @@ function fireSApplyLifecycleUxLabels() {
   });
 
   const toggle = document.getElementById('toggleFiltersBtn');
-  if (toggle) toggle.textContent = 'More Filters';
+  if (toggle) toggle.remove();
+  fireSRemoveMoreFiltersDrawer();
 }
 
 (function installFireSInspectionLifecycleUx120A(){
@@ -33573,19 +33583,7 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSSetProjectLifecycleFilter120B = setStableFilter;
 
   window.fireSToggleAdvancedFilters120B = function fireS121GToggleAdvancedFilters(){
-    const panel = document.getElementById('filterPanel');
-    const btn = document.getElementById('toggleFiltersBtn');
-    const isOpen = panel && panel.style.display !== 'none' && panel.style.display !== '';
-    const nextOpen = !isOpen;
-    writeChoicePrefs({ advancedOpen: nextOpen });
-    if (panel) panel.style.display = nextOpen ? 'block' : 'none';
-    if (btn) {
-      btn.textContent = 'More Filters';
-      btn.setAttribute('aria-expanded', String(nextOpen));
-    }
-    document.querySelectorAll('.fire-s-advanced-note').forEach(el => {
-      el.style.display = nextOpen ? '' : 'none';
-    });
+    fireSRemoveMoreFiltersDrawer();
   };
 
   // Keep the panel closed after each render unless the user explicitly opened it.

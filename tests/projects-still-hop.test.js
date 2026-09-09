@@ -106,13 +106,13 @@ assert.ok(
 assert.ok(/1\.3\.64-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.64-toets');
 assert.ok(
   /fire-s-gateway-still\.js\?v=1-0-sync/.test(liveHtml) &&
-    /app\.js\?v=1-3-58-copy/.test(liveHtml) &&
+    /app\.js\?v=1-3-58-no-more-filters/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-58-pw/.test(liveHtml),
   'Live must load the still script and cache-bust the hop fix'
 );
 assert.ok(
   /fire-s-gateway-still\.js\?v=1-0-sync/.test(stagingHtml) &&
-    /app\.js\?v=1-3-64-count/.test(stagingHtml) &&
+    /app\.js\?v=1-3-64-filters-gone/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-64-pw/.test(stagingHtml),
   'Toets-blad must load the still script and cache-bust the hop fix'
 );

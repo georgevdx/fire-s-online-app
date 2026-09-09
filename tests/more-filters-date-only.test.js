@@ -26,8 +26,9 @@ function assertDateAndStatusLayout(label, app, html, css) {
   );
   assert.ok(
     /function fireSHideMoreFiltersNonDateTiles\(/.test(app) &&
-      /function fireSPaintGatewayStatusFilters\(/.test(app),
-    label + ' must hide workspace tiles and paint status chips'
+      /function fireSPaintGatewayStatusFilters\(/.test(app) &&
+      /function fireSRemoveMoreFiltersDrawer\(/.test(app),
+    label + ' must hide workspace tiles, paint status chips, and remove More Filters'
   );
   assert.ok(
     !/groupHtml\('Workspace Filters'/.test(app) &&
@@ -41,8 +42,15 @@ function assertDateAndStatusLayout(label, app, html, css) {
     label + ' must keep All / Action required / Compliant / Scheduled / Overdue / This Month on the Gateway'
   );
   assert.ok(
-    /#fireSGatewayStatusFilters/.test(css),
-    label + ' must span status chips across the Gateway width'
+    !/id="toggleFiltersBtn"/.test(html) &&
+      !/id="filterPanel"/.test(html),
+    label + ' must not keep the More Filters button or drawer in the page'
+  );
+  assert.ok(
+    /#fireSGatewayStatusFilters/.test(css) &&
+      /#toggleFiltersBtn/.test(css) &&
+      /display: none !important/.test(css),
+    label + ' must hide leftover More Filters chrome if an old script paints it'
   );
 }
 
@@ -50,22 +58,9 @@ assertDateAndStatusLayout('Toets', stagingApp, stagingHtml, stagingCss);
 assertDateAndStatusLayout('Live', liveApp, liveHtml, liveCss);
 
 assert.ok(
-  /function fireSRemoveMoreFiltersDrawer\(/.test(stagingApp) &&
-    !/id="toggleFiltersBtn"/.test(stagingHtml) &&
-    !/id="filterPanel"/.test(stagingHtml) &&
-    /#toggleFiltersBtn/.test(stagingCss),
-  'Toets must remove More Filters and keep date filters visible on the Gateway'
-);
-
-assert.ok(
   /Version 1\.3\.58/.test(liveHtml) &&
     /1\.3\.64-toets/.test(stagingHtml),
   'Live displayed version stays 1.3.58; toets stays 1.3.64-toets'
-);
-
-assert.ok(
-  /Choose a date range or tap a quick date filter/.test(liveApp),
-  'Live More Filters heading still describes date filters until it is sat live'
 );
 
 assert.ok(

@@ -14134,6 +14134,8 @@ html[data-fire-s-theme="dark"] .fire-s-filter-close-v1112 {
 /* Status chips and date filters stay on the Gateway. More Filters is gone. */
 #toggleFiltersBtn,
 #filterPanel,
+#fireSFilterDrawer,
+#fireSFilterDrawerToggle,
 .fire-s-advanced-toggle,
 .fire-s-choice-more-control,
 .fire-s-advanced-note,
