@@ -35956,6 +35956,9 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function isOverdueInspection(project){
+    if (typeof window.fireSIsInspectionOverdue === 'function') {
+      return !!window.fireSIsInspectionOverdue(project);
+    }
     const d = inspectionDate(project);
     if (!d || isClosed(project)) return false;
     return d < todayKey();
@@ -36597,6 +36600,9 @@ function fireSApplyLifecycleUxLabels() {
     );
   }
   function isOverdue(project){
+    if (typeof window.fireSIsInspectionOverdue === 'function') {
+      return !!window.fireSIsInspectionOverdue(project);
+    }
     if (!project || isClosed(project)) return false;
     const key = dateKey(scheduleDate(project));
     return Boolean(key && key < todayKey());
@@ -36757,8 +36763,16 @@ function fireSApplyLifecycleUxLabels() {
 
   function fireSApplyKpiFilter136A3(filter, alreadyOnProjects){
     const key = setProjectFilterState(filter);
+    window.__fireSGatewayFilterEpoch = (window.__fireSGatewayFilterEpoch || 0) + 1;
+    const epoch = window.__fireSGatewayFilterEpoch;
+    if (key === 'all') window.__fireSGatewayFiltersCleared = true;
+    else window.__fireSGatewayFiltersCleared = false;
     if (!alreadyOnProjects) openProjectsOnly();
-    [0, 80, 220, 520, 1000].forEach(delay => setTimeout(() => renderWithFilter(key), delay));
+    [0, 80, 220, 520, 1000].forEach(delay => setTimeout(() => {
+      if (window.__fireSGatewayFilterEpoch !== epoch) return;
+      if (window.__fireSGatewayFiltersCleared && key !== 'all') return;
+      renderWithFilter(key);
+    }, delay));
   }
 
   window.projectMatchesInspectionGatewayQuickFilter = hardMatcher;
@@ -36788,8 +36802,15 @@ function fireSApplyLifecycleUxLabels() {
   const originalRender = window.renderProjectsList || (typeof renderProjectsList === 'function' ? renderProjectsList : null);
   if (originalRender && !originalRender.__fireS136A3Wrapped) {
     const wrapped = function fireSRenderProjectsList136A3(){
-      const pending = normalizeFilter(window.__fireSPendingKpiFilter || window.__fireSActiveKpiFilter || window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all'));
-      if (pending) setProjectFilterState(pending);
+      if (window.__fireSGatewayFiltersCleared) {
+        setProjectFilterState('all');
+      } else {
+        const pending = normalizeFilter(window.__fireSPendingKpiFilter || window.__fireSActiveKpiFilter || window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all'));
+        if (pending) setProjectFilterState(pending);
+      }
+      const pending = window.__fireSGatewayFiltersCleared
+        ? 'all'
+        : normalizeFilter(window.__fireSPendingKpiFilter || window.__fireSActiveKpiFilter || window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all'));
       const result = originalRender.apply(this, arguments);
       setProjectFilterState(pending);
       syncDropdown(pending);

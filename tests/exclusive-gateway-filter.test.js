@@ -38,7 +38,7 @@ assert.ok(
 assert.ok(/is-exclusive/.test(app) && /is-exclusive/.test(statsJs));
 assert.ok(
   html.indexOf('fire-s-dashboard-stats.js?v=1-0-filter') > 0 &&
-    html.indexOf('app.js?v=1-3-64-filter') > 0,
+    html.indexOf('app.js?v=1-3-64-clear') > 0,
   'Toets cache tags for exclusive filters'
 );
 assert.ok(

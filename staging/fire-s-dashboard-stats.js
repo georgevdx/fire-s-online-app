@@ -1077,13 +1077,23 @@
 
     function applyServerFilter(filter, alreadyInProjects) {
       const key = text(filter || 'all') || 'all';
-      const previous = text(root.currentFilter || root.__fireSAuthoritativeFilter || 'all') || 'all';
-      competingGatewayFiltersOff();
-      if (key === 'all' || key !== previous) clearGatewaySearchBox();
+        if (key === 'all') {
+          competingGatewayFiltersOff();
+          clearGatewaySearchBox();
+          try { root.__fireSGatewayFiltersCleared = true; } catch (_) {}
+        } else {
+          competingGatewayFiltersOff();
+          const previous = text(root.currentFilter || root.__fireSAuthoritativeFilter || 'all') || 'all';
+          if (key !== previous) clearGatewaySearchBox();
+          try { root.__fireSGatewayFiltersCleared = false; } catch (_) {}
+        }
       try {
         root.__fireS136A11ActiveFilter = key;
         root.__fireS136A8ActiveFilter = key;
         root.__fireSAuthoritativeFilter = key;
+        root.__fireSAuthoritativeKpiFilter = key;
+        root.__fireSActiveKpiFilter = key;
+        root.__fireSPendingKpiFilter = key;
         root.currentFilter = key;
         root.currentProjectPage = 1;
       } catch (_) {}
