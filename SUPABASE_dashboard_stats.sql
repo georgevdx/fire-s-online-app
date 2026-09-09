@@ -281,6 +281,37 @@ as $$
     and lower(coalesce(d ->> 'archiveStatus', '')) not like '%archiv%';
 $$;
 
+-- Equipment expiry: overdue / due soon / valid use a real expiry date.
+-- Missing uses an empty string expiryDate (the Track Expiry field was shown
+-- and left blank). null expiryDate means the item is not tracked.
+create or replace function public.fire_s_inspection_has_expiry_status(d jsonb, p_status text)
+returns boolean
+language sql
+immutable
+as $$
+  select exists (
+    select 1
+    from jsonb_array_elements(public.fire_s_json_as_array(d, 'answers')) ans
+    where lower(btrim(coalesce(ans ->> 'answer', ans ->> 'value', ''))) not in ('n/a', 'na', 'n / a')
+      and case lower(btrim(coalesce(p_status, '')))
+        when 'expiry-overdue' then
+          public.fire_s_safe_date(ans ->> 'expiryDate') is not null
+          and public.fire_s_safe_date(ans ->> 'expiryDate') < current_date
+        when 'expiry-soon' then
+          public.fire_s_safe_date(ans ->> 'expiryDate') is not null
+          and public.fire_s_safe_date(ans ->> 'expiryDate') >= current_date
+          and public.fire_s_safe_date(ans ->> 'expiryDate') <= (current_date + 30)
+        when 'expiry-scheduled' then
+          public.fire_s_safe_date(ans ->> 'expiryDate') is not null
+          and public.fire_s_safe_date(ans ->> 'expiryDate') > (current_date + 30)
+        when 'expiry-missing' then
+          jsonb_typeof(ans -> 'expiryDate') = 'string'
+          and btrim(coalesce(ans ->> 'expiryDate', '')) = ''
+        else false
+      end
+  );
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Resolve the caller's company. Never accept another tenant's id.
 -- ---------------------------------------------------------------------------
@@ -393,6 +424,8 @@ grant execute on function public.fire_s_company_dashboard_stats(uuid) to authent
 -- ---------------------------------------------------------------------------
 -- Paginated / searched Gateway list (summaries only, no photos)
 -- ---------------------------------------------------------------------------
+drop function if exists public.fire_s_list_company_premises(text, text, integer, integer, text, uuid, text);
+
 create or replace function public.fire_s_list_company_premises(
   p_search text default '',
   p_filter text default 'all',
@@ -400,7 +433,9 @@ create or replace function public.fire_s_list_company_premises(
   p_offset integer default 0,
   p_sort text default 'updated_desc',
   p_company_id uuid default null,
-  p_inspector_email text default null
+  p_inspector_email text default null,
+  p_date_from date default null,
+  p_date_to date default null
 )
 returns jsonb
 language plpgsql
@@ -482,6 +517,18 @@ begin
             or lower(coalesce(s.d ->> 'createdByEmail', '')) = v_email
           )
         )
+        or (v_filter = 'expiry-overdue' and public.fire_s_inspection_has_expiry_status(s.d, 'expiry-overdue'))
+        or (v_filter = 'expiry-soon' and public.fire_s_inspection_has_expiry_status(s.d, 'expiry-soon'))
+        or (v_filter = 'expiry-scheduled' and public.fire_s_inspection_has_expiry_status(s.d, 'expiry-scheduled'))
+        or (v_filter = 'expiry-missing' and public.fire_s_inspection_has_expiry_status(s.d, 'expiry-missing'))
+      )
+      and (
+        (p_date_from is null and p_date_to is null)
+        or (
+          public.fire_s_inspection_activity_date(s.d) is not null
+          and (p_date_from is null or public.fire_s_inspection_activity_date(s.d) >= p_date_from)
+          and (p_date_to is null or public.fire_s_inspection_activity_date(s.d) <= p_date_to)
+        )
       )
   )
   select count(*)::int into v_total from filtered;
@@ -552,8 +599,8 @@ begin
 end;
 $$;
 
-revoke all on function public.fire_s_list_company_premises(text, text, integer, integer, text, uuid, text) from public;
-grant execute on function public.fire_s_list_company_premises(text, text, integer, integer, text, uuid, text) to authenticated;
+revoke all on function public.fire_s_list_company_premises(text, text, integer, integer, text, uuid, text, date, date) from public;
+grant execute on function public.fire_s_list_company_premises(text, text, integer, integer, text, uuid, text, date, date) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Load one full premise (inspection_data) when the user opens it

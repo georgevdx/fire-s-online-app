@@ -214,6 +214,10 @@
   }
 
   function kpiMatches(project, filter) {
+    const expiry = root.fireSMatchesEquipmentExpiryFilter
+      ? root.fireSMatchesEquipmentExpiryFilter(project, filter)
+      : null;
+    if (expiry !== null && expiry !== undefined) return !!expiry;
     try {
       if (typeof root.fireSProductionKpiMatches === 'function') {
         return !!root.fireSProductionKpiMatches(project, filter);
@@ -579,6 +583,8 @@
     const companyId = text(opts.companyId || currentCompanyId());
     const search = text(opts.search);
     const filter = text(opts.filter || 'all') || 'all';
+    const dateFrom = text(opts.dateFrom);
+    const dateTo = text(opts.dateTo);
     const limit = Math.min(50, Math.max(1, asInt(opts.limit || PAGE_SIZE) || PAGE_SIZE));
     const offset = Math.max(0, asInt(opts.offset || 0));
     const sort = text(opts.sort || 'updated_desc') || 'updated_desc';
@@ -591,6 +597,8 @@
     };
     if (isUuid(companyId)) args.p_company_id = companyId;
     if (opts.inspectorEmail) args.p_inspector_email = lower(opts.inspectorEmail);
+    if (dateFrom) args.p_date_from = dateFrom;
+    if (dateTo) args.p_date_to = dateTo;
 
     const rpc = await rpcCall('fire_s_list_company_premises', args);
     if (rpc.ok) {
@@ -601,6 +609,8 @@
         recordsReturned: items.length,
         total: payload.total,
         filter: filter,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
         searched: !!search
       });
       return {
@@ -611,12 +621,22 @@
         offset: offset,
         filter: payload.filter || filter,
         search: search,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
         items: items.map(summaryToProject)
       };
     }
     if (!rpc.missing) return { ok: false, error: rpc.error, items: [], total: 0 };
 
-    return listPremisesFallback({ search: search, filter: filter, limit: limit, offset: offset, inspectorEmail: opts.inspectorEmail });
+    return listPremisesFallback({
+      search: search,
+      filter: filter,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      limit: limit,
+      offset: offset,
+      inspectorEmail: opts.inspectorEmail
+    });
   }
 
   function summaryToProject(item) {
@@ -658,6 +678,8 @@
     const search = lower(opts.search);
     const filter = lower(opts.filter || 'all');
     const email = lower(opts.inspectorEmail);
+    const dateFrom = text(opts.dateFrom);
+    const dateTo = text(opts.dateTo);
     const filtered = list.filter(project => {
       if (search) {
         const haystack = [
@@ -667,6 +689,16 @@
           project.contactEmail, project.gps
         ].join(' ').toLowerCase();
         if (haystack.indexOf(search) === -1) return false;
+      }
+      if (dateFrom || dateTo) {
+        if (typeof root.projectMatchesInspectionDateFilter === 'function') {
+          if (!root.projectMatchesInspectionDateFilter(project)) return false;
+        } else {
+          const d = text(project.inspectionDate || project.completedAt || project.lastSaved).slice(0, 10);
+          if (!d) return false;
+          if (dateFrom && d < dateFrom) return false;
+          if (dateTo && d > dateTo) return false;
+        }
       }
       if (filter === 'all' || filter === 'gateway') return true;
       if (filter === 'scheduled-priority') {
@@ -902,7 +934,11 @@
     compliant: 'Compliant',
     'scheduled-new': 'Scheduled',
     overdue: 'Overdue',
-    month: 'This Month'
+    month: 'This Month',
+    'expiry-overdue': 'Expired Equipment',
+    'expiry-soon': 'Equipment Due Soon',
+    'expiry-scheduled': 'Valid Equipment',
+    'expiry-missing': 'Equipment Date Missing'
   };
 
   function filterButtonHtml(stats, active, exclusive) {
@@ -925,11 +961,31 @@
     }).join('')}</div>`;
   }
 
+  function currentDateRange() {
+    const fromEl = root.document && root.document.getElementById('inspectionDateFrom');
+    const toEl = root.document && root.document.getElementById('inspectionDateTo');
+    return {
+      from: text(fromEl && fromEl.value),
+      to: text(toEl && toEl.value)
+    };
+  }
+
+  function dateRangeNote(from, to) {
+    if (!from && !to) return '';
+    if (from && to) {
+      return `<div class="fire-s-136a8-result-note">Inspection dates ${esc(from)} to ${esc(to)}.</div>`;
+    }
+    if (from) return `<div class="fire-s-136a8-result-note">Inspection dates from ${esc(from)}.</div>`;
+    return `<div class="fire-s-136a8-result-note">Inspection dates up to ${esc(to)}.</div>`;
+  }
+
   function exclusiveFilterChrome(stats, filter, search, total) {
     const key = text(filter || 'all') || 'all';
     const q = text(search);
+    const range = currentDateRange();
     const n = total == null ? null : asInt(total);
     const countBit = n == null ? '' : (' · ' + n + ' matching card' + (n === 1 ? '' : 's'));
+    const dateBit = dateRangeNote(range.from, range.to);
     if (key !== 'all') {
       const label = FILTER_LABELS[key] || key;
       const searchBit = q
@@ -940,14 +996,25 @@
         `<div><strong>Current filter</strong><span>${esc(label)}${esc(countBit)}</span></div>` +
         `<button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>` +
         filterButtonHtml(stats, key, true) +
-        searchBit
+        searchBit +
+        dateBit
       );
     }
     if (q) {
       return (
         `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner">` +
         `<div><strong>Current filter</strong><span>Search “${esc(q)}”${esc(countBit)}</span></div>` +
-        `<button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>`
+        `<button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>` +
+        dateBit
+      );
+    }
+    if (dateBit) {
+      return (
+        `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner">` +
+        `<div><strong>Current filter</strong><span>Inspection dates${esc(countBit)}</span></div>` +
+        `<button type="button" onclick="applyInspectionQuickDateFilter('all')">Clear dates</button></div>` +
+        filterButtonHtml(stats, key, false) +
+        dateBit
       );
     }
     return filterButtonHtml(stats, key, false);
@@ -957,17 +1024,7 @@
     try {
       if (typeof root.closeFilterPanel === 'function') root.closeFilterPanel();
     } catch (_) {}
-    try {
-      const from = root.document && root.document.getElementById('inspectionDateFrom');
-      const to = root.document && root.document.getElementById('inspectionDateTo');
-      if (from) from.value = '';
-      if (to) to.value = '';
-      const status = root.document && root.document.getElementById('inspectionDateFilterStatus');
-      if (status) status.textContent = 'Showing all inspection dates.';
-      root.document.querySelectorAll('[data-date-filter]').forEach(function (button) {
-        button.classList.remove('active-date-filter');
-      });
-    } catch (_) {}
+    // Inspection date and equipment expiry stay as sub-filters.
   }
 
   function clearGatewaySearchBox() {
@@ -991,8 +1048,9 @@
     if (!currentCompanyId()) return false;
     const filter = activeGatewayFilter();
     const search = currentSearchText();
+    const range = currentDateRange();
     const page = Math.max(1, asInt(root.currentProjectPage || 1) || 1);
-    const key = [filter, search, page, currentCompanyId()].join('|');
+    const key = [filter, search, range.from, range.to, page, currentCompanyId()].join('|');
     if (gatewayInFlight && gatewayInFlightKey === key) return gatewayInFlight;
     const token = ++gatewayToken;
     gatewayInFlightKey = key;
@@ -1017,6 +1075,8 @@
     const pageData = await listCompanyPremises({
       search: search,
       filter: filter,
+      dateFrom: currentDateRange().from,
+      dateTo: currentDateRange().to,
       limit: PAGE_SIZE,
       offset: offset
     });
@@ -1046,7 +1106,7 @@
       ? `<div id="projectListView" class="fire-s-136a8-card-list">${pageData.items.map(cardHtml).join('')}</div>`
       : '<div class="empty-state">No matching premises found.</div>';
     container.innerHTML = `${chrome}${cards}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
-    container.dataset.fireSGatewayPaint = [filter, search, safePage, total, pageData.items.map(p => p && p.id).join('|')].join('::');
+    container.dataset.fireSGatewayPaint = [filter, search, currentDateRange().from, currentDateRange().to, safePage, total, pageData.items.map(p => p && p.id).join('|')].join('::');
     diag('gateway-page', {
       durationMs: state.lastDurationMs,
       recordsReturned: pageData.items.length,
@@ -1268,6 +1328,21 @@
         const gateway = event.target && event.target.closest && event.target.closest('#cmdInspectionsBtn, #inspectorV4Gateway');
         if (gateway) {
           root.setTimeout(function () { renderServerGateway().catch(function () {}); }, 40);
+        }
+        const dateBtn = event.target && event.target.closest && event.target.closest('[data-date-filter]');
+        if (dateBtn) {
+          root.setTimeout(function () { renderServerGateway().catch(function () {}); }, 30);
+        }
+        const expiryBtn = event.target && event.target.closest && event.target.closest('#dashboardMetrics [data-filter^="expiry-"]');
+        if (expiryBtn) {
+          root.setTimeout(function () { renderServerGateway().catch(function () {}); }, 30);
+        }
+      }, true);
+      root.document.addEventListener('change', function (event) {
+        const id = event.target && event.target.id;
+        if (id === 'inspectionDateFrom' || id === 'inspectionDateTo') {
+          root.currentProjectPage = 1;
+          renderServerGateway().catch(function () {});
         }
       }, true);
     } catch (_) {}

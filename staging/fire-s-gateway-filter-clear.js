@@ -159,7 +159,7 @@
         bumpEpoch();
         root.__fireSGatewayFiltersCleared = key === 'all';
         setAllFilterKeys(key);
-        if (key === 'all') clearSearchAndDates();
+        // Keep inspection-date sub-filters when switching KPI / expiry.
         syncExclusiveClass(key);
         return previousSet.apply(this, arguments);
       };

@@ -12062,6 +12062,25 @@ function getProjectExpiryCounts(project) {
   return counts;
 }
 
+function fireSMatchesEquipmentExpiryFilter(project, filter) {
+  const key = String(filter || '').trim().toLowerCase().replace(/_/g, '-');
+  if (
+    key !== 'expiry-overdue' &&
+    key !== 'expiry-soon' &&
+    key !== 'expiry-scheduled' &&
+    key !== 'expiry-missing'
+  ) {
+    return null;
+  }
+  if (!project) return false;
+  const exp = getProjectExpiryCounts(project);
+  if (key === 'expiry-overdue') return Number(exp.overdue || 0) > 0;
+  if (key === 'expiry-soon') return Number(exp.soon || 0) > 0;
+  if (key === 'expiry-scheduled') return Number(exp.scheduled || 0) > 0;
+  return Number(exp.missing || 0) > 0;
+}
+try { window.fireSMatchesEquipmentExpiryFilter = fireSMatchesEquipmentExpiryFilter; } catch (_) {}
+
 function getProjectExpiryAnswer(project, expiryStatus) {
   const checklist = getChecklistForProject(project);
 
@@ -13617,25 +13636,18 @@ function getInspectionGatewayDateFilters() {
 
 function getProjectDateForFiltering(project) {
   /*
-    Fire-S Activity Date Fix v1.0
+    Inspection Date Filter v1.1
 
-    Date filters must reflect real work activity.
-    If an old inspection is opened today, photos/comments are added,
-    and the inspection is finalized today, it must count under Today / This Week.
-
-    Priority:
-    1. completedAt  - finalized today
-    2. lastSaved    - edited today
-    3. inspectionDate
-    4. updatedAt / updated_at
-    5. createdAt / created_at
-    6. scheduledDate / followUpDate
+    Date filters work on their own and together with KPI / expiry sub-filters.
+    Use the same field order as fire_s_inspection_activity_date so the
+    Gateway list matches the server page.
   */
   return normaliseDateString(
-    project?.completedAt ||
-    project?.lastSaved ||
     project?.inspectionDate ||
     project?.inspection_date ||
+    project?.completedAt ||
+    project?.finalisedAt ||
+    project?.lastSaved ||
     project?.updatedAt ||
     project?.updated_at ||
     project?.createdAt ||
@@ -13705,7 +13717,10 @@ function startOfWeekMonday(date) {
 }
 
 function formatDateInputValue(date) {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
 }
 
 function applyInspectionQuickDateFilter(filter) {
@@ -28522,26 +28537,31 @@ if (!window.fireSMobileSmartCardsApplied) {
     const metrics = document.getElementById('dashboardMetrics');
     const activeStatus = document.getElementById('activeFilterStatus');
 
-    if (datePanel && datePanel.parentElement !== filterPanel) {
-      const before = metrics && metrics.parentElement === filterPanel ? metrics : null;
-      filterPanel.insertBefore(datePanel, before);
+    if (datePanel && datePanel.parentElement === filterPanel && datePanel.parentElement) {
+      const listHost = document.getElementById('projectSearch')?.parentElement || filterPanel.parentElement;
+      if (listHost) listHost.insertBefore(datePanel, filterPanel);
     }
 
-    if (activeStatus && activeStatus.parentElement !== filterPanel) {
-      const before = metrics && metrics.parentElement === filterPanel ? metrics : null;
-      filterPanel.insertBefore(activeStatus, before);
+    if (metrics && datePanel && metrics.previousElementSibling !== datePanel) {
+      datePanel.insertAdjacentElement('afterend', metrics);
     }
 
-    if (metrics && metrics.parentElement !== filterPanel) {
-      filterPanel.appendChild(metrics);
+    if (activeStatus && metrics && activeStatus.parentElement !== metrics.parentElement) {
+      metrics.insertAdjacentElement('afterend', activeStatus);
     }
 
     if (datePanel) {
       datePanel.classList.add('fire-s-filter-panel-date-section');
+      datePanel.style.display = '';
     }
     if (metrics) {
-      metrics.classList.add('fire-s-filter-panel-workspace-section');
+      metrics.classList.remove('fire-s-filter-panel-workspace-section');
+      metrics.classList.add('fire-s-filter-panel-expiry-section');
+      metrics.style.display = '';
     }
+    const toggle = document.getElementById('toggleFiltersBtn');
+    if (toggle) toggle.style.display = 'none';
+    if (filterPanel) filterPanel.style.display = 'none';
   }
 
   function makeExecutiveSnapshotReadOnly() {
@@ -28987,20 +29007,6 @@ if (!window.fireSMobileSmartCardsApplied) {
     const searchText = (document.getElementById('projectSearch')?.value || '').trim().toLowerCase();
     const base = projects.filter(project => projectMatchesBase(project, searchText));
 
-    const filterButtons = [
-      ['all', 'All', base.length],
-      ['inspection-attention', 'Needs Attention', filterCount(base, 'inspection-attention')],
-      ['risk', 'Open Actions', filterCount(base, 'risk')],
-      ['overdue', 'Overdue', filterCount(base, 'overdue')],
-      ['soon', 'Due Soon', filterCount(base, 'soon')],
-      ['compliant', 'Compliant', filterCount(base, 'compliant')],
-      ['inspection-warning', 'Missing Data', filterCount(base, 'inspection-warning')],
-      ['inspection-draft', 'Draft', filterCount(base, 'inspection-draft')],
-      ['inspection-progress', 'In Progress', filterCount(base, 'inspection-progress')],
-      ['inspection-complete', 'Closed', filterCount(base, 'inspection-complete')],
-      ['scheduled-new', 'Scheduled New', filterCount(base, 'scheduled-new')]
-    ];
-
     const expiryButtons = [
       ['expiry-overdue', 'Expired', filterCount(base, 'expiry-overdue')],
       ['expiry-soon', 'Expiry Due Soon', filterCount(base, 'expiry-soon')],
@@ -29009,19 +29015,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     ];
 
     container.innerHTML = `
-      <div class="metric-group fire-s-stable-filter-group">
-        <div class="metric-section-title">Workspace Filters</div>
-        <div class="metric-row fire-s-stable-filter-row">
-          ${filterButtons.map(([key, label, count]) => `
-            <button type="button" class="metric-card ${currentFilter === key ? 'metric-active' : ''}" data-filter="${esc(key)}" onclick="setFilter('${esc(key)}')">
-              <span class="metric-number">${count}</span>
-              <span class="metric-label">${esc(label)}</span>
-            </button>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="metric-group metric-group-secondary fire-s-stable-filter-group">
+      <div class="metric-group metric-group-secondary fire-s-stable-filter-group fire-s-expiry-filter-group">
         <div class="metric-section-title">Equipment Expiry Filters</div>
         <div class="metric-row fire-s-stable-filter-row">
           ${expiryButtons.map(([key, label, count]) => `
@@ -29465,19 +29459,18 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (datePanel) {
       datePanel.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-date-v1112');
       const title = datePanel.querySelector('.inspection-date-filter-title');
-      if (title) title.textContent = 'Inspection Date';
+      if (title) title.textContent = 'Inspection Date Filter';
     }
 
     if (metrics) {
-      metrics.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-workspace-v1112');
-      if (!document.getElementById('fireSWorkspaceFilterTitle1112')) {
-        const title = document.createElement('div');
-        title.id = 'fireSWorkspaceFilterTitle1112';
-        title.className = 'fire-s-workspace-filter-title-v1112';
-        title.innerHTML = '<strong>Workspace Filters</strong><span>Tap a filter once to apply it; tap All to reset.</span>';
-        metrics.insertAdjacentElement('beforebegin', title);
-      }
+      metrics.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-expiry-v1112');
+      metrics.classList.remove('fire-s-filter-workspace-v1112');
+      const leftoverTitle = document.getElementById('fireSWorkspaceFilterTitle1112');
+      if (leftoverTitle) leftoverTitle.remove();
     }
+
+    if (toggle) toggle.style.display = 'none';
+    if (panel) panel.style.display = 'none';
   }
 
   // Keep the toggle label correct after the original toggleFilterPanel/closeFilterPanel runs.
@@ -36119,20 +36112,6 @@ function fireSApplyLifecycleUxLabels() {
     const container = document.getElementById('dashboardMetrics');
     if (!container) return;
     const base = currentBaseProjects(projectsOverride);
-    const workspace = [
-      ['all','All'],
-      ['inspection-attention','Premises Requiring Action'],
-      ['risk','Open Actions'],
-      ['overdue','Overdue Inspections'],
-      ['soon','Due Soon'],
-      ['compliant','Compliant'],
-      ['month','This Month'],
-      ['inspection-warning','Missing Data'],
-      ['inspection-draft','Not Assessed'],
-      ['inspection-progress','In Progress'],
-      ['inspection-complete','Completed / History'],
-      ['scheduled-new','Scheduled']
-    ];
     const equipment = [
       ['expiry-overdue','Expired'],
       ['expiry-soon','Expiry Due Soon'],
@@ -36141,7 +36120,7 @@ function fireSApplyLifecycleUxLabels() {
     ];
     const active = String(window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all') || 'all');
     const groupHtml = (title, items) => `
-      <div class="metric-group fire-s-stable-filter-group fire-s-136e-filter-group">
+      <div class="metric-group fire-s-stable-filter-group fire-s-136e-filter-group fire-s-expiry-filter-group">
         <div class="metric-section-title">${esc(title)}</div>
         <div class="metric-row fire-s-stable-filter-row fire-s-136e-filter-row">
           ${items.map(([key,label]) => `
@@ -36152,7 +36131,7 @@ function fireSApplyLifecycleUxLabels() {
           `).join('')}
         </div>
       </div>`;
-    container.innerHTML = groupHtml('Workspace Filters', workspace) + groupHtml('Equipment Expiry Filters', equipment);
+    container.innerHTML = groupHtml('Equipment Expiry Filters', equipment);
   }
 
   function refreshStatusDropdownCounts(){
@@ -38425,6 +38404,10 @@ function fireSApplyLifecycleUxLabels() {
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') return hasOpenActions(p);
+    if (typeof window.fireSMatchesEquipmentExpiryFilter === 'function') {
+      const expiry = window.fireSMatchesEquipmentExpiryFilter(p, key);
+      if (expiry !== null && expiry !== undefined) return !!expiry;
+    }
     return true;
   }
   function getProjects(){
@@ -38584,6 +38567,10 @@ function fireSApplyLifecycleUxLabels() {
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') return hasOpenActions(p);
+    if (typeof window.fireSMatchesEquipmentExpiryFilter === 'function') {
+      const expiry = window.fireSMatchesEquipmentExpiryFilter(p, key);
+      if (expiry !== null && expiry !== undefined) return !!expiry;
+    }
     return true;
   }
   function getProjects(){
@@ -38795,7 +38782,11 @@ function fireSApplyLifecycleUxLabels() {
     'scheduled-new': 'Scheduled Inspections',
     overdue: 'Overdue Inspections',
     month: 'Inspections This Month',
-    'inspection-attention': 'Action Required'
+    'inspection-attention': 'Action Required',
+    'expiry-overdue': 'Expired Equipment',
+    'expiry-soon': 'Equipment Due Soon',
+    'expiry-scheduled': 'Valid Equipment',
+    'expiry-missing': 'Equipment Date Missing'
   };
 
   function norm(value){ return String(value || '').trim().toLowerCase().replace(/_/g, '-'); }
@@ -38862,6 +38853,10 @@ function fireSApplyLifecycleUxLabels() {
   function matches(project, filter){
     const key = canonical(filter);
     if (key === 'all') return true;
+    if (typeof window.fireSMatchesEquipmentExpiryFilter === 'function') {
+      const expiry = window.fireSMatchesEquipmentExpiryFilter(project, key);
+      if (expiry !== null && expiry !== undefined) return !!expiry;
+    }
     if (typeof window.fireSProductionKpiMatches === 'function') {
       try { return !!window.fireSProductionKpiMatches(project, key); } catch (_) {}
     }
@@ -38970,17 +38965,7 @@ function fireSApplyLifecycleUxLabels() {
 
   function competingGatewayFiltersOff(){
     try { if (typeof window.closeFilterPanel === 'function') window.closeFilterPanel(); } catch (_) {}
-    try {
-      const from = document.getElementById('inspectionDateFrom');
-      const to = document.getElementById('inspectionDateTo');
-      if (from) from.value = '';
-      if (to) to.value = '';
-      const status = document.getElementById('inspectionDateFilterStatus');
-      if (status) status.textContent = 'Showing all inspection dates.';
-      document.querySelectorAll('[data-date-filter]').forEach(function(button){
-        button.classList.remove('active-date-filter');
-      });
-    } catch (_) {}
+    // Inspection date and equipment expiry stay as sub-filters.
   }
 
   function filterButtonHtml(base){

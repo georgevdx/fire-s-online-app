@@ -13905,16 +13905,19 @@ body.camera-workspace-open {
   -webkit-text-fill-color: #343a40 !important;
 }
 
-/* Exclusive Gateway filter: the filter in use hides the others until Clear */
+/* Exclusive Gateway filter: hide the other KPI chips until Clear.
+   Inspection date and equipment expiry stay visible as sub-filters. */
 .fire-s-current-kpi-filter-banner,
 .fire-s-current-kpi-filter-banner.fire-s-136a8-banner {
   display: flex !important;
 }
 body.fire-s-exclusive-gateway-filter #toggleFiltersBtn,
-body.fire-s-exclusive-gateway-filter #filterPanel,
+body.fire-s-exclusive-gateway-filter #filterPanel {
+  display: none !important;
+}
 body.fire-s-exclusive-gateway-filter #inspectionDateFilterPanel,
 body.fire-s-exclusive-gateway-filter #dashboardMetrics {
-  display: none !important;
+  display: block !important;
 }
 .fire-s-136a8-filter-grid.is-exclusive {
   grid-template-columns: minmax(0, 1fr);

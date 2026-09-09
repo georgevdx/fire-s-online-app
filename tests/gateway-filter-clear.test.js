@@ -16,9 +16,9 @@ const liveApp = read('app.js');
 const clearJs = read('staging/fire-s-gateway-filter-clear.js');
 const liveClearJs = read('fire-s-gateway-filter-clear.js');
 
-function assertClearWired(page, source, label) {
+function assertClearWired(page, source, label, clearTag) {
   assert.ok(
-    /fire-s-gateway-filter-clear\.js\?v=1-0-clear/.test(page),
+    new RegExp('fire-s-gateway-filter-clear\\.js\\?v=' + clearTag).test(page),
     label + ' must load the Gateway Clear helper last'
   );
   assert.ok(
@@ -43,8 +43,8 @@ function assertClearWired(page, source, label) {
   );
 }
 
-assertClearWired(html, app, 'Toets');
-assertClearWired(liveHtml, liveApp, 'Live');
+assertClearWired(html, app, 'Toets', '1-0-sub');
+assertClearWired(liveHtml, liveApp, 'Live', '1-0-clear');
 assert.ok(
   /function fireSClearAllGatewayFilters/.test(clearJs) &&
     /__fireSPendingKpiFilter/.test(clearJs) &&
