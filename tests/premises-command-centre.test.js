@@ -152,11 +152,11 @@ function assertCentre(src, engine, label, options) {
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-black-bar-gone/.test(liveHtml),
+  /app\.js\?v=1-3-59-see-ver/.test(liveHtml),
   'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(
-  /app\.js\?v=1-3-64-black-bar-gone/.test(stagingHtml) &&
+  /app\.js\?v=1-3-65-see-ver/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must keep the Command Centre close-and-delete actions'
 );
