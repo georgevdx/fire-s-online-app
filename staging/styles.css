@@ -9178,6 +9178,12 @@ body > #actionDropdown.action-dropdown button:last-child {
   margin: 0;
 }
 
+#dashboardMetrics.fire-s-more-filters-date-only,
+#dashboardMetrics:empty,
+#fireSWorkspaceFilterTitle1112 {
+  display: none !important;
+}
+
 #filterPanel .metric-section-title {
   margin-top: 8px;
 }
