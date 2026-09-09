@@ -13696,7 +13696,10 @@ function startOfWeekMonday(date) {
 }
 
 function formatDateInputValue(date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function applyInspectionQuickDateFilter(filter) {
@@ -43239,4 +43242,52 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     canPermanentlyDeleteEntry,
     recycleEntries
   };
+})();
+
+/* =====================================================
+   FIRE-S appearance choice — Light / Dark
+   ===================================================== */
+(function fireSAppearanceChoice() {
+  'use strict';
+
+  const STORAGE_KEY = 'fireS.theme';
+
+  function currentTheme() {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'light';
+    } catch (_) {
+      return 'light';
+    }
+  }
+
+  function applyTheme(theme) {
+    const next = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-fire-s-theme', next);
+    try { localStorage.setItem(STORAGE_KEY, next); } catch (_) {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', next === 'dark' ? '#0b1220' : '#b71c1c');
+    document.querySelectorAll('button[data-fire-s-theme]').forEach(button => {
+      const on = button.getAttribute('data-fire-s-theme') === next;
+      button.setAttribute('aria-pressed', String(on));
+      button.classList.toggle('is-selected', on);
+    });
+  }
+
+  function wire() {
+    applyTheme(currentTheme());
+    document.querySelectorAll('button[data-fire-s-theme]').forEach(button => {
+      if (button.__fireSThemeBound) return;
+      button.__fireSThemeBound = true;
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        applyTheme(button.getAttribute('data-fire-s-theme'));
+      });
+    });
+  }
+
+  window.fireSApplyAppearance = applyTheme;
+  window.fireSGetAppearance = currentTheme;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
 })();

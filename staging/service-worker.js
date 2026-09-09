@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-41-date-filters';
+const CACHE = 'fire-s-108-41-date-theme';
 const PRECACHE = [
   './',
   './index.html',
