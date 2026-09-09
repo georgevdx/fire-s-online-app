@@ -13650,6 +13650,12 @@ function projectMatchesInspectionDateFilter(project) {
   return true;
 }
 
+window.getInspectionGatewayDateFilters = getInspectionGatewayDateFilters;
+window.getProjectDateForFiltering = getProjectDateForFiltering;
+window.projectMatchesInspectionDateFilter = projectMatchesInspectionDateFilter;
+window.applyInspectionQuickDateFilter = applyInspectionQuickDateFilter;
+window.fireSRefreshProjectsAfterDateFilter = fireSRefreshProjectsAfterDateFilter;
+
 function updateInspectionDateFilterStatus() {
   const status = document.getElementById('inspectionDateFilterStatus');
   if (!status) return;
@@ -13682,9 +13688,24 @@ function setInspectionDateRange(from, to) {
   if (toField) toField.value = to || '';
 
   currentProjectPage = 1;
+  try { window.currentProjectPage = 1; } catch (_) {}
   updateInspectionDateFilterStatus();
-  renderProjectsList();
+  fireSRefreshProjectsAfterDateFilter();
   scrollToFirstVisibleProject();
+}
+
+function fireSRefreshProjectsAfterDateFilter() {
+  const list = document.getElementById('projectsList');
+  if (list && list.dataset) delete list.dataset.fireSGatewayPaint;
+  try {
+    if (typeof window.__fireSGatewayExplicitRender === 'function') window.__fireSGatewayExplicitRender();
+  } catch (_) {}
+  if (typeof window.fireS136A11RenderProjects === 'function') {
+    window.fireS136A11RenderProjects();
+    return;
+  }
+  if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+  else if (typeof renderProjectsList === 'function') renderProjectsList();
 }
 
 function startOfWeekMonday(date) {
@@ -13762,8 +13783,9 @@ function initInspectionGatewayFilters() {
 
     field.addEventListener('change', () => {
       currentProjectPage = 1;
+      try { window.currentProjectPage = 1; } catch (_) {}
       updateInspectionDateFilterStatus();
-      renderProjectsList();
+      fireSRefreshProjectsAfterDateFilter();
       scrollToFirstVisibleProject();
 
       document
@@ -39134,7 +39156,7 @@ function fireSApplyLifecycleUxLabels() {
 
   document.addEventListener('click', event => {
     const target = event.target && event.target.closest
-      ? event.target.closest('.fire-s-136a8-filter[data-filter], #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"]')
+      ? event.target.closest('.fire-s-136a8-filter[data-filter], #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"], [data-date-filter], #fireSDateFilterHow')
       : null;
     if (target) markExplicitRender();
   }, true);

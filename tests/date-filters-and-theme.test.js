@@ -102,9 +102,9 @@ assert.ok(matches('2026-09-01', '2026-09-01', '2026-09-30'));
 assert.ok(matches('2026-09-30', '2026-09-01', '2026-09-30'));
 
 assert.ok(
-  /date\.getFullYear\(\)/.test(app) &&
-    /function formatDateInputValue\(date\)/.test(app),
-  'Quick date buttons must use the local calendar date, not UTC ISO'
+  /function fireSRefreshProjectsAfterDateFilter\(/.test(app) &&
+    /fireS136A11RenderProjects/.test(app),
+  'Date filter changes must refresh the current premises list renderer'
 );
 
 assert.ok(
