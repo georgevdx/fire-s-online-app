@@ -12962,12 +12962,43 @@ function renderDashboard(projects) {
 `;
 }
 
+function fireSHideMoreFiltersNonDateTiles() {
+  const container = document.getElementById('dashboardMetrics');
+  if (container) {
+    container.innerHTML = '';
+    container.hidden = true;
+    container.setAttribute('aria-hidden', 'true');
+    container.classList.add('fire-s-more-filters-date-only');
+    container.remove();
+  }
+  const title = document.getElementById('fireSWorkspaceFilterTitle1112');
+  if (title) title.remove();
+  const panel = document.getElementById('filterPanel');
+  if (panel) {
+    panel.querySelectorAll('.metric-card, .metric-row, .metric-section-title').forEach(node => node.remove());
+  }
+}
+
+function fireSPaintGatewayStatusFilters(html) {
+  const host = document.getElementById('fireSGatewayStatusFilters');
+  if (!host) return false;
+  const next = String(html || '');
+  if (host.dataset.fireSStatusPaint === next) return true;
+  host.dataset.fireSStatusPaint = next;
+  host.innerHTML = next;
+  return true;
+}
+
 function renderDashboardMetrics(projectsOverride) {
 
   const container =
     document.getElementById('dashboardMetrics');
 
   if (!container) return;
+
+  // More Filters keeps the Inspection Date panel only.
+  fireSHideMoreFiltersNonDateTiles();
+  return;
 
   const projects =
     projectsOverride || getVisibleProjectsForCurrentUser(getProjects());
@@ -13625,9 +13656,24 @@ function setInspectionDateRange(from, to) {
   if (toField) toField.value = to || '';
 
   currentProjectPage = 1;
+  try { window.currentProjectPage = 1; } catch (_) {}
   updateInspectionDateFilterStatus();
-  renderProjectsList();
+  fireSRefreshProjectsAfterDateFilter();
   scrollToFirstVisibleProject();
+}
+
+function fireSRefreshProjectsAfterDateFilter() {
+  const list = document.getElementById('projectsList');
+  if (list && list.dataset) delete list.dataset.fireSGatewayPaint;
+  try {
+    if (typeof window.__fireSGatewayExplicitRender === 'function') window.__fireSGatewayExplicitRender();
+  } catch (_) {}
+  if (typeof window.fireS136A11RenderProjects === 'function') {
+    window.fireS136A11RenderProjects();
+    return;
+  }
+  if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+  else if (typeof renderProjectsList === 'function') renderProjectsList();
 }
 
 function startOfWeekMonday(date) {
@@ -13639,7 +13685,10 @@ function startOfWeekMonday(date) {
 }
 
 function formatDateInputValue(date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function applyInspectionQuickDateFilter(filter) {
@@ -28432,8 +28481,8 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (!filterPanel.querySelector('.filter-panel-heading')) {
       filterPanel.insertAdjacentHTML('afterbegin', `
         <div class="filter-panel-heading">
-          <strong>Premises Filters</strong>
-          <span>Date filters and workspace filters are grouped here.</span>
+          <strong>Date Filters</strong>
+          <span>Choose a date range or tap a quick date filter.</span>
         </div>
       `);
     }
@@ -28559,7 +28608,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 /* =====================================================
    FIRE-S RC 1.1.10 - Gateway Filter Stabilisation
    Single source of truth for filter counts AND visible Premises cards.
-   All workspace/status/date filters live inside Show Filters.
+   Date filters live inside More Filters. Status chips stay outside.
    ===================================================== */
 (function () {
   'use strict';
@@ -28895,64 +28944,12 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   window.renderInspectionGatewayQuickFilters = function fireSNoExternalQuickFilters() {
-    // All filters are intentionally rendered inside Show Filters via renderDashboardMetrics().
+    // Date filters stay inside More Filters. Workspace tiles are not rendered there.
     return '';
   };
 
   window.renderDashboardMetrics = function fireSRenderStableFilterMetrics(projectsOverride) {
-    const container = document.getElementById('dashboardMetrics');
-    if (!container) return;
-
-    const projects = Array.isArray(projectsOverride) ? projectsOverride : visibleProjects();
-    const searchText = (document.getElementById('projectSearch')?.value || '').trim().toLowerCase();
-    const base = projects.filter(project => projectMatchesBase(project, searchText));
-
-    const filterButtons = [
-      ['all', 'All', base.length],
-      ['inspection-attention', 'Needs Attention', filterCount(base, 'inspection-attention')],
-      ['risk', 'Open Actions', filterCount(base, 'risk')],
-      ['overdue', 'Overdue', filterCount(base, 'overdue')],
-      ['soon', 'Due Soon', filterCount(base, 'soon')],
-      ['compliant', 'Compliant', filterCount(base, 'compliant')],
-      ['inspection-warning', 'Missing Data', filterCount(base, 'inspection-warning')],
-      ['inspection-draft', 'Draft', filterCount(base, 'inspection-draft')],
-      ['inspection-progress', 'In Progress', filterCount(base, 'inspection-progress')],
-      ['inspection-complete', 'Closed', filterCount(base, 'inspection-complete')],
-      ['scheduled-new', 'Scheduled New', filterCount(base, 'scheduled-new')]
-    ];
-
-    const expiryButtons = [
-      ['expiry-overdue', 'Expired', filterCount(base, 'expiry-overdue')],
-      ['expiry-soon', 'Expiry Due Soon', filterCount(base, 'expiry-soon')],
-      ['expiry-scheduled', 'Valid Expiry', filterCount(base, 'expiry-scheduled')],
-      ['expiry-missing', 'Expiry Missing', filterCount(base, 'expiry-missing')]
-    ];
-
-    container.innerHTML = `
-      <div class="metric-group fire-s-stable-filter-group">
-        <div class="metric-section-title">Workspace Filters</div>
-        <div class="metric-row fire-s-stable-filter-row">
-          ${filterButtons.map(([key, label, count]) => `
-            <button type="button" class="metric-card ${currentFilter === key ? 'metric-active' : ''}" data-filter="${esc(key)}" onclick="setFilter('${esc(key)}')">
-              <span class="metric-number">${count}</span>
-              <span class="metric-label">${esc(label)}</span>
-            </button>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="metric-group metric-group-secondary fire-s-stable-filter-group">
-        <div class="metric-section-title">Equipment Expiry Filters</div>
-        <div class="metric-row fire-s-stable-filter-row">
-          ${expiryButtons.map(([key, label, count]) => `
-            <button type="button" class="metric-card ${currentFilter === key ? 'metric-active' : ''}" data-filter="${esc(key)}" onclick="setFilter('${esc(key)}')">
-              <span class="metric-number">${count}</span>
-              <span class="metric-label">${esc(label)}</span>
-            </button>
-          `).join('')}
-        </div>
-      </div>
-    `;
+    if (typeof fireSHideMoreFiltersNonDateTiles === 'function') fireSHideMoreFiltersNonDateTiles();
   };
 
   window.updateDashboardSelection = function fireSStableFilterActiveState() {
@@ -29335,12 +29332,12 @@ if (!window.fireSMobileSmartCardsApplied) {
 /* =====================================================
    FIRE-S RC 1.1.12 - Show Filters Drawer Polish
    Scope: UI polish only. No filter logic changed.
-   Date filters and workspace filters remain inside Show Filters.
+   Date filters remain inside More Filters.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.12-show-filters-drawer-polish';
+  const VERSION = '1.1.12-date-filters-only';
 
   function enhanceFilterDrawer() {
     const panel = document.getElementById('filterPanel');
@@ -29364,8 +29361,8 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (heading) {
       heading.innerHTML = `
         <div>
-          <strong>Show Filters</strong>
-          <span>Date filters and workspace filters are kept here so the premises list stays clean.</span>
+          <strong>Date Filters</strong>
+          <span>Choose a date range or tap a quick date filter.</span>
         </div>
         <button type="button" class="fire-s-filter-close-v1112" aria-label="Close filters">Done</button>
       `;
@@ -29389,14 +29386,9 @@ if (!window.fireSMobileSmartCardsApplied) {
     }
 
     if (metrics) {
-      metrics.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-workspace-v1112');
-      if (!document.getElementById('fireSWorkspaceFilterTitle1112')) {
-        const title = document.createElement('div');
-        title.id = 'fireSWorkspaceFilterTitle1112';
-        title.className = 'fire-s-workspace-filter-title-v1112';
-        title.innerHTML = '<strong>Workspace Filters</strong><span>Tap a filter once to apply it; tap All to reset.</span>';
-        metrics.insertAdjacentElement('beforebegin', title);
-      }
+      metrics.classList.add('fire-s-more-filters-date-only');
+      const workspaceTitle = document.getElementById('fireSWorkspaceFilterTitle1112');
+      if (workspaceTitle) workspaceTitle.remove();
     }
   }
 
@@ -36033,43 +36025,15 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function renderUnifiedDashboardMetrics(projectsOverride){
-    const container = document.getElementById('dashboardMetrics');
-    if (!container) return;
-    const base = currentBaseProjects(projectsOverride);
-    const workspace = [
-      ['all','All'],
-      ['inspection-attention','Premises Requiring Action'],
-      ['risk','Open Actions'],
-      ['overdue','Overdue Inspections'],
-      ['soon','Due Soon'],
-      ['compliant','Compliant'],
-      ['month','This Month'],
-      ['inspection-warning','Missing Data'],
-      ['inspection-draft','Not Assessed'],
-      ['inspection-progress','In Progress'],
-      ['inspection-complete','Completed / History'],
-      ['scheduled-new','Scheduled']
-    ];
-    const equipment = [
-      ['expiry-overdue','Expired'],
-      ['expiry-soon','Expiry Due Soon'],
-      ['expiry-scheduled','Valid Expiry'],
-      ['expiry-missing','Expiry Missing']
-    ];
-    const active = String(window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all') || 'all');
-    const groupHtml = (title, items) => `
-      <div class="metric-group fire-s-stable-filter-group fire-s-136e-filter-group">
-        <div class="metric-section-title">${esc(title)}</div>
-        <div class="metric-row fire-s-stable-filter-row fire-s-136e-filter-row">
-          ${items.map(([key,label]) => `
-            <button type="button" class="metric-card ${active === key ? 'metric-active' : ''}" data-filter="${esc(key)}" onclick="setFilter('${esc(key)}')">
-              <span class="metric-number">${count(base, key)}</span>
-              <span class="metric-label">${esc(label)}</span>
-            </button>
-          `).join('')}
-        </div>
-      </div>`;
-    container.innerHTML = groupHtml('Workspace Filters', workspace) + groupHtml('Equipment Expiry Filters', equipment);
+    if (typeof fireSHideMoreFiltersNonDateTiles === 'function') fireSHideMoreFiltersNonDateTiles();
+    else {
+      const container = document.getElementById('dashboardMetrics');
+      if (!container) return;
+      container.innerHTML = '';
+      container.hidden = true;
+      container.setAttribute('aria-hidden', 'true');
+      container.classList.add('fire-s-more-filters-date-only');
+    }
   }
 
   function refreshStatusDropdownCounts(){
@@ -38143,7 +38107,11 @@ function fireSApplyLifecycleUxLabels() {
     if (paging) {
       paging.innerHTML = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
     }
-    container.innerHTML = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    const chips = filterButtonHtml(base);
+    const paintedOutside = typeof fireSPaintGatewayStatusFilters === 'function'
+      ? fireSPaintGatewayStatusFilters(chips)
+      : false;
+    container.innerHTML = `${paintedOutside ? '' : chips}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
     syncHomeKpis();
   }
 
@@ -38900,7 +38868,11 @@ function fireSApplyLifecycleUxLabels() {
 
     const paging = document.getElementById('projectPagingControls');
     const nextPaging = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
-    const nextHtml = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    const chips = filterButtonHtml(base);
+    const paintedOutside = typeof fireSPaintGatewayStatusFilters === 'function'
+      ? fireSPaintGatewayStatusFilters(chips)
+      : false;
+    const nextHtml = `${paintedOutside ? '' : chips}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
     const paintKey = [key, page, total, visible.map(p => p && p.id).join('|')].join('::');
     if (container.dataset.fireSGatewayPaint === paintKey) {
       return true;
@@ -39157,7 +39129,7 @@ function fireSApplyLifecycleUxLabels() {
 
   document.addEventListener('click', event => {
     const target = event.target && event.target.closest
-      ? event.target.closest('.fire-s-136a8-filter[data-filter], #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"]')
+      ? event.target.closest('.fire-s-136a8-filter[data-filter], [data-gateway-filter], #fireSGatewayStatusFilters, #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"], [data-date-filter], #fireSDateFilterHow')
       : null;
     if (target) markExplicitRender();
   }, true);

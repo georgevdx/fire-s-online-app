@@ -103,8 +103,9 @@ assert.ok(matches('2026-09-30', '2026-09-01', '2026-09-30'));
 
 assert.ok(
   /function fireSRefreshProjectsAfterDateFilter\(/.test(app) &&
-    /fireS136A11RenderProjects/.test(app),
-  'Date filter changes must refresh the current premises list renderer'
+    /fireS136A11RenderProjects/.test(app) &&
+    /function fireSRefreshProjectsAfterDateFilter\(/.test(read('app.js')),
+  'Date filter changes must refresh the current premises list renderer on toets and live'
 );
 
 assert.ok(

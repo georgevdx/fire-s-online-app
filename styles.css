@@ -9178,6 +9178,17 @@ body > #actionDropdown.action-dropdown button:last-child {
   margin: 0;
 }
 
+#dashboardMetrics,
+#dashboardMetrics.fire-s-more-filters-date-only,
+#dashboardMetrics:empty,
+#fireSWorkspaceFilterTitle1112,
+#filterPanel .dashboard-metrics,
+#filterPanel .metric-card,
+#filterPanel .metric-row,
+#filterPanel .metric-section-title {
+  display: none !important;
+}
+
 #filterPanel .metric-section-title {
   margin-top: 8px;
 }
@@ -13886,3 +13897,124 @@ body.camera-workspace-open {
 }
 
 .home-hero{padding:4px 0}.home-hero h2{font-size:1.5rem}.home-hero p{color:#666;font-size:.95rem}
+
+.fire-s-date-filter-how {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px dashed #c5d4e4;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.fire-s-date-filter-how summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.fire-s-date-filter-how-body {
+  margin-top: 8px;
+}
+
+.fire-s-date-filter-how-svg {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin: 0 auto 8px;
+  color: #0f172a;
+}
+
+.fire-s-date-filter-how-body p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.fire-s-date-filter-how-body p:last-child {
+  margin-bottom: 0;
+}
+
+#fireSGatewayStatusFilters,
+.fire-s-gateway-status-filters {
+  display: block;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 8px 0 12px;
+}
+
+#fireSGatewayStatusFilters .fire-s-136a8-filter-grid,
+.fire-s-gateway-status-filters .fire-s-136a8-filter-grid {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 701px) {
+  #fireSGatewayStatusFilters .fire-s-136a8-filter-grid,
+  .fire-s-gateway-status-filters .fire-s-136a8-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+#fireSGatewayStatusFilters .fire-s-136a8-filter,
+.fire-s-gateway-status-filters .fire-s-136a8-filter {
+  width: 100%;
+  max-width: none;
+}
+
+#inspectionDateFilterPanel,
+#filterPanel .inspection-date-filter-panel,
+#filterPanel.fire-s-filter-panel-v1112 .inspection-date-filter-panel {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+#inspectionDateFilterPanel .inspection-date-filter-grid,
+#filterPanel .inspection-date-filter-grid,
+.fire-s-filter-panel-v1112 .inspection-date-filter-grid {
+  width: 100%;
+  max-width: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+#inspectionDateFilterPanel .inspection-quick-date-row,
+#filterPanel .inspection-quick-date-row,
+.fire-s-filter-panel-v1112 .inspection-quick-date-row {
+  display: grid !important;
+  width: 100% !important;
+  max-width: none !important;
+  gap: 8px !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+@media (min-width: 701px) {
+  #inspectionDateFilterPanel .inspection-quick-date-row,
+  #filterPanel .inspection-quick-date-row,
+  .fire-s-filter-panel-v1112 .inspection-quick-date-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+#inspectionDateFilterPanel .inspection-quick-date-row button,
+#filterPanel .inspection-quick-date-row button,
+.fire-s-filter-panel-v1112 .inspection-quick-date-row button {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+#filterPanel,
+#filterPanel.fire-s-filter-panel-v1112 {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
