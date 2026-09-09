@@ -38916,6 +38916,10 @@ function fireSApplyLifecycleUxLabels() {
     window.__fireSActiveKpiFilter = key;
     window.currentFilter = key;
     try { currentFilter = key; } catch (_) {}
+    try {
+      const searchText = (document.getElementById('projectSearch')?.value || '').trim();
+      document.body.classList.toggle('fire-s-exclusive-gateway-filter', key !== 'all' || !!searchText);
+    } catch (_) {}
     return key;
   }
 
@@ -38943,9 +38947,25 @@ function fireSApplyLifecycleUxLabels() {
     else select.value = 'all';
   }
 
+  function competingGatewayFiltersOff(){
+    try { if (typeof window.closeFilterPanel === 'function') window.closeFilterPanel(); } catch (_) {}
+    try {
+      const from = document.getElementById('inspectionDateFrom');
+      const to = document.getElementById('inspectionDateTo');
+      if (from) from.value = '';
+      if (to) to.value = '';
+      const status = document.getElementById('inspectionDateFilterStatus');
+      if (status) status.textContent = 'Showing all inspection dates.';
+      document.querySelectorAll('[data-date-filter]').forEach(function(button){
+        button.classList.remove('active-date-filter');
+      });
+    } catch (_) {}
+  }
+
   function filterButtonHtml(base){
     const c = counts(base);
     const active = activeFilter();
+    const searchText = (document.getElementById('projectSearch')?.value || '').trim();
     const items = [
       ['all', c.all, 'All'],
       ['inspection-attention', c.action, 'Action Required'],
@@ -38954,14 +38974,28 @@ function fireSApplyLifecycleUxLabels() {
       ['overdue', c.overdue, 'Overdue'],
       ['month', c.month, 'This Month']
     ];
+    if (active !== 'all') {
+      const shown = items.filter(([key]) => key === active);
+      return `<div class="fire-s-136a8-filter-grid fire-s-136a11-filter-grid is-exclusive" aria-label="Current Gateway filter">${shown.map(([key, n, label]) => `<button type="button" class="fire-s-136a8-filter active" data-filter="${esc(key)}" onclick="fireSApplyMissionFilter136A11('${esc(key)}')"><strong>${Number(n) || 0}</strong><span>${esc(label)}</span></button>`).join('')}</div>`;
+    }
+    if (searchText) return '';
     return `<div class="fire-s-136a8-filter-grid fire-s-136a11-filter-grid" aria-label="Mission Control KPI filters">${items.map(([key, n, label]) => `<button type="button" class="fire-s-136a8-filter ${active === key ? 'active' : ''}" data-filter="${esc(key)}" onclick="fireSApplyMissionFilter136A11('${esc(key)}')"><strong>${Number(n) || 0}</strong><span>${esc(label)}</span></button>`).join('')}</div>`;
   }
 
   function currentLabelHtml(total){
     const key = activeFilter();
-    if (key === 'all') return '';
-    const label = LABELS[key] || key;
-    return `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner"><div><strong>Current KPI Filter</strong><span>${esc(label)} · Showing ${total} card${total === 1 ? '' : 's'}</span></div><button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear Filter</button></div><div class="fire-s-136a8-result-note">${esc(label)}: ${total} matching card${total === 1 ? '' : 's'}.</div>`;
+    const searchText = (document.getElementById('projectSearch')?.value || '').trim();
+    if (key !== 'all') {
+      const label = LABELS[key] || key;
+      const searchBit = searchText
+        ? `<div class="fire-s-136a8-result-note">Search within ${esc(label)}: “${esc(searchText)}”.</div>`
+        : '';
+      return `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner"><div><strong>Current filter</strong><span>${esc(label)} · ${total} matching card${total === 1 ? '' : 's'}</span></div><button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>${searchBit}`;
+    }
+    if (searchText) {
+      return `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner"><div><strong>Current filter</strong><span>Search “${esc(searchText)}” · ${total} matching card${total === 1 ? '' : 's'}</span></div><button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>`;
+    }
+    return '';
   }
 
   function statusLabel(project){
@@ -38990,6 +39024,10 @@ function fireSApplyLifecycleUxLabels() {
     if (!container) return false;
     const base = baseProjects();
     const key = activeFilter();
+    const searchText = (document.getElementById('projectSearch')?.value || '').trim();
+    try {
+      document.body.classList.toggle('fire-s-exclusive-gateway-filter', key !== 'all' || !!searchText);
+    } catch (_) {}
     setStatusDropdown(key);
     const filtered = sortProjects(base.filter(p => matches(p, key)));
     const total = filtered.length;
@@ -39007,8 +39045,11 @@ function fireSApplyLifecycleUxLabels() {
 
     const paging = document.getElementById('projectPagingControls');
     const nextPaging = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
-    const nextHtml = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
-    const paintKey = [key, page, total, visible.map(p => p && p.id).join('|')].join('::');
+    const chrome = (window.FireSDashboardStats && typeof window.FireSDashboardStats.exclusiveFilterChrome === 'function')
+      ? window.FireSDashboardStats.exclusiveFilterChrome(null, key, searchText, total)
+      : (filterButtonHtml(base) + currentLabelHtml(total));
+    const nextHtml = `${chrome}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    const paintKey = [key, searchText, page, total, visible.map(p => p && p.id).join('|')].join('::');
     if (container.dataset.fireSGatewayPaint === paintKey) {
       return true;
     }
@@ -39029,9 +39070,17 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   window.fireSApplyMissionFilter136A11 = function(filter, alreadyInProjects){
+    const previous = canonical(window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all'));
     const key = setActiveFilter(filter);
     window.currentProjectPage = 1;
     try { currentProjectPage = 1; } catch (_) {}
+    competingGatewayFiltersOff();
+    if (key === 'all' || key !== previous) {
+      try {
+        const search = document.getElementById('projectSearch');
+        if (search) search.value = '';
+      } catch (_) {}
+    }
     if (!alreadyInProjects) openProjects();
     setActiveFilter(key);
     renderProjects();

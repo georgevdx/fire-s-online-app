@@ -56,8 +56,8 @@ assert.ok(
   'Gateway pages must stay small'
 );
 
-assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-stats/.test(html), 'Toets must load the stats service');
-assert.ok(/app\.js\?v=1-3-64-stats/.test(html), 'Toets app cache tag');
+assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-filter/.test(html), 'Toets must load the stats service');
+assert.ok(/app\.js\?v=1-3-64-filter/.test(html), 'Toets app cache tag');
 assert.ok(/fire-s-owner-lists\.js\?v=1-1-stats/.test(html), 'Toets owner-list cache tag');
 assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-stats/.test(liveHtml), 'Live must load the stats service');
 assert.ok(/app\.js\?v=1-3-58-stats/.test(liveHtml), 'Live app cache tag');

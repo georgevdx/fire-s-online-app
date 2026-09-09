@@ -13905,6 +13905,25 @@ body.camera-workspace-open {
   -webkit-text-fill-color: #343a40 !important;
 }
 
+/* Exclusive Gateway filter: the filter in use hides the others until Clear */
+.fire-s-current-kpi-filter-banner,
+.fire-s-current-kpi-filter-banner.fire-s-136a8-banner {
+  display: flex !important;
+}
+body.fire-s-exclusive-gateway-filter #toggleFiltersBtn,
+body.fire-s-exclusive-gateway-filter #filterPanel,
+body.fire-s-exclusive-gateway-filter #inspectionDateFilterPanel,
+body.fire-s-exclusive-gateway-filter #dashboardMetrics {
+  display: none !important;
+}
+.fire-s-136a8-filter-grid.is-exclusive {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 220px;
+}
+.fire-s-136a8-filter-grid.is-exclusive .fire-s-136a8-filter:not(.active) {
+  display: none !important;
+}
+
 .professional-assessment .assessment-chip:focus-visible {
   outline: 3px solid rgba(29, 78, 216, .35) !important;
   outline-offset: 2px !important;

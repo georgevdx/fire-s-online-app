@@ -896,7 +896,16 @@
     return `<article class="fire-s-136a8-card ${statusClass(project)}" data-project-id="${esc(project && project.id || '')}" role="button" tabindex="0" onclick='fireSOpenProjectCard136A8(${id})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();fireSOpenProjectCard136A8(${id});}'><div class="fire-s-136a8-strip"></div><div class="fire-s-136a8-card-body"><div class="fire-s-136a8-card-top"><strong>${esc(titleOf(project))}</strong><span>${esc(statusLabel(project))}</span></div>${address ? `<p>${esc(address)}</p>` : ''}<div class="fire-s-136a8-card-meta"><div><small>Last</small><b>${esc(last)}</b></div><div><small>Next</small><b>${esc(next)}</b></div><div><small>Actions</small><b>${actions}</b></div><div><small>Photos</small><b>${photos}</b></div></div><div class="fire-s-136a8-open">Open →</div></div></article>`;
   }
 
-  function filterButtonHtml(stats, active) {
+  const FILTER_LABELS = {
+    all: 'All',
+    'inspection-attention': 'Action Required',
+    compliant: 'Compliant',
+    'scheduled-new': 'Scheduled',
+    overdue: 'Overdue',
+    month: 'This Month'
+  };
+
+  function filterButtonHtml(stats, active, exclusive) {
     const s = stats || {};
     const items = [
       ['all', s.totalPremises, 'All'],
@@ -906,13 +915,75 @@
       ['overdue', s.overdueInspections, 'Overdue'],
       ['month', s.inspectionsThisMonth, 'This Month']
     ];
-    return `<div class="fire-s-136a8-filter-grid fire-s-136a11-filter-grid" aria-label="Mission Control KPI filters">${items.map(function (row) {
+    const shown = exclusive ? items.filter(function (row) { return row[0] === active; }) : items;
+    return `<div class="fire-s-136a8-filter-grid fire-s-136a11-filter-grid${exclusive ? ' is-exclusive' : ''}" aria-label="Mission Control KPI filters">${shown.map(function (row) {
       const key = row[0];
       const n = row[1];
       const label = row[2];
-      const shown = n == null ? '…' : asInt(n);
-      return `<button type="button" class="fire-s-136a8-filter ${active === key ? 'active' : ''}" data-filter="${esc(key)}" onclick="fireSApplyMissionFilter136A11('${esc(key)}')"><strong>${shown}</strong><span>${esc(label)}</span></button>`;
+      const count = n == null ? '…' : asInt(n);
+      return `<button type="button" class="fire-s-136a8-filter ${active === key ? 'active' : ''}" data-filter="${esc(key)}" onclick="fireSApplyMissionFilter136A11('${esc(key)}')"><strong>${count}</strong><span>${esc(label)}</span></button>`;
     }).join('')}</div>`;
+  }
+
+  function exclusiveFilterChrome(stats, filter, search, total) {
+    const key = text(filter || 'all') || 'all';
+    const q = text(search);
+    const n = total == null ? null : asInt(total);
+    const countBit = n == null ? '' : (' · ' + n + ' matching card' + (n === 1 ? '' : 's'));
+    if (key !== 'all') {
+      const label = FILTER_LABELS[key] || key;
+      const searchBit = q
+        ? `<div class="fire-s-136a8-result-note">Search within ${esc(label)}: “${esc(q)}”.</div>`
+        : '';
+      return (
+        `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner">` +
+        `<div><strong>Current filter</strong><span>${esc(label)}${esc(countBit)}</span></div>` +
+        `<button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>` +
+        filterButtonHtml(stats, key, true) +
+        searchBit
+      );
+    }
+    if (q) {
+      return (
+        `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a8-banner">` +
+        `<div><strong>Current filter</strong><span>Search “${esc(q)}”${esc(countBit)}</span></div>` +
+        `<button type="button" onclick="fireSApplyMissionFilter136A11('all')">Clear filter</button></div>`
+      );
+    }
+    return filterButtonHtml(stats, key, false);
+  }
+
+  function competingGatewayFiltersOff() {
+    try {
+      if (typeof root.closeFilterPanel === 'function') root.closeFilterPanel();
+    } catch (_) {}
+    try {
+      const from = root.document && root.document.getElementById('inspectionDateFrom');
+      const to = root.document && root.document.getElementById('inspectionDateTo');
+      if (from) from.value = '';
+      if (to) to.value = '';
+      const status = root.document && root.document.getElementById('inspectionDateFilterStatus');
+      if (status) status.textContent = 'Showing all inspection dates.';
+      root.document.querySelectorAll('[data-date-filter]').forEach(function (button) {
+        button.classList.remove('active-date-filter');
+      });
+    } catch (_) {}
+  }
+
+  function clearGatewaySearchBox() {
+    try {
+      const field = root.document && root.document.getElementById('projectSearch');
+      if (field) field.value = '';
+    } catch (_) {}
+  }
+
+  function syncExclusiveGatewayClass(filter, search) {
+    const on = (text(filter) && text(filter) !== 'all') || !!text(search);
+    try {
+      if (root.document && root.document.body) {
+        root.document.body.classList.toggle('fire-s-exclusive-gateway-filter', on);
+      }
+    } catch (_) {}
   }
 
   async function renderServerGateway() {
@@ -938,13 +1009,14 @@
     if (!container) return false;
     const offset = (page - 1) * PAGE_SIZE;
 
+    syncExclusiveGatewayClass(filter, search);
     if (!container.dataset.fireSGatewayPaint) {
-      container.innerHTML = `${filterButtonHtml(state.stats, filter)}<div class="empty-state">Loading premises…</div>`;
+      container.innerHTML = `${exclusiveFilterChrome(state.stats, filter, search, null)}<div class="empty-state">Loading premises…</div>`;
     }
 
     const pageData = await listCompanyPremises({
       search: search,
-      filter: search ? 'all' : filter,
+      filter: filter,
       limit: PAGE_SIZE,
       offset: offset
     });
@@ -969,15 +1041,11 @@
       `<button type="button" onclick="nextProjectPage()" ${safePage >= totalPages ? 'disabled' : ''}>Next</button>`;
     if (paging && paging.innerHTML !== nextPaging) paging.innerHTML = nextPaging;
 
-    const banner = search
-      ? `<div class="fire-s-136a8-result-note">Search results from the company database: ${total} match${total === 1 ? '' : 'es'}.</div>`
-      : (filter && filter !== 'all'
-        ? `<div class="fire-s-136a8-result-note">${esc(filter)}: ${total} matching card${total === 1 ? '' : 's'}.</div>`
-        : '');
+    const chrome = exclusiveFilterChrome(state.stats, filter, search, total);
     const cards = pageData.items.length
       ? `<div id="projectListView" class="fire-s-136a8-card-list">${pageData.items.map(cardHtml).join('')}</div>`
       : '<div class="empty-state">No matching premises found.</div>';
-    container.innerHTML = `${filterButtonHtml(state.stats, filter)}${banner}${cards}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    container.innerHTML = `${chrome}${cards}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
     container.dataset.fireSGatewayPaint = [filter, search, safePage, total, pageData.items.map(p => p && p.id).join('|')].join('::');
     diag('gateway-page', {
       durationMs: state.lastDurationMs,
@@ -1009,6 +1077,9 @@
 
     function applyServerFilter(filter, alreadyInProjects) {
       const key = text(filter || 'all') || 'all';
+      const previous = text(root.currentFilter || root.__fireSAuthoritativeFilter || 'all') || 'all';
+      competingGatewayFiltersOff();
+      if (key === 'all' || key !== previous) clearGatewaySearchBox();
       try {
         root.__fireS136A11ActiveFilter = key;
         root.__fireS136A8ActiveFilter = key;
@@ -1016,6 +1087,7 @@
         root.currentFilter = key;
         root.currentProjectPage = 1;
       } catch (_) {}
+      syncExclusiveGatewayClass(key, key === 'all' ? '' : currentSearchText());
       if (!alreadyInProjects) {
         try {
           if (typeof root.showProjectList === 'function') root.showProjectList();
@@ -1214,6 +1286,8 @@
   root.fireSSearchCompanyPremises = searchCompanyPremises;
   root.fireSEnsurePremiseLoaded = ensurePremiseLoaded;
   root.fireSScheduleDashboardStatsRefresh = scheduleStatsRefresh;
+  api.exclusiveFilterChrome = exclusiveFilterChrome;
+  api.filterLabel = function (key) { return FILTER_LABELS[text(key) || 'all'] || key; };
 
   if (root.document && root.document.readyState === 'loading') {
     root.document.addEventListener('DOMContentLoaded', install, { once: true });
