@@ -13030,6 +13030,38 @@ function fireSPaintGatewayStatusFilters(html) {
   return true;
 }
 
+function fireSRemoveMoreFiltersDrawer() {
+  const datePanel = document.getElementById('inspectionDateFilterPanel');
+  const statusHost = document.getElementById('fireSGatewayStatusFilters');
+  const search = document.getElementById('projectSearch');
+  const paging = document.getElementById('projectPagingControls');
+  const listSection = document.getElementById('projectListSection');
+  const wantedPrev = statusHost || search;
+
+  if (datePanel && wantedPrev && datePanel.previousElementSibling !== wantedPrev) {
+    wantedPrev.insertAdjacentElement('afterend', datePanel);
+  } else if (datePanel && !wantedPrev && paging && datePanel.nextElementSibling !== paging) {
+    paging.insertAdjacentElement('beforebegin', datePanel);
+  } else if (datePanel && !wantedPrev && !paging && listSection && datePanel.parentNode !== listSection) {
+    listSection.appendChild(datePanel);
+  }
+
+  const activeStatus = document.getElementById('activeFilterStatus');
+  if (activeStatus && datePanel && activeStatus.previousElementSibling !== datePanel) {
+    datePanel.insertAdjacentElement('afterend', activeStatus);
+  }
+
+  const toggle = document.getElementById('toggleFiltersBtn');
+  if (toggle) toggle.remove();
+  const panel = document.getElementById('filterPanel');
+  if (panel) {
+    panel.querySelectorAll('.metric-card, .metric-row, .metric-section-title, .metric-group').forEach(node => node.remove());
+    panel.remove();
+  }
+  document.querySelectorAll('.fire-s-advanced-toggle, .fire-s-choice-more-control, .fire-s-advanced-note, #fireSWorkspaceFilterTitle1112').forEach(node => node.remove());
+  if (typeof fireSHideMoreFiltersNonDateTiles === 'function') fireSHideMoreFiltersNonDateTiles();
+}
+
 function renderDashboardMetrics(projectsOverride) {
 
   const container =
@@ -28442,7 +28474,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises Overview</h3>
-          <p>Summary of visible premises. Use More Filters below to filter the list.</p>
+          <p>Summary of visible premises. Use the date filters and status chips below to filter the list.</p>
         </div>
       </div>
       <div class="fire-s-exec-grid">
@@ -28523,42 +28555,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function consolidateFilterPanel() {
-    const filterPanel = document.getElementById('filterPanel');
-    if (!filterPanel) return;
-
-    if (!filterPanel.querySelector('.filter-panel-heading')) {
-      filterPanel.insertAdjacentHTML('afterbegin', `
-        <div class="filter-panel-heading">
-          <strong>Date Filters</strong>
-          <span>Choose a date range or tap a quick date filter.</span>
-        </div>
-      `);
-    }
-
-    const datePanel = document.getElementById('inspectionDateFilterPanel');
-    const metrics = document.getElementById('dashboardMetrics');
-    const activeStatus = document.getElementById('activeFilterStatus');
-
-    if (datePanel && datePanel.parentElement !== filterPanel) {
-      const before = metrics && metrics.parentElement === filterPanel ? metrics : null;
-      filterPanel.insertBefore(datePanel, before);
-    }
-
-    if (activeStatus && activeStatus.parentElement !== filterPanel) {
-      const before = metrics && metrics.parentElement === filterPanel ? metrics : null;
-      filterPanel.insertBefore(activeStatus, before);
-    }
-
-    if (metrics && metrics.parentElement !== filterPanel) {
-      filterPanel.appendChild(metrics);
-    }
-
-    if (datePanel) {
-      datePanel.classList.add('fire-s-filter-panel-date-section');
-    }
-    if (metrics) {
-      metrics.classList.add('fire-s-filter-panel-workspace-section');
-    }
+    fireSRemoveMoreFiltersDrawer();
   }
 
   function makeExecutiveSnapshotReadOnly() {
@@ -28568,7 +28565,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     panel.classList.add('fire-s-exec-readonly');
 
     const copy = panel.querySelector('.fire-s-exec-head p');
-    if (copy) copy.textContent = 'Read-only summary. Use More Filters for date filters.';
+    if (copy) copy.textContent = 'Read-only summary. Use the date filters and status chips to filter the list.';
 
     panel.querySelectorAll('[data-exec-snapshot-filter]').forEach(node => {
       node.removeAttribute('data-exec-snapshot-filter');
@@ -28581,14 +28578,14 @@ if (!window.fireSMobileSmartCardsApplied) {
 
     const msg = document.getElementById('fireSExecSnapshotMessage');
     if (msg) {
-      msg.textContent = 'Snapshot only. Filters are available under Show Filters.';
+      msg.textContent = 'Snapshot only. Use the date filters and status chips below.';
       msg.style.display = 'block';
     }
   }
 
   function installFilterRenderOverride() {
     // Prevent duplicate quick-filter strips from appearing above the Premises list.
-    // Date filters remain inside More Filters; workspace tiles are no longer shown there.
+    // Date filters and status chips stay on the Gateway. More Filters is removed.
     if (typeof window.renderInspectionGatewayQuickFilters === 'function' && !window.renderInspectionGatewayQuickFilters.__fireSConsolidated119) {
       const original = window.renderInspectionGatewayQuickFilters;
       const wrapped = function fireSNoInlineGatewayQuickFilters() {
@@ -28656,7 +28653,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 /* =====================================================
    FIRE-S RC 1.1.10 - Gateway Filter Stabilisation
    Single source of truth for filter counts AND visible Premises cards.
-   Date filters live inside More Filters. Status chips stay outside.
+   Date filters and status chips stay on the Gateway. More Filters is removed.
    ===================================================== */
 (function () {
   'use strict';
@@ -29321,7 +29318,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises overview</h3>
-          <p>Read-only summary. Use <strong>More Filters</strong> below to filter the premises list.</p>
+          <p>Read-only summary. Use the date filters and status chips below to filter the premises list.</p>
         </div>
       </div>
       <div class="fire-s-snapshot-grid-v1111">
@@ -29388,59 +29385,10 @@ if (!window.fireSMobileSmartCardsApplied) {
   const VERSION = '1.1.12-date-filters-only';
 
   function enhanceFilterDrawer() {
-    const panel = document.getElementById('filterPanel');
-    const toggle = document.getElementById('toggleFiltersBtn');
-    const datePanel = document.getElementById('inspectionDateFilterPanel');
-    const metrics = document.getElementById('dashboardMetrics');
-
-    if (toggle) {
-      const isOpen = panel && panel.style.display === 'block';
-      toggle.classList.add('fire-s-filter-toggle-v1112');
-      toggle.textContent = 'More Filters';
-      toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
-      toggle.setAttribute('aria-controls', 'filterPanel');
-    }
-
-    if (!panel || panel.dataset.fireSFilterPolish === VERSION) return;
-    panel.dataset.fireSFilterPolish = VERSION;
-    panel.classList.add('fire-s-filter-panel-v1112');
-
-    const heading = panel.querySelector('.filter-panel-heading');
-    if (heading) {
-      heading.innerHTML = `
-        <div>
-          <strong>Date Filters</strong>
-          <span>Choose a date range or tap a quick date filter.</span>
-        </div>
-        <button type="button" class="fire-s-filter-close-v1112" aria-label="Close filters">Done</button>
-      `;
-
-      const closeBtn = heading.querySelector('.fire-s-filter-close-v1112');
-      if (closeBtn && !closeBtn.__fireSBound) {
-        closeBtn.__fireSBound = true;
-        closeBtn.addEventListener('click', event => {
-          event.preventDefault();
-          if (typeof window.closeFilterPanel === 'function') window.closeFilterPanel();
-          else panel.style.display = 'none';
-          enhanceFilterDrawer();
-        });
-      }
-    }
-
-    if (datePanel) {
-      datePanel.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-date-v1112');
-      const title = datePanel.querySelector('.inspection-date-filter-title');
-      if (title) title.textContent = 'Inspection Date';
-    }
-
-    if (metrics) {
-      metrics.classList.add('fire-s-more-filters-date-only');
-      const workspaceTitle = document.getElementById('fireSWorkspaceFilterTitle1112');
-      if (workspaceTitle) workspaceTitle.remove();
-    }
+    fireSRemoveMoreFiltersDrawer();
   }
 
-  // Keep the toggle label correct after the original toggleFilterPanel/closeFilterPanel runs.
+  // Keep leftover toggle/close wrappers from moving the date panel.
   const originalToggle = window.toggleFilterPanel;
   if (typeof originalToggle === 'function' && !originalToggle.__fireSPolished1112) {
     const wrapped = function () {
@@ -33017,19 +32965,6 @@ function fireSApplyLifecycleUxLabels() {
               `).join('')}
             </select>
           </label>
-
-          <label class="fire-s-choice-more-control">
-            <span>More</span>
-            <button
-              type="button"
-              class="fire-s-advanced-toggle"
-              onclick="fireSToggleAdvancedFilters120B()"
-              aria-label="${prefs.advancedOpen ? 'Hide more filters' : 'Show more filters'}"
-              title="${prefs.advancedOpen ? 'Hide more filters' : 'Show more filters'}"
-            >
-              <span class="fire-s-advanced-toggle-label">More Filters</span>
-            </button>
-          </label>
         </div>
       </section>
     `;
@@ -33256,19 +33191,12 @@ function fireSApplyLifecycleUxLabels() {
    ===================================================== */
 (function installMoreFiltersLabelHotfix120E(){
   function applyMoreFiltersLabels(){
-    document.querySelectorAll('.fire-s-advanced-toggle').forEach(btn => {
-      if (!btn.textContent || !btn.textContent.trim() || /hide filters|show filters|advanced filters/i.test(btn.textContent)) {
-        btn.innerHTML = '<span class="fire-s-advanced-toggle-label">More Filters</span>';
-      }
-      btn.setAttribute('aria-label', 'More Filters');
-      btn.setAttribute('title', 'More Filters');
-    });
-
-    const toggle = document.getElementById('toggleFiltersBtn');
-    if (toggle) {
-      toggle.textContent = 'More Filters';
-      toggle.setAttribute('aria-label', 'More Filters');
-      toggle.setAttribute('title', 'More Filters');
+    if (
+      document.getElementById('toggleFiltersBtn') ||
+      document.getElementById('filterPanel') ||
+      document.querySelector('.fire-s-advanced-toggle, .fire-s-choice-more-control, #fireSWorkspaceFilterTitle1112')
+    ) {
+      fireSRemoveMoreFiltersDrawer();
     }
   }
 
@@ -33540,13 +33468,7 @@ function fireSApplyLifecycleUxLabels() {
   writeChoicePrefs({ advancedOpen: false });
 
   function hideAdvancedFilters(){
-    const panel = document.getElementById('filterPanel');
-    const btn = document.getElementById('toggleFiltersBtn');
-    if (panel) panel.style.display = 'none';
-    if (btn) {
-      btn.textContent = 'More Filters';
-      btn.setAttribute('aria-expanded', 'false');
-    }
+    fireSRemoveMoreFiltersDrawer();
     document.querySelectorAll('.fire-s-advanced-note').forEach(el => el.remove());
   }
 

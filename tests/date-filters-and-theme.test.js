@@ -112,7 +112,7 @@ assert.ok(
   /id="fireSDateFilterHow"/.test(html) &&
     /How this filter works/.test(html) &&
     /activity date/.test(html),
-  'More Filters must include the how-this-filter-works illustration'
+  'Date filter panel must include the how-this-filter-works illustration'
 );
 
 assert.ok(

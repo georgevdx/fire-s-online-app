@@ -16,7 +16,7 @@ const liveApp = read('app.js');
 const liveHtml = read('index.html');
 const liveCss = read('styles.css');
 
-function assertSharedFilterLayout(label, app, html, css) {
+function assertDateAndStatusLayout(label, app, html, css) {
   assert.ok(
     /id="inspectionDateFilterPanel"/.test(html) &&
       /data-date-filter="today"/.test(html) &&
@@ -27,7 +27,7 @@ function assertSharedFilterLayout(label, app, html, css) {
   assert.ok(
     /function fireSHideMoreFiltersNonDateTiles\(/.test(app) &&
       /function fireSPaintGatewayStatusFilters\(/.test(app),
-    label + ' must hide workspace tiles and paint status chips outside More Filters'
+    label + ' must hide workspace tiles and paint status chips'
   );
   assert.ok(
     !/groupHtml\('Workspace Filters'/.test(app) &&
@@ -38,17 +38,24 @@ function assertSharedFilterLayout(label, app, html, css) {
   assert.ok(
     !/id="dashboardMetrics"/.test(html) &&
       /id="fireSGatewayStatusFilters"/.test(html),
-    label + ' must keep All / Action required / Compliant / Scheduled / Overdue / This Month outside More Filters'
+    label + ' must keep All / Action required / Compliant / Scheduled / Overdue / This Month on the Gateway'
   );
   assert.ok(
-    /#fireSGatewayStatusFilters/.test(css) &&
-      /#filterPanel \.metric-card/.test(css),
-    label + ' must hide leftover tiles and span status chips across the Gateway width'
+    /#fireSGatewayStatusFilters/.test(css),
+    label + ' must span status chips across the Gateway width'
   );
 }
 
-assertSharedFilterLayout('Toets', stagingApp, stagingHtml, stagingCss);
-assertSharedFilterLayout('Live', liveApp, liveHtml, liveCss);
+assertDateAndStatusLayout('Toets', stagingApp, stagingHtml, stagingCss);
+assertDateAndStatusLayout('Live', liveApp, liveHtml, liveCss);
+
+assert.ok(
+  /function fireSRemoveMoreFiltersDrawer\(/.test(stagingApp) &&
+    !/id="toggleFiltersBtn"/.test(stagingHtml) &&
+    !/id="filterPanel"/.test(stagingHtml) &&
+    /#toggleFiltersBtn/.test(stagingCss),
+  'Toets must remove More Filters and keep date filters visible on the Gateway'
+);
 
 assert.ok(
   /Version 1\.3\.58/.test(liveHtml) &&
@@ -57,9 +64,8 @@ assert.ok(
 );
 
 assert.ok(
-  /Choose a date range or tap a quick date filter/.test(stagingApp) &&
-    /Choose a date range or tap a quick date filter/.test(liveApp),
-  'More Filters heading must describe date filters only'
+  /Choose a date range or tap a quick date filter/.test(liveApp),
+  'Live More Filters heading still describes date filters until it is sat live'
 );
 
 assert.ok(

@@ -14131,7 +14131,20 @@ html[data-fire-s-theme="dark"] .fire-s-filter-close-v1112 {
   }
 }
 
-/* Status chips stay outside More Filters and fill the Gateway width. */
+/* Status chips and date filters stay on the Gateway. More Filters is gone. */
+#toggleFiltersBtn,
+#filterPanel,
+.fire-s-advanced-toggle,
+.fire-s-choice-more-control,
+.fire-s-advanced-note,
+.fire-s-workspace-filter-title-v1112,
+#projectListSection .metric-group,
+#projectListSection .metric-card,
+#projectListSection .metric-row,
+#projectListSection .metric-section-title {
+  display: none !important;
+}
+
 #fireSGatewayStatusFilters,
 .fire-s-gateway-status-filters {
   display: block;
