@@ -12659,6 +12659,31 @@ button,
 .fs-prod-kpi-overdue .fs-prod-kpi-number, .fs-prod-kpi-overdue .fs-prod-kpi-filter { color: #b91c1c !important; }
 .fs-prod-kpi-month { border-top-color: #3b82f6 !important; background: #eff6ff !important; }
 .fs-prod-kpi-month .fs-prod-kpi-number, .fs-prod-kpi-month .fs-prod-kpi-filter { color: #1d4ed8 !important; }
+.fs-prod-kpi-skeleton {
+  min-height: 1em;
+  opacity: 0.45;
+  letter-spacing: 0.12em;
+}
+.fs-prod-kpi-loading {
+  pointer-events: none;
+}
+.fs-prod-kpi-unavailable {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+#fireSOwnerListsCount[data-fire-s-count-state="loading"],
+#fireSOwnerListsCount[data-fire-s-count-state="error"] {
+  color: #6b7280;
+  font-weight: 700;
+}
+#fireSOwnerListsCount[data-fire-s-count-state="stale"] {
+  opacity: 0.88;
+}
 @media (max-width: 700px) {
   #mainCommandCentre .main-command-stats.fs-prod-kpi-row,
   #fireSOwnerKpiRow.fs-prod-kpi-row {

@@ -11,10 +11,15 @@ function read(name) {
 
 const sql = read('SUPABASE_dashboard_stats.sql');
 const statsJs = read('staging/fire-s-dashboard-stats.js');
+const liveStatsJs = read('fire-s-dashboard-stats.js');
 const app = read('staging/app.js');
+const liveApp = read('app.js');
 const html = read('staging/index.html');
+const liveHtml = read('index.html');
 const lists = read('staging/fire-s-owner-lists.js');
+const liveLists = read('fire-s-owner-lists.js');
 const inspector = read('staging/inspector-v4.js');
+const liveInspector = read('inspector-v4.js');
 
 assert.ok(
   /create or replace function public\.fire_s_company_dashboard_stats/.test(sql),
@@ -54,25 +59,44 @@ assert.ok(
 assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-stats/.test(html), 'Toets must load the stats service');
 assert.ok(/app\.js\?v=1-3-64-stats/.test(html), 'Toets app cache tag');
 assert.ok(/fire-s-owner-lists\.js\?v=1-1-stats/.test(html), 'Toets owner-list cache tag');
+assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-stats/.test(liveHtml), 'Live must load the stats service');
+assert.ok(/app\.js\?v=1-3-58-stats/.test(liveHtml), 'Live app cache tag');
+assert.ok(/fire-s-owner-lists\.js\?v=1-1-stats/.test(liveHtml), 'Live owner-list cache tag');
 assert.ok(
-  /hydrateAll === true/.test(app) && /Dashboard statistics updated/.test(app),
+  liveHtml.indexOf('fire-s-dashboard-stats.js') < liveHtml.indexOf('fire-s-owner-lists.js') &&
+    html.indexOf('fire-s-dashboard-stats.js') < html.indexOf('fire-s-owner-lists.js'),
+  'Stats service must load before Home owner-lists so leftover 86 is not painted first'
+);
+assert.ok(
+  /hydrateAll === true/.test(app) && /Dashboard statistics updated/.test(app) &&
+    /hydrateAll === true/.test(liveApp) && /Dashboard statistics updated/.test(liveApp),
   'Startup must not download every inspection_data row to paint Home'
 );
 assert.ok(
-  /fireSEnsurePremiseLoaded/.test(app) && /premiseFetchAttempted/.test(app),
+  /fireSEnsurePremiseLoaded/.test(app) && /premiseFetchAttempted/.test(app) &&
+    /fireSEnsurePremiseLoaded/.test(liveApp) && /premiseFetchAttempted/.test(liveApp),
   'Opening a premises must load that row on demand'
 );
 assert.ok(
-  /fireSAuthoritativeKpiCounts/.test(app),
+  /fireSAuthoritativeKpiCounts/.test(app) && /fireSAuthoritativeKpiCounts/.test(liveApp),
   'Home KPI cards must read the shared stats service'
 );
 assert.ok(
-  /Total premises:/.test(lists) && /Premises inspected:/.test(lists),
+  /Total premises:/.test(lists) && /Premises inspected:/.test(lists) &&
+    /Total premises:/.test(liveLists) && /Premises inspected:/.test(liveLists),
   'Home must label Total premises and Premises inspected separately'
 );
 assert.ok(
-  /fireSSearchCompanyPremises/.test(inspector),
+  /if \(root\.FireSDashboardStats\)/.test(lists) && /if \(root\.FireSDashboardStats\)/.test(liveLists),
+  'Home must not paint leftover localStorage length once the stats service is present'
+);
+assert.ok(
+  /fireSSearchCompanyPremises/.test(inspector) && /fireSSearchCompanyPremises/.test(liveInspector),
   'Inspector search must query the company database'
+);
+assert.ok(
+  /Never paint a partial array length as a final total/.test(liveStatsJs),
+  'Live stats service must match toets'
 );
 assert.ok(
   /Never paint a partial array length as a final total/.test(statsJs),
@@ -170,5 +194,78 @@ for (let i = 0; i < 1247; i += 1) {
   many.push({ id: 'prem-' + i, organisationName: 'Premises ' + i });
 }
 assert.equal(api.statsFromProjects(many).totalPremises, 1247);
+
+function leftoverCountSandbox(listSrc) {
+  const countEl = { textContent: '', setAttribute() {}, removeAttribute() {} };
+  const leftover = [];
+  for (let i = 0; i < 86; i += 1) leftover.push({ id: 'old-' + i, organisationName: 'Site ' + i });
+  const box = {
+    window: {},
+    document: {
+      readyState: 'complete',
+      getElementById(id) {
+        if (id === 'fireSOwnerListsCount') return countEl;
+        if (id === 'fireSOwnerLists') {
+          return {
+            hidden: false,
+            style: { display: '', setProperty() {} },
+            addEventListener() {},
+            setAttribute() {},
+            removeAttribute() {},
+            querySelectorAll() { return []; }
+          };
+        }
+        return {
+          hidden: true,
+          innerHTML: '',
+          style: { setProperty() {} },
+          addEventListener() {},
+          setAttribute() {},
+          removeAttribute() {}
+        };
+      },
+      addEventListener() {},
+      body: { classList: { contains(name) { return name === 'fire-s-role-owner'; } } }
+    },
+    setTimeout() {},
+    currentUserProfile: { companyId: 'co-1', role: 'owner' },
+    getProjects() { return leftover.slice(); },
+    FireSDashboardStats: {
+      getState() {
+        return box.__statsState || { status: 'idle', stats: null };
+      }
+    }
+  };
+  box.window = box;
+  box.global = box;
+  vm.createContext(box);
+  vm.runInContext(listSrc, box);
+  return { box: box, countEl: countEl };
+}
+
+const liveFlicker = leftoverCountSandbox(liveLists);
+liveFlicker.box.fireSRefreshOwnerLists();
+assert.strictEqual(
+  liveFlicker.countEl.textContent,
+  'Loading premises…',
+  'Live leftover 86 must not paint as buildings on your inspection list'
+);
+assert.ok(!/86/.test(liveFlicker.countEl.textContent), 'Live Home must not flash leftover 86');
+liveFlicker.box.__statsState = {
+  status: 'ready',
+  stats: { totalPremises: 111, premisesInspected: 40 }
+};
+liveFlicker.box.fireSRefreshOwnerLists();
+assert.strictEqual(
+  liveFlicker.countEl.textContent,
+  'Total premises: 111 · Premises inspected: 40',
+  'Live Home must jump once from loading to the confirmed snapshot'
+);
+assert.ok(!/86 buildings/.test(liveFlicker.countEl.textContent));
+assert.ok(!/111 buildings on your inspection list/.test(liveFlicker.countEl.textContent));
+
+sandbox.currentUserProfile = { companyId: 'co-live' };
+const pendingCounts = sandbox.fireSAuthoritativeKpiCounts();
+assert.ok(pendingCounts && pendingCounts.pending, 'KPI cards must stay pending until the snapshot exists');
 
 console.log('dashboard-stats-scale.test.js: ok');

@@ -65,6 +65,12 @@
         return;
       }
     } catch (_) {}
+    // Stats service is on the page: leftover localStorage length (live 86 → 111)
+    // is never a confirmed total. Wait for the snapshot instead of painting 86.
+    if (root.FireSDashboardStats) {
+      countEl.textContent = 'Loading premises…';
+      return;
+    }
     if (pullState.loading && !pullState.done) {
       countEl.textContent = 'Loading buildings…';
       return;
