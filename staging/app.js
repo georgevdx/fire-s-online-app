@@ -13063,8 +13063,12 @@ function fireSRemoveMoreFiltersDrawer() {
     if (node) node.remove();
   });
   document.querySelectorAll(
-    '.fire-s-advanced-toggle, .fire-s-choice-more-control, .fire-s-advanced-note, .fire-s-filter-drawer, .fire-s-workspace-filter-title-v1112'
+    '.fire-s-advanced-toggle, .fire-s-advanced-toggle-label, .fire-s-choice-more-control, .fire-s-advanced-note, .fire-s-filter-drawer, .fire-s-filter-toggle-v1112, .filter-toggle-btn, .fire-s-workspace-filter-title-v1112'
   ).forEach(node => node.remove());
+  document.querySelectorAll('#projectListSection button, #projectListSection [role="button"]').forEach(node => {
+    const text = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (/^(more filters|show filters|hide filters|date filters)$/i.test(text)) node.remove();
+  });
   document.querySelectorAll(
     '#projectListSection .metric-section-title, #projectListSection .metric-row, #projectListSection .metric-card, #projectListSection .metric-group'
   ).forEach(node => node.remove());
@@ -32876,10 +32880,7 @@ function fireSApplyLifecycleUxLabels() {
   };
 
   window.fireSToggleAdvancedFilters120B = function fireSToggleAdvancedFilters120B() {
-    const prefs = savePrefs({ advancedOpen: !loadPrefs().advancedOpen });
-    const panel = document.getElementById('filterPanel');
-    if (panel) panel.style.display = prefs.advancedOpen ? 'block' : 'none';
-    window.renderProjectsList();
+    fireSRemoveMoreFiltersDrawer();
   };
 
   function countFor(projects, filterKey) {
@@ -33591,14 +33592,7 @@ function fireSApplyLifecycleUxLabels() {
   if (oldRender && !oldRender.__fireS121GWrapped) {
     const wrapped = function fireS121GRenderProjectsList(){
       const result = oldRender.apply(this, arguments);
-      const prefs = readChoicePrefs();
-      const panel = document.getElementById('filterPanel');
-      const btn = document.getElementById('toggleFiltersBtn');
-      if (!prefs.advancedOpen && panel) panel.style.display = 'none';
-      if (btn) {
-        btn.textContent = 'More Filters';
-        btn.setAttribute('aria-expanded', String(Boolean(prefs.advancedOpen)));
-      }
+      fireSRemoveMoreFiltersDrawer();
       return result;
     };
     wrapped.__fireS121GWrapped = true;

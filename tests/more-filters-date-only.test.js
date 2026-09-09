@@ -47,10 +47,13 @@ function assertDateAndStatusLayout(label, app, html, css) {
     label + ' must not keep the More Filters button or drawer in the page'
   );
   assert.ok(
-    /#fireSGatewayStatusFilters/.test(css) &&
-      /#toggleFiltersBtn/.test(css) &&
+    /#toggleFiltersBtn\.fire-s-filter-toggle-v1112/.test(css) &&
       /display: none !important/.test(css),
-    label + ' must hide leftover More Filters chrome if an old script paints it'
+    label + ' must hide the charcoal More Filters bar even when the old polish class is present'
+  );
+  assert.ok(
+    !/fire-s-advanced-toggle-label">More Filters/.test(app),
+    label + ' must not paint a More Filters button inside Mission Control'
   );
 }
 

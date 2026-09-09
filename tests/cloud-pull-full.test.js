@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-58-no-more-filters',
+  '1-3-58-black-bar-gone',
   '1-1-home',
-  '108-47-no-more-filters',
-  'fire-s-108-47-no-more-filters'
+  '108-48-black-bar-gone',
+  'fire-s-108-48-black-bar-gone'
 );
 assertPullSource(
   stagingApp,
@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-filters-gone',
+  '1-3-64-black-bar-gone',
   '1-1-count',
-  '108-43-filters-gone',
-  'fire-s-108-43-filters-gone'
+  '108-44-black-bar-gone',
+  'fire-s-108-44-black-bar-gone'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));

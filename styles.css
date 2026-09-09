@@ -9481,17 +9481,9 @@ body > #actionDropdown.action-dropdown button:last-child {
 }
 
 .fire-s-filter-toggle-v1112,
+#toggleFiltersBtn,
 #toggleFiltersBtn.fire-s-filter-toggle-v1112 {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  min-height: 44px !important;
-  border-radius: 14px !important;
-  background: #1f2937 !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  letter-spacing: .01em !important;
+  display: none !important;
 }
 
 .fire-s-filter-panel-v1112,
@@ -13940,10 +13932,16 @@ body.camera-workspace-open {
 
 /* Status chips and date filters stay on the Gateway. More Filters is gone. */
 #toggleFiltersBtn,
+#toggleFiltersBtn.fire-s-filter-toggle-v1112,
+#toggleFiltersBtn.filter-toggle-btn,
+.filter-toggle-btn,
+.fire-s-filter-toggle-v1112,
 #filterPanel,
+#filterPanel.fire-s-filter-panel-v1112,
 #fireSFilterDrawer,
 #fireSFilterDrawerToggle,
 .fire-s-advanced-toggle,
+.fire-s-advanced-toggle-label,
 .fire-s-choice-more-control,
 .fire-s-advanced-note,
 .fire-s-workspace-filter-title-v1112,
@@ -13952,6 +13950,8 @@ body.camera-workspace-open {
 #projectListSection .metric-row,
 #projectListSection .metric-section-title {
   display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 #fireSGatewayStatusFilters,
