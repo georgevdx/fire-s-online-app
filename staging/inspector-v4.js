@@ -181,8 +181,28 @@
     const all=projects().slice().filter(isMine);
     const q=text(input.value).toLowerCase();
 
-    // Searching: only show records that match. Do not keep an unrelated priority card.
     if(q){
+      if (typeof window.fireSSearchCompanyPremises === 'function') {
+        next.innerHTML='';
+        results.innerHTML=`<div class="inspector-v4-empty">Searching the company database…</div>`;
+        window.fireSSearchCompanyPremises({ search: q, filter: 'all', limit: 8, offset: 0 }).then(function(page){
+          if(text(input.value).toLowerCase()!==q) return;
+          const matches=(page && Array.isArray(page.items)) ? page.items : [];
+          results.innerHTML=matches.length
+            ? matches.map(p=>cardHtml(p,'result')).join('')
+            : `<div class="inspector-v4-empty">No premises match “${esc(q)}”. Try another name or use + NEW PREMISES.</div>`;
+          document.querySelectorAll('[data-v4-open]').forEach(btn=>{
+            btn.onclick=()=>{
+              const id=btn.dataset.v4Open;
+              if(typeof window.fireSOpenProjectCard==='function') window.fireSOpenProjectCard(id);
+              else open(all.find(p=>String(p.id)===String(id)));
+            };
+          });
+        }).catch(function(){
+          results.innerHTML=`<div class="inspector-v4-empty">Search could not reach the company database.</div>`;
+        });
+        return;
+      }
       const matches=all
         .filter(p=>matchesQuery(p,q))
         .sort((a,b)=>{
@@ -203,16 +223,55 @@
 
     // No search: every open booking for this inspector, soonest date first.
     const open=openList(all);
-    if(!open.length){
-      next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
-      results.innerHTML='';
+    if (typeof window.fireSSearchCompanyPremises === 'function') {
+      const me=identity();
+      window.fireSSearchCompanyPremises({
+        search: '',
+        filter: 'scheduled-priority',
+        inspectorEmail: me.email,
+        limit: 50,
+        offset: 0
+      }).then(function(page){
+        if(text(input.value)) return;
+        const booked=(page && Array.isArray(page.items) && page.items.length) ? page.items : open;
+        if(!booked.length){
+          next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
+          results.innerHTML='';
+          return;
+        }
+        next.innerHTML=`<div class="inspector-v4-list">${booked.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
+        results.innerHTML='';
+        document.querySelectorAll('[data-v4-open]').forEach(btn=>{
+          btn.onclick=()=>{
+            const id=btn.dataset.v4Open;
+            if(typeof window.fireSOpenProjectCard==='function') window.fireSOpenProjectCard(id);
+            else open(all.find(p=>String(p.id)===String(id))||booked.find(p=>String(p.id)===String(id)));
+          };
+        });
+      }).catch(function(){
+        paintLocalScheduled();
+      });
+      if(!open.length){
+        next.innerHTML=`<div class="inspector-v4-empty">Loading scheduled inspections…</div>`;
+        results.innerHTML='';
+      } else {
+        paintLocalScheduled();
+      }
       return;
     }
-    next.innerHTML=`<div class="inspector-v4-list">${open.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
-    results.innerHTML='';
-    document.querySelectorAll('[data-v4-open]').forEach(btn=>{
-      btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));
-    });
+    paintLocalScheduled();
+    function paintLocalScheduled(){
+      if(!open.length){
+        next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
+        results.innerHTML='';
+        return;
+      }
+      next.innerHTML=`<div class="inspector-v4-list">${open.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
+      results.innerHTML='';
+      document.querySelectorAll('[data-v4-open]').forEach(btn=>{
+        btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));
+      });
+    }
   }
   function init(){ setTimeout(build,150); setTimeout(build,700); }
   document.addEventListener('DOMContentLoaded',init);

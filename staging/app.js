@@ -4899,6 +4899,18 @@ async function safeDownloadNewerCloudInspections(options) {
       return;
     }
 
+    const hydrateAll = !!(options && options.hydrateAll === true);
+    try {
+      if (typeof window.fireSRefreshDashboardStats === 'function') {
+        await window.fireSRefreshDashboardStats({ reason: hydrateAll ? 'full-pull' : 'startup' });
+      }
+    } catch (_) {}
+    if (!hydrateAll) {
+      // Do not download the tenant's full inspection_data set merely to paint Home.
+      if (syncStatus) syncStatus.textContent = 'Dashboard statistics updated.';
+      return;
+    }
+
     const localProjects = getProjects();
     const localBefore = localProjects.length;
     const freezeHomeCounts = localBefore > 0;
@@ -6937,6 +6949,13 @@ async function loadUserAccessProfile() {
       }
     } catch (_) {}
 
+    try {
+      if (currentUserProfile && currentUserProfile.companyId &&
+          typeof window.fireSRefreshDashboardStats === 'function') {
+        window.fireSRefreshDashboardStats({ reason: 'profile-ready' });
+      }
+    } catch (_) {}
+
   } catch (error) {
     console.error('Access profile load failed:', error);
 
@@ -7264,6 +7283,12 @@ function applyInspectionAccessFilter(query, userId) {
   return query;
 }
 
+// ROOT CAUSE of progressive Home/Gateway totals:
+// This pull downloaded every inspection_data row in pages of 100. Home counted
+// visiblePremises(mergedProjects).length as pages arrived (86 → 110). The cheap
+// inventory count:exact included deleted + Recycle leftover shells (e.g. 124).
+// Dashboard KPIs used the same partial array. Totals must come from
+// fire_s_company_dashboard_stats, not from a partially loaded array.
 async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   const selectCols = columns || 'inspection_data, updated_at, company_id';
   const pageSizes = [100, 40, 10, 1];
@@ -16036,7 +16061,15 @@ function openProject(projectId, focusMode, options = {}) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
   const projects = getProjects();
-  const project = resolveProjectOpenIdentifier(projectId);
+  let project = resolveProjectOpenIdentifier(projectId);
+  if (!project && !options.premiseFetchAttempted && typeof window.fireSEnsurePremiseLoaded === 'function') {
+    Promise.resolve(window.fireSEnsurePremiseLoaded(projectId)).then(function (loaded) {
+      openProject(projectId, focusMode, Object.assign({}, options, { premiseFetchAttempted: true }));
+    }).catch(function () {
+      openProject(projectId, focusMode, Object.assign({}, options, { premiseFetchAttempted: true }));
+    });
+    return;
+  }
   if (!project) {
     console.warn('Open inspection failed: project not found for identifier', projectId);
     alert('Could not open this inspection. Please refresh the list and try again.');
@@ -16640,6 +16673,12 @@ async function uploadSingleInspection(project) {
       null;
     removeInspectionFromUploadQueue(project.id);
     markInspectionSynced(project.id, rpcCompany);
+
+    try {
+      if (typeof window.fireSScheduleDashboardStatsRefresh === 'function') {
+        window.fireSScheduleDashboardStatsRefresh();
+      }
+    } catch (_) {}
 
     if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Saved locally and uploaded to cloud.';
@@ -38538,6 +38577,17 @@ function fireSApplyLifecycleUxLabels() {
     return Array.isArray(list) ? list : [];
   }
   function counts(){
+    try {
+      if (typeof window.fireSAuthoritativeKpiCounts === 'function') {
+        const server = window.fireSAuthoritativeKpiCounts();
+        if (server && server.pending) return { pending: true, compliant: '…', scheduled: '…', overdue: '…', month: '…', action: '…' };
+        if (server && server.unavailable) return { unavailable: true, compliant: null, scheduled: null, overdue: null, month: null, action: null };
+        if (server && typeof server.compliant === 'number') return server;
+      }
+    } catch (_) {}
+    if (window.currentUserProfile && window.currentUserProfile.companyId) {
+      return { pending: true, compliant: '…', scheduled: '…', overdue: '…', month: '…', action: '…' };
+    }
     const list = getProjects();
     return {
       compliant: list.filter(p => matches(p, 'compliant')).length,
@@ -38552,11 +38602,13 @@ function fireSApplyLifecycleUxLabels() {
   }
   function card(type, value, title, filterText, icon){
     const filter = FILTERS[type];
-    return `<button type="button" class="fs-prod-kpi-card fs-prod-kpi-${esc(type)}" data-prod-kpi="${esc(filter)}" aria-label="${esc(title)}">
+    const pending = value === '…' || value == null;
+    const shown = pending ? '…' : (Number(value) || 0);
+    return `<button type="button" class="fs-prod-kpi-card fs-prod-kpi-${esc(type)}${pending ? ' fs-prod-kpi-loading' : ''}" data-prod-kpi="${esc(filter)}" aria-label="${esc(title)}">
       <span class="fs-prod-kpi-icon" aria-hidden="true">${icon}</span>
-      <span class="fs-prod-kpi-number">${Number(value) || 0}</span>
+      <span class="fs-prod-kpi-number${pending ? ' fs-prod-kpi-skeleton' : ''}">${esc(shown)}</span>
       <span class="fs-prod-kpi-title">${esc(title)}</span>
-      <span class="fs-prod-kpi-action">View</span>
+      <span class="fs-prod-kpi-action">${pending ? 'Loading' : 'View'}</span>
       <span class="fs-prod-kpi-filter">Filter: ${esc(filterText)}</span>
     </button>`;
   }
@@ -38607,6 +38659,14 @@ function fireSApplyLifecycleUxLabels() {
       return;
     }
     const c = counts();
+    if (c.unavailable) {
+      row.setAttribute('data-fire-s-prod-kpis', 'error');
+      row.innerHTML = '<div class="fs-prod-kpi-unavailable">Dashboard statistics are unavailable. Fire-S will not guess a total.</div>';
+      row.hidden = false;
+      row.style.setProperty('display', 'block', 'important');
+      hideLegacyStatsRow();
+      return;
+    }
     const html = [
       card('compliant', c.compliant, 'Compliant Sites', 'Compliant', '✅'),
       card('scheduled', c.scheduled, 'Scheduled Inspections', 'Scheduled', '🗓️'),
@@ -38623,8 +38683,12 @@ function fireSApplyLifecycleUxLabels() {
     row.style.setProperty('display', 'grid', 'important');
     hideLegacyStatsRow();
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
-    if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+    if (subtitle && /premises require action|overdue|scheduled|compliant|this month|loading/i.test(subtitle.textContent || '')) {
+      if (c.pending) {
+        subtitle.textContent = 'Loading confirmed premises statistics…';
+      } else {
+        subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      }
     }
   }
   function applyFilter(filter){
