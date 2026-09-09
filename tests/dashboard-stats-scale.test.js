@@ -59,8 +59,8 @@ assert.ok(
 assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-filter/.test(html), 'Toets must load the stats service');
 assert.ok(/app\.js\?v=1-3-64-clear/.test(html), 'Toets app cache tag');
 assert.ok(/fire-s-owner-lists\.js\?v=1-1-stats/.test(html), 'Toets owner-list cache tag');
-assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-stats/.test(liveHtml), 'Live must load the stats service');
-assert.ok(/app\.js\?v=1-3-58-stats/.test(liveHtml), 'Live app cache tag');
+assert.ok(/fire-s-dashboard-stats\.js\?v=1-0-clear/.test(liveHtml), 'Live must load the stats service');
+assert.ok(/app\.js\?v=1-3-58-clear/.test(liveHtml), 'Live app cache tag');
 assert.ok(/fire-s-owner-lists\.js\?v=1-1-stats/.test(liveHtml), 'Live owner-list cache tag');
 assert.ok(
   liveHtml.indexOf('fire-s-dashboard-stats.js') < liveHtml.indexOf('fire-s-owner-lists.js') &&

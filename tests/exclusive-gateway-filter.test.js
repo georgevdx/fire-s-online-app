@@ -10,41 +10,45 @@ function read(name) {
 }
 
 const statsJs = read('staging/fire-s-dashboard-stats.js');
+const liveStatsJs = read('fire-s-dashboard-stats.js');
 const app = read('staging/app.js');
-const html = read('staging/index.html');
-const css = read('staging/styles.css');
 const liveApp = read('app.js');
+const html = read('staging/index.html');
+const liveHtml = read('index.html');
+const css = read('staging/styles.css');
+const liveCss = read('styles.css');
 
-assert.ok(
-  /filter: filter/.test(statsJs) && !/filter: search \? 'all' : filter/.test(statsJs),
-  'Search must not drop the KPI filter currently in use'
-);
-assert.ok(
-  /function exclusiveFilterChrome/.test(statsJs) &&
-    /Current filter/.test(statsJs) &&
-    /Clear filter/.test(statsJs),
-  'Gateway must show one current filter and a Clear control'
-);
-assert.ok(
-  /competingGatewayFiltersOff/.test(statsJs) && /competingGatewayFiltersOff/.test(app),
-  'Choosing a KPI filter must take the date panel and extra filters away'
-);
-assert.ok(
-  /fire-s-exclusive-gateway-filter/.test(css) &&
-    /#inspectionDateFilterPanel/.test(css) &&
-    /display: flex !important/.test(css),
-  'The current-filter banner must be visible and other filter UI must hide'
-);
-assert.ok(/is-exclusive/.test(app) && /is-exclusive/.test(statsJs));
-assert.ok(
-  html.indexOf('fire-s-dashboard-stats.js?v=1-0-filter') > 0 &&
-    html.indexOf('app.js?v=1-3-64-clear') > 0,
-  'Toets cache tags for exclusive filters'
-);
-assert.ok(
-  !/function exclusiveFilterChrome/.test(liveApp),
-  'Exclusive Gateway filters stay on the toets-blad until sit live'
-);
+function assertExclusive(stats, source, page, styles, label, appTag, statsTag) {
+  assert.ok(
+    /filter: filter/.test(stats) && !/filter: search \? 'all' : filter/.test(stats),
+    label + ': search must not drop the KPI filter currently in use'
+  );
+  assert.ok(
+    /function exclusiveFilterChrome/.test(stats) &&
+      /Current filter/.test(stats) &&
+      /Clear filter/.test(stats),
+    label + ': Gateway must show one current filter and a Clear control'
+  );
+  assert.ok(
+    /competingGatewayFiltersOff/.test(stats) && /competingGatewayFiltersOff/.test(source),
+    label + ': choosing a KPI filter must take the date panel and extra filters away'
+  );
+  assert.ok(
+    /fire-s-exclusive-gateway-filter/.test(styles) &&
+      /#inspectionDateFilterPanel/.test(styles) &&
+      /display: flex !important/.test(styles),
+    label + ': the current-filter banner must be visible and other filter UI must hide'
+  );
+  assert.ok(/is-exclusive/.test(source) && /is-exclusive/.test(stats), label + ': exclusive chip row');
+  assert.ok(
+    page.indexOf('fire-s-dashboard-stats.js?v=' + statsTag) > 0 &&
+      page.indexOf('app.js?v=' + appTag) > 0,
+    label + ': cache tags for exclusive filters'
+  );
+}
+
+assertExclusive(statsJs, app, html, css, 'Toets', '1-3-64-clear', '1-0-filter');
+assertExclusive(liveStatsJs, liveApp, liveHtml, liveCss, 'Live', '1-3-58-clear', '1-0-clear');
 
 const sandbox = {
   window: {},

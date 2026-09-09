@@ -10,43 +10,47 @@ function read(name) {
 }
 
 const html = read('staging/index.html');
+const liveHtml = read('index.html');
 const app = read('staging/app.js');
-const clearJs = read('staging/fire-s-gateway-filter-clear.js');
 const liveApp = read('app.js');
+const clearJs = read('staging/fire-s-gateway-filter-clear.js');
+const liveClearJs = read('fire-s-gateway-filter-clear.js');
 
-assert.ok(
-  /fire-s-gateway-filter-clear\.js\?v=1-0-clear/.test(html),
-  'Toets must load the Gateway Clear helper last'
-);
-assert.ok(
-  html.lastIndexOf('fire-s-gateway-filter-clear.js') > html.lastIndexOf('fire-s-entitlement.js'),
-  'Clear helper must load after other Gateway scripts so it wins setFilter'
-);
-assert.ok(
-  /__fireSGatewayFilterEpoch/.test(app) &&
-    /__fireSGatewayFiltersCleared/.test(app) &&
-    /__fireSGatewayFilterEpoch !== epoch/.test(app),
-  'Delayed Overdue re-apply timers must stop after Clear'
-);
-assert.ok(
-  /__fireSGatewayFiltersCleared/.test(app) &&
-    /setProjectFilterState\('all'\)/.test(app),
-  'A later render must not restore Overdue after Clear'
-);
-assert.ok(
-  /function isOverdueInspection\(project\)\{[\s\S]{0,180}fireSIsInspectionOverdue/.test(app) &&
-    /function isOverdue\(project\)\{[\s\S]{0,180}fireSIsInspectionOverdue/.test(app),
-  'Workspace and banner Overdue must use fireSIsInspectionOverdue, not lastSaved'
-);
+function assertClearWired(page, source, label) {
+  assert.ok(
+    /fire-s-gateway-filter-clear\.js\?v=1-0-clear/.test(page),
+    label + ' must load the Gateway Clear helper last'
+  );
+  assert.ok(
+    page.lastIndexOf('fire-s-gateway-filter-clear.js') > page.lastIndexOf('fire-s-entitlement.js'),
+    label + ': Clear helper must load after other Gateway scripts so it wins setFilter'
+  );
+  assert.ok(
+    /__fireSGatewayFilterEpoch/.test(source) &&
+      /__fireSGatewayFiltersCleared/.test(source) &&
+      /__fireSGatewayFilterEpoch !== epoch/.test(source),
+    label + ': delayed Overdue re-apply timers must stop after Clear'
+  );
+  assert.ok(
+    /__fireSGatewayFiltersCleared/.test(source) &&
+      /setProjectFilterState\('all'\)/.test(source),
+    label + ': a later render must not restore Overdue after Clear'
+  );
+  assert.ok(
+    /function isOverdueInspection\(project\)\{[\s\S]{0,180}fireSIsInspectionOverdue/.test(source) &&
+      /function isOverdue\(project\)\{[\s\S]{0,180}fireSIsInspectionOverdue/.test(source),
+    label + ': Workspace and banner Overdue must use fireSIsInspectionOverdue, not lastSaved'
+  );
+}
+
+assertClearWired(html, app, 'Toets');
+assertClearWired(liveHtml, liveApp, 'Live');
 assert.ok(
   /function fireSClearAllGatewayFilters/.test(clearJs) &&
     /__fireSPendingKpiFilter/.test(clearJs) &&
-    /#activeFilterStatus button/.test(clearJs),
-  'Clear must reset every filter key and catch the visible Clear button'
-);
-assert.ok(
-  !/function fireSClearAllGatewayFilters/.test(liveApp),
-  'Clear helper stays on the toets-blad until sit live'
+    /#activeFilterStatus button/.test(clearJs) &&
+    /function fireSClearAllGatewayFilters/.test(liveClearJs),
+  'Clear must reset every filter key and catch the visible Clear button on live and toets'
 );
 
 const clicks = [];

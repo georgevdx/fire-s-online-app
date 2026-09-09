@@ -70,7 +70,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-58-stats">
+  <link rel="stylesheet" href="styles.css?v=1-3-58-clear">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-23-lists">
@@ -1857,8 +1857,8 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-58-stats"></script>
-  <script src="fire-s-dashboard-stats.js?v=1-0-stats"></script>
+  <script src="app.js?v=1-3-58-clear"></script>
+  <script src="fire-s-dashboard-stats.js?v=1-0-clear"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-stats"></script>
   <script src="fire-s-clean-home-roles.js?v=2-40-exist-sched"></script>
@@ -1884,6 +1884,7 @@
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-0-finish-click"></script>
   <script src="fire-s-entitlement.js?v=1-0-open"></script>
+  <script src="fire-s-gateway-filter-clear.js?v=1-0-clear"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1891,7 +1892,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-45-stats')
+        navigator.serviceWorker.register('./service-worker.js?v=108-45-clear')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

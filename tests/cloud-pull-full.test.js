@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-58-stats',
+  '1-3-58-clear',
   '1-1-stats',
-  '108-45-stats',
-  'fire-s-108-45-stats'
+  '108-45-clear',
+  'fire-s-108-45-clear'
 );
 assertPullSource(
   stagingApp,

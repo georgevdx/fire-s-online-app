@@ -152,7 +152,7 @@ function assertCentre(src, engine, label, options) {
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
 assert.ok(
-  /app\.js\?v=1-3-58-stats/.test(liveHtml),
+  /app\.js\?v=1-3-58-clear/.test(liveHtml),
   'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(
