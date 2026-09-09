@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-41-date-theme';
+const CACHE = 'fire-s-108-41-status-bar';
 const PRECACHE = [
   './',
   './index.html',

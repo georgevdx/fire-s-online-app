@@ -46,8 +46,27 @@ assert.ok(
 );
 
 assert.ok(
-  /#dashboardMetrics\.fire-s-more-filters-date-only/.test(stagingCss),
-  'Date-only More Filters must hide the empty workspace metrics strip'
+  !/id="dashboardMetrics"/.test(stagingHtml),
+  'Toets More Filters must not keep a workspace metrics host'
+);
+
+assert.ok(
+  /id="fireSGatewayStatusFilters"/.test(stagingHtml) &&
+    /function fireSPaintGatewayStatusFilters\(/.test(stagingApp),
+  'All / Action required / Compliant / Scheduled / Overdue / This Month must live outside More Filters'
+);
+
+assert.ok(
+  /#fireSGatewayStatusFilters/.test(stagingCss) &&
+    /#inspectionDateFilterPanel \.inspection-quick-date-row button/.test(stagingCss) &&
+    /width: 100% !important/.test(stagingCss),
+  'Status chips and date filters must span the full Gateway width'
+);
+
+assert.ok(
+  /#dashboardMetrics/.test(stagingCss) &&
+    /#filterPanel \.metric-card/.test(stagingCss),
+  'Date-only More Filters must hide leftover workspace and expiry tiles'
 );
 
 console.log('more-filters-date-only.test.js: ok');

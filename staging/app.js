@@ -13010,9 +13010,24 @@ function fireSHideMoreFiltersNonDateTiles() {
     container.hidden = true;
     container.setAttribute('aria-hidden', 'true');
     container.classList.add('fire-s-more-filters-date-only');
+    container.remove();
   }
   const title = document.getElementById('fireSWorkspaceFilterTitle1112');
   if (title) title.remove();
+  const panel = document.getElementById('filterPanel');
+  if (panel) {
+    panel.querySelectorAll('.metric-card, .metric-row, .metric-section-title').forEach(node => node.remove());
+  }
+}
+
+function fireSPaintGatewayStatusFilters(html) {
+  const host = document.getElementById('fireSGatewayStatusFilters');
+  if (!host) return false;
+  const next = String(html || '');
+  if (host.dataset.fireSStatusPaint === next) return true;
+  host.dataset.fireSStatusPaint = next;
+  host.innerHTML = next;
+  return true;
 }
 
 function renderDashboardMetrics(projectsOverride) {
@@ -28641,7 +28656,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 /* =====================================================
    FIRE-S RC 1.1.10 - Gateway Filter Stabilisation
    Single source of truth for filter counts AND visible Premises cards.
-   All workspace/status/date filters live inside Show Filters.
+   Date filters live inside More Filters. Status chips stay outside.
    ===================================================== */
 (function () {
   'use strict';
@@ -38140,7 +38155,11 @@ function fireSApplyLifecycleUxLabels() {
     if (paging) {
       paging.innerHTML = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
     }
-    container.innerHTML = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    const chips = filterButtonHtml(base);
+    const paintedOutside = typeof fireSPaintGatewayStatusFilters === 'function'
+      ? fireSPaintGatewayStatusFilters(chips)
+      : false;
+    container.innerHTML = `${paintedOutside ? '' : chips}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
     syncHomeKpis();
   }
 
@@ -38899,7 +38918,11 @@ function fireSApplyLifecycleUxLabels() {
 
     const paging = document.getElementById('projectPagingControls');
     const nextPaging = `<button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span><button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
-    const nextHtml = `${filterButtonHtml(base)}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+    const chips = filterButtonHtml(base);
+    const paintedOutside = typeof fireSPaintGatewayStatusFilters === 'function'
+      ? fireSPaintGatewayStatusFilters(chips)
+      : false;
+    const nextHtml = `${paintedOutside ? '' : chips}${currentLabelHtml(total)}${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a8-card-list">${visible.map(cardHtml).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
     const paintKey = [key, page, total, visible.map(p => p && p.id).join('|')].join('::');
     if (container.dataset.fireSGatewayPaint === paintKey) {
       return true;
@@ -39156,7 +39179,7 @@ function fireSApplyLifecycleUxLabels() {
 
   document.addEventListener('click', event => {
     const target = event.target && event.target.closest
-      ? event.target.closest('.fire-s-136a8-filter[data-filter], #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"], [data-date-filter], #fireSDateFilterHow')
+      ? event.target.closest('.fire-s-136a8-filter[data-filter], [data-gateway-filter], #fireSGatewayStatusFilters, #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"], [data-date-filter], #fireSDateFilterHow')
       : null;
     if (target) markExplicitRender();
   }, true);

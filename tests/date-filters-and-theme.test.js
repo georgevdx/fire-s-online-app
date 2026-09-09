@@ -128,4 +128,10 @@ assert.ok(
   'Dark mode must persist and restyle the app'
 );
 
+assert.ok(
+  /id="fireSGatewayStatusFilters"/.test(html) &&
+    !/id="dashboardMetrics"/.test(html),
+  'Status chips stay outside More Filters; workspace tiles are not in the markup'
+);
+
 console.log('date-filters-and-theme.test.js: ok');
