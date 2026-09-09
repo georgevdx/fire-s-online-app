@@ -42,13 +42,37 @@
   }
 
   function writeCount(countEl, visibleCount) {
-    if (pullState.loading && !pullState.done) {
-      const shown = Math.max(visibleCount || 0, pullState.loaded);
-      if (shown <= 0) {
-        countEl.textContent = 'Loading buildings…';
+    try {
+      const statsApi = root.FireSDashboardStats && typeof root.FireSDashboardStats.getState === 'function'
+        ? root.FireSDashboardStats.getState()
+        : (root.__fireSDashboardStatsState || null);
+      if (statsApi && statsApi.status === 'loading' && !statsApi.stats) {
+        countEl.textContent = 'Loading premises…';
         return;
       }
-      countEl.textContent = 'Loading buildings… ' + shown;
+      if (statsApi && statsApi.status === 'error' && !statsApi.stats) {
+        countEl.textContent = 'Premises total unavailable';
+        return;
+      }
+      if (statsApi && statsApi.stats && typeof statsApi.stats.totalPremises === 'number') {
+        const total = statsApi.stats.totalPremises;
+        const inspected = statsApi.stats.premisesInspected;
+        countEl.textContent = total
+          ? ('Total premises: ' + total + ' · Premises inspected: ' + inspected)
+          : 'No premises on your inspection list yet.';
+        if (statsApi.stale) countEl.title = 'Last confirmed total. Live refresh could not be confirmed.';
+        else countEl.removeAttribute('title');
+        return;
+      }
+    } catch (_) {}
+    // Stats service is on the page: leftover localStorage length (live 86 → 111)
+    // is never a confirmed total. Wait for the snapshot instead of painting 86.
+    if (root.FireSDashboardStats) {
+      countEl.textContent = 'Loading premises…';
+      return;
+    }
+    if (pullState.loading && !pullState.done) {
+      countEl.textContent = 'Loading buildings…';
       return;
     }
     const n = visibleCount || 0;
@@ -302,9 +326,10 @@
       today: todayIso,
       until: endIso,
       count: all.length,
-      all,
-      upcoming,
-      deficiencies
+      all: all.slice(0, 40),
+      allTotal: all.length,
+      upcoming: upcoming.slice(0, 40),
+      deficiencies: deficiencies.slice(0, 40)
     };
   }
 
@@ -413,7 +438,11 @@
         ? model.all.map(row => rowHtml(row.id, [
             `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
             `<td class="fire-s-owner-lists-meta">${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
-          ].join(''))).join('')
+          ].join(''))).join('') + (
+            model.allTotal > model.all.length
+              ? emptyRow(2, 'Showing the first ' + model.all.length + '. Open Inspection Gateway to search every premises.')
+              : ''
+          )
         : emptyRow(2, 'No buildings on your inspection list yet.');
     }
 

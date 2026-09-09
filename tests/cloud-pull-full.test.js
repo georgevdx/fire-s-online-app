@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-58-copy',
-  '1-1-home',
-  '108-45-copy',
-  'fire-s-108-45-copy'
+  '1-3-58-clear',
+  '1-1-stats',
+  '108-45-clear',
+  'fire-s-108-45-clear'
 );
 assertPullSource(
   stagingApp,
@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-64-count',
-  '1-1-count',
-  '108-41-count',
-  'fire-s-108-41-count'
+  '1-3-64-sub',
+  '1-1-stats',
+  '108-41-sub',
+  'fire-s-108-41-sub'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
@@ -252,7 +252,11 @@ async function runFetchCases(appSrc, label) {
   listSandbox.fireSSetOwnerListsPullProgress(0, 124, false);
   assert.strictEqual(countEl.textContent, 'Loading buildings…');
   listSandbox.fireSSetOwnerListsPullProgress(40, 124, false);
-  assert.strictEqual(countEl.textContent, 'Loading buildings… 40');
+  assert.strictEqual(
+    countEl.textContent,
+    'Loading buildings…',
+    'Home must not climb 40, 86, 110 while the pull is still loading'
+  );
   listSandbox.fireSSetOwnerListsPullProgress(110, 124, true);
   assert.strictEqual(countEl.textContent, '110 buildings on your inspection list');
   listSandbox.fireSSetOwnerListsPullProgress(86, 124, false);
