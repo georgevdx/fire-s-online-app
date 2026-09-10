@@ -47,4 +47,13 @@ assert.ok(
   'Snapshot must say in date filter when Today/From-To is active'
 );
 
+const liveSnapStart = liveApp.indexOf('function readVisibleProjects()');
+const liveSnapEnd = liveApp.indexOf('function isClosed(project)', liveSnapStart);
+assert.ok(liveSnapStart > 0 && liveSnapEnd > liveSnapStart, 'Live executive snapshot reader must exist');
+assert.ok(
+  /projectMatchesInspectionDateFilter/.test(liveApp.slice(liveSnapStart, liveSnapEnd)) &&
+    /in date filter/.test(liveApp),
+  'Live snapshot Premises count must follow the same inspection-date filter as the ALL chip'
+);
+
 console.log('toets-own-projects-store.test.js: ok');

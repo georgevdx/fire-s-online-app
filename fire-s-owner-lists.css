@@ -171,3 +171,66 @@ tr.fire-s-owner-lists-empty td {
     max-width: 9.5rem;
   }
 }
+
+
+.fire-s-owner-lists-block {
+  margin: 0 0 14px;
+  padding: 12px 12px 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  color: #111827;
+}
+
+.fire-s-owner-lists-block h4,
+.fire-s-owner-lists-count {
+  color: #111827;
+}
+
+.fire-s-owner-lists-table th {
+  color: #111827;
+  background: #f1f5f9;
+}
+
+.fire-s-owner-lists-table td,
+.fire-s-owner-lists-hint,
+.fire-s-owner-lists-days,
+tr.fire-s-owner-lists-empty td {
+  color: #1f2937;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-block {
+  background: #1e293b;
+  border-color: #94a3b8;
+  color: #f8fafc;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-block h4,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-count,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-table th,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-table td,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-hint,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-days,
+html[data-fire-s-theme="dark"] tr.fire-s-owner-lists-empty td {
+  color: #f8fafc;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-table th {
+  background: #0f172a;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-scroll {
+  border-color: #64748b;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-table th,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-table td {
+  border-bottom-color: #475569;
+}
+
+html[data-fire-s-theme="dark"] tr.fire-s-owner-lists-row[data-project-id]:hover td,
+html[data-fire-s-theme="dark"] tr.fire-s-owner-lists-row[data-project-id]:focus td {
+  background: #334155;
+}

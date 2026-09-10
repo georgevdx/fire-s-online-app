@@ -11,10 +11,21 @@ function read(name) {
 
 const app = read('staging/app.js');
 const html = read('staging/index.html');
+const liveApp = read('app.js');
+const liveHtml = read('index.html');
 
 assert.ok(
-  /function fireSInspectionFilterDate\(/.test(app),
-  'Toets must pick an inspection/booking date for the Gateway date filter'
+  /function fireSInspectionFilterDate\(/.test(app) &&
+    /function fireSInspectionFilterDate\(/.test(liveApp),
+  'Toets and live must pick an inspection/booking date for the Gateway date filter'
+);
+assert.ok(
+  !/fireyeProjects-staging/.test(liveApp),
+  'Live must keep the fireyeProjects store when the date filter sits live'
+);
+assert.ok(
+  /inspection date/.test(liveHtml) && !/activity date/.test(liveHtml),
+  'Live how-this-filter-works copy must say inspection date, not activity date'
 );
 
 const helperStart = app.indexOf('function fireSInspectionFilterDate(project)');

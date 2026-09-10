@@ -83,6 +83,13 @@ assert.ok(
   'Owner list CSS must style tables, not cards'
 );
 assert.ok(
+  /\.fire-s-owner-lists-block \{/.test(css) &&
+    /\.fire-s-owner-lists-block \{/.test(read('staging/fire-s-owner-lists.css')) &&
+    /html\[data-fire-s-theme="dark"\] \.fire-s-owner-lists-block/.test(css) &&
+    /html\[data-fire-s-theme="dark"\] \.fire-s-owner-lists-block h4/.test(css),
+  'All buildings / upcoming / deficiencies blocks must have frames and dark-mode readable text'
+);
+assert.ok(
   /text-align: right/.test(css) &&
     /overflow-wrap: break-word/.test(css) &&
     /width: 7\.5rem/.test(css),

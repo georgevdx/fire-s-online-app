@@ -136,4 +136,26 @@ assert.ok(
   'Status chips stay outside More Filters; workspace tiles are not in the markup'
 );
 
+const liveHtml = read('index.html');
+const liveApp = read('app.js');
+const liveCss = read('styles.css');
+assert.ok(
+  /id="fireSThemeLightBtn"/.test(liveHtml) &&
+    /id="fireSThemeDarkBtn"/.test(liveHtml) &&
+    /fireSApplyStoredTheme/.test(liveHtml) &&
+    /function fireSAppearanceChoice/.test(liveApp),
+  'Live must sit the same Light / Dark appearance choice'
+);
+assert.ok(
+  liveHtml.indexOf('id="inspectionDateFilterPanel"') < liveHtml.indexOf('id="fireSGatewayStatusFilters"') &&
+    html.indexOf('id="inspectionDateFilterPanel"') < html.indexOf('id="fireSGatewayStatusFilters"'),
+  'Date filter must sit above the six status chips on live and toets'
+);
+assert.ok(
+  /html\[data-fire-s-theme="dark"\]/.test(liveCss) &&
+    /#mainCommandCentre \.fire-s-owner-lists-block/.test(liveCss) &&
+    /#mainCommandCentre \.fire-s-owner-lists-block/.test(css),
+  'Home section blocks must have frames on live and toets'
+);
+
 console.log('date-filters-and-theme.test.js: ok');

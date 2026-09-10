@@ -28,11 +28,11 @@ const liveManual = read('fire-s-user-manual.js');
 const css = read('staging/styles.css');
 const liveCss = read('styles.css');
 
-assert.ok(/1\.3\.67-toets/.test(env), 'Toets-blad version must stay on 1.3.67-toets');
+assert.ok(/1\.3\.68-toets/.test(env), 'Toets-blad version must stay on 1.3.68-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.59'/.test(liveEnv) &&
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.60'/.test(liveEnv) &&
     /bounceLegacyToetsQuery/.test(liveEnv),
-  'Live Fire-S must be 1.3.59 and keep the old toets-link bounce'
+  'Live Fire-S must be 1.3.60 and keep the old toets-link bounce'
 );
 assert.ok(
   !/1\.3\.23/.test(liveEnv),

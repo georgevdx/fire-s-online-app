@@ -55,15 +55,25 @@ function assertDateAndStatusLayout(label, app, html, css) {
     !/fire-s-advanced-toggle-label">More Filters/.test(app),
     label + ' must not paint a More Filters button inside Mission Control'
   );
+  const dateAt = html.indexOf('id="inspectionDateFilterPanel"');
+  const chipsAt = html.indexOf('id="fireSGatewayStatusFilters"');
+  assert.ok(
+    dateAt > 0 && chipsAt > dateAt,
+    label + ' must put the date filter just above the six status chips'
+  );
+  assert.ok(
+    /statusHost\.insertAdjacentElement\('beforebegin', datePanel\)/.test(app),
+    label + ' must keep the date panel above the chips if a leftover script moves it'
+  );
 }
 
 assertDateAndStatusLayout('Toets', stagingApp, stagingHtml, stagingCss);
 assertDateAndStatusLayout('Live', liveApp, liveHtml, liveCss);
 
 assert.ok(
-  /Version 1\.3\.59/.test(liveHtml) &&
-    /1\.3\.67-toets/.test(stagingHtml),
-  'Live displayed version stays 1.3.59; toets stays 1.3.67-toets'
+  /Version 1\.3\.60/.test(liveHtml) &&
+    /1\.3\.68-toets/.test(stagingHtml),
+  'Live displayed version stays 1.3.60; toets stays 1.3.68-toets'
 );
 
 assert.ok(

@@ -7,6 +7,16 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-512.png">
   <meta name="theme-color" content="#b71c1c">
+  <script>
+    (function fireSApplyStoredTheme() {
+      try {
+        var theme = localStorage.getItem('fireS.theme') === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-fire-s-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b1220' : '#b71c1c');
+      } catch (e) {}
+    })();
+  </script>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Fire-S">
@@ -70,11 +80,11 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-59-see-ver">
+  <link rel="stylesheet" href="styles.css?v=1-3-60-live-home">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-23-lists">
-  <link rel="stylesheet" href="fire-s-owner-lists.css?v=1-1-space">
+  <link rel="stylesheet" href="fire-s-owner-lists.css?v=1-2-frames">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
@@ -117,9 +127,15 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.59</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.60</p></div>
   </div>
 
+  <div class="fire-s-header-actions">
+    <div class="fire-s-theme-choice" role="group" aria-label="Appearance">
+      <span class="fire-s-theme-choice-label">Appearance</span>
+      <button type="button" id="fireSThemeLightBtn" data-fire-s-theme="light" aria-pressed="true">Light</button>
+      <button type="button" id="fireSThemeDarkBtn" data-fire-s-theme="dark" aria-pressed="false">Dark</button>
+    </div>
   <div class="cloud-menu">
     <button id="cloudMenuBtn" type="button" class="cloud-menu-btn">
       Cloud
@@ -187,7 +203,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.59</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.60</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -218,6 +234,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 </header>
 
@@ -1431,8 +1448,6 @@
     class="project-search-top"
   >
 
-  <div id="fireSGatewayStatusFilters" class="fire-s-gateway-status-filters" aria-label="All, Action required, Compliant, Scheduled, Overdue, This Month"></div>
-
   <div id="inspectionDateFilterPanel" class="inspection-date-filter-panel">
     <div class="inspection-date-filter-title">Inspection Date Filter</div>
 
@@ -1463,7 +1478,7 @@
       <summary>How this filter works</summary>
       <div class="fire-s-date-filter-how-body">
         <svg class="fire-s-date-filter-how-svg" viewBox="0 0 360 118" role="img" aria-labelledby="fireSDateFilterHowTitle fireSDateFilterHowDesc">
-          <title id="fireSDateFilterHowTitle">Activity date must sit inside From and To</title>
+          <title id="fireSDateFilterHowTitle">Inspection date must sit inside From and To</title>
           <desc id="fireSDateFilterHowDesc">A timeline. The shaded window is From to To. A green premises inside the window stays on the list. A grey premises outside the window is hidden.</desc>
           <rect x="8" y="8" width="344" height="102" rx="12" fill="currentColor" opacity="0.04"></rect>
           <line x1="28" y1="58" x2="332" y2="58" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.35"></line>
@@ -1476,11 +1491,13 @@
           <text x="292" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#6b7280">Hide</text>
           <text x="48" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor" opacity="0.7">Older</text>
         </svg>
-        <p>Each premises has one <strong>activity date</strong>: completed, last saved, inspection date, created, or scheduled — whichever is newest. The date filter keeps a premises only if that date is on or between <strong>From</strong> and <strong>To</strong>.</p>
-        <p>The quick buttons set those two dates for you. <strong>All</strong> clears them so every premises is shown again.</p>
+        <p>Each premises uses its <strong>inspection date</strong> (or the scheduled / follow-up date if it has not been inspected yet). Opening the app or a cloud sync does not count as work today. The filter keeps a premises only if that date is on or between <strong>From</strong> and <strong>To</strong>.</p>
+        <p>The quick buttons set those two dates for you. <strong>Today</strong> is only premises dated today. <strong>All</strong> clears the dates so every premises is shown again.</p>
       </div>
     </details>
   </div>
+
+  <div id="fireSGatewayStatusFilters" class="fire-s-gateway-status-filters" aria-label="All, Action required, Compliant, Scheduled, Overdue, This Month"></div>
 
   <div id="projectPagingControls" class="project-paging-controls"></div>
 
@@ -1858,7 +1875,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-59-ver"></script>
+  <script src="fire-s-env.js?v=1-3-60-ver"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1873,7 +1890,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-59-see-ver"></script>
+  <script src="app.js?v=1-3-60-live-home"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-40-exist-sched"></script>
@@ -1906,7 +1923,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-49-see-ver')
+        navigator.serviceWorker.register('./service-worker.js?v=108-50-live-home')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

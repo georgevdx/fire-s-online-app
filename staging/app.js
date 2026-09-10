@@ -13060,18 +13060,23 @@ function fireSRemoveMoreFiltersDrawer() {
   const search = document.getElementById('projectSearch');
   const paging = document.getElementById('projectPagingControls');
   const listSection = document.getElementById('projectListSection');
-  const wantedPrev = statusHost || search;
 
-  if (datePanel && wantedPrev && datePanel.previousElementSibling !== wantedPrev) {
-    wantedPrev.insertAdjacentElement('afterend', datePanel);
-  } else if (datePanel && !wantedPrev && paging && datePanel.nextElementSibling !== paging) {
+  if (datePanel && statusHost) {
+    if (statusHost.previousElementSibling !== datePanel) {
+      statusHost.insertAdjacentElement('beforebegin', datePanel);
+    }
+  } else if (datePanel && search && datePanel.previousElementSibling !== search) {
+    search.insertAdjacentElement('afterend', datePanel);
+  } else if (datePanel && !statusHost && !search && paging && datePanel.nextElementSibling !== paging) {
     paging.insertAdjacentElement('beforebegin', datePanel);
-  } else if (datePanel && !wantedPrev && !paging && listSection && datePanel.parentNode !== listSection) {
+  } else if (datePanel && !statusHost && !search && !paging && listSection && datePanel.parentNode !== listSection) {
     listSection.appendChild(datePanel);
   }
 
   const activeStatus = document.getElementById('activeFilterStatus');
-  if (activeStatus && datePanel && activeStatus.previousElementSibling !== datePanel) {
+  if (activeStatus && statusHost && activeStatus.previousElementSibling !== statusHost) {
+    statusHost.insertAdjacentElement('afterend', activeStatus);
+  } else if (activeStatus && datePanel && !statusHost && activeStatus.previousElementSibling !== datePanel) {
     datePanel.insertAdjacentElement('afterend', activeStatus);
   }
 

@@ -12995,18 +12995,23 @@ function fireSRemoveMoreFiltersDrawer() {
   const search = document.getElementById('projectSearch');
   const paging = document.getElementById('projectPagingControls');
   const listSection = document.getElementById('projectListSection');
-  const wantedPrev = statusHost || search;
 
-  if (datePanel && wantedPrev && datePanel.previousElementSibling !== wantedPrev) {
-    wantedPrev.insertAdjacentElement('afterend', datePanel);
-  } else if (datePanel && !wantedPrev && paging && datePanel.nextElementSibling !== paging) {
+  if (datePanel && statusHost) {
+    if (statusHost.previousElementSibling !== datePanel) {
+      statusHost.insertAdjacentElement('beforebegin', datePanel);
+    }
+  } else if (datePanel && search && datePanel.previousElementSibling !== search) {
+    search.insertAdjacentElement('afterend', datePanel);
+  } else if (datePanel && !statusHost && !search && paging && datePanel.nextElementSibling !== paging) {
     paging.insertAdjacentElement('beforebegin', datePanel);
-  } else if (datePanel && !wantedPrev && !paging && listSection && datePanel.parentNode !== listSection) {
+  } else if (datePanel && !statusHost && !search && !paging && listSection && datePanel.parentNode !== listSection) {
     listSection.appendChild(datePanel);
   }
 
   const activeStatus = document.getElementById('activeFilterStatus');
-  if (activeStatus && datePanel && activeStatus.previousElementSibling !== datePanel) {
+  if (activeStatus && statusHost && activeStatus.previousElementSibling !== statusHost) {
+    statusHost.insertAdjacentElement('afterend', activeStatus);
+  } else if (activeStatus && datePanel && !statusHost && activeStatus.previousElementSibling !== datePanel) {
     datePanel.insertAdjacentElement('afterend', activeStatus);
   }
 
@@ -13625,35 +13630,26 @@ function getInspectionGatewayDateFilters() {
   };
 }
 
-function getProjectDateForFiltering(project) {
+function fireSInspectionFilterDate(project) {
   /*
-    Fire-S Activity Date Fix v1.0
-
-    Date filters must reflect real work activity.
-    If an old inspection is opened today, photos/comments are added,
-    and the inspection is finalized today, it must count under Today / This Week.
-
-    Priority:
-    1. completedAt  - finalized today
-    2. lastSaved    - edited today
-    3. inspectionDate
-    4. updatedAt / updated_at
-    5. createdAt / created_at
-    6. scheduledDate / followUpDate
+    Inspection Date Filter uses the date on the inspection or booking.
+    lastSaved / updated_at / created_at are cloud-sync stamps. Opening the
+    app today must not pull old premises into Today.
   */
   return normaliseDateString(
-    project?.completedAt ||
-    project?.lastSaved ||
     project?.inspectionDate ||
     project?.inspection_date ||
-    project?.updatedAt ||
-    project?.updated_at ||
-    project?.createdAt ||
-    project?.created_at ||
     project?.scheduledDate ||
     project?.followUpDate ||
+    project?.nextInspectionDate ||
+    project?.completedAt ||
+    project?.finalisedAt ||
     ''
   );
+}
+
+function getProjectDateForFiltering(project) {
+  return fireSInspectionFilterDate(project);
 }
 
 function projectMatchesInspectionDateFilter(project) {
@@ -13668,6 +13664,11 @@ function projectMatchesInspectionDateFilter(project) {
 
   return true;
 }
+
+window.getInspectionGatewayDateFilters = getInspectionGatewayDateFilters;
+window.fireSInspectionFilterDate = fireSInspectionFilterDate;
+window.getProjectDateForFiltering = getProjectDateForFiltering;
+window.projectMatchesInspectionDateFilter = projectMatchesInspectionDateFilter;
 
 function updateInspectionDateFilterStatus() {
   const status = document.getElementById('inspectionDateFilterStatus');
@@ -26904,24 +26905,16 @@ setTimeout(() => {
    ===================================================== */
 
 function fireSGetActivityDateForFiltering(project) {
-  return normaliseDateString(
-    project?.completedAt ||
-    project?.lastSaved ||
-    project?.inspectionDate ||
-    project?.inspection_date ||
-    project?.updatedAt ||
-    project?.updated_at ||
-    project?.createdAt ||
-    project?.created_at ||
-    project?.scheduledDate ||
-    project?.followUpDate ||
-    ''
-  );
+  return fireSInspectionFilterDate(project);
 }
 
 function getProjectDateForFiltering(project) {
-  return fireSGetActivityDateForFiltering(project);
+  return fireSInspectionFilterDate(project);
 }
+
+window.fireSInspectionFilterDate = fireSInspectionFilterDate;
+window.fireSGetActivityDateForFiltering = fireSGetActivityDateForFiltering;
+window.getProjectDateForFiltering = getProjectDateForFiltering;
 
 function fireSDateIsToday(dateValue) {
   const dateText = normaliseDateString(dateValue);
@@ -28216,7 +28209,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function readVisibleProjects() {
     const all = readAllProjects();
-    const active = all.filter(project => {
+    let active = all.filter(project => {
       try {
         if (typeof window.fireSIsDeletedPremises === 'function' && window.fireSIsDeletedPremises(project)) {
           return false;
@@ -28229,12 +28222,19 @@ if (!window.fireSMobileSmartCardsApplied) {
     });
     try {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(active) || [];
+        active = window.getVisibleProjectsForCurrentUser(active) || [];
       }
     } catch (error) {
       console.warn('Fire-S Executive Snapshot could not filter visible premises:', error);
     }
-    return active;
+    return (Array.isArray(active) ? active : []).filter(project => {
+      try {
+        if (typeof window.projectMatchesInspectionDateFilter === 'function') {
+          return window.projectMatchesInspectionDateFilter(project);
+        }
+      } catch (_) {}
+      return true;
+    });
   }
 
   function isClosed(project) {
@@ -28433,6 +28433,13 @@ if (!window.fireSMobileSmartCardsApplied) {
     const projects = readVisibleProjects();
     const data = calc(projects);
     const healthTone = data.avg >= 90 ? 'good' : data.avg >= 75 ? 'watch' : data.avg ? 'risk' : 'neutral';
+    let premisesHint = 'all visible';
+    try {
+      const dateFilters = typeof window.getInspectionGatewayDateFilters === 'function'
+        ? window.getInspectionGatewayDateFilters()
+        : null;
+      if (dateFilters && (dateFilters.from || dateFilters.to)) premisesHint = 'in date filter';
+    } catch (_) {}
 
     const nextHtml = `
       <div class="fire-s-exec-head">
@@ -28443,7 +28450,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         </div>
       </div>
       <div class="fire-s-exec-grid">
-        ${stat('Premises', data.count, 'all visible', 'neutral')}
+        ${stat('Premises', data.count, premisesHint, 'neutral')}
         ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone)}
         ${stat('Open Actions', data.actions, data.actions ? 'open work' : 'clear', data.actions ? 'risk' : 'good')}
         ${stat('Overdue', data.overdue, data.overdue ? 'open overdue' : 'none', data.overdue ? 'risk' : 'good')}
@@ -28743,17 +28750,16 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function activityDate(project) {
+    if (typeof getProjectDateForFiltering === 'function') return getProjectDateForFiltering(project);
+    if (typeof window.getProjectDateForFiltering === 'function') return window.getProjectDateForFiltering(project);
     return dateKey(
-      project?.completedAt ||
-      project?.lastSaved ||
       project?.inspectionDate ||
       project?.inspection_date ||
-      project?.updatedAt ||
-      project?.updated_at ||
-      project?.createdAt ||
-      project?.created_at ||
       project?.scheduledDate ||
       project?.followUpDate ||
+      project?.nextInspectionDate ||
+      project?.completedAt ||
+      project?.finalisedAt ||
       ''
     );
   }
@@ -43150,4 +43156,52 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     canPermanentlyDeleteEntry,
     recycleEntries
   };
+})();
+
+/* =====================================================
+   FIRE-S appearance choice — Light / Dark
+   ===================================================== */
+(function fireSAppearanceChoice() {
+  'use strict';
+
+  const STORAGE_KEY = 'fireS.theme';
+
+  function currentTheme() {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'light';
+    } catch (_) {
+      return 'light';
+    }
+  }
+
+  function applyTheme(theme) {
+    const next = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-fire-s-theme', next);
+    try { localStorage.setItem(STORAGE_KEY, next); } catch (_) {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', next === 'dark' ? '#0b1220' : '#b71c1c');
+    document.querySelectorAll('button[data-fire-s-theme]').forEach(button => {
+      const on = button.getAttribute('data-fire-s-theme') === next;
+      button.setAttribute('aria-pressed', String(on));
+      button.classList.toggle('is-selected', on);
+    });
+  }
+
+  function wire() {
+    applyTheme(currentTheme());
+    document.querySelectorAll('button[data-fire-s-theme]').forEach(button => {
+      if (button.__fireSThemeBound) return;
+      button.__fireSThemeBound = true;
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        applyTheme(button.getAttribute('data-fire-s-theme'));
+      });
+    });
+  }
+
+  window.fireSApplyAppearance = applyTheme;
+  window.fireSGetAppearance = currentTheme;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
 })();
