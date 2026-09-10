@@ -7590,16 +7590,37 @@ function getQueuedProjects(batchSize = FIRE_S_PENDING_UPLOAD_BATCH_SIZE) {
     .filter(Boolean);
 }
 
+function fireSProjectsStorageKey() {
+  try {
+    if (typeof fireSStaging !== 'undefined' && fireSStaging) return 'fireyeProjects-staging';
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) return 'fireyeProjects-staging';
+    if (typeof window.fireSIsStaging === 'function' && window.fireSIsStaging()) {
+      return 'fireyeProjects-staging';
+    }
+    if (/\/staging(\/|$)/i.test(String((location && location.pathname) || ''))) {
+      return 'fireyeProjects-staging';
+    }
+  } catch (_) {}
+  return 'fireyeProjects';
+}
+
+function fireSDeletedProjectIdsStorageKey() {
+  return fireSProjectsStorageKey() === 'fireyeProjects-staging'
+    ? 'fireyeDeletedProjectIds-staging'
+    : 'fireyeDeletedProjectIds';
+}
+
 function getProjects() {
-  const saved = localStorage.getItem('fireyeProjects');
+  const saved = localStorage.getItem(fireSProjectsStorageKey());
   return saved ? JSON.parse(saved) : [];
 }
 
 function setProjects(projects) {
   const previousProjects = getProjects();
+  const storageKey = fireSProjectsStorageKey();
 
   try {
-    localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    localStorage.setItem(storageKey, JSON.stringify(projects));
     capturePendingUploadQueueChanges(previousProjects, projects);
   } catch (error) {
     if (error && error.name === 'QuotaExceededError') {
@@ -7607,7 +7628,7 @@ function setProjects(projects) {
         stripHeavyPhotoDataFromProjects(projects);
 
       localStorage.setItem(
-        'fireyeProjects',
+        storageKey,
         JSON.stringify(compactProjects)
       );
       capturePendingUploadQueueChanges(previousProjects, compactProjects);
@@ -7631,9 +7652,12 @@ function setProjects(projects) {
   }
 }
 
+window.fireSProjectsStorageKey = fireSProjectsStorageKey;
+window.fireSDeletedProjectIdsStorageKey = fireSDeletedProjectIdsStorageKey;
+
 function getDeletedProjectIds() {
   try {
-    const raw = localStorage.getItem('fireyeDeletedProjectIds');
+    const raw = localStorage.getItem(fireSDeletedProjectIdsStorageKey());
     return raw ? JSON.parse(raw) : {};
   } catch (error) {
     console.warn('Could not read deleted inspection register:', error);
@@ -7657,7 +7681,7 @@ function markProjectDeleted(projectId) {
 
   const deleted = getDeletedProjectIds();
   deleted[projectId] = new Date().toISOString();
-  localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+  localStorage.setItem(fireSDeletedProjectIdsStorageKey(), JSON.stringify(deleted));
 }
 
 function isProjectDeleted(projectId) {
@@ -28239,7 +28263,11 @@ if (!window.fireSMobileSmartCardsApplied) {
     try {
       const all = typeof window.getProjects === 'function'
         ? window.getProjects()
-        : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+        : JSON.parse(localStorage.getItem(
+          (typeof window.fireSProjectsStorageKey === 'function'
+            ? window.fireSProjectsStorageKey()
+            : 'fireyeProjects')
+        ) || '[]');
       return Array.isArray(all) ? all : [];
     } catch (error) {
       console.warn('Fire-S Executive Snapshot could not read premises:', error);
@@ -28249,7 +28277,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function readVisibleProjects() {
     const all = readAllProjects();
-    const active = all.filter(project => {
+    let active = all.filter(project => {
       try {
         if (typeof window.fireSIsDeletedPremises === 'function' && window.fireSIsDeletedPremises(project)) {
           return false;
@@ -28262,12 +28290,19 @@ if (!window.fireSMobileSmartCardsApplied) {
     });
     try {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(active) || [];
+        active = window.getVisibleProjectsForCurrentUser(active) || [];
       }
     } catch (error) {
       console.warn('Fire-S Executive Snapshot could not filter visible premises:', error);
     }
-    return active;
+    return (Array.isArray(active) ? active : []).filter(project => {
+      try {
+        if (typeof window.projectMatchesInspectionDateFilter === 'function') {
+          return window.projectMatchesInspectionDateFilter(project);
+        }
+      } catch (_) {}
+      return true;
+    });
   }
 
   function isClosed(project) {
@@ -28466,6 +28501,13 @@ if (!window.fireSMobileSmartCardsApplied) {
     const projects = readVisibleProjects();
     const data = calc(projects);
     const healthTone = data.avg >= 90 ? 'good' : data.avg >= 75 ? 'watch' : data.avg ? 'risk' : 'neutral';
+    let premisesHint = 'all visible';
+    try {
+      const dateFilters = typeof window.getInspectionGatewayDateFilters === 'function'
+        ? window.getInspectionGatewayDateFilters()
+        : null;
+      if (dateFilters && (dateFilters.from || dateFilters.to)) premisesHint = 'in date filter';
+    } catch (_) {}
 
     const nextHtml = `
       <div class="fire-s-exec-head">
@@ -28476,7 +28518,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         </div>
       </div>
       <div class="fire-s-exec-grid">
-        ${stat('Premises', data.count, 'all visible', 'neutral')}
+        ${stat('Premises', data.count, premisesHint, 'neutral')}
         ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone)}
         ${stat('Open Actions', data.actions, data.actions ? 'open work' : 'clear', data.actions ? 'risk' : 'good')}
         ${stat('Overdue', data.overdue, data.overdue ? 'open overdue' : 'none', data.overdue ? 'risk' : 'good')}
@@ -42327,7 +42369,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : {};
       if (deleted && deleted[projectId]) {
         delete deleted[projectId];
-        localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+        localStorage.setItem(
+          (typeof fireSDeletedProjectIdsStorageKey === 'function'
+            ? fireSDeletedProjectIdsStorageKey()
+            : 'fireyeDeletedProjectIds'),
+          JSON.stringify(deleted)
+        );
       }
     } catch (_) {}
     writeProjects(projects);

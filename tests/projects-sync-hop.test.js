@@ -59,15 +59,15 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.59'/.test(liveEnv),
   'Live Fire-S must be 1.3.59'
 );
-assert.ok(/1\.3\.66-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.66-toets');
+assert.ok(/1\.3\.67-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.67-toets');
 assert.ok(
   /app\.js\?v=1-3-59-see-ver/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-59-ver/.test(liveHtml),
   'Live must cache-bust the projects sync-hop fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-66-today-date/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-66-ver/.test(stagingHtml),
+  /app\.js\?v=1-3-67-toets-store/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-67-ver/.test(stagingHtml),
   'Toets-blad must cache-bust the projects sync-hop fix'
 );
 
