@@ -15,7 +15,7 @@ Do not wipe toets-only files or behaviour to match live:
 - `staging/fire-s-payfast.js` and `staging/fire-s-md5.js`
 - Create password when the typed email has no password yet
 - New-inspection stay-on-form (not sat live yet)
-- Displayed version **1.3.65-toets**
+- Displayed version **1.3.66-toets**
 
 Do not run `scripts/sync-toets-blad.sh` as a blanket copy. That overwrites toets extras.
 

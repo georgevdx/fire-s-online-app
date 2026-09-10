@@ -16,7 +16,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const app = read('staging/app.js');
 const css = read('staging/fire-s-get-started.css');
 
-assert.ok(/1\.3\.65-toets/.test(env), 'Toets-blad version must be 1.3.65-toets');
+assert.ok(/1\.3\.66-toets/.test(env), 'Toets-blad version must be 1.3.66-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.59'/.test(liveEnv) &&
     /bounceLegacyToetsQuery/.test(liveEnv) &&
@@ -29,10 +29,10 @@ assert.ok(
   'Version must paint as soon as the environment fence loads'
 );
 assert.ok(
-  /id="appVersion" class="brand-version">Version 1\.3\.65-toets</.test(html) &&
-    /id="cloudVersion">1\.3\.65-toets</.test(html) &&
+  /id="appVersion" class="brand-version">Version 1\.3\.66-toets</.test(html) &&
+    /id="cloudVersion">1\.3\.66-toets</.test(html) &&
     /getElementById\('cloudVersion'\)/.test(env),
-  'Toets-blad HTML must show 1.3.65-toets before scripts run'
+  'Toets-blad HTML must show 1.3.66-toets before scripts run'
 );
 assert.ok(
   /id="appVersion" class="brand-version">Version 1\.3\.59</.test(read('index.html')) &&

@@ -111,8 +111,9 @@ assert.ok(
 assert.ok(
   /id="fireSDateFilterHow"/.test(html) &&
     /How this filter works/.test(html) &&
-    /activity date/.test(html),
-  'Date filter panel must include the how-this-filter-works illustration'
+    /inspection date/.test(html) &&
+    !/activity date/.test(html),
+  'Date filter panel must explain it uses the inspection date, not last saved'
 );
 
 assert.ok(

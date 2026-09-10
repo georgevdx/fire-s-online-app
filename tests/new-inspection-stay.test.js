@@ -45,12 +45,12 @@ assert.ok(
   'Toets blank-home recover must keep a new inspection on screen'
 );
 assert.ok(
-  /app\.js\?v=1-3-65-see-ver/.test(stagingHtml) &&
+  /app\.js\?v=1-3-66-today-date/.test(stagingHtml) &&
     /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(stagingHtml),
   'Toets-blad must cache-bust the new-inspection stay fix'
 );
 assert.ok(
-  !/1-3-65-ver/.test(liveHtml) && !/1-7-new-insp/.test(liveHtml),
+  !/1-3-66-ver/.test(liveHtml) && !/1-7-new-insp/.test(liveHtml),
   'Live cache tags must not include the toets-only inspection stay'
 );
 

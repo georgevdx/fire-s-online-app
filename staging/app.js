@@ -13666,35 +13666,26 @@ function getInspectionGatewayDateFilters() {
   };
 }
 
-function getProjectDateForFiltering(project) {
+function fireSInspectionFilterDate(project) {
   /*
-    Fire-S Activity Date Fix v1.0
-
-    Date filters must reflect real work activity.
-    If an old inspection is opened today, photos/comments are added,
-    and the inspection is finalized today, it must count under Today / This Week.
-
-    Priority:
-    1. completedAt  - finalized today
-    2. lastSaved    - edited today
-    3. inspectionDate
-    4. updatedAt / updated_at
-    5. createdAt / created_at
-    6. scheduledDate / followUpDate
+    Inspection Date Filter uses the date on the inspection or booking.
+    lastSaved / updated_at / created_at are cloud-sync stamps. Opening the
+    app today must not pull old premises into Today.
   */
   return normaliseDateString(
-    project?.completedAt ||
-    project?.lastSaved ||
     project?.inspectionDate ||
     project?.inspection_date ||
-    project?.updatedAt ||
-    project?.updated_at ||
-    project?.createdAt ||
-    project?.created_at ||
     project?.scheduledDate ||
     project?.followUpDate ||
+    project?.nextInspectionDate ||
+    project?.completedAt ||
+    project?.finalisedAt ||
     ''
   );
+}
+
+function getProjectDateForFiltering(project) {
+  return fireSInspectionFilterDate(project);
 }
 
 function projectMatchesInspectionDateFilter(project) {
@@ -13711,6 +13702,7 @@ function projectMatchesInspectionDateFilter(project) {
 }
 
 window.getInspectionGatewayDateFilters = getInspectionGatewayDateFilters;
+window.fireSInspectionFilterDate = fireSInspectionFilterDate;
 window.getProjectDateForFiltering = getProjectDateForFiltering;
 window.projectMatchesInspectionDateFilter = projectMatchesInspectionDateFilter;
 window.applyInspectionQuickDateFilter = applyInspectionQuickDateFilter;
@@ -26947,29 +26939,22 @@ setTimeout(() => {
 
 
 /* =====================================================
-   FIRE-S Activity Date Fix v1.0
-   Ensures Today / This Week / This Month use real activity dates.
+   Inspection Date Filter
+   Today / This Week / This Month use the inspection or booking date,
+   not lastSaved from a cloud sync.
    ===================================================== */
 
 function fireSGetActivityDateForFiltering(project) {
-  return normaliseDateString(
-    project?.completedAt ||
-    project?.lastSaved ||
-    project?.inspectionDate ||
-    project?.inspection_date ||
-    project?.updatedAt ||
-    project?.updated_at ||
-    project?.createdAt ||
-    project?.created_at ||
-    project?.scheduledDate ||
-    project?.followUpDate ||
-    ''
-  );
+  return fireSInspectionFilterDate(project);
 }
 
 function getProjectDateForFiltering(project) {
-  return fireSGetActivityDateForFiltering(project);
+  return fireSInspectionFilterDate(project);
 }
+
+window.fireSInspectionFilterDate = fireSInspectionFilterDate;
+window.fireSGetActivityDateForFiltering = fireSGetActivityDateForFiltering;
+window.getProjectDateForFiltering = getProjectDateForFiltering;
 
 function fireSDateIsToday(dateValue) {
   const dateText = normaliseDateString(dateValue);
@@ -28791,17 +28776,16 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function activityDate(project) {
+    if (typeof getProjectDateForFiltering === 'function') return getProjectDateForFiltering(project);
+    if (typeof window.getProjectDateForFiltering === 'function') return window.getProjectDateForFiltering(project);
     return dateKey(
-      project?.completedAt ||
-      project?.lastSaved ||
       project?.inspectionDate ||
       project?.inspection_date ||
-      project?.updatedAt ||
-      project?.updated_at ||
-      project?.createdAt ||
-      project?.created_at ||
       project?.scheduledDate ||
       project?.followUpDate ||
+      project?.nextInspectionDate ||
+      project?.completedAt ||
+      project?.finalisedAt ||
       ''
     );
   }
