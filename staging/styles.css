@@ -14684,3 +14684,77 @@ html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card-meta smal
 html[data-fire-s-theme="light"] #projectListSection .ultra-premises-dates small {
   color: #334155 !important;
 }
+
+/* Dark Mode: dark type on white Home tiles, Command Centre, continue dialog. */
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-title,
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-icon,
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) span {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-copy {
+  color: #334155 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdInspectionsBtn .command-title,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdInspectionsBtn .command-copy,
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card.primary .command-title,
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card.primary .command-copy {
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-cc-eyebrow,
+html[data-fire-s-theme="dark"] span.fire-s-cc-eyebrow {
+  color: #334155 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-cc-quick button {
+  color: #0f172a !important;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-cc-quick button:disabled {
+  color: #334155 !important;
+  background: #e2e8f0 !important;
+  opacity: 1 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-cc-quick button.fire-s-cc-quick-primary,
+html[data-fire-s-theme="dark"] .fire-s-cc-quick button.fire-s-cc-quick-primary:disabled {
+  background: #176fb2 !important;
+  color: #ffffff !important;
+  border-color: #176fb2 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-cc-quick button.fire-s-cc-data-v12 {
+  color: #9f1239 !important;
+  background: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__dialog,
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__body,
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__actions {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__eyebrow {
+  color: #176fae !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11 h3,
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__premises,
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__premises strong,
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__premises span {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11 p {
+  color: #334155 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__cancel {
+  color: #334155 !important;
+  background: #ffffff !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__continue {
+  color: #ffffff !important;
+  background: #176fae !important;
+}

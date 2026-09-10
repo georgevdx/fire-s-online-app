@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-50-toets-cards';
+const CACHE = 'fire-s-108-51-toets-visible';
 const PRECACHE = [
   './',
   './index.html',

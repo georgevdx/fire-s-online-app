@@ -22,10 +22,10 @@ const stagingManual = read('staging/fire-s-user-manual.js');
 const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
-assert.ok(/1\.3\.70-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.70-toets');
+assert.ok(/1\.3\.71-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.71-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.62'/.test(liveEnv),
-  'Live Fire-S must be 1.3.62'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.63'/.test(liveEnv),
+  'Live Fire-S must be 1.3.63'
 );
 
 function assertExistingScheduleUi(html, css, app, assign, manual, label) {
@@ -65,14 +65,14 @@ function assertExistingScheduleUi(html, css, app, assign, manual, label) {
 
 assertExistingScheduleUi(liveHtml, liveCss, liveApp, liveAssign, liveManual, 'Live');
 assert.ok(
-  /id="appVersion" class="brand-version">Version 1\.3\.62</.test(liveHtml) &&
-    /id="cloudVersion">1\.3\.62</.test(liveHtml),
-  'Live must show Version 1.3.62 in the header without waiting for a script'
+  /id="appVersion" class="brand-version">Version 1\.3\.63</.test(liveHtml) &&
+    /id="cloudVersion">1\.3\.63</.test(liveHtml),
+  'Live must show Version 1.3.63 in the header without waiting for a script'
 );
 assert.ok(
-  /id="appVersion" class="brand-version">Version 1\.3\.70-toets</.test(stagingHtml) &&
-    /id="cloudVersion">1\.3\.70-toets</.test(stagingHtml),
-  'Toets-blad must show Version 1.3.70-toets in the header without waiting for a script'
+  /id="appVersion" class="brand-version">Version 1\.3\.71-toets</.test(stagingHtml) &&
+    /id="cloudVersion">1\.3\.71-toets</.test(stagingHtml),
+  'Toets-blad must show Version 1.3.71-toets in the header without waiting for a script'
 );
 assertExistingScheduleUi(
   stagingHtml,

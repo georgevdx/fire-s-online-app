@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-62-card-fonts',
+  '1-3-63-visible',
   '1-1-home',
-  '108-52-card-fonts',
-  'fire-s-108-52-card-fonts'
+  '108-53-visible',
+  'fire-s-108-53-visible'
 );
 assertPullSource(
   stagingApp,
@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-70-toets-cards',
+  '1-3-71-toets-visible',
   '1-1-count',
-  '108-50-toets-cards',
-  'fire-s-108-50-toets-cards'
+  '108-51-toets-visible',
+  'fire-s-108-51-toets-visible'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
