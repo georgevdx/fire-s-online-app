@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-51-snap-cards';
+const CACHE = 'fire-s-108-52-card-fonts';
 const PRECACHE = [
   './',
   './index.html',

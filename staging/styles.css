@@ -8297,6 +8297,14 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 .ultra-premises-card {
   position: relative;
+  display: grid;
+  grid-template-columns: 8px 1fr;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 3px 10px rgba(15,23,42,0.06);
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
@@ -14593,4 +14601,86 @@ html[data-fire-s-theme="light"] .fire-s-136a5-card-top span,
 html[data-fire-s-theme="light"] .fire-s-136a8-card-meta b,
 html[data-fire-s-theme="light"] .fire-s-136a5-card-meta b {
   color: #0f172a;
+}
+
+
+/* Inspection Gateway cards: force readable type in Light / Dark. */
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card-body,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card,
+html[data-fire-s-theme="dark"] #projectListSection .ultra-premises-card,
+html[data-fire-s-theme="dark"] #projectListSection .ultra-premises-body,
+html[data-fire-s-theme="dark"] #projectListSection .smart-premises-card,
+html[data-fire-s-theme="dark"] #projectListSection .smart-premises-body,
+html[data-fire-s-theme="dark"] #projectListSection .premises-card-v118b,
+html[data-fire-s-theme="dark"] #projectListSection .premises-card-main-v118b,
+html[data-fire-s-theme="dark"] #projectListSection .project-card {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #64748b !important;
+}
+
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card *,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card *,
+html[data-fire-s-theme="dark"] #projectListSection .ultra-premises-card *,
+html[data-fire-s-theme="dark"] #projectListSection .smart-premises-card *,
+html[data-fire-s-theme="dark"] #projectListSection .premises-card-v118b *,
+html[data-fire-s-theme="dark"] #projectListSection .project-card * {
+  color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card-top strong,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card-top strong,
+html[data-fire-s-theme="dark"] #projectListSection .ultra-premises-title,
+html[data-fire-s-theme="dark"] #projectListSection .premises-card-title-block-v118b h3 {
+  color: #f8fafc !important;
+  font-weight: 900 !important;
+}
+
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card-meta div,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card-meta div,
+html[data-fire-s-theme="dark"] #projectListSection .ultra-premises-dates > span,
+html[data-fire-s-theme="dark"] #projectListSection .smart-card-note,
+html[data-fire-s-theme="dark"] #projectListSection .premises-health-badge-v118b,
+html[data-fire-s-theme="dark"] #projectListSection .premises-card-metrics-v118b span {
+  background: #0f172a !important;
+  border-color: #64748b !important;
+  color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card-top span,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card-top span,
+html[data-fire-s-theme="dark"] #projectListSection .ultra-status-keyword,
+html[data-fire-s-theme="dark"] #projectListSection .choice-status-pill {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #94a3b8 !important;
+}
+
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card,
+html[data-fire-s-theme="light"] #projectListSection .ultra-premises-card,
+html[data-fire-s-theme="light"] #projectListSection .smart-premises-card,
+html[data-fire-s-theme="light"] #projectListSection .premises-card-v118b,
+html[data-fire-s-theme="light"] #projectListSection .project-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card-top strong,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card-top strong,
+html[data-fire-s-theme="light"] #projectListSection .ultra-premises-title,
+html[data-fire-s-theme="light"] #projectListSection .premises-card-title-block-v118b h3,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card-meta b,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card-meta b,
+html[data-fire-s-theme="light"] #projectListSection .ultra-premises-dates b {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card p,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card p,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card-meta small,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card-meta small,
+html[data-fire-s-theme="light"] #projectListSection .ultra-premises-dates small {
+  color: #334155 !important;
 }
