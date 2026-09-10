@@ -56,18 +56,18 @@ assertNoSyncHop(liveApp, 'Live');
 assertNoSyncHop(stagingApp, 'Toets');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.60'/.test(liveEnv),
-  'Live Fire-S must be 1.3.60'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.61'/.test(liveEnv),
+  'Live Fire-S must be 1.3.61'
 );
-assert.ok(/1\.3\.68-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.68-toets');
+assert.ok(/1\.3\.69-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.69-toets');
 assert.ok(
-  /app\.js\?v=1-3-60-live-home/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-60-ver/.test(liveHtml),
+  /app\.js\?v=1-3-61-snap-cards/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-61-ver/.test(liveHtml),
   'Live must cache-bust the projects sync-hop fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-68-toets-home/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-68-ver/.test(stagingHtml),
+  /app\.js\?v=1-3-69-toets-snap/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-69-ver/.test(stagingHtml),
   'Toets-blad must cache-bust the projects sync-hop fix'
 );
 

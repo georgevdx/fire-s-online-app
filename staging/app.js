@@ -28506,7 +28506,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     const projects = readVisibleProjects();
     const data = calc(projects);
     const healthTone = data.avg >= 90 ? 'good' : data.avg >= 75 ? 'watch' : data.avg ? 'risk' : 'neutral';
-    let premisesHint = 'all visible';
+    let premisesHint = 'currently shown';
     try {
       const dateFilters = typeof window.getInspectionGatewayDateFilters === 'function'
         ? window.getInspectionGatewayDateFilters()
@@ -28527,7 +28527,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone)}
         ${stat('Open Actions', data.actions, data.actions ? 'open work' : 'clear', data.actions ? 'risk' : 'good')}
         ${stat('Overdue', data.overdue, data.overdue ? 'open overdue' : 'none', data.overdue ? 'risk' : 'good')}
-        ${stat('Photos', data.photos, 'photo evidence', 'neutral')}
+        ${stat('Photos', data.photos, data.photos === 1 ? '1 on file' : 'on file', 'neutral')}
         ${stat('Attention', data.attention, 'health < 75%', data.attention ? 'watch' : 'good')}
       </div>
       <div class="fire-s-exec-bar"><i style="width:${Math.max(0, Math.min(100, data.avg || 0))}%"></i></div>

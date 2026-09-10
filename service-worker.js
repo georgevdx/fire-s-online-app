@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-50-live-home';
+const CACHE = 'fire-s-108-51-snap-cards';
 const PRECACHE = [
   './',
   './index.html',

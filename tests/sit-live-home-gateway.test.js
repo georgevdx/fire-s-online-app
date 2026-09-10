@@ -67,11 +67,11 @@ assert.ok(
   'Home section blocks must have neat frames on live and toets'
 );
 assert.ok(
-  /Version 1\.3\.60/.test(liveHtml) &&
-    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.60'/.test(liveEnv) &&
-    /1\.3\.68-toets/.test(stagingHtml) &&
-    /1\.3\.68-toets/.test(stagingEnv),
-  'Live must show 1.3.60 and toets 1.3.68-toets so a phone can tell it has this build'
+  /Version 1\.3\.61/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.61'/.test(liveEnv) &&
+    /1\.3\.69-toets/.test(stagingHtml) &&
+    /1\.3\.69-toets/.test(stagingEnv),
+  'Live must show 1.3.61 and toets 1.3.69-toets so a phone can tell it has this build'
 );
 
 console.log('sit-live-home-gateway.test.js: ok');

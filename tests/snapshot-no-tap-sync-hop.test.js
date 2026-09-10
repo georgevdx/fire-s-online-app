@@ -16,8 +16,8 @@ assert.ok(
   'Executive Snapshot must not say tap to filter'
 );
 assert.ok(
-  /open overdue/.test(app) && /photo evidence/.test(app),
-  'Overdue and Photos must be summary labels, not filter hints'
+  /open overdue/.test(app) && /currently shown/.test(app) && /on file/.test(app),
+  'Premises, Overdue and Photos must show a value plus a summary label'
 );
 assert.ok(
   /Summary of visible premises/.test(app),

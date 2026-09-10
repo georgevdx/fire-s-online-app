@@ -12351,11 +12351,11 @@ button,
 .fire-s-136a5-card-body { min-width: 0; padding: 11px 12px; }
 .fire-s-136a5-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .fire-s-136a5-card-top strong { color: #0f172a; font-size: 14px; line-height: 1.2; word-break: normal; overflow-wrap: break-word; }
-.fire-s-136a5-card-top span { flex: 0 0 auto; max-width: 118px; padding: 4px 7px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 9px; font-weight: 900; text-align: center; line-height: 1.05; white-space: normal; word-break: normal; }
+.fire-s-136a5-card-top span { flex: 0 0 auto; max-width: 118px; padding: 4px 8px; border-radius: 999px; background: #f1f5f9; color: #0f172a; font-size: 11px; font-weight: 900; text-align: center; line-height: 1.15; white-space: normal; word-break: normal; }
 .fire-s-136a5-card p { margin: 5px 0 9px; color: #64748b; font-size: 11px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fire-s-136a5-card-meta { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
 .fire-s-136a5-card-meta div { padding: 6px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; min-width: 0; }
-.fire-s-136a5-card-meta small { display: block; color: #64748b; font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+.fire-s-136a5-card-meta small { display: block; color: #334155; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
 .fire-s-136a5-card-meta b { display: block; margin-top: 2px; color: #0f172a; font-size: 11px; line-height: 1.1; white-space: normal; word-break: normal; overflow-wrap: break-word; }
 .fire-s-136a5-open { margin-top: 8px; color: #b91c1c; font-size: 12px; font-weight: 900; }
 @media (max-width: 700px) {
@@ -12366,7 +12366,7 @@ button,
   .fire-s-136a5-card { min-height: 112px; border-radius: 14px; }
   .fire-s-136a5-card-body { padding: 9px 10px; }
   .fire-s-136a5-card-top strong { font-size: 13px; }
-  .fire-s-136a5-card-top span { font-size: 8.5px; max-width: 98px; padding: 3px 6px; }
+  .fire-s-136a5-card-top span { font-size: 10px; max-width: 98px; padding: 3px 6px; }
   .fire-s-136a5-card-meta { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .fire-s-136a5-banner { align-items: stretch; flex-direction: column; }
   .fire-s-136a5-banner button { width: 100%; }
@@ -12493,14 +12493,14 @@ button,
 .fire-s-136a8-card-top span {
   flex-shrink: 0;
   max-width: 110px;
-  padding: 4px 7px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: #f1f5f9;
-  color: #334155;
-  font-size: 9px;
+  color: #0f172a;
+  font-size: 11px;
   font-weight: 900;
   text-align: center;
-  line-height: 1.05;
+  line-height: 1.15;
   white-space: normal;
   word-break: normal;
 }
@@ -12529,8 +12529,8 @@ button,
 }
 .fire-s-136a8-card-meta small {
   display: block;
-  color: #64748b;
-  font-size: 8px;
+  color: #334155;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -14516,4 +14516,81 @@ html[data-fire-s-theme="dark"] .fs-prod-kpi-month .fs-prod-kpi-filter {
   .fire-s-theme-choice-label {
     display: none;
   }
+}
+
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.neutral {
+  background: #0f172a;
+  border-color: #64748b;
+  color: #f8fafc;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-stat span,
+html[data-fire-s-theme="dark"] .fire-s-exec-stat strong,
+html[data-fire-s-theme="dark"] .fire-s-exec-stat em {
+  color: #f8fafc;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.good {
+  background: #14532d;
+  border-color: #22c55e;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.good span,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.good strong,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.good em {
+  color: #bbf7d0;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.watch {
+  background: #78350f;
+  border-color: #f59e0b;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.watch span,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.watch strong,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.watch em {
+  color: #fde68a;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.risk {
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.risk span,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.risk strong,
+html[data-fire-s-theme="dark"] .fire-s-exec-grid .fire-s-exec-stat.risk em {
+  color: #fecaca;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-136a8-card-top strong,
+html[data-fire-s-theme="dark"] .fire-s-136a5-card-top strong,
+html[data-fire-s-theme="dark"] .fire-s-136a8-card p,
+html[data-fire-s-theme="dark"] .fire-s-136a5-card p {
+  color: #f8fafc;
+}
+html[data-fire-s-theme="dark"] .fire-s-136a8-card-top span,
+html[data-fire-s-theme="dark"] .fire-s-136a5-card-top span {
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #94a3b8;
+}
+html[data-fire-s-theme="dark"] .fire-s-136a8-card-meta div,
+html[data-fire-s-theme="dark"] .fire-s-136a5-card-meta div {
+  background: #0f172a;
+  border-color: #64748b;
+}
+html[data-fire-s-theme="dark"] .fire-s-136a8-card-meta small,
+html[data-fire-s-theme="dark"] .fire-s-136a5-card-meta small,
+html[data-fire-s-theme="dark"] .fire-s-136a8-card-meta b,
+html[data-fire-s-theme="dark"] .fire-s-136a5-card-meta b {
+  color: #f8fafc;
+}
+
+html[data-fire-s-theme="light"] .fire-s-exec-stat span,
+html[data-fire-s-theme="light"] .fire-s-exec-stat em,
+html[data-fire-s-theme="light"] .fire-s-136a8-card-meta small,
+html[data-fire-s-theme="light"] .fire-s-136a5-card-meta small {
+  color: #334155;
+}
+html[data-fire-s-theme="light"] .fire-s-exec-stat strong,
+html[data-fire-s-theme="light"] .fire-s-136a8-card-top span,
+html[data-fire-s-theme="light"] .fire-s-136a5-card-top span,
+html[data-fire-s-theme="light"] .fire-s-136a8-card-meta b,
+html[data-fire-s-theme="light"] .fire-s-136a5-card-meta b {
+  color: #0f172a;
 }
