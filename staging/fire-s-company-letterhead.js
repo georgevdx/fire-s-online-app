@@ -7,10 +7,30 @@
 (function fireSCompanyLetterheadModule() {
   'use strict';
 
-  const STORAGE_KEY = 'fireS.companyLetterhead.v1';
+  const LIVE_STORAGE_KEY = 'fireS.companyLetterhead.v1';
+  const STAGING_STORAGE_KEY = 'fireS.companyLetterhead.v1-staging';
   const FIRE_S_LOGO = 'icon-192.png';
   const SAMPLE_COMPANY_S_LOGO =
     'sample-company-s-logo.svg';
+
+  function isStagingApp() {
+    try {
+      if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) return true;
+      return String((window.location && window.location.pathname) || '')
+        .toLowerCase()
+        .indexOf('/staging') !== -1;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function storageKey() {
+    return isStagingApp() ? STAGING_STORAGE_KEY : LIVE_STORAGE_KEY;
+  }
+
+  function isSampleCompanyLogo(src) {
+    return String(src || '').toLowerCase().indexOf('sample-company-s-logo') !== -1;
+  }
   const WORKSPACE_IDS = [
     'homeSection',
     'servicesSection',
@@ -85,32 +105,72 @@
 
   function cleanRecord(raw) {
     const src = raw && typeof raw === 'object' ? raw : {};
-    const logo = isFireSAppLogo(src.logo) ? '' : text(src.logo);
+    let logo = isFireSAppLogo(src.logo) ? '' : text(src.logo);
+    if (!isStagingApp() && isSampleCompanyLogo(logo)) logo = '';
+    const name = text(src.name);
     return {
-      name: text(src.name),
+      name: !isStagingApp() && name === 'Company S' ? '' : name,
       address: text(src.address),
       phone: text(src.phone),
       mobile: text(src.mobile),
       email: text(src.email),
-      logo
+      logo,
+      env: text(src.env)
     };
   }
 
-  function readStore() {
+  function parseStore(key) {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const parsed = JSON.parse(localStorage.getItem(key) || '{}');
       return parsed && typeof parsed === 'object' ? parsed : {};
     } catch (_) {
       return {};
     }
   }
 
-  function writeStore(store) {
+  function writeNamedStore(key, store) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+      localStorage.setItem(key, JSON.stringify(store));
     } catch (error) {
       console.warn('Could not keep company details on this phone:', error);
     }
+  }
+
+  function migrateToetsAwayFromLiveKey() {
+    if (!isStagingApp()) return;
+    const liveStore = parseStore(LIVE_STORAGE_KEY);
+    const stagingStore = parseStore(STAGING_STORAGE_KEY);
+    const key = companyKey();
+    let moved = false;
+    [key, 'local'].forEach(function (k) {
+      if (liveStore[k] && !stagingStore[k]) {
+        stagingStore[k] = liveStore[k];
+        delete liveStore[k];
+        moved = true;
+      }
+    });
+    if (moved) {
+      writeNamedStore(STAGING_STORAGE_KEY, stagingStore);
+      writeNamedStore(LIVE_STORAGE_KEY, liveStore);
+    }
+  }
+
+  function recordBelongsHere(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const env = text(src.env);
+    if (isStagingApp()) return env !== 'production';
+    if (env === 'staging') return false;
+    if (isSampleCompanyLogo(src.logo) || text(src.name) === 'Company S') return false;
+    return true;
+  }
+
+  function readStore() {
+    migrateToetsAwayFromLiveKey();
+    return parseStore(storageKey());
+  }
+
+  function writeStore(store) {
+    writeNamedStore(storageKey(), store);
   }
 
   function profileName() {
@@ -123,7 +183,8 @@
   function getLetterhead() {
     const store = readStore();
     const key = companyKey();
-    const saved = cleanRecord(store[key] || store.local || {});
+    const own = store[key] && recordBelongsHere(store[key]) ? store[key] : {};
+    const saved = cleanRecord(own);
     const fromProfile = cleanRecord(window.currentUserProfile?.companyLetterhead);
     const merged = {
       name: saved.name || fromProfile.name || profileName(),
@@ -133,7 +194,13 @@
       email: saved.email || fromProfile.email,
       logo: saved.logo || fromProfile.logo
     };
-    if (isGenericName(merged.name)) merged.name = 'Company S';
+    if (!isStagingApp() && (merged.name === 'Company S' || isSampleCompanyLogo(merged.logo))) {
+      if (merged.name === 'Company S') merged.name = profileName();
+      if (isSampleCompanyLogo(merged.logo)) merged.logo = '';
+    }
+    if (isGenericName(merged.name)) {
+      merged.name = isStagingApp() ? 'Company S' : '';
+    }
     return merged;
   }
 
@@ -156,8 +223,9 @@
   function persistLocal(record) {
     const store = readStore();
     const key = companyKey();
-    store[key] = record;
-    if (key !== 'local') store.local = record;
+    store[key] = Object.assign({}, record, {
+      env: isStagingApp() ? 'staging' : 'production'
+    });
     writeStore(store);
     try {
       if (typeof window.fireSApplyUserProfilePatch === 'function') {
@@ -295,7 +363,11 @@
     const mobile = byId('companyLetterheadMobile');
     const email = byId('companyLetterheadEmail');
     const logoData = byId('companyLetterheadLogoData');
-    if (name) name.value = isGenericName(data.name) ? 'Company S' : data.name;
+    if (name) {
+      name.value = isGenericName(data.name)
+        ? (isStagingApp() ? 'Company S' : '')
+        : data.name;
+    }
     if (address) address.value = data.address;
     if (phone) phone.value = data.phone;
     if (mobile) mobile.value = data.mobile;
@@ -353,11 +425,13 @@
 
   function letterheadPreviewHtml(record) {
     const data = cleanRecord(record);
-    const name = isGenericName(data.name) ? 'Company S' : data.name;
+    const name = isGenericName(data.name)
+      ? (isStagingApp() ? 'Company S' : 'Your company')
+      : data.name;
     const logoSrc =
-      data.logo && !isFireSAppLogo(data.logo)
+      data.logo && !isFireSAppLogo(data.logo) && (isStagingApp() || !isSampleCompanyLogo(data.logo))
         ? data.logo
-        : name === 'Company S'
+        : name === 'Company S' && isStagingApp()
           ? SAMPLE_COMPANY_S_LOGO
           : '';
     const logoHtml =
@@ -462,7 +536,11 @@
       return;
     }
     const record = readForm();
-    if (!record.name) record.name = 'Company S';
+    if (!record.name) record.name = isStagingApp() ? 'Company S' : '';
+    if (!record.name) {
+      setMessage('Type the company name before saving.', true);
+      return;
+    }
     persistLocal(record);
     setMessage('Saved on this phone. Putting a cloud copy up as well…');
     const cloud = await persistCloud(record);
