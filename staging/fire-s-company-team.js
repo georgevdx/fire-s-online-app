@@ -16,7 +16,8 @@
   ];
   const FRESH_MODE_KEY = 'fireS.forceNewCompanySetup';
   const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
-  const COMPANY_CACHE_KEY = 'fireS.cachedCompany';
+  const COMPANY_CACHE_KEY = 'fireS.cachedCompany-staging';
+  const LIVE_COMPANY_CACHE_KEY = 'fireS.cachedCompany';
   let lastSeatEmails = [];
   let lastMembers = [];
   let lastInvites = [];
@@ -291,6 +292,12 @@
   }
 
   function recalledCompanyName(companyId) {
+    try {
+      if (!localStorage.getItem(COMPANY_CACHE_KEY) && localStorage.getItem(LIVE_COMPANY_CACHE_KEY)) {
+        localStorage.setItem(COMPANY_CACHE_KEY, localStorage.getItem(LIVE_COMPANY_CACHE_KEY));
+        localStorage.removeItem(LIVE_COMPANY_CACHE_KEY);
+      }
+    } catch (_) {}
     try {
       const raw = localStorage.getItem(COMPANY_CACHE_KEY);
       const cached = raw ? JSON.parse(raw) : null;
