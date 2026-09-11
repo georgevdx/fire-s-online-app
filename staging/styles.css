@@ -14957,7 +14957,7 @@ html[data-fire-s-theme="dark"] .report-answer strong {
 
 html[data-fire-s-theme="dark"] .report-block,
 html[data-fire-s-theme="dark"] .report-line {
-  color: #f8fafc;
+  color: #0f172a !important;
 }
 
 html[data-fire-s-theme="dark"] #reportSection > h2,
@@ -14965,24 +14965,39 @@ html[data-fire-s-theme="dark"] #reportSection > p {
   color: #f8fafc !important;
 }
 
-html[data-fire-s-theme="dark"] .report-block h3 {
-  color: #fecaca !important;
+html[data-fire-s-theme="dark"] #reportContent,
+html[data-fire-s-theme="dark"] #reportContent * {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] #reportContent {
+  background: #ffffff !important;
+}
+html[data-fire-s-theme="dark"] .report-block h3,
+html[data-fire-s-theme="dark"] #reportContent .report-block h3,
+html[data-fire-s-theme="dark"] #reportContent .report-brand h1 {
+  color: #b71c1c !important;
 }
 
-html[data-fire-s-theme="dark"] .report-section-heading {
+html[data-fire-s-theme="dark"] .report-section-heading,
+html[data-fire-s-theme="dark"] #reportContent .report-section-heading,
+html[data-fire-s-theme="dark"] #reportContent .report-section-heading * {
   color: #ffffff !important;
   background: #b71c1c !important;
 }
 
 html[data-fire-s-theme="dark"] .summary-critical strong,
 html[data-fire-s-theme="dark"] .report-answer.answer-no strong,
+html[data-fire-s-theme="dark"] #reportContent .summary-critical strong,
+html[data-fire-s-theme="dark"] #reportContent .report-answer.answer-no strong,
 html[data-fire-s-theme="dark"] .startup-route-card .route-title {
   color: #b71c1c !important;
 }
 
 html[data-fire-s-theme="dark"] .report-expiry-overdue,
 html[data-fire-s-theme="dark"] .report-expiry-overdue span,
-html[data-fire-s-theme="dark"] .report-expiry-overdue strong {
+html[data-fire-s-theme="dark"] .report-expiry-overdue strong,
+html[data-fire-s-theme="dark"] #reportContent .report-expiry-overdue,
+html[data-fire-s-theme="dark"] #reportContent .report-expiry-overdue * {
   color: #9f1239 !important;
 }
 
@@ -14991,5 +15006,46 @@ html[data-fire-s-theme="dark"] .cloud-primary-btn,
 html[data-fire-s-theme="dark"] .fire-s-cc-quick-primary,
 html[data-fire-s-theme="dark"] .main-command-card.primary span,
 html[data-fire-s-theme="dark"] #cmdInspectionsBtn span {
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] .finding-item-card,
+html[data-fire-s-theme="dark"] .finding-detail-grid div,
+html[data-fire-s-theme="dark"] .report-signoff,
+html[data-fire-s-theme="dark"] .report-header,
+html[data-fire-s-theme="dark"] .report-client-header,
+html[data-fire-s-theme="dark"] .formal-letterhead,
+html[data-fire-s-theme="dark"] .service-request-card,
+html[data-fire-s-theme="dark"] .fire-s-card-health,
+html[data-fire-s-theme="dark"] .metric-card:not(.metric-active),
+html[data-fire-s-theme="dark"] .choice-status-pill {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] :is(
+  .finding-item-card,
+  .finding-detail-grid,
+  .report-signoff,
+  .report-header,
+  .report-client-header,
+  .formal-letterhead,
+  .service-request-card,
+  .fire-s-card-health,
+  .metric-card:not(.metric-active)
+) :is(h1, h2, h3, h4, p, span, strong, small, label, li, td, th, b, em, a, div, button, legend) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] .section-header,
+html[data-fire-s-theme="dark"] .section-header * {
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] .finding-stat-card.active-finding-filter,
+html[data-fire-s-theme="dark"] .finding-stat-card.active-finding-filter span,
+html[data-fire-s-theme="dark"] .finding-stat-card.active-finding-filter small,
+html[data-fire-s-theme="dark"] .metric-active,
+html[data-fire-s-theme="dark"] .metric-active .metric-number,
+html[data-fire-s-theme="dark"] .metric-active .metric-label,
+html[data-fire-s-theme="dark"] .metric-active .metric-subtext {
   color: #ffffff !important;
 }

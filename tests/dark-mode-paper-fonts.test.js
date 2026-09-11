@@ -38,7 +38,16 @@ function assertDarkPaper(label, css, fitCss) {
     label + ': report headings on the dark card must stay readable'
   );
   assert.ok(
-    /Dark Mode: paper \(white\/light\) islands keep dark type/.test(fitCss),
+    /html\[data-fire-s-theme="dark"\] #reportContent \*/.test(css) &&
+      /html\[data-fire-s-theme="dark"\] \.report-block,/.test(css) &&
+      /color: #0f172a !important;/.test(css) &&
+      /\.finding-item-card,/.test(css) &&
+      /\.section-header \*/.test(css),
+    label + ': the white report document and leftover paper cards must keep dark type'
+  );
+  assert.ok(
+    /Dark Mode: paper \(white\/light\) islands keep dark type/.test(fitCss) &&
+      /html\[data-fire-s-theme="dark"\] #reportContent \*/.test(fitCss),
     label + ': fit-text must keep the paper-surface contrast after styles.css'
   );
 }
