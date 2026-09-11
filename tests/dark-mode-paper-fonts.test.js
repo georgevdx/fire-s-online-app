@@ -58,4 +58,27 @@ function assertDarkPaper(label, css, fitCss) {
 assertDarkPaper('Live', read('styles.css'), read('fire-s-fit-text.css'));
 assertDarkPaper('Toets', read('staging/styles.css'), read('staging/fire-s-fit-text.css'));
 
+function assertLastLoadedDarkType(label, html, darkCss) {
+  assert.ok(
+    /fire-s-dark-type\.css\?v=1-0-last/.test(html),
+    label + ': last Dark Mode type sheet must load'
+  );
+  assert.ok(
+    html.indexOf('fire-s-entitlement.css') < html.indexOf('fire-s-dark-type.css'),
+    label + ': dark-type.css must load after every other stylesheet'
+  );
+  assert.ok(
+    /html\[data-fire-s-theme="dark"\] #reportContent \*/.test(darkCss) &&
+      /#reportContentPdfClone/.test(darkCss) &&
+      /\.pbi-shell,/.test(darkCss) &&
+      /\.user-manual-print,/.test(darkCss) &&
+      /\.company-letterhead-form,/.test(darkCss) &&
+      /\.finding-item-card,/.test(darkCss),
+    label + ': last sheet must paint reports and other paper pages dark'
+  );
+}
+
+assertLastLoadedDarkType('Live', read('index.html'), read('fire-s-dark-type.css'));
+assertLastLoadedDarkType('Toets', read('staging/index.html'), read('staging/fire-s-dark-type.css'));
+
 console.log('dark-mode-paper-fonts.test.js: ok');

@@ -1,0 +1,213 @@
+/* Last-loaded Dark Mode type. Must stay after every other stylesheet. */
+
+/* The on-screen report is a white document. */
+html[data-fire-s-theme="dark"] #reportContent,
+html[data-fire-s-theme="dark"] #reportContentPdfClone {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] #reportContent *,
+html[data-fire-s-theme="dark"] #reportContentPdfClone * {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] .report-block,
+html[data-fire-s-theme="dark"] .report-line,
+html[data-fire-s-theme="dark"] .report-signoff,
+html[data-fire-s-theme="dark"] .report-header,
+html[data-fire-s-theme="dark"] .report-client-header,
+html[data-fire-s-theme="dark"] .formal-letterhead,
+html[data-fire-s-theme="dark"] .report-disclaimer,
+html[data-fire-s-theme="dark"] .report-generated,
+html[data-fire-s-theme="dark"] .signature-line {
+  color: #0f172a !important;
+}
+html[data-fire-s-theme="dark"] #reportContent .report-block h3,
+html[data-fire-s-theme="dark"] #reportContent .report-brand h1,
+html[data-fire-s-theme="dark"] .report-block h3 {
+  color: #b71c1c !important;
+}
+html[data-fire-s-theme="dark"] #reportContent .report-section-heading,
+html[data-fire-s-theme="dark"] #reportContent .report-section-heading *,
+html[data-fire-s-theme="dark"] .report-section-heading {
+  color: #ffffff !important;
+  background: #b71c1c !important;
+}
+html[data-fire-s-theme="dark"] #reportContent .summary-critical strong,
+html[data-fire-s-theme="dark"] #reportContent .report-answer.answer-no strong {
+  color: #b71c1c !important;
+}
+html[data-fire-s-theme="dark"] #reportContent .report-expiry-overdue,
+html[data-fire-s-theme="dark"] #reportContent .report-expiry-overdue * {
+  color: #9f1239 !important;
+}
+html[data-fire-s-theme="dark"] #reportSection > h2,
+html[data-fire-s-theme="dark"] #reportSection > p {
+  color: #f8fafc !important;
+}
+
+/* Other light paper pages / cards keep dark type. */
+html[data-fire-s-theme="dark"] :is(
+  .report-summary-card,
+  .report-section-summary,
+  .report-data-quality,
+  .report-expiry-item,
+  .report-answer,
+  .report-item,
+  .report-meta,
+  .report-meta-card,
+  .report-photo-card,
+  .report-photo-item,
+  .company-team-card,
+  .company-team-add,
+  .fire-s-plan-card,
+  .fire-s-subscribe-status,
+  .pbi-shell,
+  .pbi-kpi,
+  .pbi-tile,
+  .pbi-filters,
+  .company-letterhead-form,
+  .company-letterhead-sample-card,
+  .company-letterhead-preview,
+  .user-manual-toc,
+  .user-manual-note,
+  .user-manual-print,
+  .user-manual-chapter,
+  .inspector-board-kpi,
+  .inspector-board-item,
+  .inspector-board-table,
+  .inspector-board-home-bar,
+  .test-samples-panel,
+  .schedule-new-panel,
+  .schedule-existing-summary,
+  .fire-s-get-started-choice,
+  .fire-s-access-service-form,
+  .module-heading,
+  .section-group,
+  .checklist-row,
+  .finding-item-card,
+  .finding-stat-card,
+  .finding-detail-grid div,
+  .choice-card,
+  .sae-card,
+  .service-card,
+  .service-request-form,
+  .nc-item,
+  .photo-item,
+  .dash-card,
+  .action-item,
+  .inspection-command-shell,
+  .executive-summary-card,
+  .inspector-v4-search,
+  .inspector-v4-result,
+  .inspector-v4-next
+),
+html[data-fire-s-theme="dark"] :is(
+  .report-summary-card,
+  .report-section-summary,
+  .report-data-quality,
+  .report-expiry-item,
+  .report-answer,
+  .company-team-card,
+  .company-team-add,
+  .fire-s-plan-card,
+  .pbi-shell,
+  .pbi-kpi,
+  .pbi-tile,
+  .pbi-filters,
+  .company-letterhead-form,
+  .company-letterhead-preview,
+  .user-manual-print,
+  .user-manual-chapter,
+  .inspector-board-table,
+  .inspector-board-home-bar,
+  .test-samples-panel,
+  .schedule-new-panel,
+  .section-group,
+  .checklist-row,
+  .finding-item-card,
+  .finding-stat-card,
+  .choice-card,
+  .sae-card,
+  .service-card,
+  .service-request-form,
+  .inspection-command-shell,
+  .inspector-v4-result,
+  .inspector-v4-next
+) :is(h1, h2, h3, h4, p, span, strong, small, label, li, td, th, b, em, a, div, button, legend, input, select, textarea) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-titlebar,
+html[data-fire-s-theme="dark"] .pbi-titlebar * {
+  color: #ffffff !important;
+}
+
+/* Intros sit on dark .card chrome. */
+html[data-fire-s-theme="dark"] :is(
+  .company-team-intro,
+  .company-team-kicker,
+  .company-team-meta,
+  .user-manual-intro,
+  .user-manual-kicker,
+  .fire-s-subscribe-intro,
+  .fire-s-subscribe-kicker,
+  .fire-s-plan-picker-label,
+  .test-samples-intro,
+  .test-samples-kicker,
+  .company-letterhead-intro,
+  .company-letterhead-kicker,
+  .findings-kicker,
+  .inspector-board-intro,
+  .management-dashboard-intro
+),
+html[data-fire-s-theme="dark"] :is(
+  .company-team-intro,
+  .user-manual-intro,
+  .fire-s-subscribe-intro,
+  .test-samples-intro,
+  .company-letterhead-intro
+) :is(h1, h2, h3, h4, p, span, strong, small, a, div) {
+  color: #e2e8f0 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-subscribe-intro a,
+html[data-fire-s-theme="dark"] .user-manual-intro a {
+  color: #93c5fd !important;
+}
+
+html[data-fire-s-theme="dark"] .section-header,
+html[data-fire-s-theme="dark"] .section-header * {
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-open-btn,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-open-btn,
+html[data-fire-s-theme="dark"] .cloud-primary-btn,
+html[data-fire-s-theme="dark"] .company-team-add .cloud-primary-btn,
+html[data-fire-s-theme="dark"] .fire-s-cc-quick-primary,
+html[data-fire-s-theme="dark"] .main-command-card.primary span,
+html[data-fire-s-theme="dark"] #cmdInspectionsBtn span,
+html[data-fire-s-theme="dark"] .finding-stat-card.active-finding-filter,
+html[data-fire-s-theme="dark"] .finding-stat-card.active-finding-filter span,
+html[data-fire-s-theme="dark"] .finding-stat-card.active-finding-filter small {
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] input,
+html[data-fire-s-theme="dark"] select,
+html[data-fire-s-theme="dark"] textarea {
+  color: #f8fafc !important;
+}
+html[data-fire-s-theme="dark"] :is(
+  .section-group,
+  .company-team-add,
+  .company-letterhead-form,
+  .fire-s-access-service-form,
+  .service-request-form,
+  .schedule-new-panel,
+  .pbi-filters,
+  .inspector-board-home-bar
+) :is(input, select, textarea),
+html[data-fire-s-theme="dark"] .inspector-v4-search {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}

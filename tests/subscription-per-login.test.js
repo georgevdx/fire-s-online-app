@@ -16,7 +16,7 @@ const catalogSrc = read('staging/fire-s-subscriptions.js');
 const getStarted = read('staging/fire-s-get-started.js');
 const roles = read('staging/fire-s-clean-home-roles.js');
 
-assert.ok(/1\.3\.73-toets/.test(env), 'Toets-blad version must be 1.3.73-toets');
+assert.ok(/1\.3\.74-toets/.test(env), 'Toets-blad version must be 1.3.74-toets');
 
 const subscribePage = html.match(
   /id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/

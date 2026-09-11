@@ -80,7 +80,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-73-toets-darkpaper">
+  <link rel="stylesheet" href="styles.css?v=1-3-74-toets-darkpaper">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-23-lists">
@@ -98,6 +98,7 @@
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
   <link rel="stylesheet" href="fire-s-entitlement.css?v=1-0-trial">
+  <link rel="stylesheet" href="fire-s-dark-type.css?v=1-0-last">
 </head>
 <body>
   <div id="fireSBootScreen" class="is-on" aria-live="polite">
@@ -127,7 +128,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.73-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.74-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -203,7 +204,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.73-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.74-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -1877,7 +1878,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-73-ver"></script>
+  <script src="fire-s-env.js?v=1-3-74-ver"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1892,7 +1893,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-73-toets-darkpaper"></script>
+  <script src="app.js?v=1-3-74-toets-darkpaper"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-40-exist-sched"></script>
@@ -1927,7 +1928,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-53-toets-darkpaper')
+        navigator.serviceWorker.register('./service-worker.js?v=108-54-toets-darktype')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

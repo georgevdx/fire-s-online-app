@@ -28,7 +28,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 so cancelled companies can subscribe again'
 );
-assert.ok(/1\.3\.73-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.73-toets');
+assert.ok(/1\.3\.74-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.74-toets');
 
 [liveHtml, stagingHtml].forEach(function (html, i) {
   const name = i === 0 ? 'live' : 'toets';
