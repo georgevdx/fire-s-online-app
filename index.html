@@ -80,18 +80,18 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-65-schedfont">
+  <link rel="stylesheet" href="styles.css?v=1-3-65-coisolate">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
   <link rel="stylesheet" href="fire-s-owner-lists.css?v=1-2-frames">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
-  <link rel="stylesheet" href="fire-s-company-team.css?v=1-7-owneradd">
+  <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-19-legal">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-6-subscribe-again">
-  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-14-schedfont">
-  <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-1-sample-logo">
+  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-14-coisolate">
+  <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
   <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
   <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
@@ -917,7 +917,7 @@
   <div class="company-letterhead-form">
     <div class="company-letterhead-field">
       <label for="companyLetterheadName">Company name</label>
-      <input id="companyLetterheadName" type="text" placeholder="Company S" autocomplete="organization">
+      <input id="companyLetterheadName" type="text" placeholder="Your company name" autocomplete="organization">
     </div>
     <div class="company-letterhead-field">
       <label for="companyLetterheadAddress">Address</label>
@@ -940,7 +940,7 @@
     <div class="company-letterhead-field">
       <label for="companyLetterheadLogoFile">Company logo</label>
       <p class="company-letterhead-hint">
-        Tap Choose logo picture to put your own picture here, or Sit sample Company S logo in to try the example.
+        Tap Choose logo picture to put your own company picture here.
         That picture appears top-left on the client PDF, next to the company name.
         The small Fire-S logo stays on the right as an app reminder.
       </p>
@@ -951,44 +951,11 @@
         <button id="companyLetterheadChooseLogoBtn" type="button" class="cloud-primary-btn">
           Choose logo picture
         </button>
-        <button id="companyLetterheadSampleLogoBtn" type="button" class="secondary-btn">
-          Sit sample Company S logo in
-        </button>
         <button id="companyLetterheadClearLogoBtn" type="button" class="secondary-btn">Remove logo</button>
       </div>
     </div>
     <div class="company-letterhead-actions">
       <button id="companyLetterheadSaveBtn" type="button" class="cloud-primary-btn">Save company details</button>
-    </div>
-  </div>
-
-  <div class="company-letterhead-sample-display" aria-label="Sample logo and PDF display">
-    <div class="company-letterhead-sample-card">
-      <div class="company-letterhead-preview-label">1. Sample company logo</div>
-      <p class="company-letterhead-hint">This is an example picture for Company S. Your own logo can replace it.</p>
-      <img class="company-letterhead-sample-logo" src="sample-company-s-logo.svg" alt="Sample Company S logo">
-    </div>
-    <div class="company-letterhead-sample-card">
-      <div class="company-letterhead-preview-label">2. Where it displays on the PDF</div>
-      <p class="company-letterhead-hint">Top-left is the company logo. Top-right is the Fire-S reminder. It is not the company logo.</p>
-      <div class="report-header report-client-header formal-letterhead company-letterhead-sample-pdf">
-        <div class="report-client-brand">
-          <img class="report-client-logo" src="sample-company-s-logo.svg" alt="Company S logo" style="width:52px;height:52px;max-width:52px;max-height:52px;object-fit:contain;">
-          <div>
-            <h1>Company S</h1>
-            <div class="report-subtitle">Fire Safety Inspection Report</div>
-            <div class="report-company-contact">
-              <div>12 Safety Street, Pretoria</div>
-              <div>Tel 012 345 6789 · Cell 082 000 0000</div>
-              <div>office@companys.co.za</div>
-            </div>
-          </div>
-        </div>
-        <div class="report-app-mark">
-          <img src="icon-192.png" alt="Fire-S" style="width:40px;height:40px;max-width:40px;max-height:40px;opacity:1;object-fit:contain;">
-          <span>Prepared with Fire-S</span>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1892,7 +1859,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-65-sitqa"></script>
+  <script src="app.js?v=1-3-65-coisolate"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-41-noreports"></script>
@@ -1901,7 +1868,7 @@
   <script src="fire-s-subscribe-notify.js?v=1-7-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-17-assign"></script>
   <script src="fire-s-schedule-assign.js?v=1-2-exist-sched"></script>
-  <script src="fire-s-company-letterhead.js?v=1-5-subscribe"></script>
+  <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-15-subscribe-again"></script>
   <script src="fire-s-subscribe.js?v=1-14-subscribe-again"></script>
@@ -1925,7 +1892,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-56-schedfont')
+        navigator.serviceWorker.register('./service-worker.js?v=108-57-coisolate')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

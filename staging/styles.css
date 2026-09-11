@@ -15264,3 +15264,103 @@ html[data-fire-s-theme="dark"] body.fire-s-schedule-view .back-home-btn * {
   color: #ffffff !important;
   background: #1565c0 !important;
 }
+
+/* Existing-site Schedule stays in view; Already booked sits below and the page scrolls. */
+html body.fire-s-schedule-view,
+html body.fire-s-schedule-view .app {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: auto !important;
+  max-height: none !important;
+}
+html body.fire-s-schedule-view #projectListSection,
+html body.fire-s-schedule-view #projectsList {
+  overflow: visible !important;
+  max-height: none !important;
+}
+html body.fire-s-schedule-view #scheduleExistingFields {
+  scroll-margin-top: 12px;
+}
+html body.fire-s-schedule-view #scheduleBookedHeading,
+html body.fire-s-schedule-view #projectsList {
+  scroll-margin-top: 16px;
+}
+
+
+/* Company details: dark type on light paper so every label stays visible. */
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-form,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-form :is(h1, h2, h3, h4, p, span, strong, small, label, li, div, legend),
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-sample-card,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-sample-card :is(h1, h2, h3, p, span, strong, small, label, div),
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-preview-wrap,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-preview-wrap :is(h1, h2, h3, p, span, strong, small, label, div),
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-hint,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-preview-label,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-logo-preview.is-empty,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-add,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-add :is(h1, h2, h3, h4, p, span, strong, small, label, li, div, legend),
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-card,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-card :is(h1, h2, h3, p, span, strong, small, label, div),
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-map,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-map :is(p, span, strong, small, label, li, div),
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-empty,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-hint {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-intro,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-kicker,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-intro p,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-intro h3,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-intro,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-kicker,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-meta,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-intro p,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-intro h3,
+html[data-fire-s-theme="dark"] #companyLetterheadSection > .toolbar > h2,
+html[data-fire-s-theme="dark"] #companyTeamSection > .toolbar > h2 {
+  color: #e2e8f0 !important;
+}
+
+html[data-fire-s-theme="dark"] #companyLetterheadSection .company-letterhead-form :is(input, select, textarea),
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-add :is(input, select, textarea),
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-card-actions select {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] #companyLetterheadSection .cloud-primary-btn,
+html[data-fire-s-theme="dark"] #companyTeamSection .cloud-primary-btn,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .cloud-primary-btn *,
+html[data-fire-s-theme="dark"] #companyTeamSection .cloud-primary-btn * {
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] #companyLetterheadSection .secondary-btn,
+html[data-fire-s-theme="dark"] #companyTeamSection .secondary-btn {
+  color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] #companyTeamSection .company-personnel-tabs button:not(.is-active) {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+html[data-fire-s-theme="dark"] #companyTeamSection .company-personnel-tabs button.is-active,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-personnel-tabs button.is-active * {
+  color: #ffffff !important;
+  background: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] #companyLetterheadSection .back-home-btn,
+html[data-fire-s-theme="dark"] #companyTeamSection .back-home-btn,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .back-home-btn *,
+html[data-fire-s-theme="dark"] #companyTeamSection .back-home-btn * {
+  color: #ffffff !important;
+  background: #1565c0 !important;
+}
+
+html[data-fire-s-theme="dark"] #companyLetterheadSection .formal-letterhead,
+html[data-fire-s-theme="dark"] #companyLetterheadSection .formal-letterhead :is(h1, p, span, div, small) {
+  color: #0f172a !important;
+}

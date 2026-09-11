@@ -5348,9 +5348,13 @@ function openScheduleCommand() {
       });
     }
   } catch (_) {}
-  const panel = document.getElementById('scheduleNewPanel');
-  if (panel) {
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (typeof revealFireSScheduleBookingView === 'function') {
+    revealFireSScheduleBookingView();
+  } else {
+    const panel = document.getElementById('scheduleNewPanel');
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 }
 
@@ -5555,9 +5559,13 @@ function openScheduleCommand() {
       });
     }
   } catch (_) {}
-  const panel = document.getElementById('scheduleNewPanel');
-  if (panel) {
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (typeof revealFireSScheduleBookingView === 'function') {
+    revealFireSScheduleBookingView();
+  } else {
+    const panel = document.getElementById('scheduleNewPanel');
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 }
 
@@ -6555,6 +6563,7 @@ function fireSRecalledCompanyName(companyId) {
     const name = String(cached?.name || '').trim();
     if (
       name &&
+      name !== 'Company S' &&
       !fireSIsGenericCompanyName(name) &&
       companyId &&
       String(cached?.id || '') === String(companyId)
@@ -8068,6 +8077,22 @@ function updateExistingPremisesSummary() {
   ].filter(Boolean).join(' · ');
 }
 
+function revealFireSScheduleBookingView() {
+  const existing = document.getElementById('scheduleExistingFields');
+  const panel = document.getElementById('scheduleNewPanel');
+  const booked = document.getElementById('scheduleBookedHeading');
+  const showExisting =
+    schedulePanelMode === 'existing' &&
+    existing &&
+    existing.hidden !== true &&
+    existing.style.display !== 'none';
+  const target = showExisting ? existing : panel;
+  if (target && typeof target.scrollIntoView === 'function') {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (booked) booked.style.display = 'block';
+}
+
 function setSchedulePanelMode(mode) {
   schedulePanelMode = mode === 'existing' ? 'existing' : 'new';
 
@@ -8145,10 +8170,7 @@ function openSchedulePanel(mode, options) {
     }
   } catch (_) {}
 
-  panel.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start'
-  });
+  revealFireSScheduleBookingView();
 }
 
 function scheduleNewInspection() {
@@ -8251,14 +8273,25 @@ function saveScheduledExistingInspection() {
   setProjects(projects);
   clearScheduleNewInspectionForm();
 
+  if (typeof enterFireSScheduleView === 'function') enterFireSScheduleView();
+  setSchedulePanelMode('existing');
   const panel = document.getElementById('scheduleNewPanel');
-  if (panel) panel.style.display = 'none';
+  if (panel) panel.style.display = 'block';
 
   currentFilter = 'scheduled-new';
   currentProjectPage = 1;
 
   renderProjectsList();
   updateDashboardSelection();
+  try {
+    if (typeof window.fireSKeepScheduleBookedCards === 'function') {
+      window.fireSKeepScheduleBookedCards();
+    }
+  } catch (_) {}
+  const booked = document.getElementById('scheduleBookedHeading');
+  if (booked && typeof booked.scrollIntoView === 'function') {
+    booked.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   uploadSingleInspection(stamped)
     .catch(error => {
@@ -21791,6 +21824,19 @@ function isFireSAppLogoSrc(src) {
   );
 }
 
+function isFireSStagingApp() {
+  try {
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) return true;
+    return String((location && location.pathname) || '').toLowerCase().indexOf('/staging') !== -1;
+  } catch (_) {
+    return false;
+  }
+}
+
+function isSampleCompanyLogoSrc(src) {
+  return String(src || '').toLowerCase().indexOf('sample-company-s-logo') !== -1;
+}
+
 function getSavedCompanyLetterhead() {
   try {
     if (typeof window.fireSGetCompanyLetterhead === 'function') {
@@ -21827,7 +21873,7 @@ function getClientReportLetterhead(project) {
     '';
 
   const companyName = isGenericReportCompanyName(rawName)
-    ? 'Company S'
+    ? (isFireSStagingApp() ? 'Company S' : '')
     : String(rawName).trim();
 
   const rawLogo =
@@ -21835,7 +21881,8 @@ function getClientReportLetterhead(project) {
     (source && source.companyLogo) ||
     '';
   let logo = isFireSAppLogoSrc(rawLogo) ? '' : String(rawLogo).trim();
-  if (!logo && companyName === 'Company S') {
+  if (isSampleCompanyLogoSrc(logo) && !isFireSStagingApp()) logo = '';
+  if (!logo && companyName === 'Company S' && isFireSStagingApp()) {
     logo = 'sample-company-s-logo.svg';
   }
 

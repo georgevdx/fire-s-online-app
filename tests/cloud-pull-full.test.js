@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-65-sitqa',
+  '1-3-65-coisolate',
   '1-1-home',
-  '108-56-schedfont',
-  'fire-s-108-56-schedfont'
+  '108-57-coisolate',
+  'fire-s-108-57-coisolate'
 );
 assertPullSource(
   stagingApp,
@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-78-toets-sitqa',
+  '1-3-78-toets-coisolate',
   '1-1-count',
-  '108-59-toets-schedfont',
-  'fire-s-108-59-toets-schedfont'
+  '108-60-toets-coisolate',
+  'fire-s-108-60-toets-coisolate'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
