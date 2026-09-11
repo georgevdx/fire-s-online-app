@@ -15205,3 +15205,62 @@ html[data-fire-s-theme="dark"] .fire-s-legal-links a {
   border: 2px solid #1d4ed8 !important;
   font-weight: 800 !important;
 }
+
+/* Schedule view: dark type on the white booking paper. Selected chip stays white-on-navy. */
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-panel,
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-panel :is(h1, h2, h3, h4, p, span, strong, small, label, li, div, legend),
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-existing-summary,
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-existing-summary * {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-panel .form-help-text {
+  color: #334155 !important;
+  background: #f4f7fb !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-panel :is(input, select, textarea) {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-mode-btn:not(.is-active),
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-mode-btn:not(.is-active) * {
+  color: #0f172a !important;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-mode-btn.is-active,
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-mode-btn.is-active * {
+  color: #ffffff !important;
+  background: #1e3a8a !important;
+  border-color: #1e3a8a !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-actions .compact-action-btn:not(.compact-action-secondary),
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-actions .compact-action-btn:not(.compact-action-secondary) * {
+  color: #ffffff !important;
+  background: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-actions .compact-action-secondary,
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-new-actions .compact-action-secondary * {
+  color: #ffffff !important;
+  background: #475569 !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .schedule-booked-heading {
+  color: #e2e8f0 !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view #projectListSection > .toolbar > h2 {
+  color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .back-home-btn,
+html[data-fire-s-theme="dark"] body.fire-s-schedule-view .back-home-btn * {
+  color: #ffffff !important;
+  background: #1565c0 !important;
+}
