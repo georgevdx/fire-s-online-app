@@ -252,7 +252,7 @@
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>
-        <p>Home has a <strong>Reports</strong> button. It opens completed inspections. Open one, then tap Export PDF.</p>
+        <p>Open a premises from Home or Inspection Gateway. If a report is ready, tap <strong>Latest Report</strong> or <strong>Export PDF</strong> on that site. There is no separate Reports card on Home.</p>
       </article>
 
       <article class="user-manual-chapter">
@@ -300,7 +300,7 @@
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
           <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
-          <li><strong>Reports</strong> — Home → Reports. This list is completed inspections. Open one, then tap Export PDF.</li>
+          <li><strong>Reports</strong> — open the premises. If a report is ready, tap Latest Report or Export PDF. There is no Reports card under Schedule.</li>
           <li><strong>Support</strong> — request help or send a review request.</li>
         </ul>
       </article>

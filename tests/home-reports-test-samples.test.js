@@ -16,7 +16,7 @@ const manual = read('fire-s-user-manual.js');
 
 assert.ok(
   /function shouldShowReportsCommandCard\(\) \{\s*return true;/.test(app),
-  'Reports card must be allowed on Home'
+  'Live Reports card stays on Home until sit live'
 );
 assert.ok(
   /currentFilter = 'completed'/.test(app),
@@ -28,11 +28,11 @@ assert.ok(
 );
 assert.ok(
   !/hide\('cmdReportsBtn'\)/.test(rolesJs),
-  'Home roles must not hide Reports'
+  'Live Home roles must not hide Reports'
 );
 assert.ok(
   /fire-s-role-owner #cmdReportsBtn[\s\S]*display: block !important/.test(rolesCss),
-  'Owner CSS must show Reports'
+  'Live owner CSS must show Reports'
 );
 assert.ok(
   /fire-s-role-owner #cmdTestSamplesBtn[\s\S]*display: none !important/.test(rolesCss),
@@ -40,7 +40,7 @@ assert.ok(
 );
 assert.ok(
   /Home has a <strong>Reports<\/strong> button/.test(manual),
-  'User manual must mention the Reports button'
+  'Live user manual must mention the Reports button'
 );
 assert.ok(
   /hidden on Home so clients do not see it/.test(manual),
@@ -49,6 +49,44 @@ assert.ok(
 assert.ok(
   /cmdTestSamplesBtn/.test(html),
   'Test samples markup can remain in the page'
+);
+
+const stagingApp = read('staging/app.js');
+const stagingRolesJs = read('staging/fire-s-clean-home-roles.js');
+const stagingRolesCss = read('staging/fire-s-clean-home-roles.css');
+const stagingCss = read('staging/styles.css');
+const stagingHtml = read('staging/index.html');
+const stagingManual = read('staging/fire-s-user-manual.js');
+
+assert.ok(
+  /function shouldShowReportsCommandCard\(\) \{\s*return false;/.test(stagingApp),
+  'Toets must take the Home Reports card away'
+);
+assert.ok(
+  /if \(id === 'cmdReportsBtn'\) \{\s*hide\(id\);/.test(stagingRolesJs) &&
+    /hide\('cmdReportsBtn'\)/.test(stagingRolesJs),
+  'Toets Home roles must keep Reports hidden'
+);
+assert.ok(
+  /html body #mainCommandCentre #cmdReportsBtn[\s\S]*display: none !important/.test(stagingCss) &&
+    /html body #mainCommandCentre #cmdReportsBtn[\s\S]*display: none !important/.test(stagingRolesCss),
+  'Toets CSS must hide the Home Reports card'
+);
+assert.ok(
+  /id="cmdReportsBtn" hidden/.test(stagingHtml),
+  'Toets Reports markup can remain, but starts hidden'
+);
+assert.ok(
+  /function openLatestPremisesReport\(/.test(stagingApp) &&
+    /Latest Report/.test(stagingApp) &&
+    /Export PDF/.test(stagingApp),
+  'A report still comes from the premises: Latest Report or Export PDF'
+);
+assert.ok(
+  /There is no separate Reports card on Home/.test(stagingManual) &&
+    !/Home has a <strong>Reports<\/strong> button/.test(stagingManual) &&
+    !/Home → Reports/.test(stagingManual),
+  'Toets manual must send people to the premises, not a Home Reports card'
 );
 
 console.log('home-reports-test-samples.test.js ok');

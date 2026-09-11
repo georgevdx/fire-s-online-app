@@ -264,7 +264,7 @@ body.fire-s-clean-home #inspectorBoardHomeBar {
 body.fire-s-clean-home.fire-s-role-owner #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-manager #cmdReportsBtn,
 body.fire-s-clean-home.fire-s-role-viewer #cmdReportsBtn {
-  display: block !important;
+  display: none !important;
 }
 
 body.fire-s-clean-home.fire-s-role-owner #cmdTestSamplesBtn,
@@ -337,4 +337,8 @@ body.fire-s-clean-home #homeSection .home-hero h2 {
 body.fire-s-clean-home.fire-s-role-inspector #mainCommandCentre .main-command-grid,
 body.fire-s-clean-home.fire-s-role-guest #mainCommandCentre .main-command-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+html body #mainCommandCentre #cmdReportsBtn {
+  display: none !important;
 }
