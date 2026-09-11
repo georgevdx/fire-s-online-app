@@ -25717,7 +25717,7 @@ window.bindFinalHomeNavigationTargets = bindFinalHomeNavigationTargets;
 // Client PDFs stay on the inspection itself (Export PDF).
 // =====================================================
 function shouldShowReportsCommandCard() {
-  return true;
+  return false;
 }
 
 function syncReportsCommandCardForExecHome() {

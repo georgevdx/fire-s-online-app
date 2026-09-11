@@ -15140,3 +15140,8 @@ html[data-fire-s-theme="dark"] .fire-s-subscribe-intro a,
 html[data-fire-s-theme="dark"] .user-manual-intro a {
   color: #93c5fd !important;
 }
+
+/* Home Reports card removed. Pull a client PDF from the premises. */
+html body #mainCommandCentre #cmdReportsBtn {
+  display: none !important;
+}
