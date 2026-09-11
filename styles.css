@@ -2816,6 +2816,65 @@ button.readiness-chip:focus {
   background: #ffffff;
 }
 
+.schedule-booked-heading {
+  display: none;
+  margin: 8px 0 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fire-s-schedule-view #inspectionDateFilterPanel,
+body.fire-s-schedule-view #fireSGatewayStatusFilters,
+body.fire-s-schedule-view #projectPagingControls,
+body.fire-s-schedule-view #activeFilterStatus,
+body.fire-s-schedule-view .gateway-quick-filter-bar,
+body.fire-s-schedule-view #projectSearch,
+body.fire-s-schedule-view #newProjectBtn,
+body.fire-s-schedule-view #scheduleNewInspectionBtn,
+body.fire-s-schedule-view #scheduleExistingInspectionBtn,
+body.fire-s-schedule-view #offlineReadinessBanner,
+body.fire-s-schedule-view #siteReadyPreflightChecklist,
+body.fire-s-schedule-view #postSiteSyncReminder,
+body.fire-s-schedule-view #reminderBanner,
+body.fire-s-schedule-view #fireSCompanyDataAuditBtnV16 {
+  display: none !important;
+}
+
+body.fire-s-schedule-view #projectListSection .toolbar-actions {
+  display: block;
+  width: 100%;
+}
+
+body.fire-s-schedule-view #scheduleNewPanel {
+  display: block !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.fire-s-schedule-view #scheduleBookedHeading {
+  display: block;
+}
+
+body.fire-s-schedule-view #projectsList .fire-s-136a8-filter-grid,
+body.fire-s-schedule-view #projectsList .fire-s-136a11-filter-grid,
+body.fire-s-schedule-view #projectsList .fire-s-lifecycle-filter-bar,
+body.fire-s-schedule-view #projectsList .fire-s-lifecycle-heading,
+body.fire-s-schedule-view #projectsList .fire-s-136a8-current,
+body.fire-s-schedule-view .fire-s-136a11-current-label,
+body.fire-s-schedule-view .fire-s-136a8-current-label,
+body.fire-s-schedule-view #fireSExecutiveMiniDashboard,
+body.fire-s-schedule-view #fireSCurrentKpiFilterBanner,
+body.fire-s-schedule-view .fire-s-current-kpi-filter-banner,
+body.fire-s-schedule-view .fire-s-136a5-result-note,
+body.fire-s-schedule-view .fire-s-136a8-result-note,
+body.fire-s-schedule-view .fire-s-136a5-banner,
+body.fire-s-schedule-view .fire-s-136a8-banner {
+  display: none !important;
+}
+
 .schedule-new-panel h3 {
   margin-top: 0;
 }
@@ -14580,4 +14639,70 @@ html[data-fire-s-theme="dark"] .startup-route-card .route-copy,
 html[data-fire-s-theme="dark"] .startup-route-card span.route-copy {
   color: #334155 !important;
   opacity: 1 !important;
+}
+
+/* Home Reports card removed. Pull a client PDF from the premises. */
+html body #mainCommandCentre #cmdReportsBtn {
+  display: none !important;
+}
+
+/* Q&A Expand / Collapse must stay large and readable over the compact toolbar. */
+html body .checklist-toolbar.checklist-toolbar-compact .checklist-view-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  flex: 1 1 100%;
+}
+
+html body .checklist-toolbar.checklist-toolbar-compact button.checklist-expand-btn,
+html body .checklist-toolbar.checklist-toolbar-compact button.checklist-collapse-btn {
+  flex: 1 1 auto;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 44px !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.02em;
+  white-space: nowrap !important;
+}
+
+html body .checklist-toolbar.checklist-toolbar-compact button.checklist-expand-btn {
+  background: #b71c1c !important;
+  color: #ffffff !important;
+  border: 2px solid #b71c1c !important;
+}
+
+html body .checklist-toolbar.checklist-toolbar-compact button.checklist-collapse-btn {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 2px solid #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] body .checklist-toolbar.checklist-toolbar-compact button.checklist-expand-btn,
+html[data-fire-s-theme="dark"] body .checklist-toolbar.checklist-toolbar-compact button.checklist-expand-btn * {
+  background: #b71c1c !important;
+  color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] body .checklist-toolbar.checklist-toolbar-compact button.checklist-collapse-btn,
+html[data-fire-s-theme="dark"] body .checklist-toolbar.checklist-toolbar-compact button.checklist-collapse-btn * {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #0f172a !important;
+}
+
+/* Access footer: Terms / Privacy stay readable on the white legal chips. */
+html body .fire-s-legal-links a,
+html[data-fire-s-theme="light"] .fire-s-legal-links a,
+html[data-fire-s-theme="dark"] .fire-s-legal-links a {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  border: 2px solid #1d4ed8 !important;
+  font-weight: 800 !important;
 }

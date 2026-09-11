@@ -15196,3 +15196,12 @@ html[data-fire-s-theme="dark"] body .checklist-toolbar.checklist-toolbar-compact
   color: #0f172a !important;
   border-color: #0f172a !important;
 }
+
+html body .fire-s-legal-links a,
+html[data-fire-s-theme="light"] .fire-s-legal-links a,
+html[data-fire-s-theme="dark"] .fire-s-legal-links a {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  border: 2px solid #1d4ed8 !important;
+  font-weight: 800 !important;
+}
