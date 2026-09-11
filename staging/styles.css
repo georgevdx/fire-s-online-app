@@ -2864,7 +2864,14 @@ body.fire-s-schedule-view #projectsList .fire-s-lifecycle-filter-bar,
 body.fire-s-schedule-view #projectsList .fire-s-lifecycle-heading,
 body.fire-s-schedule-view #projectsList .fire-s-136a8-current,
 body.fire-s-schedule-view .fire-s-136a11-current-label,
-body.fire-s-schedule-view .fire-s-136a8-current-label {
+body.fire-s-schedule-view .fire-s-136a8-current-label,
+body.fire-s-schedule-view #fireSExecutiveMiniDashboard,
+body.fire-s-schedule-view #fireSCurrentKpiFilterBanner,
+body.fire-s-schedule-view .fire-s-current-kpi-filter-banner,
+body.fire-s-schedule-view .fire-s-136a5-result-note,
+body.fire-s-schedule-view .fire-s-136a8-result-note,
+body.fire-s-schedule-view .fire-s-136a5-banner,
+body.fire-s-schedule-view .fire-s-136a8-banner {
   display: none !important;
 }
 
