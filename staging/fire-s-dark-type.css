@@ -395,3 +395,66 @@ html[data-fire-s-theme="dark"] #companyLetterheadSection .formal-letterhead,
 html[data-fire-s-theme="dark"] #companyLetterheadSection .formal-letterhead :is(h1, p, span, div, small) {
   color: #0f172a !important;
 }
+
+/* Live PDF / on-screen report: white paper, dark ink everywhere. */
+html[data-fire-s-theme="dark"] #reportContent,
+html[data-fire-s-theme="dark"] #reportContentPdfClone,
+.pdf-export-mode,
+.pdf-export-sandbox,
+.pdf-export-sandbox .pdf-export-mode {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] #reportContent *,
+html[data-fire-s-theme="dark"] #reportContentPdfClone *,
+.pdf-export-mode *,
+.pdf-export-sandbox * {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] #reportContent .report-block h3,
+html[data-fire-s-theme="dark"] #reportContent .report-brand h1,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-block h3,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-brand h1,
+html[data-fire-s-theme="dark"] .report-block h3,
+.pdf-export-mode .report-block h3,
+.pdf-export-mode .report-brand h1 {
+  color: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] #reportContent .report-section-heading,
+html[data-fire-s-theme="dark"] #reportContent .report-section-heading *,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-section-heading,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-section-heading *,
+html[data-fire-s-theme="dark"] .report-section-heading,
+.pdf-export-mode .report-section-heading,
+.pdf-export-mode .report-section-heading *,
+.pdf-export-mode .nc-heading,
+.pdf-export-mode .nc-heading * {
+  color: #ffffff !important;
+  background: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] #reportContent .summary-critical strong,
+html[data-fire-s-theme="dark"] #reportContent .report-answer.answer-no strong,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .summary-critical strong,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-answer.answer-no strong,
+.pdf-export-mode .summary-critical strong,
+.pdf-export-mode .report-answer.answer-no strong {
+  color: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] #reportContent .report-expiry-overdue,
+html[data-fire-s-theme="dark"] #reportContent .report-expiry-overdue *,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-expiry-overdue,
+html[data-fire-s-theme="dark"] #reportContentPdfClone .report-expiry-overdue *,
+.pdf-export-mode .report-expiry-overdue,
+.pdf-export-mode .report-expiry-overdue * {
+  color: #9f1239 !important;
+}
+
+html[data-fire-s-theme="dark"] #reportSection > h2,
+html[data-fire-s-theme="dark"] #reportSection > p {
+  color: #f8fafc !important;
+}
