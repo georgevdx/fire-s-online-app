@@ -42,7 +42,10 @@ function assertDarkPaper(label, css, fitCss) {
       /html\[data-fire-s-theme="dark"\] \.report-block,/.test(css) &&
       /color: #0f172a !important;/.test(css) &&
       /\.finding-item-card,/.test(css) &&
-      /\.section-header \*/.test(css),
+      /\.section-header \*/.test(css) &&
+      /\.company-team-intro,/.test(css) &&
+      /\.user-manual-intro,/.test(css) &&
+      /\.fire-s-subscribe-intro,/.test(css),
     label + ': the white report document and leftover paper cards must keep dark type'
   );
   assert.ok(

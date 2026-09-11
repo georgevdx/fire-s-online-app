@@ -1057,3 +1057,35 @@ html[data-fire-s-theme="dark"] .metric-active .metric-label,
 html[data-fire-s-theme="dark"] .metric-active .metric-subtext {
   color: #ffffff !important;
 }
+
+/* Dark Mode: section intros sit on dark .card chrome, not on white paper. */
+html[data-fire-s-theme="dark"] :is(
+  .company-team-intro,
+  .company-team-kicker,
+  .company-team-meta,
+  .user-manual-intro,
+  .user-manual-kicker,
+  .fire-s-subscribe-intro,
+  .fire-s-subscribe-kicker,
+  .fire-s-plan-picker-label,
+  .test-samples-intro,
+  .test-samples-kicker,
+  .company-letterhead-intro,
+  .company-letterhead-kicker,
+  .findings-kicker
+) {
+  color: #e2e8f0 !important;
+}
+html[data-fire-s-theme="dark"] :is(
+  .company-team-intro,
+  .user-manual-intro,
+  .fire-s-subscribe-intro,
+  .test-samples-intro,
+  .company-letterhead-intro
+) :is(h1, h2, h3, h4, p, span, strong, small, a, div) {
+  color: #e2e8f0 !important;
+}
+html[data-fire-s-theme="dark"] .fire-s-subscribe-intro a,
+html[data-fire-s-theme="dark"] .user-manual-intro a {
+  color: #93c5fd !important;
+}
