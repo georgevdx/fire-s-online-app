@@ -212,3 +212,20 @@ html[data-fire-s-theme="dark"] .inspector-v4-search {
   color: #0f172a !important;
   background: #ffffff !important;
 }
+
+html body .checklist-expand-btn,
+html body .checklist-expand-btn *,
+html[data-fire-s-theme="dark"] .checklist-expand-btn,
+html[data-fire-s-theme="dark"] .checklist-expand-btn * {
+  background: #b71c1c !important;
+  color: #ffffff !important;
+}
+
+html body .checklist-collapse-btn,
+html body .checklist-collapse-btn *,
+html[data-fire-s-theme="dark"] .checklist-collapse-btn,
+html[data-fire-s-theme="dark"] .checklist-collapse-btn * {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #0f172a !important;
+}

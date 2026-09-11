@@ -17893,12 +17893,12 @@ function renderChecklist(selected) {
   checklistOverview.innerHTML = `
     <div class="checklist-toolbar checklist-toolbar-compact">
       <div class="checklist-view-controls" aria-label="Checklist view controls">
-        <button type="button" onclick="expandAllSections()">Expand</button>
-        <button type="button" onclick="collapseAllSections()">Collapse</button>
+        <button type="button" class="checklist-expand-btn" onclick="expandAllSections()">Expand</button>
+        <button type="button" class="checklist-collapse-btn" onclick="collapseAllSections()">Collapse</button>
       </div>
       <div id="answerSummary" class="answer-summary">Compliant: 0 | Action Required: 0 | N/A: 0</div>
     </div>
-    <p class="checklist-expand-hint">Click <strong>Expand</strong> to access questions.</p>
+    <p class="checklist-expand-hint">Questions are already open. Use <strong>Expand</strong> or <strong>Collapse</strong> if you need to hide them.</p>
     <div id="checklistSectionStatus" class="checklist-section-status-panel"></div>
   `;
 
@@ -17968,7 +17968,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 
   html += `
     <div
-      class="section-group hidden"
+      class="section-group"
       id="section_${sectionIndex}"
       data-section-name="${escapeHtml(sectionName)}"
     >
@@ -18086,6 +18086,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
   chkDiv.innerHTML = html;
   updateAnswerSummary();
   updateProjectReadinessPanel();
+  scheduleRevealExpandedChecklistInFrame();
 }
 
 function escapeHtml(value) {
@@ -20642,6 +20643,31 @@ async function shareReport() {
   }
 }
 
+
+function revealExpandedChecklistInFrame() {
+  expandAllSections();
+
+  const frame = document.getElementById('checklist');
+  if (!frame) return;
+
+  const firstQuestion = frame.querySelector(
+    '.section-group:not(.hidden) .checklist-row:not(.fire-s-gate-hidden)'
+  );
+  if (!firstQuestion) return;
+
+  const frameRect = frame.getBoundingClientRect();
+  const questionRect = firstQuestion.getBoundingClientRect();
+  const nextTop = frame.scrollTop + (questionRect.top - frameRect.top) - 8;
+  frame.scrollTop = Math.max(0, nextTop);
+}
+
+function scheduleRevealExpandedChecklistInFrame() {
+  revealExpandedChecklistInFrame();
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(revealExpandedChecklistInFrame);
+  }
+  setTimeout(revealExpandedChecklistInFrame, 80);
+}
 
 function expandAllSections() {
   document.querySelectorAll('.section-group').forEach(section => {
@@ -40046,7 +40072,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
           }
           alert(
             retry.total === 0
-              ? 'There is no checklist yet. Choose occupancy, tap Expand, then answer the questions.'
+              ? 'There is no checklist yet. Choose occupancy, then answer the questions.'
               : `This inspection is not finished yet.\n\n${retry.unanswered} question${retry.unanswered === 1 ? '' : 's'} still need an answer.\n\nI opened the first empty one.`
           );
           updateFinalisationControls();
