@@ -32,7 +32,8 @@ function assertScheduleBookView(label, app, css, html) {
       /body\.fire-s-schedule-view #fireSGatewayStatusFilters/.test(css) &&
       /body\.fire-s-schedule-view #newProjectBtn/.test(css) &&
       /schedule-booked-heading/.test(css) &&
-      /body\.fire-s-schedule-view #projectsList \.fire-s-136a8-filter-grid/.test(css),
+      /body\.fire-s-schedule-view #projectsList \.fire-s-136a8-filter-grid/.test(css) &&
+      /body\.fire-s-schedule-view #fireSCurrentKpiFilterBanner/.test(css),
     label + ': schedule view must show the book form and hide Gateway chrome'
   );
   assert.ok(
