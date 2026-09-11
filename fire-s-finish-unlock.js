@@ -81,7 +81,7 @@
         revealField(firstUnansweredField());
         alert(
           counts.total === 0
-            ? 'There is no checklist yet. Choose occupancy, tap Expand, then answer the questions.'
+            ? 'There is no checklist yet. Choose occupancy, then answer the questions.'
             : 'This inspection is not finished yet.\n\n' +
               counts.unanswered +
               ' question' +

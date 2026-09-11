@@ -354,6 +354,10 @@
   }
 
   function show(id) {
+    if (id === 'cmdReportsBtn') {
+      hide(id);
+      return;
+    }
     const el = byId(id);
     if (!el) return;
     el.hidden = false;
@@ -638,6 +642,7 @@
     setBetaPanelsVisible(false);
 
     ALL_CMD_IDS.forEach(show);
+    hide('cmdReportsBtn');
     hide('cmdTestSamplesBtn');
     hide('cmdSubscribeBtn');
     hide('cmdInspectorsBtn');
@@ -751,6 +756,7 @@
     setBetaPanelsVisible(role === 'super_admin');
 
     ALL_CMD_IDS.forEach(show);
+    hide('cmdReportsBtn');
     hide('cmdTestSamplesBtn');
     hide('cmdInspectorsBtn');
     hide('inspectorBoardHomeBar');
@@ -875,7 +881,7 @@
     setBetaPanelsVisible(false);
 
     show('cmdInspectionsBtn');
-    show('cmdReportsBtn');
+    hide('cmdReportsBtn');
     show('cmdDashboardBtn');
     show('cmdFindingsBtn');
     show('cmdOverdueBtn');
