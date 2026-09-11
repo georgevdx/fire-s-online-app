@@ -14758,3 +14758,20 @@ html[data-fire-s-theme="dark"] .fire-s-continue-confirm-v11__continue {
   color: #ffffff !important;
   background: #176fae !important;
 }
+
+html[data-fire-s-theme="dark"] .startup-route-card,
+html[data-fire-s-theme="dark"] #homeLogoutBtn.startup-route-card,
+html[data-fire-s-theme="dark"] #homeLoginRouteBtn.startup-route-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html[data-fire-s-theme="dark"] .startup-route-card .route-title,
+html[data-fire-s-theme="dark"] .startup-route-card span.route-title {
+  color: #b71c1c !important;
+}
+html[data-fire-s-theme="dark"] .startup-route-card .route-copy,
+html[data-fire-s-theme="dark"] .startup-route-card span.route-copy {
+  color: #334155 !important;
+  opacity: 1 !important;
+}

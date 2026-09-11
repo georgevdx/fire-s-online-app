@@ -22,6 +22,13 @@ function assertLightSurfaceFonts(label, css, fitCss, app) {
     label + ': Inspection Gateway primary tile must keep white text'
   );
   assert.ok(
+    /html\[data-fire-s-theme="dark"\] \.startup-route-card/.test(css) &&
+      /html\[data-fire-s-theme="dark"\] \.startup-route-card \.route-title/.test(css) &&
+      /html\[data-fire-s-theme="dark"\] \.startup-route-card \.route-copy/.test(css) &&
+      /html\[data-fire-s-theme="dark"\] #homeLogoutBtn\.startup-route-card/.test(css),
+    label + ': Access / Logout under Services/Support must keep readable type on the white card'
+  );
+  assert.ok(
     /html\[data-fire-s-theme="dark"\] \.fire-s-cc-eyebrow/.test(css) &&
       /html\[data-fire-s-theme="dark"\] \.fire-s-cc-quick button/.test(css) &&
       /html\[data-fire-s-theme="dark"\] \.fire-s-cc-quick button:disabled/.test(css) &&
