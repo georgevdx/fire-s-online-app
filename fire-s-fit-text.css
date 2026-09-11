@@ -773,3 +773,231 @@ html[data-fire-s-theme="dark"] .startup-route-card span.route-copy {
   color: #334155 !important;
   opacity: 1 !important;
 }
+
+/* Dark Mode: paper (white/light) islands keep dark type. Do not paint every span/p/strong light. */
+html[data-fire-s-theme="dark"] #projectFormSection,
+html[data-fire-s-theme="dark"] #findingsCentreSection,
+html[data-fire-s-theme="dark"] #requirementsSection,
+html[data-fire-s-theme="dark"] .findings-centre,
+html[data-fire-s-theme="dark"] #companyTeamSection,
+html[data-fire-s-theme="dark"] #servicesSection,
+html[data-fire-s-theme="dark"] #userManualSection,
+html[data-fire-s-theme="dark"] #testSamplesSection,
+html[data-fire-s-theme="dark"] #fireSSubscribeSection,
+html[data-fire-s-theme="dark"] #managementDashboardSection,
+html[data-fire-s-theme="dark"] #companyLetterheadSection,
+html[data-fire-s-theme="dark"] #inspectorBoardSection,
+html[data-fire-s-theme="dark"] #reportSection {
+  color: #f8fafc;
+}
+
+html[data-fire-s-theme="dark"] :is(
+  .report-summary-card,
+  .report-section-summary,
+  .report-data-quality,
+  .report-expiry-item,
+  .report-answer,
+  .report-item,
+  .report-meta,
+  .report-meta-card,
+  .report-photo-card,
+  .report-photo-item,
+  .report-photo-note,
+  .report-status-pill,
+  .report-section-status,
+  .action-item,
+  .dash-card,
+  .nc-item,
+  .photo-item,
+  .service-card,
+  .company-team-card,
+  .company-team-add,
+  .company-personnel-tabs button,
+  .fire-s-plan-card,
+  .fire-s-subscribe-status,
+  .fire-s-expiry-reminder,
+  .pbi-kpi,
+  .pbi-tile,
+  .pbi-filters,
+  .company-letterhead-form,
+  .company-letterhead-sample-card,
+  .company-letterhead-preview,
+  .user-manual-toc,
+  .user-manual-note,
+  .user-manual-print,
+  .inspector-board-kpi,
+  .inspector-board-item,
+  .inspector-board-table,
+  .test-samples-panel,
+  .test-samples-inspectors li,
+  .boot-card,
+  .schedule-new-panel,
+  .schedule-existing-summary,
+  .schedule-mode-btn,
+  .fire-s-get-started-choice,
+  .fire-s-access-service-form,
+  .module-heading,
+  .project-meta-grid div,
+  .project-data-quality,
+  .project-risk-summary,
+  .site-history-panel,
+  .project-readiness-panel,
+  .readiness-chip,
+  .service-request-form,
+  .service-request-list-item,
+  .support-archive-item,
+  .inspection-command-shell,
+  .inspection-command-menu,
+  .executive-summary-card,
+  .quick-readiness-item,
+  .choice-card,
+  .choice-list-row,
+  .sae-card,
+  .sae-empty,
+  .archived-photo-card,
+  .form-help-text,
+  .checklist-toolbar,
+  .section-group,
+  .assessment-chip,
+  .answer-yes,
+  .answer-no,
+  .answer-na,
+  .checklist-row,
+  .finding-stat-card,
+  .inspector-v4-search,
+  .inspector-v4-result,
+  .inspector-v4-next,
+  .management-dashboard-message,
+  .company-letterhead-message,
+  .user-manual-message,
+  .test-samples-message,
+  .fire-s-subscribe-message,
+  .beta-feedback-item,
+  .beta-quick-test-panel,
+  .release-candidate-panel,
+  .smart-action-engine-panel
+) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] :is(
+  .report-summary-card,
+  .report-section-summary,
+  .report-data-quality,
+  .report-expiry-item,
+  .report-answer,
+  .report-item,
+  .report-meta,
+  .report-meta-card,
+  .report-photo-card,
+  .report-photo-item,
+  .report-photo-note,
+  .report-status-pill,
+  .report-section-status,
+  .action-item,
+  .dash-card,
+  .nc-item,
+  .photo-item,
+  .service-card,
+  .company-team-card,
+  .company-team-add,
+  .fire-s-plan-card,
+  .fire-s-subscribe-status,
+  .fire-s-expiry-reminder,
+  .pbi-kpi,
+  .pbi-tile,
+  .pbi-filters,
+  .company-letterhead-form,
+  .company-letterhead-sample-card,
+  .company-letterhead-preview,
+  .user-manual-toc,
+  .user-manual-note,
+  .user-manual-print,
+  .inspector-board-kpi,
+  .inspector-board-item,
+  .inspector-board-table,
+  .test-samples-panel,
+  .boot-card,
+  .schedule-new-panel,
+  .schedule-existing-summary,
+  .fire-s-get-started-choice,
+  .fire-s-access-service-form,
+  .module-heading,
+  .project-meta-grid div,
+  .project-data-quality,
+  .site-history-panel,
+  .project-readiness-panel,
+  .readiness-chip,
+  .service-request-form,
+  .service-request-list-item,
+  .inspection-command-shell,
+  .executive-summary-card,
+  .quick-readiness-item,
+  .choice-card,
+  .sae-card,
+  .archived-photo-card,
+  .form-help-text,
+  .checklist-toolbar,
+  .section-group,
+  .assessment-chip,
+  .answer-yes,
+  .answer-no,
+  .answer-na,
+  .checklist-row,
+  .finding-stat-card,
+  .inspector-v4-result,
+  .inspector-v4-next,
+  .beta-feedback-item,
+  .smart-action-engine-panel
+) :is(h1, h2, h3, h4, p, span, strong, small, label, li, td, th, b, em, a, div, button, legend) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] .report-summary-card span,
+html[data-fire-s-theme="dark"] .report-summary-card strong,
+html[data-fire-s-theme="dark"] .report-section-summary-head span,
+html[data-fire-s-theme="dark"] .report-section-summary-counts b,
+html[data-fire-s-theme="dark"] .report-expiry-item span,
+html[data-fire-s-theme="dark"] .report-expiry-item strong,
+html[data-fire-s-theme="dark"] .report-answer strong {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] .report-block,
+html[data-fire-s-theme="dark"] .report-line {
+  color: #f8fafc;
+}
+
+html[data-fire-s-theme="dark"] #reportSection > h2,
+html[data-fire-s-theme="dark"] #reportSection > p {
+  color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] .report-block h3 {
+  color: #fecaca !important;
+}
+
+html[data-fire-s-theme="dark"] .report-section-heading {
+  color: #ffffff !important;
+  background: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] .summary-critical strong,
+html[data-fire-s-theme="dark"] .report-answer.answer-no strong,
+html[data-fire-s-theme="dark"] .startup-route-card .route-title {
+  color: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] .report-expiry-overdue,
+html[data-fire-s-theme="dark"] .report-expiry-overdue span,
+html[data-fire-s-theme="dark"] .report-expiry-overdue strong {
+  color: #9f1239 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-open-btn,
+html[data-fire-s-theme="dark"] .cloud-primary-btn,
+html[data-fire-s-theme="dark"] .fire-s-cc-quick-primary,
+html[data-fire-s-theme="dark"] .main-command-card.primary span,
+html[data-fire-s-theme="dark"] #cmdInspectionsBtn span {
+  color: #ffffff !important;
+}
