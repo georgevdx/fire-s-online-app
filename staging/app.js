@@ -5316,22 +5316,62 @@ function openInspectionsCommand() {
   showProjectList();
 }
 
+function exitFireSScheduleView() {
+  document.body.classList.remove('fire-s-schedule-view');
+  const heading = document.querySelector('#projectListSection > .toolbar > h2');
+  if (heading && heading.dataset.fireSScheduleTitle === '1') {
+    heading.textContent = 'Projects';
+    delete heading.dataset.fireSScheduleTitle;
+  }
+}
+
+function enterFireSScheduleView() {
+  document.body.classList.add('fire-s-schedule-view');
+  const heading = document.querySelector('#projectListSection > .toolbar > h2');
+  if (heading) {
+    heading.textContent = 'Schedule';
+    heading.dataset.fireSScheduleTitle = '1';
+  }
+  try {
+    currentFilter = 'scheduled-new';
+    window.currentFilter = 'scheduled-new';
+    window.__fireS136A11ActiveFilter = 'scheduled-new';
+    window.__fireS136A8ActiveFilter = 'scheduled-new';
+    window.__fireSAuthoritativeFilter = 'scheduled-new';
+    window.__fireSAuthoritativeKpiFilter = 'scheduled-new';
+    window.__fireSActiveKpiFilter = 'scheduled-new';
+    currentProjectPage = 1;
+    window.currentProjectPage = 1;
+  } catch (_) {}
+}
+
 function openScheduleCommand() {
-  showProjectList();
-  setTimeout(() => {
-    const premises = typeof listSchedulablePremises === 'function'
-      ? listSchedulablePremises()
-      : [];
-    if (typeof openSchedulePanel === 'function') {
-      openSchedulePanel(premises.length ? 'existing' : 'new');
-      return;
-    }
+  window.__fireSOpeningSchedule = true;
+  try {
+    showProjectList();
+  } finally {
+    window.__fireSOpeningSchedule = false;
+  }
+  enterFireSScheduleView();
+  try {
+    currentFilter = 'scheduled-new';
+    window.currentFilter = 'scheduled-new';
+    currentProjectPage = 1;
+  } catch (_) {}
+  const premises = typeof listSchedulablePremises === 'function'
+    ? listSchedulablePremises()
+    : [];
+  if (typeof openSchedulePanel === 'function') {
+    openSchedulePanel(premises.length ? 'existing' : 'new', { force: true });
+  } else {
     const panel = document.getElementById('scheduleNewPanel');
-    if (panel) {
-      panel.style.display = 'block';
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, 150);
+    if (panel) panel.style.display = 'block';
+  }
+  if (typeof renderProjectsList === 'function') renderProjectsList();
+  const panel = document.getElementById('scheduleNewPanel');
+  if (panel) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function openReportsCommand() {
@@ -5504,22 +5544,62 @@ function openInspectionsCommand() {
   showProjectList();
 }
 
+function exitFireSScheduleView() {
+  document.body.classList.remove('fire-s-schedule-view');
+  const heading = document.querySelector('#projectListSection > .toolbar > h2');
+  if (heading && heading.dataset.fireSScheduleTitle === '1') {
+    heading.textContent = 'Projects';
+    delete heading.dataset.fireSScheduleTitle;
+  }
+}
+
+function enterFireSScheduleView() {
+  document.body.classList.add('fire-s-schedule-view');
+  const heading = document.querySelector('#projectListSection > .toolbar > h2');
+  if (heading) {
+    heading.textContent = 'Schedule';
+    heading.dataset.fireSScheduleTitle = '1';
+  }
+  try {
+    currentFilter = 'scheduled-new';
+    window.currentFilter = 'scheduled-new';
+    window.__fireS136A11ActiveFilter = 'scheduled-new';
+    window.__fireS136A8ActiveFilter = 'scheduled-new';
+    window.__fireSAuthoritativeFilter = 'scheduled-new';
+    window.__fireSAuthoritativeKpiFilter = 'scheduled-new';
+    window.__fireSActiveKpiFilter = 'scheduled-new';
+    currentProjectPage = 1;
+    window.currentProjectPage = 1;
+  } catch (_) {}
+}
+
 function openScheduleCommand() {
-  showProjectList();
-  setTimeout(() => {
-    const premises = typeof listSchedulablePremises === 'function'
-      ? listSchedulablePremises()
-      : [];
-    if (typeof openSchedulePanel === 'function') {
-      openSchedulePanel(premises.length ? 'existing' : 'new');
-      return;
-    }
+  window.__fireSOpeningSchedule = true;
+  try {
+    showProjectList();
+  } finally {
+    window.__fireSOpeningSchedule = false;
+  }
+  enterFireSScheduleView();
+  try {
+    currentFilter = 'scheduled-new';
+    window.currentFilter = 'scheduled-new';
+    currentProjectPage = 1;
+  } catch (_) {}
+  const premises = typeof listSchedulablePremises === 'function'
+    ? listSchedulablePremises()
+    : [];
+  if (typeof openSchedulePanel === 'function') {
+    openSchedulePanel(premises.length ? 'existing' : 'new', { force: true });
+  } else {
     const panel = document.getElementById('scheduleNewPanel');
-    if (panel) {
-      panel.style.display = 'block';
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, 150);
+    if (panel) panel.style.display = 'block';
+  }
+  if (typeof renderProjectsList === 'function') renderProjectsList();
+  const panel = document.getElementById('scheduleNewPanel');
+  if (panel) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function openReportsCommand() {
@@ -8099,7 +8179,7 @@ function setSchedulePanelMode(mode) {
   }
 }
 
-function openSchedulePanel(mode) {
+function openSchedulePanel(mode, options) {
   const panel = document.getElementById('scheduleNewPanel');
 
   if (!panel) {
@@ -8108,9 +8188,10 @@ function openSchedulePanel(mode) {
   }
 
   const nextMode = mode === 'existing' ? 'existing' : 'new';
+  const force = !!(options && options.force);
   const isOpen = panel.style.display === 'block';
 
-  if (isOpen && schedulePanelMode === nextMode) {
+  if (!force && isOpen && schedulePanelMode === nextMode) {
     panel.style.display = 'none';
     return;
   }
@@ -8960,6 +9041,9 @@ function updateFloatingBackButton() {
 }
 
 function showProjectList() {
+  if (!window.__fireSOpeningSchedule) {
+    try { exitFireSScheduleView(); } catch (_) {}
+  }
   if (inspectionHistoryViewMode) {
     exitInspectionHistoryViewMode();
   }
@@ -10334,6 +10418,7 @@ function updateHomeAccessCards() {
 }
 
 function showHome() {
+  try { exitFireSScheduleView(); } catch (_) {}
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
@@ -13355,6 +13440,7 @@ function getSyncStatus(project) {
 }
 
 function scrollToFirstVisibleProject() {
+  if (document.body.classList.contains('fire-s-schedule-view')) return;
   setTimeout(() => {
     const firstCard = document.querySelector('.project-card');
 
@@ -32489,6 +32575,7 @@ function fireSIsScheduledNewPremises(project) {
     type === 'new_inspection'
   );
 }
+try { window.fireSIsScheduledNewPremises = fireSIsScheduledNewPremises; } catch (_) {}
 
 function fireSIsNewPremises(project) {
   return !fireSIsScheduledNewPremises(project) && !fireSHasMeaningfulInspectionData(project) && !fireSHasPreviousCycles(project);
@@ -43309,4 +43396,80 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
+})();
+
+/* =====================================================
+   Schedule Home card: booking form + already-booked cards only
+   ===================================================== */
+(function fireSScheduleBookViewLock() {
+  'use strict';
+
+  function isBookedPremises(project) {
+    try {
+      if (typeof window.fireSIsScheduledNewPremises === 'function') {
+        return !!window.fireSIsScheduledNewPremises(project);
+      }
+    } catch (_) {}
+    if (!project || project.completedAt) return false;
+    if (String(project.scheduledStatus || '').toLowerCase() !== 'scheduled') return false;
+    const type = String(project.scheduleType || '').toLowerCase();
+    return type === 'new_site' || type === 'existing_site' || type === 'new_inspection';
+  }
+
+  function inScheduleView() {
+    try {
+      return document.body.classList.contains('fire-s-schedule-view');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function wrapMatcher(original) {
+    if (typeof original !== 'function' || original.__fireSScheduleBooked) return original;
+    const wrapped = function fireSScheduleBookedMatches(project, filter) {
+      if (inScheduleView()) return isBookedPremises(project);
+      return original.apply(this, arguments);
+    };
+    wrapped.__fireSScheduleBooked = true;
+    return wrapped;
+  }
+
+  function installMatchers() {
+    if (typeof window.fireSProductionKpiMatches === 'function') {
+      window.fireSProductionKpiMatches = wrapMatcher(window.fireSProductionKpiMatches);
+    }
+    if (typeof window.fireS136A11Matches === 'function') {
+      window.fireS136A11Matches = wrapMatcher(window.fireS136A11Matches);
+    }
+  }
+
+  function polishEmptyState() {
+    if (!inScheduleView()) return;
+    const empty = document.querySelector('#projectsList .empty-state');
+    if (empty) {
+      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above.';
+    }
+  }
+
+  function wrapRenderer() {
+    const previous = window.renderProjectsList;
+    if (typeof previous !== 'function' || previous.__fireSScheduleBookView) return;
+    const wrapped = function fireSScheduleBookViewRender() {
+      const result = previous.apply(this, arguments);
+      try { polishEmptyState(); } catch (_) {}
+      return result;
+    };
+    wrapped.__fireSScheduleBookView = true;
+    window.renderProjectsList = wrapped;
+    try { renderProjectsList = wrapped; } catch (_) {}
+  }
+
+  installMatchers();
+  wrapRenderer();
+  [0, 400, 1200].forEach(function (delay) {
+    setTimeout(function () {
+      installMatchers();
+      wrapRenderer();
+    }, delay);
+  });
 })();

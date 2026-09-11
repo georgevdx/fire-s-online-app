@@ -2816,6 +2816,58 @@ button.readiness-chip:focus {
   background: #ffffff;
 }
 
+.schedule-booked-heading {
+  display: none;
+  margin: 8px 0 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fire-s-schedule-view #inspectionDateFilterPanel,
+body.fire-s-schedule-view #fireSGatewayStatusFilters,
+body.fire-s-schedule-view #projectPagingControls,
+body.fire-s-schedule-view #activeFilterStatus,
+body.fire-s-schedule-view .gateway-quick-filter-bar,
+body.fire-s-schedule-view #projectSearch,
+body.fire-s-schedule-view #newProjectBtn,
+body.fire-s-schedule-view #scheduleNewInspectionBtn,
+body.fire-s-schedule-view #scheduleExistingInspectionBtn,
+body.fire-s-schedule-view #offlineReadinessBanner,
+body.fire-s-schedule-view #siteReadyPreflightChecklist,
+body.fire-s-schedule-view #postSiteSyncReminder,
+body.fire-s-schedule-view #reminderBanner,
+body.fire-s-schedule-view #fireSCompanyDataAuditBtnV16 {
+  display: none !important;
+}
+
+body.fire-s-schedule-view #projectListSection .toolbar-actions {
+  display: block;
+  width: 100%;
+}
+
+body.fire-s-schedule-view #scheduleNewPanel {
+  display: block !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.fire-s-schedule-view #scheduleBookedHeading {
+  display: block;
+}
+
+body.fire-s-schedule-view #projectsList .fire-s-136a8-filter-grid,
+body.fire-s-schedule-view #projectsList .fire-s-136a11-filter-grid,
+body.fire-s-schedule-view #projectsList .fire-s-lifecycle-filter-bar,
+body.fire-s-schedule-view #projectsList .fire-s-lifecycle-heading,
+body.fire-s-schedule-view #projectsList .fire-s-136a8-current,
+body.fire-s-schedule-view .fire-s-136a11-current-label,
+body.fire-s-schedule-view .fire-s-136a8-current-label {
+  display: none !important;
+}
+
 .schedule-new-panel h3 {
   margin-top: 0;
 }
