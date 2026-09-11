@@ -16,6 +16,8 @@ function assertScheduleBookView(label, app, css, html) {
       /openSchedulePanel\([\s\S]*\{ force: true \}\)/.test(app) &&
       /currentFilter = 'scheduled-new'/.test(app) &&
       /fireSScheduleBookViewLock/.test(app) &&
+      /keepBookedCardsOnly/.test(app) &&
+      /fireSKeepScheduleBookedCards/.test(app) &&
       /window\.fireSIsScheduledNewPremises = fireSIsScheduledNewPremises/.test(app) &&
       /Nothing booked yet\. Choose New site or Existing site above\./.test(app),
     label + ': Schedule Home card must open the booking form, not the Gateway card pile'

@@ -5340,6 +5340,14 @@ function openScheduleCommand() {
     if (panel) panel.style.display = 'block';
   }
   if (typeof renderProjectsList === 'function') renderProjectsList();
+  try {
+    if (typeof window.fireSKeepScheduleBookedCards === 'function') {
+      window.fireSKeepScheduleBookedCards();
+      [80, 220, 400].forEach(function (delay) {
+        setTimeout(window.fireSKeepScheduleBookedCards, delay);
+      });
+    }
+  } catch (_) {}
   const panel = document.getElementById('scheduleNewPanel');
   if (panel) {
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5568,6 +5576,14 @@ function openScheduleCommand() {
     if (panel) panel.style.display = 'block';
   }
   if (typeof renderProjectsList === 'function') renderProjectsList();
+  try {
+    if (typeof window.fireSKeepScheduleBookedCards === 'function') {
+      window.fireSKeepScheduleBookedCards();
+      [80, 220, 400].forEach(function (delay) {
+        setTimeout(window.fireSKeepScheduleBookedCards, delay);
+      });
+    }
+  } catch (_) {}
   const panel = document.getElementById('scheduleNewPanel');
   if (panel) {
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -43370,25 +43386,68 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     }
   }
 
-  function wrapRenderer() {
-    const previous = window.renderProjectsList;
+  function keepBookedCardsOnly() {
+    if (!inScheduleView()) return;
+    let projects = [];
+    try {
+      if (typeof window.getProjects === 'function') projects = window.getProjects() || [];
+    } catch (_) {}
+    const bookedIds = {};
+    (Array.isArray(projects) ? projects : []).forEach(function (project) {
+      if (isBookedPremises(project) && project && project.id != null) {
+        bookedIds[String(project.id)] = true;
+      }
+    });
+    const list = document.getElementById('projectsList');
+    if (!list) return;
+    list.querySelectorAll('article, .project-card, .ultra-premises-card, .fire-s-136a8-card, .fire-s-136a5-card').forEach(function (card) {
+      const id = String(card.getAttribute('data-project-id') || '').replace(/^"+|"+$/g, '');
+      if (id && !bookedIds[id]) card.remove();
+    });
+    const remaining = list.querySelectorAll('article, .project-card, .ultra-premises-card, .fire-s-136a8-card, .fire-s-136a5-card');
+    if (!remaining.length && !list.querySelector('.empty-state')) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above.';
+      list.appendChild(empty);
+    } else {
+      polishEmptyState();
+    }
+  }
+
+  function afterSchedulePaint() {
+    keepBookedCardsOnly();
+    polishEmptyState();
+  }
+
+  function wrapNamed(name) {
+    const previous = window[name];
     if (typeof previous !== 'function' || previous.__fireSScheduleBookView) return;
     const wrapped = function fireSScheduleBookViewRender() {
       const result = previous.apply(this, arguments);
-      try { polishEmptyState(); } catch (_) {}
+      try { afterSchedulePaint(); } catch (_) {}
       return result;
     };
     wrapped.__fireSScheduleBookView = true;
-    window.renderProjectsList = wrapped;
-    try { renderProjectsList = wrapped; } catch (_) {}
+    window[name] = wrapped;
+    try {
+      if (name === 'renderProjectsList') renderProjectsList = wrapped;
+    } catch (_) {}
+  }
+
+  function wrapRenderer() {
+    wrapNamed('renderProjectsList');
+    wrapNamed('fireS136A11RenderProjects');
   }
 
   installMatchers();
   wrapRenderer();
+  window.fireSKeepScheduleBookedCards = afterSchedulePaint;
   [0, 400, 1200].forEach(function (delay) {
     setTimeout(function () {
       installMatchers();
       wrapRenderer();
+      try { afterSchedulePaint(); } catch (_) {}
     }, delay);
   });
 })();
