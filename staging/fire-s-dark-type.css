@@ -429,9 +429,7 @@ html[data-fire-s-theme="dark"] #reportContentPdfClone .report-section-heading,
 html[data-fire-s-theme="dark"] #reportContentPdfClone .report-section-heading *,
 html[data-fire-s-theme="dark"] .report-section-heading,
 .pdf-export-mode .report-section-heading,
-.pdf-export-mode .report-section-heading *,
-.pdf-export-mode .nc-heading,
-.pdf-export-mode .nc-heading * {
+.pdf-export-mode .report-section-heading * {
   color: #ffffff !important;
   background: #b71c1c !important;
 }
