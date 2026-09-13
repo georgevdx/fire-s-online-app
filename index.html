@@ -98,6 +98,7 @@
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
   <link rel="stylesheet" href="fire-s-entitlement.css?v=1-0-trial">
+  <link rel="stylesheet" href="fire-s-dark-type.css?v=1-1-live">
 </head>
 <body>
   <div id="fireSBootScreen" class="is-on" aria-live="polite">
@@ -1892,7 +1893,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-59-qafont')
+        navigator.serviceWorker.register('./service-worker.js?v=108-60-darktype')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

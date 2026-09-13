@@ -33,6 +33,7 @@ function assertQaScheduleFonts(label, css) {
 
 assertQaScheduleFonts('Live styles', read('styles.css'));
 assertQaScheduleFonts('Live fit-text', read('fire-s-fit-text.css'));
+assertQaScheduleFonts('Live dark-type', read('fire-s-dark-type.css'));
 assertQaScheduleFonts('Toets styles', read('staging/styles.css'));
 assertQaScheduleFonts('Toets fit-text', read('staging/fire-s-fit-text.css'));
 assertQaScheduleFonts('Toets dark-type', read('staging/fire-s-dark-type.css'));
@@ -58,7 +59,8 @@ assert.ok(
 
 assert.ok(
   /styles\.css\?v=1-3-65-qafont/.test(read('index.html')) &&
-    /fire-s-fit-text\.css\?v=1-15-qafont/.test(read('index.html')),
+    /fire-s-fit-text\.css\?v=1-15-qafont/.test(read('index.html')) &&
+    /fire-s-dark-type\.css\?v=1-1-live/.test(read('index.html')),
   'Live must cache-bust Q&A and Scheduling Centre font CSS'
 );
 

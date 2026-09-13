@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-65-coisolate',
   '1-1-home',
-  '108-59-qafont',
-  'fire-s-108-59-qafont'
+  '108-60-darktype',
+  'fire-s-108-60-darktype'
 );
 assertPullSource(
   stagingApp,
