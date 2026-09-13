@@ -60,8 +60,8 @@ assertPullSource(
   'Toets',
   '1-3-78-toets-coisolate',
   '1-1-count',
-  '108-61-toets-pdffont',
-  'fire-s-108-61-toets-pdffont'
+  '108-62-toets-qafont',
+  'fire-s-108-62-toets-qafont'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));

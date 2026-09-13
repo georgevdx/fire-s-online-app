@@ -1,0 +1,55 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+
+function read(name) {
+  return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
+}
+
+function assertQaScheduleFonts(label, css) {
+  assert.ok(
+    /#checklistCard \.checklist-expand-hint[\s\S]*color: #f8fafc !important/.test(css) &&
+      /#checklistCard \.checklist-expand-hint[\s\S]*font-size: 16px !important/.test(css),
+    label + ': Q&A expand hint must be large light type on the dark checklist card'
+  );
+  assert.ok(
+    /#nextInspectionCard :is\(h3, h4, p, span, strong, small, label, div, legend\)[\s\S]*color: #0f172a !important/.test(css),
+    label + ': Scheduling Centre headings must stay dark on the white paper'
+  );
+  assert.ok(
+    /#nextInspectionCard \.schedule-option-followup \.schedule-option-label[\s\S]*color: #b71c1c !important/.test(css) &&
+      /#nextInspectionCard \.schedule-option-recurring \.schedule-option-label[\s\S]*color: #2e7d32 !important/.test(css),
+    label + ': Corrective and Routine chips must keep their brand colours'
+  );
+}
+
+assertQaScheduleFonts('Toets styles', read('staging/styles.css'));
+assertQaScheduleFonts('Toets fit-text', read('staging/fire-s-fit-text.css'));
+assertQaScheduleFonts('Toets dark-type', read('staging/fire-s-dark-type.css'));
+
+assert.ok(
+  /\.checklist-expand-hint \{[\s\S]*font-size: 16px/.test(read('staging/styles.css')) &&
+    /\.checklist-expand-hint \{[\s\S]*color: #0f172a/.test(read('staging/styles.css')),
+  'Light Mode Q&A hint must also be larger dark type'
+);
+
+assert.ok(
+  /Questions are already open/.test(read('staging/app.js')),
+  'Toets Q&A must keep the already-open hint copy'
+);
+
+assert.ok(
+  /styles\.css\?v=1-3-78-toets-qafont/.test(read('staging/index.html')) &&
+    /fire-s-fit-text\.css\?v=1-16-qafont/.test(read('staging/index.html')) &&
+    /fire-s-dark-type\.css\?v=1-5-qafont/.test(read('staging/index.html')),
+  'Toets must cache-bust Q&A and Scheduling Centre font CSS'
+);
+
+assert.ok(
+  /Version 1\.3\.78-toets/.test(read('staging/index.html')),
+  'Displayed toets version stays 1.3.78-toets'
+);
+
+console.log('qa-schedule-fonts.test.js: ok');
