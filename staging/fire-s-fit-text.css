@@ -1489,3 +1489,86 @@ html[data-fire-s-theme="dark"] .fire-s-photo-category-filter-v1116c button.activ
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+/* Subscription status / cancel / again sit on light paper. Pricing current stays light-on-navy. */
+html[data-fire-s-theme="dark"] .fire-s-subscribe-status,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-status :is(strong, p, span, small) {
+  color: #14532d !important;
+  -webkit-text-fill-color: #14532d !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-status.is-unpaid,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-status.is-unpaid :is(strong, p, span, small) {
+  color: #9a3412 !important;
+  -webkit-text-fill-color: #9a3412 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-status.is-cancelled,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-status.is-cancelled :is(strong, p, span, small) {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel :is(h4, ol, li, p, strong, span) {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel h4 {
+  color: #7f1d1d !important;
+  -webkit-text-fill-color: #7f1d1d !important;
+  font-weight: 900 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel ol,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel li {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel .secondary-btn,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel .secondary-btn * {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  background: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-again,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-again :is(h4, ol, li, p, strong, span) {
+  color: #14532d !important;
+  -webkit-text-fill-color: #14532d !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-again h4 {
+  color: #14532d !important;
+  -webkit-text-fill-color: #14532d !important;
+  font-weight: 900 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-again ol,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-again li {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-current,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-current span,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-current strong:not(.is-picked) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-current strong.is-picked {
+  color: #fde68a !important;
+  -webkit-text-fill-color: #fde68a !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-seat-label,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-seat-note {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}

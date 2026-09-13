@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-64-toets-inspfont';
+const CACHE = 'fire-s-108-65-toets-subfont';
 const PRECACHE = [
   './',
   './index.html',

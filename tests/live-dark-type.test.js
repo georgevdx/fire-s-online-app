@@ -32,7 +32,7 @@ assert.ok(
 
 const lastStylesheet = liveHtml.match(/<link rel="stylesheet"[^>]+>/g).pop();
 assert.ok(
-  /fire-s-dark-type\.css\?v=1-2-inspfont/.test(lastStylesheet),
+  /fire-s-dark-type\.css\?v=1-3-subfont/.test(lastStylesheet),
   'Live must load fire-s-dark-type.css last, same as toets'
 );
 
