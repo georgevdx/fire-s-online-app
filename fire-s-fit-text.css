@@ -992,3 +992,56 @@ html[data-fire-s-theme="dark"] #reportSection > h2,
 html[data-fire-s-theme="dark"] #reportSection > p {
   color: #f8fafc !important;
 }
+
+/* Q&A hint on the dark checklist card. New-inspection Scheduling Centre headings on white paper. */
+html[data-fire-s-theme="dark"] #checklistCard .checklist-expand-hint,
+html[data-fire-s-theme="dark"] #checklistCard .checklist-expand-hint strong {
+  color: #f8fafc !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.4 !important;
+}
+
+html[data-fire-s-theme="dark"] #checklistCard .checklist-expand-hint strong {
+  font-weight: 900 !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard,
+html[data-fire-s-theme="dark"] #nextInspectionCard.scheduling-card,
+html[data-fire-s-theme="dark"] #nextInspectionCard :is(h3, h4, p, span, strong, small, label, div, legend) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-header h3,
+html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-card h4 {
+  color: #0b1220 !important;
+  -webkit-text-fill-color: #0b1220 !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-header p,
+html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-card p {
+  color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-followup .schedule-option-label {
+  color: #b71c1c !important;
+  background: #ffebee !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-recurring .schedule-option-label {
+  color: #2e7d32 !important;
+  background: #e8f5e9 !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-badge {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+}
+
+html[data-fire-s-theme="dark"] #nextInspectionCard :is(input, select, textarea) {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}

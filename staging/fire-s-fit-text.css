@@ -1328,6 +1328,14 @@ html[data-fire-s-theme="dark"] #nextInspectionCard :is(h3, h4, p, span, strong, 
   color: #0f172a !important;
 }
 
+html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-header h3,
+html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-card h4 {
+  color: #0b1220 !important;
+  -webkit-text-fill-color: #0b1220 !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+}
+
 html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-header p,
 html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-card p {
   color: #334155 !important;

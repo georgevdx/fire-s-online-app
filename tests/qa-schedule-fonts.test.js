@@ -16,7 +16,13 @@ function assertQaScheduleFonts(label, css) {
   );
   assert.ok(
     /#nextInspectionCard :is\(h3, h4, p, span, strong, small, label, div, legend\)[\s\S]*color: #0f172a !important/.test(css),
-    label + ': Scheduling Centre headings must stay dark on the white paper'
+    label + ': Scheduling Centre type must stay dark on the white paper'
+  );
+  assert.ok(
+    /#nextInspectionCard \.scheduling-card-header h3[\s\S]*color: #0b1220 !important/.test(css) &&
+      /#nextInspectionCard \.schedule-option-card h4[\s\S]*-webkit-text-fill-color: #0b1220 !important/.test(css) &&
+      /#nextInspectionCard \.schedule-option-card h4[\s\S]*font-weight: 900 !important/.test(css),
+    label + ': Existing-Site / Corrective / Routine headings must be heavy near-black'
   );
   assert.ok(
     /#nextInspectionCard \.schedule-option-followup \.schedule-option-label[\s\S]*color: #b71c1c !important/.test(css) &&
@@ -25,31 +31,48 @@ function assertQaScheduleFonts(label, css) {
   );
 }
 
+assertQaScheduleFonts('Live styles', read('styles.css'));
+assertQaScheduleFonts('Live fit-text', read('fire-s-fit-text.css'));
 assertQaScheduleFonts('Toets styles', read('staging/styles.css'));
 assertQaScheduleFonts('Toets fit-text', read('staging/fire-s-fit-text.css'));
 assertQaScheduleFonts('Toets dark-type', read('staging/fire-s-dark-type.css'));
 
 assert.ok(
-  /\.checklist-expand-hint \{[\s\S]*font-size: 16px/.test(read('staging/styles.css')) &&
-    /\.checklist-expand-hint \{[\s\S]*color: #0f172a/.test(read('staging/styles.css')),
-  'Light Mode Q&A hint must also be larger dark type'
+  /\.checklist-expand-hint \{[\s\S]*font-size: 16px/.test(read('styles.css')) &&
+    /\.checklist-expand-hint \{[\s\S]*font-size: 16px/.test(read('staging/styles.css')),
+  'Light Mode Q&A hint must also be larger dark type on live and toets'
 );
 
 assert.ok(
-  /Questions are already open/.test(read('staging/app.js')),
-  'Toets Q&A must keep the already-open hint copy'
+  /Questions are already open/.test(read('app.js')) &&
+    /Questions are already open/.test(read('staging/app.js')),
+  'Q&A must keep the already-open hint copy'
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-78-toets-qafont/.test(read('staging/index.html')) &&
-    /fire-s-fit-text\.css\?v=1-16-qafont/.test(read('staging/index.html')) &&
-    /fire-s-dark-type\.css\?v=1-5-qafont/.test(read('staging/index.html')),
-  'Toets must cache-bust Q&A and Scheduling Centre font CSS'
+  !/enterFireSScheduleView\(\)/.test(
+    read('app.js').match(/function openInspectionsCommand\(\) \{[\s\S]*?\n\}/)?.[0] || ''
+  ),
+  'Inspection Gateway must not enter the Home Schedule booking view'
 );
 
 assert.ok(
-  /Version 1\.3\.78-toets/.test(read('staging/index.html')),
-  'Displayed toets version stays 1.3.78-toets'
+  /styles\.css\?v=1-3-65-qafont/.test(read('index.html')) &&
+    /fire-s-fit-text\.css\?v=1-15-qafont/.test(read('index.html')),
+  'Live must cache-bust Q&A and Scheduling Centre font CSS'
+);
+
+assert.ok(
+  /styles\.css\?v=1-3-78-toets-qafont2/.test(read('staging/index.html')) &&
+    /fire-s-fit-text\.css\?v=1-17-qafont/.test(read('staging/index.html')) &&
+    /fire-s-dark-type\.css\?v=1-6-qafont/.test(read('staging/index.html')),
+  'Toets must cache-bust the stronger Scheduling Centre headings'
+);
+
+assert.ok(
+  /Version 1\.3\.65/.test(read('index.html')) &&
+    /Version 1\.3\.78-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.65 live and 1.3.78-toets'
 );
 
 console.log('qa-schedule-fonts.test.js: ok');

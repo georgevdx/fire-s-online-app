@@ -31,13 +31,13 @@ assertScheduleFonts('Toets fit-text', read('staging/fire-s-fit-text.css'));
 assertScheduleFonts('Toets dark-type', read('staging/fire-s-dark-type.css'));
 
 assert.ok(
-  /styles\.css\?v=1-3-65-pdffont/.test(read('index.html')) &&
-    /fire-s-fit-text\.css\?v=1-14-pdffont/.test(read('index.html')),
+  /styles\.css\?v=1-3-65-qafont/.test(read('index.html')) &&
+    /fire-s-fit-text\.css\?v=1-15-qafont/.test(read('index.html')),
   'Live must cache-bust Schedule font CSS'
 );
 assert.ok(
-  /styles\.css\?v=1-3-78-toets-qafont/.test(read('staging/index.html')) &&
-    /fire-s-dark-type\.css\?v=1-5-qafont/.test(read('staging/index.html')),
+  /styles\.css\?v=1-3-78-toets-qafont2/.test(read('staging/index.html')) &&
+    /fire-s-dark-type\.css\?v=1-6-qafont/.test(read('staging/index.html')),
   'Toets must cache-bust Schedule font CSS'
 );
 
