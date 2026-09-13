@@ -471,6 +471,42 @@
     };
   }
 
+  function currentSubscriptionSummary() {
+    var interval = currentIntervalId();
+    var lines = bothPriceLines(interval);
+    var status = billingStatus();
+    var when = '';
+    try {
+      when = formatLongDate(currentRenewsOn()) || '';
+    } catch (_) {}
+    var price = interval === 'annual' ? lines.annual : lines.monthly;
+    if (status === 'active') {
+      return {
+        heading: 'Current subscription',
+        title: price,
+        detail: when ? 'Active · renews ' + when : 'Active',
+        status: status,
+        interval: interval
+      };
+    }
+    if (status === 'cancelled') {
+      return {
+        heading: 'Current subscription',
+        title: price,
+        detail: when ? 'Cancelled · stays until ' + when : 'Cancelled',
+        status: status,
+        interval: interval
+      };
+    }
+    return {
+      heading: 'Current subscription',
+      title: 'None yet',
+      detail: 'Not paid yet. Choose Monthly or Annual below.',
+      status: status || 'unpaid',
+      interval: interval
+    };
+  }
+
   function getSb() {
     try {
       if (root.supabaseClient) return root.supabaseClient;
@@ -622,6 +658,7 @@
     statusKeepDataNote: statusKeepDataNote,
     statusCopy: statusCopy,
     bothPriceLines: bothPriceLines,
+    currentSubscriptionSummary: currentSubscriptionSummary,
     duplicateSeatMessage: duplicateSeatMessage,
     formatRand: formatRand,
     priceFor: priceFor,

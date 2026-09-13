@@ -139,34 +139,32 @@
     return cat && cat.currentIntervalId ? cat.currentIntervalId() : 'monthly';
   }
 
+  function escapeSubscribeText(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
   function paintCurrent() {
     var cat = catalog();
-    var interval = selectedInterval();
-    var lines = cat && cat.bothPriceLines ? cat.bothPriceLines(interval) : null;
     var current = byId('fireSSubscribeCurrent');
     if (current) {
-      if (lines) {
-        current.innerHTML =
-          '<strong class="' +
-          (lines.selected === 'monthly' ? 'is-picked' : '') +
-          '">' +
-          lines.monthly +
-          '</strong><strong class="' +
-          (lines.selected === 'annual' ? 'is-picked' : '') +
-          '">' +
-          lines.annual +
-          '</strong><span>Chosen: ' +
-          (interval === 'annual' ? lines.annual : lines.monthly) +
-          '. ' +
-          lines.saveNote +
-          ' Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast.</span>';
-      } else {
-        var price = cat && cat.priceLabel ? cat.priceLabel(interval) : 'R250 per month per login';
-        current.innerHTML =
-          '<strong>Fire-S seat · ' +
-          price +
-          '</strong><span>Subscription per month per login is R250. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast.</span>';
-      }
+      var shown =
+        cat && cat.currentSubscriptionSummary
+          ? cat.currentSubscriptionSummary()
+          : {
+              heading: 'Current subscription',
+              title: 'None yet',
+              detail: 'Not paid yet. Choose Monthly or Annual below.'
+            };
+      current.innerHTML =
+        '<span class="fire-s-subscribe-current-kicker">' +
+        escapeSubscribeText(shown.heading) +
+        '</span><strong class="is-picked">' +
+        escapeSubscribeText(shown.title) +
+        '</strong><span>' +
+        escapeSubscribeText(shown.detail) +
+        '</span>';
     }
     paintSubscribeStatus();
   }
@@ -635,7 +633,7 @@
     refreshCardCopy();
     paintExpiryReminder();
     paintPayfastControls();
-    paintSubscribeStatus();
+    paintCurrent();
   }
 
   window.fireSOpenSubscribe = openSubscribe;
@@ -645,6 +643,7 @@
   window.fireSRefreshSubscribeCard = refreshCardCopy;
   window.fireSPaintExpiryReminder = paintExpiryReminder;
   window.fireSPaintSubscribeStatus = paintSubscribeStatus;
+  window.fireSPaintSubscribeCurrent = paintCurrent;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
@@ -654,6 +653,6 @@
   document.addEventListener('fire-s:auth-changed', function () {
     refreshCardCopy();
     paintExpiryReminder();
-    paintSubscribeStatus();
+    paintCurrent();
   });
 })();

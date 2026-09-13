@@ -117,6 +117,17 @@
   color: #fde68a;
 }
 
+.fire-s-subscribe-current-kicker {
+  display: block;
+  margin: 0 0 6px;
+  color: #fde68a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 1;
+}
+
 .fire-s-subscribe-current span {
   display: block;
   margin-top: 6px;
