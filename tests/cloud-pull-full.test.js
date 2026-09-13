@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-65-coisolate',
   '1-1-home',
-  '108-60-darktype',
-  'fire-s-108-60-darktype'
+  '108-61-inspfont',
+  'fire-s-108-61-inspfont'
 );
 assertPullSource(
   stagingApp,
@@ -60,8 +60,8 @@ assertPullSource(
   'Toets',
   '1-3-78-toets-coisolate',
   '1-1-count',
-  '108-63-toets-qafont',
-  'fire-s-108-63-toets-qafont'
+  '108-64-toets-inspfont',
+  'fire-s-108-64-toets-inspfont'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));

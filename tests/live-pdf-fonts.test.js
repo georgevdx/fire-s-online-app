@@ -29,9 +29,9 @@ assertPdfInk('Toets styles', read('staging/styles.css'));
 assertPdfInk('Toets dark-type', read('staging/fire-s-dark-type.css'));
 
 assert.ok(
-  /styles\.css\?v=1-3-65-qafont/.test(read('index.html')) &&
-    /fire-s-fit-text\.css\?v=1-15-qafont/.test(read('index.html')) &&
-    /fire-s-dark-type\.css\?v=1-1-live/.test(read('index.html')),
+  /styles\.css\?v=1-3-65-inspfont/.test(read('index.html')) &&
+    /fire-s-fit-text\.css\?v=1-16-inspfont/.test(read('index.html')) &&
+    /fire-s-dark-type\.css\?v=1-2-inspfont/.test(read('index.html')),
   'Live must cache-bust PDF font CSS'
 );
 

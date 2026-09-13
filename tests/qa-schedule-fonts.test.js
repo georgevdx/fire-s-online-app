@@ -58,16 +58,16 @@ assert.ok(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-65-qafont/.test(read('index.html')) &&
-    /fire-s-fit-text\.css\?v=1-15-qafont/.test(read('index.html')) &&
-    /fire-s-dark-type\.css\?v=1-1-live/.test(read('index.html')),
+  /styles\.css\?v=1-3-65-inspfont/.test(read('index.html')) &&
+    /fire-s-fit-text\.css\?v=1-16-inspfont/.test(read('index.html')) &&
+    /fire-s-dark-type\.css\?v=1-2-inspfont/.test(read('index.html')),
   'Live must cache-bust Q&A and Scheduling Centre font CSS'
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-78-toets-qafont2/.test(read('staging/index.html')) &&
-    /fire-s-fit-text\.css\?v=1-17-qafont/.test(read('staging/index.html')) &&
-    /fire-s-dark-type\.css\?v=1-6-qafont/.test(read('staging/index.html')),
+  /styles\.css\?v=1-3-78-toets-inspfont/.test(read('staging/index.html')) &&
+    /fire-s-fit-text\.css\?v=1-18-inspfont/.test(read('staging/index.html')) &&
+    /fire-s-dark-type\.css\?v=1-7-inspfont/.test(read('staging/index.html')),
   'Toets must cache-bust the stronger Scheduling Centre headings'
 );
 
