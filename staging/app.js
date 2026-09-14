@@ -42324,7 +42324,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   function writeProjects(projects){
     if (typeof setProjects === 'function') setProjects(projects);
-    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    else localStorage.setItem(projectsStorageKey(), JSON.stringify(projects));
   }
 
   function role(){
