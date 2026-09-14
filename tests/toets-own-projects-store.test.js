@@ -19,6 +19,11 @@ assert.ok(
     /localStorage\.setItem\(storageKey, JSON\.stringify\(projects\)\)/.test(stagingApp),
   'Toets must store inspections in fireyeProjects-staging, not the live fireyeProjects key'
 );
+assert.ok(
+  /function projectsStorageKey\(/.test(stagingApp) &&
+    /localStorage.getItem\(projectsStorageKey\(\)\)/.test(stagingApp),
+  'Delete / Data Management must read the same toets projects store'
+);
 
 assert.ok(
   /function getProjects\(\) \{\n  const saved = localStorage\.getItem\('fireyeProjects'\);/.test(liveApp),
