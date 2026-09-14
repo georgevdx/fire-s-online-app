@@ -47,7 +47,7 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-65-sitlive',
+  '1-3-65-rephead',
   '1-1-count',
   '108-66-sitlive',
   'fire-s-108-66-sitlive'
@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-78-toets-sitlive',
+  '1-3-78-toets-rephead',
   '1-1-count',
   '108-65-toets-subfont',
   'fire-s-108-65-toets-subfont'

@@ -720,3 +720,14 @@ html[data-fire-s-theme="dark"] .fire-s-subscribe-seat-note {
   color: #e2e8f0 !important;
   -webkit-text-fill-color: #e2e8f0 !important;
 }
+
+html[data-fire-s-theme="dark"] #fireSIndependentReportOverlay #fireSReportOverlayTitle {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+html[data-fire-s-theme="dark"] #fireSIndependentReportOverlay #reportSection > h2,
+html[data-fire-s-theme="dark"] #fireSIndependentReportOverlay #reportSection > p {
+  display: none !important;
+}

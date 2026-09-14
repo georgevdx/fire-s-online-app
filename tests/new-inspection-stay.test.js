@@ -50,12 +50,12 @@ assert.ok(
   'Blank-home recover must keep a new inspection on screen on live and toets'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-sitlive/.test(stagingHtml) &&
+  /app\.js\?v=1-3-78-toets-rephead/.test(stagingHtml) &&
     /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(stagingHtml),
   'Toets-blad must cache-bust the new-inspection stay fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-65-sitlive/.test(liveHtml) &&
+  /app\.js\?v=1-3-65-rephead/.test(liveHtml) &&
     /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(liveHtml) &&
     /Version 1\.3\.65/.test(liveHtml),
   'Live must cache-bust the new-inspection stay fix without bumping 1.3.65'

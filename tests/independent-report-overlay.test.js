@@ -58,23 +58,35 @@ assert.ok(
 );
 assert.ok(
   /#reportSection > h2/.test(app) &&
-    /color:#0f172a !important/.test(
+    /display:none !important/.test(
+      app.slice(
+        app.indexOf('function installFireSIndependentReportOverlay('),
+        app.indexOf('function generateArchivedInspectionReport(')
+      )
+    ) &&
+    /font-weight:900/.test(
       app.slice(
         app.indexOf('function installFireSIndependentReportOverlay('),
         app.indexOf('function generateArchivedInspectionReport(')
       )
     ),
-  'The overlay Inspection Report heading must stay dark ink on the white paper in Dark Mode'
+  'The overlay top heading must be heavy white; the pale in-card Inspection Report h2 must stay hidden'
 );
 assert.ok(
   /#reportSection > h2/.test(liveApp) &&
-    /color:#0f172a !important/.test(
+    /display:none !important/.test(
+      liveApp.slice(
+        liveApp.indexOf('function installFireSIndependentReportOverlay('),
+        liveApp.indexOf('function generateArchivedInspectionReport(')
+      )
+    ) &&
+    /font-weight:900/.test(
       liveApp.slice(
         liveApp.indexOf('function installFireSIndependentReportOverlay('),
         liveApp.indexOf('function generateArchivedInspectionReport(')
       )
     ),
-  'Live overlay Inspection Report heading must stay dark ink on the white paper in Dark Mode'
+  'Live overlay top heading must be heavy white; the pale in-card Inspection Report h2 must stay hidden'
 );
 assert.ok(
   !/onclick="exportReport\(\)"/.test(
@@ -92,7 +104,7 @@ assert.ok(
   'The report body must not keep a second Export PDF button; the overlay bar already has one'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-sitlive/.test(html),
+  /app\.js\?v=1-3-78-toets-rephead/.test(html),
   'Toets must cache-bust the independent report overlay'
 );
 

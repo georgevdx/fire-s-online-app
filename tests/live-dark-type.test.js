@@ -26,13 +26,14 @@ assert.ok(
     /\.command-centre-card strong/.test(live) &&
     /\.quick-link-chip \.quick-link-main/.test(live) &&
     /\.checklist-section-label-name/.test(live) &&
-    /\.fire-s-photo-category-strip-v1116 span/.test(live),
+    /\.fire-s-photo-category-strip-v1116 span/.test(live) &&
+    /#fireSIndependentReportOverlay #fireSReportOverlayTitle/.test(live),
   'Live dark-type must keep Q&A, Scheduling Centre, Schedule and open-inspection paper rules'
 );
 
 const lastStylesheet = liveHtml.match(/<link rel="stylesheet"[^>]+>/g).pop();
 assert.ok(
-  /fire-s-dark-type\.css\?v=1-3-subfont/.test(lastStylesheet),
+  /fire-s-dark-type\.css\?v=1-3-rephead/.test(lastStylesheet),
   'Live must load fire-s-dark-type.css last, same as toets'
 );
 
