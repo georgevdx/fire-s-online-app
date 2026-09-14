@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-78-toets-coisolate',
+  '1-3-78-toets-schedreset',
   '1-1-count',
   '108-65-toets-subfont',
   'fire-s-108-65-toets-subfont'

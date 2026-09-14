@@ -1335,8 +1335,12 @@ function getProjectScheduleLabel(project) {
 }
 
 function getProjectScheduleStatus(project) {
+  const effective =
+    typeof fireSApplyScheduleAfterVisit === 'function'
+      ? fireSApplyScheduleAfterVisit(project)
+      : project;
   const scheduleDate =
-    normaliseDateString(getProjectScheduleDate(project));
+    normaliseDateString(getProjectScheduleDate(effective));
 
   if (!scheduleDate) {
     return {
@@ -1509,10 +1513,19 @@ function addRecurringCycleToDate(startDateValue, cycleNumber, cycleUnit) {
   return nextDate.toISOString().slice(0, 10);
 }
 
+function fireSIsCycledInspection(project) {
+  if (!project) return false;
+  if (project.recurringCycleEnabled === true) return true;
+  const type = String(project.scheduleType || project.scheduledReason || '')
+    .trim()
+    .toLowerCase();
+  return type === 'recurring_cycle' || type === 'cycle' || type === 'recurring';
+}
+
 function getNextRecurringCycleDate(project, completedAt) {
   if (!project) return '';
 
-  if (project.recurringCycleEnabled !== true) {
+  if (!fireSIsCycledInspection(project)) {
     return '';
   }
 
@@ -1534,6 +1547,143 @@ function getNextRecurringCycleDate(project, completedAt) {
     cycleNumber,
     cycleUnit
   );
+}
+
+function fireSLastVisitDay(project, completedAt) {
+  const days = [];
+  const push = value => {
+    const day = normaliseDateString(value);
+    if (day) days.push(day);
+  };
+  push(completedAt);
+  if (project) {
+    push(project.completedAt);
+    push(project.inspectionFinalisedAt);
+    push(project.inspectionFinalizedAt);
+    push(project.finalisedAt);
+    push(project.finalizedAt);
+    push(project.scheduleCompletedAt);
+    const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory : [];
+    history.forEach(entry => {
+      if (!entry) return;
+      push(entry.completedAt || entry.inspectionFinalisedAt || entry.inspectionDate);
+    });
+  }
+  days.sort();
+  return days.length ? days[days.length - 1] : '';
+}
+
+function fireSInspectionWasFinalised(project) {
+  if (!project) return false;
+  const lifecycle = String(
+    project.inspectionLifecycleStatus || project.inspectionStatus || ''
+  ).toLowerCase();
+  const status = String(project.status || '').toLowerCase();
+  return Boolean(
+    project.completedAt ||
+    project.archivedAt ||
+    project.finalisedAt ||
+    project.finalizedAt ||
+    project.inspectionFinalisedAt ||
+    project.archiveStatus === 'completed' ||
+    project.scheduledStatus === 'completed' ||
+    lifecycle === 'finalised' ||
+    lifecycle === 'finalized' ||
+    lifecycle === 'closed' ||
+    status === 'closed'
+  );
+}
+
+function fireSSchedulePatchIfChanged(project, patch) {
+  const keys = Object.keys(patch);
+  const changed = keys.some(key => {
+    const current = project[key];
+    const next = patch[key];
+    if (current === next) return false;
+    if ((current == null || current === '') && (next == null || next === '')) return false;
+    return String(current) !== String(next);
+  });
+  return changed ? patch : null;
+}
+
+function fireSCurrentScheduleIsFollowUp(project) {
+  const type = String(project?.scheduleType || '').trim().toLowerCase();
+  return (
+    project?.scheduledReason === 'follow_up' ||
+    type === 'follow_up' ||
+    type === 'follow-up' ||
+    type === 'follow up'
+  );
+}
+
+function fireSScheduleAfterVisitPatch(project, completedAt) {
+  if (!project) return null;
+
+  const visitDay = fireSLastVisitDay(project, completedAt);
+  const wasFinalised = fireSInspectionWasFinalised(project);
+  const keepFollowUp =
+    !fireSCurrentScheduleIsFollowUp(project) &&
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate;
+
+  if (keepFollowUp) {
+    return fireSSchedulePatchIfChanged(project, {
+      scheduledDate: project.followUpDate,
+      scheduledStatus: 'scheduled',
+      scheduleType: 'follow_up',
+      scheduledReason: 'follow_up',
+      scheduleFreshInspection: true,
+      scheduledNote: project.followUpNotes || '',
+      followUpRequired: 'Yes',
+      followUpDate: project.followUpDate,
+      followUpNotes: project.followUpNotes || ''
+    });
+  }
+
+  if (fireSIsCycledInspection(project)) {
+    if (!visitDay && !wasFinalised) return null;
+    const existing = normaliseDateString(project.scheduledDate);
+    const computed = getNextRecurringCycleDate(
+      project,
+      completedAt || project.completedAt || visitDay
+    );
+    const nextDate = existing && visitDay && existing > visitDay ? existing : computed;
+    if (nextDate) {
+      return fireSSchedulePatchIfChanged(project, {
+        scheduledDate: nextDate,
+        scheduledStatus: 'scheduled',
+        scheduleType: 'recurring_cycle',
+        scheduledReason: 'recurring_cycle',
+        scheduleFreshInspection: true,
+        scheduledNote: 'Recurring cycle scheduled for ' + nextDate,
+        followUpRequired: 'No',
+        followUpDate: '',
+        followUpNotes: ''
+      });
+    }
+  }
+
+  const scheduled = normaliseDateString(project.scheduledDate);
+  const consumed = Boolean(wasFinalised || (visitDay && scheduled && scheduled <= visitDay));
+  if (!consumed) return null;
+
+  return fireSSchedulePatchIfChanged(project, {
+    scheduledDate: '',
+    scheduledStatus: wasFinalised ? 'completed' : 'created',
+    scheduleType: '',
+    scheduledReason: '',
+    scheduleFreshInspection: false,
+    scheduledNote: '',
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: ''
+  });
+}
+
+function fireSApplyScheduleAfterVisit(project, completedAt) {
+  const patch = fireSScheduleAfterVisitPatch(project, completedAt);
+  if (!project || !patch) return project;
+  return { ...project, ...patch };
 }
 
 function updateRecurringCyclePreview() {
@@ -7743,7 +7893,10 @@ function fireSDeletedProjectIdsStorageKey() {
 
 function getProjects() {
   const saved = localStorage.getItem(fireSProjectsStorageKey());
-  return saved ? JSON.parse(saved) : [];
+  const list = saved ? JSON.parse(saved) : [];
+  if (!Array.isArray(list)) return [];
+  if (typeof fireSApplyScheduleAfterVisit !== 'function') return list;
+  return list.map(project => fireSApplyScheduleAfterVisit(project));
 }
 
 function setProjects(projects) {
@@ -17559,33 +17712,6 @@ function finishInspection() {
 
       const completedAt = new Date().toISOString();
 
-     const currentScheduleType =
-  String(completedProjectBeforeUpdate.scheduleType || '')
-    .trim()
-    .toLowerCase();
-
-const isCurrentScheduledFollowUp =
-  completedProjectBeforeUpdate.scheduledReason === 'follow_up' ||
-  currentScheduleType === 'follow_up' ||
-  currentScheduleType === 'follow-up' ||
-  currentScheduleType === 'follow up';
-
-const hasNextScheduledInspection =
-  !isCurrentScheduledFollowUp &&
-  completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
-  completedProjectBeforeUpdate.followUpDate;
-
-const nextRecurringCycleDate =
-  hasNextScheduledInspection
-    ? ''
-    : getNextRecurringCycleDate(
-        completedProjectBeforeUpdate,
-        completedAt
-      );
-
-const hasNextRecurringCycle =
-  !!nextRecurringCycleDate;
-
       const completedProjectForArchive = {
         ...completedProjectBeforeUpdate,
         completedAt
@@ -17594,57 +17720,18 @@ const hasNextRecurringCycle =
       const inspectionHistory =
         archiveCurrentInspectionCycle(completedProjectForArchive);
 
+      const scheduledProject = fireSApplyScheduleAfterVisit(
+        {
+          ...completedProjectForArchive,
+          inspectionHistory
+        },
+        completedAt
+      );
+
       projects[index] = {
-        ...completedProjectForArchive,
-
+        ...scheduledProject,
         inspectionHistory,
-
-        scheduledDate: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpDate
-  : hasNextRecurringCycle
-    ? nextRecurringCycleDate
-    : '',
-
-scheduledStatus:
-  hasNextScheduledInspection || hasNextRecurringCycle
-    ? 'scheduled'
-    : 'completed',
-
-scheduleFreshInspection:
-  hasNextScheduledInspection || hasNextRecurringCycle,
-
-scheduledReason: hasNextScheduledInspection
-  ? 'follow_up'
-  : hasNextRecurringCycle
-    ? 'recurring_cycle'
-    : '',
-
-scheduledNote: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpNotes || ''
-  : hasNextRecurringCycle
-    ? `Recurring cycle scheduled for ${nextRecurringCycleDate}`
-    : '',
-
-scheduleType: hasNextScheduledInspection
-  ? 'follow_up'
-  : hasNextRecurringCycle
-    ? 'recurring_cycle'
-    : '',
-
-scheduleCompletedAt: completedAt,
-
-followUpRequired: hasNextScheduledInspection
-  ? 'Yes'
-  : 'No',
-
-followUpDate: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpDate
-  : '',
-
-followUpNotes: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpNotes || ''
-  : '',
-
+        scheduleCompletedAt: completedAt,
         syncPending: true,
         syncError: false,
         lastSaved: new Date().toISOString()
@@ -25965,20 +26052,32 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================
 
 function fireSIsInspectionClosed(project) {
+  const lifecycle = String(
+    project?.inspectionLifecycleStatus || project?.inspectionStatus || ''
+  ).toLowerCase();
   return Boolean(
     project?.completedAt ||
     project?.archivedAt ||
+    project?.finalisedAt ||
+    project?.finalizedAt ||
+    project?.inspectionFinalisedAt ||
     project?.scheduledStatus === 'completed' ||
     project?.archiveStatus === 'completed' ||
     project?.inspectionStatus === 'closed' ||
-    project?.status === 'closed'
+    project?.status === 'closed' ||
+    lifecycle === 'finalised' ||
+    lifecycle === 'finalized'
   );
 }
 
 function fireSGetInspectionScheduledDate(project) {
+  const effective =
+    typeof fireSApplyScheduleAfterVisit === 'function'
+      ? fireSApplyScheduleAfterVisit(project)
+      : project;
   return (
-    project?.scheduledDate ||
-    project?.followUpDate ||
+    effective?.scheduledDate ||
+    effective?.followUpDate ||
     ''
   );
 }
@@ -26028,7 +26127,6 @@ function fireSIsInspectionOverdue(project) {
   if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
     return false;
   }
-  if (fireSIsInspectionClosed(project)) return false;
 
   // Deleted current inspections sit in Recycle. Leftover dates must not count.
   if (
@@ -26398,6 +26496,8 @@ if (fireSOriginalShowHomeExecStandard) {
 }
 
 window.fireSIsInspectionOverdue = fireSIsInspectionOverdue;
+window.fireSApplyScheduleAfterVisit = fireSApplyScheduleAfterVisit;
+window.fireSIsCycledInspection = fireSIsCycledInspection;
 window.fireSIsDeletedPremises = fireSIsDeletedPremises;
 window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
@@ -39492,9 +39592,14 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
   const now = new Date();
   const nowIso = now.toISOString();
   const today = nowIso.slice(0, 10);
+  const lastVisit =
+    original?.completedAt ||
+    original?.inspectionFinalisedAt ||
+    original?.scheduleCompletedAt ||
+    '';
   const currentInspectionId = `inspection-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  return {
+  const cleaned = {
     ...original,
     inspectionHistory: Array.isArray(inspectionHistory) ? inspectionHistory : [],
 
@@ -39537,10 +39642,8 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
     followUpRequired: 'No',
     followUpDate: '',
     followUpNotes: '',
-    recurringCycleEnabled: false,
-    recurringCycleNumber: '',
-    recurringCycleUnit: '',
-    recurringCycleNotes: '',
+
+    // Keep premises recurring-cycle listing. A finished visit must not wipe it.
 
     // Clear any legacy top-level service/expiry values that could leak into a new cycle.
     equipmentExpiryDate: '',
@@ -39554,6 +39657,9 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
     syncError: false,
     lastSaved: nowIso
   };
+  return typeof fireSApplyScheduleAfterVisit === 'function'
+    ? fireSApplyScheduleAfterVisit(cleaned, lastVisit)
+    : cleaned;
 }
 
 archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndStartBlank(projectId) {
@@ -40086,7 +40192,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     const index = projects.findIndex(project => String(project?.id) === String(projectId));
     if (index < 0) return;
     const now = new Date().toISOString();
-    projects[index] = {
+    const row = {
       ...projects[index],
       inspectionLifecycleStatus: 'finalised',
       inspectionStatus: 'finalised',
@@ -40097,6 +40203,10 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       syncPending: true,
       lastSaved: now
     };
+    projects[index] =
+      typeof fireSApplyScheduleAfterVisit === 'function'
+        ? fireSApplyScheduleAfterVisit(row, row.completedAt || now)
+        : row;
     if (typeof setProjects === 'function') setProjects(projects);
     else if (typeof writeProjects === 'function') writeProjects(projects);
   }
