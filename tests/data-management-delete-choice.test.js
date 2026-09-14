@@ -11,6 +11,8 @@ function read(name) {
 
 const app = read('staging/app.js');
 const html = read('staging/index.html');
+const liveApp = read('app.js');
+const liveHtml = read('index.html');
 const start = app.indexOf('(function installFireSDataManagementV12(){');
 const end = app.indexOf('window.fireSPurgeExpiredRecycleAutomatically');
 assert.ok(start >= 0 && end > start, 'Data Management panel must exist');
@@ -58,9 +60,18 @@ assert.ok(
   'Delete confirm panels must wire Recycle and Immediate actions'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-complrep/.test(html) &&
+  /app\.js\?v=1-3-78-toets-sitlive/.test(html) &&
     /Version 1\.3\.78-toets/.test(html),
   'Toets must cache-bust Data Management delete without bumping the displayed version'
+);
+assert.ok(
+  /Recycle Bin \(30 days\)/.test(liveApp) &&
+    /Delete immediately/.test(liveApp) &&
+    /async function purgeExpiredRecycleAutomatically\(/.test(liveApp) &&
+    /delete-data-management-v16/.test(liveApp) &&
+    /app\.js\?v=1-3-65-sitlive/.test(liveHtml) &&
+    /Version 1\.3\.65/.test(liveHtml),
+  'Live Data Management must offer Recycle Bin or Delete immediately without bumping 1.3.65'
 );
 
 function fakeEl() {

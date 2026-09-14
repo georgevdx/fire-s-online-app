@@ -77,5 +77,10 @@ assert.ok(
     /fireS\.cachedCompany-staging/.test(read('staging/fire-s-company-team.js')),
   'Toets company cache must not overwrite the live company cache'
 );
+assert.ok(
+  !/fireS\.cachedCompany-staging/.test(read('app.js')) &&
+    !/fireS\.cachedCompany-staging/.test(read('fire-s-company-team.js')),
+  'Live company cache must stay on fireS.cachedCompany'
+);
 
 console.log('schedule-company-isolate.test.js: ok');

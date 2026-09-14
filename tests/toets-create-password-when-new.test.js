@@ -60,14 +60,16 @@ assert.ok(
   'Live Access must keep Subscribing New Company above Forgot password'
 );
 assert.ok(
-  !/\bhidden\b/.test(
+  /\bhidden\b/.test(
     liveHtml.match(/id="fireSSwitchToCreateBtn"[^>]*>/)[0]
   ),
-  'Live Create password must stay visible on Access until sit dit live'
+  'Live Create password must start hidden until an unknown email is typed'
 );
 assert.ok(
-  !/function refreshCreatePasswordButton\(/.test(liveStarted),
-  'Live Access must not hide Create password yet'
+  /function refreshCreatePasswordButton\(/.test(liveStarted) &&
+    /function setCreatePasswordVisible\(/.test(liveStarted) &&
+    /fire_s_email_has_login/.test(liveStarted),
+  'Live Access must show Create password only after an email with no registered password'
 );
 
 console.log('toets-create-password-when-new.test.js: ok');

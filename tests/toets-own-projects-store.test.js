@@ -26,12 +26,20 @@ assert.ok(
 );
 
 assert.ok(
-  /function getProjects\(\) \{\n  const saved = localStorage\.getItem\('fireyeProjects'\);/.test(liveApp),
-  'Live must keep using fireyeProjects'
+  /function fireSProjectsStorageKey\(/.test(liveApp) &&
+    /localStorage\.getItem\(fireSProjectsStorageKey\(\)\)/.test(liveApp) &&
+    /return 'fireyeProjects';/.test(
+      liveApp.slice(
+        liveApp.indexOf('function fireSProjectsStorageKey()'),
+        liveApp.indexOf('function fireSDeletedProjectIdsStorageKey()')
+      )
+    ),
+  'Live must keep using fireyeProjects when FIRE_S_ENV is not staging'
 );
 assert.ok(
-  !/fireyeProjects-staging/.test(liveApp),
-  'Live must not switch to the toets storage key'
+  /function projectsStorageKey\(/.test(liveApp) &&
+    /localStorage.getItem\(projectsStorageKey\(\)\)/.test(liveApp),
+  'Live Delete / Data Management must read the same live projects store'
 );
 
 assert.ok(

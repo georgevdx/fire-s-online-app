@@ -854,7 +854,7 @@
         setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
         setText(
           '#mainCommandSubtitle',
-          'Login first. Subscribe only if this company is not on the toets-blad yet.'
+          'One Access page: Login, Create password or Subscribe.'
         );
       }
     } catch (_) {}
@@ -924,7 +924,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'Use Access: First time? Create password, then Login. You do not Subscribe. Your owner pays for this email.'
+      'Use Access: type your email. First time? Create password appears if this email has no password yet, then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);
@@ -956,8 +956,11 @@
     const list = byId('projectListSection');
     const form = byId('projectFormSection');
     const shown = el => {
-      if (!el || el.hidden) return false;
-      if (el.style.display === 'none') return false;
+      if (!el) return false;
+      const inline = String((el.style && el.style.display) || '').toLowerCase();
+      if (inline === 'block' || inline === 'flex' || inline === 'grid') return true;
+      if (el.hidden) return false;
+      if (inline === 'none') return false;
       try {
         const style = window.getComputedStyle(el);
         return style.display !== 'none' && style.visibility !== 'hidden';

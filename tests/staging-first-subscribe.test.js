@@ -50,8 +50,8 @@ assert.ok(
   'Subscribe form must have a note the toets-blad can rewrite'
 );
 assert.ok(
-  /Login first/.test(roles),
-  'Guest home on the toets-blad must start at Login'
+  /One Access page: Login, Create password or Subscribe/.test(roles),
+  'Guest home must start at the one Access page'
 );
 assert.ok(
   /johandb@live.com/.test(reset) && /georgevdx@gmail.com/.test(reset),

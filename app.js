@@ -1335,8 +1335,12 @@ function getProjectScheduleLabel(project) {
 }
 
 function getProjectScheduleStatus(project) {
+  const effective =
+    typeof fireSApplyScheduleAfterVisit === 'function'
+      ? fireSApplyScheduleAfterVisit(project)
+      : project;
   const scheduleDate =
-    normaliseDateString(getProjectScheduleDate(project));
+    normaliseDateString(getProjectScheduleDate(effective));
 
   if (!scheduleDate) {
     return {
@@ -1509,10 +1513,19 @@ function addRecurringCycleToDate(startDateValue, cycleNumber, cycleUnit) {
   return nextDate.toISOString().slice(0, 10);
 }
 
+function fireSIsCycledInspection(project) {
+  if (!project) return false;
+  if (project.recurringCycleEnabled === true) return true;
+  const type = String(project.scheduleType || project.scheduledReason || '')
+    .trim()
+    .toLowerCase();
+  return type === 'recurring_cycle' || type === 'cycle' || type === 'recurring';
+}
+
 function getNextRecurringCycleDate(project, completedAt) {
   if (!project) return '';
 
-  if (project.recurringCycleEnabled !== true) {
+  if (!fireSIsCycledInspection(project)) {
     return '';
   }
 
@@ -1534,6 +1547,143 @@ function getNextRecurringCycleDate(project, completedAt) {
     cycleNumber,
     cycleUnit
   );
+}
+
+function fireSLastVisitDay(project, completedAt) {
+  const days = [];
+  const push = value => {
+    const day = normaliseDateString(value);
+    if (day) days.push(day);
+  };
+  push(completedAt);
+  if (project) {
+    push(project.completedAt);
+    push(project.inspectionFinalisedAt);
+    push(project.inspectionFinalizedAt);
+    push(project.finalisedAt);
+    push(project.finalizedAt);
+    push(project.scheduleCompletedAt);
+    const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory : [];
+    history.forEach(entry => {
+      if (!entry) return;
+      push(entry.completedAt || entry.inspectionFinalisedAt || entry.inspectionDate);
+    });
+  }
+  days.sort();
+  return days.length ? days[days.length - 1] : '';
+}
+
+function fireSInspectionWasFinalised(project) {
+  if (!project) return false;
+  const lifecycle = String(
+    project.inspectionLifecycleStatus || project.inspectionStatus || ''
+  ).toLowerCase();
+  const status = String(project.status || '').toLowerCase();
+  return Boolean(
+    project.completedAt ||
+    project.archivedAt ||
+    project.finalisedAt ||
+    project.finalizedAt ||
+    project.inspectionFinalisedAt ||
+    project.archiveStatus === 'completed' ||
+    project.scheduledStatus === 'completed' ||
+    lifecycle === 'finalised' ||
+    lifecycle === 'finalized' ||
+    lifecycle === 'closed' ||
+    status === 'closed'
+  );
+}
+
+function fireSSchedulePatchIfChanged(project, patch) {
+  const keys = Object.keys(patch);
+  const changed = keys.some(key => {
+    const current = project[key];
+    const next = patch[key];
+    if (current === next) return false;
+    if ((current == null || current === '') && (next == null || next === '')) return false;
+    return String(current) !== String(next);
+  });
+  return changed ? patch : null;
+}
+
+function fireSCurrentScheduleIsFollowUp(project) {
+  const type = String(project?.scheduleType || '').trim().toLowerCase();
+  return (
+    project?.scheduledReason === 'follow_up' ||
+    type === 'follow_up' ||
+    type === 'follow-up' ||
+    type === 'follow up'
+  );
+}
+
+function fireSScheduleAfterVisitPatch(project, completedAt) {
+  if (!project) return null;
+
+  const visitDay = fireSLastVisitDay(project, completedAt);
+  const wasFinalised = fireSInspectionWasFinalised(project);
+  const keepFollowUp =
+    !fireSCurrentScheduleIsFollowUp(project) &&
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate;
+
+  if (keepFollowUp) {
+    return fireSSchedulePatchIfChanged(project, {
+      scheduledDate: project.followUpDate,
+      scheduledStatus: 'scheduled',
+      scheduleType: 'follow_up',
+      scheduledReason: 'follow_up',
+      scheduleFreshInspection: true,
+      scheduledNote: project.followUpNotes || '',
+      followUpRequired: 'Yes',
+      followUpDate: project.followUpDate,
+      followUpNotes: project.followUpNotes || ''
+    });
+  }
+
+  if (fireSIsCycledInspection(project)) {
+    if (!visitDay && !wasFinalised) return null;
+    const existing = normaliseDateString(project.scheduledDate);
+    const computed = getNextRecurringCycleDate(
+      project,
+      completedAt || project.completedAt || visitDay
+    );
+    const nextDate = existing && visitDay && existing > visitDay ? existing : computed;
+    if (nextDate) {
+      return fireSSchedulePatchIfChanged(project, {
+        scheduledDate: nextDate,
+        scheduledStatus: 'scheduled',
+        scheduleType: 'recurring_cycle',
+        scheduledReason: 'recurring_cycle',
+        scheduleFreshInspection: true,
+        scheduledNote: 'Recurring cycle scheduled for ' + nextDate,
+        followUpRequired: 'No',
+        followUpDate: '',
+        followUpNotes: ''
+      });
+    }
+  }
+
+  const scheduled = normaliseDateString(project.scheduledDate);
+  const consumed = Boolean(wasFinalised || (visitDay && scheduled && scheduled <= visitDay));
+  if (!consumed) return null;
+
+  return fireSSchedulePatchIfChanged(project, {
+    scheduledDate: '',
+    scheduledStatus: wasFinalised ? 'completed' : 'created',
+    scheduleType: '',
+    scheduledReason: '',
+    scheduleFreshInspection: false,
+    scheduledNote: '',
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: ''
+  });
+}
+
+function fireSApplyScheduleAfterVisit(project, completedAt) {
+  const patch = fireSScheduleAfterVisitPatch(project, completedAt);
+  if (!project || !patch) return project;
+  return { ...project, ...patch };
 }
 
 function updateRecurringCyclePreview() {
@@ -4132,8 +4282,29 @@ function isInspectionGatewayVisible() {
   }
 }
 
+function isInspectionFormOpen() {
+  try {
+    const form = document.getElementById('projectFormSection');
+    if (!form) return false;
+    const inline = String(form.style.display || '').toLowerCase();
+    if (inline === 'none') return false;
+    if (inline === 'block' || inline === 'flex' || inline === 'grid') return true;
+    if (form.hidden) return false;
+    const formStyle = window.getComputedStyle ? getComputedStyle(form) : null;
+    if (formStyle && (formStyle.display === 'none' || formStyle.visibility === 'hidden')) {
+      return false;
+    }
+    return inline !== '';
+  } catch (_) {
+    return false;
+  }
+}
+
 function shouldPaintProjectsAfterSync(forcePaint) {
-  return forcePaint === true || !isInspectionGatewayVisible();
+  if (forcePaint === true) return true;
+  if (isInspectionGatewayVisible()) return false;
+  if (isInspectionFormOpen()) return false;
+  return true;
 }
 
 async function runBackgroundSync(reason = 'background') {
@@ -4880,6 +5051,10 @@ async function safeDownloadNewerCloudInspections(options) {
 
     const localProjects = getProjects();
     const localBefore = localProjects.length;
+    const freezeHomeCounts = localBefore > 0;
+    if (freezeHomeCounts) {
+      try { window.__fireSHomeCountsFrozen = true; } catch (_) {}
+    }
     let mergedProjects = localProjects;
     let lastPaintAt = 0;
     let expectedTotal = null;
@@ -4971,6 +5146,7 @@ async function safeDownloadNewerCloudInspections(options) {
       if (!shouldPersist) return;
       lastPaintAt = now;
       setProjects(mergedProjects);
+      if (incomplete && freezeHomeCounts) return;
       paintHome(false);
     }
 
@@ -4994,6 +5170,7 @@ async function safeDownloadNewerCloudInspections(options) {
       incomplete: !!(pulled && pulled.incomplete)
     });
     if (pullToken !== fireSCloudPullGeneration) return;
+    try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
     paintHome(true);
     finishPremisesProgress();
@@ -5007,6 +5184,7 @@ async function safeDownloadNewerCloudInspections(options) {
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
+      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     }
   }
 }
@@ -5274,6 +5452,20 @@ function showMainCommandMessage(message) {
   box.style.display = message ? 'block' : 'none';
 }
 
+function openMainDashboardCommand() {
+  renderHomeCommandCentre();
+
+  const centre = document.getElementById('mainCommandCentre');
+
+  if (centre) {
+    centre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function openInspectionsCommand() {
+  showProjectList();
+}
+
 function exitFireSScheduleView() {
   document.body.classList.remove('fire-s-schedule-view');
   const heading = document.querySelector('#projectListSection > .toolbar > h2');
@@ -5301,20 +5493,6 @@ function enterFireSScheduleView() {
     currentProjectPage = 1;
     window.currentProjectPage = 1;
   } catch (_) {}
-}
-
-function openMainDashboardCommand() {
-  renderHomeCommandCentre();
-
-  const centre = document.getElementById('mainCommandCentre');
-
-  if (centre) {
-    centre.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}
-
-function openInspectionsCommand() {
-  showProjectList();
 }
 
 function openScheduleCommand() {
@@ -5526,6 +5704,35 @@ function openMainDashboardCommand() {
 
 function openInspectionsCommand() {
   showProjectList();
+}
+
+function exitFireSScheduleView() {
+  document.body.classList.remove('fire-s-schedule-view');
+  const heading = document.querySelector('#projectListSection > .toolbar > h2');
+  if (heading && heading.dataset.fireSScheduleTitle === '1') {
+    heading.textContent = 'Projects';
+    delete heading.dataset.fireSScheduleTitle;
+  }
+}
+
+function enterFireSScheduleView() {
+  document.body.classList.add('fire-s-schedule-view');
+  const heading = document.querySelector('#projectListSection > .toolbar > h2');
+  if (heading) {
+    heading.textContent = 'Schedule';
+    heading.dataset.fireSScheduleTitle = '1';
+  }
+  try {
+    currentFilter = 'scheduled-new';
+    window.currentFilter = 'scheduled-new';
+    window.__fireS136A11ActiveFilter = 'scheduled-new';
+    window.__fireS136A8ActiveFilter = 'scheduled-new';
+    window.__fireSAuthoritativeFilter = 'scheduled-new';
+    window.__fireSAuthoritativeKpiFilter = 'scheduled-new';
+    window.__fireSActiveKpiFilter = 'scheduled-new';
+    currentProjectPage = 1;
+    window.currentProjectPage = 1;
+  } catch (_) {}
 }
 
 function openScheduleCommand() {
@@ -6563,7 +6770,6 @@ function fireSRecalledCompanyName(companyId) {
     const name = String(cached?.name || '').trim();
     if (
       name &&
-      name !== 'Company S' &&
       !fireSIsGenericCompanyName(name) &&
       companyId &&
       String(cached?.id || '') === String(companyId)
@@ -7661,16 +7867,40 @@ function getQueuedProjects(batchSize = FIRE_S_PENDING_UPLOAD_BATCH_SIZE) {
     .filter(Boolean);
 }
 
+function fireSProjectsStorageKey() {
+  try {
+    if (typeof fireSStaging !== 'undefined' && fireSStaging) return 'fireyeProjects-staging';
+    if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) return 'fireyeProjects-staging';
+    if (typeof window.fireSIsStaging === 'function' && window.fireSIsStaging()) {
+      return 'fireyeProjects-staging';
+    }
+    if (/\/staging(\/|$)/i.test(String((location && location.pathname) || ''))) {
+      return 'fireyeProjects-staging';
+    }
+  } catch (_) {}
+  return 'fireyeProjects';
+}
+
+function fireSDeletedProjectIdsStorageKey() {
+  return fireSProjectsStorageKey() === 'fireyeProjects-staging'
+    ? 'fireyeDeletedProjectIds-staging'
+    : 'fireyeDeletedProjectIds';
+}
+
 function getProjects() {
-  const saved = localStorage.getItem('fireyeProjects');
-  return saved ? JSON.parse(saved) : [];
+  const saved = localStorage.getItem(fireSProjectsStorageKey());
+  const list = saved ? JSON.parse(saved) : [];
+  if (!Array.isArray(list)) return [];
+  if (typeof fireSApplyScheduleAfterVisit !== 'function') return list;
+  return list.map(project => fireSApplyScheduleAfterVisit(project));
 }
 
 function setProjects(projects) {
   const previousProjects = getProjects();
+  const storageKey = fireSProjectsStorageKey();
 
   try {
-    localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    localStorage.setItem(storageKey, JSON.stringify(projects));
     capturePendingUploadQueueChanges(previousProjects, projects);
   } catch (error) {
     if (error && error.name === 'QuotaExceededError') {
@@ -7678,7 +7908,7 @@ function setProjects(projects) {
         stripHeavyPhotoDataFromProjects(projects);
 
       localStorage.setItem(
-        'fireyeProjects',
+        storageKey,
         JSON.stringify(compactProjects)
       );
       capturePendingUploadQueueChanges(previousProjects, compactProjects);
@@ -7702,9 +7932,12 @@ function setProjects(projects) {
   }
 }
 
+window.fireSProjectsStorageKey = fireSProjectsStorageKey;
+window.fireSDeletedProjectIdsStorageKey = fireSDeletedProjectIdsStorageKey;
+
 function getDeletedProjectIds() {
   try {
-    const raw = localStorage.getItem('fireyeDeletedProjectIds');
+    const raw = localStorage.getItem(fireSDeletedProjectIdsStorageKey());
     return raw ? JSON.parse(raw) : {};
   } catch (error) {
     console.warn('Could not read deleted inspection register:', error);
@@ -7728,7 +7961,7 @@ function markProjectDeleted(projectId) {
 
   const deleted = getDeletedProjectIds();
   deleted[projectId] = new Date().toISOString();
-  localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+  localStorage.setItem(fireSDeletedProjectIdsStorageKey(), JSON.stringify(deleted));
 }
 
 function isProjectDeleted(projectId) {
@@ -8612,6 +8845,7 @@ function cancelScheduleNewInspection() {
 }
 
 function createNewProject() {
+  try { window.__fireSOpeningInspection = Date.now(); } catch (_) {}
 
   currentInspectionSessionSnapshot = null;
   currentInspectionSessionWasNew = true;
@@ -9353,14 +9587,26 @@ function showProjectForm() {
 
   updateInspectionCommandHeader();
 
+  try { window.__fireSOpeningInspection = Date.now(); } catch (_) {}
+
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
   if (homeSection) homeSection.style.display = 'none';
   if (servicesSection) servicesSection.style.display = 'none';
 
-  getEl('projectListSection').style.display = 'none';
-  getEl('projectFormSection').style.display = 'block';
+  const list = getEl('projectListSection');
+  const form = getEl('projectFormSection');
+  if (list) {
+    list.style.display = 'none';
+  }
+  if (form) {
+    form.hidden = false;
+    form.style.display = 'block';
+    form.style.visibility = '';
+    form.style.opacity = '';
+    form.removeAttribute('aria-hidden');
+  }
 
   ensureInspectionQuickActions();
 ensureNextInspectionCardId();
@@ -10396,6 +10642,7 @@ function updateHomeAccessCards() {
 }
 
 function showHome() {
+  try { exitFireSScheduleView(); } catch (_) {}
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
@@ -13417,6 +13664,7 @@ function getSyncStatus(project) {
 }
 
 function scrollToFirstVisibleProject() {
+  if (document.body.classList.contains('fire-s-schedule-view')) return;
   setTimeout(() => {
     const firstCard = document.querySelector('.project-card');
 
@@ -13796,6 +14044,8 @@ window.getInspectionGatewayDateFilters = getInspectionGatewayDateFilters;
 window.fireSInspectionFilterDate = fireSInspectionFilterDate;
 window.getProjectDateForFiltering = getProjectDateForFiltering;
 window.projectMatchesInspectionDateFilter = projectMatchesInspectionDateFilter;
+window.applyInspectionQuickDateFilter = applyInspectionQuickDateFilter;
+window.fireSRefreshProjectsAfterDateFilter = fireSRefreshProjectsAfterDateFilter;
 
 function updateInspectionDateFilterStatus() {
   const status = document.getElementById('inspectionDateFilterStatus');
@@ -13924,8 +14174,9 @@ function initInspectionGatewayFilters() {
 
     field.addEventListener('change', () => {
       currentProjectPage = 1;
+      try { window.currentProjectPage = 1; } catch (_) {}
       updateInspectionDateFilterStatus();
-      renderProjectsList();
+      fireSRefreshProjectsAfterDateFilter();
       scrollToFirstVisibleProject();
 
       document
@@ -16137,6 +16388,7 @@ function showInspectionOpenGate(projectId, focusMode) {
         return;
       }
 
+      closeInspectionOpenGate();
       const confirmed = confirm(
         'Start a clean new inspection for this premises? Previous finalised inspection records will remain available in Inspection History.'
       );
@@ -16145,7 +16397,6 @@ function showInspectionOpenGate(projectId, focusMode) {
       const started = archiveProjectCurrentInspectionAndStartBlank(project.id);
       if (!started) return;
 
-      closeInspectionOpenGate();
       renderProjectsList();
       openProject(project.id, focusMode, { bypassOpenGate: true });
     });
@@ -17457,33 +17708,6 @@ function finishInspection() {
 
       const completedAt = new Date().toISOString();
 
-     const currentScheduleType =
-  String(completedProjectBeforeUpdate.scheduleType || '')
-    .trim()
-    .toLowerCase();
-
-const isCurrentScheduledFollowUp =
-  completedProjectBeforeUpdate.scheduledReason === 'follow_up' ||
-  currentScheduleType === 'follow_up' ||
-  currentScheduleType === 'follow-up' ||
-  currentScheduleType === 'follow up';
-
-const hasNextScheduledInspection =
-  !isCurrentScheduledFollowUp &&
-  completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
-  completedProjectBeforeUpdate.followUpDate;
-
-const nextRecurringCycleDate =
-  hasNextScheduledInspection
-    ? ''
-    : getNextRecurringCycleDate(
-        completedProjectBeforeUpdate,
-        completedAt
-      );
-
-const hasNextRecurringCycle =
-  !!nextRecurringCycleDate;
-
       const completedProjectForArchive = {
         ...completedProjectBeforeUpdate,
         completedAt
@@ -17492,57 +17716,18 @@ const hasNextRecurringCycle =
       const inspectionHistory =
         archiveCurrentInspectionCycle(completedProjectForArchive);
 
+      const scheduledProject = fireSApplyScheduleAfterVisit(
+        {
+          ...completedProjectForArchive,
+          inspectionHistory
+        },
+        completedAt
+      );
+
       projects[index] = {
-        ...completedProjectForArchive,
-
+        ...scheduledProject,
         inspectionHistory,
-
-        scheduledDate: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpDate
-  : hasNextRecurringCycle
-    ? nextRecurringCycleDate
-    : '',
-
-scheduledStatus:
-  hasNextScheduledInspection || hasNextRecurringCycle
-    ? 'scheduled'
-    : 'completed',
-
-scheduleFreshInspection:
-  hasNextScheduledInspection || hasNextRecurringCycle,
-
-scheduledReason: hasNextScheduledInspection
-  ? 'follow_up'
-  : hasNextRecurringCycle
-    ? 'recurring_cycle'
-    : '',
-
-scheduledNote: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpNotes || ''
-  : hasNextRecurringCycle
-    ? `Recurring cycle scheduled for ${nextRecurringCycleDate}`
-    : '',
-
-scheduleType: hasNextScheduledInspection
-  ? 'follow_up'
-  : hasNextRecurringCycle
-    ? 'recurring_cycle'
-    : '',
-
-scheduleCompletedAt: completedAt,
-
-followUpRequired: hasNextScheduledInspection
-  ? 'Yes'
-  : 'No',
-
-followUpDate: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpDate
-  : '',
-
-followUpNotes: hasNextScheduledInspection
-  ? completedProjectBeforeUpdate.followUpNotes || ''
-  : '',
-
+        scheduleCompletedAt: completedAt,
         syncPending: true,
         syncError: false,
         lastSaved: new Date().toISOString()
@@ -21977,10 +22162,29 @@ function revealInspectionReportSection() {
   const homeSection = document.getElementById('homeSection');
   const listSection = document.getElementById('projectListSection');
   const formSection = document.getElementById('projectFormSection');
+  const reportSection = document.getElementById('reportSection');
   if (homeSection) homeSection.style.display = 'none';
   if (listSection) listSection.style.display = 'none';
-  if (formSection) formSection.style.display = 'block';
-  const reportSection = document.getElementById('reportSection');
+  if (formSection) {
+    const formOpen = String(formSection.style.display || '').toLowerCase() !== 'none';
+    if (formOpen && !window.__fireSReportReturn) {
+      try {
+        window.__fireSReportReturn = {
+          to: 'form',
+          projectId: typeof currentProjectId !== 'undefined' ? currentProjectId : window.currentProjectId
+        };
+      } catch (_) {}
+    }
+    formSection.style.display = 'none';
+  }
+  if (window.__fireSSilentPdfExport) {
+    if (reportSection) reportSection.style.display = 'block';
+    return reportSection;
+  }
+  if (typeof window.fireSShowIndependentReportOverlay === 'function') {
+    window.fireSShowIndependentReportOverlay();
+    return document.getElementById('reportSection') || reportSection;
+  }
   if (reportSection) reportSection.style.display = 'block';
   return reportSection;
 }
@@ -22004,6 +22208,22 @@ function latestInspectionHistoryIndex(project) {
   return latestIndex;
 }
 
+function premisesHasLatestReport(project) {
+  if (!project) return false;
+  const latestIndex = latestInspectionHistoryIndex(project);
+  if (latestIndex >= 0) {
+    const record = project.inspectionHistory[latestIndex] || {};
+    const answers = Array.isArray(record.answers) ? record.answers : [];
+    const photos = Array.isArray(record.photos) ? record.photos : [];
+    return answers.some(item => String(item?.answer || '').trim()) || photos.length > 0;
+  }
+  const liveAnswers = Array.isArray(project.answers) ? project.answers : [];
+  return Boolean(
+    (project.completedAt || project.finalisedAt || project.inspectionFinalisedAt) &&
+    liveAnswers.some(item => String(item?.answer || '').trim())
+  );
+}
+
 function openLatestPremisesReport(project, focusMode) {
   if (!project || !project.id) return;
   const latestIndex = latestInspectionHistoryIndex(project);
@@ -22012,17 +22232,185 @@ function openLatestPremisesReport(project, focusMode) {
     return;
   }
   if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
-  const launchReport = function () {
-    revealInspectionReportSection();
-    generateArchivedInspectionReport(project.id, latestIndex);
-  };
-  if (typeof openProject === 'function') {
-    openProject(project.id, focusMode, { bypassOpenGate: true });
-    window.setTimeout(launchReport, 250);
+  try {
+    window.__fireSReportReturn = {
+      to: 'command-centre',
+      projectId: project.id,
+      focusMode
+    };
+  } catch (_) {}
+  generateArchivedInspectionReport(project.id, latestIndex);
+}
+
+async function openLatestPremisesPdf(project, focusMode) {
+  if (!project || !project.id) return;
+  if (!premisesHasLatestReport(project)) {
+    alert('Finish and finalise this inspection before exporting the latest PDF.');
     return;
   }
-  launchReport();
+  const latestIndex = latestInspectionHistoryIndex(project);
+  if (latestIndex < 0) {
+    alert('No finalised inspection is available for this premises yet.');
+    return;
+  }
+  if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+  try {
+    window.__fireSReportReturn = {
+      to: 'command-centre',
+      projectId: project.id,
+      focusMode
+    };
+    window.__fireSSilentPdfExport = true;
+  } catch (_) {}
+  try {
+    generateArchivedInspectionReport(project.id, latestIndex);
+    if (typeof exportReport === 'function') await exportReport();
+  } finally {
+    try { window.__fireSSilentPdfExport = false; } catch (_) {}
+    if (typeof window.fireSCloseIndependentReportOverlay === 'function') {
+      window.fireSCloseIndependentReportOverlay({ reopen: true });
+    }
+  }
 }
+
+window.premisesHasLatestReport = premisesHasLatestReport;
+window.openLatestPremisesReport = openLatestPremisesReport;
+window.openLatestPremisesPdf = openLatestPremisesPdf;
+
+(function installFireSIndependentReportOverlay(){
+  'use strict';
+  const OVERLAY_ID = 'fireSIndependentReportOverlay';
+  const STYLE_ID = 'fireSIndependentReportOverlayStyles';
+
+  function text(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function ensureStyles(){
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      #${OVERLAY_ID}{position:fixed;inset:0;z-index:55000;display:none;flex-direction:column;background:#e8eef2}
+      #${OVERLAY_ID}.open{display:flex}
+      #${OVERLAY_ID} .fire-s-report-overlay-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:12px 16px;background:#172e42;color:#fff}
+      #${OVERLAY_ID} .fire-s-report-overlay-bar strong{display:block;font-size:15px;color:#fff}
+      #${OVERLAY_ID} .fire-s-report-overlay-bar span{display:block;margin-top:2px;font-size:12px;color:#d7e3ec}
+      #${OVERLAY_ID} .fire-s-report-overlay-nav{display:flex;flex-wrap:wrap;gap:8px}
+      #${OVERLAY_ID} .fire-s-report-overlay-nav button{min-height:40px;padding:8px 12px;border:1px solid #9fb4c4;border-radius:10px;background:#fff;color:#173044;font-weight:800;cursor:pointer}
+      #${OVERLAY_ID} .fire-s-report-overlay-nav button.primary{background:#176fb2;border-color:#176fb2;color:#fff}
+      #${OVERLAY_ID} .fire-s-report-overlay-body{flex:1;overflow:auto;padding:16px;background:#dbe4ea}
+      #${OVERLAY_ID} #reportSection{display:block !important;margin:0 auto;max-width:920px;background:#fff;color:#0f172a}
+      #${OVERLAY_ID} #reportSection > h2,
+      #${OVERLAY_ID} #reportSection > p{color:#0f172a !important}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID}{background:#0b1220}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar{background:#0f172a;color:#f8fafc}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar strong{color:#f8fafc !important}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar span{color:#e2e8f0 !important}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-body{background:#0b1220}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection,
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection > h2,
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection > p{color:#0f172a !important;background:#fff}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function overlay(){
+    return document.getElementById(OVERLAY_ID);
+  }
+
+  function currentReturn(){
+    try { return window.__fireSReportReturn || {}; } catch (_) { return {}; }
+  }
+
+  function ensureOverlay(){
+    ensureStyles();
+    let node = overlay();
+    if (node) return node;
+    node = document.createElement('div');
+    node.id = OVERLAY_ID;
+    node.setAttribute('role', 'dialog');
+    node.setAttribute('aria-modal', 'true');
+    node.setAttribute('aria-label', 'Inspection report');
+    node.innerHTML = `
+      <div class="fire-s-report-overlay-bar">
+        <div>
+          <strong id="fireSReportOverlayTitle">Inspection Report</strong>
+          <span>Independent report view. The inspection form stays closed.</span>
+        </div>
+        <div class="fire-s-report-overlay-nav">
+          <button type="button" id="fireSReportBackQuick">Back to Quick Actions</button>
+          <button type="button" id="fireSReportBackHome">Back to Home</button>
+          <button type="button" class="primary" id="fireSReportExportPdf">Export PDF</button>
+        </div>
+      </div>
+      <div class="fire-s-report-overlay-body" id="fireSReportOverlayBody"></div>
+    `;
+    document.body.appendChild(node);
+    node.querySelector('#fireSReportBackQuick')?.addEventListener('click', () => closeOverlay({ to: 'command-centre' }));
+    node.querySelector('#fireSReportBackHome')?.addEventListener('click', () => closeOverlay({ to: 'home' }));
+    node.querySelector('#fireSReportExportPdf')?.addEventListener('click', () => {
+      if (typeof exportReport === 'function') exportReport();
+    });
+    return node;
+  }
+
+  function mountReportSection(node){
+    const reportSection = document.getElementById('reportSection');
+    const body = node.querySelector('#fireSReportOverlayBody');
+    if (reportSection && body && reportSection.parentElement !== body) {
+      body.appendChild(reportSection);
+    }
+    if (reportSection) reportSection.style.display = 'block';
+  }
+
+  function showOverlay(){
+    if (window.__fireSSilentPdfExport) {
+      const reportSection = document.getElementById('reportSection');
+      if (reportSection) reportSection.style.display = 'block';
+      return;
+    }
+    const node = ensureOverlay();
+    mountReportSection(node);
+    const title = node.querySelector('#fireSReportOverlayTitle');
+    const ctx = currentReturn();
+    if (title) {
+      title.textContent = text(ctx.title) || 'Inspection Report';
+    }
+    node.classList.add('open');
+    try { node.querySelector('#fireSReportOverlayBody')?.scrollTo(0, 0); } catch (_) {}
+  }
+
+  function closeOverlay(options){
+    const node = overlay();
+    if (node) node.classList.remove('open');
+    const reportSection = document.getElementById('reportSection');
+    if (reportSection) reportSection.style.display = 'none';
+    const wanted = (options && options.to) || ((options && options.reopen) ? currentReturn().to : '');
+    const projectId = currentReturn().projectId;
+    const focusMode = currentReturn().focusMode;
+    try { window.__fireSReportReturn = null; } catch (_) {}
+    if (wanted === 'form') {
+      const formSection = document.getElementById('projectFormSection');
+      if (formSection) formSection.style.display = 'block';
+      return;
+    }
+    if (wanted === 'command-centre' && projectId && typeof showInspectionOpenGate === 'function') {
+      showInspectionOpenGate(projectId, focusMode);
+      return;
+    }
+    if (wanted === 'home' || !wanted) {
+      if (typeof showHome === 'function') showHome();
+      else if (typeof window.showHome === 'function') window.showHome();
+    }
+  }
+
+  window.fireSShowIndependentReportOverlay = showOverlay;
+  window.fireSCloseIndependentReportOverlay = closeOverlay;
+  window.fireSIndependentReportOverlayOpen = function(){
+    return !!overlay()?.classList.contains('open');
+  };
+})();
 
 function generateArchivedInspectionReport(projectId, historyIndex) {
   if (!canViewReports()) {
@@ -22351,16 +22739,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   const reportContent = getEl('reportContent');
 
 reportContent.innerHTML = `
-    <div class="project-summary-actions">
-      <button
-        type="button"
-        class="secondary-btn"
-        onclick="exportReport()"
-      >
-        ${isLiveReport ? 'Export PDF' : 'Export Archived PDF'}
-      </button>
-    </div>
-
     <article class="formal-letter-report">
     ${buildClientReportLetterheadHtml(reportLetterhead)}
 
@@ -25863,20 +26241,32 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================
 
 function fireSIsInspectionClosed(project) {
+  const lifecycle = String(
+    project?.inspectionLifecycleStatus || project?.inspectionStatus || ''
+  ).toLowerCase();
   return Boolean(
     project?.completedAt ||
     project?.archivedAt ||
+    project?.finalisedAt ||
+    project?.finalizedAt ||
+    project?.inspectionFinalisedAt ||
     project?.scheduledStatus === 'completed' ||
     project?.archiveStatus === 'completed' ||
     project?.inspectionStatus === 'closed' ||
-    project?.status === 'closed'
+    project?.status === 'closed' ||
+    lifecycle === 'finalised' ||
+    lifecycle === 'finalized'
   );
 }
 
 function fireSGetInspectionScheduledDate(project) {
+  const effective =
+    typeof fireSApplyScheduleAfterVisit === 'function'
+      ? fireSApplyScheduleAfterVisit(project)
+      : project;
   return (
-    project?.scheduledDate ||
-    project?.followUpDate ||
+    effective?.scheduledDate ||
+    effective?.followUpDate ||
     ''
   );
 }
@@ -25926,7 +26316,6 @@ function fireSIsInspectionOverdue(project) {
   if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
     return false;
   }
-  if (fireSIsInspectionClosed(project)) return false;
 
   // Deleted current inspections sit in Recycle. Leftover dates must not count.
   if (
@@ -26296,6 +26685,8 @@ if (fireSOriginalShowHomeExecStandard) {
 }
 
 window.fireSIsInspectionOverdue = fireSIsInspectionOverdue;
+window.fireSApplyScheduleAfterVisit = fireSApplyScheduleAfterVisit;
+window.fireSIsCycledInspection = fireSIsCycledInspection;
 window.fireSIsDeletedPremises = fireSIsDeletedPremises;
 window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
@@ -27086,8 +27477,9 @@ setTimeout(() => {
 
 
 /* =====================================================
-   FIRE-S Activity Date Fix v1.0
-   Ensures Today / This Week / This Month use real activity dates.
+   Inspection Date Filter
+   Today / This Week / This Month use the inspection or booking date,
+   not lastSaved from a cloud sync.
    ===================================================== */
 
 function fireSGetActivityDateForFiltering(project) {
@@ -28385,7 +28777,11 @@ if (!window.fireSMobileSmartCardsApplied) {
     try {
       const all = typeof window.getProjects === 'function'
         ? window.getProjects()
-        : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+        : JSON.parse(localStorage.getItem(
+          (typeof window.fireSProjectsStorageKey === 'function'
+            ? window.fireSProjectsStorageKey()
+            : 'fireyeProjects')
+        ) || '[]');
       return Array.isArray(all) ? all : [];
     } catch (error) {
       console.warn('Fire-S Executive Snapshot could not read premises:', error);
@@ -28632,7 +29028,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises Overview</h3>
-          <p>Summary of visible premises. Use the date filters and status chips to filter the list.</p>
+          <p>Summary of visible premises. Use the date filters and status chips below to filter the list.</p>
         </div>
       </div>
       <div class="fire-s-exec-grid">
@@ -28811,7 +29207,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 /* =====================================================
    FIRE-S RC 1.1.10 - Gateway Filter Stabilisation
    Single source of truth for filter counts AND visible Premises cards.
-   Date filters live inside More Filters. Status chips stay outside.
+   Date filters and status chips stay on the Gateway. More Filters is removed.
    ===================================================== */
 (function () {
   'use strict';
@@ -29475,7 +29871,7 @@ if (!window.fireSMobileSmartCardsApplied) {
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
           <h3>Premises overview</h3>
-          <p>Read-only summary. Use the date filters and status chips to filter the premises list.</p>
+          <p>Read-only summary. Use the date filters and status chips below to filter the premises list.</p>
         </div>
       </div>
       <div class="fire-s-snapshot-grid-v1111">
@@ -29533,18 +29929,19 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 /* =====================================================
    FIRE-S RC 1.1.12 - Show Filters Drawer Polish
-   Date filters and status chips stay on the Gateway. More Filters is removed.
+   Scope: UI polish only. No filter logic changed.
+   Date filters remain inside More Filters.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.12-no-more-filters';
+  const VERSION = '1.1.12-date-filters-only';
 
   function enhanceFilterDrawer() {
     fireSRemoveMoreFiltersDrawer();
   }
 
-  // Keep the toggle label correct after the original toggleFilterPanel/closeFilterPanel runs.
+  // Keep leftover toggle/close wrappers from moving the date panel.
   const originalToggle = window.toggleFilterPanel;
   if (typeof originalToggle === 'function' && !originalToggle.__fireSPolished1112) {
     const wrapped = function () {
@@ -32582,6 +32979,7 @@ function fireSIsScheduledNewPremises(project) {
     type === 'new_inspection'
   );
 }
+try { window.fireSIsScheduledNewPremises = fireSIsScheduledNewPremises; } catch (_) {}
 
 function fireSIsNewPremises(project) {
   return !fireSIsScheduledNewPremises(project) && !fireSHasMeaningfulInspectionData(project) && !fireSHasPreviousCycles(project);
@@ -33119,7 +33517,6 @@ function fireSApplyLifecycleUxLabels() {
               `).join('')}
             </select>
           </label>
-
         </div>
       </section>
     `;
@@ -33349,7 +33746,7 @@ function fireSApplyLifecycleUxLabels() {
     if (
       document.getElementById('toggleFiltersBtn') ||
       document.getElementById('filterPanel') ||
-      document.querySelector('.fire-s-advanced-toggle, .fire-s-choice-more-control, #fireSWorkspaceFilterTitle1112, #fireSFilterDrawer')
+      document.querySelector('.fire-s-advanced-toggle, .fire-s-choice-more-control, #fireSWorkspaceFilterTitle1112')
     ) {
       fireSRemoveMoreFiltersDrawer();
     }
@@ -38439,6 +38836,7 @@ function fireSApplyLifecycleUxLabels() {
     if (numeric) numeric.textContent = String(value);
   }
   function sync(){
+    try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -38516,8 +38914,15 @@ function fireSApplyLifecycleUxLabels() {
   function hasAnsweredChecklist(p){ return answers(p).some(a => ['yes','no','na','n/a'].includes(answerValue(a))); }
   function noCount(p){ return answers(p).filter(a => answerValue(a) === 'no').length; }
   function isCompleted(p){
-    const status = norm(p?.status || p?.inspectionStatus || p?.scheduledStatus || '');
-    return Boolean(p?.completedAt || p?.finalisedAt || status.includes('complete') || status.includes('closed'));
+    const status = norm(p?.status || p?.inspectionStatus || p?.scheduledStatus || p?.archiveStatus || '');
+    return Boolean(
+      p?.completedAt ||
+      p?.finalisedAt ||
+      p?.inspectionFinalisedAt ||
+      status.includes('complete') ||
+      status.includes('closed') ||
+      status.includes('finalis')
+    );
   }
   function isArchived(p){
     const status = norm(p?.status || p?.inspectionStatus || p?.archiveStatus || '');
@@ -38538,10 +38943,39 @@ function fireSApplyLifecycleUxLabels() {
     const end = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
     return key >= start && key <= end;
   }
+  function cycleTimestamp(cycle){
+    const parsed = Date.parse(
+      cycle?.completedAt ||
+      cycle?.finalisedAt ||
+      cycle?.inspectionFinalisedAt ||
+      cycle?.archivedAt ||
+      cycle?.inspectionDate ||
+      cycle?.date ||
+      ''
+    );
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  function latestCompletedCycle(p){
+    if (isCompleted(p) && hasAnsweredChecklist(p)) return p;
+    const history = Array.isArray(p?.inspectionHistory) ? p.inspectionHistory : [];
+    let best = null;
+    let bestTs = -1;
+    history.forEach(item => {
+      if (!hasAnsweredChecklist(item)) return;
+      const ts = cycleTimestamp(item);
+      if (!best || ts >= bestTs) {
+        best = item;
+        bestTs = ts;
+      }
+    });
+    return best;
+  }
   function isCompliant(p){
-    // Compliant must be a real completed/answered inspection with no open actions.
-    // Blank/new premises and history shells do not qualify.
-    return Boolean(hasAnsweredChecklist(p) && isCompleted(p) && !hasOpenActions(p) && !isArchived(p));
+    // A premises stays Compliant when the latest completed cycle is all-clear,
+    // even after refresh when answers live in Inspection History.
+    if (isArchived(p)) return false;
+    const cycle = latestCompletedCycle(p);
+    return Boolean(cycle && !hasOpenActions(cycle));
   }
   function matches(p, filter){
     const key = norm(filter);
@@ -38555,7 +38989,10 @@ function fireSApplyLifecycleUxLabels() {
       return Boolean(plan && plan < today && !isCompleted(p) && !isArchived(p));
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
-    if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') return hasOpenActions(p);
+    if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') {
+      const cycle = latestCompletedCycle(p);
+      return hasOpenActions(p) || (cycle ? hasOpenActions(cycle) : false);
+    }
     return true;
   }
   function getProjects(){
@@ -38625,6 +39062,7 @@ function fireSApplyLifecycleUxLabels() {
     stats.style.setProperty('display', 'none', 'important');
   }
   function renderKpis(){
+    try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -38686,6 +39124,8 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
+  window.fireSLatestCompletedCycle = latestCompletedCycle;
+  window.fireSProductionIsCompliant = isCompliant;
 
   function install(){
     renderKpis();
@@ -39382,9 +39822,14 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
   const now = new Date();
   const nowIso = now.toISOString();
   const today = nowIso.slice(0, 10);
+  const lastVisit =
+    original?.completedAt ||
+    original?.inspectionFinalisedAt ||
+    original?.scheduleCompletedAt ||
+    '';
   const currentInspectionId = `inspection-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  return {
+  const cleaned = {
     ...original,
     inspectionHistory: Array.isArray(inspectionHistory) ? inspectionHistory : [],
 
@@ -39427,10 +39872,8 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
     followUpRequired: 'No',
     followUpDate: '',
     followUpNotes: '',
-    recurringCycleEnabled: false,
-    recurringCycleNumber: '',
-    recurringCycleUnit: '',
-    recurringCycleNotes: '',
+
+    // Keep premises recurring-cycle listing. A finished visit must not wipe it.
 
     // Clear any legacy top-level service/expiry values that could leak into a new cycle.
     equipmentExpiryDate: '',
@@ -39444,6 +39887,9 @@ function createFireSCleanInspectionWorkspace(original, inspectionHistory) {
     syncError: false,
     lastSaved: nowIso
   };
+  return typeof fireSApplyScheduleAfterVisit === 'function'
+    ? fireSApplyScheduleAfterVisit(cleaned, lastVisit)
+    : cleaned;
 }
 
 archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndStartBlank(projectId) {
@@ -39976,7 +40422,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     const index = projects.findIndex(project => String(project?.id) === String(projectId));
     if (index < 0) return;
     const now = new Date().toISOString();
-    projects[index] = {
+    const row = {
       ...projects[index],
       inspectionLifecycleStatus: 'finalised',
       inspectionStatus: 'finalised',
@@ -39987,6 +40433,10 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
       syncPending: true,
       lastSaved: now
     };
+    projects[index] =
+      typeof fireSApplyScheduleAfterVisit === 'function'
+        ? fireSApplyScheduleAfterVisit(row, row.completedAt || now)
+        : row;
     if (typeof setProjects === 'function') setProjects(projects);
     else if (typeof writeProjects === 'function') writeProjects(projects);
   }
@@ -40173,6 +40623,7 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
           openProject(project.id, focusMode, { bypassOpenGate: true });
           return;
         }
+        close();
         const confirmed = confirm('Start a clean new inspection for this premises? The completed inspection history will remain protected.');
         if (!confirmed) return;
         const started = typeof archiveProjectCurrentInspectionAndStartBlank === 'function'
@@ -40186,13 +40637,13 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       document.getElementById('phase5LatestBtn')?.addEventListener('click', () => {
         if (!hasHistory) return;
+        close();
         window.fireSHistoryLaunchContext = {
           mode: 'latest',
           projectId: String(project.id),
           focusMode: focusMode || '',
           capturedAt: Date.now()
         };
-        close();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         window.setTimeout(() => {
           if (typeof openInspectionArchiveFromMore === 'function') openInspectionArchiveFromMore();
@@ -40204,13 +40655,13 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
 
       document.getElementById('phase5HistoryBtn')?.addEventListener('click', () => {
         if (!hasHistory) return;
+        close();
         window.fireSHistoryLaunchContext = {
           mode: 'history',
           projectId: String(project.id),
           focusMode: focusMode || '',
           capturedAt: Date.now()
         };
-        close();
         openProject(project.id, focusMode, { bypassOpenGate: true });
         window.setTimeout(() => {
           if (typeof openInspectionArchiveFromMore === 'function') openInspectionArchiveFromMore();
@@ -41557,7 +42008,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function fireSSprint21CommandCentreV1(){
   'use strict';
 
-  const VERSION = '1.3.58-cc-place';
+  const VERSION = '1.3.78-cc-pdf';
   const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
     (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
   if (typeof previousShowInspectionOpenGate !== 'function') return;
@@ -41949,6 +42400,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       reportBtn.type = 'button';
       reportBtn.textContent = 'Latest Report';
       reportBtn.addEventListener('click', () => {
+        closeCentre();
         if (typeof window.openLatestPremisesReport === 'function') {
           window.openLatestPremisesReport(project);
         } else {
@@ -41956,6 +42408,20 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         }
       });
       quick.appendChild(reportBtn);
+      if (typeof premisesHasLatestReport !== 'function' || premisesHasLatestReport(project)) {
+        const pdfBtn = document.createElement('button');
+        pdfBtn.type = 'button';
+        pdfBtn.textContent = 'Latest PDF';
+        pdfBtn.addEventListener('click', () => {
+          closeCentre();
+          if (typeof window.openLatestPremisesPdf === 'function') {
+            window.openLatestPremisesPdf(project);
+          } else if (typeof openLatestPremisesPdf === 'function') {
+            openLatestPremisesPdf(project);
+          }
+        });
+        quick.appendChild(pdfBtn);
+      }
     }
     quick.appendChild(copyButton(closeButton, 'Return to Projects'));
 
@@ -42007,13 +42473,18 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function installFireSDataManagementV12(){
   'use strict';
 
-  const VERSION = 'delete-data-management-v14';
+  const VERSION = 'delete-data-management-v16';
   const RETENTION_DAYS = 30;
   const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1000;
   const MODAL_ID = 'fireSDataManagementV12';
   const RECYCLE_MODAL_ID = 'fireSRecycleBinV12';
-  const STYLE_ID = 'fireSDataManagementV12Styles';
-  const AUDIT_KEY = 'fireSDataManagementAuditV12';
+  const STYLE_ID = 'fireSDataManagementV16Styles';
+  const AUDIT_KEY = (
+    typeof fireSProjectsStorageKey === 'function' &&
+    fireSProjectsStorageKey() === 'fireyeProjects-staging'
+  )
+    ? 'fireSDataManagementAuditV12-staging'
+    : 'fireSDataManagementAuditV12';
   const CURRENT_INSPECTION_KEYS = [
     'currentInspectionId',
     'inspectionId',
@@ -42077,9 +42548,19 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .replace(/'/g, '&#039;');
   }
 
+  function projectsStorageKey(){
+    try {
+      if (typeof fireSProjectsStorageKey === 'function') return fireSProjectsStorageKey();
+    } catch (_) {}
+    try {
+      if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) return 'fireyeProjects-staging';
+    } catch (_) {}
+    return 'fireyeProjects';
+  }
+
   function rawProjects(){
     try {
-      const parsed = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const parsed = JSON.parse(localStorage.getItem(projectsStorageKey()) || '[]');
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) {
       return [];
@@ -42088,10 +42569,15 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   function writeProjects(projects){
     if (typeof setProjects === 'function') setProjects(projects);
-    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    else localStorage.setItem(projectsStorageKey(), JSON.stringify(projects));
   }
 
   function role(){
+    try {
+      if (typeof window.resolveFireSHomeRole === 'function') {
+        return text(window.resolveFireSHomeRole()).toLowerCase();
+      }
+    } catch (_) {}
     return text(
       typeof getCurrentUserRole === 'function'
         ? getCurrentUserRole()
@@ -42309,7 +42795,15 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   }
 
   function findProject(projectId){
-    return rawProjects().find(project => String(project?.id) === String(projectId)) || null;
+    const id = typeof projectId === 'object' ? projectId?.id : projectId;
+    const fromRaw = rawProjects().find(project => String(project?.id) === String(id));
+    if (fromRaw) return fromRaw;
+    try {
+      if (typeof getProjects === 'function') {
+        return getProjects().find(project => String(project?.id) === String(id)) || null;
+      }
+    } catch (_) {}
+    return null;
   }
 
   function hasCurrentIncomplete(project){
@@ -42335,47 +42829,57 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     ensureRecycleBinButton();
   }
 
-  function deleteCurrentInspection(projectId){
+  function deleteCurrentInspection(projectId, mode){
     if (!canDeleteIncomplete()) {
       alert('Your access does not allow deleting an incomplete inspection.');
       return false;
     }
     const projects = rawProjects();
     const index = projects.findIndex(project => String(project?.id) === String(projectId));
-    if (index < 0) return false;
+    if (index < 0) {
+      alert('This premises could not be found in storage. Refresh and try again.');
+      return false;
+    }
     const project = projects[index];
     if (!hasCurrentIncomplete(project)) {
       alert('There is no incomplete current inspection to delete.');
       return false;
     }
+    const immediate = mode === 'immediate';
     const metadata = nowMetadata('current_inspection');
     const bin = ensureRecycleBin(project);
-    bin.currentInspections.push({
-      ...metadata,
-      inspectionLabel:
-        text(project.inspectionNumber) ||
-        text(project.inspectionDate) ||
-        'Incomplete inspection',
-      snapshot: captureCurrentInspection(project)
-    });
+    if (!immediate) {
+      bin.currentInspections.push({
+        ...metadata,
+        inspectionLabel:
+          text(project.inspectionNumber) ||
+          text(project.inspectionDate) ||
+          'Incomplete inspection',
+        snapshot: captureCurrentInspection(project)
+      });
+    }
     const updated = clearCurrentInspection(project, bin, metadata.deletedAt);
-    appendAudit(updated, 'delete_current_inspection', {
-      recycleId: metadata.recycleId,
-      retentionDays: RETENTION_DAYS
+    appendAudit(updated, immediate ? 'immediate_delete_current_inspection' : 'delete_current_inspection', {
+      recycleId: immediate ? '' : metadata.recycleId,
+      immediate,
+      retentionDays: immediate ? 0 : RETENTION_DAYS
     });
     projects[index] = updated;
     writeProjects(projects);
     return true;
   }
 
-  function deleteHistoryInspection(projectId, historyIndex){
+  function deleteHistoryInspection(projectId, historyIndex, mode){
     if (!canAdminDelete()) {
       alert('Only a Company Admin or Super Admin may delete Inspection History.');
       return false;
     }
     const projects = rawProjects();
     const index = projects.findIndex(project => String(project?.id) === String(projectId));
-    if (index < 0) return false;
+    if (index < 0) {
+      alert('This premises could not be found in storage. Refresh and try again.');
+      return false;
+    }
     const project = projects[index];
     const history = Array.isArray(project.inspectionHistory)
       ? [...project.inspectionHistory]
@@ -42384,19 +42888,22 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       alert('The selected historical inspection could not be found.');
       return false;
     }
+    const immediate = mode === 'immediate';
     const metadata = nowMetadata('history_inspection');
     const [snapshot] = history.splice(historyIndex, 1);
     const bin = ensureRecycleBin(project);
-    bin.historyInspections.push({
-      ...metadata,
-      inspectionLabel:
-        text(snapshot?.inspectionNumber) ||
-        text(snapshot?.inspectionDate) ||
-        text(snapshot?.completedAt)?.slice(0, 10) ||
-        'Historical inspection',
-      originalHistoryIndex: historyIndex,
-      snapshot
-    });
+    if (!immediate) {
+      bin.historyInspections.push({
+        ...metadata,
+        inspectionLabel:
+          text(snapshot?.inspectionNumber) ||
+          text(snapshot?.inspectionDate) ||
+          text(snapshot?.completedAt)?.slice(0, 10) ||
+          'Historical inspection',
+        originalHistoryIndex: historyIndex,
+        snapshot
+      });
+    }
     const updated = {
       ...project,
       inspectionHistory: history,
@@ -42407,27 +42914,45 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       syncError: false,
       lastSaved: metadata.deletedAt
     };
-    appendAudit(updated, 'delete_history_inspection', {
-      recycleId: metadata.recycleId,
+    appendAudit(updated, immediate ? 'immediate_delete_history_inspection' : 'delete_history_inspection', {
+      recycleId: immediate ? '' : metadata.recycleId,
       inspectionNumber: snapshot?.inspectionNumber || '',
       inspectionDate: snapshot?.inspectionDate || '',
-      retentionDays: RETENTION_DAYS
+      immediate,
+      retentionDays: immediate ? 0 : RETENTION_DAYS
     });
     projects[index] = updated;
     writeProjects(projects);
     return true;
   }
 
-  function deleteEntirePremises(projectId){
+  async function deleteEntirePremises(projectId, mode){
     if (!canAdminDelete()) {
       alert('Only a Company Admin or Super Admin may delete an entire premises.');
       return false;
     }
     const projects = rawProjects();
     const index = projects.findIndex(project => String(project?.id) === String(projectId));
-    if (index < 0) return false;
+    if (index < 0) {
+      alert('This premises could not be found in storage. Refresh and try again.');
+      return false;
+    }
     const project = projects[index];
+    const immediate = mode === 'immediate';
     const metadata = nowMetadata('entire_premises');
+    if (immediate) {
+      if (!await deletePremisesFromCloud(projectId, { silent: false })) return false;
+      appendAudit(project, 'immediate_delete_entire_premises', {
+        immediate: true,
+        retentionDays: 0
+      });
+      try {
+        if (typeof markProjectDeleted === 'function') markProjectDeleted(projectId);
+      } catch (_) {}
+      projects.splice(index, 1);
+      writeProjects(projects);
+      return true;
+    }
     const updated = {
       ...project,
       deletedAt: metadata.deletedAt,
@@ -42463,6 +42988,62 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     return Math.max(0, Math.ceil((expiry - Date.now()) / (24 * 60 * 60 * 1000)));
   }
 
+  let purgeExpiredBusy = false;
+  async function purgeExpiredRecycleAutomatically(){
+    if (purgeExpiredBusy) return { changed: false, purged: 0 };
+    purgeExpiredBusy = true;
+    try {
+      const projects = rawProjects();
+      const kept = [];
+      let purged = 0;
+      for (const project of projects) {
+        const premisesExpiry = new Date(project?.deletePurgeAfter || 0).getTime();
+        const premisesRecycled = !!(project?.deletedAt || project?.dataManagementDeletedAt);
+        if (
+          premisesRecycled &&
+          Number.isFinite(premisesExpiry) &&
+          premisesExpiry < Date.now()
+        ) {
+          await deletePremisesFromCloud(project.id, { silent: true });
+          try {
+            if (typeof markProjectDeleted === 'function') markProjectDeleted(project.id);
+          } catch (_) {}
+          purged += 1;
+          continue;
+        }
+
+        const bin = ensureRecycleBin(project);
+        const currentBefore = bin.currentInspections.length;
+        const historyBefore = bin.historyInspections.length;
+        bin.currentInspections = bin.currentInspections.filter(isWithinRetention);
+        bin.historyInspections = bin.historyInspections.filter(isWithinRetention);
+        if (
+          bin.currentInspections.length !== currentBefore ||
+          bin.historyInspections.length !== historyBefore
+        ) {
+          purged += (currentBefore - bin.currentInspections.length) +
+            (historyBefore - bin.historyInspections.length);
+          kept.push({
+            ...project,
+            recycleBin: bin,
+            syncPending: true,
+            syncError: false,
+            lastSaved: new Date().toISOString()
+          });
+        } else {
+          kept.push(project);
+        }
+      }
+      if (purged > 0) writeProjects(kept);
+      if (purged > 0) {
+        try { ensureRecycleBinButton(); } catch (_) {}
+      }
+      return { changed: purged > 0, purged };
+    } finally {
+      purgeExpiredBusy = false;
+    }
+  }
+
   function restorePremises(projectId){
     if (!canAdminDelete()) return false;
     const projects = rawProjects();
@@ -42489,7 +43070,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : {};
       if (deleted && deleted[projectId]) {
         delete deleted[projectId];
-        localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+        localStorage.setItem(
+          (typeof fireSDeletedProjectIdsStorageKey === 'function'
+            ? fireSDeletedProjectIdsStorageKey()
+            : 'fireyeDeletedProjectIds'),
+          JSON.stringify(deleted)
+        );
       }
     } catch (_) {}
     writeProjects(projects);
@@ -42578,21 +43164,22 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       (!isWithinRetention(item) || canPurgeBeforeExpiry());
   }
 
-  async function deletePremisesFromCloud(projectId){
+  async function deletePremisesFromCloud(projectId, options){
+    const silent = !!(options && options.silent);
     if (
       typeof supabaseClient === 'undefined' ||
       !supabaseClient?.auth ||
       !supabaseClient?.from
     ) {
-      return role() === 'local';
+      return role() === 'local' || silent;
     }
 
     try {
       const { data: userData, error: userError } =
         await supabaseClient.auth.getUser();
       if (userError || !userData?.user) {
-        alert('Permanent deletion requires an active cloud session.');
-        return false;
+        if (!silent) alert('Permanent deletion requires an active cloud session.');
+        return silent;
       }
 
       let query = supabaseClient
@@ -42607,14 +43194,16 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       const { error } = await query.select();
       if (error) {
         console.error('Permanent premises deletion failed:', error);
-        alert(`Permanent cloud deletion failed: ${error.message}`);
-        return false;
+        if (!silent) alert(`Permanent cloud deletion failed: ${error.message}`);
+        return silent;
       }
       return true;
     } catch (error) {
       console.error('Permanent premises deletion failed:', error);
-      alert('Permanent cloud deletion failed. The premises remains in the Recycle Bin.');
-      return false;
+      if (!silent) {
+        alert('Permanent cloud deletion failed. The premises remains in the Recycle Bin.');
+      }
+      return silent;
     }
   }
 
@@ -42710,7 +43299,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      .fire-s-data-v12-backdrop{position:fixed;inset:0;z-index:10120;display:grid;place-items:center;padding:16px;background:rgba(8,22,33,.68)}
+      .fire-s-data-v12-backdrop{position:fixed;inset:0;z-index:60050;display:grid;place-items:center;padding:16px;background:rgba(8,22,33,.68)}
       .fire-s-data-v12-dialog{width:min(100%,760px);max-height:calc(100vh - 28px);overflow:auto;border:1px solid #d4dde4;border-radius:18px;background:#fff;box-shadow:0 28px 80px rgba(3,16,26,.35)}
       .fire-s-data-v12-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px;border-bottom:1px solid #e3e9ed;background:#f8fafb}
       .fire-s-data-v12-head h3{margin:3px 0 0;color:#172e42;font-size:21px}
@@ -42729,9 +43318,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-data-v12-confirm{display:none;margin-top:11px;padding:12px;border:1px solid #e7b1b1;border-radius:11px;background:#fff}
       .fire-s-data-v12-confirm.open{display:block}
       .fire-s-data-v12-confirm strong{display:block;margin-bottom:7px;color:#7f1d1d;font-size:12px}
-      .fire-s-data-v12-confirm-actions{display:flex;gap:8px;justify-content:flex-end}
+      .fire-s-data-v12-confirm-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
       .fire-s-data-v12-confirm-actions .cancel{border-color:#cbd7df;background:#fff;color:#455d6d}
-      .fire-s-data-v12-confirm-actions .confirm{background:#b42323;color:#fff}
+      .fire-s-data-v12-confirm-actions .recycle{border-color:#1d4ed8;background:#eff6ff;color:#1e3a8a}
+      .fire-s-data-v12-confirm-actions .immediate,.fire-s-data-v12-confirm-actions .confirm{background:#b42323;color:#fff}
       .fire-s-data-v12-recycle-button{border-color:#899cab;color:#314b5d;background:#f8fafb}
       #fireSRecycleBinBtnV12{position:relative}
       .fire-s-recycle-count-v12{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:5px;padding:0 5px;border-radius:999px;background:#a62424;color:#fff;font-size:11px}
@@ -42786,7 +43376,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         ? projectIdentifier?.id
         : projectIdentifier
     );
-    if (!project || project.deletedAt) return;
+    if (!project || project.deletedAt) {
+      if (!project) {
+        alert('Save this inspection before opening Delete / Data Management.');
+      }
+      return;
+    }
     ensureStyles();
     closeModal(MODAL_ID);
 
@@ -42817,7 +43412,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         </div>
         <div class="fire-s-data-v12-body">
           <div class="fire-s-data-v12-safety">
-            Deleted data is moved to the Recycle Bin for ${RETENTION_DAYS} days and recorded in the premises audit trail. It is not immediately erased.
+            Choose Recycle Bin to restore for ${RETENTION_DAYS} days; after that it is deleted automatically. Delete immediately cannot be undone.
           </div>
 
           <section class="fire-s-data-v12-card">
@@ -42827,26 +43422,28 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
               ${hasCurrent ? 'Delete Incomplete Inspection' : 'No Incomplete Inspection'}
             </button>
             <div class="fire-s-data-v12-confirm" id="fireSDeleteCurrentConfirmV12">
-              <strong>Move this incomplete inspection to the Recycle Bin?</strong>
+              <strong>How should this incomplete inspection be deleted?</strong>
               <div class="fire-s-data-v12-confirm-actions">
                 <button type="button" class="cancel">Cancel</button>
-                <button type="button" class="confirm">Yes, Delete Inspection</button>
+                <button type="button" class="recycle">Recycle Bin (30 days)</button>
+                <button type="button" class="immediate">Delete immediately</button>
               </div>
             </div>
           </section>
 
           <section class="fire-s-data-v12-card ${adminAllowed ? '' : 'admin-locked'}">
             <h4>2. Delete Inspection from History</h4>
-            <p>Select one completed cycle. Only that inspection, its report data, photos and linked Action Items move to the Recycle Bin. Company Admin or Super Admin access is required.</p>
+            <p>Select one completed cycle. Company Admin or Super Admin access is required.</p>
             <select id="fireSHistoryDeleteSelectV12" ${history.length && adminAllowed ? '' : 'disabled'}>
               ${historyOptions || '<option value="">No History records available</option>'}
             </select>
             <button type="button" id="fireSDeleteHistoryV12" ${history.length && adminAllowed ? '' : 'disabled'}>Delete Selected History Record</button>
             <div class="fire-s-data-v12-confirm" id="fireSDeleteHistoryConfirmV12">
-              <strong>Move the selected completed inspection to the Recycle Bin?</strong>
+              <strong>How should this History record be deleted?</strong>
               <div class="fire-s-data-v12-confirm-actions">
                 <button type="button" class="cancel">Cancel</button>
-                <button type="button" class="confirm">Yes, Delete History Record</button>
+                <button type="button" class="recycle">Recycle Bin (30 days)</button>
+                <button type="button" class="immediate">Delete immediately</button>
               </div>
             </div>
           </section>
@@ -42856,11 +43453,13 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
             <p>Removes the premises from the Gateway together with its current inspection, all History, reports, photos and Action Items. Building Passport data is included. Company Admin or Super Admin access is required.</p>
             <button type="button" id="fireSDeletePremisesV12" ${adminAllowed ? '' : 'disabled'}>Delete Entire Premises</button>
             <div class="fire-s-data-v12-confirm" id="fireSDeletePremisesConfirmV12">
-              <strong>Type the exact Name + Site shown below to confirm:</strong>
+              <strong>How should this entire premises be deleted?</strong>
+              <p>Recycle Bin keeps it for ${RETENTION_DAYS} days, then deletes it automatically. Delete immediately cannot be undone — type the exact Name + Site below.</p>
               <input type="text" id="fireSDeletePremisesPhraseV12" autocomplete="off" placeholder="${safeHtml(confirmationPhrase(project))}">
               <div class="fire-s-data-v12-confirm-actions">
                 <button type="button" class="cancel">Cancel</button>
-                <button type="button" class="confirm" disabled>Delete Entire Premises</button>
+                <button type="button" class="recycle">Recycle Bin (30 days)</button>
+                <button type="button" class="immediate" disabled>Delete immediately</button>
               </div>
             </div>
           </section>
@@ -42879,70 +43478,104 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       if (event.target === backdrop) close();
     });
 
-    function wireConfirmation(openButtonId, panelId, action){
-      const openButton = backdrop.querySelector(`#${openButtonId}`);
-      const panel = backdrop.querySelector(`#${panelId}`);
-      const cancel = panel?.querySelector('.cancel');
-      const confirmButton = panel?.querySelector('.confirm');
-      openButton?.addEventListener('click', () => panel?.classList.add('open'));
-      cancel?.addEventListener('click', () => panel?.classList.remove('open'));
-      confirmButton?.addEventListener('click', action);
+    function selectedHistoryIndex(){
+      return Number(backdrop.querySelector('#fireSHistoryDeleteSelectV12')?.value);
     }
 
-    wireConfirmation(
+    function wireChoice(openButtonId, panelId, recycleAction, immediateAction){
+      const openButton = backdrop.querySelector(`#${openButtonId}`);
+      const panel = backdrop.querySelector(`#${panelId}`);
+      openButton?.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        panel?.classList.add('open');
+        try { panel?.scrollIntoView({ block: 'nearest' }); } catch (_) {}
+      });
+      panel?.querySelector('.cancel')?.addEventListener('click', () => panel.classList.remove('open'));
+      panel?.querySelector('.recycle')?.addEventListener('click', recycleAction);
+      panel?.querySelector('.immediate')?.addEventListener('click', immediateAction);
+    }
+
+    function afterCurrentDeleted(immediate){
+      close();
+      if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+      refreshAfterMutation();
+      if (typeof showProjectList === 'function') showProjectList();
+      alert(
+        immediate
+          ? 'The incomplete inspection was deleted immediately and cannot be restored.'
+          : 'The incomplete inspection was moved to the Recycle Bin for 30 days. After that it is deleted automatically.'
+      );
+    }
+
+    wireChoice(
       'fireSDeleteCurrentV12',
       'fireSDeleteCurrentConfirmV12',
       () => {
-        if (!deleteCurrentInspection(project.id)) return;
-        close();
-        if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
-        refreshAfterMutation();
-        if (typeof showProjectList === 'function') showProjectList();
-        alert('The incomplete inspection was moved to the Recycle Bin for 30 days.');
+        if (!deleteCurrentInspection(project.id, 'recycle')) return;
+        afterCurrentDeleted(false);
+      },
+      () => {
+        if (!deleteCurrentInspection(project.id, 'immediate')) return;
+        afterCurrentDeleted(true);
       }
     );
 
-    wireConfirmation(
+    wireChoice(
       'fireSDeleteHistoryV12',
       'fireSDeleteHistoryConfirmV12',
       () => {
-        const selected = Number(
-          backdrop.querySelector('#fireSHistoryDeleteSelectV12')?.value
-        );
-        if (!deleteHistoryInspection(project.id, selected)) return;
+        if (!deleteHistoryInspection(project.id, selectedHistoryIndex(), 'recycle')) return;
         close();
         refreshAfterMutation();
-        alert('The selected History record was moved to the Recycle Bin for 30 days.');
+        alert('The selected History record was moved to the Recycle Bin for 30 days. After that it is deleted automatically.');
+        showDataManagement(project.id);
+      },
+      () => {
+        if (!deleteHistoryInspection(project.id, selectedHistoryIndex(), 'immediate')) return;
+        close();
+        refreshAfterMutation();
+        alert('The selected History record was deleted immediately and cannot be restored.');
         showDataManagement(project.id);
       }
     );
 
     const premisesPanel = backdrop.querySelector('#fireSDeletePremisesConfirmV12');
     const premisesInput = backdrop.querySelector('#fireSDeletePremisesPhraseV12');
-    const premisesConfirm = premisesPanel?.querySelector('.confirm');
+    const premisesImmediate = premisesPanel?.querySelector('.immediate');
     const expected = confirmationPhrase(project);
-    backdrop.querySelector('#fireSDeletePremisesV12')?.addEventListener('click', () => {
+    backdrop.querySelector('#fireSDeletePremisesV12')?.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
       premisesPanel?.classList.add('open');
       premisesInput?.focus();
     });
     premisesPanel?.querySelector('.cancel')?.addEventListener('click', () => {
       premisesPanel.classList.remove('open');
       if (premisesInput) premisesInput.value = '';
-      if (premisesConfirm) premisesConfirm.disabled = true;
+      if (premisesImmediate) premisesImmediate.disabled = true;
     });
     premisesInput?.addEventListener('input', () => {
-      if (premisesConfirm) {
-        premisesConfirm.disabled = text(premisesInput.value) !== expected;
+      if (premisesImmediate) {
+        premisesImmediate.disabled = text(premisesInput.value) !== expected;
       }
     });
-    premisesConfirm?.addEventListener('click', () => {
-      if (text(premisesInput?.value) !== expected) return;
-      if (!deleteEntirePremises(project.id)) return;
+    premisesPanel?.querySelector('.recycle')?.addEventListener('click', async () => {
+      if (!await deleteEntirePremises(project.id, 'recycle')) return;
       close();
       if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
       refreshAfterMutation();
       if (typeof showProjectList === 'function') showProjectList();
-      alert('The entire premises was moved to the Recycle Bin for 30 days.');
+      alert('The entire premises was moved to the Recycle Bin for 30 days. After that it is deleted automatically.');
+    });
+    premisesImmediate?.addEventListener('click', async () => {
+      if (text(premisesInput?.value) !== expected) return;
+      if (!await deleteEntirePremises(project.id, 'immediate')) return;
+      close();
+      if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+      refreshAfterMutation();
+      if (typeof showProjectList === 'function') showProjectList();
+      alert('The entire premises was deleted immediately and cannot be restored.');
     });
 
     backdrop.querySelector('#fireSOpenRecycleV12')?.addEventListener('click', () => {
@@ -43017,7 +43650,8 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     );
   }
 
-  function showRecycleBin(){
+  async function showRecycleBin(){
+    await purgeExpiredRecycleAutomatically();
     ensureStyles();
     closeModal(RECYCLE_MODAL_ID);
     const entries = recycleEntries();
@@ -43071,7 +43705,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         </div>
         <div class="fire-s-data-v12-body">
           <div class="fire-s-data-v12-safety">
-            Restore is available for 30 days. After expiry, a Company Admin or Super Admin may permanently delete the item. Only the Super Admin may permanently delete it before expiry.
+            Restore is available for 30 days. After that the item is deleted automatically. You do not need to empty the Recycle Bin.
           </div>
           <div class="fire-s-recycle-v12-list">${rows}</div>
         </div>
@@ -43088,7 +43722,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       button.addEventListener('click', () => {
         const kind = button.dataset.kind;
         const projectId = button.dataset.projectId;
-        const recycleId = button.dataset.recycleId;
+        const recycleId = button.dataset.restoreRecycleId || button.dataset.recycleId;
         const restored =
           kind === 'premises'
             ? restorePremises(projectId)
@@ -43316,6 +43950,11 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
   ensureStyles();
   reinstallEntryPoints();
   observeCommandCentre();
+  const scheduleExpiredPurge = () => {
+    window.setTimeout(() => {
+      Promise.resolve(purgeExpiredRecycleAutomatically()).catch(() => {});
+    }, 1200);
+  };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       // inspection-lifecycle-engine.js loads after app.js and may replace the
@@ -43325,13 +43964,18 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       [250, 800].forEach(delay => {
         window.setTimeout(reinstallEntryPoints, delay);
       });
+      scheduleExpiredPurge();
     }, {
       once: true
     });
   } else {
     [0, 250].forEach(delay => window.setTimeout(reinstallEntryPoints, delay));
+    scheduleExpiredPurge();
   }
-  window.addEventListener('pageshow', reinstallEntryPoints);
+  window.addEventListener('pageshow', () => {
+    reinstallEntryPoints();
+    scheduleExpiredPurge();
+  });
   window.fireSOpenDataManagementV12 = showDataManagement;
   window.fireSOpenRecycleBinV12 = showRecycleBin;
   window.FireSDataManagementV12 = {
@@ -43345,8 +43989,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     restorePremises,
     permanentlyDeleteRecycleEntry,
     canPermanentlyDeleteEntry,
-    recycleEntries
+    recycleEntries,
+    purgeExpiredRecycleAutomatically
   };
+  window.fireSPurgeExpiredRecycleAutomatically = purgeExpiredRecycleAutomatically;
 })();
 
 /* =====================================================
@@ -43395,125 +44041,6 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
-})();
-
-/* =====================================================
-   Schedule Home card: booking form + already-booked cards only
-   ===================================================== */
-(function fireSScheduleBookViewLock() {
-  'use strict';
-
-  function isBookedPremises(project) {
-    try {
-      if (typeof window.fireSIsScheduledNewPremises === 'function') {
-        return !!window.fireSIsScheduledNewPremises(project);
-      }
-    } catch (_) {}
-    if (!project || project.completedAt) return false;
-    if (String(project.scheduledStatus || '').toLowerCase() !== 'scheduled') return false;
-    const type = String(project.scheduleType || '').toLowerCase();
-    return type === 'new_site' || type === 'existing_site' || type === 'new_inspection';
-  }
-
-  function inScheduleView() {
-    try {
-      return document.body.classList.contains('fire-s-schedule-view');
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function wrapMatcher(original) {
-    if (typeof original !== 'function' || original.__fireSScheduleBooked) return original;
-    const wrapped = function fireSScheduleBookedMatches(project, filter) {
-      if (inScheduleView()) return isBookedPremises(project);
-      return original.apply(this, arguments);
-    };
-    wrapped.__fireSScheduleBooked = true;
-    return wrapped;
-  }
-
-  function installMatchers() {
-    if (typeof window.fireSProductionKpiMatches === 'function') {
-      window.fireSProductionKpiMatches = wrapMatcher(window.fireSProductionKpiMatches);
-    }
-    if (typeof window.fireS136A11Matches === 'function') {
-      window.fireS136A11Matches = wrapMatcher(window.fireS136A11Matches);
-    }
-  }
-
-  function polishEmptyState() {
-    if (!inScheduleView()) return;
-    const empty = document.querySelector('#projectsList .empty-state');
-    if (empty) {
-      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above.';
-    }
-  }
-
-  function keepBookedCardsOnly() {
-    if (!inScheduleView()) return;
-    let projects = [];
-    try {
-      if (typeof window.getProjects === 'function') projects = window.getProjects() || [];
-    } catch (_) {}
-    const bookedIds = {};
-    (Array.isArray(projects) ? projects : []).forEach(function (project) {
-      if (isBookedPremises(project) && project && project.id != null) {
-        bookedIds[String(project.id)] = true;
-      }
-    });
-    const list = document.getElementById('projectsList');
-    if (!list) return;
-    list.querySelectorAll('article, .project-card, .ultra-premises-card, .fire-s-136a8-card, .fire-s-136a5-card').forEach(function (card) {
-      const id = String(card.getAttribute('data-project-id') || '').replace(/^"+|"+$/g, '');
-      if (id && !bookedIds[id]) card.remove();
-    });
-    const remaining = list.querySelectorAll('article, .project-card, .ultra-premises-card, .fire-s-136a8-card, .fire-s-136a5-card');
-    if (!remaining.length && !list.querySelector('.empty-state')) {
-      const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above.';
-      list.appendChild(empty);
-    } else {
-      polishEmptyState();
-    }
-  }
-
-  function afterSchedulePaint() {
-    keepBookedCardsOnly();
-    polishEmptyState();
-  }
-
-  function wrapNamed(name) {
-    const previous = window[name];
-    if (typeof previous !== 'function' || previous.__fireSScheduleBookView) return;
-    const wrapped = function fireSScheduleBookViewRender() {
-      const result = previous.apply(this, arguments);
-      try { afterSchedulePaint(); } catch (_) {}
-      return result;
-    };
-    wrapped.__fireSScheduleBookView = true;
-    window[name] = wrapped;
-    try {
-      if (name === 'renderProjectsList') renderProjectsList = wrapped;
-    } catch (_) {}
-  }
-
-  function wrapRenderer() {
-    wrapNamed('renderProjectsList');
-    wrapNamed('fireS136A11RenderProjects');
-  }
-
-  installMatchers();
-  wrapRenderer();
-  window.fireSKeepScheduleBookedCards = afterSchedulePaint;
-  [0, 400, 1200].forEach(function (delay) {
-    setTimeout(function () {
-      installMatchers();
-      wrapRenderer();
-      try { afterSchedulePaint(); } catch (_) {}
-    }, delay);
-  });
 })();
 
 /* =====================================================

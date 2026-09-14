@@ -41,8 +41,14 @@ assert.ok(
   'Today must use the inspection date on live and toets'
 );
 assert.ok(
-  !/fireyeProjects-staging/.test(liveApp) &&
-    /function getProjects\(\) \{\n  const saved = localStorage\.getItem\('fireyeProjects'\);/.test(liveApp),
+  /function fireSProjectsStorageKey\(/.test(liveApp) &&
+    /localStorage\.getItem\(fireSProjectsStorageKey\(\)\)/.test(liveApp) &&
+    /return 'fireyeProjects';/.test(
+      liveApp.slice(
+        liveApp.indexOf('function fireSProjectsStorageKey()'),
+        liveApp.indexOf('function fireSDeletedProjectIdsStorageKey()')
+      )
+    ),
   'Live must keep the fireyeProjects store'
 );
 assert.ok(

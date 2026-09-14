@@ -11,6 +11,8 @@ function read(name) {
 
 const stagingApp = read('staging/app.js');
 const stagingHtml = read('staging/index.html');
+const liveApp = read('app.js');
+const liveHtml = read('index.html');
 
 assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(stagingApp) &&
@@ -44,12 +46,20 @@ assert.ok(
   'Overdue must still show the next cycle date after the previous inspection is closed'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-complrep/.test(stagingHtml),
+  /app\.js\?v=1-3-78-toets-sitlive/.test(stagingHtml),
   'Toets must cache-bust schedule reset after finalise'
 );
 assert.ok(
   /Version 1\.3\.78-toets/.test(stagingHtml),
   'Displayed toets version stays 1.3.78-toets'
+);
+assert.ok(
+  /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
+    /persistFinalisedLifecycle[\s\S]*fireSApplyScheduleAfterVisit\(row/.test(liveApp) &&
+    /list\.map\(project => fireSApplyScheduleAfterVisit\(project\)\)/.test(liveApp) &&
+    /app\.js\?v=1-3-65-sitlive/.test(liveHtml) &&
+    /Version 1\.3\.65/.test(liveHtml),
+  'Live must reset schedule after finalise without bumping 1.3.65'
 );
 
 function sliceFn(src, name, nextName) {

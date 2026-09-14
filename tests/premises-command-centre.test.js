@@ -163,14 +163,14 @@ function assertCentre(src, engine, label, options) {
   );
 }
 
-assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true });
+assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true, independentReport: true });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true, independentReport: true });
 assert.ok(
-  /app\.js\?v=1-3-65-coisolate/.test(liveHtml),
+  /app\.js\?v=1-3-65-sitlive/.test(liveHtml),
   'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-complrep/.test(stagingHtml) &&
+  /app\.js\?v=1-3-78-toets-sitlive/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must keep the Command Centre close-and-delete actions'
 );
@@ -358,11 +358,11 @@ function assertLatestReportOpensPremises(src, label, options) {
   }
 }
 
-assertRevealReportFromGateway(liveApp, 'Live reveal');
+assertRevealReportFromGateway(liveApp, 'Live reveal', { independentReport: true });
 assertRevealReportFromGateway(stagingApp, 'Toets reveal', { independentReport: true });
 assertLatestHistoryIndex(liveApp, 'Live latest index');
 assertLatestHistoryIndex(stagingApp, 'Toets latest index');
-assertLatestReportOpensPremises(liveApp, 'Live opener');
+assertLatestReportOpensPremises(liveApp, 'Live opener', { independentReport: true });
 assertLatestReportOpensPremises(stagingApp, 'Toets opener', { independentReport: true });
 
 console.log('premises-command-centre.test.js: ok');

@@ -22304,9 +22304,17 @@ window.openLatestPremisesPdf = openLatestPremisesPdf;
       #${OVERLAY_ID} .fire-s-report-overlay-nav button{min-height:40px;padding:8px 12px;border:1px solid #9fb4c4;border-radius:10px;background:#fff;color:#173044;font-weight:800;cursor:pointer}
       #${OVERLAY_ID} .fire-s-report-overlay-nav button.primary{background:#176fb2;border-color:#176fb2;color:#fff}
       #${OVERLAY_ID} .fire-s-report-overlay-body{flex:1;overflow:auto;padding:16px;background:#dbe4ea}
-      #${OVERLAY_ID} #reportSection{display:block !important;margin:0 auto;max-width:920px;background:#fff}
+      #${OVERLAY_ID} #reportSection{display:block !important;margin:0 auto;max-width:920px;background:#fff;color:#0f172a}
+      #${OVERLAY_ID} #reportSection > h2,
+      #${OVERLAY_ID} #reportSection > p{color:#0f172a !important}
       html[data-fire-s-theme="dark"] #${OVERLAY_ID}{background:#0b1220}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar{background:#0f172a;color:#f8fafc}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar strong{color:#f8fafc !important}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar span{color:#e2e8f0 !important}
       html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-body{background:#0b1220}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection,
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection > h2,
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection > p{color:#0f172a !important;background:#fff}
     `;
     document.head.appendChild(style);
   }
@@ -22735,16 +22743,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   const reportContent = getEl('reportContent');
 
 reportContent.innerHTML = `
-    <div class="project-summary-actions">
-      <button
-        type="button"
-        class="secondary-btn"
-        onclick="exportReport()"
-      >
-        ${isLiveReport ? 'Export PDF' : 'Export Archived PDF'}
-      </button>
-    </div>
-
     <article class="formal-letter-report">
     ${buildClientReportLetterheadHtml(reportLetterhead)}
 

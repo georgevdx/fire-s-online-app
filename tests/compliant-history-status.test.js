@@ -23,13 +23,15 @@ assert.ok(
   'Home and Gateway Compliant counts must use the History-aware matcher'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-complrep/.test(html) &&
+  /app\.js\?v=1-3-78-toets-sitlive/.test(html) &&
     /Version 1\.3\.78-toets/.test(html),
   'Toets must cache-bust Compliant + report overlay without bumping the displayed version'
 );
 assert.ok(
-  /hasAnsweredChecklist\(p\) && isCompleted\(p\) && !hasOpenActions\(p\)/.test(liveApp),
-  'Live Compliant matcher stays unchanged until sit live'
+  /hasAnsweredChecklist\(p\) && isCompleted\(p\) && !hasOpenActions\(p\)/.test(liveApp) === false &&
+    /function latestCompletedCycle\(p\)\{/.test(liveApp) &&
+    /window\.fireSProductionIsCompliant = isCompliant/.test(liveApp),
+  'Live Compliant matcher must keep completed all-clear premises Compliant after refresh'
 );
 
 const start = app.indexOf('(function fireS136A10StableVisibleKpis(){');

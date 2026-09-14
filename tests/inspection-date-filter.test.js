@@ -20,7 +20,13 @@ assert.ok(
   'Toets and live must pick an inspection/booking date for the Gateway date filter'
 );
 assert.ok(
-  !/fireyeProjects-staging/.test(liveApp),
+  /function fireSProjectsStorageKey\(/.test(liveApp) &&
+    /return 'fireyeProjects';/.test(
+      liveApp.slice(
+        liveApp.indexOf('function fireSProjectsStorageKey()'),
+        liveApp.indexOf('function fireSDeletedProjectIdsStorageKey()')
+      )
+    ),
   'Live must keep the fireyeProjects store when the date filter sits live'
 );
 assert.ok(

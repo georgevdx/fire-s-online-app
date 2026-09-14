@@ -41,16 +41,58 @@ assert.ok(
   'Phone Back must close the report overlay first'
 );
 assert.ok(
-  /bypassOpenGate: true/.test(
-    liveApp.slice(
-      liveApp.indexOf('function openLatestPremisesReport('),
-      liveApp.indexOf('function generateArchivedInspectionReport(')
-    )
-  ),
-  'Live Latest Report stays on the inspection form until sit live'
+  /function installFireSIndependentReportOverlay\(/.test(liveApp) &&
+    /fireSShowIndependentReportOverlay/.test(liveApp) &&
+    /function openLatestPremisesPdf\(/.test(liveApp) &&
+    /Latest PDF/.test(liveApp),
+  'Live Latest Report must open the independent overlay and offer Latest PDF'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-complrep/.test(html),
+  !/bypassOpenGate: true/.test(
+    liveApp.slice(
+      liveApp.indexOf('function openLatestPremisesReport('),
+      liveApp.indexOf('async function openLatestPremisesPdf(')
+    )
+  ),
+  'Live Latest Report must not reopen the inspection form'
+);
+assert.ok(
+  /#reportSection > h2/.test(app) &&
+    /color:#0f172a !important/.test(
+      app.slice(
+        app.indexOf('function installFireSIndependentReportOverlay('),
+        app.indexOf('function generateArchivedInspectionReport(')
+      )
+    ),
+  'The overlay Inspection Report heading must stay dark ink on the white paper in Dark Mode'
+);
+assert.ok(
+  /#reportSection > h2/.test(liveApp) &&
+    /color:#0f172a !important/.test(
+      liveApp.slice(
+        liveApp.indexOf('function installFireSIndependentReportOverlay('),
+        liveApp.indexOf('function generateArchivedInspectionReport(')
+      )
+    ),
+  'Live overlay Inspection Report heading must stay dark ink on the white paper in Dark Mode'
+);
+assert.ok(
+  !/onclick="exportReport\(\)"/.test(
+    app.slice(
+      app.indexOf('function generateArchivedInspectionReport('),
+      app.indexOf('function closeArchivedInspectionDetail(')
+    )
+  ) &&
+    !/onclick="exportReport\(\)"/.test(
+      liveApp.slice(
+        liveApp.indexOf('function generateArchivedInspectionReport('),
+        liveApp.indexOf('function closeArchivedInspectionDetail(')
+      )
+    ),
+  'The report body must not keep a second Export PDF button; the overlay bar already has one'
+);
+assert.ok(
+  /app\.js\?v=1-3-78-toets-sitlive/.test(html),
   'Toets must cache-bust the independent report overlay'
 );
 

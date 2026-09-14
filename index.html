@@ -80,7 +80,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-65-subfont">
+  <link rel="stylesheet" href="styles.css?v=1-3-65-sitlive">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -90,7 +90,7 @@
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-19-legal">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-7-current">
-  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-17-subfont">
+  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-sitlive">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
   <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
@@ -305,7 +305,7 @@
         >Show password</button>
       </div>
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
-      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn">First time? Create password</button>
+      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn" hidden>First time? Create password</button>
       <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
       <button id="fireSLoginViewPlansBtn" type="button" class="secondary-btn">View Plans & Pricing</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
@@ -1860,14 +1860,14 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-65-coisolate"></script>
+  <script src="app.js?v=1-3-65-sitlive"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-41-noreports"></script>
-  <script src="fire-s-owner-lists.js?v=1-1-home"></script>
+    <script src="fire-s-clean-home-roles.js?v=2-42-sitlive"></script>
+  <script src="fire-s-owner-lists.js?v=1-1-count"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-7-svc-req"></script>
-  <script src="fire-s-company-team.js?v=2-17-assign"></script>
+  <script src="fire-s-company-team.js?v=2-21-ownerlock"></script>
   <script src="fire-s-schedule-assign.js?v=1-2-exist-sched"></script>
   <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
@@ -1876,10 +1876,10 @@
   <script src="fire-s-user-manual.js?v=1-38-sitqa"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-51-show-pw"></script>
-  <script src="fire-s-startup-stability.js?v=1-13-logo-splash"></script>
-  <script src="fire-s-screen-lock.js?v=1-6-subscribe"></script>
-  <script src="fire-s-phone-back.js?v=1-3-seat"></script>
+  <script src="fire-s-get-started.js?v=2-52-create-pw"></script>
+  <script src="fire-s-startup-stability.js?v=1-14-stay"></script>
+  <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
+  <script src="fire-s-phone-back.js?v=1-3-report-overlay"></script>
   <script src="fire-s-global-flow.js?v=1-1-copy"></script>
   <script src="fire-s-desktop-access.js?v=1-3-keep-dash"></script>
   <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
@@ -1893,7 +1893,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-62-subfont')
+        navigator.serviceWorker.register('./service-worker.js?v=108-66-sitlive')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

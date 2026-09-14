@@ -13,18 +13,21 @@ const liveApp = read('app.js');
 const stagingApp = read('staging/app.js');
 const liveStarted = read('fire-s-get-started.js');
 const stagingStarted = read('staging/fire-s-get-started.js');
+const liveLock = read('fire-s-screen-lock.js');
 const stagingLock = read('staging/fire-s-screen-lock.js');
 const stagingHtml = read('staging/index.html');
 const liveHtml = read('index.html');
 
 assert.ok(
-  !/function isInspectionFormOpen\(/.test(liveApp) &&
-    !/__fireSOpeningInspection/.test(liveApp),
-  'Live must not get the new-inspection stay fix yet'
+  /function isInspectionFormOpen\(/.test(liveApp) &&
+    /if \(isInspectionFormOpen\(\)\) return false;/.test(liveApp) &&
+    /__fireSOpeningInspection/.test(liveApp),
+  'Live must keep a new inspection on the blank form after Home'
 );
 assert.ok(
-  !/if \(userLeftHome\(\)\) return;/.test(liveStarted),
-  'Live delayed Home paint must stay as-is until the inspection stay is sat live'
+  /function userLeftHome\(/.test(liveStarted) &&
+    /if \(userLeftHome\(\)\) return;/.test(liveStarted),
+  'Live delayed Home paint must not run on Gateway or a new inspection'
 );
 
 assert.ok(
@@ -41,17 +44,21 @@ assert.ok(
 );
 assert.ok(
   /function inlineOpen\(el\)/.test(stagingLock) &&
-    /__fireSOpeningInspection/.test(stagingLock),
-  'Toets blank-home recover must keep a new inspection on screen'
+    /__fireSOpeningInspection/.test(stagingLock) &&
+    /function inlineOpen\(el\)/.test(liveLock) &&
+    /__fireSOpeningInspection/.test(liveLock),
+  'Blank-home recover must keep a new inspection on screen on live and toets'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-complrep/.test(stagingHtml) &&
+  /app\.js\?v=1-3-78-toets-sitlive/.test(stagingHtml) &&
     /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(stagingHtml),
   'Toets-blad must cache-bust the new-inspection stay fix'
 );
 assert.ok(
-  !/1-3-78-ver/.test(liveHtml) && !/1-7-new-insp/.test(liveHtml),
-  'Live cache tags must not include the toets-only inspection stay'
+  /app\.js\?v=1-3-65-sitlive/.test(liveHtml) &&
+    /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(liveHtml) &&
+    /Version 1\.3\.65/.test(liveHtml),
+  'Live must cache-bust the new-inspection stay fix without bumping 1.3.65'
 );
 
 function makeEl(id, display) {
@@ -95,7 +102,7 @@ const workspaceIds = [
   'mainCommandCentre'
 ];
 
-function loadLock() {
+function loadLock(lockSrc) {
   const els = {};
   workspaceIds.forEach(id => {
     els[id] = makeEl(id, 'none');
@@ -132,11 +139,11 @@ function loadLock() {
     }
     return { display: el.style.display || 'block', visibility: el.style.visibility || 'visible' };
   };
-  vm.runInNewContext(stagingLock, sandbox);
+  vm.runInNewContext(lockSrc, sandbox);
   return { els, sandbox };
 }
 
-const firstClick = loadLock();
+const firstClick = loadLock(stagingLock);
 workspaceIds.forEach(id => {
   firstClick.els[id].style.display = 'none';
 });
@@ -149,5 +156,19 @@ assert.strictEqual(
 );
 assert.strictEqual(firstClick.els.projectFormSection.style.display, 'block');
 assert.strictEqual(firstClick.els.homeSection.style.display, 'none');
+
+const liveClick = loadLock(liveLock);
+workspaceIds.forEach(id => {
+  liveClick.els[id].style.display = 'none';
+});
+liveClick.els.projectFormSection.style.display = 'block';
+liveClick.els.projectFormSection.hidden = true;
+assert.strictEqual(
+  liveClick.sandbox.fireSRecoverHomeIfBlank(),
+  false,
+  'live first + New inspection at New Site must stay on the form'
+);
+assert.strictEqual(liveClick.els.projectFormSection.style.display, 'block');
+assert.strictEqual(liveClick.els.homeSection.style.display, 'none');
 
 console.log('new-inspection-stay.test.js: ok');

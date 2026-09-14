@@ -18,7 +18,11 @@ const agents = read('AGENTS.md');
 
 function assertShared(src, label) {
   assert.ok(/function openLatestPremisesReport\(/.test(src), label + ': Latest Report must open the premises report');
-  assert.ok(/function revealInspectionReportSection\(/.test(src), label + ': reportSection must unhide with the inspection form');
+  assert.ok(
+    /function revealInspectionReportSection\(/.test(src) &&
+      /fireSShowIndependentReportOverlay/.test(src),
+    label + ': reports must open in the independent overlay'
+  );
   assert.ok(/fireSCloudPullGeneration/.test(src), label + ': Home count must ignore overlapping cloud pulls');
   assert.ok(
     /closeCentre\(\);\s*if \(target\) target\.click\(\)/.test(src),
@@ -36,6 +40,22 @@ function assertShared(src, label) {
   assert.ok(
     /An unfinished current inspection already exists/.test(src),
     label + ': Start Inspection must warn when a current inspection is unfinished'
+  );
+  assert.ok(
+    /function isInspectionFormOpen\(/.test(src) && /__fireSOpeningInspection/.test(src),
+    label + ': a new inspection must stay on the blank form'
+  );
+  assert.ok(
+    /function latestCompletedCycle\(p\)\{/.test(src),
+    label + ': Compliant must use the latest completed cycle, including History'
+  );
+  assert.ok(
+    /function fireSApplyScheduleAfterVisit\(/.test(src),
+    label + ': finalise must reset a spent schedule'
+  );
+  assert.ok(
+    /Recycle Bin \(30 days\)/.test(src) && /Delete immediately/.test(src),
+    label + ': Data Management must offer Recycle Bin or Delete immediately'
   );
 }
 

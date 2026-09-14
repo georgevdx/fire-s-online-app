@@ -27,8 +27,15 @@
     return document.getElementById(id);
   }
 
+  function inlineOpen(el) {
+    if (!el || !el.style) return false;
+    const display = String(el.style.display || '').toLowerCase();
+    return display === 'block' || display === 'flex' || display === 'grid';
+  }
+
   function isShown(el) {
     if (!el) return false;
+    if (inlineOpen(el)) return true;
     if (el.hidden) return false;
     if (el.style && el.style.display === 'none') return false;
     try {
@@ -49,6 +56,14 @@
 
   function recoverHomeIfBlank() {
     if (visibleWorkspaceId()) return false;
+    if (inlineOpen(byId('projectFormSection')) || inlineOpen(byId('projectListSection'))) {
+      return false;
+    }
+    try {
+      if (window.__fireSOpeningInspection && Date.now() - window.__fireSOpeningInspection < 1500) {
+        return false;
+      }
+    } catch (_) {}
 
     document.body.classList.remove(
       'fire-s-premises-render-lock',

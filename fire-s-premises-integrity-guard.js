@@ -12,7 +12,11 @@
   'use strict';
 
   const VERSION = '1.5.0';
-  const STORAGE_KEY = 'fireyeProjects';
+  const STORAGE_KEY = (typeof window.fireSProjectsStorageKey === 'function')
+    ? window.fireSProjectsStorageKey()
+    : ((window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) || /\/staging(\/|$)/i.test(String((location && location.pathname) || ''))
+      ? 'fireyeProjects-staging'
+      : 'fireyeProjects');
   const ERROR_CODE = 'FIRE_S_PREMISES_INTEGRITY_BLOCK';
 
   let duplicateLock = {

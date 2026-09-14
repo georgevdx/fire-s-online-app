@@ -61,7 +61,7 @@ assert.ok(
 );
 assert.ok(
   /fire-s-get-started\.css\?v=2-19-legal/.test(liveHtml) &&
-    /fire-s-get-started\.js\?v=2-51-show-pw/.test(liveHtml) &&
+    /fire-s-get-started\.js\?v=2-52-create-pw/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-65-ver/.test(liveHtml),
   'Live must cache-bust Show password Access files'
 );
