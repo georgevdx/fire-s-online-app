@@ -6676,13 +6676,21 @@ function fireSApplyCompanyNameToUi(companyId, companyName, extra) {
 function fireSResolveCompanyNameLazy(companyId) {
   if (!companyId || !supabaseClient) return;
 
-  const applyRow = (name, status, plan) => {
+  const applyRow = (name, status, plan, row) => {
     if (!name || !currentUserProfile) return;
-    fireSApplyCompanyNameToUi(companyId, name, {
+    const extra = {
       status: status || 'active',
       plan: plan || 'development',
       source: 'supabase'
-    });
+    };
+    const interval = String((row && row.billing_interval) || '').trim();
+    const renews =
+      (row &&
+        (row.billing_renews_on || row.subscription_paid_through || row.subscription_expires_at)) ||
+      '';
+    if (interval) extra.billingInterval = interval;
+    if (renews) extra.billingRenewsOn = renews;
+    fireSApplyCompanyNameToUi(companyId, name, extra);
   };
 
   // 1) SECURITY DEFINER RPC (best when companies RLS is strict)
@@ -6696,17 +6704,32 @@ function fireSResolveCompanyNameLazy(companyId) {
         row?.out_company_name || row?.company_name || row?.name || ''
       ).trim();
       if (!name) throw new Error('empty name');
-      applyRow(name, row?.status, row?.plan);
+      applyRow(name, row?.status, row?.plan, row);
     })
     .catch(() =>
       supabaseClient
         .from('companies')
-        .select('name, status, plan')
+        .select(
+          'name, status, plan, billing_interval, billing_renews_on, subscription_paid_through, subscription_expires_at'
+        )
         .eq('id', companyId)
         .maybeSingle()
         .then(({ data, error }) => {
-          if (error || !data?.name) throw error || new Error('no company');
-          applyRow(data.name, data.status, data.plan);
+          if (error) {
+            return supabaseClient
+              .from('companies')
+              .select('name, status, plan')
+              .eq('id', companyId)
+              .maybeSingle()
+              .then(second => {
+                if (second.error || !second.data?.name) {
+                  throw second.error || error || new Error('no company');
+                }
+                applyRow(second.data.name, second.data.status, second.data.plan);
+              });
+          }
+          if (!data?.name) throw new Error('no company');
+          applyRow(data.name, data.status, data.plan, data);
         })
     )
     .catch(() =>
@@ -6720,7 +6743,7 @@ function fireSResolveCompanyNameLazy(companyId) {
         .then(({ data }) => {
           const company = data?.companies;
           const row = Array.isArray(company) ? company[0] : company;
-          if (row?.name) applyRow(row.name, row.status, row.plan);
+          if (row?.name) applyRow(row.name, row.status, row.plan, row);
         })
     )
     .catch(() => {});

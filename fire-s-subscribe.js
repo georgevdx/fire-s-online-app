@@ -68,13 +68,84 @@
     });
   }
 
+  function summaryOverlay() {
+    var overlay = {};
+    try {
+      var entitlement =
+        window.fireSEntitlement &&
+        window.fireSEntitlement.snapshot &&
+        window.fireSEntitlement.snapshot();
+      if (entitlement && entitlement.backendReady) {
+        if (entitlement.status) overlay.status = entitlement.status;
+        if (entitlement.billing_interval) overlay.interval = entitlement.billing_interval;
+        if (entitlement.subscription_paid_through) {
+          overlay.renewsOn = entitlement.subscription_paid_through;
+        } else if (entitlement.subscription_expires_at) {
+          overlay.renewsOn = entitlement.subscription_expires_at;
+        }
+      }
+    } catch (_) {}
+    try {
+      var access = window.currentCompanyAccess || {};
+      if (access.billingInterval) overlay.interval = access.billingInterval;
+      if (access.billingRenewsOn) overlay.renewsOn = overlay.renewsOn || access.billingRenewsOn;
+      if (!overlay.status && access.billingStatus) overlay.status = access.billingStatus;
+    } catch (_) {}
+    return overlay;
+  }
+
+  var billingHydrateBusy = false;
+  function hydrateCompanyBilling() {
+    if (billingHydrateBusy) return;
+    var sb = window.supabaseClient;
+    var cid = '';
+    try {
+      cid = String(
+        (window.currentUserProfile && window.currentUserProfile.companyId) ||
+          (window.currentCompanyAccess && window.currentCompanyAccess.companyId) ||
+          ''
+      ).trim();
+    } catch (_) {}
+    if (!sb || !sb.from || !cid) return;
+    billingHydrateBusy = true;
+    Promise.resolve(
+      sb
+        .from('companies')
+        .select(
+          'billing_interval, billing_renews_on, subscription_paid_through, subscription_expires_at'
+        )
+        .eq('id', cid)
+        .maybeSingle()
+    )
+      .then(function (res) {
+        billingHydrateBusy = false;
+        if (!res || res.error || !res.data) return;
+        var row = res.data;
+        var interval = String(row.billing_interval || '').trim();
+        var renews =
+          row.billing_renews_on || row.subscription_paid_through || row.subscription_expires_at || '';
+        var cat = catalog();
+        try {
+          if (!window.currentCompanyAccess) window.currentCompanyAccess = {};
+          if (interval) window.currentCompanyAccess.billingInterval = interval;
+          if (renews) window.currentCompanyAccess.billingRenewsOn = renews;
+        } catch (_) {}
+        if (cat && interval && cat.rememberInterval) cat.rememberInterval(interval);
+        if (cat && renews && cat.rememberRenewsOn) cat.rememberRenewsOn(renews);
+        paintCurrent();
+      })
+      .catch(function () {
+        billingHydrateBusy = false;
+      });
+  }
+
   function paintCurrent() {
     var cat = catalog();
     var current = byId('fireSSubscribeCurrent');
     if (current) {
       var shown =
         cat && cat.currentSubscriptionSummary
-          ? cat.currentSubscriptionSummary()
+          ? cat.currentSubscriptionSummary(summaryOverlay())
           : {
               heading: 'Current subscription',
               title: 'None yet',
@@ -443,6 +514,7 @@
     paintMode();
     paintCurrent();
     paintSubscribeStatus();
+    hydrateCompanyBilling();
     setMessage('');
     var emailInput = byId('fireSSeatEmail');
     var roleSelect = byId('fireSSeatRole');
@@ -572,6 +644,7 @@
     refreshCardCopy();
     paintExpiryReminder();
     paintCurrent();
+    hydrateCompanyBilling();
   }
 
   window.fireSOpenSubscribe = openSubscribe;
@@ -592,5 +665,6 @@
     refreshCardCopy();
     paintExpiryReminder();
     paintCurrent();
+    hydrateCompanyBilling();
   });
 })();

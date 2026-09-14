@@ -474,13 +474,37 @@
     };
   }
 
-  function currentSubscriptionSummary() {
-    var interval = currentIntervalId();
+  function normalizeSummaryStatus(raw) {
+    var status = text(raw).toLowerCase();
+    if (status === 'subscription_active' || status === 'active' || status === 'paid') return 'active';
+    if (status === 'subscription_cancelled' || status === 'cancelled' || status === 'canceled') {
+      return 'cancelled';
+    }
+    if (
+      status === 'blocked' ||
+      status === 'unpaid' ||
+      status === 'expired' ||
+      status === 'locked' ||
+      status === 'subscription_required' ||
+      status === 'subscription_past_due' ||
+      status === 'subscription_suspended' ||
+      status === 'trial_expired'
+    ) {
+      return 'unpaid';
+    }
+    return '';
+  }
+
+  function currentSubscriptionSummary(overlay) {
+    overlay = overlay && typeof overlay === 'object' ? overlay : {};
+    var interval = overlay.interval ? normalizeInterval(overlay.interval) : currentIntervalId();
     var lines = bothPriceLines(interval);
-    var status = billingStatus();
+    var overlayStatus = normalizeSummaryStatus(overlay.status);
+    var status = overlayStatus || billingStatus();
     var when = '';
+    var renewsRaw = overlay.renewsOn || currentRenewsOn();
     try {
-      when = formatLongDate(currentRenewsOn()) || '';
+      when = formatLongDate(renewsRaw ? todayKey(renewsRaw) : '') || '';
     } catch (_) {}
     var price = interval === 'annual' ? lines.annual : lines.monthly;
     if (status === 'active') {
@@ -664,6 +688,8 @@
     statusHeadline: statusHeadline,
     statusKeepDataNote: statusKeepDataNote,
     statusCopy: statusCopy,
+    rememberInterval: rememberInterval,
+    rememberRenewsOn: rememberRenewsOn,
     bothPriceLines: bothPriceLines,
     currentSubscriptionSummary: currentSubscriptionSummary,
     duplicateSeatMessage: duplicateSeatMessage,
