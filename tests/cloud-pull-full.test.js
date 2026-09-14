@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-78-toets-datadel',
+  '1-3-78-toets-complrep',
   '1-1-count',
   '108-65-toets-subfont',
   'fire-s-108-65-toets-subfont'

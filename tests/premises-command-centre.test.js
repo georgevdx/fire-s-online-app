@@ -60,12 +60,26 @@ function assertCentre(src, engine, label, options) {
     /openLatestPremisesReport\(project\)/.test(block),
     label + ': Latest Report must open the premises report, not only close Command Centre'
   );
-  assert.ok(
-    /function openLatestPremisesReport\(/.test(src) &&
-      /bypassOpenGate: true/.test(src.slice(src.indexOf('function openLatestPremisesReport('), src.indexOf('function generateArchivedInspectionReport('))) &&
-      /revealInspectionReportSection\(\)/.test(src),
-    label + ': Latest Report must show the inspection form so reportSection is visible'
-  );
+  if (options && options.independentReport) {
+    assert.ok(
+      /function openLatestPremisesReport\(/.test(src) &&
+        /__fireSReportReturn/.test(src.slice(src.indexOf('function openLatestPremisesReport('), src.indexOf('async function openLatestPremisesPdf('))) &&
+        /fireSShowIndependentReportOverlay/.test(src),
+      label + ': Latest Report must open an independent overlay, not the inspection form'
+    );
+    assert.ok(
+      /Latest PDF/.test(block) &&
+        /openLatestPremisesPdf\(project\)/.test(block),
+      label + ': Quick Actions must offer Latest PDF when a report exists'
+    );
+  } else {
+    assert.ok(
+      /function openLatestPremisesReport\(/.test(src) &&
+        /bypassOpenGate: true/.test(src.slice(src.indexOf('function openLatestPremisesReport('), src.indexOf('function generateArchivedInspectionReport('))) &&
+        /revealInspectionReportSection\(\)/.test(src),
+      label + ': Latest Report must show the inspection form so reportSection is visible'
+    );
+  }
   assert.ok(
     /openLatestPremisesReport\(project\)/.test(
       src.slice(src.indexOf('data-command="latest-report"'), src.indexOf('function fireSSprint21MorePanelGate'))
@@ -150,13 +164,13 @@ function assertCentre(src, engine, label, options) {
 }
 
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true });
-assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true });
+assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true, independentReport: true });
 assert.ok(
   /app\.js\?v=1-3-65-coisolate/.test(liveHtml),
   'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-datadel/.test(stagingHtml) &&
+  /app\.js\?v=1-3-78-toets-complrep/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must keep the Command Centre close-and-delete actions'
 );
@@ -243,7 +257,7 @@ function assertActionClosesFirst(label) {
 
 assertActionClosesFirst('Close-then-act');
 
-function assertRevealReportFromGateway(src, label) {
+function assertRevealReportFromGateway(src, label, options) {
   const start = src.indexOf('function revealInspectionReportSection()');
   const end = src.indexOf('function latestInspectionHistoryIndex(project)', start);
   assert.ok(start > 0 && end > start, label + ': revealInspectionReportSection must exist');
@@ -251,18 +265,25 @@ function assertRevealReportFromGateway(src, label) {
   const projectListSection = { style: { display: 'block' } };
   const projectFormSection = { style: { display: 'none' } };
   const reportSection = { style: { display: 'none' } };
+  const overlayCalls = [];
   const reveal = new Function(
     'document',
+    'window',
     src.slice(start, end) + '\nreturn revealInspectionReportSection;'
-  )({
-    getElementById(id) {
-      if (id === 'homeSection') return homeSection;
-      if (id === 'projectListSection') return projectListSection;
-      if (id === 'projectFormSection') return projectFormSection;
-      if (id === 'reportSection') return reportSection;
-      return null;
+  )(
+    {
+      getElementById(id) {
+        if (id === 'homeSection') return homeSection;
+        if (id === 'projectListSection') return projectListSection;
+        if (id === 'projectFormSection') return projectFormSection;
+        if (id === 'reportSection') return reportSection;
+        return null;
+      }
+    },
+    {
+      fireSShowIndependentReportOverlay() { overlayCalls.push('overlay'); }
     }
-  });
+  );
   reveal();
   assert.strictEqual(homeSection.style.display, 'none', label + ': Home must hide when Latest Report opens');
   assert.strictEqual(
@@ -270,8 +291,13 @@ function assertRevealReportFromGateway(src, label) {
     'none',
     label + ': Inspection Gateway must hide when Latest Report opens'
   );
-  assert.strictEqual(projectFormSection.style.display, 'block', label + ': inspection form must become visible');
-  assert.strictEqual(reportSection.style.display, 'block', label + ': report section must become visible');
+  if (options && options.independentReport) {
+    assert.strictEqual(projectFormSection.style.display, 'none', label + ': inspection form must stay closed');
+    assert.deepStrictEqual(overlayCalls, ['overlay'], label + ': report must open in the independent overlay');
+  } else {
+    assert.strictEqual(projectFormSection.style.display, 'block', label + ': inspection form must become visible');
+    assert.strictEqual(reportSection.style.display, 'block', label + ': report section must become visible');
+  }
 }
 
 function assertLatestHistoryIndex(src, label) {
@@ -291,9 +317,11 @@ function assertLatestHistoryIndex(src, label) {
   );
 }
 
-function assertLatestReportOpensPremises(src, label) {
+function assertLatestReportOpensPremises(src, label, options) {
   const start = src.indexOf('function openLatestPremisesReport(project, focusMode)');
-  const end = src.indexOf('function generateArchivedInspectionReport(projectId, historyIndex)', start);
+  const end = options && options.independentReport
+    ? src.indexOf('async function openLatestPremisesPdf(project, focusMode)', start)
+    : src.indexOf('function generateArchivedInspectionReport(projectId, historyIndex)', start);
   assert.ok(start > 0 && end > start, label + ': openLatestPremisesReport must exist');
   const calls = [];
   const openLatest = new Function(
@@ -306,8 +334,8 @@ function assertLatestReportOpensPremises(src, label) {
     src.slice(start, end) + '\nreturn openLatestPremisesReport;'
   )(
     function () { calls.push('close'); },
-    function (id, focus, options) {
-      calls.push(['open', id, options && options.bypassOpenGate]);
+    function (id, focus, opts) {
+      calls.push(['open', id, opts && opts.bypassOpenGate]);
     },
     function (id, index) { calls.push(['report', id, index]); },
     function () { calls.push('reveal'); },
@@ -315,18 +343,26 @@ function assertLatestReportOpensPremises(src, label) {
     { setTimeout(fn) { fn(); } }
   );
   openLatest({ id: 'prem-9', inspectionHistory: [{}, {}] });
-  assert.deepStrictEqual(
-    calls,
-    ['close', ['open', 'prem-9', true], 'reveal', ['report', 'prem-9', 1]],
-    label + ': Latest Report must close Command Centre, open the premises, then show the report'
-  );
+  if (options && options.independentReport) {
+    assert.deepStrictEqual(
+      calls,
+      ['close', ['report', 'prem-9', 1]],
+      label + ': Latest Report must close Command Centre and open the overlay report without the inspection form'
+    );
+  } else {
+    assert.deepStrictEqual(
+      calls,
+      ['close', ['open', 'prem-9', true], 'reveal', ['report', 'prem-9', 1]],
+      label + ': Latest Report must close Command Centre, open the premises, then show the report'
+    );
+  }
 }
 
 assertRevealReportFromGateway(liveApp, 'Live reveal');
-assertRevealReportFromGateway(stagingApp, 'Toets reveal');
+assertRevealReportFromGateway(stagingApp, 'Toets reveal', { independentReport: true });
 assertLatestHistoryIndex(liveApp, 'Live latest index');
 assertLatestHistoryIndex(stagingApp, 'Toets latest index');
 assertLatestReportOpensPremises(liveApp, 'Live opener');
-assertLatestReportOpensPremises(stagingApp, 'Toets opener');
+assertLatestReportOpensPremises(stagingApp, 'Toets opener', { independentReport: true });
 
 console.log('premises-command-centre.test.js: ok');

@@ -60,6 +60,15 @@
   }
 
   function hideReportIfOpen() {
+    try {
+      if (typeof window.fireSIndependentReportOverlayOpen === 'function' &&
+          window.fireSIndependentReportOverlayOpen()) {
+        if (typeof window.fireSCloseIndependentReportOverlay === 'function') {
+          window.fireSCloseIndependentReportOverlay({ reopen: true });
+        }
+        return true;
+      }
+    } catch (_) {}
     const report = byId('reportSection');
     if (!isShown(report)) return false;
     report.style.display = 'none';

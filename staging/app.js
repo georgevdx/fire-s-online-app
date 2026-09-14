@@ -22166,10 +22166,29 @@ function revealInspectionReportSection() {
   const homeSection = document.getElementById('homeSection');
   const listSection = document.getElementById('projectListSection');
   const formSection = document.getElementById('projectFormSection');
+  const reportSection = document.getElementById('reportSection');
   if (homeSection) homeSection.style.display = 'none';
   if (listSection) listSection.style.display = 'none';
-  if (formSection) formSection.style.display = 'block';
-  const reportSection = document.getElementById('reportSection');
+  if (formSection) {
+    const formOpen = String(formSection.style.display || '').toLowerCase() !== 'none';
+    if (formOpen && !window.__fireSReportReturn) {
+      try {
+        window.__fireSReportReturn = {
+          to: 'form',
+          projectId: typeof currentProjectId !== 'undefined' ? currentProjectId : window.currentProjectId
+        };
+      } catch (_) {}
+    }
+    formSection.style.display = 'none';
+  }
+  if (window.__fireSSilentPdfExport) {
+    if (reportSection) reportSection.style.display = 'block';
+    return reportSection;
+  }
+  if (typeof window.fireSShowIndependentReportOverlay === 'function') {
+    window.fireSShowIndependentReportOverlay();
+    return document.getElementById('reportSection') || reportSection;
+  }
   if (reportSection) reportSection.style.display = 'block';
   return reportSection;
 }
@@ -22193,6 +22212,22 @@ function latestInspectionHistoryIndex(project) {
   return latestIndex;
 }
 
+function premisesHasLatestReport(project) {
+  if (!project) return false;
+  const latestIndex = latestInspectionHistoryIndex(project);
+  if (latestIndex >= 0) {
+    const record = project.inspectionHistory[latestIndex] || {};
+    const answers = Array.isArray(record.answers) ? record.answers : [];
+    const photos = Array.isArray(record.photos) ? record.photos : [];
+    return answers.some(item => String(item?.answer || '').trim()) || photos.length > 0;
+  }
+  const liveAnswers = Array.isArray(project.answers) ? project.answers : [];
+  return Boolean(
+    (project.completedAt || project.finalisedAt || project.inspectionFinalisedAt) &&
+    liveAnswers.some(item => String(item?.answer || '').trim())
+  );
+}
+
 function openLatestPremisesReport(project, focusMode) {
   if (!project || !project.id) return;
   const latestIndex = latestInspectionHistoryIndex(project);
@@ -22201,17 +22236,177 @@ function openLatestPremisesReport(project, focusMode) {
     return;
   }
   if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
-  const launchReport = function () {
-    revealInspectionReportSection();
-    generateArchivedInspectionReport(project.id, latestIndex);
-  };
-  if (typeof openProject === 'function') {
-    openProject(project.id, focusMode, { bypassOpenGate: true });
-    window.setTimeout(launchReport, 250);
+  try {
+    window.__fireSReportReturn = {
+      to: 'command-centre',
+      projectId: project.id,
+      focusMode
+    };
+  } catch (_) {}
+  generateArchivedInspectionReport(project.id, latestIndex);
+}
+
+async function openLatestPremisesPdf(project, focusMode) {
+  if (!project || !project.id) return;
+  if (!premisesHasLatestReport(project)) {
+    alert('Finish and finalise this inspection before exporting the latest PDF.');
     return;
   }
-  launchReport();
+  const latestIndex = latestInspectionHistoryIndex(project);
+  if (latestIndex < 0) {
+    alert('No finalised inspection is available for this premises yet.');
+    return;
+  }
+  if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
+  try {
+    window.__fireSReportReturn = {
+      to: 'command-centre',
+      projectId: project.id,
+      focusMode
+    };
+    window.__fireSSilentPdfExport = true;
+  } catch (_) {}
+  try {
+    generateArchivedInspectionReport(project.id, latestIndex);
+    if (typeof exportReport === 'function') await exportReport();
+  } finally {
+    try { window.__fireSSilentPdfExport = false; } catch (_) {}
+    if (typeof window.fireSCloseIndependentReportOverlay === 'function') {
+      window.fireSCloseIndependentReportOverlay({ reopen: true });
+    }
+  }
 }
+
+window.premisesHasLatestReport = premisesHasLatestReport;
+window.openLatestPremisesReport = openLatestPremisesReport;
+window.openLatestPremisesPdf = openLatestPremisesPdf;
+
+(function installFireSIndependentReportOverlay(){
+  'use strict';
+  const OVERLAY_ID = 'fireSIndependentReportOverlay';
+  const STYLE_ID = 'fireSIndependentReportOverlayStyles';
+
+  function text(value){
+    return String(value == null ? '' : value).trim();
+  }
+
+  function ensureStyles(){
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      #${OVERLAY_ID}{position:fixed;inset:0;z-index:55000;display:none;flex-direction:column;background:#e8eef2}
+      #${OVERLAY_ID}.open{display:flex}
+      #${OVERLAY_ID} .fire-s-report-overlay-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:12px 16px;background:#172e42;color:#fff}
+      #${OVERLAY_ID} .fire-s-report-overlay-bar strong{display:block;font-size:15px;color:#fff}
+      #${OVERLAY_ID} .fire-s-report-overlay-bar span{display:block;margin-top:2px;font-size:12px;color:#d7e3ec}
+      #${OVERLAY_ID} .fire-s-report-overlay-nav{display:flex;flex-wrap:wrap;gap:8px}
+      #${OVERLAY_ID} .fire-s-report-overlay-nav button{min-height:40px;padding:8px 12px;border:1px solid #9fb4c4;border-radius:10px;background:#fff;color:#173044;font-weight:800;cursor:pointer}
+      #${OVERLAY_ID} .fire-s-report-overlay-nav button.primary{background:#176fb2;border-color:#176fb2;color:#fff}
+      #${OVERLAY_ID} .fire-s-report-overlay-body{flex:1;overflow:auto;padding:16px;background:#dbe4ea}
+      #${OVERLAY_ID} #reportSection{display:block !important;margin:0 auto;max-width:920px;background:#fff}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID}{background:#0b1220}
+      html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-body{background:#0b1220}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function overlay(){
+    return document.getElementById(OVERLAY_ID);
+  }
+
+  function currentReturn(){
+    try { return window.__fireSReportReturn || {}; } catch (_) { return {}; }
+  }
+
+  function ensureOverlay(){
+    ensureStyles();
+    let node = overlay();
+    if (node) return node;
+    node = document.createElement('div');
+    node.id = OVERLAY_ID;
+    node.setAttribute('role', 'dialog');
+    node.setAttribute('aria-modal', 'true');
+    node.setAttribute('aria-label', 'Inspection report');
+    node.innerHTML = `
+      <div class="fire-s-report-overlay-bar">
+        <div>
+          <strong id="fireSReportOverlayTitle">Inspection Report</strong>
+          <span>Independent report view. The inspection form stays closed.</span>
+        </div>
+        <div class="fire-s-report-overlay-nav">
+          <button type="button" id="fireSReportBackQuick">Back to Quick Actions</button>
+          <button type="button" id="fireSReportBackHome">Back to Home</button>
+          <button type="button" class="primary" id="fireSReportExportPdf">Export PDF</button>
+        </div>
+      </div>
+      <div class="fire-s-report-overlay-body" id="fireSReportOverlayBody"></div>
+    `;
+    document.body.appendChild(node);
+    node.querySelector('#fireSReportBackQuick')?.addEventListener('click', () => closeOverlay({ to: 'command-centre' }));
+    node.querySelector('#fireSReportBackHome')?.addEventListener('click', () => closeOverlay({ to: 'home' }));
+    node.querySelector('#fireSReportExportPdf')?.addEventListener('click', () => {
+      if (typeof exportReport === 'function') exportReport();
+    });
+    return node;
+  }
+
+  function mountReportSection(node){
+    const reportSection = document.getElementById('reportSection');
+    const body = node.querySelector('#fireSReportOverlayBody');
+    if (reportSection && body && reportSection.parentElement !== body) {
+      body.appendChild(reportSection);
+    }
+    if (reportSection) reportSection.style.display = 'block';
+  }
+
+  function showOverlay(){
+    if (window.__fireSSilentPdfExport) {
+      const reportSection = document.getElementById('reportSection');
+      if (reportSection) reportSection.style.display = 'block';
+      return;
+    }
+    const node = ensureOverlay();
+    mountReportSection(node);
+    const title = node.querySelector('#fireSReportOverlayTitle');
+    const ctx = currentReturn();
+    if (title) {
+      title.textContent = text(ctx.title) || 'Inspection Report';
+    }
+    node.classList.add('open');
+    try { node.querySelector('#fireSReportOverlayBody')?.scrollTo(0, 0); } catch (_) {}
+  }
+
+  function closeOverlay(options){
+    const node = overlay();
+    if (node) node.classList.remove('open');
+    const reportSection = document.getElementById('reportSection');
+    if (reportSection) reportSection.style.display = 'none';
+    const wanted = (options && options.to) || ((options && options.reopen) ? currentReturn().to : '');
+    const projectId = currentReturn().projectId;
+    const focusMode = currentReturn().focusMode;
+    try { window.__fireSReportReturn = null; } catch (_) {}
+    if (wanted === 'form') {
+      const formSection = document.getElementById('projectFormSection');
+      if (formSection) formSection.style.display = 'block';
+      return;
+    }
+    if (wanted === 'command-centre' && projectId && typeof showInspectionOpenGate === 'function') {
+      showInspectionOpenGate(projectId, focusMode);
+      return;
+    }
+    if (wanted === 'home' || !wanted) {
+      if (typeof showHome === 'function') showHome();
+      else if (typeof window.showHome === 'function') window.showHome();
+    }
+  }
+
+  window.fireSShowIndependentReportOverlay = showOverlay;
+  window.fireSCloseIndependentReportOverlay = closeOverlay;
+  window.fireSIndependentReportOverlayOpen = function(){
+    return !!overlay()?.classList.contains('open');
+  };
+})();
 
 function generateArchivedInspectionReport(projectId, historyIndex) {
   if (!canViewReports()) {
@@ -38725,8 +38920,15 @@ function fireSApplyLifecycleUxLabels() {
   function hasAnsweredChecklist(p){ return answers(p).some(a => ['yes','no','na','n/a'].includes(answerValue(a))); }
   function noCount(p){ return answers(p).filter(a => answerValue(a) === 'no').length; }
   function isCompleted(p){
-    const status = norm(p?.status || p?.inspectionStatus || p?.scheduledStatus || '');
-    return Boolean(p?.completedAt || p?.finalisedAt || status.includes('complete') || status.includes('closed'));
+    const status = norm(p?.status || p?.inspectionStatus || p?.scheduledStatus || p?.archiveStatus || '');
+    return Boolean(
+      p?.completedAt ||
+      p?.finalisedAt ||
+      p?.inspectionFinalisedAt ||
+      status.includes('complete') ||
+      status.includes('closed') ||
+      status.includes('finalis')
+    );
   }
   function isArchived(p){
     const status = norm(p?.status || p?.inspectionStatus || p?.archiveStatus || '');
@@ -38747,10 +38949,39 @@ function fireSApplyLifecycleUxLabels() {
     const end = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
     return key >= start && key <= end;
   }
+  function cycleTimestamp(cycle){
+    const parsed = Date.parse(
+      cycle?.completedAt ||
+      cycle?.finalisedAt ||
+      cycle?.inspectionFinalisedAt ||
+      cycle?.archivedAt ||
+      cycle?.inspectionDate ||
+      cycle?.date ||
+      ''
+    );
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  function latestCompletedCycle(p){
+    if (isCompleted(p) && hasAnsweredChecklist(p)) return p;
+    const history = Array.isArray(p?.inspectionHistory) ? p.inspectionHistory : [];
+    let best = null;
+    let bestTs = -1;
+    history.forEach(item => {
+      if (!hasAnsweredChecklist(item)) return;
+      const ts = cycleTimestamp(item);
+      if (!best || ts >= bestTs) {
+        best = item;
+        bestTs = ts;
+      }
+    });
+    return best;
+  }
   function isCompliant(p){
-    // Compliant must be a real completed/answered inspection with no open actions.
-    // Blank/new premises and history shells do not qualify.
-    return Boolean(hasAnsweredChecklist(p) && isCompleted(p) && !hasOpenActions(p) && !isArchived(p));
+    // A premises stays Compliant when the latest completed cycle is all-clear,
+    // even after refresh when answers live in Inspection History.
+    if (isArchived(p)) return false;
+    const cycle = latestCompletedCycle(p);
+    return Boolean(cycle && !hasOpenActions(cycle));
   }
   function matches(p, filter){
     const key = norm(filter);
@@ -38764,7 +38995,10 @@ function fireSApplyLifecycleUxLabels() {
       return Boolean(plan && plan < today && !isCompleted(p) && !isArchived(p));
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
-    if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') return hasOpenActions(p);
+    if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') {
+      const cycle = latestCompletedCycle(p);
+      return hasOpenActions(p) || (cycle ? hasOpenActions(cycle) : false);
+    }
     return true;
   }
   function getProjects(){
@@ -38896,6 +39130,8 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
+  window.fireSLatestCompletedCycle = latestCompletedCycle;
+  window.fireSProductionIsCompliant = isCompliant;
 
   function install(){
     renderKpis();
@@ -41778,7 +42014,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 (function fireSSprint21CommandCentreV1(){
   'use strict';
 
-  const VERSION = '1.3.58-cc-close';
+  const VERSION = '1.3.78-cc-pdf';
   const previousShowInspectionOpenGate = window.showInspectionOpenGate ||
     (typeof showInspectionOpenGate === 'function' ? showInspectionOpenGate : null);
   if (typeof previousShowInspectionOpenGate !== 'function') return;
@@ -42170,6 +42406,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       reportBtn.type = 'button';
       reportBtn.textContent = 'Latest Report';
       reportBtn.addEventListener('click', () => {
+        closeCentre();
         if (typeof window.openLatestPremisesReport === 'function') {
           window.openLatestPremisesReport(project);
         } else {
@@ -42177,6 +42414,20 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         }
       });
       quick.appendChild(reportBtn);
+      if (typeof premisesHasLatestReport !== 'function' || premisesHasLatestReport(project)) {
+        const pdfBtn = document.createElement('button');
+        pdfBtn.type = 'button';
+        pdfBtn.textContent = 'Latest PDF';
+        pdfBtn.addEventListener('click', () => {
+          closeCentre();
+          if (typeof window.openLatestPremisesPdf === 'function') {
+            window.openLatestPremisesPdf(project);
+          } else if (typeof openLatestPremisesPdf === 'function') {
+            openLatestPremisesPdf(project);
+          }
+        });
+        quick.appendChild(pdfBtn);
+      }
     }
     quick.appendChild(copyButton(closeButton, 'Return to Projects'));
 
