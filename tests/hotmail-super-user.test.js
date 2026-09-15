@@ -54,7 +54,7 @@ assert.ok(
 assert.ok(/1\.3\.65/.test(liveEnv), 'Live Fire-S must be 1.3.65');
 assert.ok(/1\.3\.82-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.82-toets');
 assert.ok(
-  /app\.js\?v=1-3-65-comment/.test(liveHtml) &&
+  /app\.js\?v=1-3-65-home/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-65-ver/.test(liveHtml) &&
     /app\.js\?v=1-3-82-toets-now/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-82-ver/.test(stagingHtml),

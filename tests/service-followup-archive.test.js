@@ -34,7 +34,7 @@ assert.ok(
   'Toets-blad must cache-bust the archive follow-up files'
 );
 assert.ok(
-  /app\.js\?v=1-3-65-comment/.test(liveHtml) &&
+  /app\.js\?v=1-3-65-home/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-65-ver/.test(liveHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(liveHtml) &&
     /id="viewSupportArchiveBtn"/.test(liveHtml) &&

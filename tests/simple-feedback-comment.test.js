@@ -135,9 +135,9 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.65/.test(liveHtml) &&
-    /app\.js\?v=1-3-65-comment/.test(liveHtml) &&
-    /service-worker\.js\?v=108-67-comment/.test(liveHtml) &&
-    /fire-s-108-67-comment/.test(read('service-worker.js')) &&
+    /app\.js\?v=1-3-65-home/.test(liveHtml) &&
+    /service-worker\.js\?v=108-68-home/.test(liveHtml) &&
+    /fire-s-108-68-home/.test(read('service-worker.js')) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(read('fire-s-env.js')),
   'Live must sit the comment form without bumping 1.3.65'
 );

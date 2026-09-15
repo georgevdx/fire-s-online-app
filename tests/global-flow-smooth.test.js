@@ -28,7 +28,7 @@ assert.ok(
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-1-copy/.test(liveHtml) &&
-    /app\.js\?v=1-3-65-comment/.test(liveHtml),
+    /app\.js\?v=1-3-65-home/.test(liveHtml),
   'Live must load the global-flow script'
 );
 assert.ok(

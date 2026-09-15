@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-65-comment',
-  '1-1-count',
-  '108-67-comment',
-  'fire-s-108-67-comment'
+  '1-3-65-home',
+  '1-2-stable-home',
+  '108-68-home',
+  'fire-s-108-68-home'
 );
 assertPullSource(
   stagingApp,
@@ -66,9 +66,11 @@ assertPullSource(
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
 assert.ok(
-  /A short phone pull must not become the finished Home count/.test(stagingApp) &&
+  /A short phone pull must not become the finished Home count/.test(liveApp) &&
+    /A short phone pull must not become the finished Home count/.test(stagingApp) &&
+    /__fireSCloudPullSettled === false/.test(liveLists) &&
     /__fireSCloudPullSettled === false/.test(stagingLists),
-  'Toets Home must not freeze a short phone pull as the finished building count'
+  'Live and toets must not freeze a short phone pull as the finished building count'
 );
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingLists));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));

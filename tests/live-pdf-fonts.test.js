@@ -29,7 +29,7 @@ assertPdfInk('Toets styles', read('staging/styles.css'));
 assertPdfInk('Toets dark-type', read('staging/fire-s-dark-type.css'));
 
 assert.ok(
-  /styles\.css\?v=1-3-65-sitlive/.test(read('index.html')) &&
+  /styles\.css\?v=1-3-65-home/.test(read('index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-sitlive/.test(read('index.html')) &&
     /fire-s-dark-type\.css\?v=1-3-rephead/.test(read('index.html')),
   'Live must cache-bust PDF font CSS'

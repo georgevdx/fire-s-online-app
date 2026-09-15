@@ -55,7 +55,7 @@ assert.ok(
   'Toets-blad must cache-bust the new-inspection stay fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-65-comment/.test(liveHtml) &&
+  /app\.js\?v=1-3-65-home/.test(liveHtml) &&
     /fire-s-screen-lock\.js\?v=1-7-new-insp/.test(liveHtml) &&
     /Version 1\.3\.65/.test(liveHtml),
   'Live must cache-bust the new-inspection stay fix without bumping 1.3.65'

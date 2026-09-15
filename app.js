@@ -5033,11 +5033,18 @@ let fireSCloudPullInFlight = false;
 let fireSCloudPullGeneration = 0;
 
 async function safeDownloadNewerCloudInspections(options) {
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
-  if (fireSCloudPullInFlight) return;
-  fireSCloudPullInFlight = true;
-  const pullToken = ++fireSCloudPullGeneration;
+    if (!navigator.onLine) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (typeof supabaseClient === 'undefined') {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (fireSCloudPullInFlight) return;
+    fireSCloudPullInFlight = true;
+    try { window.__fireSCloudPullSettled = false; } catch (_) {}
+    const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
 
@@ -5046,6 +5053,7 @@ async function safeDownloadNewerCloudInspections(options) {
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       return;
     }
 
@@ -5161,15 +5169,33 @@ async function safeDownloadNewerCloudInspections(options) {
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       finishPremisesProgress();
       return;
     }
 
+    const incomplete = !!(pulled && pulled.incomplete);
     applyCloudRows(Array.isArray(data) ? data : [], {
       expectedTotal: pulled && pulled.expectedTotal,
-      incomplete: !!(pulled && pulled.incomplete)
+      incomplete: incomplete
     });
     if (pullToken !== fireSCloudPullGeneration) return;
+
+    // A short phone pull must not become the finished Home count.
+    // Laptop/phone were settling on 8 vs 5 buildings and different Overdue cards.
+    if (incomplete) {
+      try { window.__fireSCloudPullSettled = false; } catch (_) {}
+      reportPremisesProgress(true);
+      const retry = Number(options && options.retry) || 0;
+      if (retry < 2) {
+        setTimeout(() => {
+          try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
+        }, 1800);
+        return;
+      }
+    }
+
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
     paintHome(true);
@@ -5181,10 +5207,13 @@ async function safeDownloadNewerCloudInspections(options) {
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
-      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
+      try {
+        if (window.__fireSCloudPullSettled) window.__fireSHomeCountsFrozen = false;
+      } catch (_) {}
     }
   }
 }
@@ -34436,6 +34465,18 @@ function fireSApplyLifecycleUxLabels() {
   }
 })();
 
+function fireSPaintLeftoverCommandSubtitle(el, text) {
+  // 136A10 owns the Executive Command Centre count line. Leftover KPI
+  // layers used different Action/Overdue/Compliant matchers, so this
+  // summary flickered while the hash-gated cards underneath stayed still.
+  try { if (window.__fireS136A10Installed) return; } catch (_) {}
+  if (!el) return;
+  const next = String(text == null ? '' : text);
+  if ((el.textContent || '') === next) return;
+  el.textContent = next;
+}
+try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtitle; } catch (_) {}
+
 
 // =====================================================
 // FIRE-S RC 1.3.1 - Role Test Mode + Management Cards Fix
@@ -34657,7 +34698,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`);
     }
   }
 
@@ -34914,7 +34955,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`);
     }
 
     bindManagementCardClicks();
@@ -35189,7 +35230,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     }
 
     const access = document.getElementById('mainCommandAccessStatus');
@@ -35531,7 +35572,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`);
     }
 
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
@@ -35775,7 +35816,7 @@ function fireSApplyLifecycleUxLabels() {
     if (scoreLabel) scoreLabel.textContent = 'Compliance Score';
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
     if (heroSubtitle) heroSubtitle.textContent = `Management snapshot: ${scheduled} scheduled inspections, ${overdue} overdue inspections and ${month} inspections this month.`;
   }
@@ -35989,7 +36030,7 @@ function fireSApplyLifecycleUxLabels() {
     ].join('');
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function applyGatewayFilter(filter, message){
@@ -37841,9 +37882,9 @@ function fireSApplyLifecycleUxLabels() {
     });
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
     const oldSubtitle = document.querySelector('.main-command-top p');
-    if (oldSubtitle && oldSubtitle !== subtitle) oldSubtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (oldSubtitle && oldSubtitle !== subtitle) fireSPaintLeftoverCommandSubtitle(oldSubtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function filterButtons(base){
@@ -38177,7 +38218,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38606,7 +38647,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38759,7 +38800,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
   const oldMatcher = window.projectMatchesInspectionGatewayQuickFilter;
@@ -38801,12 +38842,21 @@ function fireSApplyLifecycleUxLabels() {
     if (!value) return '';
     const raw = String(value).trim();
     if (!raw || /^not\s*set$/i.test(raw) || /^n\/?a$/i.test(raw) || /^unknown$/i.test(raw)) return '';
-    const direct = raw.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
     const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
-  function todayKey(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+  function todayKey(){
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
   function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.scheduledDate || p?.followUpDate); }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
@@ -38890,6 +38940,9 @@ function fireSApplyLifecycleUxLabels() {
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') {
+      // Same exclusive bucket as the card pill: Overdue wins over ACTION.
+      // Laptop/phone must not count one overdue premises inside Action Required.
+      if (matches(p, 'overdue')) return false;
       const cycle = latestCompletedCycle(p);
       return hasOpenActions(p) || (cycle ? hasOpenActions(cycle) : false);
     }
@@ -38904,6 +38957,12 @@ function fireSApplyLifecycleUxLabels() {
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch (_) {}
+    if (typeof window.fireSIsDeletedPremises === 'function') {
+      list = list.filter(project => !window.fireSIsDeletedPremises(project));
+    }
+    if (typeof window.fireSIsEmptyRecycleLeftoverPremises === 'function') {
+      list = list.filter(project => !window.fireSIsEmptyRecycleLeftoverPremises(project));
+    }
     return Array.isArray(list) ? list : [];
   }
   function counts(){
@@ -38963,6 +39022,7 @@ function fireSApplyLifecycleUxLabels() {
   }
   function renderKpis(){
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
+    try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -38991,10 +39051,21 @@ function fireSApplyLifecycleUxLabels() {
     row.removeAttribute('aria-hidden');
     row.style.setProperty('display', 'grid', 'important');
     hideLegacyStatsRow();
+    hideOwnerCountLine();
+  }
+  function hideOwnerCountLine(){
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
-    if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+    if (!subtitle) return;
+    if (isInspectorOrGuestHome()) {
+      subtitle.hidden = false;
+      subtitle.removeAttribute('aria-hidden');
+      subtitle.style.removeProperty('display');
+      return;
     }
+    subtitle.textContent = '';
+    subtitle.hidden = true;
+    subtitle.setAttribute('aria-hidden', 'true');
+    subtitle.style.setProperty('display', 'none', 'important');
   }
   function applyFilter(filter){
     const key = norm(filter) === 'scheduled' ? 'scheduled-new' : norm(filter);
@@ -39024,6 +39095,7 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
+  window.fireSPaintOwnerCommandSubtitle = hideOwnerCountLine;
   window.fireSLatestCompletedCycle = latestCompletedCycle;
   window.fireSProductionIsCompliant = isCompliant;
 
