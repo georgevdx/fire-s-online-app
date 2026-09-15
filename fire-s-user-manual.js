@@ -301,7 +301,7 @@
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
           <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — open the premises. If a report is ready, tap Latest Report or Export PDF. There is no Reports card under Schedule.</li>
-          <li><strong>Support</strong> — request help or send a review request.</li>
+          <li><strong>Support</strong> — request help, or write a comment if you reviewed the app or found a problem.</li>
         </ul>
       </article>
 

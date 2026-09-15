@@ -46,18 +46,18 @@ assert.ok(
   'Overdue must still show the next cycle date after the previous inspection is closed'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-actovd/.test(stagingHtml),
+  /app\.js\?v=1-3-80-toets-now/.test(stagingHtml),
   'Toets must cache-bust schedule reset after finalise'
 );
 assert.ok(
-  /Version 1\.3\.78-toets/.test(stagingHtml),
-  'Displayed toets version stays 1.3.78-toets'
+  /Version 1\.3\.80-toets/.test(stagingHtml),
+  'Displayed toets version stays 1.3.80-toets'
 );
 assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
     /persistFinalisedLifecycle[\s\S]*fireSApplyScheduleAfterVisit\(row/.test(liveApp) &&
     /list\.map\(project => fireSApplyScheduleAfterVisit\(project\)\)/.test(liveApp) &&
-    /app\.js\?v=1-3-65-rephead/.test(liveHtml) &&
+    /app\.js\?v=1-3-65-comment/.test(liveHtml) &&
     /Version 1\.3\.65/.test(liveHtml),
   'Live must reset schedule after finalise without bumping 1.3.65'
 );

@@ -653,7 +653,7 @@
         <span class="command-icon">🛠️</span>
         <span class="command-text">
           <span class="command-title">Services / Support</span>
-          <span class="command-copy">Request support, report a problem or ask for review.</span>
+          <span class="command-copy">Request support, or write a comment about the app or a problem.</span>
         </span>
       </button>
     </div>
@@ -1097,12 +1097,12 @@
     </div>
 
     <div class="service-card beta-feedback-card">
-      <h3>Report a problem</h3>
+      <h3>Feedback</h3>
       <p>
-        Report bugs, sync issues, layout problems or confusing wording.
+        Write a comment if you reviewed the app or found a problem.
       </p>
       <button type="button" id="openBetaFeedbackBtn">
-        Report a problem
+        Write a comment
       </button>
     </div>
 
@@ -1220,77 +1220,23 @@
 </div>
 
 <div id="betaFeedbackForm" class="service-request-form" style="display:none;">
-  <h3>Report a problem</h3>
-  <div id="betaAutoFillHint" class="beta-autofill-hint" style="display:none;"></div>
+  <h3>Your comment</h3>
+  <p class="form-help-text">
+    Tell us what you thought of the app, or what went wrong. Then tap Submit.
+  </p>
 
   <div class="form-row">
-    <label for="betaIssueType">Issue Type</label>
-    <select id="betaIssueType">
-      <option value="Bug">Bug</option>
-      <option value="Sync Issue">Sync Issue</option>
-      <option value="Photo Issue">Photo Issue</option>
-      <option value="Report/PDF Issue">Report/PDF Issue</option>
-      <option value="Offline Issue">Offline Issue</option>
-      <option value="Layout/UI Issue">Layout/UI Issue</option>
-      <option value="Wording/Checklist Issue">Wording/Checklist Issue</option>
-      <option value="Suggestion">Suggestion</option>
-    </select>
-  </div>
-
-  <div class="form-row">
-    <label for="betaPriority">Priority</label>
-    <select id="betaPriority">
-      <option value="Low">Low</option>
-      <option value="Medium" selected>Medium</option>
-      <option value="High">High</option>
-      <option value="Critical">Critical</option>
-    </select>
-  </div>
-
-  <div class="form-row">
-    <label for="betaDevice">Device</label>
-    <input id="betaDevice" type="text" placeholder="Example: Samsung phone / Laptop">
-  </div>
-
-  <div class="form-row">
-    <label for="betaBrowser">Browser</label>
-    <input id="betaBrowser" type="text" placeholder="Example: Chrome / Safari / PWA">
-  </div>
-
-  <div class="form-row">
-    <label for="betaOnlineStatus">Online / Offline</label>
-    <select id="betaOnlineStatus">
-      <option value="Online">Online</option>
-      <option value="Offline">Offline</option>
-      <option value="Intermittent signal">Intermittent signal</option>
-      <option value="Not sure">Not sure</option>
-    </select>
-  </div>
-
-  <div class="form-row">
-    <label for="betaInspectionNumber">Inspection Number</label>
-    <input id="betaInspectionNumber" type="text" placeholder="Example: FIR-2026-0004">
-  </div>
-
-  <div class="form-row">
-    <label for="betaWhatHened">What happened?</label>
+    <label for="betaComment">Comment</label>
     <textarea
-      id="betaWhatHened"
-      placeholder="Describe the issue..."
-    ></textarea>
-  </div>
-
-  <div class="form-row">
-    <label for="betaExpectedResult">What did you expect?</label>
-    <textarea
-      id="betaExpectedResult"
-      placeholder="What should have hened?"
+      id="betaComment"
+      rows="8"
+      placeholder="Write your comment here..."
     ></textarea>
   </div>
 
   <div class="button-row">
     <button id="submitBetaFeedbackBtn" type="button">
-      Submit Feedback
+      Submit
     </button>
 
     <button id="cancelBetaFeedbackBtn" type="button" class="secondary-btn">
@@ -1860,10 +1806,10 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-65-rephead"></script>
+  <script src="app.js?v=1-3-65-comment"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-    <script src="fire-s-clean-home-roles.js?v=2-42-sitlive"></script>
+    <script src="fire-s-clean-home-roles.js?v=2-43-comment"></script>
   <script src="fire-s-owner-lists.js?v=1-1-count"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-7-svc-req"></script>
@@ -1873,7 +1819,7 @@
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-16-subtype"></script>
   <script src="fire-s-subscribe.js?v=1-16-subtype"></script>
-  <script src="fire-s-user-manual.js?v=1-38-sitqa"></script>
+  <script src="fire-s-user-manual.js?v=1-39-comment"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-52-create-pw"></script>
@@ -1893,7 +1839,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-66-sitlive')
+        navigator.serviceWorker.register('./service-worker.js?v=108-67-comment')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })
