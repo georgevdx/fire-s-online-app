@@ -39008,6 +39008,9 @@ function fireSApplyLifecycleUxLabels() {
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') {
+      // Same exclusive bucket as the card pill: Overdue wins over ACTION.
+      // Laptop/phone must not count one overdue premises inside Action Required.
+      if (matches(p, 'overdue')) return false;
       const cycle = latestCompletedCycle(p);
       return hasOpenActions(p) || (cycle ? hasOpenActions(cycle) : false);
     }
@@ -39291,7 +39294,14 @@ function fireSApplyLifecycleUxLabels() {
       if (typeof window.fireSIsInspectionOverdue === 'function') return !!window.fireSIsInspectionOverdue(project);
       return !!(plan && plan < todayStr && !closed && !archived);
     }
-    if (key === 'inspection-attention') return !!openActions;
+    if (key === 'inspection-attention') {
+      if (typeof window.fireSIsInspectionOverdue === 'function') {
+        try { if (window.fireSIsInspectionOverdue(project)) return false; } catch (_) {}
+      } else if (plan && plan < todayStr && !closed && !archived) {
+        return false;
+      }
+      return !!openActions;
+    }
     if (key === 'month') {
       const d = dateKey(project?.inspectionDate || project?.completedAt || project?.finalisedAt || project?.lastSaved || project?.updatedAt || project?.createdAt || project?.scheduledDate || project?.followUpDate);
       if (!d) return false;
