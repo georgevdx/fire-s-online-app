@@ -5033,11 +5033,18 @@ let fireSCloudPullInFlight = false;
 let fireSCloudPullGeneration = 0;
 
 async function safeDownloadNewerCloudInspections(options) {
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
-  if (fireSCloudPullInFlight) return;
-  fireSCloudPullInFlight = true;
-  const pullToken = ++fireSCloudPullGeneration;
+    if (!navigator.onLine) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (typeof supabaseClient === 'undefined') {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (fireSCloudPullInFlight) return;
+    fireSCloudPullInFlight = true;
+    try { window.__fireSCloudPullSettled = false; } catch (_) {}
+    const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
 
@@ -5046,6 +5053,7 @@ async function safeDownloadNewerCloudInspections(options) {
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       return;
     }
 
@@ -5161,15 +5169,33 @@ async function safeDownloadNewerCloudInspections(options) {
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       finishPremisesProgress();
       return;
     }
 
+    const incomplete = !!(pulled && pulled.incomplete);
     applyCloudRows(Array.isArray(data) ? data : [], {
       expectedTotal: pulled && pulled.expectedTotal,
-      incomplete: !!(pulled && pulled.incomplete)
+      incomplete: incomplete
     });
     if (pullToken !== fireSCloudPullGeneration) return;
+
+    // A short phone pull must not become the finished Home count.
+    // Laptop/phone were settling on 8 vs 5 buildings and different Overdue cards.
+    if (incomplete) {
+      try { window.__fireSCloudPullSettled = false; } catch (_) {}
+      reportPremisesProgress(true);
+      const retry = Number(options && options.retry) || 0;
+      if (retry < 2) {
+        setTimeout(() => {
+          try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
+        }, 1800);
+        return;
+      }
+    }
+
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
     paintHome(true);
@@ -5181,10 +5207,13 @@ async function safeDownloadNewerCloudInspections(options) {
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
-      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
+      try {
+        if (window.__fireSCloudPullSettled) window.__fireSHomeCountsFrozen = false;
+      } catch (_) {}
     }
   }
 }
@@ -38817,12 +38846,21 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     if (!value) return '';
     const raw = String(value).trim();
     if (!raw || /^not\s*set$/i.test(raw) || /^n\/?a$/i.test(raw) || /^unknown$/i.test(raw)) return '';
-    const direct = raw.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
     const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
-  function todayKey(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+  function todayKey(){
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
   function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.scheduledDate || p?.followUpDate); }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
@@ -38939,6 +38977,12 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch (_) {}
+    if (typeof window.fireSIsDeletedPremises === 'function') {
+      list = list.filter(project => !window.fireSIsDeletedPremises(project));
+    }
+    if (typeof window.fireSIsEmptyRecycleLeftoverPremises === 'function') {
+      list = list.filter(project => !window.fireSIsEmptyRecycleLeftoverPremises(project));
+    }
     return Array.isArray(list) ? list : [];
   }
   function counts(){
@@ -38998,6 +39042,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
   function renderKpis(){
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
+    try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -39026,15 +39071,21 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     row.removeAttribute('aria-hidden');
     row.style.setProperty('display', 'grid', 'important');
     hideLegacyStatsRow();
-    paintCommandSubtitle(c);
+    hideOwnerCountLine();
   }
-  function paintCommandSubtitle(c){
-    if (isInspectorOrGuestHome()) return;
+  function hideOwnerCountLine(){
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (!subtitle) return;
-    const next = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
-    if ((subtitle.textContent || '') === next) return;
-    subtitle.textContent = next;
+    if (isInspectorOrGuestHome()) {
+      subtitle.hidden = false;
+      subtitle.removeAttribute('aria-hidden');
+      subtitle.style.removeProperty('display');
+      return;
+    }
+    subtitle.textContent = '';
+    subtitle.hidden = true;
+    subtitle.setAttribute('aria-hidden', 'true');
+    subtitle.style.setProperty('display', 'none', 'important');
   }
   function applyFilter(filter){
     const key = norm(filter) === 'scheduled' ? 'scheduled-new' : norm(filter);
@@ -39064,7 +39115,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
-  window.fireSPaintOwnerCommandSubtitle = paintCommandSubtitle;
+  window.fireSPaintOwnerCommandSubtitle = hideOwnerCountLine;
   window.fireSLatestCompletedCycle = latestCompletedCycle;
   window.fireSProductionIsCompliant = isCompliant;
   window.fireSLatestInspectionActionCount = latestInspectionActionCount;

@@ -65,7 +65,7 @@ assert.ok(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-81-toets-now/.test(read('staging/index.html')) &&
+  /styles\.css\?v=1-3-82-toets-now/.test(read('staging/index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-actovd/.test(read('staging/index.html')) &&
     /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
   'Toets must cache-bust the stronger Scheduling Centre headings'
@@ -73,8 +73,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.65/.test(read('index.html')) &&
-    /Version 1\.3\.81-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.65 live and 1.3.81-toets'
+    /Version 1\.3\.82-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.65 live and 1.3.82-toets'
 );
 
 console.log('qa-schedule-fonts.test.js: ok');

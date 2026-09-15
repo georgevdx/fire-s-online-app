@@ -15,9 +15,11 @@ const html = read('staging/index.html');
 assert.ok(
   /function fireSPaintLeftoverCommandSubtitle\(el, text\)/.test(app) &&
     /if \(window\.__fireS136A10Installed\) return/.test(app) &&
-    /function paintCommandSubtitle\(c\)\{/.test(app) &&
-    /window\.fireSPaintOwnerCommandSubtitle = paintCommandSubtitle/.test(app),
-  '136A10 must own the Executive Command Centre count line'
+    /function hideOwnerCountLine\(\)\{/.test(app) &&
+    /window\.fireSPaintOwnerCommandSubtitle = hideOwnerCountLine/.test(app) &&
+    /A short phone pull must not become the finished Home count/.test(app) &&
+    /__fireSCloudPullSettled === false/.test(app),
+  'Owner Home must hide the duplicate count line and wait for a complete cloud pull'
 );
 
 const leftoverNames = [
@@ -44,16 +46,22 @@ leftoverNames.forEach((name, idx) => {
 });
 
 assert.ok(
-  /Version 1\.3\.81-toets/.test(html) &&
-    /app\.js\?v=1-3-81-toets-now/.test(html),
-  'Toets must cache-bust the stable Command Centre counts'
+  /Version 1\.3\.82-toets/.test(html) &&
+    /app\.js\?v=1-3-82-toets-now/.test(html),
+  'Toets must cache-bust the hidden Command Centre summary and stable Home counts'
 );
 
 const start = app.indexOf('(function fireS136A10StableVisibleKpis(){');
 const end = app.indexOf('(function fireS136A11ProjectKpiSingleMatcher(){', start);
 assert.ok(start > 0 && end > start, '136A10 KPI matcher must exist');
 
-const subtitle = { textContent: 'Showing 6 inspections available in this workspace.' };
+const subtitle = {
+  textContent: 'Showing 6 inspections available in this workspace.',
+  hidden: false,
+  style: { display: '', setProperty(name, value) { this[name] = value; }, removeProperty() {} },
+  setAttribute() {},
+  removeAttribute() {}
+};
 const row = {
   hidden: false,
   style: { display: '', setProperty() {} },
@@ -164,44 +172,40 @@ vm.runInNewContext(
   context
 );
 
-const production = '1 premises require action · 1 overdue · 0 scheduled · 2 compliant · 3 this month.';
-assert.strictEqual(
-  subtitle.textContent,
-  production,
-  'Owner count line must use the same exclusive Action vs Overdue buckets as the cards'
+const productionCounts = { action: 1, overdue: 1, scheduled: 0, compliant: 2, month: 3 };
+const counts = context.window.fireSProductionKpiCounts();
+assert.deepStrictEqual(
+  {
+    action: counts.action,
+    overdue: counts.overdue,
+    scheduled: counts.scheduled,
+    compliant: counts.compliant,
+    month: counts.month
+  },
+  productionCounts,
+  'KPI cards must use the same exclusive Action vs Overdue buckets on laptop and phone'
 );
+assert.strictEqual(subtitle.hidden, true, 'Owner Home must hide the duplicate count line');
+assert.strictEqual(subtitle.textContent, '', 'Owner count line must be empty once the cards are shown');
 
 assert.ok(typeof context.window.fireS136A9SyncKpis === 'function', '136A9 sync must export');
 context.window.fireS136A9SyncKpis();
 context.window.fireS136A9SyncKpis();
 context.window.fireS136A9SyncKpis();
-assert.strictEqual(
-  subtitle.textContent,
-  production,
-  'Leftover 136A9 interval must not flip the count line after 136A10 is installed'
-);
+assert.strictEqual(subtitle.hidden, true, 'Leftover 136A9 must not bring the duplicate count line back');
+assert.strictEqual(subtitle.textContent, '', 'Leftover 136A9 must not rewrite the hidden count line');
 
 const leftover = '2 premises require action · 1 overdue · 0 scheduled · 1 compliant · 3 this month.';
 context.window.fireSPaintLeftoverCommandSubtitle(subtitle, leftover);
-assert.strictEqual(
-  subtitle.textContent,
-  production,
-  'Leftover KPI layers must not flip the count line after 136A10 is installed'
-);
+assert.strictEqual(subtitle.textContent, '', 'Leftover KPI layers must not flip counts after 136A10 is installed');
 
-context.window.fireSPaintOwnerCommandSubtitle(context.window.fireSProductionKpiCounts());
-assert.strictEqual(
-  subtitle.textContent,
-  production,
-  'Repainting the same owner counts must leave the subtitle unchanged'
-);
+context.window.fireSPaintOwnerCommandSubtitle();
+assert.strictEqual(subtitle.hidden, true, 'Hiding the owner count line again must keep it hidden');
 
 subtitle.textContent = leftover;
+subtitle.hidden = false;
 context.window.fireSProductionRenderKpis();
-assert.strictEqual(
-  subtitle.textContent,
-  production,
-  '136A10 must restore its own count line if a leftover write slips through'
-);
+assert.strictEqual(subtitle.hidden, true, '136A10 must hide the count line if a leftover write slips through');
+assert.strictEqual(subtitle.textContent, '', '136A10 must clear leftover count text');
 
 console.log('stable-command-counts.test.js: ok');

@@ -122,8 +122,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.65/.test(read('index.html')) &&
-    /Version 1\.3\.81-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.65 live and 1.3.81-toets'
+    /Version 1\.3\.82-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.65 live and 1.3.82-toets'
 );
 
 assert.ok(
