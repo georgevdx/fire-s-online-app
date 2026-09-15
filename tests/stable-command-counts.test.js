@@ -156,14 +156,29 @@ const context = {
 context.window = Object.assign(windowObj, context);
 const helperStart = app.indexOf('function fireSPaintLeftoverCommandSubtitle');
 const helperEnd = app.indexOf('// FIRE-S RC 1.3.1', helperStart);
+const leftoverStart = app.indexOf('(function fireS136A9CompliantFinalAlignment(){');
 assert.ok(helperStart > 0 && helperEnd > helperStart, 'leftover subtitle helper must exist');
-vm.runInNewContext(app.slice(helperStart, helperEnd) + app.slice(start, end), context);
+assert.ok(leftoverStart > 0 && leftoverStart < start, '136A9 leftover sync must exist');
+vm.runInNewContext(
+  app.slice(helperStart, helperEnd) + app.slice(leftoverStart, start) + app.slice(start, end),
+  context
+);
 
 const production = '1 premises require action · 1 overdue · 0 scheduled · 2 compliant · 3 this month.';
 assert.strictEqual(
   subtitle.textContent,
   production,
   'Owner count line must use the same exclusive Action vs Overdue buckets as the cards'
+);
+
+assert.ok(typeof context.window.fireS136A9SyncKpis === 'function', '136A9 sync must export');
+context.window.fireS136A9SyncKpis();
+context.window.fireS136A9SyncKpis();
+context.window.fireS136A9SyncKpis();
+assert.strictEqual(
+  subtitle.textContent,
+  production,
+  'Leftover 136A9 interval must not flip the count line after 136A10 is installed'
 );
 
 const leftover = '2 premises require action · 1 overdue · 0 scheduled · 1 compliant · 3 this month.';
