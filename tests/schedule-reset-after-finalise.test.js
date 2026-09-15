@@ -46,7 +46,7 @@ assert.ok(
   'Overdue must still show the next cycle date after the previous inspection is closed'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-actovd/.test(stagingHtml),
+  /app\.js\?v=1-3-78-toets-comment/.test(stagingHtml),
   'Toets must cache-bust schedule reset after finalise'
 );
 assert.ok(
