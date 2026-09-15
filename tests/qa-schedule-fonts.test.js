@@ -65,8 +65,8 @@ assert.ok(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-78-toets-subfont/.test(read('staging/index.html')) &&
-    /fire-s-fit-text\.css\?v=1-19-subfont/.test(read('staging/index.html')) &&
+  /styles\.css\?v=1-3-78-toets-actlabel/.test(read('staging/index.html')) &&
+    /fire-s-fit-text\.css\?v=1-19-actlabel/.test(read('staging/index.html')) &&
     /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
   'Toets must cache-bust the stronger Scheduling Centre headings'
 );

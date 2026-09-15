@@ -38979,6 +38979,22 @@ function fireSApplyLifecycleUxLabels() {
     const cycle = latestCompletedCycle(p);
     return Boolean(cycle && !hasOpenActions(cycle));
   }
+  function openItemCount(cycle){
+    const src = cycle || {};
+    const nos = noCount(src);
+    if (nos > 0) return nos;
+    const findings = Array.isArray(src.findings) ? src.findings : [];
+    const openFindings = findings.filter(f => !/closed|complete|completed|resolved|done/i.test(String(f?.status || ''))).length;
+    if (openFindings > 0) return openFindings;
+    const actions = Array.isArray(src.actions) ? src.actions : [];
+    return actions.filter(a => !/closed|complete|completed|resolved|done/i.test(String(a?.status || ''))).length;
+  }
+  function latestInspectionActionCount(p){
+    const cycle = latestCompletedCycle(p);
+    const fromCycle = openItemCount(cycle);
+    if (fromCycle > 0) return fromCycle;
+    return openItemCount(p);
+  }
   function matches(p, filter){
     const key = norm(filter);
     const today = todayKey();
@@ -39128,6 +39144,7 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionRenderKpis = renderKpis;
   window.fireSLatestCompletedCycle = latestCompletedCycle;
   window.fireSProductionIsCompliant = isCompliant;
+  window.fireSLatestInspectionActionCount = latestInspectionActionCount;
 
   function install(){
     renderKpis();
@@ -39212,6 +39229,12 @@ function fireSApplyLifecycleUxLabels() {
   function photos(p){ return Array.isArray(p?.photos) ? p.photos : []; }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
   function noAnswerCount(p){ return answers(p).filter(a => norm(a?.answer) === 'no').length; }
+  function actionCount(p){
+    if (typeof window.fireSLatestInspectionActionCount === 'function') {
+      try { return Number(window.fireSLatestInspectionActionCount(p)) || 0; } catch (_) {}
+    }
+    return noAnswerCount(p);
+  }
 
   function canonical(filter){
     const key = norm(filter);
@@ -39391,7 +39414,10 @@ function fireSApplyLifecycleUxLabels() {
   }
   function cardHtml(project){
     const id = JSON.stringify(project?.id || '');
-    return `<article class="fire-s-136a8-card ${statusClass(project)}" data-project-id="${esc(project?.id || '')}" role="button" tabindex="0" onclick='fireSOpenProjectCard136A8(${id})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();fireSOpenProjectCard136A8(${id});}'><div class="fire-s-136a8-strip"></div><div class="fire-s-136a8-card-body"><div class="fire-s-136a8-card-top"><strong>${esc(title(project))}</strong><span>${esc(statusLabel(project))}</span></div>${address(project) ? `<p>${esc(address(project))}</p>` : ''}<div class="fire-s-136a8-card-meta"><div><small>Last</small><b>${esc(dateText(lastDate(project)))}</b></div><div><small>Next</small><b>${esc(dateText(plannedDate(project)))}</b></div><div><small>Actions</small><b>${noAnswerCount(project)}</b></div><div><small>Photos</small><b>${photos(project).length}</b></div></div><div class="fire-s-136a8-open">Open →</div></div></article>`;
+    const status = statusClass(project);
+    const label = statusLabel(project);
+    const pillClass = status === 'action' ? ' class="fire-s-action-status-label"' : '';
+    return `<article class="fire-s-136a8-card ${status}" data-project-id="${esc(project?.id || '')}" role="button" tabindex="0" onclick='fireSOpenProjectCard136A8(${id})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();fireSOpenProjectCard136A8(${id});}'><div class="fire-s-136a8-strip"></div><div class="fire-s-136a8-card-body"><div class="fire-s-136a8-card-top"><strong>${esc(title(project))}</strong><span${pillClass}>${esc(label)}</span></div>${address(project) ? `<p>${esc(address(project))}</p>` : ''}<div class="fire-s-136a8-card-meta"><div><small>Last</small><b>${esc(dateText(lastDate(project)))}</b></div><div><small>Next</small><b>${esc(dateText(plannedDate(project)))}</b></div><div><small>Actions</small><b>${actionCount(project)}</b></div><div><small>Photos</small><b>${photos(project).length}</b></div></div><div class="fire-s-136a8-open">Open →</div></div></article>`;
   }
 
   function renderProjects(){

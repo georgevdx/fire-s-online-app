@@ -12573,6 +12573,13 @@ button,
   white-space: normal;
   word-break: normal;
 }
+.fire-s-136a8-card.action .fire-s-136a8-card-top span,
+.fire-s-136a5-card.action .fire-s-136a5-card-top span,
+.fire-s-action-status-label {
+  background: #b91c1c;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+}
 .fire-s-136a8-card p {
   margin: 5px 0 8px;
   color: #64748b;
@@ -14706,6 +14713,19 @@ html[data-fire-s-theme="dark"] #projectListSection .choice-status-pill {
   background: #0f172a !important;
   color: #f8fafc !important;
   border: 1px solid #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card.action .fire-s-136a8-card-top span,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card.action .fire-s-136a8-card-top span,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card.action .fire-s-136a5-card-top span,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card.action .fire-s-136a5-card-top span,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-action-status-label,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-action-status-label {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  font-weight: 900 !important;
 }
 
 html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card,
