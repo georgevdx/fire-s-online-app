@@ -60,8 +60,8 @@ assert.ok(
   'Delete confirm panels must wire Recycle and Immediate actions'
 );
 assert.ok(
-  /app\.js\?v=1-3-78-toets-comment/.test(html) &&
-    /Version 1\.3\.78-toets/.test(html),
+  /app\.js\?v=1-3-79-toets-comment/.test(html) &&
+    /Version 1\.3\.79-toets/.test(html),
   'Toets must cache-bust Data Management delete without bumping the displayed version'
 );
 assert.ok(
@@ -69,7 +69,7 @@ assert.ok(
     /Delete immediately/.test(liveApp) &&
     /async function purgeExpiredRecycleAutomatically\(/.test(liveApp) &&
     /delete-data-management-v16/.test(liveApp) &&
-    /app\.js\?v=1-3-65-rephead/.test(liveHtml) &&
+    /app\.js\?v=1-3-65-comment/.test(liveHtml) &&
     /Version 1\.3\.65/.test(liveHtml),
   'Live Data Management must offer Recycle Bin or Delete immediately without bumping 1.3.65'
 );

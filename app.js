@@ -9732,7 +9732,7 @@ function updateBetaNotesPanel() {
 
             <div class="beta-note">
               <strong>Report issues</strong>
-              <span>Use Additional Services → Report Beta Issue for bugs, missing data or confusing behaviour.</span>
+              <span>Use Additional Services → Feedback to send a comment if something is wrong or confusing.</span>
             </div>
 
             <div class="beta-note">
@@ -9815,7 +9815,7 @@ function updateBetaQuickTestPanel() {
 
             <div class="beta-quick-test-item beta-quick-test-final">
               <strong>7</strong>
-              <span>Submit Beta Feedback if anything looks wrong, confusing or incomplete.</span>
+              <span>Send a comment under Additional Services if anything looks wrong, confusing or incomplete.</span>
             </div>
           </div>
         `
@@ -10264,7 +10264,7 @@ function updateRcTesterInstructionPanel() {
 
             <div class="rc-tester-step rc-tester-step-final">
               <strong>6</strong>
-              <span>Report issues under Additional Services → Beta Feedback.</span>
+              <span>Send a comment under Additional Services → Feedback.</span>
             </div>
           </div>
         `
@@ -10793,6 +10793,8 @@ function requestAdditionalService(serviceName) {
 
   if (!form || !selectedService) return;
 
+  cancelBetaFeedback();
+
   selectedService.value = serviceName || '';
 
   if (status) {
@@ -10952,61 +10954,37 @@ function getCurrentInspectionNumberForFeedback() {
   return project?.inspectionNumber || '';
 }
 
+function collectSilentFeedbackContext() {
+  let browser = 'Not available';
+  try {
+    browser = String(navigator.userAgent || '').trim() || 'Not available';
+  } catch (_) {}
+
+  let onlineStatus = 'Online';
+  try {
+    onlineStatus = navigator.onLine ? 'Online' : 'Offline';
+  } catch (_) {}
+
+  return {
+    device: getBrowserDeviceHint(),
+    browser,
+    online_status: onlineStatus,
+    inspection_number: getCurrentInspectionNumberForFeedback()
+  };
+}
+
 function openBetaFeedbackForm() {
   const form = document.getElementById('betaFeedbackForm');
   const status = document.getElementById('betaFeedbackStatus');
+  const comment = document.getElementById('betaComment');
 
   if (!form) return;
+
+  cancelServiceRequest();
 
   if (status) {
     status.textContent = '';
   }
-
-  const inspectionField =
-  document.getElementById('betaInspectionNumber');
-
-if (inspectionField) {
-  inspectionField.value =
-    getCurrentInspectionNumberForFeedback();
-}
-
-const deviceField =
-  document.getElementById('betaDevice');
-
-if (deviceField && !deviceField.value.trim()) {
-  deviceField.value =
-    getBrowserDeviceHint();
-}
-
-const browserField =
-  document.getElementById('betaBrowser');
-
-if (browserField && !browserField.value.trim()) {
-  browserField.value =
-    navigator.userAgent || 'Not available';
-}
-
-const onlineStatus =
-  document.getElementById('betaOnlineStatus');
-
-if (onlineStatus) {
-  onlineStatus.value =
-    navigator.onLine ? 'Online' : 'Offline';
-}
-
-const autoFillHint =
-  document.getElementById('betaAutoFillHint');
-
-if (autoFillHint) {
-  const inspectionNumber =
-    getCurrentInspectionNumberForFeedback();
-
-  autoFillHint.style.display = 'block';
-  autoFillHint.textContent =
-    inspectionNumber
-      ? 'Auto-filled: device, browser, online status and inspection number.'
-      : 'Auto-filled: device, browser and online status.';
-}
 
   form.style.display = 'block';
 
@@ -11014,6 +10992,12 @@ if (autoFillHint) {
     behavior: 'smooth',
     block: 'start'
   });
+
+  if (comment) {
+    try {
+      comment.focus();
+    } catch (_) {}
+  }
 }
 
 function cancelBetaFeedback() {
@@ -11027,122 +11011,57 @@ function cancelBetaFeedback() {
   if (status) {
     status.textContent = '';
   }
-
-  const autoFillHint =
-  document.getElementById('betaAutoFillHint');
-
-if (autoFillHint) {
-  autoFillHint.style.display = 'none';
-  autoFillHint.textContent = '';
-}
 }
 
 function clearBetaFeedbackForm() {
-  const ids = [
-  'betaDevice',
-  'betaBrowser',
-  'betaInspectionNumber',
-  'betaWhatHappened',
-  'betaExpectedResult'
-];
+  const comment = document.getElementById('betaComment');
 
-  ids.forEach(id => {
-    const field = document.getElementById(id);
-
-    if (field) {
-      field.value = '';
-    }
-  });
-
-  const issueType = document.getElementById('betaIssueType');
-
-  if (issueType) {
-    issueType.value = 'Bug';
+  if (comment) {
+    comment.value = '';
   }
+}
 
-  const priority = document.getElementById('betaPriority');
+function setBetaFeedbackUserMessage(text) {
+  const status = document.getElementById('betaFeedbackStatus');
 
-  if (priority) {
-    priority.value = 'Medium';
+  if (status) {
+    status.textContent = text || '';
   }
-
-  const onlineStatus =
-  document.getElementById('betaOnlineStatus');
-
-if (onlineStatus) {
-  onlineStatus.value =
-    navigator.onLine ? 'Online' : 'Offline';
-}
-const whatHappenedField =
-  document.getElementById('betaWhatHappened');
-
-if (whatHappenedField) {
-  whatHappenedField.placeholder =
-    'Describe the issue...';
-}
 }
 
 async function submitBetaFeedback() {
-  const status = document.getElementById('betaFeedbackStatus');
+  const comment =
+    document.getElementById('betaComment')?.value.trim() || '';
 
-  const issueType =
-    document.getElementById('betaIssueType')?.value || '';
-
-  const priority =
-    document.getElementById('betaPriority')?.value || '';
-
-  const device =
-    document.getElementById('betaDevice')?.value.trim() || '';
-
-  const browser =
-    document.getElementById('betaBrowser')?.value.trim() || '';
-
-  const onlineStatus =
-    document.getElementById('betaOnlineStatus')?.value || '';
-
-  const inspectionNumber =
-    document.getElementById('betaInspectionNumber')?.value.trim() || '';
-
-  const whatHappened =
-    document.getElementById('betaWhatHappened')?.value.trim() || '';
-
-  const expectedResult =
-    document.getElementById('betaExpectedResult')?.value.trim() || '';
-
-  if (!whatHappened) {
-    if (status) {
-      status.textContent = 'Please describe what happened.';
-    }
-
+  if (!comment) {
+    setBetaFeedbackUserMessage('Please write a comment first.');
     return;
   }
 
-  if (status) {
-    status.textContent = 'Submitting feedback...';
-  }
+  setBetaFeedbackUserMessage('Sending…');
 
   try {
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
 
     if (userError || !userData?.user) {
-      if (status) {
-        status.textContent = 'Please login before submitting beta feedback.';
-      }
-
+      setBetaFeedbackUserMessage(
+        'Please Login first, then send your comment.'
+      );
       return;
     }
 
+    const silent = collectSilentFeedbackContext();
     const payload = {
       app_version: APP_VERSION,
-      issue_type: issueType,
-      priority,
-      device,
-      browser,
-      online_status: onlineStatus,
-      inspection_number: inspectionNumber,
-      what_happened: whatHappened,
-      expected_result: expectedResult,
+      issue_type: 'Comment',
+      priority: 'Medium',
+      device: silent.device,
+      browser: silent.browser,
+      online_status: silent.online_status,
+      inspection_number: silent.inspection_number,
+      what_happened: comment,
+      expected_result: '',
       reported_by_user_id: userData.user.id,
       reported_by_email: userData.user.email,
       status: 'new'
@@ -11154,36 +11073,19 @@ async function submitBetaFeedback() {
 
     if (error) {
       console.error('Beta feedback submit failed:', error);
-
-      if (status) {
-        status.textContent =
-          `Feedback could not be submitted: ${error.message}`;
-      }
-
+      setBetaFeedbackUserMessage(
+        'Could not send your comment. Please try again.'
+      );
       return;
     }
 
-    if (status) {
-      status.textContent = 'Feedback submitted. Thank you.';
-    }
-
     clearBetaFeedbackForm();
-
-    const autoFillHint =
-  document.getElementById('betaAutoFillHint');
-
-if (autoFillHint) {
-  autoFillHint.style.display = 'none';
-  autoFillHint.textContent = '';
-}
-
+    setBetaFeedbackUserMessage('Comment sent. Thank you.');
   } catch (error) {
     console.error('Beta feedback crashed:', error);
-
-    if (status) {
-      status.textContent =
-        `Feedback submit failed: ${error.message}`;
-    }
+    setBetaFeedbackUserMessage(
+      'Could not send your comment. Please try again.'
+    );
   }
 }
 

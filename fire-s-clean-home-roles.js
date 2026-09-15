@@ -691,7 +691,7 @@
     cardText(
       'cmdServicesBtn',
       'Support',
-      'Request review or operational support.'
+      'Write a comment, request review or operational support.'
     );
 
     // Force Gateway visible even if older inspector CSS left it hidden.
@@ -814,7 +814,7 @@
     cardText(
       'cmdServicesBtn',
       'Services / Support',
-      'Consultancy, review requests and support.'
+      'Consultancy, a comment about the app, or support.'
     );
 
     try {
