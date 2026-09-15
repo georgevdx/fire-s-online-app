@@ -34440,6 +34440,18 @@ function fireSApplyLifecycleUxLabels() {
   }
 })();
 
+function fireSPaintLeftoverCommandSubtitle(el, text) {
+  // 136A10 owns the Executive Command Centre count line. Leftover KPI
+  // layers used different Action/Overdue/Compliant matchers, so this
+  // summary flickered while the hash-gated cards underneath stayed still.
+  try { if (window.__fireS136A10Installed) return; } catch (_) {}
+  if (!el) return;
+  const next = String(text == null ? '' : text);
+  if ((el.textContent || '') === next) return;
+  el.textContent = next;
+}
+try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtitle; } catch (_) {}
+
 
 // =====================================================
 // FIRE-S RC 1.3.1 - Role Test Mode + Management Cards Fix
@@ -34661,7 +34673,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`);
     }
   }
 
@@ -34918,7 +34930,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`);
     }
 
     bindManagementCardClicks();
@@ -35193,7 +35205,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     }
 
     const access = document.getElementById('mainCommandAccessStatus');
@@ -35535,7 +35547,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`);
     }
 
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
@@ -35779,7 +35791,7 @@ function fireSApplyLifecycleUxLabels() {
     if (scoreLabel) scoreLabel.textContent = 'Compliance Score';
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
     if (heroSubtitle) heroSubtitle.textContent = `Management snapshot: ${scheduled} scheduled inspections, ${overdue} overdue inspections and ${month} inspections this month.`;
   }
@@ -35993,7 +36005,7 @@ function fireSApplyLifecycleUxLabels() {
     ].join('');
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function applyGatewayFilter(filter, message){
@@ -37845,9 +37857,9 @@ function fireSApplyLifecycleUxLabels() {
     });
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
     const oldSubtitle = document.querySelector('.main-command-top p');
-    if (oldSubtitle && oldSubtitle !== subtitle) oldSubtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (oldSubtitle && oldSubtitle !== subtitle) fireSPaintLeftoverCommandSubtitle(oldSubtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function filterButtons(base){
@@ -38181,7 +38193,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38610,7 +38622,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38763,7 +38775,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
   const oldMatcher = window.projectMatchesInspectionGatewayQuickFilter;
@@ -39014,10 +39026,15 @@ function fireSApplyLifecycleUxLabels() {
     row.removeAttribute('aria-hidden');
     row.style.setProperty('display', 'grid', 'important');
     hideLegacyStatsRow();
+    paintCommandSubtitle(c);
+  }
+  function paintCommandSubtitle(c){
+    if (isInspectorOrGuestHome()) return;
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
-    if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
-    }
+    if (!subtitle) return;
+    const next = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+    if ((subtitle.textContent || '') === next) return;
+    subtitle.textContent = next;
   }
   function applyFilter(filter){
     const key = norm(filter) === 'scheduled' ? 'scheduled-new' : norm(filter);
@@ -39047,6 +39064,7 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
+  window.fireSPaintOwnerCommandSubtitle = paintCommandSubtitle;
   window.fireSLatestCompletedCycle = latestCompletedCycle;
   window.fireSProductionIsCompliant = isCompliant;
   window.fireSLatestInspectionActionCount = latestInspectionActionCount;
