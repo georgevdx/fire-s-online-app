@@ -5110,10 +5110,15 @@ async function safeDownloadNewerCloudInspections(options) {
 
     function visiblePremises(list) {
       try {
+        let visible = Array.isArray(list) ? list : [];
         if (typeof getVisibleProjectsForCurrentUser === 'function') {
-          const visible = getVisibleProjectsForCurrentUser(list);
-          if (Array.isArray(visible)) return visible;
+          const filtered = getVisibleProjectsForCurrentUser(list);
+          if (Array.isArray(filtered)) visible = filtered;
         }
+        if (typeof fireSUniqueCurrentBuildings === 'function') {
+          return fireSUniqueCurrentBuildings(visible);
+        }
+        return visible;
       } catch (_) {}
       return Array.isArray(list) ? list : [];
     }
@@ -26455,6 +26460,83 @@ function fireSIsHiddenFromCurrentLists(project) {
   return false;
 }
 
+// Home counts buildings, not inspections. Same Organisation + Site is one
+// building even when laptop storage still has two live rows for it.
+function fireSPremisesBuildingKey(project) {
+  if (!project) return '';
+  const nameFn = typeof getProjectPremisesName === 'function'
+    ? getProjectPremisesName
+    : function nameFallback(row) {
+        return String(
+          (row && (
+            row.organisationName ||
+            row.organizationName ||
+            row.businessName ||
+            row.clientName ||
+            row.premisesName ||
+            (!row.siteName ? row.projectName : '')
+          )) || ''
+        );
+      };
+  const siteFn = typeof getProjectPremisesSite === 'function'
+    ? getProjectPremisesSite
+    : function siteFallback(row) {
+        return String(
+          (row && (row.siteName || row.site_name || row.branchName || row.locationName)) || ''
+        );
+      };
+  const norm = typeof normalizePremisesIdentityName === 'function'
+    ? normalizePremisesIdentityName
+    : function normFallback(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      };
+  const name = norm(nameFn(project));
+  const site = norm(siteFn(project));
+  if (name || site) return name + '\u0001' + site;
+  const id = String(project.id || project.inspectionId || '').trim();
+  return id ? 'id:' + id : '';
+}
+
+function fireSBuildingRecency(project) {
+  if (!project) return 0;
+  const stamps = [
+    project.lastSaved,
+    project.updatedAt,
+    project.updated_at,
+    project.completedAt,
+    project.inspectionDate,
+    project.createdAt
+  ];
+  let best = 0;
+  for (let i = 0; i < stamps.length; i += 1) {
+    const t = Date.parse(stamps[i]);
+    if (!Number.isNaN(t) && t > best) best = t;
+  }
+  return best;
+}
+
+function fireSUniqueCurrentBuildings(list) {
+  const source = Array.isArray(list) ? list : [];
+  const seen = new Map();
+  for (let i = 0; i < source.length; i += 1) {
+    const project = source[i];
+    if (!project) continue;
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      continue;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (!key) continue;
+    const current = seen.get(key);
+    if (!current || fireSBuildingRecency(project) > fireSBuildingRecency(current)) {
+      seen.set(key, project);
+    }
+  }
+  return Array.from(seen.values());
+}
+
 function fireSIsInspectionOverdue(project) {
   if (!project) return false;
   if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
@@ -26834,6 +26916,8 @@ window.fireSIsCycledInspection = fireSIsCycledInspection;
 window.fireSIsDeletedPremises = fireSIsDeletedPremises;
 window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises;
 window.fireSIsHiddenFromCurrentLists = fireSIsHiddenFromCurrentLists;
+window.fireSPremisesBuildingKey = fireSPremisesBuildingKey;
+window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
 window.fireSHasLiveCurrentInspection = fireSHasLiveCurrentInspection;
 window.fireSIsScheduledNewPremisesOnly = fireSIsScheduledNewPremisesOnly;

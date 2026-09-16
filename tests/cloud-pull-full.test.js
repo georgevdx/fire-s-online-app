@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-84-toets-now',
-  '1-3-recycle-hide',
-  '108-74-toets-recycle',
-  'fire-s-108-74-toets-recycle'
+  '1-3-85-toets-now',
+  '1-3-stable-buildings',
+  '108-75-toets-buildings',
+  'fire-s-108-75-toets-buildings'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
@@ -69,8 +69,10 @@ assert.ok(
   /A short phone pull must not become the finished Home count/.test(liveApp) &&
     /A short phone pull must not become the finished Home count/.test(stagingApp) &&
     /__fireSCloudPullSettled === false/.test(liveLists) &&
-    /__fireSCloudPullSettled === false/.test(stagingLists),
-  'Live and toets must not freeze a short phone pull as the finished building count'
+    /__fireSCloudPullSettled !== true/.test(stagingLists) &&
+    /function fireSUniqueCurrentBuildings\(/.test(stagingApp) &&
+    /fireSUniqueCurrentBuildings\(visible\)/.test(stagingApp),
+  'Toets Home must wait for a settled unique building count so laptop 8 then 7 cannot wriggle'
 );
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingLists));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
@@ -81,8 +83,9 @@ assert.ok(
 );
 assert.ok(
   /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(liveLists) &&
-    /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(stagingLists),
-  'Home building count must match Gateway visible premises'
+    /isDeleted\(project\) \|\| isRecycleLeftover\(project\)/.test(stagingLists) &&
+    /function uniqueActive\(projects\)/.test(stagingLists),
+  'Home building count must hide Recycle leftovers and count unique buildings on toets'
 );
 
 function rowsFor(count, prefix) {

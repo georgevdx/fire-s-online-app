@@ -75,8 +75,9 @@ assert.ok(
 );
 assert.ok(
   /__fireSCloudPullSettled === false/.test(liveLists) &&
-    /__fireSCloudPullSettled === false/.test(stagingLists),
-  'Home building lists must wait for the same settled cloud pull on live and toets'
+    /__fireSCloudPullSettled !== true/.test(stagingLists) &&
+    /function fireSUniqueCurrentBuildings\(/.test(stagingApp),
+  'Toets Home waits for a settled unique building count; live still skips only a known-incomplete pull'
 );
 assert.ok(
   /const GATEWAY_COPY = 'Open, continue, search and manage inspections\.'/.test(liveFlow) &&

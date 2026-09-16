@@ -19,11 +19,18 @@
   };
 
   const pullState = { loaded: 0, total: 0, loading: false, done: false };
+  let lockedFinishedCount = null;
 
   function applyPullProgress(loaded, total, done) {
     const nextLoaded = Math.max(0, Number(loaded) || 0);
     const nextDone = !!done;
     if (pullState.done && !nextDone) return;
+    if (pullState.done && nextDone && lockedFinishedCount != null) {
+      const countEl = byId('fireSOwnerListsCount');
+      if (countEl) writeCount(countEl, lockedFinishedCount);
+      return;
+    }
+    if (!nextDone) lockedFinishedCount = null;
     pullState.loaded = nextLoaded;
     pullState.done = nextDone;
     pullState.loading = !nextDone;
@@ -51,7 +58,11 @@
       countEl.textContent = 'Loading buildings… ' + shown;
       return;
     }
-    const n = visibleCount || 0;
+    let n = visibleCount || 0;
+    if (root.__fireSCloudPullSettled === true) {
+      if (lockedFinishedCount == null) lockedFinishedCount = n;
+      n = lockedFinishedCount;
+    }
     countEl.textContent = n
       ? n + (n === 1 ? ' building on your inspection list' : ' buildings on your inspection list')
       : 'No buildings on your inspection list yet.';
@@ -267,12 +278,30 @@
     return text(a).localeCompare(text(b), undefined, { sensitivity: 'base' });
   }
 
+  function uniqueActive(projects) {
+    const source = Array.isArray(projects) ? projects : [];
+    try {
+      if (typeof root.fireSUniqueCurrentBuildings === 'function') {
+        const unique = root.fireSUniqueCurrentBuildings(source);
+        if (Array.isArray(unique)) {
+          return source.filter(project => unique.indexOf(project) !== -1);
+        }
+      }
+    } catch (_) {}
+    const seen = Object.create(null);
+    return source.filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      const key = text(buildingName(project)).toLowerCase() || ('id:' + text(project.id));
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
   function buildModel(projects, today) {
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
-    const active = (Array.isArray(projects) ? projects : []).filter(project =>
-      !isDeleted(project) && !isRecycleLeftover(project)
-    );
+    const active = uniqueActive(projects);
 
     const all = active
       .map(project => ({
@@ -413,6 +442,10 @@
       pullState.loading = !!root.__fireSOwnerListsPullProgress.loading;
       pullState.done = !!root.__fireSOwnerListsPullProgress.done;
     }
+    if (root.__fireSCloudPullSettled === true) {
+      pullState.loading = false;
+      pullState.done = true;
+    }
 
     if (countEl) {
       writeCount(countEl, model.count);
@@ -484,7 +517,6 @@
 
   function refresh() {
     if (root.__fireSHomeCountsFrozen) return;
-    if (root.__fireSCloudPullSettled === false) return;
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);
@@ -492,6 +524,20 @@
       hidePanel(panel);
       return;
     }
+    // undefined used to paint the laptop's local 8 before the company pull
+    // finished and Recycle hide dropped it to 7. Wait for the settled unique
+    // list so phone and laptop lock the same building number.
+    if (root.__fireSCloudPullSettled !== true) {
+      lockedFinishedCount = null;
+      pullState.loading = true;
+      pullState.done = false;
+      const countEl = byId('fireSOwnerListsCount');
+      if (countEl) writeCount(countEl, pullState.loaded);
+      showPanel(panel);
+      return;
+    }
+    pullState.loading = false;
+    pullState.done = true;
     renderModel(buildModel(loadProjects(), todayKey()));
   }
 
@@ -499,6 +545,13 @@
     const original = root[name];
     if (typeof original !== 'function' || original.__fireSOwnerListsWrapped) return;
     const wrapped = function fireSOwnerListsAfter() {
+      if (
+        name === 'setProjects' &&
+        !root.__fireSHomeCountsFrozen &&
+        root.__fireSCloudPullSettled === true
+      ) {
+        lockedFinishedCount = null;
+      }
       const result = original.apply(this, arguments);
       const after = function fireSOwnerListsAfterSync() {
         if (root.__fireSHomeCountsFrozen) return;
