@@ -1,7 +1,14 @@
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 import { loadPayfastConfig, resolvePayfastMode, processUrlForMode, publicPayfastConfig } from '../supabase/functions/_shared/payfast-config.js';
-import { buildSignedCheckoutFields, generateSignature, signatureParamString, amountForInterval } from '../supabase/functions/_shared/payfast-sign.js';
+import {
+  assertSandboxCheckout,
+  buildSignedCheckoutFields,
+  generateSignature,
+  resolveAuthoritativeCheckout,
+  signatureParamString,
+  amountForInterval
+} from '../supabase/functions/_shared/payfast-sign.js';
 import { md5hex } from '../supabase/functions/_shared/payfast-md5.js';
 
 assert.strictEqual(resolvePayfastMode({}), 'sandbox');
@@ -99,10 +106,27 @@ const annual = buildSignedCheckoutFields(sandboxCfg, {
   kind: 'seat',
   interval: 'annual',
   email: 'owner@acme.test',
-  seatEmail: 'inspector@acme.test'
+  seatEmail: 'inspector@acme.test',
+  amount: '1.00'
 });
 assert.strictEqual(annual.amount, '2500.00');
 assert.strictEqual(annual.frequency, '6');
 assert.strictEqual(annual.custom_str5, 'inspector@acme.test');
+
+const trusted = resolveAuthoritativeCheckout(
+  { companyId: 'co-1', companyName: 'Acme', email: 'owner@acme.test' },
+  { interval: 'monthly', amount: '1.00', price: 0, companyId: 'attacker', mPaymentId: 'evil', plan: 'enterprise' }
+);
+assert.strictEqual(trusted.planCode, 'standard');
+assert.strictEqual(trusted.amount, '250.00');
+assert.strictEqual(trusted.amountNumber, 250);
+assert.strictEqual(trusted.companyId, 'co-1');
+assert.ok(trusted.mPaymentId.indexOf('evil') === -1);
+
+assertSandboxCheckout(sandboxCfg);
+assert.throws(
+  () => assertSandboxCheckout(liveCfg),
+  /sandbox-only/
+);
 
 console.log('payfast-config.test.mjs: ok');
