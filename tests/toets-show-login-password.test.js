@@ -21,7 +21,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65'
 );
-assert.ok(/1\.3\.82-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.82-toets');
+assert.ok(/1\.3\.83-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.83-toets');
 
 function assertShowPassword(html, started, css, label) {
   const login = html.match(
