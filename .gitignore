@@ -17,3 +17,8 @@ Desktop.ini
 # Editor / OS
 .DS_Store
 *.swp
+
+# Secrets — never commit real PayFast / Supabase service credentials
+.env
+.env.*
+!.env.example

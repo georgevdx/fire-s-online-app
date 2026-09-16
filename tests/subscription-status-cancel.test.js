@@ -91,10 +91,11 @@ assert.ok(
 );
 
 assert.ok(
-  /This login is now active and renews until you cancel/.test(payfast) &&
+  /PayFast received this payment\. Access updates when the server confirms/.test(payfast) &&
     /PayFast payment was cancelled\. This company and its inspections stay saved/.test(payfast) &&
-    /cat\.markUnpaid/.test(payfast),
-  'Failed or cancelled PayFast must keep company data and mark unpaid, not wipe'
+    /cat\.markUnpaid/.test(payfast) &&
+    !/cat\.markPaid/.test(payfast),
+  'PayFast return must not mark the browser as paid; cancel keeps company data'
 );
 
 assert.ok(

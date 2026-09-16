@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const crypto = require('crypto');
 const vm = require('vm');
 
 function read(name) {
@@ -31,10 +30,20 @@ assert.ok(/PayFast sandbox/.test(html), 'Toets Subscribe copy must say sandbox â
 assert.ok(/startCheckout/.test(getStarted) && /startCheckout/.test(subscribe), 'Subscribe flows must open PayFast');
 assert.ok(!/VAT/.test(payfastSrc), 'PayFast module must not mention VAT to subscribers');
 
+assert.ok(!/merchantKey/.test(envSrc), 'Toets env must not ship a merchant key');
+assert.ok(!/passphrase\s*:/.test(envSrc), 'Toets env must not ship a PayFast passphrase');
+assert.ok(!/merchant_key/.test(payfastSrc), 'PWA PayFast module must not post merchant_key itself');
+assert.ok(/functions\/v1/.test(payfastSrc), 'Checkout must call the Edge Function');
+assert.ok(!/generateSignature/.test(payfastSrc), 'Browser must not sign PayFast requests');
+assert.ok(/mode: 'sandbox'/.test(envSrc), 'Toets PayFast mode must be sandbox');
+
 const store = {};
 const sandbox = {
   window: {},
   console,
+  fetch: async function () {
+    throw new Error('fetch should not run in unit enablement checks');
+  },
   location: {
     protocol: 'https:',
     host: 'georgevdx.github.io',
@@ -64,7 +73,6 @@ const sandbox = {
 sandbox.window = sandbox;
 
 vm.runInNewContext(envSrc, sandbox);
-vm.runInNewContext(read('staging/fire-s-md5.js'), sandbox);
 vm.runInNewContext(catalogSrc, sandbox);
 vm.runInNewContext(payfastSrc, sandbox);
 
@@ -72,43 +80,16 @@ const env = sandbox.FIRE_S_ENV;
 const pf = sandbox.fireSPayfast;
 assert.ok(env && env.isStaging, 'PayFast tests must run as staging');
 assert.ok(pf && pf.isEnabled(), 'Toets-blad PayFast sandbox must be on');
+assert.strictEqual(env.payfast.mode, 'sandbox');
+assert.ok(!env.payfast.merchantKey && !env.payfast.passphrase);
 assert.strictEqual(pf.processUrl(), 'https://sandbox.payfast.co.za/eng/process');
-assert.strictEqual(pf.md5hex('hello'), '5d41402abc4b2a76b9719d911017c592');
 assert.strictEqual(pf.amountFor('monthly'), '250.00');
 assert.strictEqual(pf.amountFor('annual'), '2500.00');
 assert.strictEqual(pf.payLabel('monthly'), 'Pay R250 on PayFast');
 assert.strictEqual(pf.payLabel('annual'), 'Pay R2 500 on PayFast');
-
-const monthly = pf.buildFields({
-  kind: 'subscribe',
-  company: 'Acme Fire',
-  email: 'owner@acme.test',
-  interval: 'monthly'
-});
-assert.strictEqual(monthly.merchant_id, '10000100');
-assert.strictEqual(monthly.amount, '250.00');
-assert.strictEqual(monthly.recurring_amount, '250.00');
-assert.strictEqual(monthly.subscription_type, '1');
-assert.strictEqual(monthly.frequency, '3');
-assert.strictEqual(monthly.cycles, '0');
-assert.ok(monthly.signature && monthly.signature.length === 32);
-
-const unsigned = Object.assign({}, monthly);
-delete unsigned.signature;
-const param = pf.signatureParamString(unsigned, env.payfast.passphrase);
-const expected = crypto.createHash('md5').update(param, 'utf8').digest('hex');
-assert.strictEqual(monthly.signature, expected, 'PayFast signature must match PHP-style MD5');
-
-const annual = pf.buildFields({
-  kind: 'seat',
-  company: 'Acme Fire',
-  email: 'owner@acme.test',
-  seatEmail: 'inspector@acme.test',
-  interval: 'annual'
-});
-assert.strictEqual(annual.amount, '2500.00');
-assert.strictEqual(annual.frequency, '6');
-assert.strictEqual(annual.custom_str4, 'seat');
-assert.strictEqual(annual.custom_str5, 'inspector@acme.test');
+assert.ok(
+  /\/functions\/v1\/payfast-checkout$/.test(pf.checkoutUrl()),
+  'Checkout URL must be the staging Edge Function'
+);
 
 console.log('payfast-toets.test.js: ok');
