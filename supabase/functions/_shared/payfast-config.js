@@ -6,6 +6,16 @@
 
 const SANDBOX_PROCESS = 'https://sandbox.payfast.co.za/eng/process';
 const LIVE_PROCESS = 'https://www.payfast.co.za/eng/process';
+const SANDBOX_VALIDATE = 'https://sandbox.payfast.co.za/eng/query/validate';
+const LIVE_VALIDATE = 'https://www.payfast.co.za/eng/query/validate';
+
+/** Hosts PayFast documents for ITN origin checks. */
+export const PAYFAST_VALID_HOSTS = [
+  'www.payfast.co.za',
+  'sandbox.payfast.co.za',
+  'w1w.payfast.co.za',
+  'w2w.payfast.co.za'
+];
 const DEFAULT_SANDBOX_PUBLIC =
   'https://georgevdx.github.io/fire-s-online-app/staging/index.html';
 const DEFAULT_LIVE_PUBLIC =
@@ -39,6 +49,14 @@ export function defaultPublicUrl(mode) {
 
 export function processUrlForMode(mode) {
   return mode === 'live' ? LIVE_PROCESS : SANDBOX_PROCESS;
+}
+
+export function validateUrlForMode(mode) {
+  return mode === 'live' ? LIVE_VALIDATE : SANDBOX_VALIDATE;
+}
+
+export function validateHostForMode(mode) {
+  return mode === 'live' ? 'www.payfast.co.za' : 'sandbox.payfast.co.za';
 }
 
 function withIndexHtml(url) {
@@ -89,6 +107,18 @@ export function loadPayfastConfig(env) {
     throw new Error('Live mode cannot use the sandbox PayFast process URL.');
   }
 
+  const validateUrlOverride = envGet(env, prefix + 'VALIDATE_URL');
+  const validateUrl = validateUrlOverride || validateUrlForMode(mode);
+  if (mode === 'sandbox' && /www\.payfast\.co\.za/i.test(validateUrl)) {
+    throw new Error('Sandbox mode cannot use the live PayFast validate URL.');
+  }
+  if (mode === 'live' && /sandbox\.payfast\.co\.za/i.test(validateUrl)) {
+    throw new Error('Live mode cannot use the sandbox PayFast validate URL.');
+  }
+  if (!/\/eng\/query\/validate\/?$/i.test(validateUrl)) {
+    throw new Error('PayFast validate URL must be the /eng/query/validate endpoint.');
+  }
+
   const publicUrl =
     withIndexHtml(envGet(env, 'FIRE_S_PUBLIC_URL')) || defaultPublicUrl(mode);
   const returnUrl =
@@ -123,6 +153,8 @@ export function loadPayfastConfig(env) {
     cancelUrl,
     notifyUrl,
     processUrl,
+    validateUrl,
+    validateHost: validateHostForMode(mode),
     supabaseUrl
   };
 }
@@ -138,6 +170,7 @@ export function publicPayfastConfig(cfg) {
     returnUrl: cfg.returnUrl,
     cancelUrl: cfg.cancelUrl,
     notifyUrl: cfg.notifyUrl,
+    validateUrl: cfg.validateUrl,
     merchantIdConfigured: !!text(cfg.merchantId),
     configured: true
   };
