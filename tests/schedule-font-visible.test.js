@@ -38,7 +38,7 @@ assert.ok(
   'Live must cache-bust Schedule font CSS'
 );
 assert.ok(
-  /styles\.css\?v=1-3-86-toets-now/.test(read('staging/index.html')) &&
+  /styles\.css\?v=1-3-87-toets-now/.test(read('staging/index.html')) &&
     /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
   'Toets must cache-bust Schedule font CSS'
 );

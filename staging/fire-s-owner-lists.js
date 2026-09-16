@@ -43,18 +43,13 @@
 
   function writeCount(countEl, visibleCount) {
     if (pullState.loading && !pullState.done) {
-      const shown = Math.max(visibleCount || 0, pullState.loaded);
-      if (shown <= 0) {
-        countEl.textContent = 'Loading buildings…';
-        return;
-      }
-      countEl.textContent = 'Loading buildings… ' + shown;
+      countEl.textContent = 'Loading buildings…';
       return;
     }
     const n = visibleCount || 0;
     countEl.textContent = n
-      ? n + (n === 1 ? ' building on your inspection list' : ' buildings on your inspection list')
-      : 'No buildings on your inspection list yet.';
+      ? n + (n === 1 ? ' building on the company inspection list' : ' buildings on the company inspection list')
+      : 'No buildings on the company inspection list yet.';
   }
 
   root.fireSSetOwnerListsPullProgress = applyPullProgress;
@@ -452,7 +447,7 @@
             `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
             `<td class="fire-s-owner-lists-meta">${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
           ].join(''))).join('')
-        : emptyRow(2, 'No buildings on your inspection list yet.');
+        : emptyRow(2, 'No buildings on the company inspection list yet.');
     }
 
     if (upcomingBody) {

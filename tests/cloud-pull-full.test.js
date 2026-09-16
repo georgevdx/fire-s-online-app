@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-86-toets-now',
-  '1-3-cloud-count',
-  '108-76-toets-drop',
-  'fire-s-108-76-toets-drop'
+  '1-3-87-toets-now',
+  '1-3-one-count',
+  '108-77-toets-one',
+  'fire-s-108-77-toets-one'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
@@ -71,7 +71,8 @@ assert.ok(
     /__fireSCloudPullSettled === false/.test(liveLists) &&
     /__fireSCloudPullSettled !== true/.test(stagingLists) &&
     /function fireSUniqueCurrentBuildings\(/.test(stagingApp) &&
-    /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp),
+    /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
+    /Keep Loading until the company pull is complete/.test(stagingApp),
   'Toets Home must wait for a settled unique building count so laptop 8 then 7 cannot wriggle'
 );
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingLists));

@@ -5211,6 +5211,8 @@ async function safeDownloadNewerCloudInspections(options) {
 
     // A short phone pull must not become the finished Home count.
     // Laptop/phone were settling on 8 vs 5 buildings and different Overdue cards.
+    // Keep Loading until the company pull is complete so both devices show
+    // the same unique cloud list — never pick 5 or 7 from a half-finished pull.
     if (incomplete) {
       try { window.__fireSCloudPullSettled = false; } catch (_) {}
       reportPremisesProgress(true);
@@ -5221,6 +5223,10 @@ async function safeDownloadNewerCloudInspections(options) {
         }, 1800);
         return;
       }
+      setTimeout(() => {
+        try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
+      }, 4000);
+      return;
     }
 
     // Laptop leftover locals (untagged / never uploaded) stay at 8 while the

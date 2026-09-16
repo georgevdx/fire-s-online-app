@@ -26,11 +26,11 @@ assert.ok(
   'Live must keep 1.3.65 and drop the old Home cache so the phone count fix sits'
 );
 assert.ok(
-  /Version 1\.3\.86-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-86-toets-now/.test(stagingHtml) &&
-    /1\.3\.86-toets/.test(stagingEnv) &&
-    /fire-s-108-76-toets-drop/.test(stagingSw),
-  'Toets must show 1.3.86-toets so a phone can tell it has dropped 1.3.82-toets'
+  /Version 1\.3\.87-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-87-toets-now/.test(stagingHtml) &&
+    /1\.3\.87-toets/.test(stagingEnv) &&
+    /fire-s-108-77-toets-one/.test(stagingSw),
+  'Toets must show 1.3.87-toets so a phone can tell it has dropped 1.3.82-toets'
 );
 
 function assertSameCountSource(app, label) {

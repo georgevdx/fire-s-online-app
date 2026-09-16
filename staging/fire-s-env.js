@@ -38,7 +38,7 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.86-toets' : '1.3.27',
+    appVersion: staging ? '1.3.87-toets' : '1.3.27',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,
@@ -86,10 +86,10 @@
       'font-family:Arial,sans-serif;font-size:0.95rem;line-height:1.35;text-align:center;';
     if (stagingCloudReady) {
       bar.textContent =
-        'TOETS-BLAD 1.3.86-toets — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie.';
+        'TOETS-BLAD 1.3.87-toets — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie.';
     } else {
       bar.textContent =
-        'TOETS-BLAD 1.3.86-toets — nie vir kliënte. Die toets-wolk is nog nie gekoppel nie. Moenie hier Subscribe asof dit live is nie.';
+        'TOETS-BLAD 1.3.87-toets — nie vir kliënte. Die toets-wolk is nog nie gekoppel nie. Moenie hier Subscribe asof dit live is nie.';
     }
     var body = root.document.body;
     if (body) body.insertBefore(bar, body.firstChild);

@@ -16,12 +16,12 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.86-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-86-toets-now/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-3-cloud-count/.test(stagingHtml) &&
-    /1\.3\.86-toets/.test(stagingEnv) &&
-    /fire-s-108-76-toets-drop/.test(stagingSw),
-  'Toets must show 1.3.86-toets so a phone can tell it has the stable Home building count'
+  /Version 1\.3\.87-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-87-toets-now/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-3-one-count/.test(stagingHtml) &&
+    /1\.3\.87-toets/.test(stagingEnv) &&
+    /fire-s-108-77-toets-one/.test(stagingSw),
+  'Toets must show 1.3.87-toets so a phone can tell it has the one company building count'
 );
 assert.ok(
   /function fireSPremisesBuildingKey\(project\)/.test(stagingApp) &&
@@ -30,7 +30,7 @@ assert.ok(
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
     /cache: 'no-store'/.test(stagingSw) &&
-    /fireS\.toetsCacheDrop\.1-3-86/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-87/.test(stagingHtml),
   'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
 );
 assert.ok(
@@ -38,6 +38,11 @@ assert.ok(
     /function uniqueActive\(projects\)/.test(stagingLists) &&
     /fireSFilterToCloudBuildings/.test(stagingLists),
   'Toets Home must show Loading until the company pull settles on the cloud building list'
+);
+assert.ok(
+  /company inspection list/.test(stagingLists) &&
+    /Phone and laptop show this same company list/.test(stagingHtml),
+  'Home must say this is the company list so phone and laptop are not two different truths'
 );
 
 const helperStart = stagingApp.indexOf('function fireSHasRecycledCurrentInspection');
@@ -216,15 +221,15 @@ listSandbox.__fireSCloudPullSettled = true;
 listSandbox.fireSRefreshOwnerLists();
 assert.strictEqual(
   el(listElements, 'fireSOwnerListsCount').textContent,
-  '5 buildings on your inspection list',
-  'Settled Home must lock the unique building count shared with the phone'
+  '5 buildings on the company inspection list',
+  'Settled Home must show the unique company building count shared with the phone'
 );
 
 stored.splice(stored.length - 1, 1);
 listSandbox.fireSRefreshOwnerLists();
 assert.strictEqual(
   el(listElements, 'fireSOwnerListsCount').textContent,
-  '5 buildings on your inspection list',
+  '5 buildings on the company inspection list',
   'Delayed Home refresh must not wriggle 8 then 7 after the unique count is locked'
 );
 
@@ -235,7 +240,7 @@ listSandbox.setProjects([
 ]);
 assert.strictEqual(
   el(listElements, 'fireSOwnerListsCount').textContent,
-  '3 buildings on your inspection list',
+  '3 buildings on the company inspection list',
   'A later setProjects after settle may update the unique building count'
 );
 
