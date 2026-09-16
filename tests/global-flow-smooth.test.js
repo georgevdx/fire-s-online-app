@@ -28,12 +28,12 @@ assert.ok(
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-1-copy/.test(liveHtml) &&
-    /app\.js\?v=1-3-65-home/.test(liveHtml),
+    /app\.js\?v=1-3-65-count/.test(liveHtml),
   'Live must load the global-flow script'
 );
 assert.ok(
   /fire-s-global-flow\.js\?v=1-1-copy/.test(html) &&
-    /app\.js\?v=1-3-83-toets-now/.test(html) &&
+    /app\.js\?v=1-3-83-toets-sit/.test(html) &&
     /fire-s-env\.js\?v=1-3-82-ver/.test(html),
   'Toets-blad must load the global-flow script with a fresh cache tag'
 );

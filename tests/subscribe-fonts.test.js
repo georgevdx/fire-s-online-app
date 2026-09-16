@@ -47,14 +47,14 @@ assert.strictEqual(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-65-home/.test(read('index.html')) &&
+  /styles\.css\?v=1-3-65-count/.test(read('index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-sitlive/.test(read('index.html')) &&
     /fire-s-dark-type\.css\?v=1-3-rephead/.test(read('index.html')),
   'Live must cache-bust subscription paper font CSS'
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-83-toets-now/.test(read('staging/index.html')) &&
+  /styles\.css\?v=1-3-83-toets-sit/.test(read('staging/index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-actovd/.test(read('staging/index.html')) &&
     /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
   'Toets must cache-bust subscription paper font CSS'

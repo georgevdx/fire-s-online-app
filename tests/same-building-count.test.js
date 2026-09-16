@@ -9,33 +9,49 @@ function read(name) {
   return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
 }
 
+const liveApp = read('app.js');
+const liveHtml = read('index.html');
+const liveEnv = read('fire-s-env.js');
+const liveSw = read('service-worker.js');
 const stagingApp = read('staging/app.js');
 const stagingHtml = read('staging/index.html');
 const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
+  /Version 1\.3\.65/.test(liveHtml) &&
+    /app\.js\?v=1-3-65-count/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv) &&
+    /fire-s-108-72-count/.test(liveSw),
+  'Live must keep 1.3.65 and drop the old Home cache so the phone count fix sits'
+);
+assert.ok(
   /Version 1\.3\.83-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-83-toets-now/.test(stagingHtml) &&
+    /app\.js\?v=1-3-83-toets-sit/.test(stagingHtml) &&
     /1\.3\.83-toets/.test(stagingEnv) &&
-    /fire-s-108-71-toets-home/.test(stagingSw),
-  'Toets must show 1.3.83-toets so a phone can tell it has the same-building-count build'
+    /fire-s-108-73-toets-sit/.test(stagingSw),
+  'Toets must show 1.3.83-toets so a phone can tell it has dropped 1.3.82-toets'
 );
-assert.ok(
-  /function unionCloudRows\(left, right\)/.test(stagingApp) &&
-    /openCount > filteredCount/.test(stagingApp) &&
-    /otherCount > primaryLen/.test(stagingApp) &&
-    !/if \(Array\.isArray\(primary\.data\) && primary\.data\.length > 0\) \{\s*return primary;/.test(
-      stagingApp
-    ),
-  'Toets must use the larger open/filtered cloud inventory instead of keeping a short 5-row pull'
-);
-assert.ok(
-  /function queueLocalPremisesMissingFromCloud\(/.test(stagingApp) &&
-    /queueLocalPremisesMissingFromCloud\(/.test(stagingApp) &&
-    /retry < 4/.test(stagingApp),
-  'Toets must re-queue laptop-only premises after a complete company pull'
-);
+
+function assertSameCountSource(app, label) {
+  assert.ok(
+    /function unionCloudRows\(left, right\)/.test(app) &&
+      /openCount > filteredCount/.test(app) &&
+      /otherCount > primaryLen/.test(app) &&
+      !/if \(Array\.isArray\(primary\.data\) && primary\.data\.length > 0\) \{\s*return primary;/.test(
+        app
+      ),
+    label + ' must use the larger open/filtered cloud inventory instead of keeping a short 5-row pull'
+  );
+  assert.ok(
+    /function queueLocalPremisesMissingFromCloud\(/.test(app) &&
+      /queueLocalPremisesMissingFromCloud\(/.test(app) &&
+      /retry < 4/.test(app),
+    label + ' must re-queue laptop-only premises after a complete company pull'
+  );
+}
+assertSameCountSource(liveApp, 'Live');
+assertSameCountSource(stagingApp, 'Toets');
 
 function rowsFor(count, prefix, companyId) {
   const rows = [];
@@ -99,12 +115,12 @@ function loadFetch(appSrc, spec) {
   return { fetch: sandbox.fetchCompanyInspectionsFromCloud, calls: calls };
 }
 
-(async function run() {
+async function runAppCases(appSrc, label) {
   const five = rowsFor(5, 'co', 'co-1');
   const extra = rowsFor(3, 'own', null);
   const eight = five.concat(extra);
 
-  const split = loadFetch(stagingApp, function spec(args) {
+  const split = loadFetch(appSrc, function spec(args) {
     const source = args.filtered ? five : eight;
     return {
       data: source.slice(args.from, args.to + 1),
@@ -116,16 +132,16 @@ function loadFetch(appSrc, spec) {
     'user-1',
     'inspection_data, updated_at, company_id'
   );
-  assert.strictEqual(splitResult.error, null);
-  assert.strictEqual(splitResult.incomplete, false);
+  assert.strictEqual(splitResult.error, null, label);
+  assert.strictEqual(splitResult.incomplete, false, label);
   assert.strictEqual(
     splitResult.data.length,
     8,
-    'phone must pull untagged own rows when the open inventory is larger than the filtered company list'
+    label + ': phone must pull untagged own rows when the open inventory is larger than the filtered company list'
   );
-  assert.strictEqual(splitResult.expectedTotal, 8);
+  assert.strictEqual(splitResult.expectedTotal, 8, label);
 
-  const shortFiltered = loadFetch(stagingApp, function spec(args) {
+  const shortFiltered = loadFetch(appSrc, function spec(args) {
     if (args.filtered && !args.isIndex) {
       if (args.from >= 5) {
         return { data: null, count: eight.length, error: { message: 'network drop' } };
@@ -146,13 +162,13 @@ function loadFetch(appSrc, spec) {
   assert.strictEqual(
     recovered.data.length,
     8,
-    'an incomplete filtered pull of 5 must still take the open inventory of 8'
+    label + ': an incomplete filtered pull of 5 must still take the open inventory of 8'
   );
-  assert.strictEqual(recovered.incomplete, false);
+  assert.strictEqual(recovered.incomplete, false, label);
 
-  const qStart = stagingApp.indexOf('function fireSCloudRowInspectionId');
-  const qEnd = stagingApp.indexOf('function fireSIsLocalProfileFallback');
-  assert.ok(qStart > 0 && qEnd > qStart, 'missing-cloud queue helper must exist');
+  const qStart = appSrc.indexOf('function fireSCloudRowInspectionId');
+  const qEnd = appSrc.indexOf('function fireSIsLocalProfileFallback');
+  assert.ok(qStart > 0 && qEnd > qStart, label + ': missing-cloud queue helper must exist');
   const queued = [];
   const queueSandbox = {
     currentUserProfile: { companyId: 'co-1' },
@@ -166,7 +182,7 @@ function loadFetch(appSrc, spec) {
       queued.push(String(id));
     }
   };
-  vm.runInNewContext(stagingApp.slice(qStart, qEnd), queueSandbox);
+  vm.runInNewContext(appSrc.slice(qStart, qEnd), queueSandbox);
   const queuedCount = queueSandbox.queueLocalPremisesMissingFromCloud(
     [
       { id: 'co-0', companyId: 'co-1' },
@@ -180,11 +196,11 @@ function loadFetch(appSrc, spec) {
     ],
     five
   );
-  assert.strictEqual(queuedCount, 3);
+  assert.strictEqual(queuedCount, 3, label);
   assert.deepStrictEqual(queued.sort(), ['own-0', 'own-1', 'own-2']);
 
-  const fStart = stagingApp.indexOf('function fireSIsLocalProfileFallback');
-  const fEnd = stagingApp.indexOf('\nfunction getProjectCloudMetadata');
+  const fStart = appSrc.indexOf('function fireSIsLocalProfileFallback');
+  const fEnd = appSrc.indexOf('\nfunction getProjectCloudMetadata');
   const filterSandbox = {
     fireSIsDeletedPremises() {
       return false;
@@ -193,7 +209,7 @@ function loadFetch(appSrc, spec) {
       return false;
     }
   };
-  vm.runInNewContext(stagingApp.slice(fStart, fEnd), filterSandbox);
+  vm.runInNewContext(appSrc.slice(fStart, fEnd), filterSandbox);
   const profile = {
     id: 'user-1',
     email: 'owner@example.com',
@@ -213,9 +229,13 @@ function loadFetch(appSrc, spec) {
   assert.deepStrictEqual(
     visible.map(function (row) { return row.id; }).sort(),
     ['co-row', 'legacy', 'mine-untagged'],
-    'company Home must keep company rows, own untagged leftovers, and untagged legacy buildings'
+    label + ': company Home must keep company rows, own untagged leftovers, and untagged legacy buildings'
   );
+}
 
+(async function run() {
+  await runAppCases(liveApp, 'Live');
+  await runAppCases(stagingApp, 'Toets');
   console.log('same-building-count.test.js: ok');
 })().catch(function (err) {
   console.error(err);

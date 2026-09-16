@@ -66,8 +66,12 @@ assert.ok(
   /function hideOwnerCountLine\(/.test(liveApp) &&
     /function hideOwnerCountLine\(/.test(stagingApp) &&
     /A short phone pull must not become the finished Home count/.test(liveApp) &&
-    /A short phone pull must not become the finished Home count/.test(stagingApp),
-  'Live and toets must hide the duplicate Command Centre line and wait for a complete cloud pull'
+    /A short phone pull must not become the finished Home count/.test(stagingApp) &&
+    /function unionCloudRows\(left, right\)/.test(liveApp) &&
+    /function unionCloudRows\(left, right\)/.test(stagingApp) &&
+    /queueLocalPremisesMissingFromCloud\(/.test(liveApp) &&
+    /queueLocalPremisesMissingFromCloud\(/.test(stagingApp),
+  'Live and toets must hide the duplicate Command Centre line and use the same company building pull'
 );
 assert.ok(
   /__fireSCloudPullSettled === false/.test(liveLists) &&

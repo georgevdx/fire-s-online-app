@@ -123,21 +123,21 @@ assertCommentForm(
 
 assert.ok(
   /Version 1\.3\.83-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-83-toets-now/.test(stagingHtml) &&
+    /app\.js\?v=1-3-83-toets-sit/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-82-ver/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-71-toets-home/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-73-toets-sit/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
     /TOETS-BLAD 1\.3\.83-toets/.test(read('staging/fire-s-env.js')) &&
     /1\.3\.83-toets/.test(read('staging/fire-s-env.js')) &&
-    /fire-s-108-71-toets-home/.test(read('staging/service-worker.js')),
+    /fire-s-108-73-toets-sit/.test(read('staging/service-worker.js')),
   'Toets-blad must show 1.3.83-toets and drop the stuck 1.3.78 cache'
 );
 
 assert.ok(
   /Version 1\.3\.65/.test(liveHtml) &&
-    /app\.js\?v=1-3-65-home/.test(liveHtml) &&
-    /service-worker\.js\?v=108-68-home/.test(liveHtml) &&
-    /fire-s-108-68-home/.test(read('service-worker.js')) &&
+    /app\.js\?v=1-3-65-count/.test(liveHtml) &&
+    /service-worker\.js\?v=108-72-count/.test(liveHtml) &&
+    /fire-s-108-72-count/.test(read('service-worker.js')) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(read('fire-s-env.js')),
   'Live must sit the comment form without bumping 1.3.65'
 );

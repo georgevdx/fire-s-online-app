@@ -5187,13 +5187,33 @@ async function safeDownloadNewerCloudInspections(options) {
       try { window.__fireSCloudPullSettled = false; } catch (_) {}
       reportPremisesProgress(true);
       const retry = Number(options && options.retry) || 0;
-      if (retry < 2) {
+      if (retry < 4) {
         setTimeout(() => {
           try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
         }, 1800);
         return;
       }
     }
+
+    // Laptop leftover locals (untagged / never uploaded) stay at 8 while the
+    // phone only has the 5 company-tagged cloud rows. Stamp and push them so
+    // the next phone pull sees the same company list.
+    try {
+      const cid = currentUserProfile && currentUserProfile.companyId;
+      if (cid) {
+        restampLocalInspectionsWithCompany(
+          cid,
+          currentUserProfile.companyName
+        );
+      }
+      if (!incomplete) {
+        queueLocalPremisesMissingFromCloud(
+          localProjects,
+          Array.isArray(data) ? data : []
+        );
+      }
+      uploadPendingInspections();
+    } catch (_) {}
 
     try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
@@ -7455,6 +7475,58 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
   return changed;
 }
 
+function fireSCloudRowInspectionId(row) {
+  if (!row) return '';
+  return String(
+    row.id ||
+      (row.inspection_data && row.inspection_data.id) ||
+      ''
+  ).trim();
+}
+
+/**
+ * After a complete company pull, re-queue local premises the cloud did not
+ * return. Laptop-only leftovers then upload with company_id so the phone
+ * can show the same building list.
+ */
+function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
+  const cloudIds = new Set();
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id = fireSCloudRowInspectionId(row);
+    if (id) cloudIds.add(id);
+  });
+  const cid = String(
+    (typeof currentUserProfile !== 'undefined' &&
+      currentUserProfile &&
+      currentUserProfile.companyId) ||
+      ''
+  ).trim();
+  let queued = 0;
+  (Array.isArray(localProjects) ? localProjects : []).forEach(project => {
+    if (!project || !project.id) return;
+    if (
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(project)
+    ) {
+      return;
+    }
+    if (
+      typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
+      fireSIsEmptyRecycleLeftoverPremises(project)
+    ) {
+      return;
+    }
+    const projectCid = String(
+      project.companyId || project.company_id || ''
+    ).trim();
+    if (cid && projectCid && projectCid !== cid) return;
+    if (cloudIds.has(String(project.id))) return;
+    queueInspectionForUpload(project.id);
+    queued += 1;
+  });
+  return queued;
+}
+
 function fireSIsLocalProfileFallback(profile) {
   if (!profile) return true;
   const id = String(profile.id || '');
@@ -7497,7 +7569,16 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
         project.companyId || project.company_id || ''
       ).trim();
       if (projectCompanyId === profileCompanyId) return true;
-      if (!projectCompanyId && mine(project)) return true;
+      if (!projectCompanyId) {
+        if (mine(project)) return true;
+        const hasOwner = String(
+          project.createdByUserId ||
+            project.user_id ||
+            project.createdByEmail ||
+            ''
+        ).trim();
+        if (!hasOwner) return true;
+      }
       return false;
     });
     if (matched.length) return matched;
@@ -7707,41 +7788,98 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   }
 
   const preferFiltered = !!(currentUserProfile && currentUserProfile.companyId);
-  let inventoryMode = preferFiltered ? 'filtered' : 'open';
-  let inventory = await fetchInventory(
-    inventoryMode === 'filtered' ? filteredIndexQuery : openIndexQuery
-  );
-  if (inventory.error || !inventory.rows.length) {
-    const other = inventoryMode === 'filtered' ? 'open' : 'filtered';
-    const fallbackInventory = await fetchInventory(
-      other === 'filtered' ? filteredIndexQuery : openIndexQuery
-    );
-    if (!fallbackInventory.error && fallbackInventory.rows.length) {
-      inventory = fallbackInventory;
-      inventoryMode = other;
-    }
+
+  function inventoryCount(inv) {
+    if (!inv || inv.error) return 0;
+    const listed = Array.isArray(inv.rows) ? inv.rows.length : 0;
+    const counted = typeof inv.count === 'number' ? inv.count : 0;
+    return Math.max(listed, counted);
   }
-  const expectedTotal = inventory.count || inventory.rows.length || null;
+
+  function unionCloudRows(left, right) {
+    const map = new Map();
+    function add(list) {
+      (Array.isArray(list) ? list : []).forEach(row => {
+        const id = String(
+          (row && row.id) ||
+            (row && row.inspection_data && row.inspection_data.id) ||
+            ''
+        ).trim();
+        if (id && !map.has(id)) map.set(id, row);
+      });
+    }
+    add(left);
+    add(right);
+    return Array.from(map.values());
+  }
+
+  const openInv = await fetchInventory(openIndexQuery);
+  let filteredInv = { rows: [], count: 0, error: { message: 'skip' } };
+  if (preferFiltered) {
+    filteredInv = await fetchInventory(filteredIndexQuery);
+  } else if (openInv.error || !openInv.rows.length) {
+    filteredInv = await fetchInventory(filteredIndexQuery);
+  }
+  const filteredCount = inventoryCount(filteredInv);
+  const openCount = inventoryCount(openInv);
+
+  let inventoryMode;
+  let inventory;
+  if (openCount > filteredCount) {
+    inventoryMode = 'open';
+    inventory = openInv;
+  } else if (filteredCount > openCount) {
+    inventoryMode = 'filtered';
+    inventory = filteredInv;
+  } else if (preferFiltered && filteredCount) {
+    inventoryMode = 'filtered';
+    inventory = filteredInv;
+  } else {
+    inventoryMode = 'open';
+    inventory = openInv.error && filteredCount ? filteredInv : openInv;
+    if (inventory === filteredInv) inventoryMode = 'filtered';
+  }
+
+  const expectedTotal =
+    Math.max(filteredCount, openCount, inventoryCount(inventory)) || null;
   report([], expectedTotal, true);
 
   const primaryQuery = inventoryMode === 'filtered' ? filteredQuery : openQuery;
   const secondaryQuery = inventoryMode === 'filtered' ? openQuery : filteredQuery;
-  const primary = await fetchAll(primaryQuery, expectedTotal);
-  if (!primary.error && !primary.incomplete) {
-    return primary;
+  const primaryExpected =
+    inventoryMode === 'filtered'
+      ? filteredCount || expectedTotal
+      : openCount || expectedTotal;
+  const primary = await fetchAll(primaryQuery, primaryExpected);
+  const primaryLen = Array.isArray(primary.data) ? primary.data.length : 0;
+  const otherCount = inventoryMode === 'filtered' ? openCount : filteredCount;
+  const needSecondary =
+    !!(primary.error && !primaryLen) ||
+    !!primary.incomplete ||
+    otherCount > primaryLen;
+
+  if (!needSecondary) {
+    return {
+      data: primary.data,
+      error: primary.error,
+      incomplete:
+        !!(expectedTotal && primaryLen < expectedTotal) || !!primary.incomplete,
+      expectedTotal: expectedTotal
+    };
   }
-  if (Array.isArray(primary.data) && primary.data.length > 0) {
-    return primary;
-  }
-  const secondary = await fetchAll(secondaryQuery, expectedTotal);
-  if (
-    !secondary.error &&
-    Array.isArray(secondary.data) &&
-    secondary.data.length >= (Array.isArray(primary.data) ? primary.data.length : 0)
-  ) {
-    return secondary;
-  }
-  return primary;
+
+  const secondaryExpected =
+    inventoryMode === 'filtered'
+      ? openCount || expectedTotal
+      : filteredCount || expectedTotal;
+  const secondary = await fetchAll(secondaryQuery, secondaryExpected);
+  const merged = unionCloudRows(primary.data, secondary.data);
+  return {
+    data: merged,
+    error: merged.length ? null : primary.error || secondary.error,
+    incomplete: !!(expectedTotal && merged.length < expectedTotal),
+    expectedTotal: expectedTotal
+  };
 }
 
 function applyInspectionDeleteFilter(query, userId) {
