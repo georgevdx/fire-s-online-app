@@ -7909,33 +7909,24 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
       ? filteredCount || expectedTotal
       : openCount || expectedTotal;
   const primary = await fetchAll(primaryQuery, primaryExpected);
-  const primaryLen = Array.isArray(primary.data) ? primary.data.length : 0;
-  const otherCount = inventoryMode === 'filtered' ? openCount : filteredCount;
-  const needSecondary =
-    !!(primary.error && !primaryLen) ||
-    !!primary.incomplete ||
-    otherCount > primaryLen;
-
-  if (!needSecondary) {
-    return {
-      data: primary.data,
-      error: primary.error,
-      incomplete:
-        !!(expectedTotal && primaryLen < expectedTotal) || !!primary.incomplete,
-      expectedTotal: expectedTotal
-    };
-  }
-
   const secondaryExpected =
     inventoryMode === 'filtered'
       ? openCount || expectedTotal
       : filteredCount || expectedTotal;
   const secondary = await fetchAll(secondaryQuery, secondaryExpected);
   const merged = unionCloudRows(primary.data, secondary.data);
+  const mergedLen = merged.length;
+  const inventoryFailed = !!(
+    openInv.error ||
+    (preferFiltered && filteredInv.error)
+  );
   return {
     data: merged,
     error: merged.length ? null : primary.error || secondary.error,
-    incomplete: !!(expectedTotal && merged.length < expectedTotal),
+    incomplete:
+      !!inventoryFailed ||
+      !!(expectedTotal && mergedLen < expectedTotal) ||
+      (!expectedTotal && (!mergedLen || (!!primary.incomplete && !!secondary.incomplete))),
     expectedTotal: expectedTotal
   };
 }

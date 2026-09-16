@@ -26,23 +26,33 @@ assert.ok(
   'Live must keep 1.3.65 and drop the old Home cache so the phone count fix sits'
 );
 assert.ok(
-  /Version 1\.3\.87-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-87-toets-now/.test(stagingHtml) &&
-    /1\.3\.87-toets/.test(stagingEnv) &&
-    /fire-s-108-77-toets-one/.test(stagingSw),
-  'Toets must show 1.3.87-toets so a phone can tell it has dropped 1.3.82-toets'
+  /Version 1\.3\.88-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-88-toets-now/.test(stagingHtml) &&
+    /1\.3\.88-toets/.test(stagingEnv) &&
+    /fire-s-108-78-toets-union/.test(stagingSw),
+  'Toets must show 1.3.88-toets so a phone can tell it has dropped 1.3.82-toets'
 );
 
-function assertSameCountSource(app, label) {
+function assertSameCountSource(app, label, alwaysUnion) {
   assert.ok(
     /function unionCloudRows\(left, right\)/.test(app) &&
       /openCount > filteredCount/.test(app) &&
-      /otherCount > primaryLen/.test(app) &&
       !/if \(Array\.isArray\(primary\.data\) && primary\.data\.length > 0\) \{\s*return primary;/.test(
         app
       ),
     label + ' must use the larger open/filtered cloud inventory instead of keeping a short 5-row pull'
   );
+  if (alwaysUnion) {
+    assert.ok(
+      /inventoryFailed/.test(app),
+      label + ' must always union filtered and open pulls so a phone 5 cannot skip laptop extras'
+    );
+  } else {
+    assert.ok(
+      /otherCount > primaryLen/.test(app),
+      label + ' must fetch the larger inventory when the short list is incomplete'
+    );
+  }
   assert.ok(
     /function queueLocalPremisesMissingFromCloud\(/.test(app) &&
       /queueLocalPremisesMissingFromCloud\(/.test(app) &&
@@ -50,8 +60,8 @@ function assertSameCountSource(app, label) {
     label + ' must re-queue laptop-only premises after a complete company pull'
   );
 }
-assertSameCountSource(liveApp, 'Live');
-assertSameCountSource(stagingApp, 'Toets');
+assertSameCountSource(liveApp, 'Live', false);
+assertSameCountSource(stagingApp, 'Toets', true);
 
 function rowsFor(count, prefix, companyId) {
   const rows = [];
@@ -231,6 +241,26 @@ async function runAppCases(appSrc, label) {
     ['co-row', 'legacy', 'mine-untagged'],
     label + ': company Home must keep company rows, own untagged leftovers, and untagged legacy buildings'
   );
+
+  if (label === 'Toets') {
+    const fiveOnly = rowsFor(5, 'co', 'co-1');
+    const openFail = loadFetch(appSrc, function spec(args) {
+      if (!args.filtered) {
+        return { data: null, count: null, error: { message: 'timeout' } };
+      }
+      return {
+        data: fiveOnly.slice(args.from, args.to + 1),
+        count: fiveOnly.length,
+        error: null
+      };
+    });
+    const stalled = await openFail.fetch('user-1');
+    assert.strictEqual(
+      stalled.incomplete,
+      true,
+      'Toets: if the open cloud list times out, Home must not finish as 5 while the laptop has 7'
+    );
+  }
 }
 
 (async function run() {
