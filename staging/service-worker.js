@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-73-toets-sit';
+const CACHE = 'fire-s-108-74-toets-recycle';
 const PRECACHE = [
   './',
   './index.html',

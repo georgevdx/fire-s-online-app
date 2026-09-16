@@ -4958,6 +4958,43 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
     if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
     const localProject = mergedMap.get(cloudProject.id);
 
+    // Never bring a locally deleted premises or Recycle leftover back as a
+    // live building. If the cloud already has the Recycle/deleted stamp,
+    // that stamp wins so phone and laptop hide the same premises.
+    const localDeleted =
+      localProject &&
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(localProject);
+    const cloudDeleted =
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(cloudProject);
+    const localHidden =
+      localProject &&
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(localProject);
+    const cloudHidden =
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(cloudProject);
+    const localTime = localProject && localProject.lastSaved
+      ? new Date(localProject.lastSaved).getTime()
+      : 0;
+    const cloudTime = cloudProject.lastSaved
+      ? new Date(cloudProject.lastSaved).getTime()
+      : 0;
+
+    if (localDeleted && !cloudDeleted && !(cloudTime > localTime)) {
+      return;
+    }
+    if (cloudDeleted) {
+      if (!localProject || localDeleted || cloudTime >= localTime) {
+        mergedMap.set(cloudProject.id, cloudProject);
+      }
+      return;
+    }
+    if (localHidden && !cloudHidden && !(cloudTime > localTime)) {
+      return;
+    }
+
     // Never bring a locally deleted premises or empty Recycle leftover back.
     if (localProject && typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(localProject)) {
       return;
@@ -4981,17 +5018,7 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
       const cloudLive =
         typeof fireSHasLiveCurrentInspection === 'function' &&
         fireSHasLiveCurrentInspection(cloudProject);
-      const localTime = localProject.lastSaved ? new Date(localProject.lastSaved).getTime() : 0;
-      const cloudTime = cloudProject.lastSaved ? new Date(cloudProject.lastSaved).getTime() : 0;
       if (!(cloudLive && cloudTime > localTime)) return;
-    }
-
-    if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(cloudProject)) {
-      const localDeleted = mergedMap.get(cloudProject.id);
-      if (!localDeleted || fireSIsDeletedPremises(localDeleted)) {
-        mergedMap.set(cloudProject.id, cloudProject);
-      }
-      return;
     }
 
     if (!localProject) {
@@ -5012,14 +5039,6 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
       });
       return;
     }
-
-    const localTime = localProject.lastSaved
-      ? new Date(localProject.lastSaved).getTime()
-      : 0;
-
-    const cloudTime = cloudProject.lastSaved
-      ? new Date(cloudProject.lastSaved).getTime()
-      : 0;
 
     if (cloudTime > localTime) {
       mergedMap.set(cloudProject.id, cloudProject);
@@ -7512,11 +7531,24 @@ function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
       typeof fireSIsDeletedPremises === 'function' &&
       fireSIsDeletedPremises(project)
     ) {
+      const cloudRow = (Array.isArray(cloudRows) ? cloudRows : []).find(row =>
+        fireSCloudRowInspectionId(row) === String(project.id)
+      );
+      const cloudData = (cloudRow && cloudRow.inspection_data) || cloudRow || {};
+      const cloudDeleted = !!(
+        cloudData.deletedAt ||
+        cloudData.dataManagementDeletedAt ||
+        String(cloudData.deleteType || '').toLowerCase() === 'entire_premises'
+      );
+      if (!cloudDeleted) {
+        queueInspectionForUpload(project.id);
+        queued += 1;
+      }
       return;
     }
     if (
-      typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
-      fireSIsEmptyRecycleLeftoverPremises(project)
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
     ) {
       return;
     }
@@ -7557,8 +7589,10 @@ function fireSProjectOwnedByProfile(project, profile) {
 
 function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
   const activeProjects = (Array.isArray(projects) ? projects : []).filter(project =>
-    !fireSIsDeletedPremises(project) &&
-    !fireSIsEmptyRecycleLeftoverPremises(project)
+    typeof fireSIsHiddenFromCurrentLists === 'function'
+      ? !fireSIsHiddenFromCurrentLists(project)
+      : (!fireSIsDeletedPremises(project) &&
+        !fireSIsEmptyRecycleLeftoverPremises(project))
   );
 
   if (isAdmin) return activeProjects;
@@ -26371,15 +26405,54 @@ function fireSHasInspectionHistoryRecords(project) {
   return Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0;
 }
 
+function fireSLiveInspectionMatchesRecycledCurrent(project) {
+  if (!fireSHasRecycledCurrentInspection(project)) return false;
+  const liveKeys = [
+    project.inspectionNumber,
+    project.inspectionId,
+    project.currentInspectionId
+  ]
+    .map(value => String(value || '').trim())
+    .filter(Boolean);
+  if (!liveKeys.length) return false;
+  const items = project.recycleBin.currentInspections;
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i] || {};
+    const snap = item.snapshot && typeof item.snapshot === 'object' ? item.snapshot : {};
+    const recycledKeys = [
+      item.inspectionLabel,
+      snap.inspectionNumber,
+      snap.inspectionId,
+      snap.currentInspectionId
+    ]
+      .map(value => String(value || '').trim())
+      .filter(Boolean);
+    if (liveKeys.some(key => recycledKeys.indexOf(key) !== -1)) return true;
+  }
+  return false;
+}
+
 // Empty leftover after "Delete Incomplete Inspection": the premises shell is
 // still in storage for Recycle, but Gateway must not keep showing the card.
+// A current inspection that is already in Recycle must also stay off current
+// lists even if leftover answers or the inspection number were restored.
 function fireSIsEmptyRecycleLeftoverPremises(project) {
   if (!project) return false;
   if (!fireSHasRecycledCurrentInspection(project)) return false;
-  if (fireSHasLiveCurrentInspection(project)) return false;
   if (fireSIsScheduledNewPremisesOnly(project)) return false;
+  if (fireSLiveInspectionMatchesRecycledCurrent(project)) return true;
+  if (fireSHasLiveCurrentInspection(project)) return false;
   if (fireSHasInspectionHistoryRecords(project)) return false;
   return true;
+}
+
+function fireSIsHiddenFromCurrentLists(project) {
+  if (!project) return true;
+  if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
+    return true;
+  }
+  if (fireSIsEmptyRecycleLeftoverPremises(project)) return true;
+  return false;
 }
 
 function fireSIsInspectionOverdue(project) {
@@ -26760,6 +26833,7 @@ window.fireSApplyScheduleAfterVisit = fireSApplyScheduleAfterVisit;
 window.fireSIsCycledInspection = fireSIsCycledInspection;
 window.fireSIsDeletedPremises = fireSIsDeletedPremises;
 window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises;
+window.fireSIsHiddenFromCurrentLists = fireSIsHiddenFromCurrentLists;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
 window.fireSHasLiveCurrentInspection = fireSHasLiveCurrentInspection;
 window.fireSIsScheduledNewPremisesOnly = fireSIsScheduledNewPremisesOnly;

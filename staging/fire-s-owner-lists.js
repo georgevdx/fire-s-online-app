@@ -204,6 +204,11 @@
   function isDeleted(project) {
     if (!project) return true;
     try {
+      if (typeof root.fireSIsHiddenFromCurrentLists === 'function') {
+        return !!root.fireSIsHiddenFromCurrentLists(project);
+      }
+    } catch (_) {}
+    try {
       if (typeof root.fireSIsDeletedPremises === 'function') {
         return !!root.fireSIsDeletedPremises(project);
       }
@@ -217,6 +222,11 @@
   }
 
   function isRecycleLeftover(project) {
+    try {
+      if (typeof root.fireSIsHiddenFromCurrentLists === 'function') {
+        return !!root.fireSIsHiddenFromCurrentLists(project);
+      }
+    } catch (_) {}
     try {
       if (typeof root.fireSIsEmptyRecycleLeftoverPremises === 'function') {
         return !!root.fireSIsEmptyRecycleLeftoverPremises(project);
