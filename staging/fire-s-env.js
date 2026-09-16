@@ -44,21 +44,12 @@
     cloudReady: staging ? stagingCloudReady : true,
     notifyCompanyS: !staging,
     storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth',
-    payfast: staging
-      ? {
-          enabled: true,
-          sandbox: true,
-          merchantId: '10000100',
-          merchantKey: '46f0cd694581a',
-          passphrase: 'jt7NOE43FZPn'
-        }
-      : {
-          enabled: false,
-          sandbox: false,
-          merchantId: '',
-          merchantKey: '',
-          passphrase: ''
-        }
+    // Public flags only. Merchant secrets stay on the Edge Function.
+    payfast: {
+      enabled: !!staging,
+      mode: 'sandbox',
+      checkoutFunction: 'payfast-checkout'
+    }
   };
 
   function paintVersion() {

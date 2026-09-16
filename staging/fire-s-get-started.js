@@ -1412,13 +1412,17 @@
     clearPendingSubscribe();
     if (window.fireSPayfast && window.fireSPayfast.isEnabled && window.fireSPayfast.isEnabled()) {
       setStatus('Opening PayFast…');
-      window.fireSPayfast.startCheckout({
+      var paid = await window.fireSPayfast.startCheckout({
         kind: 'subscribe',
         company: company,
         email: email,
         interval: intervalId
       });
-      return;
+      if (paid && paid.ok) return;
+      setStatus(
+        (paid && paid.error) ||
+          'PayFast is not ready on the server. Free trial started. Opening Fire-S…'
+      );
     }
     setStatus('Free trial started. Opening Fire-S…');
     mode = 'choices';

@@ -1,0 +1,5 @@
+# Minimal function config. Secrets live in the dashboard, not here.
+# Toets project should set PAYFAST_MODE=sandbox (the code default).
+
+[functions.payfast-checkout]
+verify_jwt = true

@@ -85,11 +85,17 @@
       return;
     }
     setMessage('Opening PayFast…');
-    pf.startCheckout({
-      kind: 'subscribe',
-      company: companyName() || 'Fire-S',
-      email: email,
-      interval: interval
+    Promise.resolve(
+      pf.startCheckout({
+        kind: 'subscribe',
+        company: companyName() || 'Fire-S',
+        email: email,
+        interval: interval
+      })
+    ).then(function (res) {
+      if (res && res.ok === false) {
+        setMessage(res.error || 'PayFast is not ready on the server.', true);
+      }
     });
   }
 
@@ -395,12 +401,16 @@
     paintExpiryReminder();
     if (payfastOn()) {
       setMessage('Opening PayFast to subscribe again with this same company name…');
-      payfast().startCheckout({
+      var again = await payfast().startCheckout({
         kind: 'subscribe',
         company: company || 'Fire-S',
         email: ownerEmail(),
         interval: intervalId
       });
+      if (again && again.ok === false) {
+        setMessage(again.error || 'PayFast is not ready on the server.', true);
+        return;
+      }
       return;
     }
     setMessage(
@@ -565,13 +575,17 @@
       }
       if (payfastOn()) {
         setMessage('Opening PayFast for this extra login…');
-        payfast().startCheckout({
+        var seatPay = await payfast().startCheckout({
           kind: 'seat',
           company: companyName() || 'Fire-S',
           email: ownerEmail(),
           seatEmail: email,
           interval: intervalId
         });
+        if (seatPay && seatPay.ok === false) {
+          setMessage(seatPay.error || 'PayFast is not ready on the server.', true);
+          return;
+        }
         return;
       }
     } catch (err) {
