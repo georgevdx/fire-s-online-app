@@ -35,7 +35,11 @@ assert.ok(!/passphrase\s*:/.test(envSrc), 'Toets env must not ship a PayFast pas
 assert.ok(!/merchant_key/.test(payfastSrc), 'PWA PayFast module must not post merchant_key itself');
 assert.ok(/functions\/v1/.test(payfastSrc), 'Checkout must call the Edge Function');
 assert.ok(!/generateSignature/.test(payfastSrc), 'Browser must not sign PayFast requests');
-assert.ok(/mode: 'sandbox'/.test(envSrc), 'Toets PayFast mode must be sandbox');
+const fetchBody = payfastSrc.match(/body:\s*JSON\.stringify\(\{[\s\S]*?\}\)/);
+assert.ok(fetchBody, 'Checkout POST body must exist');
+assert.ok(!/amount/.test(fetchBody[0]), 'Browser must not send a price');
+assert.ok(!/companyId/.test(fetchBody[0]), 'Browser must not send company_id as authority');
+assert.ok(!/mPaymentId/.test(fetchBody[0]), 'Browser must not send the payment reference');
 
 const store = {};
 const sandbox = {

@@ -128,8 +128,6 @@
         body: JSON.stringify({
           kind: text(info && info.kind) || 'subscribe',
           interval: interval,
-          company: text(info && info.company),
-          companyId: text(info && info.companyId) || companyId(),
           seatEmail: text(info && info.seatEmail)
         })
       });

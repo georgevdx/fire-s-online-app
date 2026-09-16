@@ -1,5 +1,10 @@
 import { loadPayfastConfig, publicPayfastConfig } from '../_shared/payfast-config.js';
-import { buildSignedCheckoutFields, checkoutAutoPostHtml } from '../_shared/payfast-sign.js';
+import {
+  assertSandboxCheckout,
+  buildSignedCheckoutFields,
+  checkoutAutoPostHtml,
+  resolveAuthoritativeCheckout
+} from '../_shared/payfast-sign.js';
 
 const ALLOWED_ORIGINS = [
   'https://georgevdx.github.io',
@@ -27,7 +32,7 @@ function json(body, status, req) {
 
 function envObject() {
   const out = {};
-  for (const key of [
+  const keys = [
     'PAYFAST_MODE',
     'PAYFAST_ALLOW_LIVE',
     'PAYFAST_SANDBOX_MERCHANT_ID',
@@ -46,23 +51,47 @@ function envObject() {
     'PAYFAST_CANCEL_URL',
     'PAYFAST_NOTIFY_URL',
     'SUPABASE_URL',
-    'SUPABASE_ANON_KEY'
-  ]) {
+    'SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY'
+  ];
+  for (const key of keys) {
     const val = Deno.env.get(key);
     if (val != null) out[key] = val;
   }
   return out;
 }
 
+function safeMessage(err) {
+  const message = String((err && err.message) || 'PayFast is not ready.');
+  if (/passphrase|merchant_key|merchant key|service_role|SERVICE_ROLE/i.test(message)) {
+    return 'PayFast is not configured on the server.';
+  }
+  return message;
+}
+
+function logEvent(event, extra) {
+  const row = Object.assign({ fire_s: 'payfast_checkout', event: event }, extra || {});
+  delete row.passphrase;
+  delete row.merchantKey;
+  delete row.signature;
+  try {
+    console.log(JSON.stringify(row));
+  } catch (_) {}
+}
+
 async function getUser(req, env) {
   const auth = String(req.headers.get('authorization') || '');
   if (!/^bearer\s+/i.test(auth)) {
-    throw new Error('Sign in first, then pay on PayFast.');
+    const err = new Error('Sign in first, then pay on PayFast.');
+    err.status = 401;
+    throw err;
   }
   const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const anon = env.SUPABASE_ANON_KEY || '';
   if (!supabaseUrl || !anon) {
-    throw new Error('PayFast checkout is not configured.');
+    const err = new Error('PayFast checkout is not configured.');
+    err.status = 503;
+    throw err;
   }
   const res = await fetch(supabaseUrl + '/auth/v1/user', {
     headers: {
@@ -71,7 +100,9 @@ async function getUser(req, env) {
     }
   });
   if (!res.ok) {
-    throw new Error('Sign in first, then pay on PayFast.');
+    const err = new Error('Sign in first, then pay on PayFast.');
+    err.status = 401;
+    throw err;
   }
   return res.json();
 }
@@ -94,6 +125,53 @@ async function myCompany(req, env) {
   return row || null;
 }
 
+function canCheckout(role, kind) {
+  const r = String(role || '').toLowerCase();
+  if (r === 'company_owner' || r === 'owner' || r === 'super_admin') return true;
+  if (kind === 'seat' && r === 'manager') return true;
+  return false;
+}
+
+async function beginPending(env, checkout, actorUserId) {
+  const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!supabaseUrl || !serviceKey) {
+    const err = new Error('PayFast checkout cannot record the payment. Try again.');
+    err.status = 503;
+    throw err;
+  }
+  const res = await fetch(supabaseUrl + '/rest/v1/rpc/fire_s_begin_payfast_checkout', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + serviceKey,
+      apikey: serviceKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      p_company_id: checkout.companyId,
+      p_m_payment_id: checkout.mPaymentId,
+      p_plan_code: checkout.planCode,
+      p_billing_interval: checkout.interval,
+      p_amount: checkout.amountNumber,
+      p_kind: checkout.kind,
+      p_actor_user_id: actorUserId || null
+    })
+  });
+  const data = await res.json().catch(function () {
+    return null;
+  });
+  if (!res.ok) {
+    const hint =
+      (data && (data.message || data.hint || data.details || data.error)) ||
+      'Could not start PayFast checkout. The payment was not sent.';
+    const err = new Error(String(hint));
+    err.status = 500;
+    throw err;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return row;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders(req) });
@@ -105,10 +183,14 @@ Deno.serve(async (req) => {
   try {
     const env = envObject();
     const cfg = loadPayfastConfig(env);
+    assertSandboxCheckout(cfg);
+
     const user = await getUser(req, env);
     const email = String((user && user.email) || '').trim().toLowerCase();
     if (!email) {
-      throw new Error('Sign in first, then pay on PayFast.');
+      const err = new Error('Sign in first, then pay on PayFast.');
+      err.status = 401;
+      throw err;
     }
 
     let body = {};
@@ -119,27 +201,60 @@ Deno.serve(async (req) => {
     }
 
     const companyRow = await myCompany(req, env);
+    const companyId = String(
+      (companyRow && (companyRow.out_company_id || companyRow.company_id || companyRow.id)) || ''
+    ).trim();
+    const companyName = String(
+      (companyRow && (companyRow.out_company_name || companyRow.company_name || companyRow.name)) ||
+        ''
+    ).trim();
+    if (!companyId) {
+      const err = new Error('Create your company first, then pay on PayFast.');
+      err.status = 400;
+      throw err;
+    }
+
+    const checkout = resolveAuthoritativeCheckout(
+      { companyId: companyId, companyName: companyName, email: email },
+      body
+    );
+
     const role = String(
       (companyRow && (companyRow.out_member_role || companyRow.role)) || ''
     ).toLowerCase();
-    if (
-      role &&
-      role !== 'company_owner' &&
-      role !== 'owner' &&
-      role !== 'super_admin' &&
-      role !== 'manager'
-    ) {
-      throw new Error('Only the Owner can pay on PayFast.');
+    if (!canCheckout(role, checkout.kind)) {
+      const err = new Error('Only the Owner can pay on PayFast.');
+      err.status = 403;
+      throw err;
+    }
+
+    const pending = await beginPending(env, checkout, user && user.id);
+    if (!pending || pending.ok !== true || pending.activated === true) {
+      const err = new Error('Could not start PayFast checkout. The payment was not sent.');
+      err.status = 500;
+      throw err;
     }
 
     const fields = buildSignedCheckoutFields(cfg, {
-      kind: body.kind,
-      interval: body.interval,
-      company: body.company || (companyRow && (companyRow.out_company_name || companyRow.name)),
-      companyId: body.companyId || (companyRow && (companyRow.out_company_id || companyRow.id)),
-      email: email,
-      seatEmail: body.seatEmail,
-      mPaymentId: body.mPaymentId
+      kind: checkout.kind,
+      interval: checkout.interval,
+      company: checkout.companyName,
+      companyId: checkout.companyId,
+      email: checkout.email,
+      seatEmail: checkout.seatEmail,
+      mPaymentId: checkout.mPaymentId
+    });
+
+    logEvent('CHECKOUT_STARTED', {
+      company_id: checkout.companyId,
+      m_payment_id: checkout.mPaymentId,
+      plan_code: checkout.planCode,
+      billing_interval: checkout.interval,
+      amount: checkout.amount,
+      kind: checkout.kind,
+      mode: 'sandbox',
+      notify_url: cfg.notifyUrl,
+      activates_on_return_url: false
     });
 
     const html = checkoutAutoPostHtml(cfg.processUrl, fields);
@@ -151,13 +266,13 @@ Deno.serve(async (req) => {
       )
     });
   } catch (err) {
-    const message = String((err && err.message) || 'PayFast is not ready.');
-    const safe = /passphrase|merchant_key|merchant key/i.test(message)
-      ? 'PayFast is not configured on the server.'
-      : message;
+    const status = Number(err && err.status) || 400;
+    const safe = safeMessage(err);
+    logEvent('CHECKOUT_FAILED', { error: safe, status: status });
     return json(
       {
         error: safe,
+        activated: false,
         public: publicPayfastConfig(
           (function () {
             try {
@@ -168,7 +283,7 @@ Deno.serve(async (req) => {
           })()
         )
       },
-      400,
+      status,
       req
     );
   }

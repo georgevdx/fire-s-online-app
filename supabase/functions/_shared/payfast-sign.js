@@ -82,6 +82,60 @@ export function amountForInterval(interval) {
   return formatAmount(SERVER_PRICES[id]);
 }
 
+export function newMerchantPaymentId(kind) {
+  const prefix = 'fs-' + text(kind || 'sub').slice(0, 8);
+  let rand = '';
+  try {
+    if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+      rand = globalThis.crypto.randomUUID();
+    }
+  } catch (_) {}
+  if (!rand) {
+    rand = Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e9).toString(36);
+  }
+  return (prefix + '-' + rand).slice(0, 100);
+}
+
+/**
+ * Plan, price, company and m_payment_id are decided here.
+ * Untrusted body may only suggest interval/kind/seat email.
+ * Never read amount, price, plan, companyId or mPaymentId from the browser.
+ */
+export function resolveAuthoritativeCheckout(trusted, untrustedBody) {
+  const body = untrustedBody || {};
+  const interval = text(body.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
+  const kind = text(body.kind).toLowerCase() === 'seat' ? 'seat' : 'subscribe';
+  const companyId = text(trusted && trusted.companyId);
+  const email = text(trusted && trusted.email).toLowerCase();
+  if (!companyId) {
+    throw new Error('Company is required before PayFast checkout.');
+  }
+  if (!email) {
+    throw new Error('Sign in first, then pay on PayFast.');
+  }
+  return {
+    planCode: 'standard',
+    interval: interval,
+    kind: kind,
+    amount: amountForInterval(interval),
+    amountNumber: interval === 'annual' ? SERVER_PRICES.annual : SERVER_PRICES.monthly,
+    companyId: companyId,
+    companyName: text(trusted && trusted.companyName) || 'Fire-S',
+    email: email,
+    seatEmail: kind === 'seat' ? text(body.seatEmail).toLowerCase() : '',
+    mPaymentId: newMerchantPaymentId(kind)
+  };
+}
+
+export function assertSandboxCheckout(cfg) {
+  if (!cfg || cfg.mode !== 'sandbox') {
+    throw new Error('PayFast checkout is sandbox-only until go-live.');
+  }
+  if (!/sandbox\.payfast\.co\.za/i.test(text(cfg.processUrl))) {
+    throw new Error('PayFast checkout is sandbox-only until go-live.');
+  }
+}
+
 export function buildSignedCheckoutFields(cfg, info) {
   const interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
   const amount = amountForInterval(interval);
