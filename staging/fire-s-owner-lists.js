@@ -19,18 +19,11 @@
   };
 
   const pullState = { loaded: 0, total: 0, loading: false, done: false };
-  let lockedFinishedCount = null;
 
   function applyPullProgress(loaded, total, done) {
     const nextLoaded = Math.max(0, Number(loaded) || 0);
     const nextDone = !!done;
     if (pullState.done && !nextDone) return;
-    if (pullState.done && nextDone && lockedFinishedCount != null) {
-      const countEl = byId('fireSOwnerListsCount');
-      if (countEl) writeCount(countEl, lockedFinishedCount);
-      return;
-    }
-    if (!nextDone) lockedFinishedCount = null;
     pullState.loaded = nextLoaded;
     pullState.done = nextDone;
     pullState.loading = !nextDone;
@@ -58,11 +51,7 @@
       countEl.textContent = 'Loading buildings… ' + shown;
       return;
     }
-    let n = visibleCount || 0;
-    if (root.__fireSCloudPullSettled === true) {
-      if (lockedFinishedCount == null) lockedFinishedCount = n;
-      n = lockedFinishedCount;
-    }
+    const n = visibleCount || 0;
     countEl.textContent = n
       ? n + (n === 1 ? ' building on your inspection list' : ' buildings on your inspection list')
       : 'No buildings on your inspection list yet.';
@@ -281,6 +270,12 @@
   function uniqueActive(projects) {
     const source = Array.isArray(projects) ? projects : [];
     try {
+      if (typeof root.fireSFilterToCloudBuildings === 'function') {
+        const unique = root.fireSFilterToCloudBuildings(source);
+        if (Array.isArray(unique)) {
+          return source.filter(project => unique.indexOf(project) !== -1);
+        }
+      }
       if (typeof root.fireSUniqueCurrentBuildings === 'function') {
         const unique = root.fireSUniqueCurrentBuildings(source);
         if (Array.isArray(unique)) {
@@ -528,7 +523,6 @@
     // finished and Recycle hide dropped it to 7. Wait for the settled unique
     // list so phone and laptop lock the same building number.
     if (root.__fireSCloudPullSettled !== true) {
-      lockedFinishedCount = null;
       pullState.loading = true;
       pullState.done = false;
       const countEl = byId('fireSOwnerListsCount');
@@ -545,13 +539,6 @@
     const original = root[name];
     if (typeof original !== 'function' || original.__fireSOwnerListsWrapped) return;
     const wrapped = function fireSOwnerListsAfter() {
-      if (
-        name === 'setProjects' &&
-        !root.__fireSHomeCountsFrozen &&
-        root.__fireSCloudPullSettled === true
-      ) {
-        lockedFinishedCount = null;
-      }
       const result = original.apply(this, arguments);
       const after = function fireSOwnerListsAfterSync() {
         if (root.__fireSHomeCountsFrozen) return;

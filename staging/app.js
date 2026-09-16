@@ -5063,6 +5063,7 @@ async function safeDownloadNewerCloudInspections(options) {
     if (fireSCloudPullInFlight) return;
     fireSCloudPullInFlight = true;
     try { window.__fireSCloudPullSettled = false; } catch (_) {}
+    try { window.__fireSCloudBuildingFilter = null; } catch (_) {}
     const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
@@ -5114,6 +5115,9 @@ async function safeDownloadNewerCloudInspections(options) {
         if (typeof getVisibleProjectsForCurrentUser === 'function') {
           const filtered = getVisibleProjectsForCurrentUser(list);
           if (Array.isArray(filtered)) visible = filtered;
+        }
+        if (typeof fireSFilterToCloudBuildings === 'function') {
+          return fireSFilterToCloudBuildings(visible);
         }
         if (typeof fireSUniqueCurrentBuildings === 'function') {
           return fireSUniqueCurrentBuildings(visible);
@@ -5239,6 +5243,11 @@ async function safeDownloadNewerCloudInspections(options) {
       uploadPendingInspections();
     } catch (_) {}
 
+    try {
+      if (!incomplete && typeof fireSApplyCloudBuildingFilter === 'function') {
+        fireSApplyCloudBuildingFilter(Array.isArray(data) ? data : []);
+      }
+    } catch (_) {}
     try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
@@ -26537,6 +26546,96 @@ function fireSUniqueCurrentBuildings(list) {
   return Array.from(seen.values());
 }
 
+// Laptop-only leftovers (not in the company cloud) must not become a 7 while
+// the phone still has the cloud's 5. Queue them for upload; do not count them.
+function fireSCloudBackedBuildings(list, cloudRows) {
+  const unique = fireSUniqueCurrentBuildings(list);
+  const rows = Array.isArray(cloudRows) ? cloudRows : [];
+  if (!rows.length) return unique;
+  const ids = new Set();
+  const keys = new Set();
+  rows.forEach(row => {
+    const id =
+      typeof fireSCloudRowInspectionId === 'function'
+        ? fireSCloudRowInspectionId(row)
+        : String((row && (row.id || (row.inspection_data && row.inspection_data.id))) || '');
+    if (id) ids.add(String(id).trim());
+    let project = row;
+    try {
+      if (typeof normaliseCloudSyncedProject === 'function') {
+        project = normaliseCloudSyncedProject(row) || row;
+      } else if (row && row.inspection_data && typeof row.inspection_data === 'object') {
+        project = row.inspection_data;
+      }
+    } catch (_) {}
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      return;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (key) keys.add(key);
+  });
+  if (!ids.size && !keys.size) return unique;
+  return unique.filter(project => {
+    if (ids.has(String((project && project.id) || '').trim())) return true;
+    const key = fireSPremisesBuildingKey(project);
+    return !!(key && keys.has(key));
+  });
+}
+
+function fireSApplyCloudBuildingFilter(cloudRows) {
+  const ids = {};
+  const keys = {};
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id =
+      typeof fireSCloudRowInspectionId === 'function'
+        ? fireSCloudRowInspectionId(row)
+        : String((row && (row.id || (row.inspection_data && row.inspection_data.id))) || '');
+    if (id) ids[String(id).trim()] = true;
+    let project = row;
+    try {
+      if (typeof normaliseCloudSyncedProject === 'function') {
+        project = normaliseCloudSyncedProject(row) || row;
+      } else if (row && row.inspection_data && typeof row.inspection_data === 'object') {
+        project = Object.assign({ id: id }, row.inspection_data);
+      }
+    } catch (_) {}
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      return;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (key) keys[key] = true;
+  });
+  try {
+    window.__fireSCloudBuildingFilter =
+      Object.keys(ids).length || Object.keys(keys).length
+        ? { ids: ids, keys: keys }
+        : null;
+  } catch (_) {}
+}
+
+function fireSFilterToCloudBuildings(list) {
+  const unique = fireSUniqueCurrentBuildings(list);
+  let filter = null;
+  try { filter = window.__fireSCloudBuildingFilter; } catch (_) {}
+  if (!filter || (!filter.ids && !filter.keys)) return unique;
+  const ids = filter.ids || {};
+  const keys = filter.keys || {};
+  const hasIds = Object.keys(ids).length > 0;
+  const hasKeys = Object.keys(keys).length > 0;
+  if (!hasIds && !hasKeys) return unique;
+  return unique.filter(project => {
+    if (hasIds && ids[String((project && project.id) || '').trim()]) return true;
+    const key = fireSPremisesBuildingKey(project);
+    return !!(hasKeys && key && keys[key]);
+  });
+}
+
 function fireSIsInspectionOverdue(project) {
   if (!project) return false;
   if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
@@ -26918,6 +27017,9 @@ window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises
 window.fireSIsHiddenFromCurrentLists = fireSIsHiddenFromCurrentLists;
 window.fireSPremisesBuildingKey = fireSPremisesBuildingKey;
 window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
+window.fireSCloudBackedBuildings = fireSCloudBackedBuildings;
+window.fireSFilterToCloudBuildings = fireSFilterToCloudBuildings;
+window.fireSApplyCloudBuildingFilter = fireSApplyCloudBuildingFilter;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
 window.fireSHasLiveCurrentInspection = fireSHasLiveCurrentInspection;
 window.fireSIsScheduledNewPremisesOnly = fireSIsScheduledNewPremisesOnly;

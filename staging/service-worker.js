@@ -1,7 +1,5 @@
-const CACHE = 'fire-s-108-75-toets-buildings';
+const CACHE = 'fire-s-108-76-toets-drop';
 const PRECACHE = [
-  './',
-  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -22,6 +20,15 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(windows => Promise.all((windows || []).map(client => {
+        try {
+          if (client && typeof client.navigate === 'function') {
+            return client.navigate(client.url);
+          }
+        } catch (_) {}
+        return undefined;
+      })))
   );
 });
 
@@ -35,10 +42,15 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (url.origin !== self.location.origin) return;
+  const path = url.pathname || '';
+  const isDoc =
+    req.mode === 'navigate' ||
+    path.endsWith('/') ||
+    /\.html$/i.test(path);
   event.respondWith(
-    fetch(req)
+    fetch(req, isDoc ? { cache: 'no-store' } : undefined)
       .then(res => {
-        if (res && res.ok) {
+        if (res && res.ok && !isDoc) {
           const copy = res.clone();
           caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => undefined);
         }

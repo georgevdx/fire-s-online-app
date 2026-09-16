@@ -16,25 +16,28 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.85-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-85-toets-now/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-3-stable-buildings/.test(stagingHtml) &&
-    /1\.3\.85-toets/.test(stagingEnv) &&
-    /fire-s-108-75-toets-buildings/.test(stagingSw),
-  'Toets must show 1.3.85-toets so a phone can tell it has the stable Home building count'
+  /Version 1\.3\.86-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-86-toets-now/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-3-cloud-count/.test(stagingHtml) &&
+    /1\.3\.86-toets/.test(stagingEnv) &&
+    /fire-s-108-76-toets-drop/.test(stagingSw),
+  'Toets must show 1.3.86-toets so a phone can tell it has the stable Home building count'
 );
 assert.ok(
   /function fireSPremisesBuildingKey\(project\)/.test(stagingApp) &&
     /function fireSUniqueCurrentBuildings\(list\)/.test(stagingApp) &&
+    /function fireSFilterToCloudBuildings\(list\)/.test(stagingApp) &&
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
-    /fireSUniqueCurrentBuildings\(visible\)/.test(stagingApp),
-  'Toets must count unique current buildings, not leftover inspection rows'
+    /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
+    /cache: 'no-store'/.test(stagingSw) &&
+    /fireS\.toetsCacheDrop\.1-3-86/.test(stagingHtml),
+  'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
 );
 assert.ok(
   /__fireSCloudPullSettled !== true/.test(stagingLists) &&
-    /lockedFinishedCount/.test(stagingLists) &&
-    /function uniqueActive\(projects\)/.test(stagingLists),
-  'Toets Home must show Loading until the company pull settles and then lock the unique count'
+    /function uniqueActive\(projects\)/.test(stagingLists) &&
+    /fireSFilterToCloudBuildings/.test(stagingLists),
+  'Toets Home must show Loading until the company pull settles on the cloud building list'
 );
 
 const helperStart = stagingApp.indexOf('function fireSHasRecycledCurrentInspection');
@@ -77,6 +80,45 @@ assert.strictEqual(
   uniqueSandbox.unique.map(function (row) { return row.id; }).slice().sort().join(','),
   'cemetery,mall,plastic-b,school,tester-b',
   'Eight inspection rows with Recycle and duplicate name+site must count as five buildings'
+);
+
+const sevenLocal = [
+  { id: 'plastic-b', organisationName: 'Plastic view', completedAt: '2026-08-01' },
+  { id: 'tester-b', organisationName: 'Tester 1', siteName: 'George', lastSaved: '2026-09-01' },
+  { id: 'cemetery', organisationName: 'Cemetary view', completedAt: '2026-07-17' },
+  { id: 'mall', organisationName: 'West End Mall', siteName: 'Shop 12', completedAt: '2026-06-01' },
+  { id: 'school', organisationName: 'Greenfield School', completedAt: '2026-08-01' },
+  { id: 'hall', organisationName: 'Late Hall', completedAt: '2026-05-01' },
+  { id: 'clinic', organisationName: 'River Clinic', completedAt: '2026-04-01' }
+];
+const fiveCloud = [
+  { id: 'plastic-b', inspection_data: { id: 'plastic-b', organisationName: 'Plastic view' } },
+  { id: 'tester-b', inspection_data: { id: 'tester-b', organisationName: 'Tester 1', siteName: 'George' } },
+  { id: 'cemetery', inspection_data: { id: 'cemetery', organisationName: 'Cemetary view' } },
+  { id: 'mall', inspection_data: { id: 'mall', organisationName: 'West End Mall', siteName: 'Shop 12' } },
+  { id: 'school', inspection_data: { id: 'school', organisationName: 'Greenfield School' } }
+];
+const cloudSandbox = {
+  fireSIsDeletedPremises(project) {
+    return !!(project && (project.deletedAt || project.deleteType === 'entire_premises'));
+  },
+  window: { __fireSCloudBuildingFilter: null },
+  sevenLocal: sevenLocal,
+  fiveCloud: fiveCloud,
+  backed: null
+};
+cloudSandbox.window = cloudSandbox;
+vm.runInNewContext(
+  stagingApp.slice(helperStart, helperEnd) + `
+    fireSApplyCloudBuildingFilter(fiveCloud);
+    backed = fireSFilterToCloudBuildings(sevenLocal);
+  `,
+  cloudSandbox
+);
+assert.strictEqual(
+  cloudSandbox.backed.map(function (row) { return row.id; }).slice().sort().join(','),
+  'cemetery,mall,plastic-b,school,tester-b',
+  'Laptop-only buildings must not make Home 7 while the company cloud still has 5'
 );
 
 function el(store, id) {

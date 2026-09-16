@@ -104,7 +104,7 @@ assert.ok(
   'The report body must not keep a second Export PDF button; the overlay bar already has one'
 );
 assert.ok(
-  /app\.js\?v=1-3-85-toets-now/.test(html),
+  /app\.js\?v=1-3-86-toets-now/.test(html),
   'Toets must cache-bust the independent report overlay'
 );
 
