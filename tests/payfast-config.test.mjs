@@ -42,7 +42,14 @@ assert.strictEqual(
   sandboxCfg.notifyUrl,
   'https://ejqgzpkfcwocmtvwufwp.supabase.co/functions/v1/payfast-itn'
 );
+assert.strictEqual(
+  sandboxCfg.validateUrl,
+  'https://sandbox.payfast.co.za/eng/query/validate'
+);
+assert.strictEqual(sandboxCfg.validateHost, 'sandbox.payfast.co.za');
 assert.strictEqual(sandboxCfg.merchantKey, 'test-sandbox-key');
+assert.ok(!Object.prototype.hasOwnProperty.call(publicPayfastConfig(sandboxCfg), 'passphrase'));
+assert.ok(publicPayfastConfig(sandboxCfg).validateUrl.indexOf('/eng/query/validate') !== -1);
 
 assert.throws(
   () =>
