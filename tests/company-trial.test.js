@@ -57,11 +57,19 @@ assert.ok(/browser clock/.test(stagingJs));
 assert.ok(/trial_ends_at/.test(stagingJs));
 assert.ok(/Subscribe on PayFast to continue/.test(stagingJs));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingJs));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-trial/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-lifecycle/.test(stagingHtml));
 assert.ok(/Start a 14-day free trial/.test(stagingHtml));
 assert.ok(/fireSEntitlement\.refresh/.test(stagingApp));
 assert.ok(/status = 'unpaid'/.test(stagingSubscribe));
-assert.ok(!/cat\.billingStatus\(\)/.test(stagingSubscribe.match(/if \(entitlement && entitlement\.backendReady\) \{[\s\S]*?paintPayfastControls/)[0]));
+const subscribeStatusFn = stagingSubscribe.match(
+  /function paintSubscribeStatus\(\) \{[\s\S]*?function cancelSubscription/
+);
+assert.ok(subscribeStatusFn, 'paintSubscribeStatus must exist');
+assert.ok(/entitlement && entitlement\.backendReady/.test(subscribeStatusFn[0]));
+assert.ok(
+  !/cat\.billingStatus\(\)/.test(subscribeStatusFn[0]),
+  'server entitlement must set subscribe status, not localStorage billingStatus'
+);
 assert.ok(!/Subscribe on PayFast to continue/.test(liveJs), 'live entitlement copy waits for sit dit live');
 assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml));
 

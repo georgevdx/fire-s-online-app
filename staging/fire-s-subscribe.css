@@ -150,6 +150,13 @@
   color: #9a3412;
 }
 
+.fire-s-subscribe-status.is-past_due,
+.fire-s-subscribe-status.is-trial {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
 .fire-s-subscribe-status.is-cancelled {
   border-color: #cbd5e1;
   background: #f8fafc;
@@ -332,4 +339,63 @@ body.fire-s-role-inspector #fireSPayfastReturnBanner {
 
 .fire-s-payfast-return.is-cancel {
   background: #9a3412;
+}
+
+.fire-s-company-billing {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.fire-s-company-billing h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.fire-s-company-billing-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.fire-s-company-billing-list > div {
+  display: grid;
+  grid-template-columns: minmax(9rem, 38%) 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.fire-s-company-billing-list dt {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.fire-s-company-billing-list dd {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.fire-s-company-billing-note,
+.fire-s-company-billing-keep {
+  margin: 0 0 8px;
+  color: #334155;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.fire-s-company-billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fire-s-company-billing-actions .cloud-primary-btn,
+.fire-s-company-billing-actions .secondary-btn {
+  min-height: 44px;
 }
