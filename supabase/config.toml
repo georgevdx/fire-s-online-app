@@ -3,7 +3,9 @@
 
 [functions.payfast-checkout]
 verify_jwt = true
+entrypoint = "index.js"
 
 # PayFast posts ITN with no JWT. Signature + origin + /eng/query/validate are the auth.
 [functions.payfast-itn]
 verify_jwt = false
+entrypoint = "index.js"
