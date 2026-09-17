@@ -7,7 +7,8 @@
      companies entitlement-column trigger
 
    This module may DISPLAY trial/subscription state.
-   It must not GRANT access from localStorage, URL, or JS variables.
+   It must not GRANT access from localStorage, URL, JS variables, or the
+   browser clock. Trial dates come from fire_s_get_company_entitlement.
    ============================================================ */
 (function fireSEntitlement(root) {
   'use strict';
@@ -79,6 +80,9 @@
       trial_inspections_remaining: 0,
       trial_inspections_used: 0,
       trial_inspection_limit: CONFIG.DEFAULT_TRIAL_INSPECTION_LIMIT,
+      trial_started_at: null,
+      trial_ends_at: null,
+      trial_expires_at: null,
       plan: null,
       can_finalise: false,
       can_create: false,
@@ -140,7 +144,7 @@
       return 'You have completed the inspections included in your Fire-S free trial. Choose a subscription plan to continue using Fire-S.';
     }
     if (reason === 'trial_expired') {
-      return 'Your Fire-S free trial has ended.';
+      return 'Your Fire-S free trial has ended. Subscribe on PayFast to continue.';
     }
     if (reason === 'subscription_required') {
       return 'A Fire-S subscription is required to continue.';
@@ -165,7 +169,7 @@
     var headline = '';
     var detail = '';
     var urgency = 'none';
-    var cta = 'VIEW PLANS / SUBSCRIBE';
+    var cta = 'Subscribe / Reactivate';
 
     if (status === 'subscription_active' || data.allowed === true && status !== 'trial_active') {
       if (status === 'subscription_active') {
@@ -175,13 +179,13 @@
 
     if (reason === 'trial_limit_reached') {
       headline = 'Trial inspections used';
-      detail = 'You have completed the inspections included in your Fire-S trial.';
+      detail = 'You have completed the inspections included in your Fire-S trial. Subscribe on PayFast to continue.';
       urgency = 'block';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
     if (reason === 'trial_expired' || status === 'trial_expired') {
       headline = 'Trial ended';
-      detail = 'Your Fire-S free trial has ended.';
+      detail = 'Your Fire-S free trial has ended. Subscribe on PayFast to continue.';
       urgency = 'block';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: 0, remaining: remaining, used: used, limit: limit };
     }
@@ -315,7 +319,7 @@
         '<strong id="fireSTrialBannerTitle"></strong>' +
         '<span id="fireSTrialBannerDetail"></span>' +
       '</div>' +
-      '<button type="button" class="cloud-primary-btn fire-s-trial-banner-cta" id="fireSTrialBannerCta">VIEW PLANS / SUBSCRIBE</button>';
+      '<button type="button" class="cloud-primary-btn fire-s-trial-banner-cta" id="fireSTrialBannerCta">Subscribe / Reactivate</button>';
     var status = document.getElementById('mainCommandAccessStatus');
     if (status && status.parentNode === host.querySelector('.main-command-top')) {
       host.querySelector('.main-command-top').after(el);
@@ -417,7 +421,7 @@
 
   function trialLine(info) {
     var data = info || last || emptySnapshot();
-    var expires = text(data.trial_expires_at);
+    var expires = text(data.trial_ends_at || data.trial_expires_at);
     var days = Math.max(0, Number(data.trial_days_remaining) || 0);
     if (!expires && !days) return 'No active trial.';
     if (text(data.status) === 'trial_expired' || text(data.reason) === 'trial_expired') {
@@ -765,6 +769,7 @@
     isLocalWorkspace: isLocalWorkspace,
     openRequiredScreen: openRequiredScreen,
     statusLabel: statusLabel,
+    trialLine: trialLine,
     paint: paint,
     blockMessage: blockMessage,
     guardDirectUrl: guardDirectUrl
