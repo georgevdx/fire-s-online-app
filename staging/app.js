@@ -6614,9 +6614,17 @@ function isViewer() {
 
 function hasActiveCompanyAccess() {
   if (isSuperAdmin()) return true;
-
-  return currentCompanyAccess?.status === 'active' ||
-    currentCompanyAccess?.status === 'trial';
+  try {
+    if (window.fireSEntitlement) {
+      if (typeof window.fireSEntitlement.isLocalWorkspace === 'function' && window.fireSEntitlement.isLocalWorkspace()) {
+        return true;
+      }
+      if (window.fireSEntitlement.hasSnapshot && window.fireSEntitlement.hasSnapshot()) {
+        return window.fireSEntitlement.operationallyAllowed() === true;
+      }
+    }
+  } catch (_) {}
+  return false;
 }
 
 function fireSEntitlementGate(kind) {
@@ -6649,25 +6657,24 @@ function canEditInspection() {
 
   if (isSuperAdmin()) return true;
 
-  if (!hasActiveCompanyAccess()) return false;
-
   try {
+    if (window.fireSEntitlement && window.fireSEntitlement.isLocalWorkspace && window.fireSEntitlement.isLocalWorkspace()) {
+      return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
+    }
     var snap = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
-    if (snap && snap.backendReady && snap.can_write_draft === false && snap.allowed === false) {
-      return false;
+    if (snap && snap.backendReady) {
+      if (snap.can_write_draft === false && snap.allowed === false) return false;
+      return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
     }
   } catch (_) {}
 
-  return ['company_owner', 'manager', 'inspector']
-    .includes(getCurrentUserRole());
+  return false;
 }
 
 function canViewReports() {
   if (!currentUserProfile) return false;
 
   if (isSuperAdmin()) return true;
-
-  if (!hasActiveCompanyAccess()) return false;
 
   return ['company_owner', 'manager', 'inspector', 'viewer']
     .includes(getCurrentUserRole());

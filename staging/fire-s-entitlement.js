@@ -2,8 +2,8 @@
    Fire-S company entitlement (client display + UX gates)
 
    Authority lives in Supabase:
-     fire_s_check_company_entitlement()
-     inspection INSERT/UPDATE trigger
+     fire_s_get_company_entitlement()
+     inspection INSERT/UPDATE trigger (including new cycles)
      companies entitlement-column trigger
 
    This module may DISPLAY trial/subscription state.
@@ -24,9 +24,11 @@
   var ALLOWED_WHEN_LOCKED = {
     fireSSubscribeSection: true,
     fireSGetStarted: true,
+    fireSSubscriptionRequiredSection: true,
     companyLetterheadSection: true,
     userManualSection: true,
     projectListSection: true,
+    reportSection: true,
     homeSection: true
   };
 
@@ -81,6 +83,10 @@
       can_finalise: false,
       can_create: false,
       can_write_draft: true,
+      can_read: true,
+      can_export: true,
+      keep_data: true,
+      authority: 'none',
       backendReady: false,
       source: 'none'
     };
@@ -96,19 +102,22 @@
 
   function operationallyAllowed() {
     if (isSuperAdmin()) return true;
-    if (!hasSnapshot()) return null;
+    if (isLocalWorkspace()) return true;
+    if (!hasSnapshot()) return false;
     return last.allowed === true;
   }
 
   function canFinalise() {
     if (isSuperAdmin()) return true;
-    if (!hasSnapshot()) return null;
+    if (isLocalWorkspace()) return true;
+    if (!hasSnapshot()) return false;
     return last.can_finalise === true;
   }
 
   function canCreate() {
     if (isSuperAdmin()) return true;
-    if (!hasSnapshot()) return null;
+    if (isLocalWorkspace()) return true;
+    if (!hasSnapshot()) return false;
     return last.can_create === true;
   }
 
@@ -192,7 +201,7 @@
       headline = 'Subscription required';
       detail = humanMessage(reason || 'subscription_required', data);
       urgency = 'block';
-      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
+      return { headline: headline, detail: detail, urgency: urgency, cta: 'Subscribe / Reactivate', show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
     return { headline: '', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
   }
@@ -205,23 +214,49 @@
     return copy.detail || humanMessage(last && last.reason, last);
   }
 
+  async function rpcEntitlement(sb, cid) {
+    var names = ['fire_s_get_company_entitlement', 'fire_s_check_company_entitlement'];
+    var lastErr = null;
+    for (var i = 0; i < names.length; i += 1) {
+      var res = await sb.rpc(names[i], { p_company_id: cid });
+      if (res && !res.error) return res;
+      lastErr = res && res.error;
+      if (lastErr && !/could not find the function|schema cache|PGRST202|404/i.test(text(lastErr.message))) {
+        return res;
+      }
+    }
+    return { error: lastErr || { message: 'Entitlement RPC missing' } };
+  }
+
   async function check(targetCompanyId) {
     var sb = getSb();
     var cid = text(targetCompanyId) || companyId();
-    if (!sb || !sb.rpc || !cid || isLocalWorkspace()) {
+    if (isLocalWorkspace()) {
       last = emptySnapshot('subscription_required');
+      last.allowed = true;
+      last.can_create = true;
+      last.can_finalise = true;
+      last.can_write_draft = true;
       last.backendReady = false;
       last.source = 'local';
+      last.authority = 'local';
+      return last;
+    }
+    if (!sb || !sb.rpc || !cid) {
+      last = emptySnapshot('subscription_required');
+      last.backendReady = false;
+      last.source = 'none';
       return last;
     }
     try {
-      var res = await sb.rpc('fire_s_check_company_entitlement', { p_company_id: cid });
+      var res = await rpcEntitlement(sb, cid);
       if (res && res.error) {
         var missing = /could not find the function|schema cache|PGRST202|404/i.test(text(res.error.message));
         last = emptySnapshot('subscription_required');
         last.backendReady = false;
         last.source = missing ? 'missing-rpc' : 'rpc-error';
         last.error = text(res.error.message);
+        paint();
         return last;
       }
       var data = res && res.data;
@@ -231,7 +266,7 @@
           data = JSON.parse(data);
         } catch (_) {}
       }
-      last = Object.assign({ backendReady: true, source: 'rpc' }, data || {});
+      last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data || {});
       lastAt = Date.now();
       paint();
       return last;
@@ -240,6 +275,7 @@
       last.backendReady = false;
       last.source = 'rpc-error';
       last.error = text(err && err.message);
+      paint();
       return last;
     }
   }
@@ -307,9 +343,14 @@
     el.innerHTML =
       '<div class="fire-s-entitlement-blocker-card">' +
         '<h3 id="fireSEntitlementBlockerTitle">Subscription required</h3>' +
+        '<p id="fireSEntitlementBlockerStatus"></p>' +
+        '<p id="fireSEntitlementBlockerTrial"></p>' +
+        '<p id="fireSEntitlementBlockerPlan"></p>' +
         '<p id="fireSEntitlementBlockerCopy"></p>' +
+        '<p>Inspections, reports, premises and photos stay. Nothing is deleted when billing ends.</p>' +
+        '<p>Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>' +
         '<div class="fire-s-entitlement-blocker-actions">' +
-          '<button type="button" class="cloud-primary-btn" id="fireSEntitlementBlockerSubscribe">VIEW PLANS / SUBSCRIBE</button>' +
+          '<button type="button" class="cloud-primary-btn" id="fireSEntitlementBlockerSubscribe">Subscribe / Reactivate</button>' +
           '<button type="button" class="secondary-btn" id="fireSEntitlementBlockerHome">Back Home</button>' +
         '</div>' +
       '</div>';
@@ -336,6 +377,7 @@
   function visibleWorkspaceId() {
     var ids = [
       'fireSSubscribeSection',
+      'fireSSubscriptionRequiredSection',
       'companyLetterheadSection',
       'userManualSection',
       'projectFormSection',
@@ -359,6 +401,82 @@
     return 'homeSection';
   }
 
+  function statusLabel(info) {
+    var data = info || last || emptySnapshot();
+    var status = text(data.status || data.reason);
+    if (data.super_admin) return 'Super Admin access';
+    if (status === 'subscription_active') return 'Paid subscription active';
+    if (status === 'trial_active' && data.reason === 'trial_limit_reached') return 'Trial inspections used';
+    if (status === 'trial_active') return 'Active trial';
+    if (status === 'trial_expired') return 'Trial ended';
+    if (status === 'subscription_cancelled') return 'Subscription cancelled';
+    if (status === 'subscription_past_due') return 'Payment past due';
+    if (status === 'payment_pending') return 'Payment pending';
+    return 'Subscription required';
+  }
+
+  function trialLine(info) {
+    var data = info || last || emptySnapshot();
+    var expires = text(data.trial_expires_at);
+    var days = Math.max(0, Number(data.trial_days_remaining) || 0);
+    if (!expires && !days) return 'No active trial.';
+    if (text(data.status) === 'trial_expired' || text(data.reason) === 'trial_expired') {
+      return 'Trial expired' + (expires ? ' on ' + String(expires).slice(0, 10) : '') + '.';
+    }
+    if (days) return 'Trial: ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining.';
+    return expires ? 'Trial ends ' + String(expires).slice(0, 10) + '.' : '';
+  }
+
+  function planLine(info) {
+    var data = info || last || emptySnapshot();
+    var plan = text(data.plan) || 'standard';
+    var interval = text(data.billing_interval || data.subscription_billing_interval);
+    if (!interval) interval = 'monthly';
+    return 'Plan: ' + plan + ' · ' + interval + ' billing.';
+  }
+
+  function fillRequiredCopy(rootElPrefix) {
+    var statusEl = document.getElementById(rootElPrefix + 'Status');
+    var trialEl = document.getElementById(rootElPrefix + 'Trial');
+    var planEl = document.getElementById(rootElPrefix + 'Plan');
+    if (statusEl) statusEl.textContent = 'Current status: ' + statusLabel(last);
+    if (trialEl) trialEl.textContent = trialLine(last);
+    if (planEl) planEl.textContent = planLine(last);
+  }
+
+  function hideWriteWorkspaces() {
+    ['projectFormSection', 'companyTeamSection', 'inspectorBoardSection', 'servicesSection', 'findingsCentreSection', 'testSamplesSection'].forEach(function (id) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.hidden = true;
+      if (node.style) node.style.display = 'none';
+    });
+  }
+
+  function openRequiredScreen() {
+    fillRequiredCopy('fireSSubscriptionRequiredScreen');
+    fillRequiredCopy('fireSSubscriptionRequired');
+    fillRequiredCopy('fireSEntitlementBlocker');
+    var section = document.getElementById('fireSSubscriptionRequiredSection');
+    if (section) {
+      hideWriteWorkspaces();
+      section.style.display = 'block';
+      section.hidden = false;
+    }
+    var panel = document.getElementById('fireSSubscriptionRequiredPanel');
+    if (panel) panel.hidden = false;
+    var blocker = ensureBlocker();
+    var copy = displayCopy(last);
+    if (blocker && copy.urgency === 'block') {
+      var title = document.getElementById('fireSEntitlementBlockerTitle');
+      var body = document.getElementById('fireSEntitlementBlockerCopy');
+      if (title) title.textContent = copy.headline || 'Subscription required';
+      if (body) body.textContent = blockMessage();
+      fillRequiredCopy('fireSEntitlementBlocker');
+      blocker.hidden = false;
+    }
+  }
+
   function showBlockerIfNeeded() {
     var copy = displayCopy(last);
     var blocker = ensureBlocker();
@@ -366,36 +484,41 @@
     var space = visibleWorkspaceId();
     var lockedOp =
       copy.urgency === 'block' &&
+      !isSuperAdmin() &&
+      last &&
+      last.backendReady === true &&
+      last.can_create === false &&
       !ALLOWED_WHEN_LOCKED[space] &&
       space !== 'homeSection' &&
       space !== 'projectListSection';
+    fillRequiredCopy('fireSSubscriptionRequiredScreen');
+    fillRequiredCopy('fireSSubscriptionRequired');
+    var panel = document.getElementById('fireSSubscriptionRequiredPanel');
+    if (panel) panel.hidden = !(copy.urgency === 'block' && last && last.backendReady);
     if (!lockedOp) {
       blocker.hidden = true;
       return;
     }
-    var title = document.getElementById('fireSEntitlementBlockerTitle');
-    var body = document.getElementById('fireSEntitlementBlockerCopy');
-    if (title) title.textContent = copy.headline || 'Subscription required';
-    if (body) body.textContent = blockMessage();
-    blocker.hidden = false;
+    openRequiredScreen();
   }
 
   function paint() {
-    var banner = ensureBanner();
-    if (!banner) return;
     var copy = displayCopy(last);
+    var banner = ensureBanner();
     var title = document.getElementById('fireSTrialBannerTitle');
     var detail = document.getElementById('fireSTrialBannerDetail');
     var cta = document.getElementById('fireSTrialBannerCta');
-    if (!copy.show || isSuperAdmin()) {
-      banner.hidden = true;
-      banner.className = 'fire-s-trial-banner';
-    } else {
-      banner.hidden = false;
-      banner.className = 'fire-s-trial-banner is-' + copy.urgency;
-      if (title) title.textContent = copy.headline;
-      if (detail) detail.textContent = copy.detail;
-      if (cta) cta.textContent = copy.cta;
+    if (banner) {
+      if (!copy.show || isSuperAdmin()) {
+        banner.hidden = true;
+        banner.className = 'fire-s-trial-banner';
+      } else {
+        banner.hidden = false;
+        banner.className = 'fire-s-trial-banner is-' + copy.urgency;
+        if (title) title.textContent = copy.headline;
+        if (detail) detail.textContent = copy.detail;
+        if (cta) cta.textContent = copy.cta;
+      }
     }
     try {
       var fullyBlocked =
@@ -429,6 +552,7 @@
       alert(message);
     } catch (_) {}
     if (parsed.reason === 'trial_limit_reached' || parsed.reason === 'trial_expired' || parsed.reason === 'subscription_required') {
+      openRequiredScreen();
       openPlans();
     }
     return false;
@@ -436,17 +560,24 @@
 
   async function assertCanFinalise() {
     if (isSuperAdmin()) return true;
+    if (isLocalWorkspace()) return true;
     var info = await refresh();
-    if (!info || !info.backendReady) return true;
+    if (!info || !info.backendReady) {
+      return deny('subscription_required');
+    }
     if (info.can_finalise === true) return true;
     return deny(info.reason || 'subscription_required');
   }
 
   async function assertCanCreate() {
     if (isSuperAdmin()) return true;
+    if (isLocalWorkspace()) return true;
     var info = await refresh();
-    if (!info || !info.backendReady) return true;
+    if (!info || !info.backendReady) {
+      return deny('subscription_required');
+    }
     if (info.can_create === true || info.allowed === true) return true;
+    openRequiredScreen();
     return deny(info.reason || 'subscription_required');
   }
 
@@ -467,22 +598,36 @@
     } catch (_) {}
   }
 
+  function wrapCreateFn(holder, name) {
+    if (!holder) return;
+    var original = holder[name];
+    if (typeof original !== 'function' || original.__fireSEntitlementCreate) return;
+    var wrapped = function () {
+      var args = arguments;
+      var ctx = this;
+      return Promise.resolve(assertCanCreate()).then(function (ok) {
+        if (ok === false) return;
+        return original.apply(ctx, args);
+      });
+    };
+    wrapped.__fireSEntitlementCreate = true;
+    holder[name] = wrapped;
+  }
+
   function wrapNewInspection() {
-    var names = ['createNewInspection', 'startNewInspection', 'addNewProject'];
+    var names = [
+      'createNewInspection',
+      'startNewInspection',
+      'addNewProject',
+      'createNewProject',
+      'startNewInspectionForPremises',
+      'archiveProjectCurrentInspectionAndStartBlank',
+      'newPremises'
+    ];
     names.forEach(function (name) {
-      var original = root[name];
-      if (typeof original !== 'function' || original.__fireSEntitlementCreate) return;
-      var wrapped = function () {
-        var args = arguments;
-        var ctx = this;
-        return Promise.resolve(assertCanCreate()).then(function (ok) {
-          if (ok === false) return;
-          return original.apply(ctx, args);
-        });
-      };
-      wrapped.__fireSEntitlementCreate = true;
-      root[name] = wrapped;
+      wrapCreateFn(root, name);
     });
+    wrapCreateFn(root.FireSNewInspectionFlow, 'startNewInspection');
   }
 
   async function extendTrial(targetCompanyId, extraDays) {
@@ -514,31 +659,82 @@
     return Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
   }
 
+  function guardDirectUrl() {
+    var bits = String((root.location && (root.location.hash || '')) || '') +
+      String((root.location && (root.location.search || '')) || '');
+    if (!/newInspection|new-inspection|projectForm|createNewProject|inspect=new/i.test(bits)) return;
+    if (isSuperAdmin() || isLocalWorkspace()) return;
+    if (last && last.backendReady && last.can_create === false) {
+      openRequiredScreen();
+    }
+  }
+
+  function wireRequiredScreen() {
+    function bind(id, fn) {
+      var el = document.getElementById(id);
+      if (!el || el.__fireSBound) return;
+      el.__fireSBound = true;
+      el.addEventListener('click', fn);
+    }
+    bind('fireSSubscriptionRequiredSubscribe', function (ev) {
+      ev.preventDefault();
+      openPlans();
+    });
+    bind('fireSSubscriptionRequiredScreenSubscribe', function (ev) {
+      ev.preventDefault();
+      openPlans();
+    });
+    bind('fireSSubscriptionRequiredBackBtn', function (ev) {
+      ev.preventDefault();
+      var section = document.getElementById('fireSSubscriptionRequiredSection');
+      if (section) {
+        section.style.display = 'none';
+        section.hidden = true;
+      }
+      try {
+        if (typeof root.showHome === 'function') root.showHome();
+      } catch (_) {}
+    });
+  }
+
   function wire() {
     wrapFinish();
     wrapNewInspection();
     ensureBanner();
     ensureBlocker();
+    wireRequiredScreen();
+    document.addEventListener('hashchange', guardDirectUrl);
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t) return;
-      if (t.id === 'newInspectionBtn' || t.id === 'cmdInspectionsBtn' || t.closest && t.closest('#newInspectionBtn')) {
-        if (document.body.classList.contains('fire-s-entitlement-blocked')) {
-          var creating = t.id === 'newInspectionBtn' || (t.closest && t.closest('#newInspectionBtn'));
-          if (creating) {
-            var info = last;
-            if (info && info.backendReady && info.can_create === false) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              deny(info.reason);
-            }
-          }
-        }
+      var id = t.id || '';
+      var creating =
+        id === 'newInspectionBtn' ||
+        id === 'newProjectBtn' ||
+        id === 'inspectorV4New' ||
+        id === 'openGateStartBtn' ||
+        id === 'fireSStartBlankInspectionV106' ||
+        id === 'fireSStartInspectionCopyAnswersV106' ||
+        id === 'startNewInspectionMoreBtn' ||
+        (t.closest && (
+          t.closest('#newInspectionBtn') ||
+          t.closest('#newProjectBtn') ||
+          t.closest('#inspectorV4New') ||
+          t.closest('#openGateStartBtn')
+        ));
+      if (!creating) return;
+      var info = last;
+      if (info && info.backendReady && info.can_create === false && !isSuperAdmin()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        deny(info.reason);
       }
     }, true);
     setTimeout(function () {
-      refresh();
+      wrapNewInspection();
+      refresh().then(guardDirectUrl);
     }, 400);
+    setTimeout(wrapNewInspection, 900);
   }
 
   if (document.readyState === 'loading') {
@@ -565,10 +761,18 @@
     listCompanies: listCompanies,
     assertCanFinalise: assertCanFinalise,
     assertCanCreate: assertCanCreate,
+    getCompanyEntitlement: check,
+    isLocalWorkspace: isLocalWorkspace,
+    openRequiredScreen: openRequiredScreen,
+    statusLabel: statusLabel,
     paint: paint,
-    blockMessage: blockMessage
+    blockMessage: blockMessage,
+    guardDirectUrl: guardDirectUrl
   };
   root.checkCompanyEntitlement = function (id) {
+    return check(id);
+  };
+  root.getCompanyEntitlement = function (id) {
     return check(id);
   };
 })(window);
