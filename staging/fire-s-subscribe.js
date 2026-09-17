@@ -275,13 +275,7 @@
       else if (entitlement.reason === 'trial_limit_reached') status = 'trial';
       else if (entitlement.reason === 'trial_expired') status = 'unpaid';
     } else {
-      try {
-        var signedIn =
-          window.currentUserProfile &&
-          window.currentUserProfile.id &&
-          window.currentUserProfile.id !== 'local-user';
-        if (signedIn && cat.billingStatus) status = cat.billingStatus();
-      } catch (_) {}
+      status = 'unpaid';
     }
     var cancelled = status === 'cancelled';
     box.hidden = false;
