@@ -1393,6 +1393,10 @@
       if (!ctx.companyId) {
         throw new Error('Save your company first, then add people.');
       }
+      if (window.fireSEntitlement && window.fireSEntitlement.assertCanCreate) {
+        const allowed = await window.fireSEntitlement.assertCanCreate();
+        if (allowed === false) return;
+      }
       if (role === 'company_owner' && !canAssignOwner()) {
         throw new Error('Only an Owner can add another Owner.');
       }

@@ -168,6 +168,39 @@
 body.fire-s-entitlement-blocked #fireSSubscribeSection,
 body.fire-s-entitlement-blocked #fireSGetStarted,
 body.fire-s-entitlement-blocked #companyLetterheadSection,
+body.fire-s-entitlement-blocked #projectListSection,
+body.fire-s-entitlement-blocked #reportSection,
+body.fire-s-entitlement-blocked #homeSection,
+body.fire-s-entitlement-blocked #fireSSubscriptionRequiredSection,
 body.fire-s-entitlement-blocked #logoutBtn {
   pointer-events: auto;
+}
+
+.fire-s-subscription-required-section,
+.fire-s-subscription-required-panel {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+.fire-s-subscription-required-section[hidden],
+.fire-s-subscription-required-panel[hidden] {
+  display: none !important;
+}
+
+.fire-s-subscription-required-section p,
+.fire-s-subscription-required-panel p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.fire-s-subscription-required-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

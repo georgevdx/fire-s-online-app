@@ -130,7 +130,7 @@
   <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
-  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-0-trial">
+  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-1-required">
   <link rel="stylesheet" href="fire-s-dark-type.css?v=1-8-rephead">
 </head>
 <body>
@@ -814,6 +814,18 @@
   <div id="userManualMessage" class="user-manual-message" style="display:none;"></div>
   <div id="userManualPrintRoot" class="user-manual-print"></div>
 </section>
+<section id="fireSSubscriptionRequiredSection" class="card fire-s-subscription-required-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Subscription required</h2>
+    <button id="fireSSubscriptionRequiredBackBtn" type="button" class="back-home-btn">Back Home</button>
+  </div>
+  <p id="fireSSubscriptionRequiredScreenStatus"></p>
+  <p id="fireSSubscriptionRequiredScreenTrial"></p>
+  <p id="fireSSubscriptionRequiredScreenPlan"></p>
+  <p>Inspections, reports, premises and photos stay. Billing expiry does not delete company data.</p>
+  <p>Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>
+  <button type="button" class="cloud-primary-btn" id="fireSSubscriptionRequiredScreenSubscribe">Subscribe / Reactivate</button>
+</section>
 <section id="fireSSubscribeSection" class="card fire-s-subscribe-section" style="display:none;">
   <div class="toolbar">
     <h2 id="fireSSubscribeHeading">Subscription</h2>
@@ -836,6 +848,17 @@
     </p>
   </div>
   <p id="fireSTrialSubscribeNote" class="fire-s-trial-subscribe-note" hidden></p>
+  <aside id="fireSSubscriptionRequiredPanel" class="fire-s-subscription-required-panel" hidden>
+    <h3 id="fireSSubscriptionRequiredTitle">Subscription required</h3>
+    <p id="fireSSubscriptionRequiredStatus"></p>
+    <p id="fireSSubscriptionRequiredTrial"></p>
+    <p id="fireSSubscriptionRequiredPlan"></p>
+    <p id="fireSSubscriptionRequiredKeep">Inspections, reports, premises and photos stay in this company. Nothing is deleted when billing ends.</p>
+    <p id="fireSSubscriptionRequiredSupport">Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>
+    <div class="fire-s-subscription-required-actions">
+      <button type="button" class="cloud-primary-btn" id="fireSSubscriptionRequiredSubscribe">Subscribe / Reactivate</button>
+    </div>
+  </aside>
   <div id="fireSSubscribeBillingWrap" class="fire-s-plan-picker">
     <p class="fire-s-plan-picker-label">Choose monthly or annual · annual is 2 months free</p>
     <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
@@ -1902,7 +1925,7 @@
   <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-1-qaexpand"></script>
-  <script src="fire-s-entitlement.js?v=1-0-open"></script>
+  <script src="fire-s-entitlement.js?v=1-1-access"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

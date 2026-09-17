@@ -1,0 +1,124 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const vm = require('vm');
+
+function read(name) {
+  return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
+}
+
+const sql = read('SUPABASE_entitlement_access.sql');
+const migration = read('supabase/migrations/20260917120000_fire_s_get_company_entitlement.sql');
+const stagingJs = read('staging/fire-s-entitlement.js');
+const stagingApp = read('staging/app.js');
+const stagingHtml = read('staging/index.html');
+const liveApp = read('app.js');
+const liveHtml = read('index.html');
+const entitlementSql = read('SUPABASE_company_entitlement.sql');
+
+assert.strictEqual(sql, migration, 'SQL Editor copy must match the migration');
+
+assert.ok(/fire_s_get_company_entitlement/.test(sql));
+assert.ok(/authority', 'server'/.test(sql) || /'authority', 'server'/.test(sql));
+assert.ok(/keep_data/.test(sql));
+assert.ok(/super_admin/.test(sql));
+assert.ok(/fire_s_require_company_write/.test(sql));
+assert.ok(/fire_s_company_members_entitlement_guard/.test(sql));
+assert.ok(/grant execute on function public\.fire_s_get_company_entitlement\(uuid\) to authenticated/.test(sql));
+assert.ok(!/delete from public\.inspections/.test(sql));
+assert.ok(!/drop table if exists public\.inspections/.test(sql));
+assert.ok(/return public\.fire_s_get_company_entitlement/.test(sql));
+
+assert.ok(/create trigger fire_s_inspections_entitlement_guard/.test(entitlementSql));
+assert.ok(/if public\.fire_s_is_super_admin\(\) then\s+return NEW/s.test(entitlementSql));
+assert.ok(/fire_s_protect_company_entitlement/.test(entitlementSql));
+assert.ok(/with check \(false\)/.test(entitlementSql));
+
+assert.ok(/id="fireSSubscriptionRequiredSection"/.test(stagingHtml));
+assert.ok(/Subscribe \/ Reactivate/.test(stagingHtml));
+assert.ok(/georgevdx@gmail\.com/.test(stagingHtml));
+assert.ok(/Inspections, reports, premises and photos stay/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-1-access/.test(stagingHtml));
+assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits on toets first');
+
+assert.ok(/getCompanyEntitlement/.test(stagingJs));
+assert.ok(/openRequiredScreen/.test(stagingJs));
+assert.ok(/guardDirectUrl/.test(stagingJs));
+assert.ok(/createNewProject/.test(stagingJs));
+assert.ok(/if \(!info \|\| !info\.backendReady\) {\s*return deny\('subscription_required'\)/s.test(stagingJs));
+assert.ok(/must not GRANT access from localStorage/.test(stagingJs));
+
+assert.ok(/fireSEntitlement\.hasSnapshot/.test(stagingApp));
+assert.ok(/operationallyAllowed\(\) === true/.test(stagingApp));
+assert.ok(!/currentCompanyAccess\?\.status === 'active' \|\|/.test(stagingApp.match(/function hasActiveCompanyAccess\(\) \{[\s\S]*?\n\}/)[0]));
+
+assert.ok(/function canViewReports\(\) \{[\s\S]*isSuperAdmin[\s\S]*company_owner[\s\S]*viewer/.test(stagingApp));
+const liveCanView = liveApp.match(/function canViewReports\(\) \{[\s\S]*?\n\}/);
+assert.ok(liveCanView && /hasActiveCompanyAccess/.test(liveCanView[0]), 'live report gate unchanged until sit dit live');
+
+const store = {};
+const sandbox = {
+  window: { currentUserProfile: { id: 'u1', email: 'a@b.c', companyId: 'co1', role: 'company_owner' } },
+  location: { hash: '#newInspection', search: '', href: 'https://example.test/staging/#newInspection' },
+  document: {
+    readyState: 'complete',
+    addEventListener: function () {},
+    getElementById: function () {
+      return null;
+    },
+    body: { classList: { toggle: function () {}, contains: function () { return false; } }, appendChild: function () {} },
+    createElement: function () {
+      return { id: '', className: '', hidden: true, innerHTML: '', addEventListener: function () {} };
+    }
+  },
+  console: console,
+  localStorage: {
+    getItem: function (key) {
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
+    },
+    setItem: function (key, value) {
+      store[key] = String(value);
+    }
+  },
+  alert: function () {},
+  setTimeout: function (fn) {
+    return 0;
+  }
+};
+sandbox.window = sandbox;
+sandbox.currentUserProfile = {
+  id: 'u1',
+  email: 'a@b.c',
+  companyId: 'co1',
+  role: 'company_owner'
+};
+vm.runInNewContext(stagingJs, sandbox);
+
+const api = sandbox.fireSEntitlement;
+assert.ok(api.getCompanyEntitlement);
+assert.strictEqual(typeof sandbox.getCompanyEntitlement, 'function');
+
+store['fireS.billingStatus'] = 'active';
+store['fireS.trialExpiresAt'] = '2099-01-01';
+assert.strictEqual(api.hasSnapshot(), false, 'localStorage must not make entitlement ready');
+assert.strictEqual(api.operationallyAllowed(), false, 'cloud client must not invent access before the server RPC');
+assert.strictEqual(api.canCreate(), false, 'missing RPC must not allow new inspections');
+
+const blocked = api.displayCopy({
+  status: 'subscription_cancelled',
+  reason: 'subscription_required',
+  allowed: false,
+  can_create: false,
+  backendReady: true,
+  plan: 'standard',
+  billing_interval: 'annual',
+  trial_days_remaining: 0
+});
+assert.ok(blocked.show);
+assert.strictEqual(blocked.urgency, 'block');
+assert.ok(/Subscribe \/ Reactivate/.test(blocked.cta));
+assert.ok(/cancelled/i.test(api.statusLabel({ status: 'subscription_cancelled' })));
+
+console.log('entitlement-access.test.js: ok');
