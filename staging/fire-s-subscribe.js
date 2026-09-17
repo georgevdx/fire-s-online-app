@@ -73,6 +73,10 @@
   }
 
   function payNow() {
+    if (!canManage()) {
+      setMessage('Only the Owner can pay on PayFast.', true);
+      return;
+    }
     var pf = payfast();
     if (!pf || !pf.startCheckout) {
       setMessage('PayFast is not ready on this page.', true);
@@ -673,6 +677,10 @@
   }
 
   async function savePlan() {
+    if (!canManage()) {
+      setMessage('Only the Owner can change billing.', true);
+      return;
+    }
     var cat = catalog();
     var billing = byId('fireSSubscribeBillingOptions');
     if (!cat || !cat.persistCompanyPlan) {
