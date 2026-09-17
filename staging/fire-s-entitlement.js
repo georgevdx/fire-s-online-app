@@ -2,8 +2,8 @@
    Fire-S company entitlement (client display + UX gates)
 
    Authority lives in Supabase:
-     fire_s_check_company_entitlement()
-     inspection INSERT/UPDATE trigger
+     fire_s_get_company_entitlement()
+     inspection INSERT/UPDATE trigger (including new cycles)
      companies entitlement-column trigger
 
    This module may DISPLAY trial/subscription state.
@@ -598,22 +598,36 @@
     } catch (_) {}
   }
 
+  function wrapCreateFn(holder, name) {
+    if (!holder) return;
+    var original = holder[name];
+    if (typeof original !== 'function' || original.__fireSEntitlementCreate) return;
+    var wrapped = function () {
+      var args = arguments;
+      var ctx = this;
+      return Promise.resolve(assertCanCreate()).then(function (ok) {
+        if (ok === false) return;
+        return original.apply(ctx, args);
+      });
+    };
+    wrapped.__fireSEntitlementCreate = true;
+    holder[name] = wrapped;
+  }
+
   function wrapNewInspection() {
-    var names = ['createNewInspection', 'startNewInspection', 'addNewProject', 'createNewProject'];
+    var names = [
+      'createNewInspection',
+      'startNewInspection',
+      'addNewProject',
+      'createNewProject',
+      'startNewInspectionForPremises',
+      'archiveProjectCurrentInspectionAndStartBlank',
+      'newPremises'
+    ];
     names.forEach(function (name) {
-      var original = root[name];
-      if (typeof original !== 'function' || original.__fireSEntitlementCreate) return;
-      var wrapped = function () {
-        var args = arguments;
-        var ctx = this;
-        return Promise.resolve(assertCanCreate()).then(function (ok) {
-          if (ok === false) return;
-          return original.apply(ctx, args);
-        });
-      };
-      wrapped.__fireSEntitlementCreate = true;
-      root[name] = wrapped;
+      wrapCreateFn(root, name);
     });
+    wrapCreateFn(root.FireSNewInspectionFlow, 'startNewInspection');
   }
 
   async function extendTrial(targetCompanyId, extraDays) {
@@ -693,23 +707,34 @@
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t) return;
-      if (t.id === 'newInspectionBtn' || t.id === 'cmdInspectionsBtn' || t.closest && t.closest('#newInspectionBtn')) {
-        if (document.body.classList.contains('fire-s-entitlement-blocked')) {
-          var creating = t.id === 'newInspectionBtn' || (t.closest && t.closest('#newInspectionBtn'));
-          if (creating) {
-            var info = last;
-            if (info && info.backendReady && info.can_create === false) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              deny(info.reason);
-            }
-          }
-        }
+      var id = t.id || '';
+      var creating =
+        id === 'newInspectionBtn' ||
+        id === 'newProjectBtn' ||
+        id === 'inspectorV4New' ||
+        id === 'openGateStartBtn' ||
+        id === 'fireSStartBlankInspectionV106' ||
+        id === 'fireSStartInspectionCopyAnswersV106' ||
+        id === 'startNewInspectionMoreBtn' ||
+        (t.closest && (
+          t.closest('#newInspectionBtn') ||
+          t.closest('#newProjectBtn') ||
+          t.closest('#inspectorV4New') ||
+          t.closest('#openGateStartBtn')
+        ));
+      if (!creating) return;
+      var info = last;
+      if (info && info.backendReady && info.can_create === false && !isSuperAdmin()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        deny(info.reason);
       }
     }, true);
     setTimeout(function () {
+      wrapNewInspection();
       refresh().then(guardDirectUrl);
     }, 400);
+    setTimeout(wrapNewInspection, 900);
   }
 
   if (document.readyState === 'loading') {
@@ -741,7 +766,8 @@
     openRequiredScreen: openRequiredScreen,
     statusLabel: statusLabel,
     paint: paint,
-    blockMessage: blockMessage
+    blockMessage: blockMessage,
+    guardDirectUrl: guardDirectUrl
   };
   root.checkCompanyEntitlement = function (id) {
     return check(id);

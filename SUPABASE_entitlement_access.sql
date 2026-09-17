@@ -161,6 +161,199 @@ create trigger fire_s_company_members_entitlement_guard
   for each row
   execute procedure public.fire_s_company_members_entitlement_guard();
 
+-- New inspection cycles reuse the same premises row (UPDATE), so INSERT-only
+-- guards are not enough. History growth / a new inspection number with a blank
+-- checklist is a paid create, not a draft save.
+create or replace function public.fire_s_inspection_starts_new_cycle(p_old jsonb, p_new jsonb)
+returns boolean
+language sql
+immutable
+as $$
+  select
+    p_new is not null
+    and (
+      (
+        public.fire_s_inspection_is_finalised(p_old)
+        and not public.fire_s_inspection_is_finalised(p_new)
+      )
+      or (
+        jsonb_typeof(coalesce(p_new->'inspectionHistory', '[]'::jsonb)) = 'array'
+        and jsonb_array_length(coalesce(p_new->'inspectionHistory', '[]'::jsonb))
+            > jsonb_array_length(coalesce(p_old->'inspectionHistory', '[]'::jsonb))
+      )
+      or (
+        (
+          (
+            nullif(trim(coalesce(p_new->>'inspectionNumber', '')), '') is not null
+            and coalesce(p_new->>'inspectionNumber', '')
+                is distinct from coalesce(p_old->>'inspectionNumber', '')
+          )
+          or (
+            nullif(trim(coalesce(p_new->>'currentInspectionId', '')), '') is not null
+            and coalesce(p_new->>'currentInspectionId', '')
+                is distinct from coalesce(p_old->>'currentInspectionId', '')
+          )
+        )
+        and (
+          p_new->'answers' is null
+          or p_new->'answers' = '[]'::jsonb
+          or p_new->'answers' = '{}'::jsonb
+        )
+      )
+    );
+$$;
+
+create or replace function public.fire_s_inspections_entitlement_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_company uuid;
+  v_info jsonb;
+  v_was boolean := false;
+  v_now boolean := false;
+  v_id text;
+  v_reason text;
+begin
+  if auth.uid() is null then
+    return NEW;
+  end if;
+
+  if public.fire_s_is_super_admin() then
+    return NEW;
+  end if;
+
+  v_company := coalesce(
+    NEW.company_id,
+    case when tg_op = 'UPDATE' then OLD.company_id else null end
+  );
+
+  if v_company is null then
+    select m.company_id into v_company
+    from public.company_members m
+    where m.user_id = auth.uid()
+      and coalesce(m.status, 'active') = 'active'
+    limit 1;
+    if v_company is not null then
+      NEW.company_id := v_company;
+    end if;
+  end if;
+
+  if tg_op = 'UPDATE' and v_company is null then
+    return NEW;
+  end if;
+
+  if v_company is null then
+    raise exception 'FIRE_S_ENTITLEMENT:subscription_required:Company required';
+  end if;
+
+  if NEW.company_id is not null
+     and not public.fire_s_is_company_member(NEW.company_id)
+     and not public.fire_s_is_super_admin() then
+    if tg_op = 'INSERT' then
+      raise exception 'FIRE_S_ENTITLEMENT:subscription_required:Not a member of this company';
+    elsif tg_op = 'UPDATE' and OLD.user_id is distinct from auth.uid() then
+      raise exception 'FIRE_S_ENTITLEMENT:subscription_required:Not a member of this company';
+    end if;
+  end if;
+
+  if tg_op = 'UPDATE'
+     and OLD.company_id is not null
+     and NEW.company_id is distinct from OLD.company_id then
+    NEW.company_id := OLD.company_id;
+  end if;
+
+  v_was := tg_op = 'UPDATE' and public.fire_s_inspection_is_finalised(OLD.inspection_data);
+  v_now := public.fire_s_inspection_is_finalised(NEW.inspection_data);
+  v_id := coalesce(NEW.id::text, OLD.id::text);
+
+  perform pg_advisory_xact_lock(hashtext('fire_s_entitlement:' || v_company::text));
+
+  -- Compute only: do not refresh/write company rows from this trigger.
+  v_info := public.fire_s_compute_entitlement(v_company);
+  v_reason := v_info->>'reason';
+
+  if tg_op = 'INSERT' and not v_now then
+    if coalesce((v_info->>'can_create')::boolean, false) is not true then
+      raise exception 'FIRE_S_ENTITLEMENT:%:%',
+        coalesce(v_reason, 'subscription_required'),
+        'A subscription is required to start new inspections';
+    end if;
+    return NEW;
+  end if;
+
+  if tg_op = 'UPDATE'
+     and not v_now
+     and public.fire_s_inspection_starts_new_cycle(OLD.inspection_data, NEW.inspection_data) then
+    if coalesce((v_info->>'can_create')::boolean, false) is not true then
+      raise exception 'FIRE_S_ENTITLEMENT:%:%',
+        coalesce(v_reason, 'subscription_required'),
+        'A subscription is required to start a new inspection cycle';
+    end if;
+  end if;
+
+  if v_now and not v_was then
+    if exists (
+      select 1
+      from public.fire_s_trial_finalised_inspections t
+      where t.company_id = v_company
+        and t.inspection_id = v_id
+    ) then
+      return NEW;
+    end if;
+
+    if coalesce((v_info->>'can_finalise')::boolean, false) is not true then
+      raise exception 'FIRE_S_ENTITLEMENT:%:%',
+        coalesce(v_reason, 'subscription_required'),
+        case
+          when v_reason = 'trial_limit_reached' then
+            'You have completed the inspections included in your Fire-S free trial. Choose a subscription plan to continue using Fire-S.'
+          when v_reason = 'trial_expired' then
+            'Your Fire-S free trial has ended.'
+          else
+            'A Fire-S subscription is required to finalise inspections.'
+        end;
+    end if;
+
+    insert into public.fire_s_trial_finalised_inspections (inspection_id, company_id)
+    values (v_id, v_company)
+    on conflict (company_id, inspection_id) do nothing;
+
+    perform set_config('fire_s.entitlement_write', 'on', true);
+
+    update public.companies c
+       set trial_inspections_used = public.fire_s_count_finalised_inspections(v_company),
+           entitlement_updated_at = now()
+     where c.id = v_company;
+
+    perform public.fire_s_audit_entitlement(
+      v_company,
+      'TRIAL_INSPECTION_COMPLETED',
+      jsonb_build_object('inspection_id', v_id)
+    );
+
+    perform public.fire_s_refresh_entitlement_status(v_company);
+  elsif not v_now and tg_op = 'UPDATE' then
+    if coalesce((v_info->>'can_write_draft')::boolean, true) is not true
+       and coalesce((v_info->>'allowed')::boolean, false) is not true then
+      raise exception 'FIRE_S_ENTITLEMENT:%:%',
+        coalesce(v_reason, 'subscription_required'),
+        'A subscription is required to change inspections';
+    end if;
+  end if;
+
+  return NEW;
+end;
+$$;
+
+drop trigger if exists fire_s_inspections_entitlement_guard on public.inspections;
+create trigger fire_s_inspections_entitlement_guard
+  before insert or update on public.inspections
+  for each row
+  execute procedure public.fire_s_inspections_entitlement_guard();
+
 revoke all on function public.fire_s_get_company_entitlement(uuid) from public;
 revoke all on function public.fire_s_get_company_entitlement(uuid) from anon;
 grant execute on function public.fire_s_get_company_entitlement(uuid) to authenticated;
