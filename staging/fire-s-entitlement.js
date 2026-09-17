@@ -146,6 +146,12 @@
     if (reason === 'trial_expired') {
       return 'Your Fire-S free trial has ended. Subscribe on PayFast to continue.';
     }
+    if (reason === 'past_due_grace') {
+      return 'A payment did not go through. Fire-S stays available during the grace period. Subscribe on PayFast.';
+    }
+    if (reason === 'cancelled_until_period_end') {
+      return 'This subscription is cancelled. Access continues until the paid-through date.';
+    }
     if (reason === 'subscription_required') {
       return 'A Fire-S subscription is required to continue.';
     }
@@ -199,6 +205,18 @@
         urgency = 'mid';
         detail = 'Your Fire-S trial ends in ' + days + ' days. ' + detail;
       }
+      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
+    }
+    if (reason === 'past_due_grace' || (status === 'subscription_past_due' && data.allowed === true)) {
+      headline = 'Payment past due';
+      detail = humanMessage('past_due_grace', data);
+      urgency = 'mid';
+      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
+    }
+    if (reason === 'cancelled_until_period_end') {
+      headline = 'Subscription cancelled';
+      detail = humanMessage('cancelled_until_period_end', data);
+      urgency = 'mid';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
     if (status === 'subscription_cancelled' || status === 'subscription_past_due' || status === 'subscription_suspended' || reason === 'subscription_required') {
@@ -408,11 +426,13 @@
   function statusLabel(info) {
     var data = info || last || emptySnapshot();
     var status = text(data.status || data.reason);
+    var reason = text(data.reason);
     if (data.super_admin) return 'Super Admin access';
     if (status === 'subscription_active') return 'Paid subscription active';
-    if (status === 'trial_active' && data.reason === 'trial_limit_reached') return 'Trial inspections used';
+    if (status === 'trial_active' && reason === 'trial_limit_reached') return 'Trial inspections used';
     if (status === 'trial_active') return 'Active trial';
     if (status === 'trial_expired') return 'Trial ended';
+    if (status === 'subscription_past_due' && (data.in_grace === true || reason === 'past_due_grace')) return 'Payment past due — grace period';
     if (status === 'subscription_cancelled') return 'Subscription cancelled';
     if (status === 'subscription_past_due') return 'Payment past due';
     if (status === 'payment_pending') return 'Payment pending';
