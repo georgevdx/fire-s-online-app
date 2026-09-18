@@ -30,6 +30,9 @@ assert.ok(/keep_data/.test(sql));
 assert.ok(/super_admin/.test(sql));
 assert.ok(/fire_s_require_company_write/.test(sql));
 assert.ok(/fire_s_company_members_entitlement_guard/.test(sql));
+assert.ok(/fire_s_company_can_read_inspections/.test(sql));
+assert.ok(/fire_s_inspections_entitlement_delete_guard/.test(sql));
+assert.ok(/Inspections stay in the cloud/.test(sql));
 assert.ok(/grant execute on function public\.fire_s_get_company_entitlement\(uuid\) to authenticated/.test(sql));
 assert.ok(!/delete from public\.inspections/.test(sql));
 assert.ok(!/drop table if exists public\.inspections/.test(sql));
@@ -44,7 +47,7 @@ assert.ok(/id="fireSSubscriptionRequiredSection"/.test(stagingHtml));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingHtml));
 assert.ok(/georgevdx@gmail\.com/.test(stagingHtml));
 assert.ok(/Inspections, reports, premises and photos stay/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-lifecycle/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-cancel-lock/.test(stagingHtml));
 assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits on toets first');
 
 assert.ok(/getCompanyEntitlement/.test(stagingJs));
@@ -63,7 +66,8 @@ assert.ok(/fireSEntitlement\.hasSnapshot/.test(stagingApp));
 assert.ok(/operationallyAllowed\(\) === true/.test(stagingApp));
 assert.ok(!/currentCompanyAccess\?\.status === 'active' \|\|/.test(stagingApp.match(/function hasActiveCompanyAccess\(\) \{[\s\S]*?\n\}/)[0]));
 
-assert.ok(/function canViewReports\(\) \{[\s\S]*isSuperAdmin[\s\S]*company_owner[\s\S]*viewer/.test(stagingApp));
+assert.ok(/function canViewReports\(\) \{[\s\S]*isSuperAdmin[\s\S]*fireSEntitlementGate\('export'\)[\s\S]*viewer/.test(stagingApp));
+assert.ok(/inspectionAccessLocked\(\)/.test(stagingApp));
 const liveCanView = liveApp.match(/function canViewReports\(\) \{[\s\S]*?\n\}/);
 assert.ok(liveCanView && /hasActiveCompanyAccess/.test(liveCanView[0]), 'live report gate unchanged until sit dit live');
 
@@ -157,9 +161,9 @@ assert.ok(/cancelled/i.test(api.statusLabel({ status: 'subscription_cancelled' }
           allowed: false,
           can_create: false,
           can_finalise: false,
-          can_write_draft: true,
-          can_read: true,
-          can_export: true,
+          can_write_draft: false,
+          can_read: false,
+          can_export: false,
           keep_data: true,
           authority: 'server',
           status: 'subscription_cancelled',
@@ -179,9 +183,10 @@ assert.ok(/cancelled/i.test(api.statusLabel({ status: 'subscription_cancelled' }
   assert.strictEqual(info.authority, 'server');
   assert.strictEqual(info.allowed, false);
   assert.strictEqual(info.can_create, false);
-  assert.strictEqual(info.can_read, true);
+  assert.strictEqual(info.can_read, false);
   assert.strictEqual(info.keep_data, true);
   assert.strictEqual(api.canCreate(), false, 'localStorage paid flag must not override the server');
+  assert.strictEqual(api.canRead(), false, 'cancelled companies must not open inspections');
   assert.strictEqual(api.operationallyAllowed(), false);
 
   api.guardDirectUrl();

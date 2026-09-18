@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-80-toets-now',
+  '1-3-80-toets-lock',
   '1-1-count',
   '108-68-toets-now',
   'fire-s-108-68-toets-now'

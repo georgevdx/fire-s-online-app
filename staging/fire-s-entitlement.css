@@ -168,12 +168,24 @@
 body.fire-s-entitlement-blocked #fireSSubscribeSection,
 body.fire-s-entitlement-blocked #fireSGetStarted,
 body.fire-s-entitlement-blocked #companyLetterheadSection,
-body.fire-s-entitlement-blocked #projectListSection,
-body.fire-s-entitlement-blocked #reportSection,
-body.fire-s-entitlement-blocked #homeSection,
+body.fire-s-entitlement-blocked #userManualSection,
+body.fire-s-entitlement-blocked #fireSCompanyBillingPanel,
 body.fire-s-entitlement-blocked #fireSSubscriptionRequiredSection,
 body.fire-s-entitlement-blocked #logoutBtn {
   pointer-events: auto;
+}
+
+body.fire-s-entitlement-blocked #projectFormSection,
+body.fire-s-entitlement-blocked #projectListSection,
+body.fire-s-entitlement-blocked #reportSection,
+body.fire-s-entitlement-blocked #inspectorBoardSection,
+body.fire-s-entitlement-blocked #findingsCentreSection,
+body.fire-s-entitlement-blocked #testSamplesSection,
+body.fire-s-entitlement-blocked #managementDashboardSection,
+body.fire-s-entitlement-blocked #servicesSection,
+body.fire-s-entitlement-blocked #companyTeamSection {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .fire-s-subscription-required-section,

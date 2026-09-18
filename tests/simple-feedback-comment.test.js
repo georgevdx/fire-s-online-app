@@ -123,7 +123,7 @@ assertCommentForm(
 
 assert.ok(
   /Version 1\.3\.80-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-80-toets-now/.test(stagingHtml) &&
+    /app\.js\?v=1-3-80-toets-lock/.test(stagingHtml) &&
     /fire-s-env\.js\?v=1-3-80-pf-server/.test(stagingHtml) &&
     /service-worker\.js\?v=108-68-toets-now/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&

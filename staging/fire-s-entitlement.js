@@ -26,11 +26,9 @@
     fireSSubscribeSection: true,
     fireSGetStarted: true,
     fireSSubscriptionRequiredSection: true,
+    fireSCompanyBillingPanel: true,
     companyLetterheadSection: true,
-    userManualSection: true,
-    projectListSection: true,
-    reportSection: true,
-    homeSection: true
+    userManualSection: true
   };
 
   function text(value) {
@@ -86,9 +84,9 @@
       plan: null,
       can_finalise: false,
       can_create: false,
-      can_write_draft: true,
-      can_read: true,
-      can_export: true,
+      can_write_draft: false,
+      can_read: false,
+      can_export: false,
       keep_data: true,
       authority: 'none',
       backendReady: false,
@@ -125,6 +123,26 @@
     return last.can_create === true;
   }
 
+  function canRead() {
+    if (isSuperAdmin()) return true;
+    if (isLocalWorkspace()) return true;
+    if (!hasSnapshot()) return false;
+    return last.can_read === true || last.allowed === true;
+  }
+
+  function canExport() {
+    if (isSuperAdmin()) return true;
+    if (isLocalWorkspace()) return true;
+    if (!hasSnapshot()) return false;
+    return last.can_export === true || last.can_read === true || last.allowed === true;
+  }
+
+  function inspectionAccessLocked() {
+    if (isSuperAdmin() || isLocalWorkspace()) return false;
+    if (!hasSnapshot()) return false;
+    return canRead() !== true;
+  }
+
   function parseRpcError(err) {
     var msg = text(err && (err.message || err.error_description || err));
     var match = msg.match(/FIRE_S_ENTITLEMENT:([a-z_]+):?(.*)$/i);
@@ -149,11 +167,11 @@
     if (reason === 'past_due_grace') {
       return 'A payment did not go through. Fire-S stays available during the grace period. Subscribe on PayFast.';
     }
-    if (reason === 'cancelled_until_period_end') {
-      return 'This subscription is cancelled. Access continues until the paid-through date.';
+    if (reason === 'cancelled_until_period_end' || reason === 'subscription_cancelled') {
+      return 'This subscription is cancelled. Inspections stay in the cloud and stay locked until a new subscription is active.';
     }
     if (reason === 'subscription_required') {
-      return 'A Fire-S subscription is required to continue.';
+      return 'A Fire-S subscription is required to continue. Inspections stay in the cloud and stay locked until a new subscription is active.';
     }
     if (info && info.status === 'trial_active' && days <= 3 && days > 1) {
       return 'Your Fire-S trial ends in ' + days + ' days.';
@@ -213,13 +231,13 @@
       urgency = 'mid';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
-    if (reason === 'cancelled_until_period_end') {
-      headline = 'Subscription cancelled';
-      detail = humanMessage('cancelled_until_period_end', data);
-      urgency = 'mid';
-      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
+    if (reason === 'cancelled_until_period_end' || status === 'subscription_cancelled') {
+      headline = 'Subscription required';
+      detail = humanMessage('subscription_cancelled', data);
+      urgency = 'block';
+      return { headline: headline, detail: detail, urgency: urgency, cta: 'Subscribe / Reactivate', show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
-    if (status === 'subscription_cancelled' || status === 'subscription_past_due' || status === 'subscription_suspended' || reason === 'subscription_required') {
+    if (status === 'subscription_past_due' || status === 'subscription_suspended' || reason === 'subscription_required') {
       headline = 'Subscription required';
       detail = humanMessage(reason || 'subscription_required', data);
       urgency = 'block';
@@ -259,6 +277,8 @@
       last.can_create = true;
       last.can_finalise = true;
       last.can_write_draft = true;
+      last.can_read = true;
+      last.can_export = true;
       last.backendReady = false;
       last.source = 'local';
       last.authority = 'local';
@@ -369,7 +389,7 @@
         '<p id="fireSEntitlementBlockerTrial"></p>' +
         '<p id="fireSEntitlementBlockerPlan"></p>' +
         '<p id="fireSEntitlementBlockerCopy"></p>' +
-        '<p>Inspections, reports, premises and photos stay. Nothing is deleted when billing ends.</p>' +
+        '<p>Inspections, reports, premises and photos stay in the cloud. They stay locked in the app until a new subscription is active. Nothing is deleted.</p>' +
         '<p>Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>' +
         '<div class="fire-s-entitlement-blocker-actions">' +
           '<button type="button" class="cloud-primary-btn" id="fireSEntitlementBlockerSubscribe">Subscribe / Reactivate</button>' +
@@ -387,10 +407,7 @@
     }
     if (home) {
       home.addEventListener('click', function () {
-        el.hidden = true;
-        try {
-          if (typeof root.showHome === 'function') root.showHome();
-        } catch (_) {}
+        openRequiredScreen();
       });
     }
     return el;
@@ -400,6 +417,7 @@
     var ids = [
       'fireSSubscribeSection',
       'fireSSubscriptionRequiredSection',
+      'fireSCompanyBillingPanel',
       'companyLetterheadSection',
       'userManualSection',
       'projectFormSection',
@@ -469,7 +487,7 @@
   }
 
   function hideWriteWorkspaces() {
-    ['projectFormSection', 'companyTeamSection', 'inspectorBoardSection', 'servicesSection', 'findingsCentreSection', 'testSamplesSection'].forEach(function (id) {
+    ['projectFormSection', 'companyTeamSection', 'inspectorBoardSection', 'servicesSection', 'findingsCentreSection', 'testSamplesSection', 'projectListSection', 'reportSection', 'managementDashboardSection'].forEach(function (id) {
       var node = document.getElementById(id);
       if (!node) return;
       node.hidden = true;
@@ -507,18 +525,12 @@
     if (!blocker) return;
     var space = visibleWorkspaceId();
     var lockedOp =
-      copy.urgency === 'block' &&
-      !isSuperAdmin() &&
-      last &&
-      last.backendReady === true &&
-      last.can_create === false &&
-      !ALLOWED_WHEN_LOCKED[space] &&
-      space !== 'homeSection' &&
-      space !== 'projectListSection';
+      inspectionAccessLocked() &&
+      !ALLOWED_WHEN_LOCKED[space];
     fillRequiredCopy('fireSSubscriptionRequiredScreen');
     fillRequiredCopy('fireSSubscriptionRequired');
     var panel = document.getElementById('fireSSubscriptionRequiredPanel');
-    if (panel) panel.hidden = !(copy.urgency === 'block' && last && last.backendReady);
+    if (panel) panel.hidden = !(inspectionAccessLocked() || (copy.urgency === 'block' && last && last.backendReady));
     if (!lockedOp) {
       blocker.hidden = true;
       return;
@@ -545,12 +557,7 @@
       }
     }
     try {
-      var fullyBlocked =
-        copy.urgency === 'block' &&
-        !isSuperAdmin() &&
-        last &&
-        last.backendReady === true &&
-        last.can_create === false;
+      var fullyBlocked = inspectionAccessLocked();
       document.body.classList.toggle('fire-s-entitlement-blocked', fullyBlocked);
     } catch (_) {}
     showBlockerIfNeeded();
@@ -638,6 +645,24 @@
     holder[name] = wrapped;
   }
 
+  function wrapOpenProject() {
+    var names = ['openProject', 'openProjectAndReviewFindings', 'openProjectAndViewPhotos', 'openProjectAndGoToSchedule', 'openProjectAndGenerateReport', 'openProjectSummaryCard'];
+    names.forEach(function (name) {
+      var original = root[name];
+      if (typeof original !== 'function' || original.__fireSEntitlementRead) return;
+      var wrapped = function () {
+        if (inspectionAccessLocked()) {
+          openRequiredScreen();
+          deny((last && last.reason) || 'subscription_required');
+          return;
+        }
+        return original.apply(this, arguments);
+      };
+      wrapped.__fireSEntitlementRead = true;
+      root[name] = wrapped;
+    });
+  }
+
   function wrapNewInspection() {
     var names = [
       'createNewInspection',
@@ -686,8 +711,14 @@
   function guardDirectUrl() {
     var bits = String((root.location && (root.location.hash || '')) || '') +
       String((root.location && (root.location.search || '')) || '');
-    if (!/newInspection|new-inspection|projectForm|createNewProject|inspect=new/i.test(bits)) return;
     if (isSuperAdmin() || isLocalWorkspace()) return;
+    if (last && last.backendReady && canRead() === false) {
+      if (/newInspection|new-inspection|projectForm|createNewProject|inspect=new|reportSection|openProject|projectList/i.test(bits)) {
+        openRequiredScreen();
+      }
+      return;
+    }
+    if (!/newInspection|new-inspection|projectForm|createNewProject|inspect=new/i.test(bits)) return;
     if (last && last.backendReady && last.can_create === false) {
       openRequiredScreen();
     }
@@ -724,6 +755,7 @@
   function wire() {
     wrapFinish();
     wrapNewInspection();
+    wrapOpenProject();
     ensureBanner();
     ensureBlocker();
     wireRequiredScreen();
@@ -748,6 +780,12 @@
         ));
       if (!creating) return;
       var info = last;
+      if (inspectionAccessLocked()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        deny((info && info.reason) || 'subscription_required');
+        return;
+      }
       if (info && info.backendReady && info.can_create === false && !isSuperAdmin()) {
         ev.preventDefault();
         ev.stopPropagation();
@@ -756,9 +794,13 @@
     }, true);
     setTimeout(function () {
       wrapNewInspection();
+      wrapOpenProject();
       refresh().then(guardDirectUrl);
     }, 400);
-    setTimeout(wrapNewInspection, 900);
+    setTimeout(function () {
+      wrapNewInspection();
+      wrapOpenProject();
+    }, 900);
   }
 
   if (document.readyState === 'loading') {
@@ -776,6 +818,9 @@
     operationallyAllowed: operationallyAllowed,
     canFinalise: canFinalise,
     canCreate: canCreate,
+    canRead: canRead,
+    canExport: canExport,
+    inspectionAccessLocked: inspectionAccessLocked,
     displayCopy: displayCopy,
     humanMessage: humanMessage,
     parseRpcError: parseRpcError,
