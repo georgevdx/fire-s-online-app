@@ -1022,6 +1022,7 @@
       if (inspectionAccessLocked() && !isAllowedLockedTarget(t)) {
         ev.preventDefault();
         ev.stopPropagation();
+        if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
         pinLockedHome();
         return;
       }
@@ -1053,6 +1054,7 @@
       if (isAllowedLockedTarget(ev.target)) return;
       ev.preventDefault();
       ev.stopPropagation();
+      if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
       pinLockedHome();
     }, true);
     setTimeout(function () {
