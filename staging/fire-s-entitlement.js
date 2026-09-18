@@ -214,15 +214,16 @@
     if (node.nodeType === 3) node = node.parentElement;
     if (!node || !node.closest) return false;
     try {
-      if (node.closest('#fireSSubscribeBackBtn')) return false;
       if (node.closest('#fireSSubscriptionRequiredBackBtn')) return false;
       if (node.closest('#projectsHomeBtn')) return false;
     } catch (_) {}
     var allow = [
       '#fireSSubscribeSection',
+      '#fireSSubscribeBackBtn',
       '#fireSSubscribePayActions',
       '#fireSPayfastPayBtn',
       '#fireSBillingSubscribeBtn',
+      '#fireSSubscribeCompanyLine',
       '#fireSCompanyBillingPanel',
       '#fireSSubscriptionRequiredSection',
       '#fireSEntitlementBlocker',

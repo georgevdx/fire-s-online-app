@@ -139,11 +139,7 @@
       setMessage('Sign in first, then pay on PayFast.', true);
       return;
     }
-    if (!linkedCompanyId()) {
-      paintCompanyLine();
-      setMessage(noCompanyPayMessage(), true);
-      return;
-    }
+    paintCompanyLine();
     setMessage('Opening PayFast…');
     Promise.resolve(
       pf.startCheckout({
@@ -162,6 +158,8 @@
         }
         setMessage(err || 'PayFast is not ready on the server.', true);
       }
+    }).catch(function (err) {
+      setMessage((err && err.message) || 'PayFast is not ready on the server.', true);
     });
   }
 
@@ -178,8 +176,24 @@
   }
 
   function canManage() {
+    var profileRole = '';
+    try {
+      profileRole = String((window.currentUserProfile && window.currentUserProfile.role) || '').toLowerCase();
+    } catch (_) {}
+    if (
+      profileRole === 'company_owner' ||
+      profileRole === 'owner' ||
+      profileRole === 'super_admin' ||
+      profileRole === 'admin'
+    ) {
+      return true;
+    }
     var role = homeRole();
-    return role === 'company_owner' || role === 'owner' || role === 'super_admin';
+    if (role === 'company_owner' || role === 'owner' || role === 'super_admin') return true;
+    // Staging paints new_company while companyId is still loading. A signed-in
+    // cancelled owner must still be able to open PayFast.
+    if (role === 'new_company' && ownerEmail()) return true;
+    return false;
   }
 
   function canAddSeat() {
@@ -582,6 +596,16 @@
     }
     try {
       if (typeof window.showHome === 'function') window.showHome();
+    } catch (_) {}
+    try {
+      if (
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        window.fireSEntitlement.inspectionAccessLocked() &&
+        typeof window.fireSEntitlement.pinLockedHome === 'function'
+      ) {
+        window.fireSEntitlement.pinLockedHome();
+      }
     } catch (_) {}
   }
 

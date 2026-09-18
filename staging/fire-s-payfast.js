@@ -100,12 +100,12 @@
 
   async function startCheckout(info) {
     if (!isEnabled()) {
-      return { ok: false, reason: 'disabled' };
+      return { ok: false, reason: 'disabled', error: 'PayFast is not ready on this page.' };
     }
     var e = env();
     var url = checkoutUrl();
     if (!url) {
-      return { ok: false, reason: 'no-function' };
+      return { ok: false, reason: 'no-function', error: 'PayFast is not ready on the server.' };
     }
     var interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
     var token = '';

@@ -290,7 +290,11 @@ body.fire-s-entitlement-blocked #fireSEntitlementBlocker {
 body.fire-s-entitlement-blocked #cmdSubscribeBtn,
 body.fire-s-entitlement-blocked #cmdUserManualBtn,
 body.fire-s-entitlement-blocked #fireSHomeLockPanel,
-body.fire-s-entitlement-blocked #fireSHomeLockSubscribe {
+body.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
+body.fire-s-entitlement-blocked #fireSSubscribeSection,
+body.fire-s-entitlement-blocked #fireSSubscribeBackBtn,
+body.fire-s-entitlement-blocked #fireSPayfastPayBtn,
+body.fire-s-entitlement-blocked #fireSBillingSubscribeBtn {
   pointer-events: auto !important;
 }
 

@@ -21,7 +21,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65'
 );
-assert.ok(/1\.3\.94-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.94-toets');
+assert.ok(/1\.3\.95-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.95-toets');
 
 function assertShowPassword(html, started, css, label) {
   const login = html.match(
@@ -56,7 +56,7 @@ assertShowPassword(liveHtml, liveStarted, liveCss, 'Live');
 assert.ok(
   /fire-s-get-started\.css\?v=2-19-legal/.test(stagingHtml) &&
     /fire-s-get-started\.js\?v=2-53-access-lock/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-94-company/.test(stagingHtml),
+    /fire-s-env\.js\?v=1-3-95-back-pay/.test(stagingHtml),
   'Toets-blad must cache-bust the phone Access files'
 );
 assert.ok(

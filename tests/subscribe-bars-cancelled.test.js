@@ -17,7 +17,7 @@ const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.94-toets/.test(env), 'Toets-blad version must be 1.3.94-toets');
+assert.ok(/1\.3\.95-toets/.test(env), 'Toets-blad version must be 1.3.95-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must stay 1.3.65'
@@ -78,12 +78,23 @@ assert.ok(/fireSStartSubscribeCheckout/.test(entitlement), 'already-open Subscri
 assert.ok(/id="fireSSubscribeCompanyLine"/.test(html), 'Subscription must say which company this login pays for');
 assert.ok(/function linkedCompanyId\(/.test(subscribe));
 assert.ok(/function noCompanyPayMessage\(/.test(subscribe));
-assert.ok(/if \(!linkedCompanyId\(\)\)/.test(subscribe), 'PayFast must not start until a company is linked to this login');
+assert.ok(
+  !/if \(!linkedCompanyId\(\)\) \{\s*paintCompanyLine\(\);\s*setMessage\(noCompanyPayMessage\(\), true\);\s*return;/.test(
+    subscribe
+  ),
+  'PayFast checkout must still start; the server knows the company from the login'
+);
 assert.ok(/Subscribing New Company/.test(subscribe), 'no-company copy must send a new business to Access');
 assert.ok(/same owner email/.test(subscribe), 'cancelled copy must keep the same owner email');
 assert.ok(/html\.fire-s-access-open #fireSHomeLockPanel/.test(read('staging/fire-s-entitlement.css')));
 assert.ok(/accessGateOpen\(\) && !companyId\(\)/.test(entitlement), 'Access Subscribe/Reactivate must not pay without a company');
 assert.ok(/classList\.add\('fire-s-access-open'\)/.test(read('staging/fire-s-get-started.js')));
+assert.ok(/#fireSSubscribeBackBtn/.test(entitlement), 'Back Home on Subscription must be an allowed locked target');
+assert.ok(
+  !/closest\('#fireSSubscribeBackBtn'\)\) return false/.test(entitlement),
+  'locked Subscription Back Home must return to Home, not stay stuck'
+);
+assert.ok(/role === 'new_company' && ownerEmail\(\)/.test(subscribe), 'cancelled owner can pay while companyId is still loading');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
