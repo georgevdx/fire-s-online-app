@@ -14,7 +14,7 @@ const env = read('staging/fire-s-env.js');
 const liveApp = read('app.js');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.80-toets/.test(env), 'Toets-blad version must be 1.3.80-toets');
+assert.ok(/1\.3\.98-toets/.test(env), 'Toets-blad version must be 1.3.98-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -73,7 +73,9 @@ const result = {
   withHistory: null,
   live: null,
   scheduled: null,
-  plain: null
+  plain: null,
+  recycledLive: null,
+  hiddenDeleted: null
 };
 vm.runInNewContext(
   helpers + `
@@ -104,8 +106,35 @@ vm.runInNewContext(
       id: 'plain',
       organisationName: 'Test1 Val'
     });
+    result.recycledLive = fireSIsEmptyRecycleLeftoverPremises({
+      id: 'restored-recycle',
+      inspectionNumber: 'FS-9',
+      currentInspectionId: 'insp-9',
+      answers: [{ answer: 'Yes' }],
+      recycleBin: {
+        currentInspections: [{
+          recycleId: 'r5',
+          inspectionLabel: 'FS-9',
+          snapshot: { inspectionNumber: 'FS-9', currentInspectionId: 'insp-9' }
+        }]
+      }
+    });
+    result.hiddenDeleted = fireSIsHiddenFromCurrentLists({
+      id: 'bin-premises',
+      deletedAt: '2026-09-01T00:00:00.000Z',
+      deleteType: 'entire_premises',
+      organisationName: 'Saverite'
+    });
   `,
-  { result }
+  {
+    result,
+    fireSIsDeletedPremises(project) {
+      if (!project) return true;
+      if (project.deletedAt || project.dataManagementDeletedAt) return true;
+      const deleteType = String(project.deleteType || '').toLowerCase();
+      return deleteType === 'entire_premises' || deleteType === 'permanently_deleted';
+    }
+  }
 );
 
 assert.strictEqual(result.leftover, true, 'aa aa leftover empty card must hide from Gateway');
@@ -113,6 +142,16 @@ assert.strictEqual(result.withHistory, false, 'Premises with History must stay a
 assert.strictEqual(result.live, false, 'A live current inspection must stay on Gateway');
 assert.strictEqual(result.scheduled, false, 'A scheduled new premises must stay on Gateway');
 assert.strictEqual(result.plain, false, 'An untouched premises card must stay on Gateway');
+assert.strictEqual(
+  result.recycledLive,
+  true,
+  'A current inspection that is already in Recycle must not stay on current lists'
+);
+assert.strictEqual(
+  result.hiddenDeleted,
+  true,
+  'Entire premises in Recycle Bin must never appear on current lists'
+);
 
 assert.ok(
   /function fireSIsEmptyRecycleLeftoverPremises\(project\)/.test(liveApp) &&

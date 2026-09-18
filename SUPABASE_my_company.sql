@@ -1,6 +1,7 @@
 -- Fire-S: return the signed-in user's primary company (SECURITY DEFINER)
--- Picks the active membership with the most team members so staff on a large
--- company are not left on a personal shell company after login.
+-- Prefers an owned cancelled/expired company so Subscribe/Reactivate can
+-- open PayFast for that login. Otherwise prefers owner roles, then the
+-- largest team so staff are not left on a personal shell.
 -- Run in Supabase SQL Editor once (replaces prior fire_s_my_company()).
 
 begin;
@@ -19,33 +20,55 @@ set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
+  v_super boolean := false;
 begin
   if v_uid is null then
     raise exception 'Not authenticated';
   end if;
 
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = v_uid
+      and lower(coalesce(p.role, '')) = 'super_admin'
+  ) into v_super;
+
+  -- Owner + cancelled/expired first so Subscribe/Reactivate bills the company
+  -- already on this login, not a larger staff company or a shell.
   return query
     select
       c.id,
       c.name,
-      m.role::text
+      case
+        when v_super then 'super_admin'::text
+        else m.role::text
+      end
     from public.company_members as m
     join public.companies as c on c.id = m.company_id
+    left join public.fire_s_company_subscriptions as s on s.company_id = c.id
     where m.user_id = v_uid
       and coalesce(m.status, 'active') = 'active'
-    order by (
-      select count(*)::int
-      from public.company_members as cm
-      where cm.company_id = m.company_id
-        and coalesce(cm.status, 'active') = 'active'
-    ) desc,
-    case m.role
-      when 'manager' then 0
-      when 'inspector' then 1
-      when 'company_owner' then 2
-      else 3
-    end,
-    c.name asc
+    order by
+      case
+        when lower(coalesce(s.status, '')) in ('cancelled', 'expired', 'past_due', 'unpaid')
+         and lower(coalesce(m.role, '')) in ('company_owner', 'owner', 'super_admin')
+        then 0
+        else 1
+      end,
+      case lower(coalesce(m.role, ''))
+        when 'company_owner' then 0
+        when 'owner' then 1
+        when 'super_admin' then 2
+        when 'manager' then 3
+        else 4
+      end,
+      (
+        select count(*)::int
+        from public.company_members as cm
+        where cm.company_id = m.company_id
+          and coalesce(cm.status, 'active') = 'active'
+      ) desc,
+      c.name asc
     limit 1;
 end;
 $$;

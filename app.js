@@ -5033,11 +5033,18 @@ let fireSCloudPullInFlight = false;
 let fireSCloudPullGeneration = 0;
 
 async function safeDownloadNewerCloudInspections(options) {
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
-  if (fireSCloudPullInFlight) return;
-  fireSCloudPullInFlight = true;
-  const pullToken = ++fireSCloudPullGeneration;
+    if (!navigator.onLine) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (typeof supabaseClient === 'undefined') {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (fireSCloudPullInFlight) return;
+    fireSCloudPullInFlight = true;
+    try { window.__fireSCloudPullSettled = false; } catch (_) {}
+    const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
 
@@ -5046,6 +5053,7 @@ async function safeDownloadNewerCloudInspections(options) {
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       return;
     }
 
@@ -5161,15 +5169,53 @@ async function safeDownloadNewerCloudInspections(options) {
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       finishPremisesProgress();
       return;
     }
 
+    const incomplete = !!(pulled && pulled.incomplete);
     applyCloudRows(Array.isArray(data) ? data : [], {
       expectedTotal: pulled && pulled.expectedTotal,
-      incomplete: !!(pulled && pulled.incomplete)
+      incomplete: incomplete
     });
     if (pullToken !== fireSCloudPullGeneration) return;
+
+    // A short phone pull must not become the finished Home count.
+    // Laptop/phone were settling on 8 vs 5 buildings and different Overdue cards.
+    if (incomplete) {
+      try { window.__fireSCloudPullSettled = false; } catch (_) {}
+      reportPremisesProgress(true);
+      const retry = Number(options && options.retry) || 0;
+      if (retry < 4) {
+        setTimeout(() => {
+          try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
+        }, 1800);
+        return;
+      }
+    }
+
+    // Laptop leftover locals (untagged / never uploaded) stay at 8 while the
+    // phone only has the 5 company-tagged cloud rows. Stamp and push them so
+    // the next phone pull sees the same company list.
+    try {
+      const cid = currentUserProfile && currentUserProfile.companyId;
+      if (cid) {
+        restampLocalInspectionsWithCompany(
+          cid,
+          currentUserProfile.companyName
+        );
+      }
+      if (!incomplete) {
+        queueLocalPremisesMissingFromCloud(
+          localProjects,
+          Array.isArray(data) ? data : []
+        );
+      }
+      uploadPendingInspections();
+    } catch (_) {}
+
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
     paintHome(true);
@@ -5181,10 +5227,13 @@ async function safeDownloadNewerCloudInspections(options) {
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
-      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
+      try {
+        if (window.__fireSCloudPullSettled) window.__fireSHomeCountsFrozen = false;
+      } catch (_) {}
     }
   }
 }
@@ -7426,6 +7475,58 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
   return changed;
 }
 
+function fireSCloudRowInspectionId(row) {
+  if (!row) return '';
+  return String(
+    row.id ||
+      (row.inspection_data && row.inspection_data.id) ||
+      ''
+  ).trim();
+}
+
+/**
+ * After a complete company pull, re-queue local premises the cloud did not
+ * return. Laptop-only leftovers then upload with company_id so the phone
+ * can show the same building list.
+ */
+function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
+  const cloudIds = new Set();
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id = fireSCloudRowInspectionId(row);
+    if (id) cloudIds.add(id);
+  });
+  const cid = String(
+    (typeof currentUserProfile !== 'undefined' &&
+      currentUserProfile &&
+      currentUserProfile.companyId) ||
+      ''
+  ).trim();
+  let queued = 0;
+  (Array.isArray(localProjects) ? localProjects : []).forEach(project => {
+    if (!project || !project.id) return;
+    if (
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(project)
+    ) {
+      return;
+    }
+    if (
+      typeof fireSIsEmptyRecycleLeftoverPremises === 'function' &&
+      fireSIsEmptyRecycleLeftoverPremises(project)
+    ) {
+      return;
+    }
+    const projectCid = String(
+      project.companyId || project.company_id || ''
+    ).trim();
+    if (cid && projectCid && projectCid !== cid) return;
+    if (cloudIds.has(String(project.id))) return;
+    queueInspectionForUpload(project.id);
+    queued += 1;
+  });
+  return queued;
+}
+
 function fireSIsLocalProfileFallback(profile) {
   if (!profile) return true;
   const id = String(profile.id || '');
@@ -7468,7 +7569,16 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
         project.companyId || project.company_id || ''
       ).trim();
       if (projectCompanyId === profileCompanyId) return true;
-      if (!projectCompanyId && mine(project)) return true;
+      if (!projectCompanyId) {
+        if (mine(project)) return true;
+        const hasOwner = String(
+          project.createdByUserId ||
+            project.user_id ||
+            project.createdByEmail ||
+            ''
+        ).trim();
+        if (!hasOwner) return true;
+      }
       return false;
     });
     if (matched.length) return matched;
@@ -7678,41 +7788,98 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   }
 
   const preferFiltered = !!(currentUserProfile && currentUserProfile.companyId);
-  let inventoryMode = preferFiltered ? 'filtered' : 'open';
-  let inventory = await fetchInventory(
-    inventoryMode === 'filtered' ? filteredIndexQuery : openIndexQuery
-  );
-  if (inventory.error || !inventory.rows.length) {
-    const other = inventoryMode === 'filtered' ? 'open' : 'filtered';
-    const fallbackInventory = await fetchInventory(
-      other === 'filtered' ? filteredIndexQuery : openIndexQuery
-    );
-    if (!fallbackInventory.error && fallbackInventory.rows.length) {
-      inventory = fallbackInventory;
-      inventoryMode = other;
-    }
+
+  function inventoryCount(inv) {
+    if (!inv || inv.error) return 0;
+    const listed = Array.isArray(inv.rows) ? inv.rows.length : 0;
+    const counted = typeof inv.count === 'number' ? inv.count : 0;
+    return Math.max(listed, counted);
   }
-  const expectedTotal = inventory.count || inventory.rows.length || null;
+
+  function unionCloudRows(left, right) {
+    const map = new Map();
+    function add(list) {
+      (Array.isArray(list) ? list : []).forEach(row => {
+        const id = String(
+          (row && row.id) ||
+            (row && row.inspection_data && row.inspection_data.id) ||
+            ''
+        ).trim();
+        if (id && !map.has(id)) map.set(id, row);
+      });
+    }
+    add(left);
+    add(right);
+    return Array.from(map.values());
+  }
+
+  const openInv = await fetchInventory(openIndexQuery);
+  let filteredInv = { rows: [], count: 0, error: { message: 'skip' } };
+  if (preferFiltered) {
+    filteredInv = await fetchInventory(filteredIndexQuery);
+  } else if (openInv.error || !openInv.rows.length) {
+    filteredInv = await fetchInventory(filteredIndexQuery);
+  }
+  const filteredCount = inventoryCount(filteredInv);
+  const openCount = inventoryCount(openInv);
+
+  let inventoryMode;
+  let inventory;
+  if (openCount > filteredCount) {
+    inventoryMode = 'open';
+    inventory = openInv;
+  } else if (filteredCount > openCount) {
+    inventoryMode = 'filtered';
+    inventory = filteredInv;
+  } else if (preferFiltered && filteredCount) {
+    inventoryMode = 'filtered';
+    inventory = filteredInv;
+  } else {
+    inventoryMode = 'open';
+    inventory = openInv.error && filteredCount ? filteredInv : openInv;
+    if (inventory === filteredInv) inventoryMode = 'filtered';
+  }
+
+  const expectedTotal =
+    Math.max(filteredCount, openCount, inventoryCount(inventory)) || null;
   report([], expectedTotal, true);
 
   const primaryQuery = inventoryMode === 'filtered' ? filteredQuery : openQuery;
   const secondaryQuery = inventoryMode === 'filtered' ? openQuery : filteredQuery;
-  const primary = await fetchAll(primaryQuery, expectedTotal);
-  if (!primary.error && !primary.incomplete) {
-    return primary;
+  const primaryExpected =
+    inventoryMode === 'filtered'
+      ? filteredCount || expectedTotal
+      : openCount || expectedTotal;
+  const primary = await fetchAll(primaryQuery, primaryExpected);
+  const primaryLen = Array.isArray(primary.data) ? primary.data.length : 0;
+  const otherCount = inventoryMode === 'filtered' ? openCount : filteredCount;
+  const needSecondary =
+    !!(primary.error && !primaryLen) ||
+    !!primary.incomplete ||
+    otherCount > primaryLen;
+
+  if (!needSecondary) {
+    return {
+      data: primary.data,
+      error: primary.error,
+      incomplete:
+        !!(expectedTotal && primaryLen < expectedTotal) || !!primary.incomplete,
+      expectedTotal: expectedTotal
+    };
   }
-  if (Array.isArray(primary.data) && primary.data.length > 0) {
-    return primary;
-  }
-  const secondary = await fetchAll(secondaryQuery, expectedTotal);
-  if (
-    !secondary.error &&
-    Array.isArray(secondary.data) &&
-    secondary.data.length >= (Array.isArray(primary.data) ? primary.data.length : 0)
-  ) {
-    return secondary;
-  }
-  return primary;
+
+  const secondaryExpected =
+    inventoryMode === 'filtered'
+      ? openCount || expectedTotal
+      : filteredCount || expectedTotal;
+  const secondary = await fetchAll(secondaryQuery, secondaryExpected);
+  const merged = unionCloudRows(primary.data, secondary.data);
+  return {
+    data: merged,
+    error: merged.length ? null : primary.error || secondary.error,
+    incomplete: !!(expectedTotal && merged.length < expectedTotal),
+    expectedTotal: expectedTotal
+  };
 }
 
 function applyInspectionDeleteFilter(query, userId) {
@@ -34436,6 +34603,18 @@ function fireSApplyLifecycleUxLabels() {
   }
 })();
 
+function fireSPaintLeftoverCommandSubtitle(el, text) {
+  // 136A10 owns the Executive Command Centre count line. Leftover KPI
+  // layers used different Action/Overdue/Compliant matchers, so this
+  // summary flickered while the hash-gated cards underneath stayed still.
+  try { if (window.__fireS136A10Installed) return; } catch (_) {}
+  if (!el) return;
+  const next = String(text == null ? '' : text);
+  if ((el.textContent || '') === next) return;
+  el.textContent = next;
+}
+try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtitle; } catch (_) {}
+
 
 // =====================================================
 // FIRE-S RC 1.3.1 - Role Test Mode + Management Cards Fix
@@ -34657,7 +34836,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`);
     }
   }
 
@@ -34914,7 +35093,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`);
     }
 
     bindManagementCardClicks();
@@ -35189,7 +35368,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     }
 
     const access = document.getElementById('mainCommandAccessStatus');
@@ -35531,7 +35710,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`);
     }
 
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
@@ -35775,7 +35954,7 @@ function fireSApplyLifecycleUxLabels() {
     if (scoreLabel) scoreLabel.textContent = 'Compliance Score';
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
     if (heroSubtitle) heroSubtitle.textContent = `Management snapshot: ${scheduled} scheduled inspections, ${overdue} overdue inspections and ${month} inspections this month.`;
   }
@@ -35989,7 +36168,7 @@ function fireSApplyLifecycleUxLabels() {
     ].join('');
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function applyGatewayFilter(filter, message){
@@ -37841,9 +38020,9 @@ function fireSApplyLifecycleUxLabels() {
     });
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
     const oldSubtitle = document.querySelector('.main-command-top p');
-    if (oldSubtitle && oldSubtitle !== subtitle) oldSubtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (oldSubtitle && oldSubtitle !== subtitle) fireSPaintLeftoverCommandSubtitle(oldSubtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function filterButtons(base){
@@ -38177,7 +38356,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38606,7 +38785,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38759,7 +38938,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
   const oldMatcher = window.projectMatchesInspectionGatewayQuickFilter;
@@ -38801,12 +38980,21 @@ function fireSApplyLifecycleUxLabels() {
     if (!value) return '';
     const raw = String(value).trim();
     if (!raw || /^not\s*set$/i.test(raw) || /^n\/?a$/i.test(raw) || /^unknown$/i.test(raw)) return '';
-    const direct = raw.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
     const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
-  function todayKey(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+  function todayKey(){
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
   function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.scheduledDate || p?.followUpDate); }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
@@ -38890,6 +39078,9 @@ function fireSApplyLifecycleUxLabels() {
     }
     if (key === 'month' || key === 'this-month' || key === 'fs-kpi-month' || key === 'inspections-this-month') return isThisMonth(p);
     if (key === 'inspection-attention' || key === 'action-required' || key === 'actions-required') {
+      // Same exclusive bucket as the card pill: Overdue wins over ACTION.
+      // Laptop/phone must not count one overdue premises inside Action Required.
+      if (matches(p, 'overdue')) return false;
       const cycle = latestCompletedCycle(p);
       return hasOpenActions(p) || (cycle ? hasOpenActions(cycle) : false);
     }
@@ -38904,6 +39095,12 @@ function fireSApplyLifecycleUxLabels() {
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch (_) {}
+    if (typeof window.fireSIsDeletedPremises === 'function') {
+      list = list.filter(project => !window.fireSIsDeletedPremises(project));
+    }
+    if (typeof window.fireSIsEmptyRecycleLeftoverPremises === 'function') {
+      list = list.filter(project => !window.fireSIsEmptyRecycleLeftoverPremises(project));
+    }
     return Array.isArray(list) ? list : [];
   }
   function counts(){
@@ -38963,6 +39160,7 @@ function fireSApplyLifecycleUxLabels() {
   }
   function renderKpis(){
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
+    try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -38991,10 +39189,21 @@ function fireSApplyLifecycleUxLabels() {
     row.removeAttribute('aria-hidden');
     row.style.setProperty('display', 'grid', 'important');
     hideLegacyStatsRow();
+    hideOwnerCountLine();
+  }
+  function hideOwnerCountLine(){
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
-    if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+    if (!subtitle) return;
+    if (isInspectorOrGuestHome()) {
+      subtitle.hidden = false;
+      subtitle.removeAttribute('aria-hidden');
+      subtitle.style.removeProperty('display');
+      return;
     }
+    subtitle.textContent = '';
+    subtitle.hidden = true;
+    subtitle.setAttribute('aria-hidden', 'true');
+    subtitle.style.setProperty('display', 'none', 'important');
   }
   function applyFilter(filter){
     const key = norm(filter) === 'scheduled' ? 'scheduled-new' : norm(filter);
@@ -39024,6 +39233,7 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
+  window.fireSPaintOwnerCommandSubtitle = hideOwnerCountLine;
   window.fireSLatestCompletedCycle = latestCompletedCycle;
   window.fireSProductionIsCompliant = isCompliant;
 

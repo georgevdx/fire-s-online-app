@@ -26,7 +26,7 @@ const liveCss = read('fire-s-subscribe.css');
 const liveManual = read('fire-s-user-manual.js');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.80-toets/.test(env), 'Toets-blad version must be 1.3.80-toets');
+assert.ok(/1\.3\.98-toets/.test(env), 'Toets-blad version must be 1.3.98-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -91,10 +91,11 @@ assert.ok(
 );
 
 assert.ok(
-  /This login is now active and renews until you cancel/.test(payfast) &&
+  /PayFast received this payment\. Access updates when the server confirms/.test(payfast) &&
     /PayFast payment was cancelled\. This company and its inspections stay saved/.test(payfast) &&
-    /cat\.markUnpaid/.test(payfast),
-  'Failed or cancelled PayFast must keep company data and mark unpaid, not wipe'
+    /cat\.markUnpaid/.test(payfast) &&
+    !/cat\.markPaid/.test(payfast),
+  'PayFast return must not mark the browser as paid; cancel keeps company data'
 );
 
 assert.ok(

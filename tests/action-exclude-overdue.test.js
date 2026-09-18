@@ -13,12 +13,13 @@ const app = read('staging/app.js');
 const html = read('staging/index.html');
 
 assert.ok(
-  /Same exclusive bucket as the card pill/.test(app),
-  'Action Required must not also count an Overdue premises'
+  /Same exclusive bucket as the card pill/.test(app) &&
+    /Same exclusive bucket as the card pill/.test(read('app.js')),
+  'Action Required must not also count an Overdue premises on toets or live'
 );
 assert.ok(
-  /app\.js\?v=1-3-80-toets-now/.test(html) &&
-    /Version 1\.3\.80-toets/.test(html),
+  /app\.js\?v=1-3-98-resub/.test(html) &&
+    /Version 1\.3\.98-toets/.test(html),
   'Toets must cache-bust exclusive Action vs Overdue without bumping the displayed version'
 );
 

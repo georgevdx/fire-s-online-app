@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="fire-s-booting">
+<html lang="en" class="fire-s-booting fire-s-entitlement-blocked">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -9,8 +9,9 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var FLAG = 'fireS.toetsCacheDrop.1-3-80';
-        if (sessionStorage.getItem(FLAG) === '1') return;
+        var WANT = '1.3.98-toets';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-98';
+        if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           var stagingRegs = (regs || []).filter(function (reg) {
@@ -22,15 +23,13 @@
             return caches.keys();
           }).then(function (keys) {
             var toetsKeys = (keys || []).filter(function (key) {
-              return /toets/i.test(String(key || ''));
+              return /toets|fire-s-108/i.test(String(key || ''));
             });
             return Promise.all(toetsKeys.map(function (key) {
               return caches.delete(key);
             })).then(function () {
-              if (stagingRegs.length || toetsKeys.length) {
-                sessionStorage.setItem(FLAG, '1');
-                location.reload();
-              }
+              try { localStorage.setItem(FLAG, WANT); } catch (_) {}
+              if (stagingRegs.length || toetsKeys.length) location.reload();
             });
           });
         }).catch(function () {});
@@ -113,7 +112,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-80-toets-now">
+  <link rel="stylesheet" href="styles.css?v=1-3-98-toets-now">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -122,7 +121,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-19-legal">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-9-current">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-12-company">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-actovd">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -130,7 +129,7 @@
   <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
-  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-0-trial">
+  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-98-resub">
   <link rel="stylesheet" href="fire-s-dark-type.css?v=1-8-rephead">
 </head>
 <body>
@@ -138,7 +137,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.80-toets</p>
+      <p class="brand-version">Version 1.3.98-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -162,7 +161,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.80-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.98-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -238,7 +237,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.80-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.98-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -485,7 +484,8 @@
     <div id="fireSOwnerKpiRow" class="fire-s-owner-kpi-row fs-prod-kpi-row" aria-label="Fire-S dashboard summary" hidden></div>
 
     <section id="fireSOwnerLists" class="fire-s-owner-lists" hidden aria-label="Building inspection lists">
-      <p id="fireSOwnerListsCount" class="fire-s-owner-lists-count">Buildings on your inspection list</p>
+      <p id="fireSOwnerListsCount" class="fire-s-owner-lists-count">Company buildings</p>
+      <p class="fire-s-owner-lists-hint" id="fireSOwnerListsCountHint">Phone and laptop show this same company list. Recycle Bin buildings are not counted.</p>
 
       <div class="fire-s-owner-lists-block">
         <h4>All buildings</h4>
@@ -814,12 +814,22 @@
   <div id="userManualMessage" class="user-manual-message" style="display:none;"></div>
   <div id="userManualPrintRoot" class="user-manual-print"></div>
 </section>
+<section id="fireSSubscriptionRequiredSection" class="card fire-s-subscription-required-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Subscription required</h2>
+    <button id="fireSSubscriptionRequiredBackBtn" type="button" class="back-home-btn">Back Home</button>
+  </div>
+  <p id="fireSSubscriptionRequiredScreenStatus"></p>
+  <p id="fireSSubscriptionRequiredScreenTrial"></p>
+  <p id="fireSSubscriptionRequiredScreenPlan"></p>
+  <p>Inspections, reports, premises and photos stay in the cloud. They stay locked in the app until a new subscription is active. Billing expiry does not delete company data.</p>
+  <p>Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>
+  <button type="button" class="cloud-primary-btn" id="fireSSubscriptionRequiredScreenSubscribe">Subscribe / Reactivate</button>
+</section>
 <section id="fireSSubscribeSection" class="card fire-s-subscribe-section" style="display:none;">
   <div class="toolbar">
     <h2 id="fireSSubscribeHeading">Subscription</h2>
-    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">
-      Back Home
-    </button>
+    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">Back Home</button>
   </div>
   <div class="fire-s-subscribe-intro">
     <div class="fire-s-subscribe-kicker" id="fireSSubscribeKicker">Paid seats</div>
@@ -836,6 +846,17 @@
     </p>
   </div>
   <p id="fireSTrialSubscribeNote" class="fire-s-trial-subscribe-note" hidden></p>
+  <aside id="fireSSubscriptionRequiredPanel" class="fire-s-subscription-required-panel" hidden>
+    <h3 id="fireSSubscriptionRequiredTitle">Subscription required</h3>
+    <p id="fireSSubscriptionRequiredStatus"></p>
+    <p id="fireSSubscriptionRequiredTrial"></p>
+    <p id="fireSSubscriptionRequiredPlan"></p>
+    <p id="fireSSubscriptionRequiredKeep">Inspections, reports, premises and photos stay in the cloud. They stay locked in the app until a new subscription is active. Nothing is deleted when billing ends.</p>
+    <p id="fireSSubscriptionRequiredSupport">Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>
+    <div class="fire-s-subscription-required-actions">
+      <button type="button" class="cloud-primary-btn" id="fireSSubscriptionRequiredSubscribe">Subscribe / Reactivate</button>
+    </div>
+  </aside>
   <div id="fireSSubscribeBillingWrap" class="fire-s-plan-picker">
     <p class="fire-s-plan-picker-label">Choose monthly or annual · annual is 2 months free</p>
     <div id="fireSSubscribeBillingOptions" class="fire-s-plan-options" data-interval-name="fireSSubscribeBilling"></div>
@@ -846,6 +867,30 @@
     <p id="fireSSubscribeStatusCopy"></p>
     <p id="fireSSubscribeStatusKeep" class="fire-s-subscribe-status-keep"></p>
   </div>
+  <div id="fireSSubscribePayActions" class="fire-s-subscribe-pay-actions">
+    <p id="fireSSubscribeCompanyLine" class="fire-s-subscribe-company-line"></p>
+    <button type="button" class="cloud-primary-btn" id="fireSBillingSubscribeBtn">Subscribe / Reactivate</button>
+    <button id="fireSPayfastPayBtn" type="button" class="cloud-primary-btn">Pay R250 on PayFast</button>
+    <p id="fireSPayfastHint" class="fire-s-payfast-hint">PayFast sandbox on this toets-blad — no real money. Card details stay with PayFast.</p>
+  </div>
+  <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
+  <section id="fireSCompanyBillingPanel" class="fire-s-company-billing" aria-labelledby="fireSCompanyBillingTitle">
+    <h3 id="fireSCompanyBillingTitle">Company billing</h3>
+    <dl class="fire-s-company-billing-list">
+      <div><dt>Plan</dt><dd id="fireSBillingPlan">—</dd></div>
+      <div><dt>Billing interval</dt><dd id="fireSBillingInterval">—</dd></div>
+      <div><dt>Subscription status</dt><dd id="fireSBillingStatus">—</dd></div>
+      <div><dt>Trial expiry</dt><dd id="fireSBillingTrial">—</dd></div>
+      <div><dt>Paid through</dt><dd id="fireSBillingPaidThrough">—</dd></div>
+      <div><dt>Next billing</dt><dd id="fireSBillingNext">—</dd></div>
+      <div><dt>Last successful payment</dt><dd id="fireSBillingLastPaid">—</dd></div>
+    </dl>
+    <p id="fireSBillingGrace" class="fire-s-company-billing-note" hidden></p>
+    <p class="fire-s-company-billing-keep">Inspections, reports, premises and photos stay. A failed payment does not delete company data.</p>
+    <div id="fireSCompanyBillingActions" class="fire-s-company-billing-actions">
+      <button type="button" class="secondary-btn" id="fireSBillingCancelBtn">Cancel subscription</button>
+    </div>
+  </section>
   <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel" hidden>
     <h4>Cancel this subscription</h4>
     <ol>
@@ -880,10 +925,7 @@
     </p>
     <button id="fireSSubscribeSeatBtn" type="button" class="cloud-primary-btn">Subscribe this email</button>
   </div>
-  <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
   <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save billing</button>
-  <button id="fireSPayfastPayBtn" type="button" class="cloud-primary-btn">Pay R250 on PayFast</button>
-  <p id="fireSPayfastHint" class="fire-s-payfast-hint">PayFast sandbox on this toets-blad — no real money. Card details stay with PayFast.</p>
 </section>
 <section id="managementDashboardSection" class="card management-dashboard-section" style="display:none;">
   <div class="toolbar">
@@ -1860,7 +1902,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-80-ver"></script>
+  <script src="fire-s-env.js?v=1-3-98-resub"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1875,11 +1917,11 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-80-toets-now"></script>
+  <script src="app.js?v=1-3-98-resub"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-42-comment"></script>
-  <script src="fire-s-owner-lists.js?v=1-1-count"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-46-subscribe-bars"></script>
+  <script src="fire-s-owner-lists.js?v=1-5-home-lock"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-21-isolate"></script>
@@ -1888,21 +1930,21 @@
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-19-subtype"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
-  <script src="fire-s-payfast.js?v=1-1-status"></script>
-  <script src="fire-s-subscribe.js?v=1-19-subtype"></script>
+  <script src="fire-s-payfast.js?v=1-7-resub"></script>
+  <script src="fire-s-subscribe.js?v=1-27-resub"></script>
   <script src="fire-s-user-manual.js?v=1-44-comment"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-51-show-pw"></script>
+  <script src="fire-s-get-started.js?v=2-53-access-lock"></script>
   <script src="fire-s-startup-stability.js?v=1-13-logo-splash"></script>
   <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
   <script src="fire-s-phone-back.js?v=1-3-report-overlay"></script>
   <script src="fire-s-global-flow.js?v=1-1-copy"></script>
-  <script src="fire-s-desktop-access.js?v=1-3-keep-dash"></script>
+  <script src="fire-s-desktop-access.js?v=1-4-subscribe-first"></script>
   <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-1-qaexpand"></script>
-  <script src="fire-s-entitlement.js?v=1-0-open"></script>
+  <script src="fire-s-entitlement.js?v=1-3-98-resub"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1921,7 +1963,7 @@
           }).catch(function () {});
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-68-toets-now')
+        navigator.serviceWorker.register('./service-worker.js?v=108-70-toets-98')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

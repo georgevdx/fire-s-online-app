@@ -38,27 +38,18 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.80-toets' : '1.3.27',
+    appVersion: staging ? '1.3.98-toets' : '1.3.27',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,
     notifyCompanyS: !staging,
     storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth',
-    payfast: staging
-      ? {
-          enabled: true,
-          sandbox: true,
-          merchantId: '10000100',
-          merchantKey: '46f0cd694581a',
-          passphrase: 'jt7NOE43FZPn'
-        }
-      : {
-          enabled: false,
-          sandbox: false,
-          merchantId: '',
-          merchantKey: '',
-          passphrase: ''
-        }
+    // Public flags only. Merchant secrets stay on the Edge Function.
+    payfast: {
+      enabled: !!staging,
+      mode: 'sandbox',
+      checkoutFunction: 'payfast-checkout'
+    }
   };
 
   function paintVersion() {
@@ -86,10 +77,10 @@
       'font-family:Arial,sans-serif;font-size:0.95rem;line-height:1.35;text-align:center;';
     if (stagingCloudReady) {
       bar.textContent =
-        'TOETS-BLAD 1.3.80-toets — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie.';
+        'TOETS-BLAD 1.3.98-toets — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie.';
     } else {
       bar.textContent =
-        'TOETS-BLAD 1.3.80-toets — nie vir kliënte. Die toets-wolk is nog nie gekoppel nie. Moenie hier Subscribe asof dit live is nie.';
+        'TOETS-BLAD 1.3.98-toets — nie vir kliënte. Die toets-wolk is nog nie gekoppel nie. Moenie hier Subscribe asof dit live is nie.';
     }
     var body = root.document.body;
     if (body) body.insertBefore(bar, body.firstChild);

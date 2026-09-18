@@ -73,6 +73,10 @@
   }
 
   function showGatewayCard(title, copy) {
+    if (inspectionHomeLocked()) {
+      hide('cmdInspectionsBtn');
+      return;
+    }
     const btn = gatewayButton();
     const grid = document.querySelector('#mainCommandCentre .main-command-grid');
     if (btn && grid && grid.firstElementChild !== btn) {
@@ -353,8 +357,59 @@
     if (el) el.textContent = text;
   }
 
+  function inspectionHomeLocked() {
+    try {
+      if (
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.homeWorkAllowed === 'function'
+      ) {
+        return window.fireSEntitlement.homeWorkAllowed() !== true;
+      }
+      return !!(
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        window.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function applyLockedSubscribeHome() {
+    ALL_CMD_IDS.forEach(function (id) {
+      if (id === 'cmdSubscribeBtn' || id === 'cmdUserManualBtn') show(id);
+      else hide(id);
+    });
+    hide('inspectorBoardHomeBar');
+    hide('fireSOwnerLists');
+    hide('fireSOwnerKpiRow');
+    hide('fireSDesktopAccess');
+    const personnel = document.querySelector('#mainCommandCentre .main-command-personnel');
+    if (personnel) {
+      personnel.hidden = true;
+      personnel.setAttribute('aria-hidden', 'true');
+      personnel.style.setProperty('display', 'none', 'important');
+    }
+    setStatsVisible(false);
+    hideManagementOverlays();
+    const homeHero = document.querySelector('#homeSection .home-hero');
+    if (homeHero) homeHero.style.setProperty('display', 'none', 'important');
+    const shell = byId('inspectorV4Shell');
+    if (shell) {
+      shell.style.setProperty('display', 'none', 'important');
+      shell.setAttribute('hidden', 'true');
+      shell.setAttribute('aria-hidden', 'true');
+    }
+    show('cmdSubscribeBtn');
+    show('cmdUserManualBtn');
+  }
+
   function show(id) {
     if (id === 'cmdReportsBtn') {
+      hide(id);
+      return;
+    }
+    if (inspectionHomeLocked() && id !== 'cmdSubscribeBtn' && id !== 'cmdUserManualBtn') {
       hide(id);
       return;
     }
@@ -521,7 +576,8 @@
       'executiveSnapshotPanel',
       'fireSExecutiveDashboard1115',
       'inspectorBoardHomeBar',
-      'fireSOwnerLists'
+      'fireSOwnerLists',
+      'fireSDesktopAccess'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -1027,6 +1083,11 @@
       return;
     }
     paintRecoveryBody(false);
+    if (inspectionHomeLocked()) {
+      wrapAllCommandCards();
+      applyLockedSubscribeHome();
+      return;
+    }
     if (isGatewayOrFormVisible()) return;
 
     wrapAllCommandCards();
@@ -1211,6 +1272,10 @@
 
   function cleanHomeRender() {
     if (isGatewayOrFormVisible()) return;
+    if (inspectionHomeLocked()) {
+      applyCleanHome();
+      return;
+    }
     if (typeof previousRender === 'function' && !previousRender.__fireSCleanHome) {
       try {
         previousRender();

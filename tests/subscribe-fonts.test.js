@@ -47,14 +47,14 @@ assert.strictEqual(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-65-sitlive/.test(read('index.html')) &&
+  /styles\.css\?v=1-3-65-count/.test(read('index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-sitlive/.test(read('index.html')) &&
     /fire-s-dark-type\.css\?v=1-3-rephead/.test(read('index.html')),
   'Live must cache-bust subscription paper font CSS'
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-80-toets-now/.test(read('staging/index.html')) &&
+  /styles\.css\?v=1-3-98-toets-now/.test(read('staging/index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-actovd/.test(read('staging/index.html')) &&
     /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
   'Toets must cache-bust subscription paper font CSS'
@@ -62,8 +62,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.65/.test(read('index.html')) &&
-    /Version 1\.3\.80-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.65 live and 1.3.80-toets'
+    /Version 1\.3\.98-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.65 live and 1.3.98-toets'
 );
 
 console.log('subscribe-fonts.test.js: ok');

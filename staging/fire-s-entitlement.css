@@ -52,7 +52,7 @@
 .fire-s-entitlement-blocker {
   position: fixed;
   inset: 0;
-  z-index: 12050;
+  z-index: 2147483500;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -168,6 +168,198 @@
 body.fire-s-entitlement-blocked #fireSSubscribeSection,
 body.fire-s-entitlement-blocked #fireSGetStarted,
 body.fire-s-entitlement-blocked #companyLetterheadSection,
+body.fire-s-entitlement-blocked #userManualSection,
+body.fire-s-entitlement-blocked #fireSCompanyBillingPanel,
+body.fire-s-entitlement-blocked #fireSSubscriptionRequiredSection,
 body.fire-s-entitlement-blocked #logoutBtn {
   pointer-events: auto;
+}
+
+html.fire-s-entitlement-blocked #projectFormSection,
+html.fire-s-entitlement-blocked #projectListSection,
+html.fire-s-entitlement-blocked #reportSection,
+html.fire-s-entitlement-blocked #inspectorBoardSection,
+html.fire-s-entitlement-blocked #findingsCentreSection,
+html.fire-s-entitlement-blocked #testSamplesSection,
+html.fire-s-entitlement-blocked #managementDashboardSection,
+html.fire-s-entitlement-blocked #servicesSection,
+html.fire-s-entitlement-blocked #companyTeamSection,
+html.fire-s-entitlement-blocked #openGateBackdrop,
+html.fire-s-entitlement-blocked .inspection-open-gate,
+html.fire-s-entitlement-blocked #premisesCommandCentre,
+html.fire-s-entitlement-blocked #inspectorV4Root,
+body.fire-s-entitlement-blocked #projectFormSection,
+body.fire-s-entitlement-blocked #projectListSection,
+body.fire-s-entitlement-blocked #reportSection,
+body.fire-s-entitlement-blocked #inspectorBoardSection,
+body.fire-s-entitlement-blocked #findingsCentreSection,
+body.fire-s-entitlement-blocked #testSamplesSection,
+body.fire-s-entitlement-blocked #managementDashboardSection,
+body.fire-s-entitlement-blocked #servicesSection,
+body.fire-s-entitlement-blocked #companyTeamSection,
+body.fire-s-entitlement-blocked #openGateBackdrop,
+body.fire-s-entitlement-blocked .inspection-open-gate,
+body.fire-s-entitlement-blocked #premisesCommandCentre,
+body.fire-s-entitlement-blocked #inspectorV4Root {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+html.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn),
+html.fire-s-entitlement-blocked #mainCommandCentre .main-stat-card,
+html.fire-s-entitlement-blocked #mainCommandCentre .main-command-stats,
+html.fire-s-entitlement-blocked #cmdInspectionsBtn,
+html.fire-s-entitlement-blocked #cmdScheduleBtn,
+html.fire-s-entitlement-blocked #cmdReportsBtn,
+html.fire-s-entitlement-blocked #cmdCompanyDetailsBtn,
+html.fire-s-entitlement-blocked #cmdCompanyBtn,
+html.fire-s-entitlement-blocked #cmdTestSamplesBtn,
+html.fire-s-entitlement-blocked #cmdManagementDashboardBtn,
+html.fire-s-entitlement-blocked #cmdServicesBtn,
+html.fire-s-entitlement-blocked #cmdDashboardBtn,
+html.fire-s-entitlement-blocked #cmdFindingsBtn,
+html.fire-s-entitlement-blocked #cmdOverdueBtn,
+html.fire-s-entitlement-blocked #cmdInspectorsBtn,
+html.fire-s-entitlement-blocked #cmdComplianceInspectionsBtn,
+html.fire-s-entitlement-blocked #cmdComplianceFindingsBtn,
+html.fire-s-entitlement-blocked #cmdComplianceOverdueBtn,
+html.fire-s-entitlement-blocked #cmdComplianceSitesBtn,
+html.fire-s-entitlement-blocked #fireSOwnerLists,
+html.fire-s-entitlement-blocked #fireSOwnerKpiRow,
+html.fire-s-entitlement-blocked #inspectorBoardHomeBar,
+html.fire-s-entitlement-blocked .home-recent-activity,
+html.fire-s-entitlement-blocked .attention-site-row,
+body.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn),
+body.fire-s-entitlement-blocked #mainCommandCentre .main-stat-card,
+body.fire-s-entitlement-blocked #mainCommandCentre .main-command-stats,
+body.fire-s-entitlement-blocked #cmdInspectionsBtn,
+body.fire-s-entitlement-blocked #cmdScheduleBtn,
+body.fire-s-entitlement-blocked #cmdReportsBtn,
+body.fire-s-entitlement-blocked #cmdCompanyDetailsBtn,
+body.fire-s-entitlement-blocked #cmdCompanyBtn,
+body.fire-s-entitlement-blocked #cmdTestSamplesBtn,
+body.fire-s-entitlement-blocked #cmdManagementDashboardBtn,
+body.fire-s-entitlement-blocked #cmdServicesBtn,
+body.fire-s-entitlement-blocked #cmdDashboardBtn,
+body.fire-s-entitlement-blocked #cmdFindingsBtn,
+body.fire-s-entitlement-blocked #cmdOverdueBtn,
+body.fire-s-entitlement-blocked #cmdInspectorsBtn,
+body.fire-s-entitlement-blocked #cmdComplianceInspectionsBtn,
+body.fire-s-entitlement-blocked #cmdComplianceFindingsBtn,
+body.fire-s-entitlement-blocked #cmdComplianceOverdueBtn,
+body.fire-s-entitlement-blocked #cmdComplianceSitesBtn,
+body.fire-s-entitlement-blocked #fireSOwnerLists,
+body.fire-s-entitlement-blocked #fireSOwnerKpiRow,
+body.fire-s-entitlement-blocked #inspectorBoardHomeBar,
+body.fire-s-entitlement-blocked .home-recent-activity,
+body.fire-s-entitlement-blocked .attention-site-row,
+body.fire-s-entitlement-blocked .main-command-personnel,
+html.fire-s-entitlement-blocked .main-command-personnel {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+body.fire-s-entitlement-blocked #fireSDesktopAccess,
+body.fire-s-entitlement-blocked .fire-s-desktop-access,
+html.fire-s-entitlement-blocked #fireSDesktopAccess,
+html.fire-s-entitlement-blocked .fire-s-desktop-access,
+body.fire-s-entitlement-blocked #mainCommandCentre .main-command-top,
+html.fire-s-entitlement-blocked #mainCommandCentre .main-command-top,
+body.fire-s-entitlement-blocked .fire-s-exec-mini-dashboard,
+html.fire-s-entitlement-blocked .fire-s-exec-mini-dashboard,
+body.fire-s-entitlement-blocked .fire-s-exec-dashboard-v1115,
+html.fire-s-entitlement-blocked .fire-s-exec-dashboard-v1115 {
+  display: none !important;
+}
+
+html.fire-s-entitlement-blocked #homeSection .home-hero,
+html.fire-s-entitlement-blocked #fireSExpiryReminder,
+html.fire-s-entitlement-blocked #fireSTrialBanner,
+html.fire-s-entitlement-blocked #inspectorV4Shell,
+html.fire-s-entitlement-blocked #fireSSubscriptionRequiredSection,
+html.fire-s-entitlement-blocked #fireSEntitlementBlocker,
+body.fire-s-entitlement-blocked #homeSection .home-hero,
+body.fire-s-entitlement-blocked #fireSExpiryReminder,
+body.fire-s-entitlement-blocked #fireSTrialBanner,
+body.fire-s-entitlement-blocked #inspectorV4Shell,
+body.fire-s-entitlement-blocked #fireSSubscriptionRequiredSection,
+body.fire-s-entitlement-blocked #fireSEntitlementBlocker {
+  display: none !important;
+}
+
+body.fire-s-entitlement-blocked #cmdSubscribeBtn,
+body.fire-s-entitlement-blocked #cmdUserManualBtn,
+body.fire-s-entitlement-blocked #fireSHomeLockPanel,
+body.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
+body.fire-s-entitlement-blocked #fireSSubscribeSection,
+body.fire-s-entitlement-blocked #fireSSubscribeBackBtn,
+body.fire-s-entitlement-blocked #fireSPayfastPayBtn,
+body.fire-s-entitlement-blocked #fireSBillingSubscribeBtn,
+body.fire-s-entitlement-blocked #fireSSubscribePayActions,
+html.fire-s-entitlement-blocked #cmdSubscribeBtn,
+html.fire-s-entitlement-blocked #cmdUserManualBtn,
+html.fire-s-entitlement-blocked #fireSHomeLockPanel,
+html.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
+html.fire-s-entitlement-blocked #fireSSubscribeSection,
+html.fire-s-entitlement-blocked #fireSSubscribeBackBtn,
+html.fire-s-entitlement-blocked #fireSPayfastPayBtn,
+html.fire-s-entitlement-blocked #fireSBillingSubscribeBtn,
+html.fire-s-entitlement-blocked #fireSSubscribePayActions {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 6;
+}
+
+html.fire-s-access-open #fireSHomeLockPanel,
+body.fire-s-access-open #fireSHomeLockPanel {
+  display: none !important;
+}
+
+.fire-s-home-lock-panel {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+.fire-s-home-lock-panel[hidden] {
+  display: none !important;
+}
+
+.fire-s-home-lock-panel h3,
+.fire-s-home-lock-panel p {
+  margin: 0;
+}
+
+.fire-s-subscription-required-section,
+.fire-s-subscription-required-panel {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+.fire-s-subscription-required-section[hidden],
+.fire-s-subscription-required-panel[hidden] {
+  display: none !important;
+}
+
+.fire-s-subscription-required-section p,
+.fire-s-subscription-required-panel p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.fire-s-subscription-required-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

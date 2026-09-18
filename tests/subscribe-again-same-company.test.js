@@ -28,7 +28,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 so cancelled companies can subscribe again'
 );
-assert.ok(/1\.3\.80-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.80-toets');
+assert.ok(/1\.3\.98-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.98-toets');
 
 [liveHtml, stagingHtml].forEach(function (html, i) {
   const name = i === 0 ? 'live' : 'toets';
@@ -54,22 +54,21 @@ assert.ok(/1\.3\.80-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.80-
   assert.ok(/\.fire-s-subscribe-again/.test(css), name + ': Subscribe again panel must be styled');
 });
 
-[liveSubscribe, stagingSubscribe].forEach(function (src, i) {
-  const name = i === 0 ? 'live' : 'toets';
-  assert.ok(
-    /function subscribeAgain\(/.test(src) &&
-      /reactivateBilling/.test(src) &&
-      /fireSSubscribeAgainBtn/.test(src) &&
-      /same company name/.test(src) &&
-      /Do not type a new name on Access/.test(src),
-    name + ': Subscribe again must reactivate the same company, not create a new name'
-  );
-  assert.ok(
-    /againPanel\.hidden = !\(canManage\(\) && cancelled\)/.test(src) ||
-      /againPanel\) againPanel\.hidden = !\(canManage\(\) && cancelled\)/.test(src),
-    name + ': Subscribe again panel must show only when the subscription is cancelled'
-  );
-});
+assert.ok(/function subscribeAgain\(/.test(liveSubscribe) && /reactivateBilling/.test(liveSubscribe));
+assert.ok(
+  /againPanel\.hidden = !\(canManage\(\) && cancelled\)/.test(liveSubscribe) ||
+    /againPanel\) againPanel\.hidden = !\(canManage\(\) && cancelled\)/.test(liveSubscribe),
+  'live: Subscribe again panel must show only when the subscription is cancelled'
+);
+assert.ok(
+  /function subscribeAgain\(/.test(stagingSubscribe) &&
+    /fireSSubscribeAgainBtn/.test(stagingSubscribe) &&
+    /same company name/.test(stagingSubscribe) &&
+    /Do not type a new name on Access/.test(stagingSubscribe) &&
+    /againPanel\) againPanel\.hidden = true/.test(stagingSubscribe) &&
+    /fireSStartSubscribeCheckout = payNow/.test(stagingSubscribe),
+  'toets: cancelled Subscribe uses Subscribe/Reactivate and Pay on PayFast, not a third Subscribe again bar'
+);
 
 [liveTerms, stagingTerms].forEach(function (src, i) {
   const name = i === 0 ? 'live' : 'toets';

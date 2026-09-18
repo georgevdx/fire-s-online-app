@@ -12638,6 +12638,9 @@ button,
 #fireSOwnerKpiRow[hidden] {
   display: none !important;
 }
+#mainCommandCentre:has(#fireSOwnerKpiRow:not([hidden])) #mainCommandSubtitle {
+  display: none !important;
+}
 /* Hide leftover original stat tiles only. Do not hide .fs-kpi-card —
    a later Home render can put those into this row, and hiding them made
    Owner Command Centre cards vanish after a second. */

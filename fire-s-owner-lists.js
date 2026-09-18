@@ -474,6 +474,7 @@
 
   function refresh() {
     if (root.__fireSHomeCountsFrozen) return;
+    if (root.__fireSCloudPullSettled === false) return;
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);

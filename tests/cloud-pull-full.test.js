@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-65-comment',
-  '1-1-count',
-  '108-67-comment',
-  'fire-s-108-67-comment'
+  '1-3-65-count',
+  '1-2-stable-home',
+  '108-72-count',
+  'fire-s-108-72-count'
 );
 assertPullSource(
   stagingApp,
@@ -58,13 +58,23 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-80-toets-now',
-  '1-1-count',
-  '108-68-toets-now',
-  'fire-s-108-68-toets-now'
+  '1-3-98-resub',
+  '1-5-home-lock',
+  '108-70-toets-98',
+  'fire-s-108-70-toets-98'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
+assert.ok(
+  /A short phone pull must not become the finished Home count/.test(liveApp) &&
+    /A short phone pull must not become the finished Home count/.test(stagingApp) &&
+    /__fireSCloudPullSettled === false/.test(liveLists) &&
+    /__fireSCloudPullSettled !== true/.test(stagingLists) &&
+    /function fireSUniqueCurrentBuildings\(/.test(stagingApp) &&
+    /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
+    /Keep Loading until the company pull is complete/.test(stagingApp),
+  'Toets Home must wait for a settled unique building count so laptop 8 then 7 cannot wriggle'
+);
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingLists));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
 assert.ok(
@@ -74,8 +84,9 @@ assert.ok(
 );
 assert.ok(
   /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(liveLists) &&
-    /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(stagingLists),
-  'Home building count must match Gateway visible premises'
+    /isDeleted\(project\) \|\| isRecycleLeftover\(project\)/.test(stagingLists) &&
+    /function uniqueActive\(projects\)/.test(stagingLists),
+  'Home building count must hide Recycle leftovers and count unique buildings on toets'
 );
 
 function rowsFor(count, prefix) {

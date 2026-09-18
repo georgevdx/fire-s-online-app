@@ -1,49 +1,11 @@
 /* ============================================================
-   Fire-S → PayFast checkout (toets-blad sandbox)
-   Card details stay on PayFast. Live stays invoice-only until
-   sit dit live and Johan’s own merchant numbers are in the app.
-   Official PayFast sandbox credentials (not a live account):
-   merchant_id 10000100 / merchant_key 46f0cd694581a
+   Fire-S → PayFast checkout (toets-blad)
+   Card details stay on PayFast. Signing and merchant secrets
+   stay on the PayFast Edge Function. This file never holds a
+   merchant key or passphrase.
    ============================================================ */
 (function fireSPayfast(root) {
   'use strict';
-
-  var FIELD_ORDER = [
-    'merchant_id',
-    'merchant_key',
-    'return_url',
-    'cancel_url',
-    'notify_url',
-    'name_first',
-    'name_last',
-    'email_address',
-    'cell_number',
-    'm_payment_id',
-    'amount',
-    'item_name',
-    'item_description',
-    'custom_int1',
-    'custom_int2',
-    'custom_int3',
-    'custom_int4',
-    'custom_int5',
-    'custom_str1',
-    'custom_str2',
-    'custom_str3',
-    'custom_str4',
-    'custom_str5',
-    'email_confirmation',
-    'confirmation_address',
-    'payment_method',
-    'subscription_type',
-    'billing_date',
-    'recurring_amount',
-    'frequency',
-    'cycles',
-    'subscription_notify_email',
-    'subscription_notify_webhook',
-    'subscription_notify_buyer'
-  ];
 
   function text(value) {
     return String(value == null ? '' : value).trim();
@@ -65,53 +27,14 @@
   function isEnabled() {
     var c = cfg();
     var e = env();
-    return !!(e.isStaging && c.enabled && c.sandbox && c.merchantId && c.merchantKey && c.passphrase);
+    if (!e.isStaging) return false;
+    if (!c.enabled) return false;
+    if (text(c.mode).toLowerCase() === 'live') return false;
+    return true;
   }
 
   function processUrl() {
     return 'https://sandbox.payfast.co.za/eng/process';
-  }
-
-  function phpUrlEncode(value) {
-    return encodeURIComponent(String(value == null ? '' : value).trim())
-      .replace(/[!'()*]/g, function (ch) {
-        return '%' + ch.charCodeAt(0).toString(16).toUpperCase();
-      })
-      .replace(/%20/g, '+')
-      .replace(/%[0-9a-f]{2}/gi, function (hex) {
-        return hex.toUpperCase();
-      });
-  }
-
-  function md5hex(input) {
-    var fn = root.md5;
-    if (typeof fn !== 'function') {
-      throw new Error('PayFast MD5 helper is missing');
-    }
-    return fn(String(input));
-  }
-
-  function signatureParamString(fields, passphrase) {
-    var parts = [];
-    FIELD_ORDER.forEach(function (key) {
-      if (!Object.prototype.hasOwnProperty.call(fields, key)) return;
-      var val = text(fields[key]);
-      if (!val) return;
-      parts.push(key + '=' + phpUrlEncode(val));
-    });
-    var getString = parts.join('&');
-    if (text(passphrase)) getString += '&passphrase=' + phpUrlEncode(passphrase);
-    return getString;
-  }
-
-  function generateSignature(fields, passphrase) {
-    return md5hex(signatureParamString(fields, passphrase));
-  }
-
-  function formatAmount(rand) {
-    var n = Number(rand);
-    if (!isFinite(n) || n <= 0) n = 0;
-    return n.toFixed(2);
   }
 
   function catalog() {
@@ -120,6 +43,12 @@
     } catch (_) {
       return null;
     }
+  }
+
+  function formatAmount(rand) {
+    var n = Number(rand);
+    if (!isFinite(n) || n <= 0) n = 0;
+    return n.toFixed(2);
   }
 
   function amountFor(interval) {
@@ -133,108 +62,175 @@
     return annual ? 'Pay R2 500 on PayFast' : 'Pay R250 on PayFast';
   }
 
-  function appBaseUrl() {
-    try {
-      var loc = root.location;
-      var path = String((loc && loc.pathname) || '/');
-      if (!/\/$/.test(path) && path.indexOf('.html') === -1) path += '/';
-      var file = /index\.html$/i.test(path) ? path : path.replace(/\/?$/, '/') + 'index.html';
-      return String(loc.protocol) + '//' + loc.host + file;
-    } catch (_) {
-      return 'https://georgevdx.github.io/fire-s-online-app/staging/index.html';
-    }
+  function checkoutUrl() {
+    var e = env();
+    var name = text(cfg().checkoutFunction) || 'payfast-checkout';
+    var base = text(e.supabaseUrl).replace(/\/$/, '');
+    if (!base) return '';
+    return base + '/functions/v1/' + name;
   }
 
-  function withPayfastQuery(status) {
-    return appBaseUrl() + '?payfast=' + encodeURIComponent(status);
-  }
-
-  function paymentId(kind) {
-    return (
-      'fs-' +
-      text(kind || 'sub').slice(0, 8) +
-      '-' +
-      Date.now().toString(36) +
-      '-' +
-      Math.floor(Math.random() * 1e6).toString(36)
-    );
-  }
-
-  function buildFields(info) {
-    var c = cfg();
-    var interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
-    var amount = amountFor(interval);
-    var kind = text(info && info.kind) || 'subscribe';
-    var company = text(info && info.company) || 'Fire-S';
-    var email = text(info && info.email).toLowerCase();
-    var seatEmail = text(info && info.seatEmail).toLowerCase();
-    var itemName =
-      interval === 'annual' ? 'Fire-S annual login' : 'Fire-S monthly login';
-    var desc =
-      kind === 'seat'
-        ? 'Extra login ' + (seatEmail || email)
-        : 'Owner login ' + email;
-    var fields = {
-      merchant_id: text(c.merchantId),
-      merchant_key: text(c.merchantKey),
-      return_url: withPayfastQuery('ok'),
-      cancel_url: withPayfastQuery('cancel'),
-      email_address: email || 'test@test.com',
-      m_payment_id: paymentId(kind),
-      amount: amount,
-      item_name: itemName,
-      item_description: desc.slice(0, 255),
-      custom_str1: company.slice(0, 255),
-      custom_str2: email.slice(0, 255),
-      custom_str3: interval,
-      custom_str4: kind.slice(0, 255),
-      custom_str5: (seatEmail || email).slice(0, 255),
-      subscription_type: '1',
-      recurring_amount: amount,
-      frequency: interval === 'annual' ? '6' : '3',
-      cycles: '0'
-    };
-    fields.signature = generateSignature(fields, c.passphrase);
-    return fields;
-  }
-
-  function rememberCheckout(fields) {
+  function rememberCheckout(meta) {
     try {
       root.localStorage.setItem(
         'fireS.payfast.lastCheckout',
         JSON.stringify({
-          id: fields.m_payment_id,
-          amount: fields.amount,
-          item: fields.item_name,
+          amount: meta && meta.amount,
+          interval: meta && meta.interval,
           at: Date.now()
         })
       );
     } catch (_) {}
   }
 
-  function startCheckout(info) {
-    if (!isEnabled()) {
-      return { ok: false, reason: 'disabled' };
-    }
-    var fields = buildFields(info || {});
-    rememberCheckout(fields);
+  function submitLiveForm(html) {
     var doc = root.document;
-    if (!doc || !doc.body) return { ok: false, reason: 'no-dom', fields: fields };
-    var form = doc.createElement('form');
-    form.method = 'POST';
-    form.action = processUrl();
-    form.acceptCharset = 'utf-8';
-    form.style.display = 'none';
-    Object.keys(fields).forEach(function (name) {
-      var input = doc.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = fields[name];
-      form.appendChild(input);
-    });
-    doc.body.appendChild(form);
-    form.submit();
-    return { ok: true, fields: fields };
+    if (!doc || !doc.createElement) return false;
+    var parsedForm = null;
+    try {
+      if (root.DOMParser) {
+        var parsed = new root.DOMParser().parseFromString(html, 'text/html');
+        parsedForm = parsed && parsed.querySelector ? parsed.querySelector('form') : null;
+      }
+    } catch (_) {}
+    if (!parsedForm) return false;
+    var action = '';
+    try {
+      action = text(parsedForm.getAttribute && parsedForm.getAttribute('action')) || text(parsedForm.action);
+    } catch (_) {}
+    if (!action) action = processUrl();
+    var live = doc.createElement('form');
+    live.method = 'POST';
+    live.action = action;
+    try {
+      live.setAttribute('accept-charset', 'utf-8');
+      live.setAttribute('target', '_top');
+    } catch (_) {}
+    live.style.display = 'none';
+    var inputs = [];
+    try {
+      inputs = parsedForm.querySelectorAll ? parsedForm.querySelectorAll('input') : [];
+    } catch (_) {}
+    var i;
+    for (i = 0; i < inputs.length; i += 1) {
+      var src = inputs[i];
+      var inp = doc.createElement('input');
+      inp.type = 'hidden';
+      try {
+        inp.name = text(src.name || (src.getAttribute && src.getAttribute('name')));
+        inp.value =
+          src.value != null ? String(src.value) : text(src.getAttribute && src.getAttribute('value'));
+      } catch (_) {}
+      if (inp.name) live.appendChild(inp);
+    }
+    if (doc.body) doc.body.appendChild(live);
+    else if (doc.documentElement) doc.documentElement.appendChild(live);
+    var submitFn =
+      root.HTMLFormElement && root.HTMLFormElement.prototype && root.HTMLFormElement.prototype.submit;
+    if (typeof submitFn === 'function') {
+      submitFn.call(live);
+      return true;
+    }
+    if (typeof live.submit === 'function') {
+      live.submit();
+      return true;
+    }
+    return false;
+  }
+
+  function submitHostedCheckout(html) {
+    var doc = root.document;
+    if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
+    // Full auto-submit HTML is what opened PayFast before. Write that page
+    // first. Do not return success from a silent form.submit() and skip this.
+    try {
+      if (typeof doc.open === 'function' && typeof doc.write === 'function') {
+        doc.open();
+        doc.write(html);
+        doc.close();
+        return { ok: true };
+      }
+    } catch (_) {}
+    try {
+      if (submitLiveForm(html)) return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: 'dom', error: text(err && err.message) || 'PayFast did not open.' };
+    }
+    return { ok: false, reason: 'dom', error: 'PayFast did not open in this browser.' };
+  }
+
+  function companyId() {
+    try {
+      return text(root.currentUserProfile && root.currentUserProfile.companyId);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async function accessToken() {
+    var sb = root.supabaseClient;
+    if (!sb || !sb.auth || !sb.auth.getSession) return '';
+    var res = await sb.auth.getSession();
+    return text(res && res.data && res.data.session && res.data.session.access_token);
+  }
+
+  async function startCheckout(info) {
+    if (!isEnabled()) {
+      return { ok: false, reason: 'disabled', error: 'PayFast is not ready on this page.' };
+    }
+    var e = env();
+    var url = checkoutUrl();
+    if (!url) {
+      return { ok: false, reason: 'no-function', error: 'PayFast is not ready on the server.' };
+    }
+    var interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
+    var token = '';
+    try {
+      token = await accessToken();
+    } catch (_) {}
+    if (!token) {
+      return { ok: false, reason: 'auth', error: 'Sign in first, then pay on PayFast.' };
+    }
+    rememberCheckout({ amount: amountFor(interval), interval: interval });
+    var res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          apikey: text(e.supabaseAnonKey),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          kind: text(info && info.kind) || 'subscribe',
+          interval: interval,
+          seatEmail: text(info && info.seatEmail)
+        })
+      });
+    } catch (err) {
+      return { ok: false, reason: 'network', error: text(err && err.message) };
+    }
+    var type = text(res && res.headers && res.headers.get && res.headers.get('content-type'));
+    var raw = '';
+    try {
+      raw = await res.text();
+    } catch (_) {}
+    if (res && res.ok && raw && (/text\/html/i.test(type) || /^\s*</.test(raw))) {
+      return submitHostedCheckout(raw);
+    }
+    var errBody = {};
+    try {
+      errBody = JSON.parse(raw || '{}');
+    } catch (_) {}
+    var status = res && res.status ? String(res.status) : '';
+    var serverErr = text(errBody.error);
+    if (!serverErr && status === '401') serverErr = 'Sign in first, then pay on PayFast.';
+    if (!serverErr && status === '403') serverErr = 'Only the Owner can pay on PayFast.';
+    return {
+      ok: false,
+      reason: 'server',
+      error: serverErr || 'PayFast is not ready on the server.' + (status ? ' (' + status + ')' : '')
+    };
   }
 
   function queryStatus() {
@@ -251,10 +247,13 @@
     try {
       var loc = root.location;
       if (!loc || !root.history || !root.history.replaceState) return;
-      var url = new URL(loc.href);
-      if (!url.searchParams.has('payfast')) return;
-      url.searchParams.delete('payfast');
-      var next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash;
+      var nextUrl = new URL(loc.href);
+      if (!nextUrl.searchParams.has('payfast')) return;
+      nextUrl.searchParams.delete('payfast');
+      var next =
+        nextUrl.pathname +
+        (nextUrl.searchParams.toString() ? '?' + nextUrl.searchParams.toString() : '') +
+        nextUrl.hash;
       root.history.replaceState({}, '', next);
     } catch (_) {}
   }
@@ -269,22 +268,29 @@
       bar = doc.createElement('div');
       bar.id = 'fireSPayfastReturnBanner';
       bar.setAttribute('role', 'status');
-      doc.body.insertBefore(bar, doc.getElementById('fireSStagingBanner') ? doc.getElementById('fireSStagingBanner').nextSibling : doc.body.firstChild);
+      doc.body.insertBefore(
+        bar,
+        doc.getElementById('fireSStagingBanner')
+          ? doc.getElementById('fireSStagingBanner').nextSibling
+          : doc.body.firstChild
+      );
     }
     bar.className = 'fire-s-payfast-return is-' + status;
     bar.textContent =
       status === 'ok'
-        ? 'PayFast sandbox received this payment. This login is now active and renews until you cancel. Company data stays saved.'
+        ? 'PayFast received this payment. Access updates when the server confirms. Company data stays saved.'
         : 'PayFast payment was cancelled. This company and its inspections stay saved. Open Subscription → Pay on PayFast when you are ready.';
     try {
       var cat = root.fireSSubscriptionCatalog;
-      if (cat) {
-        if (status === 'ok' && cat.markPaid) cat.markPaid();
-        if (status === 'cancel' && cat.markUnpaid) cat.markUnpaid();
-      }
+      if (cat && status === 'cancel' && cat.markUnpaid) cat.markUnpaid();
     } catch (_) {}
     try {
       if (typeof root.fireSPaintSubscribeStatus === 'function') root.fireSPaintSubscribeStatus();
+    } catch (_) {}
+    try {
+      if (status === 'ok' && root.fireSEntitlement && root.fireSEntitlement.refresh) {
+        root.fireSEntitlement.refresh(true);
+      }
     } catch (_) {}
     stripPayfastQuery();
   }
@@ -292,14 +298,11 @@
   root.fireSPayfast = {
     isEnabled: isEnabled,
     processUrl: processUrl,
-    phpUrlEncode: phpUrlEncode,
-    generateSignature: generateSignature,
-    signatureParamString: signatureParamString,
-    md5hex: md5hex,
     amountFor: amountFor,
     payLabel: payLabel,
-    buildFields: buildFields,
+    checkoutUrl: checkoutUrl,
     startCheckout: startCheckout,
+    submitHostedCheckout: submitHostedCheckout,
     queryStatus: queryStatus,
     paintReturnBanner: paintReturnBanner
   };

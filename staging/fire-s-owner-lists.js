@@ -43,18 +43,13 @@
 
   function writeCount(countEl, visibleCount) {
     if (pullState.loading && !pullState.done) {
-      const shown = Math.max(visibleCount || 0, pullState.loaded);
-      if (shown <= 0) {
-        countEl.textContent = 'Loading buildings…';
-        return;
-      }
-      countEl.textContent = 'Loading buildings… ' + shown;
+      countEl.textContent = 'Loading buildings…';
       return;
     }
     const n = visibleCount || 0;
     countEl.textContent = n
-      ? n + (n === 1 ? ' building on your inspection list' : ' buildings on your inspection list')
-      : 'No buildings on your inspection list yet.';
+      ? n + (n === 1 ? ' building on the company inspection list' : ' buildings on the company inspection list')
+      : 'No buildings on the company inspection list yet.';
   }
 
   root.fireSSetOwnerListsPullProgress = applyPullProgress;
@@ -204,6 +199,11 @@
   function isDeleted(project) {
     if (!project) return true;
     try {
+      if (typeof root.fireSIsHiddenFromCurrentLists === 'function') {
+        return !!root.fireSIsHiddenFromCurrentLists(project);
+      }
+    } catch (_) {}
+    try {
       if (typeof root.fireSIsDeletedPremises === 'function') {
         return !!root.fireSIsDeletedPremises(project);
       }
@@ -217,6 +217,11 @@
   }
 
   function isRecycleLeftover(project) {
+    try {
+      if (typeof root.fireSIsHiddenFromCurrentLists === 'function') {
+        return !!root.fireSIsHiddenFromCurrentLists(project);
+      }
+    } catch (_) {}
     try {
       if (typeof root.fireSIsEmptyRecycleLeftoverPremises === 'function') {
         return !!root.fireSIsEmptyRecycleLeftoverPremises(project);
@@ -257,12 +262,36 @@
     return text(a).localeCompare(text(b), undefined, { sensitivity: 'base' });
   }
 
+  function uniqueActive(projects) {
+    const source = Array.isArray(projects) ? projects : [];
+    try {
+      if (typeof root.fireSFilterToCloudBuildings === 'function') {
+        const unique = root.fireSFilterToCloudBuildings(source);
+        if (Array.isArray(unique)) {
+          return source.filter(project => unique.indexOf(project) !== -1);
+        }
+      }
+      if (typeof root.fireSUniqueCurrentBuildings === 'function') {
+        const unique = root.fireSUniqueCurrentBuildings(source);
+        if (Array.isArray(unique)) {
+          return source.filter(project => unique.indexOf(project) !== -1);
+        }
+      }
+    } catch (_) {}
+    const seen = Object.create(null);
+    return source.filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      const key = text(buildingName(project)).toLowerCase() || ('id:' + text(project.id));
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
   function buildModel(projects, today) {
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
-    const active = (Array.isArray(projects) ? projects : []).filter(project =>
-      !isDeleted(project) && !isRecycleLeftover(project)
-    );
+    const active = uniqueActive(projects);
 
     const all = active
       .map(project => ({
@@ -353,6 +382,21 @@
     }
   }
 
+  function inspectionHomeLocked() {
+    try {
+      if (root.fireSEntitlement && typeof root.fireSEntitlement.homeWorkAllowed === 'function') {
+        return root.fireSEntitlement.homeWorkAllowed() !== true;
+      }
+      return !!(
+        root.fireSEntitlement &&
+        typeof root.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        root.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function hidePanel(panel) {
     if (!panel) return;
     panel.hidden = true;
@@ -403,6 +447,10 @@
       pullState.loading = !!root.__fireSOwnerListsPullProgress.loading;
       pullState.done = !!root.__fireSOwnerListsPullProgress.done;
     }
+    if (root.__fireSCloudPullSettled === true) {
+      pullState.loading = false;
+      pullState.done = true;
+    }
 
     if (countEl) {
       writeCount(countEl, model.count);
@@ -414,7 +462,7 @@
             `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
             `<td class="fire-s-owner-lists-meta">${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
           ].join(''))).join('')
-        : emptyRow(2, 'No buildings on your inspection list yet.');
+        : emptyRow(2, 'No buildings on the company inspection list yet.');
     }
 
     if (upcomingBody) {
@@ -477,10 +525,23 @@
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);
-    if (!canShowLists()) {
+    if (inspectionHomeLocked() || !canShowLists()) {
       hidePanel(panel);
       return;
     }
+    // undefined used to paint the laptop's local 8 before the company pull
+    // finished and Recycle hide dropped it to 7. Wait for the settled unique
+    // list so phone and laptop lock the same building number.
+    if (root.__fireSCloudPullSettled !== true) {
+      pullState.loading = true;
+      pullState.done = false;
+      const countEl = byId('fireSOwnerListsCount');
+      if (countEl) writeCount(countEl, pullState.loaded);
+      showPanel(panel);
+      return;
+    }
+    pullState.loading = false;
+    pullState.done = true;
     renderModel(buildModel(loadProjects(), todayKey()));
   }
 
@@ -491,6 +552,10 @@
       const result = original.apply(this, arguments);
       const after = function fireSOwnerListsAfterSync() {
         if (root.__fireSHomeCountsFrozen) return;
+        if (inspectionHomeLocked()) {
+          try { refresh(); } catch (_) {}
+          return;
+        }
         try { refresh(); } catch (_) {}
         if (name !== 'setProjects' || wrapped.__fireSOwnerListsRefreshing) return;
         wrapped.__fireSOwnerListsRefreshing = true;

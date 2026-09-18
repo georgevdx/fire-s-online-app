@@ -4958,6 +4958,43 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
     if (!cloudProject?.id || isProjectDeleted(cloudProject.id)) return;
     const localProject = mergedMap.get(cloudProject.id);
 
+    // Never bring a locally deleted premises or Recycle leftover back as a
+    // live building. If the cloud already has the Recycle/deleted stamp,
+    // that stamp wins so phone and laptop hide the same premises.
+    const localDeleted =
+      localProject &&
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(localProject);
+    const cloudDeleted =
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(cloudProject);
+    const localHidden =
+      localProject &&
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(localProject);
+    const cloudHidden =
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(cloudProject);
+    const localTime = localProject && localProject.lastSaved
+      ? new Date(localProject.lastSaved).getTime()
+      : 0;
+    const cloudTime = cloudProject.lastSaved
+      ? new Date(cloudProject.lastSaved).getTime()
+      : 0;
+
+    if (localDeleted && !cloudDeleted && !(cloudTime > localTime)) {
+      return;
+    }
+    if (cloudDeleted) {
+      if (!localProject || localDeleted || cloudTime >= localTime) {
+        mergedMap.set(cloudProject.id, cloudProject);
+      }
+      return;
+    }
+    if (localHidden && !cloudHidden && !(cloudTime > localTime)) {
+      return;
+    }
+
     // Never bring a locally deleted premises or empty Recycle leftover back.
     if (localProject && typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(localProject)) {
       return;
@@ -4981,17 +5018,7 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
       const cloudLive =
         typeof fireSHasLiveCurrentInspection === 'function' &&
         fireSHasLiveCurrentInspection(cloudProject);
-      const localTime = localProject.lastSaved ? new Date(localProject.lastSaved).getTime() : 0;
-      const cloudTime = cloudProject.lastSaved ? new Date(cloudProject.lastSaved).getTime() : 0;
       if (!(cloudLive && cloudTime > localTime)) return;
-    }
-
-    if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(cloudProject)) {
-      const localDeleted = mergedMap.get(cloudProject.id);
-      if (!localDeleted || fireSIsDeletedPremises(localDeleted)) {
-        mergedMap.set(cloudProject.id, cloudProject);
-      }
-      return;
     }
 
     if (!localProject) {
@@ -5013,14 +5040,6 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
       return;
     }
 
-    const localTime = localProject.lastSaved
-      ? new Date(localProject.lastSaved).getTime()
-      : 0;
-
-    const cloudTime = cloudProject.lastSaved
-      ? new Date(cloudProject.lastSaved).getTime()
-      : 0;
-
     if (cloudTime > localTime) {
       mergedMap.set(cloudProject.id, cloudProject);
     }
@@ -5033,11 +5052,19 @@ let fireSCloudPullInFlight = false;
 let fireSCloudPullGeneration = 0;
 
 async function safeDownloadNewerCloudInspections(options) {
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
-  if (fireSCloudPullInFlight) return;
-  fireSCloudPullInFlight = true;
-  const pullToken = ++fireSCloudPullGeneration;
+    if (!navigator.onLine) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (typeof supabaseClient === 'undefined') {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      return;
+    }
+    if (fireSCloudPullInFlight) return;
+    fireSCloudPullInFlight = true;
+    try { window.__fireSCloudPullSettled = false; } catch (_) {}
+    try { window.__fireSCloudBuildingFilter = null; } catch (_) {}
+    const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
 
@@ -5046,6 +5073,7 @@ async function safeDownloadNewerCloudInspections(options) {
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       return;
     }
 
@@ -5083,10 +5111,18 @@ async function safeDownloadNewerCloudInspections(options) {
 
     function visiblePremises(list) {
       try {
+        let visible = Array.isArray(list) ? list : [];
         if (typeof getVisibleProjectsForCurrentUser === 'function') {
-          const visible = getVisibleProjectsForCurrentUser(list);
-          if (Array.isArray(visible)) return visible;
+          const filtered = getVisibleProjectsForCurrentUser(list);
+          if (Array.isArray(filtered)) visible = filtered;
         }
+        if (typeof fireSFilterToCloudBuildings === 'function') {
+          return fireSFilterToCloudBuildings(visible);
+        }
+        if (typeof fireSUniqueCurrentBuildings === 'function') {
+          return fireSUniqueCurrentBuildings(visible);
+        }
+        return visible;
       } catch (_) {}
       return Array.isArray(list) ? list : [];
     }
@@ -5161,15 +5197,64 @@ async function safeDownloadNewerCloudInspections(options) {
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
       finishPremisesProgress();
       return;
     }
 
+    const incomplete = !!(pulled && pulled.incomplete);
     applyCloudRows(Array.isArray(data) ? data : [], {
       expectedTotal: pulled && pulled.expectedTotal,
-      incomplete: !!(pulled && pulled.incomplete)
+      incomplete: incomplete
     });
     if (pullToken !== fireSCloudPullGeneration) return;
+
+    // A short phone pull must not become the finished Home count.
+    // Laptop/phone were settling on 8 vs 5 buildings and different Overdue cards.
+    // Keep Loading until the company pull is complete so both devices show
+    // the same unique cloud list — never pick 5 or 7 from a half-finished pull.
+    if (incomplete) {
+      try { window.__fireSCloudPullSettled = false; } catch (_) {}
+      reportPremisesProgress(true);
+      const retry = Number(options && options.retry) || 0;
+      if (retry < 4) {
+        setTimeout(() => {
+          try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
+        }, 1800);
+        return;
+      }
+      setTimeout(() => {
+        try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
+      }, 4000);
+      return;
+    }
+
+    // Laptop leftover locals (untagged / never uploaded) stay at 8 while the
+    // phone only has the 5 company-tagged cloud rows. Stamp and push them so
+    // the next phone pull sees the same company list.
+    try {
+      const cid = currentUserProfile && currentUserProfile.companyId;
+      if (cid) {
+        restampLocalInspectionsWithCompany(
+          cid,
+          currentUserProfile.companyName
+        );
+      }
+      if (!incomplete) {
+        queueLocalPremisesMissingFromCloud(
+          localProjects,
+          Array.isArray(data) ? data : []
+        );
+      }
+      uploadPendingInspections();
+    } catch (_) {}
+
+    try {
+      if (!incomplete && typeof fireSApplyCloudBuildingFilter === 'function') {
+        fireSApplyCloudBuildingFilter(Array.isArray(data) ? data : []);
+      }
+    } catch (_) {}
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     setProjects(mergedProjects);
     paintHome(true);
@@ -5181,10 +5266,13 @@ async function safeDownloadNewerCloudInspections(options) {
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
+    try { window.__fireSCloudPullSettled = true; } catch (_) {}
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
-      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
+      try {
+        if (window.__fireSCloudPullSettled) window.__fireSHomeCountsFrozen = false;
+      } catch (_) {}
     }
   }
 }
@@ -6614,9 +6702,17 @@ function isViewer() {
 
 function hasActiveCompanyAccess() {
   if (isSuperAdmin()) return true;
-
-  return currentCompanyAccess?.status === 'active' ||
-    currentCompanyAccess?.status === 'trial';
+  try {
+    if (window.fireSEntitlement) {
+      if (typeof window.fireSEntitlement.isLocalWorkspace === 'function' && window.fireSEntitlement.isLocalWorkspace()) {
+        return true;
+      }
+      if (window.fireSEntitlement.hasSnapshot && window.fireSEntitlement.hasSnapshot()) {
+        return window.fireSEntitlement.operationallyAllowed() === true;
+      }
+    }
+  } catch (_) {}
+  return false;
 }
 
 function fireSEntitlementGate(kind) {
@@ -6627,6 +6723,8 @@ function fireSEntitlementGate(kind) {
     if (kind === 'create') return window.fireSEntitlement.canCreate();
     if (kind === 'finalise') return window.fireSEntitlement.canFinalise();
     if (kind === 'allowed') return window.fireSEntitlement.operationallyAllowed();
+    if (kind === 'read') return window.fireSEntitlement.canRead ? window.fireSEntitlement.canRead() : window.fireSEntitlement.operationallyAllowed();
+    if (kind === 'export') return window.fireSEntitlement.canExport ? window.fireSEntitlement.canExport() : window.fireSEntitlement.operationallyAllowed();
   } catch (_) {}
   return null;
 }
@@ -6649,17 +6747,19 @@ function canEditInspection() {
 
   if (isSuperAdmin()) return true;
 
-  if (!hasActiveCompanyAccess()) return false;
-
   try {
+    if (window.fireSEntitlement && window.fireSEntitlement.isLocalWorkspace && window.fireSEntitlement.isLocalWorkspace()) {
+      return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
+    }
     var snap = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
-    if (snap && snap.backendReady && snap.can_write_draft === false && snap.allowed === false) {
-      return false;
+    if (snap && snap.backendReady) {
+      if (snap.can_read !== true && snap.allowed !== true) return false;
+      if (snap.can_write_draft !== true && snap.allowed !== true) return false;
+      return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
     }
   } catch (_) {}
 
-  return ['company_owner', 'manager', 'inspector']
-    .includes(getCurrentUserRole());
+  return false;
 }
 
 function canViewReports() {
@@ -6667,7 +6767,17 @@ function canViewReports() {
 
   if (isSuperAdmin()) return true;
 
-  if (!hasActiveCompanyAccess()) return false;
+  try {
+    if (window.fireSEntitlement && window.fireSEntitlement.isLocalWorkspace && window.fireSEntitlement.isLocalWorkspace()) {
+      return ['company_owner', 'manager', 'inspector', 'viewer'].includes(getCurrentUserRole());
+    }
+    if (window.fireSEntitlement && window.fireSEntitlement.hasSnapshot && window.fireSEntitlement.hasSnapshot()) {
+      if (fireSEntitlementGate('export') === false) return false;
+      if (fireSEntitlementGate('read') === false) return false;
+    } else if (window.fireSEntitlement && typeof window.fireSEntitlement.isLocalWorkspace === 'function' && !window.fireSEntitlement.isLocalWorkspace()) {
+      return false;
+    }
+  } catch (_) {}
 
   return ['company_owner', 'manager', 'inspector', 'viewer']
     .includes(getCurrentUserRole());
@@ -7430,6 +7540,71 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
   return changed;
 }
 
+function fireSCloudRowInspectionId(row) {
+  if (!row) return '';
+  return String(
+    row.id ||
+      (row.inspection_data && row.inspection_data.id) ||
+      ''
+  ).trim();
+}
+
+/**
+ * After a complete company pull, re-queue local premises the cloud did not
+ * return. Laptop-only leftovers then upload with company_id so the phone
+ * can show the same building list.
+ */
+function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
+  const cloudIds = new Set();
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id = fireSCloudRowInspectionId(row);
+    if (id) cloudIds.add(id);
+  });
+  const cid = String(
+    (typeof currentUserProfile !== 'undefined' &&
+      currentUserProfile &&
+      currentUserProfile.companyId) ||
+      ''
+  ).trim();
+  let queued = 0;
+  (Array.isArray(localProjects) ? localProjects : []).forEach(project => {
+    if (!project || !project.id) return;
+    if (
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(project)
+    ) {
+      const cloudRow = (Array.isArray(cloudRows) ? cloudRows : []).find(row =>
+        fireSCloudRowInspectionId(row) === String(project.id)
+      );
+      const cloudData = (cloudRow && cloudRow.inspection_data) || cloudRow || {};
+      const cloudDeleted = !!(
+        cloudData.deletedAt ||
+        cloudData.dataManagementDeletedAt ||
+        String(cloudData.deleteType || '').toLowerCase() === 'entire_premises'
+      );
+      if (!cloudDeleted) {
+        queueInspectionForUpload(project.id);
+        queued += 1;
+      }
+      return;
+    }
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      return;
+    }
+    const projectCid = String(
+      project.companyId || project.company_id || ''
+    ).trim();
+    if (cid && projectCid && projectCid !== cid) return;
+    if (cloudIds.has(String(project.id))) return;
+    queueInspectionForUpload(project.id);
+    queued += 1;
+  });
+  return queued;
+}
+
 function fireSIsLocalProfileFallback(profile) {
   if (!profile) return true;
   const id = String(profile.id || '');
@@ -7456,8 +7631,10 @@ function fireSProjectOwnedByProfile(project, profile) {
 
 function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
   const activeProjects = (Array.isArray(projects) ? projects : []).filter(project =>
-    !fireSIsDeletedPremises(project) &&
-    !fireSIsEmptyRecycleLeftoverPremises(project)
+    typeof fireSIsHiddenFromCurrentLists === 'function'
+      ? !fireSIsHiddenFromCurrentLists(project)
+      : (!fireSIsDeletedPremises(project) &&
+        !fireSIsEmptyRecycleLeftoverPremises(project))
   );
 
   if (isAdmin) return activeProjects;
@@ -7472,7 +7649,16 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
         project.companyId || project.company_id || ''
       ).trim();
       if (projectCompanyId === profileCompanyId) return true;
-      if (!projectCompanyId && mine(project)) return true;
+      if (!projectCompanyId) {
+        if (mine(project)) return true;
+        const hasOwner = String(
+          project.createdByUserId ||
+            project.user_id ||
+            project.createdByEmail ||
+            ''
+        ).trim();
+        if (!hasOwner) return true;
+      }
       return false;
     });
     if (matched.length) return matched;
@@ -7682,41 +7868,89 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   }
 
   const preferFiltered = !!(currentUserProfile && currentUserProfile.companyId);
-  let inventoryMode = preferFiltered ? 'filtered' : 'open';
-  let inventory = await fetchInventory(
-    inventoryMode === 'filtered' ? filteredIndexQuery : openIndexQuery
-  );
-  if (inventory.error || !inventory.rows.length) {
-    const other = inventoryMode === 'filtered' ? 'open' : 'filtered';
-    const fallbackInventory = await fetchInventory(
-      other === 'filtered' ? filteredIndexQuery : openIndexQuery
-    );
-    if (!fallbackInventory.error && fallbackInventory.rows.length) {
-      inventory = fallbackInventory;
-      inventoryMode = other;
-    }
+
+  function inventoryCount(inv) {
+    if (!inv || inv.error) return 0;
+    const listed = Array.isArray(inv.rows) ? inv.rows.length : 0;
+    const counted = typeof inv.count === 'number' ? inv.count : 0;
+    return Math.max(listed, counted);
   }
-  const expectedTotal = inventory.count || inventory.rows.length || null;
+
+  function unionCloudRows(left, right) {
+    const map = new Map();
+    function add(list) {
+      (Array.isArray(list) ? list : []).forEach(row => {
+        const id = String(
+          (row && row.id) ||
+            (row && row.inspection_data && row.inspection_data.id) ||
+            ''
+        ).trim();
+        if (id && !map.has(id)) map.set(id, row);
+      });
+    }
+    add(left);
+    add(right);
+    return Array.from(map.values());
+  }
+
+  const openInv = await fetchInventory(openIndexQuery);
+  let filteredInv = { rows: [], count: 0, error: { message: 'skip' } };
+  if (preferFiltered) {
+    filteredInv = await fetchInventory(filteredIndexQuery);
+  } else if (openInv.error || !openInv.rows.length) {
+    filteredInv = await fetchInventory(filteredIndexQuery);
+  }
+  const filteredCount = inventoryCount(filteredInv);
+  const openCount = inventoryCount(openInv);
+
+  let inventoryMode;
+  let inventory;
+  if (openCount > filteredCount) {
+    inventoryMode = 'open';
+    inventory = openInv;
+  } else if (filteredCount > openCount) {
+    inventoryMode = 'filtered';
+    inventory = filteredInv;
+  } else if (preferFiltered && filteredCount) {
+    inventoryMode = 'filtered';
+    inventory = filteredInv;
+  } else {
+    inventoryMode = 'open';
+    inventory = openInv.error && filteredCount ? filteredInv : openInv;
+    if (inventory === filteredInv) inventoryMode = 'filtered';
+  }
+
+  const expectedTotal =
+    Math.max(filteredCount, openCount, inventoryCount(inventory)) || null;
   report([], expectedTotal, true);
 
   const primaryQuery = inventoryMode === 'filtered' ? filteredQuery : openQuery;
   const secondaryQuery = inventoryMode === 'filtered' ? openQuery : filteredQuery;
-  const primary = await fetchAll(primaryQuery, expectedTotal);
-  if (!primary.error && !primary.incomplete) {
-    return primary;
-  }
-  if (Array.isArray(primary.data) && primary.data.length > 0) {
-    return primary;
-  }
-  const secondary = await fetchAll(secondaryQuery, expectedTotal);
-  if (
-    !secondary.error &&
-    Array.isArray(secondary.data) &&
-    secondary.data.length >= (Array.isArray(primary.data) ? primary.data.length : 0)
-  ) {
-    return secondary;
-  }
-  return primary;
+  const primaryExpected =
+    inventoryMode === 'filtered'
+      ? filteredCount || expectedTotal
+      : openCount || expectedTotal;
+  const primary = await fetchAll(primaryQuery, primaryExpected);
+  const secondaryExpected =
+    inventoryMode === 'filtered'
+      ? openCount || expectedTotal
+      : filteredCount || expectedTotal;
+  const secondary = await fetchAll(secondaryQuery, secondaryExpected);
+  const merged = unionCloudRows(primary.data, secondary.data);
+  const mergedLen = merged.length;
+  const inventoryFailed = !!(
+    openInv.error ||
+    (preferFiltered && filteredInv.error)
+  );
+  return {
+    data: merged,
+    error: merged.length ? null : primary.error || secondary.error,
+    incomplete:
+      !!inventoryFailed ||
+      !!(expectedTotal && mergedLen < expectedTotal) ||
+      (!expectedTotal && (!mergedLen || (!!primary.incomplete && !!secondary.incomplete))),
+    expectedTotal: expectedTotal
+  };
 }
 
 function applyInspectionDeleteFilter(query, userId) {
@@ -16373,6 +16607,18 @@ function showInspectionOpenGate(projectId, focusMode) {
 function openProject(projectId, focusMode, options = {}) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
+  try {
+    if (
+      window.fireSEntitlement &&
+      typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+      window.fireSEntitlement.inspectionAccessLocked()
+    ) {
+      if (typeof window.fireSEntitlement.openRequiredScreen === 'function') {
+        window.fireSEntitlement.openRequiredScreen();
+      }
+      return;
+    }
+  } catch (_) {}
   const projects = getProjects();
   const project = resolveProjectOpenIdentifier(projectId);
   if (!project) {
@@ -26204,15 +26450,221 @@ function fireSHasInspectionHistoryRecords(project) {
   return Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0;
 }
 
+function fireSLiveInspectionMatchesRecycledCurrent(project) {
+  if (!fireSHasRecycledCurrentInspection(project)) return false;
+  const liveKeys = [
+    project.inspectionNumber,
+    project.inspectionId,
+    project.currentInspectionId
+  ]
+    .map(value => String(value || '').trim())
+    .filter(Boolean);
+  if (!liveKeys.length) return false;
+  const items = project.recycleBin.currentInspections;
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i] || {};
+    const snap = item.snapshot && typeof item.snapshot === 'object' ? item.snapshot : {};
+    const recycledKeys = [
+      item.inspectionLabel,
+      snap.inspectionNumber,
+      snap.inspectionId,
+      snap.currentInspectionId
+    ]
+      .map(value => String(value || '').trim())
+      .filter(Boolean);
+    if (liveKeys.some(key => recycledKeys.indexOf(key) !== -1)) return true;
+  }
+  return false;
+}
+
 // Empty leftover after "Delete Incomplete Inspection": the premises shell is
 // still in storage for Recycle, but Gateway must not keep showing the card.
+// A current inspection that is already in Recycle must also stay off current
+// lists even if leftover answers or the inspection number were restored.
 function fireSIsEmptyRecycleLeftoverPremises(project) {
   if (!project) return false;
   if (!fireSHasRecycledCurrentInspection(project)) return false;
-  if (fireSHasLiveCurrentInspection(project)) return false;
   if (fireSIsScheduledNewPremisesOnly(project)) return false;
+  if (fireSLiveInspectionMatchesRecycledCurrent(project)) return true;
+  if (fireSHasLiveCurrentInspection(project)) return false;
   if (fireSHasInspectionHistoryRecords(project)) return false;
   return true;
+}
+
+function fireSIsHiddenFromCurrentLists(project) {
+  if (!project) return true;
+  if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
+    return true;
+  }
+  if (fireSIsEmptyRecycleLeftoverPremises(project)) return true;
+  return false;
+}
+
+// Home counts buildings, not inspections. Same Organisation + Site is one
+// building even when laptop storage still has two live rows for it.
+function fireSPremisesBuildingKey(project) {
+  if (!project) return '';
+  const nameFn = typeof getProjectPremisesName === 'function'
+    ? getProjectPremisesName
+    : function nameFallback(row) {
+        return String(
+          (row && (
+            row.organisationName ||
+            row.organizationName ||
+            row.businessName ||
+            row.clientName ||
+            row.premisesName ||
+            (!row.siteName ? row.projectName : '')
+          )) || ''
+        );
+      };
+  const siteFn = typeof getProjectPremisesSite === 'function'
+    ? getProjectPremisesSite
+    : function siteFallback(row) {
+        return String(
+          (row && (row.siteName || row.site_name || row.branchName || row.locationName)) || ''
+        );
+      };
+  const norm = typeof normalizePremisesIdentityName === 'function'
+    ? normalizePremisesIdentityName
+    : function normFallback(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      };
+  const name = norm(nameFn(project));
+  const site = norm(siteFn(project));
+  if (name || site) return name + '\u0001' + site;
+  const id = String(project.id || project.inspectionId || '').trim();
+  return id ? 'id:' + id : '';
+}
+
+function fireSBuildingRecency(project) {
+  if (!project) return 0;
+  const stamps = [
+    project.lastSaved,
+    project.updatedAt,
+    project.updated_at,
+    project.completedAt,
+    project.inspectionDate,
+    project.createdAt
+  ];
+  let best = 0;
+  for (let i = 0; i < stamps.length; i += 1) {
+    const t = Date.parse(stamps[i]);
+    if (!Number.isNaN(t) && t > best) best = t;
+  }
+  return best;
+}
+
+function fireSUniqueCurrentBuildings(list) {
+  const source = Array.isArray(list) ? list : [];
+  const seen = new Map();
+  for (let i = 0; i < source.length; i += 1) {
+    const project = source[i];
+    if (!project) continue;
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      continue;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (!key) continue;
+    const current = seen.get(key);
+    if (!current || fireSBuildingRecency(project) > fireSBuildingRecency(current)) {
+      seen.set(key, project);
+    }
+  }
+  return Array.from(seen.values());
+}
+
+// Laptop-only leftovers (not in the company cloud) must not become a 7 while
+// the phone still has the cloud's 5. Queue them for upload; do not count them.
+function fireSCloudBackedBuildings(list, cloudRows) {
+  const unique = fireSUniqueCurrentBuildings(list);
+  const rows = Array.isArray(cloudRows) ? cloudRows : [];
+  if (!rows.length) return unique;
+  const ids = new Set();
+  const keys = new Set();
+  rows.forEach(row => {
+    const id =
+      typeof fireSCloudRowInspectionId === 'function'
+        ? fireSCloudRowInspectionId(row)
+        : String((row && (row.id || (row.inspection_data && row.inspection_data.id))) || '');
+    if (id) ids.add(String(id).trim());
+    let project = row;
+    try {
+      if (typeof normaliseCloudSyncedProject === 'function') {
+        project = normaliseCloudSyncedProject(row) || row;
+      } else if (row && row.inspection_data && typeof row.inspection_data === 'object') {
+        project = row.inspection_data;
+      }
+    } catch (_) {}
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      return;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (key) keys.add(key);
+  });
+  if (!ids.size && !keys.size) return unique;
+  return unique.filter(project => {
+    if (ids.has(String((project && project.id) || '').trim())) return true;
+    const key = fireSPremisesBuildingKey(project);
+    return !!(key && keys.has(key));
+  });
+}
+
+function fireSApplyCloudBuildingFilter(cloudRows) {
+  const ids = {};
+  const keys = {};
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id =
+      typeof fireSCloudRowInspectionId === 'function'
+        ? fireSCloudRowInspectionId(row)
+        : String((row && (row.id || (row.inspection_data && row.inspection_data.id))) || '');
+    if (id) ids[String(id).trim()] = true;
+    let project = row;
+    try {
+      if (typeof normaliseCloudSyncedProject === 'function') {
+        project = normaliseCloudSyncedProject(row) || row;
+      } else if (row && row.inspection_data && typeof row.inspection_data === 'object') {
+        project = Object.assign({ id: id }, row.inspection_data);
+      }
+    } catch (_) {}
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      return;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (key) keys[key] = true;
+  });
+  try {
+    window.__fireSCloudBuildingFilter =
+      Object.keys(ids).length || Object.keys(keys).length
+        ? { ids: ids, keys: keys }
+        : null;
+  } catch (_) {}
+}
+
+function fireSFilterToCloudBuildings(list) {
+  const unique = fireSUniqueCurrentBuildings(list);
+  let filter = null;
+  try { filter = window.__fireSCloudBuildingFilter; } catch (_) {}
+  if (!filter || (!filter.ids && !filter.keys)) return unique;
+  const ids = filter.ids || {};
+  const keys = filter.keys || {};
+  const hasIds = Object.keys(ids).length > 0;
+  const hasKeys = Object.keys(keys).length > 0;
+  if (!hasIds && !hasKeys) return unique;
+  return unique.filter(project => {
+    if (hasIds && ids[String((project && project.id) || '').trim()]) return true;
+    const key = fireSPremisesBuildingKey(project);
+    return !!(hasKeys && key && keys[key]);
+  });
 }
 
 function fireSIsInspectionOverdue(project) {
@@ -26593,6 +27045,12 @@ window.fireSApplyScheduleAfterVisit = fireSApplyScheduleAfterVisit;
 window.fireSIsCycledInspection = fireSIsCycledInspection;
 window.fireSIsDeletedPremises = fireSIsDeletedPremises;
 window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises;
+window.fireSIsHiddenFromCurrentLists = fireSIsHiddenFromCurrentLists;
+window.fireSPremisesBuildingKey = fireSPremisesBuildingKey;
+window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
+window.fireSCloudBackedBuildings = fireSCloudBackedBuildings;
+window.fireSFilterToCloudBuildings = fireSFilterToCloudBuildings;
+window.fireSApplyCloudBuildingFilter = fireSApplyCloudBuildingFilter;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
 window.fireSHasLiveCurrentInspection = fireSHasLiveCurrentInspection;
 window.fireSIsScheduledNewPremisesOnly = fireSIsScheduledNewPremisesOnly;
@@ -34440,6 +34898,18 @@ function fireSApplyLifecycleUxLabels() {
   }
 })();
 
+function fireSPaintLeftoverCommandSubtitle(el, text) {
+  // 136A10 owns the Executive Command Centre count line. Leftover KPI
+  // layers used different Action/Overdue/Compliant matchers, so this
+  // summary flickered while the hash-gated cards underneath stayed still.
+  try { if (window.__fireS136A10Installed) return; } catch (_) {}
+  if (!el) return;
+  const next = String(text == null ? '' : text);
+  if ((el.textContent || '') === next) return;
+  el.textContent = next;
+}
+try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtitle; } catch (_) {}
+
 
 // =====================================================
 // FIRE-S RC 1.3.1 - Role Test Mode + Management Cards Fix
@@ -34661,7 +35131,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${data.requiringAction} premises require action · ${data.overdue} overdue · ${data.compliant} compliant · ${data.month} this month.`);
     }
   }
 
@@ -34918,7 +35388,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${overdue} overdue · ${compliant} compliant · ${month} this month.`);
     }
 
     bindManagementCardClicks();
@@ -35193,7 +35663,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     }
 
     const access = document.getElementById('mainCommandAccessStatus');
@@ -35535,7 +36005,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle');
     if (subtitle) {
-      subtitle.textContent = `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${actionCount} premises require action · ${overdueCount} overdue · ${scheduledCount} scheduled · ${compliantCount} compliant · ${monthCount} this month.`);
     }
 
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
@@ -35779,7 +36249,7 @@ function fireSApplyLifecycleUxLabels() {
     if (scoreLabel) scoreLabel.textContent = 'Compliance Score';
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${action} premises require action · ${overdue} overdue · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`);
     const heroSubtitle = document.getElementById('complianceHeroSubtitle');
     if (heroSubtitle) heroSubtitle.textContent = `Management snapshot: ${scheduled} scheduled inspections, ${overdue} overdue inspections and ${month} inspections this month.`;
   }
@@ -35993,7 +36463,7 @@ function fireSApplyLifecycleUxLabels() {
     ].join('');
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function applyGatewayFilter(filter, message){
@@ -37806,6 +38276,17 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function syncKpiCards(){
+    try {
+      if (
+        window.fireSEntitlement &&
+        (
+          (typeof window.fireSEntitlement.homeWorkAllowed === 'function' && window.fireSEntitlement.homeWorkAllowed() !== true) ||
+          (typeof window.fireSEntitlement.inspectionAccessLocked === 'function' && window.fireSEntitlement.inspectionAccessLocked())
+        )
+      ) {
+        return;
+      }
+    } catch (_) {}
     const counts = {
       compliant: count('compliant'),
       scheduled: count('scheduled-new'),
@@ -37845,9 +38326,9 @@ function fireSApplyLifecycleUxLabels() {
     });
 
     const subtitle = document.getElementById('mainCommandSubtitle');
-    if (subtitle) subtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (subtitle) fireSPaintLeftoverCommandSubtitle(subtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
     const oldSubtitle = document.querySelector('.main-command-top p');
-    if (oldSubtitle && oldSubtitle !== subtitle) oldSubtitle.textContent = `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`;
+    if (oldSubtitle && oldSubtitle !== subtitle) fireSPaintLeftoverCommandSubtitle(oldSubtitle, `${counts.action} premises require action · ${counts.overdue} overdue · ${counts.scheduled} scheduled · ${counts.compliant} compliant · ${counts.month} this month.`);
   }
 
   function filterButtons(base){
@@ -38181,7 +38662,7 @@ function fireSApplyLifecycleUxLabels() {
 
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38610,7 +39091,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
 
@@ -38763,7 +39244,7 @@ function fireSApplyLifecycleUxLabels() {
     });
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+      fireSPaintLeftoverCommandSubtitle(subtitle, `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`);
     }
   }
   const oldMatcher = window.projectMatchesInspectionGatewayQuickFilter;
@@ -38805,12 +39286,21 @@ function fireSApplyLifecycleUxLabels() {
     if (!value) return '';
     const raw = String(value).trim();
     if (!raw || /^not\s*set$/i.test(raw) || /^n\/?a$/i.test(raw) || /^unknown$/i.test(raw)) return '';
-    const direct = raw.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
     const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
-  function todayKey(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+  function todayKey(){
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
   function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.scheduledDate || p?.followUpDate); }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
@@ -38927,6 +39417,12 @@ function fireSApplyLifecycleUxLabels() {
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch (_) {}
+    if (typeof window.fireSIsDeletedPremises === 'function') {
+      list = list.filter(project => !window.fireSIsDeletedPremises(project));
+    }
+    if (typeof window.fireSIsEmptyRecycleLeftoverPremises === 'function') {
+      list = list.filter(project => !window.fireSIsEmptyRecycleLeftoverPremises(project));
+    }
     return Array.isArray(list) ? list : [];
   }
   function counts(){
@@ -38986,6 +39482,23 @@ function fireSApplyLifecycleUxLabels() {
   }
   function renderKpis(){
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
+    try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
+    try {
+      if (
+        window.fireSEntitlement &&
+        (
+          (typeof window.fireSEntitlement.homeWorkAllowed === 'function' && window.fireSEntitlement.homeWorkAllowed() !== true) ||
+          (typeof window.fireSEntitlement.inspectionAccessLocked === 'function' && window.fireSEntitlement.inspectionAccessLocked())
+        )
+      ) {
+        const lockedRow = document.getElementById('fireSOwnerKpiRow');
+        if (lockedRow) {
+          lockedRow.hidden = true;
+          lockedRow.style.setProperty('display', 'none', 'important');
+        }
+        return;
+      }
+    } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -39014,10 +39527,21 @@ function fireSApplyLifecycleUxLabels() {
     row.removeAttribute('aria-hidden');
     row.style.setProperty('display', 'grid', 'important');
     hideLegacyStatsRow();
+    hideOwnerCountLine();
+  }
+  function hideOwnerCountLine(){
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
-    if (subtitle && /premises require action|overdue|scheduled|compliant|this month/i.test(subtitle.textContent || '')) {
-      subtitle.textContent = `${c.action} premises require action · ${c.overdue} overdue · ${c.scheduled} scheduled · ${c.compliant} compliant · ${c.month} this month.`;
+    if (!subtitle) return;
+    if (isInspectorOrGuestHome()) {
+      subtitle.hidden = false;
+      subtitle.removeAttribute('aria-hidden');
+      subtitle.style.removeProperty('display');
+      return;
     }
+    subtitle.textContent = '';
+    subtitle.hidden = true;
+    subtitle.setAttribute('aria-hidden', 'true');
+    subtitle.style.setProperty('display', 'none', 'important');
   }
   function applyFilter(filter){
     const key = norm(filter) === 'scheduled' ? 'scheduled-new' : norm(filter);
@@ -39047,6 +39571,7 @@ function fireSApplyLifecycleUxLabels() {
   window.fireSProductionKpiMatches = matches;
   window.fireSProductionKpiCounts = counts;
   window.fireSProductionRenderKpis = renderKpis;
+  window.fireSPaintOwnerCommandSubtitle = hideOwnerCountLine;
   window.fireSLatestCompletedCycle = latestCompletedCycle;
   window.fireSProductionIsCompliant = isCompliant;
   window.fireSLatestInspectionActionCount = latestInspectionActionCount;

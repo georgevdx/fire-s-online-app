@@ -63,9 +63,21 @@ assertShared(liveApp, 'Live');
 assertShared(stagingApp, 'Toets');
 
 assert.ok(
-  /fireSIsEmptyRecycleLeftoverPremises/.test(liveLists) &&
-    /fireSIsEmptyRecycleLeftoverPremises/.test(stagingLists),
-  'Home building count must use the same leftover rule on live and toets'
+  /function hideOwnerCountLine\(/.test(liveApp) &&
+    /function hideOwnerCountLine\(/.test(stagingApp) &&
+    /A short phone pull must not become the finished Home count/.test(liveApp) &&
+    /A short phone pull must not become the finished Home count/.test(stagingApp) &&
+    /function unionCloudRows\(left, right\)/.test(liveApp) &&
+    /function unionCloudRows\(left, right\)/.test(stagingApp) &&
+    /queueLocalPremisesMissingFromCloud\(/.test(liveApp) &&
+    /queueLocalPremisesMissingFromCloud\(/.test(stagingApp),
+  'Live and toets must hide the duplicate Command Centre line and use the same company building pull'
+);
+assert.ok(
+  /__fireSCloudPullSettled === false/.test(liveLists) &&
+    /__fireSCloudPullSettled !== true/.test(stagingLists) &&
+    /function fireSUniqueCurrentBuildings\(/.test(stagingApp),
+  'Toets Home waits for a settled unique building count; live still skips only a known-incomplete pull'
 );
 assert.ok(
   /const GATEWAY_COPY = 'Open, continue, search and manage inspections\.'/.test(liveFlow) &&
