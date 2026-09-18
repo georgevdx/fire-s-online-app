@@ -294,8 +294,20 @@ body.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
 body.fire-s-entitlement-blocked #fireSSubscribeSection,
 body.fire-s-entitlement-blocked #fireSSubscribeBackBtn,
 body.fire-s-entitlement-blocked #fireSPayfastPayBtn,
-body.fire-s-entitlement-blocked #fireSBillingSubscribeBtn {
+body.fire-s-entitlement-blocked #fireSBillingSubscribeBtn,
+body.fire-s-entitlement-blocked #fireSSubscribePayActions,
+html.fire-s-entitlement-blocked #cmdSubscribeBtn,
+html.fire-s-entitlement-blocked #cmdUserManualBtn,
+html.fire-s-entitlement-blocked #fireSHomeLockPanel,
+html.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
+html.fire-s-entitlement-blocked #fireSSubscribeSection,
+html.fire-s-entitlement-blocked #fireSSubscribeBackBtn,
+html.fire-s-entitlement-blocked #fireSPayfastPayBtn,
+html.fire-s-entitlement-blocked #fireSBillingSubscribeBtn,
+html.fire-s-entitlement-blocked #fireSSubscribePayActions {
   pointer-events: auto !important;
+  position: relative;
+  z-index: 6;
 }
 
 html.fire-s-access-open #fireSHomeLockPanel,

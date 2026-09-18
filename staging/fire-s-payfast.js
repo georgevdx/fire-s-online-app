@@ -83,6 +83,62 @@
     } catch (_) {}
   }
 
+  function submitHostedCheckout(html) {
+    var doc = root.document;
+    if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
+    var form = null;
+    try {
+      if (root.DOMParser) {
+        var parsed = new root.DOMParser().parseFromString(html, 'text/html');
+        form = parsed && parsed.querySelector ? parsed.querySelector('form') : null;
+      }
+    } catch (_) {}
+    if (!form) {
+      try {
+        var holder = doc.createElement('div');
+        holder.innerHTML = html;
+        form = holder.querySelector ? holder.querySelector('form') : null;
+      } catch (_) {}
+    }
+    if (form) {
+      try {
+        var live = doc.importNode ? doc.importNode(form, true) : form;
+        live.style.display = 'none';
+        if (doc.body) doc.body.appendChild(live);
+        else doc.documentElement.appendChild(live);
+        if (typeof live.submit === 'function') {
+          live.submit();
+          return { ok: true };
+        }
+      } catch (err) {
+        try {
+          if (form.action && root.location && root.location.assign) {
+            root.location.assign(form.action);
+            return { ok: true };
+          }
+        } catch (_) {}
+        return { ok: false, reason: 'dom', error: text(err && err.message) };
+      }
+    }
+    try {
+      var blob = new Blob([html], { type: 'text/html' });
+      var blobUrl = URL.createObjectURL(blob);
+      if (root.location && root.location.assign) {
+        root.location.assign(blobUrl);
+        return { ok: true };
+      }
+    } catch (_) {}
+    try {
+      if (!doc.open) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
+      doc.open();
+      doc.write(html);
+      doc.close();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: 'dom', error: text(err && err.message) };
+    }
+  }
+
   function companyId() {
     try {
       return text(root.currentUserProfile && root.currentUserProfile.companyId);
@@ -135,22 +191,16 @@
       return { ok: false, reason: 'network', error: text(err && err.message) };
     }
     var type = text(res && res.headers && res.headers.get && res.headers.get('content-type'));
-    if (res && res.ok && /text\/html/i.test(type)) {
-      var html = await res.text();
-      var doc = root.document;
-      if (!doc || !doc.open) return { ok: false, reason: 'no-dom' };
-      try {
-        doc.open();
-        doc.write(html);
-        doc.close();
-      } catch (err) {
-        return { ok: false, reason: 'dom', error: text(err && err.message) };
-      }
-      return { ok: true };
+    var raw = '';
+    try {
+      raw = await res.text();
+    } catch (_) {}
+    if (res && res.ok && raw && (/text\/html/i.test(type) || /^\s*</.test(raw))) {
+      return submitHostedCheckout(raw);
     }
     var errBody = {};
     try {
-      errBody = await res.json();
+      errBody = JSON.parse(raw || '{}');
     } catch (_) {}
     return {
       ok: false,
@@ -228,6 +278,7 @@
     payLabel: payLabel,
     checkoutUrl: checkoutUrl,
     startCheckout: startCheckout,
+    submitHostedCheckout: submitHostedCheckout,
     queryStatus: queryStatus,
     paintReturnBanner: paintReturnBanner
   };

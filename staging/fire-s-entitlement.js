@@ -209,6 +209,47 @@
     return !!(copy && copy.urgency === 'block' && reason !== 'trial_limit_reached');
   }
 
+  function subscribeControlAction(node) {
+    if (!node) return '';
+    if (node.nodeType === 3) node = node.parentElement;
+    if (!node || !node.closest) return '';
+    try {
+      if (node.closest('#fireSSubscribeBackBtn')) return 'home';
+      if (
+        node.closest('#fireSPayfastPayBtn') ||
+        node.closest('#fireSBillingSubscribeBtn') ||
+        node.closest('#fireSSubscribeAgainBtn')
+      ) {
+        return 'pay';
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  function runSubscribeControl(action) {
+    if (action === 'home') {
+      try {
+        if (typeof root.fireSSubscribeGoBack === 'function') {
+          root.fireSSubscribeGoBack();
+          return true;
+        }
+      } catch (_) {}
+      pinLockedHome({ preferHome: true });
+      return true;
+    }
+    if (action === 'pay') {
+      try {
+        if (typeof root.fireSStartSubscribeCheckout === 'function') {
+          root.fireSStartSubscribeCheckout();
+          return true;
+        }
+      } catch (_) {}
+      openPlans();
+      return true;
+    }
+    return false;
+  }
+
   function isAllowedLockedTarget(node) {
     if (!node) return false;
     if (node.nodeType === 3) node = node.parentElement;
@@ -217,6 +258,7 @@
       if (node.closest('#fireSSubscriptionRequiredBackBtn')) return false;
       if (node.closest('#projectsHomeBtn')) return false;
     } catch (_) {}
+    if (subscribeControlAction(node)) return true;
     var allow = [
       '#fireSSubscribeSection',
       '#fireSSubscribeBackBtn',
@@ -224,6 +266,7 @@
       '#fireSPayfastPayBtn',
       '#fireSBillingSubscribeBtn',
       '#fireSSubscribeCompanyLine',
+      '#fireSSubscribeMessage',
       '#fireSCompanyBillingPanel',
       '#fireSSubscriptionRequiredSection',
       '#fireSEntitlementBlocker',
@@ -421,7 +464,7 @@
     hideNode(personnel);
   }
 
-  function pinLockedHome() {
+  function pinLockedHome(opts) {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (accessGateOpen()) {
       hideDesktopAccess();
@@ -433,7 +476,11 @@
     hideHomeInspectionCards();
     hideDesktopAccess();
     syncHomeLayer();
-    if (subscribeSectionShown()) {
+    var preferHome = !!(opts && opts.preferHome);
+    if (preferHome) {
+      hideNode(document.getElementById('fireSSubscribeSection'));
+    }
+    if (subscribeSectionShown() && !preferHome) {
       hideLockedHomeChrome();
       try {
         document.body.classList.add('fire-s-entitlement-blocked');
@@ -1151,6 +1198,14 @@
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t) return;
+      var subscribeAction = subscribeControlAction(t);
+      if (subscribeAction) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+        runSubscribeControl(subscribeAction);
+        return;
+      }
       if (inspectionAccessLocked() && !isAllowedLockedTarget(t)) {
         ev.preventDefault();
         ev.stopPropagation();
@@ -1182,6 +1237,15 @@
       }
     }, true);
     document.addEventListener('pointerdown', function (ev) {
+      var subscribeAction = subscribeControlAction(ev.target);
+      if (subscribeAction === 'home') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+        runSubscribeControl('home');
+        return;
+      }
+      if (subscribeAction === 'pay') return;
       if (!inspectionAccessLocked()) return;
       if (isAllowedLockedTarget(ev.target)) return;
       ev.preventDefault();

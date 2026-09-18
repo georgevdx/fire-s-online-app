@@ -17,7 +17,7 @@ const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.95-toets/.test(env), 'Toets-blad version must be 1.3.95-toets');
+assert.ok(/1\.3\.96-toets/.test(env), 'Toets-blad version must be 1.3.96-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must stay 1.3.65'
@@ -71,8 +71,15 @@ assert.ok(
 
 assert.ok(/function subscribeSectionShown\(/.test(entitlement));
 assert.ok(/function hideLockedHomeChrome\(/.test(entitlement));
-assert.ok(/if \(subscribeSectionShown\(\)\) \{/.test(entitlement));
+assert.ok(/if \(subscribeSectionShown\(\) && !preferHome\) \{/.test(entitlement));
 assert.ok(/hideLockedHomeChrome\(\)/.test(entitlement));
+assert.ok(/function subscribeControlAction\(/.test(entitlement));
+assert.ok(/runSubscribeControl\('home'\)/.test(entitlement));
+assert.ok(/pinLockedHome\(\{ preferHome: true \}\)/.test(entitlement));
+assert.ok(/pinLockedHome\(\{ preferHome: true \}\)/.test(subscribe));
+assert.ok(/function submitHostedCheckout\(/.test(read('staging/fire-s-payfast.js')));
+assert.ok(/!canManage\(\) && !email/.test(subscribe), 'signed-in owner can open PayFast even if Home role paint lags');
+assert.ok(/html\.fire-s-entitlement-blocked #fireSSubscribeBackBtn/.test(read('staging/fire-s-entitlement.css')));
 assert.ok(/#fireSPayfastPayBtn/.test(entitlement), 'Pay bar must be an allowed locked target');
 assert.ok(/fireSStartSubscribeCheckout/.test(entitlement), 'already-open Subscribe/Reactivate starts checkout');
 assert.ok(/id="fireSSubscribeCompanyLine"/.test(html), 'Subscription must say which company this login pays for');
@@ -198,6 +205,18 @@ assert.strictEqual(
   client.__nodes.fireSHomeLockPanel.hidden,
   true,
   'Subscribe/Reactivate lock bar stays off while Subscription is already open'
+);
+
+client.fireSEntitlement.pinLockedHome({ preferHome: true });
+assert.strictEqual(
+  client.__nodes.fireSSubscribeSection.hidden,
+  true,
+  'Back Home must close Subscription even while the account is locked'
+);
+assert.strictEqual(
+  client.__nodes.homeSection.hidden,
+  false,
+  'Back Home must return to locked Home'
 );
 
 let checkoutCalls = 0;

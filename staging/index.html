@@ -9,8 +9,8 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var WANT = '1.3.95-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-95';
+        var WANT = '1.3.96-toets';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-96';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -112,7 +112,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-95-toets-now">
+  <link rel="stylesheet" href="styles.css?v=1-3-96-toets-now">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -129,7 +129,7 @@
   <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
-  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-95-back-pay">
+  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-96-back-home">
   <link rel="stylesheet" href="fire-s-dark-type.css?v=1-8-rephead">
 </head>
 <body>
@@ -137,7 +137,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.95-toets</p>
+      <p class="brand-version">Version 1.3.96-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -161,7 +161,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.95-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.96-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -237,7 +237,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.95-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.96-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -829,9 +829,7 @@
 <section id="fireSSubscribeSection" class="card fire-s-subscribe-section" style="display:none;">
   <div class="toolbar">
     <h2 id="fireSSubscribeHeading">Subscription</h2>
-    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">
-      Back Home
-    </button>
+    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">Back Home</button>
   </div>
   <div class="fire-s-subscribe-intro">
     <div class="fire-s-subscribe-kicker" id="fireSSubscribeKicker">Paid seats</div>
@@ -1904,7 +1902,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-95-back-pay"></script>
+  <script src="fire-s-env.js?v=1-3-96-back-home"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1919,7 +1917,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-95-back-pay"></script>
+  <script src="app.js?v=1-3-96-back-home"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-46-subscribe-bars"></script>
@@ -1932,8 +1930,8 @@
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-19-subtype"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
-  <script src="fire-s-payfast.js?v=1-4-open"></script>
-  <script src="fire-s-subscribe.js?v=1-24-back-pay"></script>
+  <script src="fire-s-payfast.js?v=1-5-form"></script>
+  <script src="fire-s-subscribe.js?v=1-25-back-home"></script>
   <script src="fire-s-user-manual.js?v=1-44-comment"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
@@ -1946,7 +1944,7 @@
   <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-1-qaexpand"></script>
-  <script src="fire-s-entitlement.js?v=1-3-95-back-pay"></script>
+  <script src="fire-s-entitlement.js?v=1-3-96-back-home"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1965,7 +1963,7 @@
           }).catch(function () {});
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-70-toets-95')
+        navigator.serviceWorker.register('./service-worker.js?v=108-70-toets-96')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

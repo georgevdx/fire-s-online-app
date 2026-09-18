@@ -124,8 +124,9 @@
   }
 
   function payNow() {
-    if (!canManage()) {
-      setMessage('Only the Owner can pay on PayFast.', true);
+    var email = ownerEmail();
+    if (!canManage() && !email) {
+      setMessage('Sign in first, then pay on PayFast.', true);
       return;
     }
     var pf = payfast();
@@ -134,7 +135,6 @@
       return;
     }
     var interval = selectedBillingInterval();
-    var email = ownerEmail();
     if (!email) {
       setMessage('Sign in first, then pay on PayFast.', true);
       return;
@@ -157,6 +157,10 @@
           return;
         }
         setMessage(err || 'PayFast is not ready on the server.', true);
+        return;
+      }
+      if (!(res && res.ok)) {
+        setMessage('PayFast did not open. Try Pay on PayFast again.', true);
       }
     }).catch(function (err) {
       setMessage((err && err.message) || 'PayFast is not ready on the server.', true);
@@ -576,16 +580,37 @@
     });
   }
 
-  function goHome() {
-    var section = byId('fireSSubscribeSection');
-    if (section) {
-      section.hidden = true;
-      if (section.style && typeof section.style.setProperty === 'function') {
-        section.style.setProperty('display', 'none', 'important');
-      } else if (section.style) {
-        section.style.display = 'none';
-      }
+  function hideEl(el) {
+    if (!el) return;
+    el.hidden = true;
+    try {
+      el.setAttribute('aria-hidden', 'true');
+    } catch (_) {}
+    if (el.style && typeof el.style.setProperty === 'function') {
+      el.style.setProperty('display', 'none', 'important');
+    } else if (el.style) {
+      el.style.display = 'none';
     }
+  }
+
+  function showEl(el, display) {
+    if (!el) return;
+    el.hidden = false;
+    try {
+      el.removeAttribute('hidden');
+    } catch (_) {}
+    try {
+      el.removeAttribute('aria-hidden');
+    } catch (_) {}
+    if (el.style && typeof el.style.setProperty === 'function') {
+      el.style.setProperty('display', display || 'block', 'important');
+    } else if (el.style) {
+      el.style.display = display || 'block';
+    }
+  }
+
+  function goHome() {
+    hideEl(byId('fireSSubscribeSection'));
     if (mode === 'seat') {
       try {
         if (typeof window.fireSOpenCompanyTeam === 'function') {
@@ -594,9 +619,11 @@
         }
       } catch (_) {}
     }
+    showEl(byId('homeSection'), 'block');
     try {
       if (typeof window.showHome === 'function') window.showHome();
     } catch (_) {}
+    showEl(byId('homeSection'), 'block');
     try {
       if (
         window.fireSEntitlement &&
@@ -604,7 +631,7 @@
         window.fireSEntitlement.inspectionAccessLocked() &&
         typeof window.fireSEntitlement.pinLockedHome === 'function'
       ) {
-        window.fireSEntitlement.pinLockedHome();
+        window.fireSEntitlement.pinLockedHome({ preferHome: true });
       }
     } catch (_) {}
   }
