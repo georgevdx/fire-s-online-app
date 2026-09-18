@@ -22,14 +22,14 @@ assert.ok(
   storeSrc === stagingStoreSrc,
   'Live and toets must share the same service-request store'
 );
-assert.ok(/1\.3\.90-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.90-toets');
+assert.ok(/1\.3\.91-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.91-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
 );
 assert.ok(
-  /app\.js\?v=1-3-90-toets-lock/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-90-home-lock/.test(stagingHtml) &&
+  /app\.js\?v=1-3-91-toets-lock/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-91-home-lock/.test(stagingHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(stagingHtml),
   'Toets-blad must cache-bust the archive follow-up files'
 );

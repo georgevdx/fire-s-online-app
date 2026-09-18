@@ -220,6 +220,15 @@ body.fire-s-entitlement-blocked .attention-site-row {
   pointer-events: none !important;
 }
 
+body.fire-s-entitlement-blocked #homeSection .home-hero,
+body.fire-s-entitlement-blocked #fireSExpiryReminder,
+body.fire-s-entitlement-blocked #fireSTrialBanner,
+body.fire-s-entitlement-blocked #inspectorV4Shell,
+body.fire-s-entitlement-blocked #fireSSubscriptionRequiredSection,
+body.fire-s-entitlement-blocked #fireSEntitlementBlocker {
+  display: none !important;
+}
+
 body.fire-s-entitlement-blocked #cmdSubscribeBtn,
 body.fire-s-entitlement-blocked #cmdUserManualBtn,
 body.fire-s-entitlement-blocked #fireSHomeLockPanel,

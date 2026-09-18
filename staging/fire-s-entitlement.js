@@ -737,12 +737,11 @@
   }
 
   function showBlockerIfNeeded() {
-    var copy = displayCopy(last);
     var blocker = ensureBlocker();
     fillRequiredCopy('fireSSubscriptionRequiredScreen');
     fillRequiredCopy('fireSSubscriptionRequired');
     var panel = document.getElementById('fireSSubscriptionRequiredPanel');
-    if (panel) panel.hidden = !(inspectionAccessLocked() || (copy.urgency === 'block' && last && last.backendReady));
+    if (panel) panel.hidden = true;
     if (!inspectionAccessLocked()) {
       var homeLock = document.getElementById('fireSHomeLockPanel');
       if (homeLock) homeLock.hidden = true;
@@ -764,7 +763,7 @@
     var detail = document.getElementById('fireSTrialBannerDetail');
     var cta = document.getElementById('fireSTrialBannerCta');
     if (banner) {
-      if (!copy.show || isSuperAdmin()) {
+      if (!copy.show || isSuperAdmin() || inspectionAccessLocked()) {
         banner.hidden = true;
         banner.className = 'fire-s-trial-banner';
       } else {
@@ -1073,14 +1072,6 @@
       if (inspectionAccessLocked()) pinLockedHome();
     }, 900);
     setTimeout(wrapNavFns, 1800);
-    setInterval(function () {
-      if (!inspectionAccessLocked()) return;
-      wrapNavFns();
-      wrapOpenProject();
-      hideHomeInspectionCards();
-      if (nodeIsShown(document.getElementById('fireSSubscribeSection'))) return;
-      if (inspectionWorkspaceIsOpen()) pinLockedHome();
-    }, 400);
   }
 
   if (document.readyState === 'loading') {

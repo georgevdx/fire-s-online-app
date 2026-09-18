@@ -376,7 +376,17 @@
     });
     hide('inspectorBoardHomeBar');
     hide('fireSOwnerLists');
+    hide('fireSOwnerKpiRow');
     setStatsVisible(false);
+    hideManagementOverlays();
+    const homeHero = document.querySelector('#homeSection .home-hero');
+    if (homeHero) homeHero.style.setProperty('display', 'none', 'important');
+    const shell = byId('inspectorV4Shell');
+    if (shell) {
+      shell.style.setProperty('display', 'none', 'important');
+      shell.setAttribute('hidden', 'true');
+      shell.setAttribute('aria-hidden', 'true');
+    }
     show('cmdSubscribeBtn');
     show('cmdUserManualBtn');
   }
@@ -1059,7 +1069,12 @@
       return;
     }
     paintRecoveryBody(false);
-    if (!inspectionHomeLocked() && isGatewayOrFormVisible()) return;
+    if (inspectionHomeLocked()) {
+      wrapAllCommandCards();
+      applyLockedSubscribeHome();
+      return;
+    }
+    if (isGatewayOrFormVisible()) return;
 
     wrapAllCommandCards();
 
@@ -1072,11 +1087,6 @@
     else if (role === 'company_owner' || role === 'super_admin') applyOwnerHome(role);
     else if (role === 'viewer') applyViewerHome();
     else applyGuestHome();
-
-    if (inspectionHomeLocked()) {
-      applyLockedSubscribeHome();
-      return;
-    }
 
     assertGatewayOnFrontPage(role);
 
@@ -1248,6 +1258,10 @@
 
   function cleanHomeRender() {
     if (isGatewayOrFormVisible()) return;
+    if (inspectionHomeLocked()) {
+      applyCleanHome();
+      return;
+    }
     if (typeof previousRender === 'function' && !previousRender.__fireSCleanHome) {
       try {
         previousRender();

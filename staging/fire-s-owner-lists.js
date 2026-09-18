@@ -382,6 +382,18 @@
     }
   }
 
+  function inspectionHomeLocked() {
+    try {
+      return !!(
+        root.fireSEntitlement &&
+        typeof root.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        root.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function hidePanel(panel) {
     if (!panel) return;
     panel.hidden = true;
@@ -510,7 +522,7 @@
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);
-    if (!canShowLists()) {
+    if (inspectionHomeLocked() || !canShowLists()) {
       hidePanel(panel);
       return;
     }
@@ -537,6 +549,10 @@
       const result = original.apply(this, arguments);
       const after = function fireSOwnerListsAfterSync() {
         if (root.__fireSHomeCountsFrozen) return;
+        if (inspectionHomeLocked()) {
+          try { refresh(); } catch (_) {}
+          return;
+        }
         try { refresh(); } catch (_) {}
         if (name !== 'setProjects' || wrapped.__fireSOwnerListsRefreshing) return;
         wrapped.__fireSOwnerListsRefreshing = true;
