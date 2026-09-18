@@ -93,6 +93,8 @@ assert.ok(/They stay locked in the app until a new subscription is active/.test(
 const testExpirySql = read('SUPABASE_test_cancelled_expiry_past.sql');
 assert.ok(/now\(\) - interval '1 day'/.test(testExpirySql));
 assert.ok(/s\.status = 'cancelled'/.test(testExpirySql));
+assert.ok(/fire_s_refresh_entitlement_status/.test(testExpirySql));
+assert.ok(/block_is_on/.test(testExpirySql));
 assert.ok(/keep_data/.test(testExpirySql));
 assert.ok(!/delete from public\.inspections/.test(testExpirySql));
 
