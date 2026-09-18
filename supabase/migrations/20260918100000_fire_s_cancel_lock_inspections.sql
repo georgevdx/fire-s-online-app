@@ -1,4 +1,4 @@
--- Fire-S: cancel locks inspection access immediately.
+-- Fire-S: after expiry, cancel locks inspection access.
 -- Run AFTER SUPABASE_subscription_lifecycle.sql on Fire-S Test.
 --
 -- Cancelled companies KEEP every inspection row in the cloud (keep_data).
