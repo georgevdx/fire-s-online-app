@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-80-toets-lock',
+  '1-3-89-toets-lock',
   '1-1-count',
-  '108-68-toets-now',
-  'fire-s-108-68-toets-now'
+  '108-69-toets-89',
+  'fire-s-108-69-toets-89'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));

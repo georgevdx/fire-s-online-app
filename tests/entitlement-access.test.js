@@ -47,7 +47,7 @@ assert.ok(/id="fireSSubscriptionRequiredSection"/.test(stagingHtml));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingHtml));
 assert.ok(/georgevdx@gmail\.com/.test(stagingHtml));
 assert.ok(/Inspections, reports, premises and photos stay/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-home-stay/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-89-home-stay/.test(stagingHtml));
 assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits on toets first');
 
 assert.ok(/getCompanyEntitlement/.test(stagingJs));

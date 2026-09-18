@@ -57,7 +57,7 @@ assert.ok(/browser clock/.test(stagingJs));
 assert.ok(/trial_ends_at/.test(stagingJs));
 assert.ok(/Subscribe on PayFast to continue/.test(stagingJs));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingJs));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-home-stay/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-89-home-stay/.test(stagingHtml));
 assert.ok(/Start a 14-day free trial/.test(stagingHtml));
 assert.ok(/fireSEntitlement\.refresh/.test(stagingApp));
 assert.ok(/status = 'unpaid'/.test(stagingSubscribe));
