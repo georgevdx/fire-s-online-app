@@ -122,15 +122,15 @@ assertCommentForm(
 );
 
 assert.ok(
-  /Version 1\.3\.93-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-93-subscribe-bars/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-93-subscribe-bars/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-70-toets-93/.test(stagingHtml) &&
+  /Version 1\.3\.94-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-94-company/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-94-company/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-70-toets-94/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /TOETS-BLAD 1\.3\.93-toets/.test(read('staging/fire-s-env.js')) &&
-    /1\.3\.93-toets/.test(read('staging/fire-s-env.js')) &&
-    /fire-s-108-70-toets-93/.test(read('staging/service-worker.js')),
-  'Toets-blad must show 1.3.93-toets and drop the stuck 1.3.78 cache'
+    /TOETS-BLAD 1\.3\.94-toets/.test(read('staging/fire-s-env.js')) &&
+    /1\.3\.94-toets/.test(read('staging/fire-s-env.js')) &&
+    /fire-s-108-70-toets-94/.test(read('staging/service-worker.js')),
+  'Toets-blad must show 1.3.94-toets and drop the stuck 1.3.78 cache'
 );
 
 assert.ok(

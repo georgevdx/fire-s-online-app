@@ -83,6 +83,46 @@
     if (hint) hint.style.display = showPay ? '' : 'none';
   }
 
+  function linkedCompanyId() {
+    try {
+      return String(
+        (window.currentUserProfile && window.currentUserProfile.companyId) ||
+          (window.currentCompanyAccess && window.currentCompanyAccess.companyId) ||
+          ''
+      ).trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function noCompanyPayMessage() {
+    return (
+      'PayFast bills the company already linked to this login. ' +
+      'Cancelled company: Login with the same owner email, then Subscribe / Reactivate. ' +
+      'New business: Access → Subscribing New Company → type the company name. That creates the company. Then pay on PayFast.'
+    );
+  }
+
+  function paintCompanyLine() {
+    var el = byId('fireSSubscribeCompanyLine');
+    if (!el) return;
+    var name = companyName();
+    var cid = linkedCompanyId();
+    if (cid && name) {
+      el.hidden = false;
+      el.textContent = 'This login pays for ' + name + '. Subscribe / Reactivate does not pick a new name.';
+      return;
+    }
+    if (cid) {
+      el.hidden = false;
+      el.textContent =
+        'This login already has a company. Subscribe / Reactivate bills that same company. It does not create a new name.';
+      return;
+    }
+    el.hidden = false;
+    el.textContent = noCompanyPayMessage();
+  }
+
   function payNow() {
     if (!canManage()) {
       setMessage('Only the Owner can pay on PayFast.', true);
@@ -99,6 +139,11 @@
       setMessage('Sign in first, then pay on PayFast.', true);
       return;
     }
+    if (!linkedCompanyId()) {
+      paintCompanyLine();
+      setMessage(noCompanyPayMessage(), true);
+      return;
+    }
     setMessage('Opening PayFast…');
     Promise.resolve(
       pf.startCheckout({
@@ -109,7 +154,13 @@
       })
     ).then(function (res) {
       if (res && res.ok === false) {
-        setMessage(res.error || 'PayFast is not ready on the server.', true);
+        var err = String((res && res.error) || '');
+        if (/create your company first/i.test(err) || /no company/i.test(err)) {
+          paintCompanyLine();
+          setMessage(noCompanyPayMessage(), true);
+          return;
+        }
+        setMessage(err || 'PayFast is not ready on the server.', true);
       }
     });
   }
@@ -264,6 +315,7 @@
         escapeSubscribeText(shown.detail) +
         '</span>';
     }
+    paintCompanyLine();
     paintSubscribeStatus();
     loadCompanyBilling();
   }

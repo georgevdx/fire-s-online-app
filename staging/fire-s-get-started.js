@@ -309,6 +309,10 @@
     }
     if (root) root.style.display = 'none';
     try {
+      document.documentElement.classList.remove('fire-s-access-open');
+      if (document.body) document.body.classList.remove('fire-s-access-open');
+    } catch (_) {}
+    try {
       if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
         window.fireSMaybeOpenDesktopWorkspace();
       }
@@ -317,6 +321,19 @@
 
   function showAccess() {
     if (root) root.style.display = '';
+    try {
+      document.documentElement.classList.add('fire-s-access-open');
+      if (document.body) document.body.classList.add('fire-s-access-open');
+    } catch (_) {}
+    try {
+      var lock = byId('fireSHomeLockPanel');
+      if (lock) {
+        lock.hidden = true;
+        if (lock.style && typeof lock.style.setProperty === 'function') {
+          lock.style.setProperty('display', 'none', 'important');
+        }
+      }
+    } catch (_) {}
   }
 
   function refreshHomeChrome() {

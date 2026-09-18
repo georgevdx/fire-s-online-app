@@ -294,6 +294,11 @@ body.fire-s-entitlement-blocked #fireSHomeLockSubscribe {
   pointer-events: auto !important;
 }
 
+html.fire-s-access-open #fireSHomeLockPanel,
+body.fire-s-access-open #fireSHomeLockPanel {
+  display: none !important;
+}
+
 .fire-s-home-lock-panel {
   display: grid;
   gap: 10px;

@@ -17,7 +17,7 @@ const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.93-toets/.test(env), 'Toets-blad version must be 1.3.93-toets');
+assert.ok(/1\.3\.94-toets/.test(env), 'Toets-blad version must be 1.3.94-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must stay 1.3.65'
@@ -75,8 +75,15 @@ assert.ok(/if \(subscribeSectionShown\(\)\) \{/.test(entitlement));
 assert.ok(/hideLockedHomeChrome\(\)/.test(entitlement));
 assert.ok(/#fireSPayfastPayBtn/.test(entitlement), 'Pay bar must be an allowed locked target');
 assert.ok(/fireSStartSubscribeCheckout/.test(entitlement), 'already-open Subscribe/Reactivate starts checkout');
-assert.ok(/panel\.hidden = true/.test(entitlement), 'required-panel duplicate stays off the Subscribe page');
-assert.ok(/main-command-personnel/.test(read('staging/fire-s-entitlement.css')));
+assert.ok(/id="fireSSubscribeCompanyLine"/.test(html), 'Subscription must say which company this login pays for');
+assert.ok(/function linkedCompanyId\(/.test(subscribe));
+assert.ok(/function noCompanyPayMessage\(/.test(subscribe));
+assert.ok(/if \(!linkedCompanyId\(\)\)/.test(subscribe), 'PayFast must not start until a company is linked to this login');
+assert.ok(/Subscribing New Company/.test(subscribe), 'no-company copy must send a new business to Access');
+assert.ok(/same owner email/.test(subscribe), 'cancelled copy must keep the same owner email');
+assert.ok(/html\.fire-s-access-open #fireSHomeLockPanel/.test(read('staging/fire-s-entitlement.css')));
+assert.ok(/accessGateOpen\(\) && !companyId\(\)/.test(entitlement), 'Access Subscribe/Reactivate must not pay without a company');
+assert.ok(/classList\.add\('fire-s-access-open'\)/.test(read('staging/fire-s-get-started.js')));
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {

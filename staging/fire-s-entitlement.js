@@ -166,7 +166,16 @@
       var gate = document.getElementById('fireSGetStarted');
       if (!gate) return false;
       if (gate.hidden) return false;
+      try {
+        if (gate.getAttribute && gate.hasAttribute('hidden')) return false;
+      } catch (_) {}
       if (gate.style && gate.style.display === 'none') return false;
+      try {
+        if (root.getComputedStyle) {
+          var vis = String(root.getComputedStyle(gate).display || '');
+          if (vis === 'none') return false;
+        }
+      } catch (_) {}
       return true;
     } catch (_) {}
     return false;
@@ -415,6 +424,7 @@
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (accessGateOpen()) {
       hideDesktopAccess();
+      hideNode(document.getElementById('fireSHomeLockPanel'));
       syncHomeLayer();
       return false;
     }
@@ -653,6 +663,13 @@
   }
 
   function openPlans() {
+    if (accessGateOpen() && !companyId()) {
+      try {
+        var login = document.getElementById('fireSLoginEmail') || document.getElementById('fireSDoLoginBtn');
+        if (login && login.scrollIntoView) login.scrollIntoView({ block: 'center' });
+      } catch (_) {}
+      return;
+    }
     var already = false;
     try {
       already = subscribeSectionShown();
@@ -855,7 +872,7 @@
     if (panel) panel.hidden = true;
     if (accessGateOpen() || !inspectionAccessLocked()) {
       var homeLock = document.getElementById('fireSHomeLockPanel');
-      if (homeLock) homeLock.hidden = true;
+      if (homeLock) hideNode(homeLock);
       if (blocker) blocker.hidden = true;
       hideDesktopAccess();
       return;
