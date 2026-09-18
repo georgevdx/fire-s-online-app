@@ -57,7 +57,7 @@ assert.ok(/browser clock/.test(stagingJs));
 assert.ok(/trial_ends_at/.test(stagingJs));
 assert.ok(/Subscribe on PayFast to continue/.test(stagingJs));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingJs));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-lifecycle/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-89-home-stay/.test(stagingHtml));
 assert.ok(/Start a 14-day free trial/.test(stagingHtml));
 assert.ok(/fireSEntitlement\.refresh/.test(stagingApp));
 assert.ok(/status = 'unpaid'/.test(stagingSubscribe));
@@ -99,7 +99,9 @@ function loadClient(extra) {
       }
     },
     alert: function () {},
-    setTimeout: function () { return 0; }
+    setTimeout: function () { return 0; },
+    setInterval: function () { return 0; },
+    clearInterval: function () {}
   };
   Object.assign(sandbox, extra || {});
   sandbox.window = sandbox;
@@ -222,6 +224,11 @@ function loadClient(extra) {
   assert.strictEqual(info.can_create, false);
   assert.strictEqual(info.keep_data, true);
   assert.strictEqual(apiClient.fireSEntitlement.canCreate(), false);
+  assert.strictEqual(
+    apiClient.fireSEntitlement.inspectionAccessLocked(),
+    true,
+    'expired trial must stay on Home until subscribed, even if can_read is still true'
+  );
 
   // Additional company user uses the same company snapshot, not a new trial.
   const inspector = loadClient({

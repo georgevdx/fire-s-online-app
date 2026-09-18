@@ -9,7 +9,7 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var FLAG = 'fireS.toetsCacheDrop.1-3-80';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-89';
         if (sessionStorage.getItem(FLAG) === '1') return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -113,7 +113,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-80-toets-now">
+  <link rel="stylesheet" href="styles.css?v=1-3-89-toets-now">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -130,7 +130,7 @@
   <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
-  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-trial">
+  <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-89-home-stay">
   <link rel="stylesheet" href="fire-s-dark-type.css?v=1-8-rephead">
 </head>
 <body>
@@ -138,7 +138,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.80-toets</p>
+      <p class="brand-version">Version 1.3.89-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -162,7 +162,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.80-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.89-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -238,7 +238,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.80-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.89-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -822,7 +822,7 @@
   <p id="fireSSubscriptionRequiredScreenStatus"></p>
   <p id="fireSSubscriptionRequiredScreenTrial"></p>
   <p id="fireSSubscriptionRequiredScreenPlan"></p>
-  <p>Inspections, reports, premises and photos stay. Billing expiry does not delete company data.</p>
+  <p>Inspections, reports, premises and photos stay in the cloud. They stay locked in the app until a new subscription is active. Billing expiry does not delete company data.</p>
   <p>Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>
   <button type="button" class="cloud-primary-btn" id="fireSSubscriptionRequiredScreenSubscribe">Subscribe / Reactivate</button>
 </section>
@@ -853,7 +853,7 @@
     <p id="fireSSubscriptionRequiredStatus"></p>
     <p id="fireSSubscriptionRequiredTrial"></p>
     <p id="fireSSubscriptionRequiredPlan"></p>
-    <p id="fireSSubscriptionRequiredKeep">Inspections, reports, premises and photos stay in this company. Nothing is deleted when billing ends.</p>
+    <p id="fireSSubscriptionRequiredKeep">Inspections, reports, premises and photos stay in the cloud. They stay locked in the app until a new subscription is active. Nothing is deleted when billing ends.</p>
     <p id="fireSSubscriptionRequiredSupport">Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>
     <div class="fire-s-subscription-required-actions">
       <button type="button" class="cloud-primary-btn" id="fireSSubscriptionRequiredSubscribe">Subscribe / Reactivate</button>
@@ -1901,7 +1901,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-80-pf-server"></script>
+  <script src="fire-s-env.js?v=1-3-89-home-lock"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1916,10 +1916,10 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-80-toets-now"></script>
+  <script src="app.js?v=1-3-89-toets-lock"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-42-comment"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-43-home-lock"></script>
   <script src="fire-s-owner-lists.js?v=1-1-count"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
@@ -1943,7 +1943,7 @@
   <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-1-qaexpand"></script>
-  <script src="fire-s-entitlement.js?v=1-3-lifecycle"></script>
+  <script src="fire-s-entitlement.js?v=1-3-89-home-stay"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1962,7 +1962,7 @@
           }).catch(function () {});
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-68-toets-now')
+        navigator.serviceWorker.register('./service-worker.js?v=108-69-toets-89')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

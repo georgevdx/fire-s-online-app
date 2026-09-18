@@ -1,7 +1,8 @@
 -- Fire-S Phase 6: one server-authoritative company entitlement
 -- Run AFTER SUPABASE_payfast_itn.sql on Fire-S Test.
 -- Frontend may display this JSON. It must not invent access.
--- Expired/cancelled companies keep inspections, reports, photos, premises.
+-- Expired/cancelled companies keep inspections, reports, photos, premises
+-- in the cloud. The app cannot open them until a new subscription is active.
 -- Super Admin keeps access. Sit live later.
 
 begin;
@@ -54,8 +55,6 @@ begin
 
   v_info := public.fire_s_refresh_entitlement_status(v_company);
   v_info := v_info || jsonb_build_object(
-    'can_read', true,
-    'can_export', true,
     'keep_data', true,
     'authority', 'server',
     'super_admin', v_super
@@ -336,11 +335,11 @@ begin
 
     perform public.fire_s_refresh_entitlement_status(v_company);
   elsif not v_now and tg_op = 'UPDATE' then
-    if coalesce((v_info->>'can_write_draft')::boolean, true) is not true
+    if coalesce((v_info->>'can_write_draft')::boolean, false) is not true
        and coalesce((v_info->>'allowed')::boolean, false) is not true then
       raise exception 'FIRE_S_ENTITLEMENT:%:%',
         coalesce(v_reason, 'subscription_required'),
-        'A subscription is required to change inspections';
+        'Inspections stay in the cloud. A subscription is required to open or change them';
     end if;
   end if;
 
@@ -354,6 +353,73 @@ create trigger fire_s_inspections_entitlement_guard
   for each row
   execute procedure public.fire_s_inspections_entitlement_guard();
 
+create or replace function public.fire_s_company_can_read_inspections(p_company_id uuid)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_info jsonb;
+begin
+  if public.fire_s_is_super_admin() then
+    return true;
+  end if;
+  if p_company_id is null then
+    return false;
+  end if;
+  v_info := public.fire_s_compute_entitlement(p_company_id);
+  return coalesce((v_info->>'can_read')::boolean, false)
+      or coalesce((v_info->>'allowed')::boolean, false);
+end;
+$$;
+
+drop policy if exists fire_s_inspections_select on public.inspections;
+create policy "fire_s_inspections_select"
+  on public.inspections for select to authenticated
+  using (
+    public.fire_s_is_super_admin()
+    or (
+      (user_id = auth.uid() or public.fire_s_is_company_member(company_id))
+      and public.fire_s_company_can_read_inspections(company_id)
+    )
+  );
+
+create or replace function public.fire_s_inspections_entitlement_delete_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_company uuid;
+  v_info jsonb;
+begin
+  if auth.uid() is null then
+    return OLD;
+  end if;
+  if public.fire_s_is_super_admin() then
+    return OLD;
+  end if;
+  v_company := coalesce(OLD.company_id, NEW.company_id);
+  v_info := public.fire_s_compute_entitlement(v_company);
+  if coalesce((v_info->>'can_read')::boolean, false) is not true
+     and coalesce((v_info->>'allowed')::boolean, false) is not true then
+    raise exception 'FIRE_S_ENTITLEMENT:%:%',
+      coalesce(v_info->>'reason', 'subscription_required'),
+      'Inspections stay in the cloud. A subscription is required to change them';
+  end if;
+  return OLD;
+end;
+$$;
+
+drop trigger if exists fire_s_inspections_entitlement_delete_guard on public.inspections;
+create trigger fire_s_inspections_entitlement_delete_guard
+  before delete on public.inspections
+  for each row
+  execute procedure public.fire_s_inspections_entitlement_delete_guard();
+
 revoke all on function public.fire_s_get_company_entitlement(uuid) from public;
 revoke all on function public.fire_s_get_company_entitlement(uuid) from anon;
 grant execute on function public.fire_s_get_company_entitlement(uuid) to authenticated;
@@ -362,8 +428,13 @@ revoke all on function public.fire_s_require_company_write(uuid, text) from publ
 revoke all on function public.fire_s_require_company_write(uuid, text) from anon;
 grant execute on function public.fire_s_require_company_write(uuid, text) to authenticated;
 
+revoke all on function public.fire_s_company_can_read_inspections(uuid) from public;
+revoke all on function public.fire_s_company_can_read_inspections(uuid) from anon;
+grant execute on function public.fire_s_company_can_read_inspections(uuid) to authenticated;
+grant execute on function public.fire_s_company_can_read_inspections(uuid) to service_role;
+
 comment on function public.fire_s_get_company_entitlement(uuid) is
-  'Authoritative Fire-S company access. Browser localStorage/URL must not override this.';
+  'Authoritative Fire-S company access. Browser localStorage/URL must not override this. Cancelled companies keep rows (keep_data) but can_read is false until a new subscription is active.';
 
 commit;
 

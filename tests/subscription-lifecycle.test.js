@@ -32,7 +32,7 @@ assert.strictEqual(sql, migration, 'SQL Editor copy must match the migration');
 assert.ok(/payment_grace_days integer/.test(sql));
 assert.ok(/payment_grace_days set default 7/.test(sql));
 assert.ok(/cancel_keeps_access_until_paid_through boolean/.test(sql));
-assert.ok(/cancel_keeps_access_until_paid_through set default true/.test(sql));
+assert.ok(/cancel_keeps_access_until_paid_through set default false/.test(sql));
 assert.ok(/One row, not scattered in app code/.test(sql));
 assert.ok(/grace_ends_at timestamptz/.test(sql));
 assert.ok(/last_payment_failed_at timestamptz/.test(sql));
@@ -44,10 +44,13 @@ assert.ok(/fire_s_get_company_billing/.test(sql));
 const compute = sliceFn(sql, 'fire_s_compute_entitlement');
 assert.ok(/past_due_grace/.test(compute));
 assert.ok(/cancelled_until_period_end/.test(compute));
+assert.ok(/v_sub_status = 'cancelled'/.test(compute));
 assert.ok(/in_grace/.test(compute));
 assert.ok(/access_until/.test(compute));
 assert.ok(/keep_data', true/.test(compute) || /'keep_data', true/.test(compute));
-assert.ok(/can_read', true/.test(compute) || /'can_read', true/.test(compute));
+assert.ok(/'can_read', v_can_read/.test(compute));
+assert.ok(/'can_export', v_can_export/.test(compute));
+assert.ok(!/'can_read', true/.test(compute), 'cancelled companies must not always receive can_read');
 assert.ok(!/delete from public\.inspections/.test(compute));
 
 const apply = sliceFn(sql, 'fire_s_apply_payfast_itn');
@@ -135,10 +138,10 @@ assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on toets first');
-assert.ok(/Version 1\.3\.80-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.89-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
 assert.ok(/fire-s-subscribe\.js\?v=1-21-security/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-lifecycle/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-89-home-stay/.test(stagingHtml));
 assert.ok(/fire-s-subscribe\.css\?v=1-10-billing/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
@@ -205,7 +208,9 @@ function loadEntitlement() {
       }
     },
     alert: function () {},
-    setTimeout: function () { return 0; }
+    setTimeout: function () { return 0; },
+    setInterval: function () { return 0; },
+    clearInterval: function () {}
   };
   sandbox.window = sandbox;
   sandbox.currentUserProfile = sandbox.window.currentUserProfile;
@@ -236,10 +241,22 @@ const cancelCopy = ent.fireSEntitlement.displayCopy({
   status: 'subscription_cancelled',
   reason: 'cancelled_until_period_end',
   allowed: true,
+  can_read: true,
   backendReady: true
 });
 assert.strictEqual(cancelCopy.urgency, 'mid');
 assert.ok(/paid-through/i.test(cancelCopy.detail));
+assert.ok(/locked until a new subscription is active/i.test(cancelCopy.detail));
+
+const cancelExpiredCopy = ent.fireSEntitlement.displayCopy({
+  status: 'subscription_cancelled',
+  reason: 'subscription_required',
+  allowed: false,
+  can_read: false,
+  backendReady: true
+});
+assert.strictEqual(cancelExpiredCopy.urgency, 'block');
+assert.ok(/locked until a new subscription is active/i.test(cancelExpiredCopy.detail));
 
 const blockedPastDue = ent.fireSEntitlement.displayCopy({
   status: 'subscription_past_due',

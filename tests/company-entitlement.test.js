@@ -58,8 +58,8 @@ assert.ok(/VIEW PLANS \/ SUBSCRIBE/.test(js));
 assert.ok(/Your Fire-S trial ends tomorrow/.test(js));
 assert.ok(/Your Fire-S free trial has ended/.test(js));
 assert.ok(/You have completed the inspections included in your Fire-S free trial/.test(js));
-assert.ok(/projectListSection: true/.test(js), 'Existing inspections list must stay visible during a billing block');
-assert.ok(/projectListSection: true/.test(stagingJs));
+assert.ok(/projectListSection: true/.test(js), 'Live list stays visible until sit dit live');
+assert.ok(!/projectListSection: true/.test(stagingJs), 'Cancelled toets must lock the inspection list until a new subscription is active');
 assert.ok(/getCompanyEntitlement/.test(stagingJs), 'Toets Phase 6 central getter');
 assert.ok(/fire_s_get_company_entitlement/.test(stagingJs));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingJs));
@@ -100,7 +100,9 @@ const sandbox = {
     setItem: function (key, value) { store[key] = String(value); }
   },
   alert: function () {},
-  setTimeout: function (fn) { return fn(); }
+  setTimeout: function (fn) { return fn(); },
+  setInterval: function () { return 0; },
+  clearInterval: function () {}
 };
 sandbox.window = sandbox;
 sandbox.document.body = sandbox.document.body;

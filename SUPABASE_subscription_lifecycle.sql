@@ -3,7 +3,8 @@
 --
 -- Transitions happen only in this SQL (ITN / cancel RPCs). Browser clock
 -- and localStorage cannot activate, cancel, or extend access.
--- One failed payment does not delete data or immediately drop access.
+-- One failed payment does not delete data. Cancel keeps rows in the cloud
+-- but locks app inspection access until a new subscription is active.
 -- Sit live later.
 
 begin;
@@ -15,7 +16,7 @@ alter table public.fire_s_entitlement_config
 
 update public.fire_s_entitlement_config
    set payment_grace_days = coalesce(payment_grace_days, 7),
-       cancel_keeps_access_until_paid_through = coalesce(cancel_keeps_access_until_paid_through, true),
+       cancel_keeps_access_until_paid_through = false,
        updated_at = now()
  where id = 1;
 
@@ -24,7 +25,7 @@ alter table public.fire_s_entitlement_config
 alter table public.fire_s_entitlement_config
   alter column payment_grace_days set not null;
 alter table public.fire_s_entitlement_config
-  alter column cancel_keeps_access_until_paid_through set default true;
+  alter column cancel_keeps_access_until_paid_through set default false;
 alter table public.fire_s_entitlement_config
   alter column cancel_keeps_access_until_paid_through set not null;
 
@@ -44,7 +45,7 @@ alter table public.fire_s_company_subscriptions
 comment on column public.fire_s_entitlement_config.payment_grace_days is
   'Days of paid access after a failed renewal. One row, not scattered in app code.';
 comment on column public.fire_s_entitlement_config.cancel_keeps_access_until_paid_through is
-  'If true, cancel stops renewals but keeps access until current_period_end.';
+  'Cancelled companies keep app access only until current_period_end. After that date can_read is false. Rows stay (keep_data).';
 
 create or replace function public.fire_s_payment_grace_days()
 returns integer
@@ -68,7 +69,7 @@ set search_path = public
 as $$
   select coalesce(
     (select c.cancel_keeps_access_until_paid_through from public.fire_s_entitlement_config c where c.id = 1),
-    true
+    false
   );
 $$;
 
@@ -100,7 +101,7 @@ begin
   if v_sub.status = 'past_due' then
     return coalesce(v_sub.grace_ends_at, v_period);
   end if;
-  if v_sub.status = 'cancelled' and public.fire_s_cancel_keeps_access() then
+  if v_sub.status = 'cancelled' then
     return v_period;
   end if;
   if v_sub.status = 'trialing' then
@@ -130,7 +131,9 @@ declare
   v_allowed boolean := false;
   v_can_finalise boolean := false;
   v_can_create boolean := false;
-  v_can_draft boolean := true;
+  v_can_draft boolean := false;
+  v_can_read boolean := false;
+  v_can_export boolean := false;
   v_paid boolean := false;
   v_ends timestamptz;
   v_period timestamptz;
@@ -151,6 +154,8 @@ begin
       'can_create', false,
       'can_finalise', false,
       'can_write_draft', false,
+      'can_read', false,
+      'can_export', false,
       'server_now', v_now,
       'clock', 'server',
       'payment_grace_days', public.fire_s_payment_grace_days()
@@ -166,6 +171,9 @@ begin
       'keep_data', true,
       'can_create', false,
       'can_finalise', false,
+      'can_write_draft', false,
+      'can_read', false,
+      'can_export', false,
       'server_now', v_now,
       'clock', 'server'
     );
@@ -201,9 +209,8 @@ begin
     v_can_create := true;
     v_in_grace := true;
   elsif v_sub_status = 'cancelled'
-        and public.fire_s_cancel_keeps_access()
-        and v_period is not null
-        and v_now < v_period then
+        and v_access is not null
+        and v_now < v_access then
     v_status := 'subscription_cancelled';
     v_reason := 'cancelled_until_period_end';
     v_allowed := true;
@@ -254,11 +261,23 @@ begin
     v_can_finalise := false;
     v_can_create := true;
     v_can_draft := true;
-  elsif v_reason = 'subscription_required' then
+    v_can_read := true;
+    v_can_export := true;
+  elsif v_reason = 'subscription_required' or v_reason = 'trial_expired' then
     v_allowed := false;
     v_can_finalise := false;
     v_can_create := false;
+    v_can_draft := false;
+    v_can_read := false;
+    v_can_export := false;
+  elsif v_allowed then
+    v_can_read := true;
+    v_can_export := true;
     v_can_draft := true;
+  else
+    v_can_draft := false;
+    v_can_read := false;
+    v_can_export := false;
   end if;
 
   return jsonb_build_object(
@@ -288,8 +307,8 @@ begin
     'can_create', v_can_create,
     'can_write_draft', v_can_draft,
     'keep_data', true,
-    'can_read', true,
-    'can_export', true,
+    'can_read', v_can_read,
+    'can_export', v_can_export,
     'server_now', v_now,
     'clock', 'server',
     'company_id', p_company_id

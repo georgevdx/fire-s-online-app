@@ -6635,6 +6635,8 @@ function fireSEntitlementGate(kind) {
     if (kind === 'create') return window.fireSEntitlement.canCreate();
     if (kind === 'finalise') return window.fireSEntitlement.canFinalise();
     if (kind === 'allowed') return window.fireSEntitlement.operationallyAllowed();
+    if (kind === 'read') return window.fireSEntitlement.canRead ? window.fireSEntitlement.canRead() : window.fireSEntitlement.operationallyAllowed();
+    if (kind === 'export') return window.fireSEntitlement.canExport ? window.fireSEntitlement.canExport() : window.fireSEntitlement.operationallyAllowed();
   } catch (_) {}
   return null;
 }
@@ -6663,7 +6665,8 @@ function canEditInspection() {
     }
     var snap = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
     if (snap && snap.backendReady) {
-      if (snap.can_write_draft === false && snap.allowed === false) return false;
+      if (snap.can_read !== true && snap.allowed !== true) return false;
+      if (snap.can_write_draft !== true && snap.allowed !== true) return false;
       return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
     }
   } catch (_) {}
@@ -6675,6 +6678,18 @@ function canViewReports() {
   if (!currentUserProfile) return false;
 
   if (isSuperAdmin()) return true;
+
+  try {
+    if (window.fireSEntitlement && window.fireSEntitlement.isLocalWorkspace && window.fireSEntitlement.isLocalWorkspace()) {
+      return ['company_owner', 'manager', 'inspector', 'viewer'].includes(getCurrentUserRole());
+    }
+    if (window.fireSEntitlement && window.fireSEntitlement.hasSnapshot && window.fireSEntitlement.hasSnapshot()) {
+      if (fireSEntitlementGate('export') === false) return false;
+      if (fireSEntitlementGate('read') === false) return false;
+    } else if (window.fireSEntitlement && typeof window.fireSEntitlement.isLocalWorkspace === 'function' && !window.fireSEntitlement.isLocalWorkspace()) {
+      return false;
+    }
+  } catch (_) {}
 
   return ['company_owner', 'manager', 'inspector', 'viewer']
     .includes(getCurrentUserRole());
@@ -16380,6 +16395,18 @@ function showInspectionOpenGate(projectId, focusMode) {
 function openProject(projectId, focusMode, options = {}) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
+  try {
+    if (
+      window.fireSEntitlement &&
+      typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+      window.fireSEntitlement.inspectionAccessLocked()
+    ) {
+      if (typeof window.fireSEntitlement.openRequiredScreen === 'function') {
+        window.fireSEntitlement.openRequiredScreen();
+      }
+      return;
+    }
+  } catch (_) {}
   const projects = getProjects();
   const project = resolveProjectOpenIdentifier(projectId);
   if (!project) {
