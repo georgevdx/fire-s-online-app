@@ -384,6 +384,9 @@
 
   function inspectionHomeLocked() {
     try {
+      if (root.fireSEntitlement && typeof root.fireSEntitlement.homeWorkAllowed === 'function') {
+        return root.fireSEntitlement.homeWorkAllowed() !== true;
+      }
       return !!(
         root.fireSEntitlement &&
         typeof root.fireSEntitlement.inspectionAccessLocked === 'function' &&

@@ -359,6 +359,12 @@
 
   function inspectionHomeLocked() {
     try {
+      if (
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.homeWorkAllowed === 'function'
+      ) {
+        return window.fireSEntitlement.homeWorkAllowed() !== true;
+      }
       return !!(
         window.fireSEntitlement &&
         typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
@@ -377,6 +383,7 @@
     hide('inspectorBoardHomeBar');
     hide('fireSOwnerLists');
     hide('fireSOwnerKpiRow');
+    hide('fireSDesktopAccess');
     setStatsVisible(false);
     hideManagementOverlays();
     const homeHero = document.querySelector('#homeSection .home-hero');
@@ -563,7 +570,8 @@
       'executiveSnapshotPanel',
       'fireSExecutiveDashboard1115',
       'inspectorBoardHomeBar',
-      'fireSOwnerLists'
+      'fireSOwnerLists',
+      'fireSDesktopAccess'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');

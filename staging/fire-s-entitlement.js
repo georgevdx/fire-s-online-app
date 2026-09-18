@@ -150,9 +150,32 @@
     return last.can_export === true || last.can_read === true || last.allowed === true;
   }
 
+  function isCloudCompanyUser() {
+    try {
+      var id = text(root.currentUserProfile && root.currentUserProfile.id);
+      if (!id || id === 'local-user') return false;
+      var email = text(root.currentUserProfile && root.currentUserProfile.email).toLowerCase();
+      if (!email || email === 'local@fire-s.app') return false;
+      return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function accessGateOpen() {
+    try {
+      var gate = document.getElementById('fireSGetStarted');
+      if (!gate) return false;
+      if (gate.hidden) return false;
+      if (gate.style && gate.style.display === 'none') return false;
+      return true;
+    } catch (_) {}
+    return false;
+  }
+
   function inspectionAccessLocked() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
-    if (!hasSnapshot()) return false;
+    if (accessGateOpen()) return false;
+    if (!hasSnapshot()) return isCloudCompanyUser();
     var status = text(last && last.status);
     var reason = text(last && last.reason);
     if (reason === 'cancelled_until_period_end' && (last.allowed === true || last.can_read === true)) {
@@ -328,10 +351,45 @@
     return el;
   }
 
+  function homeWorkAllowed() {
+    if (accessGateOpen()) return false;
+    if (isSuperAdmin()) return true;
+    try {
+      if (text(root.currentUserProfile && root.currentUserProfile.id) === 'local-user') return true;
+    } catch (_) {}
+    if (!hasSnapshot()) return false;
+    return inspectionAccessLocked() === false;
+  }
+
+  function syncHomeLayer() {
+    var allow = homeWorkAllowed();
+    var locked = !allow;
+    try {
+      document.documentElement.classList.toggle('fire-s-entitlement-blocked', locked);
+      document.documentElement.classList.toggle('fire-s-entitlement-allowed', allow);
+      if (document.body) {
+        document.body.classList.toggle('fire-s-entitlement-blocked', locked);
+        document.body.classList.toggle('fire-s-entitlement-allowed', allow);
+      }
+    } catch (_) {}
+    return allow;
+  }
+
+  function hideDesktopAccess() {
+    hideNode(document.getElementById('fireSDesktopAccess'));
+  }
+
   function pinLockedHome() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
+    if (accessGateOpen()) {
+      hideDesktopAccess();
+      syncHomeLayer();
+      return false;
+    }
     hideInspectionWorkspaces();
     hideHomeInspectionCards();
+    hideDesktopAccess();
+    syncHomeLayer();
     var home = document.getElementById('homeSection');
     if (home) showNode(home, 'block');
     var panel = ensureHomeLockPanel();
@@ -347,6 +405,7 @@
     }
     try {
       document.body.classList.add('fire-s-entitlement-blocked');
+      document.documentElement.classList.add('fire-s-entitlement-blocked');
     } catch (_) {}
     var blocker = ensureBlocker();
     if (blocker) hideNode(blocker);
@@ -742,10 +801,11 @@
     fillRequiredCopy('fireSSubscriptionRequired');
     var panel = document.getElementById('fireSSubscriptionRequiredPanel');
     if (panel) panel.hidden = true;
-    if (!inspectionAccessLocked()) {
+    if (accessGateOpen() || !inspectionAccessLocked()) {
       var homeLock = document.getElementById('fireSHomeLockPanel');
       if (homeLock) homeLock.hidden = true;
       if (blocker) blocker.hidden = true;
+      hideDesktopAccess();
       return;
     }
     var space = visibleWorkspaceId();
@@ -775,8 +835,7 @@
       }
     }
     try {
-      var fullyBlocked = inspectionAccessLocked();
-      document.body.classList.toggle('fire-s-entitlement-blocked', fullyBlocked);
+      syncHomeLayer();
     } catch (_) {}
     showBlockerIfNeeded();
     paintSubscribeHints(copy);
@@ -1014,6 +1073,8 @@
     ensureBanner();
     ensureBlocker();
     wireRequiredScreen();
+    syncHomeLayer();
+    hideDesktopAccess();
     document.addEventListener('hashchange', guardDirectUrl);
     document.addEventListener('click', function (ev) {
       var t = ev.target;
@@ -1080,6 +1141,8 @@
     wire();
   }
 
+  try { syncHomeLayer(); } catch (_) {}
+
   root.fireSEntitlement = {
     CONFIG: CONFIG,
     check: check,
@@ -1092,6 +1155,8 @@
     canRead: canRead,
     canExport: canExport,
     inspectionAccessLocked: inspectionAccessLocked,
+    homeWorkAllowed: homeWorkAllowed,
+    syncHomeLayer: syncHomeLayer,
     isAllowedLockedTarget: isAllowedLockedTarget,
     sendLockedActionToSubscribe: sendLockedActionToSubscribe,
     pinLockedHome: pinLockedHome,

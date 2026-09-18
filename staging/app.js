@@ -38276,6 +38276,17 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
 
   function syncKpiCards(){
+    try {
+      if (
+        window.fireSEntitlement &&
+        (
+          (typeof window.fireSEntitlement.homeWorkAllowed === 'function' && window.fireSEntitlement.homeWorkAllowed() !== true) ||
+          (typeof window.fireSEntitlement.inspectionAccessLocked === 'function' && window.fireSEntitlement.inspectionAccessLocked())
+        )
+      ) {
+        return;
+      }
+    } catch (_) {}
     const counts = {
       compliant: count('compliant'),
       scheduled: count('scheduled-new'),
@@ -39472,6 +39483,22 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   function renderKpis(){
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
+    try {
+      if (
+        window.fireSEntitlement &&
+        (
+          (typeof window.fireSEntitlement.homeWorkAllowed === 'function' && window.fireSEntitlement.homeWorkAllowed() !== true) ||
+          (typeof window.fireSEntitlement.inspectionAccessLocked === 'function' && window.fireSEntitlement.inspectionAccessLocked())
+        )
+      ) {
+        const lockedRow = document.getElementById('fireSOwnerKpiRow');
+        if (lockedRow) {
+          lockedRow.hidden = true;
+          lockedRow.style.setProperty('display', 'none', 'important');
+        }
+        return;
+      }
+    } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
