@@ -60,8 +60,8 @@ assert.ok(
   'Delete confirm panels must wire Recycle and Immediate actions'
 );
 assert.ok(
-  /app\.js\?v=1-3-96-back-home/.test(html) &&
-    /Version 1\.3\.96-toets/.test(html),
+  /app\.js\?v=1-3-97-pay-open/.test(html) &&
+    /Version 1\.3\.97-toets/.test(html),
   'Toets must cache-bust Data Management delete without bumping the displayed version'
 );
 assert.ok(

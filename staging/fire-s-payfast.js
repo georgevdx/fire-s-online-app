@@ -83,60 +83,80 @@
     } catch (_) {}
   }
 
-  function submitHostedCheckout(html) {
+  function submitLiveForm(html) {
     var doc = root.document;
-    if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
-    var form = null;
+    if (!doc || !doc.createElement) return false;
+    var parsedForm = null;
     try {
       if (root.DOMParser) {
         var parsed = new root.DOMParser().parseFromString(html, 'text/html');
-        form = parsed && parsed.querySelector ? parsed.querySelector('form') : null;
+        parsedForm = parsed && parsed.querySelector ? parsed.querySelector('form') : null;
       }
     } catch (_) {}
-    if (!form) {
-      try {
-        var holder = doc.createElement('div');
-        holder.innerHTML = html;
-        form = holder.querySelector ? holder.querySelector('form') : null;
-      } catch (_) {}
-    }
-    if (form) {
-      try {
-        var live = doc.importNode ? doc.importNode(form, true) : form;
-        live.style.display = 'none';
-        if (doc.body) doc.body.appendChild(live);
-        else doc.documentElement.appendChild(live);
-        if (typeof live.submit === 'function') {
-          live.submit();
-          return { ok: true };
-        }
-      } catch (err) {
-        try {
-          if (form.action && root.location && root.location.assign) {
-            root.location.assign(form.action);
-            return { ok: true };
-          }
-        } catch (_) {}
-        return { ok: false, reason: 'dom', error: text(err && err.message) };
-      }
-    }
+    if (!parsedForm) return false;
+    var action = '';
     try {
-      var blob = new Blob([html], { type: 'text/html' });
-      var blobUrl = URL.createObjectURL(blob);
-      if (root.location && root.location.assign) {
-        root.location.assign(blobUrl);
+      action = text(parsedForm.getAttribute && parsedForm.getAttribute('action')) || text(parsedForm.action);
+    } catch (_) {}
+    if (!action) action = processUrl();
+    var live = doc.createElement('form');
+    live.method = 'POST';
+    live.action = action;
+    try {
+      live.setAttribute('accept-charset', 'utf-8');
+      live.setAttribute('target', '_top');
+    } catch (_) {}
+    live.style.display = 'none';
+    var inputs = [];
+    try {
+      inputs = parsedForm.querySelectorAll ? parsedForm.querySelectorAll('input') : [];
+    } catch (_) {}
+    var i;
+    for (i = 0; i < inputs.length; i += 1) {
+      var src = inputs[i];
+      var inp = doc.createElement('input');
+      inp.type = 'hidden';
+      try {
+        inp.name = text(src.name || (src.getAttribute && src.getAttribute('name')));
+        inp.value =
+          src.value != null ? String(src.value) : text(src.getAttribute && src.getAttribute('value'));
+      } catch (_) {}
+      if (inp.name) live.appendChild(inp);
+    }
+    if (doc.body) doc.body.appendChild(live);
+    else if (doc.documentElement) doc.documentElement.appendChild(live);
+    var submitFn =
+      root.HTMLFormElement && root.HTMLFormElement.prototype && root.HTMLFormElement.prototype.submit;
+    if (typeof submitFn === 'function') {
+      submitFn.call(live);
+      return true;
+    }
+    if (typeof live.submit === 'function') {
+      live.submit();
+      return true;
+    }
+    return false;
+  }
+
+  function submitHostedCheckout(html) {
+    var doc = root.document;
+    if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
+    // Full auto-submit HTML is what opened PayFast before. Write that page
+    // first. Do not return success from a silent form.submit() and skip this.
+    try {
+      if (typeof doc.open === 'function' && typeof doc.write === 'function') {
+        doc.open();
+        doc.write(html);
+        doc.close();
         return { ok: true };
       }
     } catch (_) {}
     try {
-      if (!doc.open) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
-      doc.open();
-      doc.write(html);
-      doc.close();
-      return { ok: true };
+      if (submitLiveForm(html)) return { ok: true };
     } catch (err) {
-      return { ok: false, reason: 'dom', error: text(err && err.message) };
+      return { ok: false, reason: 'dom', error: text(err && err.message) || 'PayFast did not open.' };
     }
+    return { ok: false, reason: 'dom', error: 'PayFast did not open in this browser.' };
   }
 
   function companyId() {
@@ -202,10 +222,14 @@
     try {
       errBody = JSON.parse(raw || '{}');
     } catch (_) {}
+    var status = res && res.status ? String(res.status) : '';
+    var serverErr = text(errBody.error);
+    if (!serverErr && status === '401') serverErr = 'Sign in first, then pay on PayFast.';
+    if (!serverErr && status === '403') serverErr = 'Only the Owner can pay on PayFast.';
     return {
       ok: false,
       reason: 'server',
-      error: text(errBody.error) || 'PayFast is not ready on the server.'
+      error: serverErr || 'PayFast is not ready on the server.' + (status ? ' (' + status + ')' : '')
     };
   }
 

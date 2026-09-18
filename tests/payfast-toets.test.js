@@ -18,7 +18,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.96-toets/.test(envSrc), 'Toets-blad version must be 1.3.96-toets');
+assert.ok(/1\.3\.97-toets/.test(envSrc), 'Toets-blad version must be 1.3.97-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -33,9 +33,10 @@ assert.ok(!/VAT/.test(payfastSrc), 'PayFast module must not mention VAT to subsc
 assert.ok(!/merchantKey/.test(envSrc), 'Toets env must not ship a merchant key');
 assert.ok(!/passphrase\s*:/.test(envSrc), 'Toets env must not ship a PayFast passphrase');
 assert.ok(!/merchant_key/.test(payfastSrc), 'PWA PayFast module must not post merchant_key itself');
-assert.ok(/function submitHostedCheckout\(/.test(payfastSrc), 'PayFast must submit the hosted form instead of only document.write');
+assert.ok(/function submitHostedCheckout\(/.test(payfastSrc), 'PayFast must open hosted checkout HTML');
 assert.ok(/submitHostedCheckout\(raw\)/.test(payfastSrc), 'HTML checkout responses must open PayFast');
-assert.ok(/live\.submit/.test(payfastSrc), 'Hosted PayFast form must submit in the browser');
+assert.ok(/doc\.write\(html\)/.test(payfastSrc), 'Hosted PayFast HTML must replace this page so the auto-submit runs');
+assert.ok(/HTMLFormElement\.prototype\.submit/.test(payfastSrc), 'PayFast form fallback must call the real submit');
 assert.ok(!/generateSignature/.test(payfastSrc), 'Browser must not sign PayFast requests');
 const fetchBody = payfastSrc.match(/body:\s*JSON\.stringify\(\{[\s\S]*?\}\)/);
 assert.ok(fetchBody, 'Checkout POST body must exist');
@@ -98,38 +99,18 @@ assert.ok(
   'Checkout URL must be the staging Edge Function'
 );
 
-(function testHostedFormSubmit() {
-  let submitted = false;
-  const liveForm = {
-    style: { display: '' },
-    submit: function () {
-      submitted = true;
-    }
+(function testHostedWrite() {
+  let written = '';
+  sandbox.document.open = function () {};
+  sandbox.document.write = function (html) {
+    written = String(html || '');
   };
-  sandbox.DOMParser = function () {};
-  sandbox.DOMParser.prototype.parseFromString = function () {
-    return {
-      querySelector: function () {
-        return {
-          action: 'https://sandbox.payfast.co.za/eng/process'
-        };
-      }
-    };
-  };
-  sandbox.document.importNode = function () {
-    return liveForm;
-  };
-  sandbox.document.body = sandbox.document.body || { appendChild: function () {} };
-  sandbox.document.body.appendChild = function () {};
-  sandbox.document.documentElement = { appendChild: function () {} };
-  sandbox.document.createElement = function () {
-    return { innerHTML: '', querySelector: function () { return null; } };
-  };
-  const result = pf.submitHostedCheckout(
-    '<form action="https://sandbox.payfast.co.za/eng/process" method="post"></form>'
-  );
+  sandbox.document.close = function () {};
+  const htmlDoc =
+    '<!DOCTYPE html><html><body><form id="payfast" method="POST" action="https://sandbox.payfast.co.za/eng/process"></form><script>document.getElementById("payfast").submit();</script></body></html>';
+  const result = pf.submitHostedCheckout(htmlDoc);
   assert.ok(result && result.ok, 'Hosted PayFast HTML must open');
-  assert.ok(submitted, 'Hosted PayFast form must submit');
+  assert.ok(written.indexOf('sandbox.payfast.co.za/eng/process') !== -1, 'PayFast auto-submit HTML must be written into this page');
 })();
 
 console.log('payfast-toets.test.js: ok');

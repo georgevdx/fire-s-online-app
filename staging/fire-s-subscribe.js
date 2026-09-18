@@ -218,12 +218,18 @@
       el.textContent = '';
       return;
     }
-    el.style.display = '';
+    el.style.display = 'block';
+    el.hidden = false;
     el.textContent = msg;
     el.className = 'fire-s-subscribe-message' + (isError ? ' is-error' : '');
     try {
       el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     } catch (_) {}
+    if (isError) {
+      try {
+        window.alert(msg);
+      } catch (_) {}
+    }
   }
 
   function selectedInterval() {

@@ -17,7 +17,7 @@ const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.96-toets/.test(env), 'Toets-blad version must be 1.3.96-toets');
+assert.ok(/1\.3\.97-toets/.test(env), 'Toets-blad version must be 1.3.97-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must stay 1.3.65'
@@ -77,7 +77,8 @@ assert.ok(/function subscribeControlAction\(/.test(entitlement));
 assert.ok(/runSubscribeControl\('home'\)/.test(entitlement));
 assert.ok(/pinLockedHome\(\{ preferHome: true \}\)/.test(entitlement));
 assert.ok(/pinLockedHome\(\{ preferHome: true \}\)/.test(subscribe));
-assert.ok(/function submitHostedCheckout\(/.test(read('staging/fire-s-payfast.js')));
+assert.ok(/doc\.write\(html\)/.test(read('staging/fire-s-payfast.js')), 'PayFast must write the hosted checkout page');
+assert.ok(/window\.alert\(msg\)/.test(subscribe), 'PayFast errors must show, not stay silent');
 assert.ok(/!canManage\(\) && !email/.test(subscribe), 'signed-in owner can open PayFast even if Home role paint lags');
 assert.ok(/html\.fire-s-entitlement-blocked #fireSSubscribeBackBtn/.test(read('staging/fire-s-entitlement.css')));
 assert.ok(/#fireSPayfastPayBtn/.test(entitlement), 'Pay bar must be an allowed locked target');
