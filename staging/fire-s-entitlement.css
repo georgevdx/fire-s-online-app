@@ -252,7 +252,9 @@ body.fire-s-entitlement-blocked #fireSOwnerLists,
 body.fire-s-entitlement-blocked #fireSOwnerKpiRow,
 body.fire-s-entitlement-blocked #inspectorBoardHomeBar,
 body.fire-s-entitlement-blocked .home-recent-activity,
-body.fire-s-entitlement-blocked .attention-site-row {
+body.fire-s-entitlement-blocked .attention-site-row,
+body.fire-s-entitlement-blocked .main-command-personnel,
+html.fire-s-entitlement-blocked .main-command-personnel {
   display: none !important;
   pointer-events: none !important;
 }

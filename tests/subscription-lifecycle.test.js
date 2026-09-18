@@ -128,7 +128,7 @@ assert.ok(/Trial expiry/.test(billingPage) && /id="fireSBillingTrial"/.test(bill
 assert.ok(/Paid through/.test(billingPage) && /id="fireSBillingPaidThrough"/.test(billingPage));
 assert.ok(/Next billing/.test(billingPage) && /id="fireSBillingNext"/.test(billingPage));
 assert.ok(/Last successful payment/.test(billingPage) && /id="fireSBillingLastPaid"/.test(billingPage));
-assert.ok(/Subscribe \/ Reactivate/.test(billingPage));
+assert.ok(/id="fireSBillingSubscribeBtn"/.test(stagingHtml) && /Subscribe \/ Reactivate/.test(stagingHtml));
 assert.ok(/Cancel subscription/.test(billingPage));
 assert.ok(/A failed payment does not delete company data/.test(billingPage));
 assert.ok(!/merchant_key/.test(billingPage));
@@ -138,11 +138,11 @@ assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on toets first');
-assert.ok(/Version 1\.3\.92-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.93-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
-assert.ok(/fire-s-subscribe\.js\?v=1-21-security/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-92-home-stay/.test(stagingHtml));
-assert.ok(/fire-s-subscribe\.css\?v=1-10-billing/.test(stagingHtml));
+assert.ok(/fire-s-subscribe\.js\?v=1-22-bars/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-93-subscribe-bars/.test(stagingHtml));
+assert.ok(/fire-s-subscribe\.css\?v=1-11-bars/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
 assert.ok(/\.fire-s-company-billing-list/.test(stagingCss));

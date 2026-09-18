@@ -384,6 +384,12 @@
     hide('fireSOwnerLists');
     hide('fireSOwnerKpiRow');
     hide('fireSDesktopAccess');
+    const personnel = document.querySelector('#mainCommandCentre .main-command-personnel');
+    if (personnel) {
+      personnel.hidden = true;
+      personnel.setAttribute('aria-hidden', 'true');
+      personnel.style.setProperty('display', 'none', 'important');
+    }
     setStatsVisible(false);
     hideManagementOverlays();
     const homeHero = document.querySelector('#homeSection .home-hero');

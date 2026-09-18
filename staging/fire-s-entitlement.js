@@ -211,6 +211,9 @@
     } catch (_) {}
     var allow = [
       '#fireSSubscribeSection',
+      '#fireSSubscribePayActions',
+      '#fireSPayfastPayBtn',
+      '#fireSBillingSubscribeBtn',
       '#fireSCompanyBillingPanel',
       '#fireSSubscriptionRequiredSection',
       '#fireSEntitlementBlocker',
@@ -223,8 +226,7 @@
       '#companyLetterheadSection',
       '#logoutBtn',
       '#homeLogoutBtn',
-      '#fireSLoginViewPlansBtn',
-      '#fireSBillingSubscribeBtn'
+      '#fireSLoginViewPlansBtn'
     ];
     for (var i = 0; i < allow.length; i += 1) {
       try {
@@ -299,7 +301,11 @@
     'cmdComplianceSitesBtn',
     'fireSOwnerLists',
     'fireSOwnerKpiRow',
-    'inspectorBoardHomeBar'
+    'inspectorBoardHomeBar',
+    'cmdPersonnelInspectors',
+    'cmdPersonnelManagers',
+    'cmdPersonnelOwners',
+    'cmdPersonnelTotal'
   ];
 
   function hideHomeInspectionCards() {
@@ -379,6 +385,32 @@
     hideNode(document.getElementById('fireSDesktopAccess'));
   }
 
+  function subscribeSectionShown() {
+    var section = document.getElementById('fireSSubscribeSection');
+    if (!section) return false;
+    if (section.hidden) return false;
+    try {
+      if (section.getAttribute && section.hasAttribute('hidden')) return false;
+    } catch (_) {}
+    var display = '';
+    try {
+      display = String((section.style && section.style.display) || '');
+    } catch (_) {}
+    if (display === 'none') return false;
+    if (display === 'block' || display === 'flex' || display === 'grid') return true;
+    return nodeIsShown(section);
+  }
+
+  function hideLockedHomeChrome() {
+    hideNode(document.getElementById('homeSection'));
+    hideNode(document.getElementById('fireSHomeLockPanel'));
+    var personnel = null;
+    try {
+      personnel = document.querySelector('#homeSection .main-command-personnel, .main-command-personnel');
+    } catch (_) {}
+    hideNode(personnel);
+  }
+
   function pinLockedHome() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (accessGateOpen()) {
@@ -390,6 +422,18 @@
     hideHomeInspectionCards();
     hideDesktopAccess();
     syncHomeLayer();
+    if (subscribeSectionShown()) {
+      hideLockedHomeChrome();
+      try {
+        document.body.classList.add('fire-s-entitlement-blocked');
+        document.documentElement.classList.add('fire-s-entitlement-blocked');
+      } catch (_) {}
+      var openBlocker = ensureBlocker();
+      if (openBlocker) hideNode(openBlocker);
+      var required = document.getElementById('fireSSubscriptionRequiredPanel');
+      if (required) required.hidden = true;
+      return false;
+    }
     var home = document.getElementById('homeSection');
     if (home) showNode(home, 'block');
     var panel = ensureHomeLockPanel();
@@ -609,15 +653,23 @@
   }
 
   function openPlans() {
+    var already = false;
+    try {
+      already = subscribeSectionShown();
+    } catch (_) {}
     try {
       if (typeof root.fireSOpenSubscribe === 'function') {
         root.fireSOpenSubscribe();
-        return;
+      } else {
+        var btn = document.getElementById('cmdSubscribeBtn');
+        if (btn) btn.click();
       }
     } catch (_) {}
+    if (!already) return;
     try {
-      var btn = document.getElementById('cmdSubscribeBtn');
-      if (btn) btn.click();
+      if (typeof root.fireSStartSubscribeCheckout === 'function') {
+        root.fireSStartSubscribeCheckout();
+      }
     } catch (_) {}
   }
 
@@ -785,7 +837,7 @@
     fillRequiredCopy('fireSSubscriptionRequired');
     fillRequiredCopy('fireSEntitlementBlocker');
     var panel = document.getElementById('fireSSubscriptionRequiredPanel');
-    if (panel) panel.hidden = false;
+    if (panel) panel.hidden = true;
   }
 
   function inspectionWorkspaceIsOpen() {
@@ -811,6 +863,8 @@
     var space = visibleWorkspaceId();
     if (space === 'fireSSubscribeSection') {
       if (blocker) blocker.hidden = true;
+      hideLockedHomeChrome();
+      if (panel) panel.hidden = true;
       return;
     }
     pinLockedHome();

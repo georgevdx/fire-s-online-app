@@ -72,8 +72,8 @@ assertDateAndStatusLayout('Live', liveApp, liveHtml, liveCss);
 
 assert.ok(
   /Version 1\.3\.65/.test(liveHtml) &&
-    /1\.3\.92-toets/.test(stagingHtml),
-  'Live displayed version stays 1.3.65; toets stays 1.3.92-toets'
+    /1\.3\.93-toets/.test(stagingHtml),
+  'Live displayed version stays 1.3.65; toets stays 1.3.93-toets'
 );
 
 assert.ok(

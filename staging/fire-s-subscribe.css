@@ -395,7 +395,26 @@ body.fire-s-role-inspector #fireSPayfastReturnBanner {
   gap: 8px;
 }
 
+.fire-s-company-billing-actions[hidden] {
+  display: none !important;
+}
+
 .fire-s-company-billing-actions .cloud-primary-btn,
 .fire-s-company-billing-actions .secondary-btn {
   min-height: 44px;
+}
+
+.fire-s-subscribe-pay-actions {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.fire-s-subscribe-pay-actions[hidden] {
+  display: none !important;
+}
+
+.fire-s-subscribe-pay-actions .cloud-primary-btn {
+  min-height: 48px;
+  width: 100%;
 }

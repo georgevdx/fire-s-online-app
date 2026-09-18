@@ -46,12 +46,12 @@ assert.ok(
   'Overdue must still show the next cycle date after the previous inspection is closed'
 );
 assert.ok(
-  /app\.js\?v=1-3-92-toets-lock/.test(stagingHtml),
+  /app\.js\?v=1-3-93-subscribe-bars/.test(stagingHtml),
   'Toets must cache-bust schedule reset after finalise'
 );
 assert.ok(
-  /Version 1\.3\.92-toets/.test(stagingHtml),
-  'Displayed toets version stays 1.3.92-toets'
+  /Version 1\.3\.93-toets/.test(stagingHtml),
+  'Displayed toets version stays 1.3.93-toets'
 );
 assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
