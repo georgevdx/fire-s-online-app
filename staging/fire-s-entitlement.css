@@ -52,7 +52,7 @@
 .fire-s-entitlement-blocker {
   position: fixed;
   inset: 0;
-  z-index: 12050;
+  z-index: 2147483500;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -183,9 +183,30 @@ body.fire-s-entitlement-blocked #findingsCentreSection,
 body.fire-s-entitlement-blocked #testSamplesSection,
 body.fire-s-entitlement-blocked #managementDashboardSection,
 body.fire-s-entitlement-blocked #servicesSection,
-body.fire-s-entitlement-blocked #companyTeamSection {
+body.fire-s-entitlement-blocked #companyTeamSection,
+body.fire-s-entitlement-blocked #openGateBackdrop,
+body.fire-s-entitlement-blocked .inspection-open-gate,
+body.fire-s-entitlement-blocked #premisesCommandCentre,
+body.fire-s-entitlement-blocked #inspectorV4Root {
   display: none !important;
   pointer-events: none !important;
+}
+
+body.fire-s-entitlement-blocked #cmdInspectionsBtn,
+body.fire-s-entitlement-blocked #cmdScheduleBtn,
+body.fire-s-entitlement-blocked #cmdReportsBtn,
+body.fire-s-entitlement-blocked #cmdFindingsBtn,
+body.fire-s-entitlement-blocked #cmdOverdueBtn,
+body.fire-s-entitlement-blocked #cmdDashboardBtn,
+body.fire-s-entitlement-blocked #cmdTestSamplesBtn,
+body.fire-s-entitlement-blocked #cmdManagementDashboardBtn,
+body.fire-s-entitlement-blocked #cmdServicesBtn,
+body.fire-s-entitlement-blocked #cmdInspectorsBtn,
+body.fire-s-entitlement-blocked #cmdCompanyBtn,
+body.fire-s-entitlement-blocked #cmdCompanyDetailsBtn,
+body.fire-s-entitlement-blocked #newInspectionBtn,
+body.fire-s-entitlement-blocked #newProjectBtn {
+  pointer-events: none;
 }
 
 .fire-s-subscription-required-section,

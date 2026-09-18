@@ -74,14 +74,18 @@ assert.ok(!/homeSection: true/.test(stagingEntitlement));
 assert.ok(/fireSCompanyBillingPanel: true/.test(stagingEntitlement));
 assert.ok(/fireSSubscribeSection: true/.test(stagingEntitlement));
 assert.ok(/function canRead\(/.test(stagingEntitlement));
-assert.ok(/function inspectionAccessLocked\(/.test(stagingEntitlement));
+assert.ok(/isAllowedLockedTarget/.test(stagingEntitlement));
+assert.ok(/sendLockedActionToSubscribe/.test(stagingEntitlement));
+assert.ok(/wrapNavFns/.test(stagingEntitlement));
+assert.ok(/#cmdInspectionsBtn/.test(stagingCss));
+assert.ok(/z-index: 2147483500/.test(stagingCss));
 assert.ok(/stay locked until a new subscription is active/.test(stagingEntitlement));
 assert.ok(/wrapOpenProject/.test(stagingEntitlement));
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-cancel-lock/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.css\?v=1-3-cancel-lock/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-cancel-buttons/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.css\?v=1-3-cancel-buttons/.test(stagingHtml));
 assert.ok(/app\.js\?v=1-3-80-toets-lock/.test(stagingHtml));
 assert.ok(/Version 1\.3\.80-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
@@ -110,6 +114,10 @@ function fakeEl(id, nodes) {
       addEventListener: function () {},
       querySelector: function () {
         return fakeEl(id + '__child', nodes);
+      },
+      closest: function (sel) {
+        if (sel === '#' + id) return nodes[id];
+        return null;
       }
     };
   }
@@ -210,6 +218,36 @@ assert.strictEqual(oldPaidThroughCopy.urgency, 'mid', 'before expiry the company
   assert.strictEqual(client.fireSEntitlement.canExport(), false);
   assert.strictEqual(client.fireSEntitlement.inspectionAccessLocked(), true);
   assert.strictEqual(client.fireSEntitlement.operationallyAllowed(), false);
+  assert.strictEqual(client.fireSEntitlement.isAllowedLockedTarget({ closest: function (sel) { return sel === '#cmdInspectionsBtn' ? {} : null; } }), false);
+  assert.strictEqual(client.fireSEntitlement.isAllowedLockedTarget({ closest: function (sel) { return sel === '#cmdSubscribeBtn' ? {} : null; } }), true);
+
+  const overlayClient = loadEntitlement();
+  overlayClient.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: false,
+          can_create: false,
+          can_finalise: false,
+          can_write_draft: true,
+          can_read: true,
+          can_export: true,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'subscription_required',
+          super_admin: false,
+          backendReady: true
+        }
+      };
+    }
+  };
+  await overlayClient.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(
+    overlayClient.fireSEntitlement.inspectionAccessLocked(),
+    true,
+    'Subscription required must lock inspection buttons even if can_read is still true'
+  );
 
   client.currentUserProfile.role = 'super_admin';
   client.isSuperAdmin = function () { return true; };

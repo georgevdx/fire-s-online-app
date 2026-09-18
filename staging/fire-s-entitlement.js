@@ -140,7 +140,68 @@
   function inspectionAccessLocked() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (!hasSnapshot()) return false;
-    return canRead() !== true;
+    var status = text(last && last.status);
+    var reason = text(last && last.reason);
+    if (reason === 'cancelled_until_period_end' && (last.allowed === true || last.can_read === true)) {
+      return false;
+    }
+    if (reason === 'past_due_grace' && last.allowed === true) return false;
+    if (reason === 'trial_limit_reached') return false;
+    if (status === 'trial_active' && last.allowed === true) return false;
+    if (status === 'subscription_active' && last.allowed === true) return false;
+    if (canRead() !== true) return true;
+    if (last.allowed === false && (
+      reason === 'subscription_required' ||
+      reason === 'trial_expired' ||
+      status === 'subscription_cancelled' ||
+      status === 'trial_expired' ||
+      status === 'subscription_required' ||
+      status === 'subscription_past_due'
+    )) {
+      return true;
+    }
+    var copy = displayCopy(last);
+    return !!(copy && copy.urgency === 'block' && reason !== 'trial_limit_reached');
+  }
+
+  function isAllowedLockedTarget(node) {
+    if (!node) return false;
+    if (node.nodeType === 3) node = node.parentElement;
+    if (!node || !node.closest) return false;
+    try {
+      if (node.closest('#fireSSubscribeBackBtn')) return false;
+      if (node.closest('#fireSSubscriptionRequiredBackBtn')) return false;
+      if (node.closest('#projectsHomeBtn')) return false;
+    } catch (_) {}
+    var allow = [
+      '#fireSSubscribeSection',
+      '#fireSCompanyBillingPanel',
+      '#fireSSubscriptionRequiredSection',
+      '#fireSEntitlementBlocker',
+      '#fireSTrialBanner',
+      '#cmdSubscribeBtn',
+      '#cmdUserManualBtn',
+      '#userManualSection',
+      '#logoutBtn',
+      '#homeLogoutBtn',
+      '#fireSLoginViewPlansBtn',
+      '#fireSBillingSubscribeBtn'
+    ];
+    for (var i = 0; i < allow.length; i += 1) {
+      try {
+        if (node.closest(allow[i])) return true;
+      } catch (_) {}
+    }
+    try {
+      if (node.closest('a[href^="mailto:"]')) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function sendLockedActionToSubscribe() {
+    openRequiredScreen();
+    openPlans();
+    return false;
   }
 
   function parseRpcError(err) {
@@ -402,7 +463,7 @@
         '<p>Need help? Email <a href="mailto:georgevdx@gmail.com">georgevdx@gmail.com</a>.</p>' +
         '<div class="fire-s-entitlement-blocker-actions">' +
           '<button type="button" class="cloud-primary-btn" id="fireSEntitlementBlockerSubscribe">Subscribe / Reactivate</button>' +
-          '<button type="button" class="secondary-btn" id="fireSEntitlementBlockerHome">Back Home</button>' +
+          '<button type="button" class="secondary-btn" id="fireSEntitlementBlockerHome">Subscribe / Reactivate</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(el);
@@ -416,17 +477,30 @@
     }
     if (home) {
       home.addEventListener('click', function () {
-        openRequiredScreen();
+        sendLockedActionToSubscribe();
       });
     }
     return el;
+  }
+
+  function nodeIsShown(node) {
+    var cur = node;
+    while (cur && cur !== document.body && cur !== document.documentElement) {
+      if (!cur) return false;
+      if (cur.hidden) return false;
+      try {
+        if (cur.getAttribute && cur.hasAttribute('hidden')) return false;
+      } catch (_) {}
+      if (cur.style && (cur.style.display === 'none' || cur.style.visibility === 'hidden')) return false;
+      cur = cur.parentElement;
+    }
+    return !!node;
   }
 
   function visibleWorkspaceId() {
     var ids = [
       'fireSSubscribeSection',
       'fireSSubscriptionRequiredSection',
-      'fireSCompanyBillingPanel',
       'companyLetterheadSection',
       'userManualSection',
       'projectFormSection',
@@ -442,9 +516,7 @@
     ];
     for (var i = 0; i < ids.length; i += 1) {
       var node = document.getElementById(ids[i]);
-      if (!node) continue;
-      if (node.hidden) continue;
-      if (node.style && node.style.display === 'none') continue;
+      if (!nodeIsShown(node)) continue;
       return ids[i];
     }
     return 'homeSection';
@@ -721,15 +793,13 @@
     var bits = String((root.location && (root.location.hash || '')) || '') +
       String((root.location && (root.location.search || '')) || '');
     if (isSuperAdmin() || isLocalWorkspace()) return;
-    if (last && last.backendReady && canRead() === false) {
-      if (/newInspection|new-inspection|projectForm|createNewProject|inspect=new|reportSection|openProject|projectList/i.test(bits)) {
-        openRequiredScreen();
-      }
+    if (inspectionAccessLocked()) {
+      sendLockedActionToSubscribe();
       return;
     }
     if (!/newInspection|new-inspection|projectForm|createNewProject|inspect=new/i.test(bits)) return;
     if (last && last.backendReady && last.can_create === false) {
-      openRequiredScreen();
+      sendLockedActionToSubscribe();
     }
   }
 
@@ -750,14 +820,41 @@
     });
     bind('fireSSubscriptionRequiredBackBtn', function (ev) {
       ev.preventDefault();
-      var section = document.getElementById('fireSSubscriptionRequiredSection');
-      if (section) {
-        section.style.display = 'none';
-        section.hidden = true;
-      }
-      try {
-        if (typeof root.showHome === 'function') root.showHome();
-      } catch (_) {}
+      sendLockedActionToSubscribe();
+    });
+  }
+
+  function wrapNavFns() {
+    var names = [
+      'showHome',
+      'openInspectionsCommand',
+      'openScheduleCommand',
+      'openReports',
+      'showReports',
+      'showProjectList',
+      'showProjects',
+      'openProjects',
+      'openProjectsSafely',
+      'openProjectsOnly',
+      'showInspectionOpenGate',
+      'showTestSamples',
+      'showManagementDashboard',
+      'showServices',
+      'showCompanyTeam',
+      'showFindingsCentre',
+      'openPremisesCommandCentre'
+    ];
+    names.forEach(function (name) {
+      var original = root[name];
+      if (typeof original !== 'function' || original.__fireSEntitlementNav) return;
+      var wrapped = function () {
+        if (inspectionAccessLocked()) {
+          return sendLockedActionToSubscribe();
+        }
+        return original.apply(this, arguments);
+      };
+      wrapped.__fireSEntitlementNav = true;
+      root[name] = wrapped;
     });
   }
 
@@ -765,6 +862,7 @@
     wrapFinish();
     wrapNewInspection();
     wrapOpenProject();
+    wrapNavFns();
     ensureBanner();
     ensureBlocker();
     wireRequiredScreen();
@@ -772,6 +870,12 @@
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t) return;
+      if (inspectionAccessLocked() && !isAllowedLockedTarget(t)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        sendLockedActionToSubscribe();
+        return;
+      }
       var id = t.id || '';
       var creating =
         id === 'newInspectionBtn' ||
@@ -789,12 +893,6 @@
         ));
       if (!creating) return;
       var info = last;
-      if (inspectionAccessLocked()) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        deny((info && info.reason) || 'subscription_required');
-        return;
-      }
       if (info && info.backendReady && info.can_create === false && !isSuperAdmin()) {
         ev.preventDefault();
         ev.stopPropagation();
@@ -804,12 +902,15 @@
     setTimeout(function () {
       wrapNewInspection();
       wrapOpenProject();
+      wrapNavFns();
       refresh().then(guardDirectUrl);
     }, 400);
     setTimeout(function () {
       wrapNewInspection();
       wrapOpenProject();
+      wrapNavFns();
     }, 900);
+    setTimeout(wrapNavFns, 1800);
   }
 
   if (document.readyState === 'loading') {
@@ -830,6 +931,8 @@
     canRead: canRead,
     canExport: canExport,
     inspectionAccessLocked: inspectionAccessLocked,
+    isAllowedLockedTarget: isAllowedLockedTarget,
+    sendLockedActionToSubscribe: sendLockedActionToSubscribe,
     displayCopy: displayCopy,
     humanMessage: humanMessage,
     parseRpcError: parseRpcError,
