@@ -73,6 +73,10 @@
   }
 
   function payNow() {
+    if (!canManage()) {
+      setMessage('Only the Owner can pay on PayFast.', true);
+      return;
+    }
     var pf = payfast();
     if (!pf || !pf.startCheckout) {
       setMessage('PayFast is not ready on this page.', true);
@@ -85,11 +89,17 @@
       return;
     }
     setMessage('Opening PayFast…');
-    pf.startCheckout({
-      kind: 'subscribe',
-      company: companyName() || 'Fire-S',
-      email: email,
-      interval: interval
+    Promise.resolve(
+      pf.startCheckout({
+        kind: 'subscribe',
+        company: companyName() || 'Fire-S',
+        email: email,
+        interval: interval
+      })
+    ).then(function (res) {
+      if (res && res.ok === false) {
+        setMessage(res.error || 'PayFast is not ready on the server.', true);
+      }
     });
   }
 
@@ -238,6 +248,86 @@
         '</span>';
     }
     paintSubscribeStatus();
+    loadCompanyBilling();
+  }
+
+  function formatBillingDate(value) {
+    var text = String(value == null ? '' : value).trim();
+    if (!text) return '—';
+    return text.slice(0, 10);
+  }
+
+  function paintCompanyBilling(info) {
+    var data = info || {};
+    function setText(id, value) {
+      var el = byId(id);
+      if (el) el.textContent = value || '—';
+    }
+    setText('fireSBillingPlan', data.plan || 'standard');
+    setText('fireSBillingInterval', data.billing_interval || '—');
+    setText('fireSBillingStatus', data.subscription_status || data.status || '—');
+    setText('fireSBillingTrial', formatBillingDate(data.trial_ends_at));
+    setText('fireSBillingPaidThrough', formatBillingDate(data.paid_through));
+    setText(
+      'fireSBillingNext',
+      String(data.subscription_status || '') === 'cancelled'
+        ? 'Stopped'
+        : formatBillingDate(data.next_billing_at)
+    );
+    setText('fireSBillingLastPaid', formatBillingDate(data.last_successful_payment_at));
+    var grace = byId('fireSBillingGrace');
+    if (grace) {
+      if (data.in_grace) {
+        grace.hidden = false;
+        grace.textContent =
+          'Grace period until ' +
+          formatBillingDate(data.grace_ends_at || data.access_until) +
+          '. Access stays. Data stays.';
+      } else {
+        grace.hidden = true;
+        grace.textContent = '';
+      }
+    }
+    var cancelBtn = byId('fireSBillingCancelBtn');
+    if (cancelBtn) {
+      var cancelled = String(data.subscription_status || '') === 'cancelled';
+      var allowCancel = data.can_cancel == null ? canManage() : !!data.can_cancel;
+      cancelBtn.hidden = !allowCancel || cancelled;
+    }
+  }
+
+  function loadCompanyBilling() {
+    var sb = window.supabaseClient;
+    if (!sb || !sb.rpc) return;
+    Promise.resolve(sb.rpc('fire_s_get_company_billing'))
+      .then(function (res) {
+        if (!res || res.error || !res.data) return;
+        var data = res.data;
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch (_) {}
+        }
+        paintCompanyBilling(data);
+      })
+      .catch(function () {});
+  }
+
+  function billingSubscribe() {
+    var cat = catalog();
+    if (cat && cat.billingStatus && cat.billingStatus() === 'cancelled') {
+      subscribeAgain();
+      return;
+    }
+    if (payfastOn()) {
+      payNow();
+      return;
+    }
+    try {
+      if (window.fireSEntitlement && window.fireSEntitlement.openPlans) {
+        window.fireSEntitlement.openPlans();
+      }
+    } catch (_) {}
   }
 
   function paintSubscribeStatus() {
@@ -265,17 +355,12 @@
     if (entitlement && entitlement.backendReady) {
       if (entitlement.status === 'subscription_active') status = 'active';
       else if (entitlement.status === 'subscription_cancelled') status = 'cancelled';
+      else if (entitlement.status === 'subscription_past_due') status = 'past_due';
       else if (entitlement.status === 'trial_active') status = 'trial';
       else if (entitlement.reason === 'trial_limit_reached') status = 'trial';
       else if (entitlement.reason === 'trial_expired') status = 'unpaid';
     } else {
-      try {
-        var signedIn =
-          window.currentUserProfile &&
-          window.currentUserProfile.id &&
-          window.currentUserProfile.id !== 'local-user';
-        if (signedIn && cat.billingStatus) status = cat.billingStatus();
-      } catch (_) {}
+      status = 'unpaid';
     }
     var cancelled = status === 'cancelled';
     box.hidden = false;
@@ -286,6 +371,8 @@
           ? 'Active subscription'
           : cancelled
             ? 'Cancelled'
+            : status === 'past_due'
+              ? 'Payment past due'
             : status === 'trial'
               ? 'Free trial'
             : 'Not paid yet';
@@ -395,12 +482,16 @@
     paintExpiryReminder();
     if (payfastOn()) {
       setMessage('Opening PayFast to subscribe again with this same company name…');
-      payfast().startCheckout({
+      var again = await payfast().startCheckout({
         kind: 'subscribe',
         company: company || 'Fire-S',
         email: ownerEmail(),
         interval: intervalId
       });
+      if (again && again.ok === false) {
+        setMessage(again.error || 'PayFast is not ready on the server.', true);
+        return;
+      }
       return;
     }
     setMessage(
@@ -565,13 +656,17 @@
       }
       if (payfastOn()) {
         setMessage('Opening PayFast for this extra login…');
-        payfast().startCheckout({
+        var seatPay = await payfast().startCheckout({
           kind: 'seat',
           company: companyName() || 'Fire-S',
           email: ownerEmail(),
           seatEmail: email,
           interval: intervalId
         });
+        if (seatPay && seatPay.ok === false) {
+          setMessage(seatPay.error || 'PayFast is not ready on the server.', true);
+          return;
+        }
         return;
       }
     } catch (err) {
@@ -582,6 +677,10 @@
   }
 
   async function savePlan() {
+    if (!canManage()) {
+      setMessage('Only the Owner can change billing.', true);
+      return;
+    }
     var cat = catalog();
     var billing = byId('fireSSubscribeBillingOptions');
     if (!cat || !cat.persistCompanyPlan) {
@@ -711,11 +810,15 @@
     var reminderCancel = byId('fireSExpiryReminderCancelBtn');
     var cancelBtn = byId('fireSSubscribeCancelBtn');
     var againBtn = byId('fireSSubscribeAgainBtn');
+    var billingSub = byId('fireSBillingSubscribeBtn');
+    var billingCancel = byId('fireSBillingCancelBtn');
     if (back) back.addEventListener('click', goHome);
     if (save) save.addEventListener('click', savePlan);
     if (payBtn) payBtn.addEventListener('click', payNow);
     if (cancelBtn) cancelBtn.addEventListener('click', cancelSubscription);
     if (againBtn) againBtn.addEventListener('click', subscribeAgain);
+    if (billingSub) billingSub.addEventListener('click', billingSubscribe);
+    if (billingCancel) billingCancel.addEventListener('click', cancelSubscription);
     if (seatBtn) seatBtn.addEventListener('click', subscribeSeat);
     if (reminderClose) reminderClose.addEventListener('click', closeExpiryReminder);
     if (reminderRenew) reminderRenew.addEventListener('click', renewFromReminder);
