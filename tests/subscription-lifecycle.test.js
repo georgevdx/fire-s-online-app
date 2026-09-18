@@ -110,6 +110,10 @@ assert.ok(!/passphrase/.test(billingFn));
 assert.ok(!/last_failed_payment_id/.test(billingFn));
 assert.ok(!/PAYFAST_/.test(billingFn));
 assert.ok(/Never returns PayFast tokens or secrets/.test(sql));
+assert.ok(/Cancelled companies stay readable/.test(sql));
+assert.ok(!/raise exception 'Company required'/.test(billingFn));
+assert.ok(/fire_s_my_company\(\)/.test(billingFn));
+assert.ok(/fire_s_compute_entitlement/.test(billingFn));
 
 assert.ok(/revoke select on table public\.fire_s_company_subscriptions from authenticated/.test(sql));
 assert.ok(/grant select \(/.test(sql));
@@ -138,10 +142,10 @@ assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on toets first');
-assert.ok(/Version 1\.3\.97-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.98-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
-assert.ok(/fire-s-subscribe\.js\?v=1-26-pay-open/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-97-pay-open/.test(stagingHtml));
+assert.ok(/fire-s-subscribe\.js\?v=1-27-resub/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-98-resub/.test(stagingHtml));
 assert.ok(/fire-s-subscribe\.css\?v=1-12-company/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
@@ -150,7 +154,7 @@ assert.ok(/\.fire-s-subscribe-status\.is-past_due/.test(stagingCss));
 
 assert.ok(/function paintCompanyBilling\(/.test(stagingSubscribe));
 assert.ok(/function loadCompanyBilling\(/.test(stagingSubscribe));
-assert.ok(/rpc\('fire_s_get_company_billing'\)/.test(stagingSubscribe));
+assert.ok(/rpc\('fire_s_get_company_billing'/.test(stagingSubscribe));
 assert.ok(/Payment past due/.test(stagingSubscribe));
 assert.ok(/billingSubscribe/.test(stagingSubscribe));
 assert.ok(/fireSBillingSubscribeBtn/.test(stagingSubscribe));
@@ -276,6 +280,7 @@ assert.ok(/Payment past due/.test(ent.fireSEntitlement.statusLabel({
   const nodes = {};
   const store = {};
   let rpcName = '';
+  let rpcArgs = {};
   const sandbox = {
     window: {
       currentUserProfile: { id: 'owner-1', email: 'owner@example.test', companyId: 'co-1', role: 'company_owner' },
@@ -315,8 +320,9 @@ assert.ok(/Payment past due/.test(ent.fireSEntitlement.statusLabel({
   sandbox.resolveFireSHomeRole = sandbox.window.resolveFireSHomeRole;
   sandbox.fireSSubscriptionCatalog = sandbox.window.fireSSubscriptionCatalog;
   sandbox.supabaseClient = {
-    rpc: async function (name) {
+    rpc: async function (name, args) {
       rpcName = name;
+      rpcArgs = args || {};
       assert.strictEqual(name, 'fire_s_get_company_billing');
       return {
         data: {
@@ -343,6 +349,7 @@ assert.ok(/Payment past due/.test(ent.fireSEntitlement.statusLabel({
   await Promise.resolve();
   await Promise.resolve();
   assert.strictEqual(rpcName, 'fire_s_get_company_billing');
+  assert.strictEqual(rpcArgs.p_company_id, 'co-1');
   assert.strictEqual(nodes.fireSBillingPlan.textContent, 'standard');
   assert.strictEqual(nodes.fireSBillingInterval.textContent, 'annual');
   assert.strictEqual(nodes.fireSBillingStatus.textContent, 'past_due');

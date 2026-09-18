@@ -405,12 +405,50 @@
     if (billingActions) billingActions.hidden = cancelled || mode === 'seat';
   }
 
+  function billingFromEntitlement() {
+    try {
+      var entitlement =
+        window.fireSEntitlement &&
+        window.fireSEntitlement.snapshot &&
+        window.fireSEntitlement.snapshot();
+      if (!entitlement || !entitlement.backendReady) return null;
+      var status = String(entitlement.subscription_status || entitlement.status || '').toLowerCase();
+      if (status === 'subscription_cancelled') status = 'cancelled';
+      if (status === 'subscription_past_due') status = 'past_due';
+      if (status === 'subscription_active') status = 'active';
+      return {
+        plan: entitlement.plan || 'standard',
+        billing_interval: entitlement.billing_interval || '',
+        subscription_status: status,
+        status: entitlement.status,
+        trial_ends_at: entitlement.trial_ends_at || entitlement.trial_expires_at,
+        paid_through: entitlement.subscription_paid_through,
+        next_billing_at: entitlement.next_billing_at,
+        last_successful_payment_at: entitlement.last_successful_payment_at,
+        in_grace: !!entitlement.in_grace,
+        grace_ends_at: entitlement.grace_ends_at,
+        access_until: entitlement.access_until,
+        can_subscribe: true,
+        keep_data: true
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   function loadCompanyBilling() {
+    var fallback = billingFromEntitlement();
+    if (fallback) paintCompanyBilling(fallback);
     var sb = window.supabaseClient;
     if (!sb || !sb.rpc) return;
-    Promise.resolve(sb.rpc('fire_s_get_company_billing'))
+    var cid = linkedCompanyId();
+    var args = cid ? { p_company_id: cid } : {};
+    Promise.resolve(sb.rpc('fire_s_get_company_billing', args))
       .then(function (res) {
-        if (!res || res.error || !res.data) return;
+        if (!res || res.error || !res.data) {
+          if (fallback) paintCompanyBilling(fallback);
+          return;
+        }
         var data = res.data;
         if (typeof data === 'string') {
           try {
@@ -419,7 +457,9 @@
         }
         paintCompanyBilling(data);
       })
-      .catch(function () {});
+      .catch(function () {
+        if (fallback) paintCompanyBilling(fallback);
+      });
   }
 
   function billingSubscribe() {

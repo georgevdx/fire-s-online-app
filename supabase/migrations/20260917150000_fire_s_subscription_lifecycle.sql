@@ -721,7 +721,6 @@ $$;
 create or replace function public.fire_s_get_company_billing(p_company_id uuid default null)
 returns jsonb
 language plpgsql
-stable
 security definer
 set search_path = public
 as $$
@@ -729,10 +728,20 @@ declare
   v_uid uuid := auth.uid();
   v_company uuid := p_company_id;
   v_sub public.fire_s_company_subscriptions%rowtype;
-  v_info jsonb;
+  v_info jsonb := '{}'::jsonb;
 begin
   if v_uid is null then
     raise exception 'Not authenticated';
+  end if;
+
+  if v_company is null then
+    begin
+      select mc.out_company_id into v_company
+      from public.fire_s_my_company() mc
+      limit 1;
+    exception when others then
+      v_company := null;
+    end;
   end if;
 
   if v_company is null then
@@ -740,12 +749,27 @@ begin
     from public.company_members m
     where m.user_id = v_uid
       and coalesce(m.status, 'active') = 'active'
-    order by case m.role when 'company_owner' then 0 when 'owner' then 1 else 2 end
+    order by case lower(coalesce(m.role, ''))
+      when 'company_owner' then 0
+      when 'owner' then 1
+      when 'super_admin' then 2
+      else 3
+    end
     limit 1;
   end if;
 
   if v_company is null then
-    raise exception 'Company required';
+    return jsonb_build_object(
+      'company_id', null,
+      'plan', 'standard',
+      'billing_interval', null,
+      'subscription_status', 'none',
+      'status', 'subscription_required',
+      'can_subscribe', true,
+      'can_cancel', false,
+      'keep_data', true,
+      'authority', 'server'
+    );
   end if;
 
   if not public.fire_s_is_super_admin()
@@ -757,7 +781,11 @@ begin
     from public.fire_s_company_subscriptions s
    where s.company_id = v_company;
 
-  v_info := public.fire_s_get_company_entitlement(v_company);
+  begin
+    v_info := public.fire_s_compute_entitlement(v_company);
+  exception when others then
+    v_info := '{}'::jsonb;
+  end;
 
   return jsonb_build_object(
     'company_id', v_company,
@@ -840,7 +868,7 @@ grant select (
 ) on table public.fire_s_company_subscriptions to authenticated;
 
 comment on function public.fire_s_get_company_billing(uuid) is
-  'Non-sensitive company billing. Never returns PayFast tokens or secrets.';
+  'Non-sensitive company billing. Never returns PayFast tokens or secrets. Cancelled companies stay readable.';
 
 commit;
 
