@@ -167,7 +167,10 @@
     if (reason === 'past_due_grace') {
       return 'A payment did not go through. Fire-S stays available during the grace period. Subscribe on PayFast.';
     }
-    if (reason === 'cancelled_until_period_end' || reason === 'subscription_cancelled') {
+    if (reason === 'cancelled_until_period_end') {
+      return 'This subscription is cancelled. Access continues until the paid-through date. After that, inspections stay in the cloud and stay locked until a new subscription is active.';
+    }
+    if (reason === 'subscription_cancelled') {
       return 'This subscription is cancelled. Inspections stay in the cloud and stay locked until a new subscription is active.';
     }
     if (reason === 'subscription_required') {
@@ -228,6 +231,12 @@
     if (reason === 'past_due_grace' || (status === 'subscription_past_due' && data.allowed === true)) {
       headline = 'Payment past due';
       detail = humanMessage('past_due_grace', data);
+      urgency = 'mid';
+      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
+    }
+    if (reason === 'cancelled_until_period_end' && (data.allowed === true || data.can_read === true)) {
+      headline = 'Subscription cancelled';
+      detail = 'This subscription is cancelled. Access continues until the paid-through date. After that, inspections stay in the cloud and stay locked until a new subscription is active.';
       urgency = 'mid';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
     }

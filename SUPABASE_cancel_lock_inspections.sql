@@ -1,9 +1,10 @@
--- Fire-S: cancel locks inspection access immediately.
+-- Fire-S: after expiry, cancel locks inspection access.
 -- Run AFTER SUPABASE_subscription_lifecycle.sql on Fire-S Test.
 --
--- Cancelled / expired / unpaid companies KEEP every inspection row in the
--- cloud (keep_data). The app and inspection SELECT cannot open old or new
--- inspections until a new subscription is active, or a valid trial remains.
+-- Cancelled companies KEEP every inspection row in the cloud (keep_data).
+-- App access continues until current_period_end. After that expiry date
+-- the app and inspection SELECT cannot open old or new inspections until a
+-- new subscription is active, or a valid trial remains.
 -- Super Admin keeps access. Nothing is deleted. Sit live later.
 
 begin;
@@ -17,7 +18,7 @@ alter table public.fire_s_entitlement_config
   alter column cancel_keeps_access_until_paid_through set default false;
 
 comment on column public.fire_s_entitlement_config.cancel_keeps_access_until_paid_through is
-  'Always false for inspection access. Cancel keeps cloud rows (keep_data) but locks the app until a new subscription is active.';
+  'Cancelled companies keep app access only until current_period_end. After that date can_read is false. Rows stay (keep_data).';
 
 create or replace function public.fire_s_cancel_keeps_access()
 returns boolean
@@ -61,7 +62,7 @@ begin
     return coalesce(v_sub.grace_ends_at, v_period);
   end if;
   if v_sub.status = 'cancelled' then
-    return null;
+    return v_period;
   end if;
   if v_sub.status = 'trialing' then
     return v_sub.trial_ends_at;
@@ -167,6 +168,14 @@ begin
     v_can_finalise := true;
     v_can_create := true;
     v_in_grace := true;
+  elsif v_sub_status = 'cancelled'
+        and v_access is not null
+        and v_now < v_access then
+    v_status := 'subscription_cancelled';
+    v_reason := 'cancelled_until_period_end';
+    v_allowed := true;
+    v_can_finalise := true;
+    v_can_create := true;
   elsif v_sub_status = 'past_due' then
     v_status := 'subscription_past_due';
     v_reason := 'subscription_required';

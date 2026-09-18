@@ -43,7 +43,7 @@ assert.ok(/fire_s_get_company_billing/.test(sql));
 
 const compute = sliceFn(sql, 'fire_s_compute_entitlement');
 assert.ok(/past_due_grace/.test(compute));
-assert.ok(!/cancelled_until_period_end/.test(compute));
+assert.ok(/cancelled_until_period_end/.test(compute));
 assert.ok(/v_sub_status = 'cancelled'/.test(compute));
 assert.ok(/in_grace/.test(compute));
 assert.ok(/access_until/.test(compute));
@@ -237,13 +237,24 @@ assert.ok(/grace period/i.test(ent.fireSEntitlement.statusLabel({
 
 const cancelCopy = ent.fireSEntitlement.displayCopy({
   status: 'subscription_cancelled',
+  reason: 'cancelled_until_period_end',
+  allowed: true,
+  can_read: true,
+  backendReady: true
+});
+assert.strictEqual(cancelCopy.urgency, 'mid');
+assert.ok(/paid-through/i.test(cancelCopy.detail));
+assert.ok(/locked until a new subscription is active/i.test(cancelCopy.detail));
+
+const cancelExpiredCopy = ent.fireSEntitlement.displayCopy({
+  status: 'subscription_cancelled',
   reason: 'subscription_required',
   allowed: false,
   can_read: false,
   backendReady: true
 });
-assert.strictEqual(cancelCopy.urgency, 'block');
-assert.ok(/locked until a new subscription is active/i.test(cancelCopy.detail));
+assert.strictEqual(cancelExpiredCopy.urgency, 'block');
+assert.ok(/locked until a new subscription is active/i.test(cancelExpiredCopy.detail));
 
 const blockedPastDue = ent.fireSEntitlement.displayCopy({
   status: 'subscription_past_due',

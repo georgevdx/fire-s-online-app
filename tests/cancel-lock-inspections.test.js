@@ -42,7 +42,7 @@ assert.strictEqual(
 );
 
 const compute = sliceFn(lockSql, 'fire_s_compute_entitlement');
-assert.ok(!/cancelled_until_period_end/.test(compute));
+assert.ok(/cancelled_until_period_end/.test(compute));
 assert.ok(/v_sub_status = 'cancelled'/.test(compute));
 assert.ok(/'can_read', v_can_read/.test(compute));
 assert.ok(/'can_export', v_can_export/.test(compute));
@@ -65,7 +65,7 @@ assert.ok(/fire_s_company_can_read_inspections/.test(lockSql));
 assert.ok(/fire_s_inspections_select/.test(lockSql));
 assert.ok(/fire_s_inspections_entitlement_delete_guard/.test(lockSql));
 assert.ok(/cancel_keeps_access_until_paid_through = false/.test(lockSql));
-assert.ok(/status = 'cancelled' then\s+return null/s.test(sliceFn(lockSql, 'fire_s_subscription_access_until')));
+assert.ok(/status = 'cancelled' then\s+return v_period/s.test(sliceFn(lockSql, 'fire_s_subscription_access_until')));
 
 assert.ok(/projectListSection: true/.test(liveEntitlement), 'live list waits for sit dit live');
 assert.ok(!/projectListSection: true/.test(stagingEntitlement));
@@ -89,6 +89,12 @@ assert.ok(!/inspectionAccessLocked/.test(liveApp), 'live openProject waits for s
 assert.ok(/inspectionAccessLocked\(\)/.test(stagingApp));
 assert.ok(/fireSEntitlementGate\('read'\)/.test(stagingApp));
 assert.ok(/They stay locked in the app until a new subscription is active/.test(stagingHtml));
+
+const testExpirySql = read('SUPABASE_test_cancelled_expiry_past.sql');
+assert.ok(/now\(\) - interval '1 day'/.test(testExpirySql));
+assert.ok(/s\.status = 'cancelled'/.test(testExpirySql));
+assert.ok(/keep_data/.test(testExpirySql));
+assert.ok(!/delete from public\.inspections/.test(testExpirySql));
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
@@ -168,7 +174,7 @@ const oldPaidThroughCopy = ent.fireSEntitlement.displayCopy({
   can_read: true,
   backendReady: true
 });
-assert.strictEqual(oldPaidThroughCopy.urgency, 'block', 'cancel must lock even if an old payload still says allowed');
+assert.strictEqual(oldPaidThroughCopy.urgency, 'mid', 'before expiry the company can still work, with a cancelled banner');
 
 (async function runCancelledRpc() {
   const client = loadEntitlement();
