@@ -141,7 +141,7 @@ assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on
 assert.ok(/Version 1\.3\.80-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
 assert.ok(/fire-s-subscribe\.js\?v=1-21-security/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-cancel-buttons/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-home-lock/.test(stagingHtml));
 assert.ok(/fire-s-subscribe\.css\?v=1-10-billing/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
@@ -208,7 +208,9 @@ function loadEntitlement() {
       }
     },
     alert: function () {},
-    setTimeout: function () { return 0; }
+    setTimeout: function () { return 0; },
+    setInterval: function () { return 0; },
+    clearInterval: function () {}
   };
   sandbox.window = sandbox;
   sandbox.currentUserProfile = sandbox.window.currentUserProfile;

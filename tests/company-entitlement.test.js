@@ -100,7 +100,9 @@ const sandbox = {
     setItem: function (key, value) { store[key] = String(value); }
   },
   alert: function () {},
-  setTimeout: function (fn) { return fn(); }
+  setTimeout: function (fn) { return fn(); },
+  setInterval: function () { return 0; },
+  clearInterval: function () {}
 };
 sandbox.window = sandbox;
 sandbox.document.body = sandbox.document.body;

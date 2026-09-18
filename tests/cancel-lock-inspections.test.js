@@ -70,22 +70,31 @@ assert.ok(/status = 'cancelled' then\s+return v_period/s.test(sliceFn(lockSql, '
 assert.ok(/projectListSection: true/.test(liveEntitlement), 'live list waits for sit dit live');
 assert.ok(!/projectListSection: true/.test(stagingEntitlement));
 assert.ok(!/reportSection: true/.test(stagingEntitlement));
-assert.ok(!/homeSection: true/.test(stagingEntitlement));
+assert.ok(/homeSection: true/.test(stagingEntitlement), 'locked users stay on Home until they subscribe');
 assert.ok(/fireSCompanyBillingPanel: true/.test(stagingEntitlement));
+assert.ok(/function pinLockedHome\(/.test(stagingEntitlement));
+assert.ok(/Stay on Home until you subscribe/.test(stagingEntitlement));
 assert.ok(/fireSSubscribeSection: true/.test(stagingEntitlement));
 assert.ok(/function canRead\(/.test(stagingEntitlement));
 assert.ok(/isAllowedLockedTarget/.test(stagingEntitlement));
 assert.ok(/sendLockedActionToSubscribe/.test(stagingEntitlement));
 assert.ok(/wrapNavFns/.test(stagingEntitlement));
 assert.ok(/#cmdInspectionsBtn/.test(stagingCss));
+assert.ok(/hideHomeInspectionCards/.test(stagingEntitlement));
+assert.ok(/openGateway/.test(stagingEntitlement));
+assert.ok(/function inspectionHomeLocked\(/.test(read('staging/fire-s-clean-home-roles.js')));
+assert.ok(/applyLockedSubscribeHome/.test(read('staging/fire-s-clean-home-roles.js')));
+assert.ok(/fire-s-clean-home-roles\.js\?v=2-43-home-lock/.test(stagingHtml));
 assert.ok(/z-index: 2147483500/.test(stagingCss));
 assert.ok(/stay locked until a new subscription is active/.test(stagingEntitlement));
 assert.ok(/wrapOpenProject/.test(stagingEntitlement));
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-cancel-buttons/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.css\?v=1-3-cancel-buttons/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-home-lock/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.css\?v=1-3-home-lock/.test(stagingHtml));
+assert.ok(/#fireSOwnerLists/.test(stagingCss));
+assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
 assert.ok(/app\.js\?v=1-3-80-toets-lock/.test(stagingHtml));
 assert.ok(/Version 1\.3\.80-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
@@ -115,10 +124,20 @@ function fakeEl(id, nodes) {
       querySelector: function () {
         return fakeEl(id + '__child', nodes);
       },
+      insertBefore: function () {},
+      after: function () {},
+      firstChild: null,
+      setAttribute: function () {},
+      removeAttribute: function () {},
+      parentNode: {
+        after: function () {},
+        insertBefore: function () {}
+      },
       closest: function (sel) {
         if (sel === '#' + id) return nodes[id];
         return null;
-      }
+      },
+      classList: { add: function () {}, toggle: function () {}, contains: function () { return false; } }
     };
   }
   return nodes[id];
@@ -134,7 +153,7 @@ function loadEntitlement() {
       readyState: 'complete',
       addEventListener: function () {},
       getElementById: function (id) { return fakeEl(id, nodes); },
-      body: { classList: { toggle: function () {}, contains: function () { return false; } }, appendChild: function () {} },
+      body: { classList: { add: function () {}, toggle: function () {}, contains: function () { return false; } }, appendChild: function () {} },
       createElement: function () {
         return { id: '', className: '', hidden: true, innerHTML: '', addEventListener: function () {}, style: {} };
       }
@@ -149,7 +168,12 @@ function loadEntitlement() {
       }
     },
     alert: function () {},
-    setTimeout: function () { return 0; }
+    setTimeout: function () { return 0; },
+    setInterval: function () { return 0; },
+    clearInterval: function () {},
+    __openedInspections: 0,
+    openInspectionsCommand: function () { sandbox.__openedInspections += 1; },
+    openGateway: function () { sandbox.__openedInspections += 1; }
   };
   sandbox.window = sandbox;
   sandbox.currentUserProfile = {
@@ -188,9 +212,6 @@ assert.strictEqual(oldPaidThroughCopy.urgency, 'mid', 'before expiry the company
 
 (async function runCancelledRpc() {
   const client = loadEntitlement();
-  let opened = 0;
-  client.openProject = function () { opened += 1; };
-  client.fireSEntitlement = client.fireSEntitlement;
   client.supabaseClient = {
     rpc: async function () {
       return {
@@ -220,6 +241,17 @@ assert.strictEqual(oldPaidThroughCopy.urgency, 'mid', 'before expiry the company
   assert.strictEqual(client.fireSEntitlement.operationallyAllowed(), false);
   assert.strictEqual(client.fireSEntitlement.isAllowedLockedTarget({ closest: function (sel) { return sel === '#cmdInspectionsBtn' ? {} : null; } }), false);
   assert.strictEqual(client.fireSEntitlement.isAllowedLockedTarget({ closest: function (sel) { return sel === '#cmdSubscribeBtn' ? {} : null; } }), true);
+  client.__openedInspections = 0;
+  client.openInspectionsCommand();
+  client.openGateway();
+  assert.strictEqual(client.__openedInspections, 0, 'Gateway / Inspections must stay on Home after expiry');
+  client.fireSEntitlement.pinLockedHome();
+  assert.strictEqual(client.__nodes.homeSection.hidden, false, 'locked users stay on Home');
+  assert.strictEqual(client.__nodes.projectFormSection.hidden, true, 'inspection form stays closed');
+  assert.strictEqual(client.__nodes.projectListSection.hidden, true, 'inspection list stays closed');
+  assert.ok(client.__nodes.fireSHomeLockPanel && client.__nodes.fireSHomeLockPanel.hidden === false);
+  assert.strictEqual(client.__nodes.cmdInspectionsBtn.hidden, true, 'Inspection Gateway stays off Home after expiry');
+  assert.strictEqual(client.__nodes.cmdSubscribeBtn.hidden, false, 'Subscribe stays on Home');
 
   const overlayClient = loadEntitlement();
   overlayClient.supabaseClient = {

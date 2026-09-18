@@ -28,8 +28,21 @@
     fireSSubscriptionRequiredSection: true,
     fireSCompanyBillingPanel: true,
     companyLetterheadSection: true,
-    userManualSection: true
+    userManualSection: true,
+    homeSection: true
   };
+
+  var INSPECTION_WORKSPACES = [
+    'projectFormSection',
+    'projectListSection',
+    'reportSection',
+    'companyTeamSection',
+    'inspectorBoardSection',
+    'servicesSection',
+    'findingsCentreSection',
+    'testSamplesSection',
+    'managementDashboardSection'
+  ];
 
   function text(value) {
     return String(value == null ? '' : value).trim();
@@ -179,9 +192,12 @@
       '#fireSSubscriptionRequiredSection',
       '#fireSEntitlementBlocker',
       '#fireSTrialBanner',
+      '#fireSHomeLockPanel',
+      '#fireSHomeLockSubscribe',
       '#cmdSubscribeBtn',
       '#cmdUserManualBtn',
       '#userManualSection',
+      '#companyLetterheadSection',
       '#logoutBtn',
       '#homeLogoutBtn',
       '#fireSLoginViewPlansBtn',
@@ -199,8 +215,141 @@
   }
 
   function sendLockedActionToSubscribe() {
-    openRequiredScreen();
-    openPlans();
+    return pinLockedHome();
+  }
+
+  function hideNode(node) {
+    if (!node) return;
+    node.hidden = true;
+    try {
+      node.setAttribute('aria-hidden', 'true');
+    } catch (_) {}
+    if (node.style) {
+      if (typeof node.style.setProperty === 'function') {
+        node.style.setProperty('display', 'none', 'important');
+      } else {
+        node.style.display = 'none';
+      }
+    }
+  }
+
+  function showNode(node, display) {
+    if (!node) return;
+    node.hidden = false;
+    try {
+      node.removeAttribute('aria-hidden');
+    } catch (_) {}
+    if (node.style) {
+      if (typeof node.style.setProperty === 'function') {
+        node.style.setProperty('display', display || 'block', 'important');
+      } else {
+        node.style.display = display || 'block';
+      }
+    }
+  }
+
+  function hideInspectionWorkspaces() {
+    INSPECTION_WORKSPACES.forEach(function (id) {
+      hideNode(document.getElementById(id));
+    });
+    ['openGateBackdrop', 'inspectionOpenGate', 'premisesCommandCentre', 'inspectorV4Root'].forEach(function (id) {
+      hideNode(document.getElementById(id));
+    });
+  }
+
+  var HOME_LOCK_HIDE_IDS = [
+    'cmdInspectionsBtn',
+    'cmdScheduleBtn',
+    'cmdReportsBtn',
+    'cmdCompanyDetailsBtn',
+    'cmdCompanyBtn',
+    'cmdTestSamplesBtn',
+    'cmdManagementDashboardBtn',
+    'cmdServicesBtn',
+    'cmdDashboardBtn',
+    'cmdFindingsBtn',
+    'cmdOverdueBtn',
+    'cmdInspectorsBtn',
+    'cmdComplianceInspectionsBtn',
+    'cmdComplianceFindingsBtn',
+    'cmdComplianceOverdueBtn',
+    'cmdComplianceSitesBtn',
+    'fireSOwnerLists',
+    'fireSOwnerKpiRow',
+    'inspectorBoardHomeBar'
+  ];
+
+  function hideHomeInspectionCards() {
+    HOME_LOCK_HIDE_IDS.forEach(function (id) {
+      hideNode(document.getElementById(id));
+    });
+    showNode(document.getElementById('cmdSubscribeBtn'), 'flex');
+    showNode(document.getElementById('cmdUserManualBtn'), 'flex');
+  }
+
+  function ensureHomeLockPanel() {
+    var home = document.getElementById('homeSection') || document.getElementById('mainCommandCentre');
+    var el = document.getElementById('fireSHomeLockPanel');
+    if (el && String(el.className || '').indexOf('fire-s-home-lock-panel') !== -1 && el.__fireSReady) {
+      return el;
+    }
+    if (!el) {
+      if (!home) return null;
+      el = document.createElement('div');
+      el.id = 'fireSHomeLockPanel';
+    }
+    el.className = 'fire-s-home-lock-panel';
+    el.hidden = true;
+    el.innerHTML =
+      '<h3 id="fireSHomeLockTitle">Subscription required</h3>' +
+      '<p id="fireSHomeLockStatus"></p>' +
+      '<p id="fireSHomeLockCopy"></p>' +
+      '<p>Inspections, reports, premises and photos stay in the cloud. Stay on Home until you subscribe. Nothing is deleted.</p>' +
+      '<button type="button" class="cloud-primary-btn" id="fireSHomeLockSubscribe">Subscribe / Reactivate</button>';
+    el.__fireSReady = true;
+    if (home) {
+      var hero = null;
+      try {
+        hero = home.querySelector('.home-hero');
+      } catch (_) {}
+      try {
+        if (hero && hero.parentNode && typeof hero.after === 'function') hero.after(el);
+        else if (typeof home.insertBefore === 'function') home.insertBefore(el, home.firstChild);
+      } catch (_) {}
+    }
+    var btn = document.getElementById('fireSHomeLockSubscribe');
+    if (btn && !btn.__fireSBound) {
+      btn.__fireSBound = true;
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        openPlans();
+      });
+    }
+    return el;
+  }
+
+  function pinLockedHome() {
+    if (isSuperAdmin() || isLocalWorkspace()) return false;
+    hideInspectionWorkspaces();
+    hideHomeInspectionCards();
+    var home = document.getElementById('homeSection');
+    if (home) showNode(home, 'block');
+    var panel = ensureHomeLockPanel();
+    var copy = displayCopy(last);
+    if (panel) {
+      var title = document.getElementById('fireSHomeLockTitle');
+      var status = document.getElementById('fireSHomeLockStatus');
+      var body = document.getElementById('fireSHomeLockCopy');
+      if (title) title.textContent = copy.headline || 'Subscription required';
+      if (status) status.textContent = statusLabel(last);
+      if (body) body.textContent = copy.detail || blockMessage();
+      showNode(panel, 'grid');
+    }
+    try {
+      document.body.classList.add('fire-s-entitlement-blocked');
+    } catch (_) {}
+    var blocker = ensureBlocker();
+    if (blocker) hideNode(blocker);
     return false;
   }
 
@@ -568,55 +717,44 @@
   }
 
   function hideWriteWorkspaces() {
-    ['projectFormSection', 'companyTeamSection', 'inspectorBoardSection', 'servicesSection', 'findingsCentreSection', 'testSamplesSection', 'projectListSection', 'reportSection', 'managementDashboardSection'].forEach(function (id) {
-      var node = document.getElementById(id);
-      if (!node) return;
-      node.hidden = true;
-      if (node.style) node.style.display = 'none';
-    });
+    hideInspectionWorkspaces();
   }
 
   function openRequiredScreen() {
+    pinLockedHome();
     fillRequiredCopy('fireSSubscriptionRequiredScreen');
     fillRequiredCopy('fireSSubscriptionRequired');
     fillRequiredCopy('fireSEntitlementBlocker');
-    var section = document.getElementById('fireSSubscriptionRequiredSection');
-    if (section) {
-      hideWriteWorkspaces();
-      section.style.display = 'block';
-      section.hidden = false;
-    }
     var panel = document.getElementById('fireSSubscriptionRequiredPanel');
     if (panel) panel.hidden = false;
-    var blocker = ensureBlocker();
-    var copy = displayCopy(last);
-    if (blocker && copy.urgency === 'block') {
-      var title = document.getElementById('fireSEntitlementBlockerTitle');
-      var body = document.getElementById('fireSEntitlementBlockerCopy');
-      if (title) title.textContent = copy.headline || 'Subscription required';
-      if (body) body.textContent = blockMessage();
-      fillRequiredCopy('fireSEntitlementBlocker');
-      blocker.hidden = false;
+  }
+
+  function inspectionWorkspaceIsOpen() {
+    for (var i = 0; i < INSPECTION_WORKSPACES.length; i += 1) {
+      if (nodeIsShown(document.getElementById(INSPECTION_WORKSPACES[i]))) return true;
     }
+    return false;
   }
 
   function showBlockerIfNeeded() {
     var copy = displayCopy(last);
     var blocker = ensureBlocker();
-    if (!blocker) return;
-    var space = visibleWorkspaceId();
-    var lockedOp =
-      inspectionAccessLocked() &&
-      !ALLOWED_WHEN_LOCKED[space];
     fillRequiredCopy('fireSSubscriptionRequiredScreen');
     fillRequiredCopy('fireSSubscriptionRequired');
     var panel = document.getElementById('fireSSubscriptionRequiredPanel');
     if (panel) panel.hidden = !(inspectionAccessLocked() || (copy.urgency === 'block' && last && last.backendReady));
-    if (!lockedOp) {
-      blocker.hidden = true;
+    if (!inspectionAccessLocked()) {
+      var homeLock = document.getElementById('fireSHomeLockPanel');
+      if (homeLock) homeLock.hidden = true;
+      if (blocker) blocker.hidden = true;
       return;
     }
-    openRequiredScreen();
+    var space = visibleWorkspaceId();
+    if (space === 'fireSSubscribeSection') {
+      if (blocker) blocker.hidden = true;
+      return;
+    }
+    pinLockedHome();
   }
 
   function paint() {
@@ -664,8 +802,7 @@
       alert(message);
     } catch (_) {}
     if (parsed.reason === 'trial_limit_reached' || parsed.reason === 'trial_expired' || parsed.reason === 'subscription_required') {
-      openRequiredScreen();
-      openPlans();
+      pinLockedHome();
     }
     return false;
   }
@@ -733,8 +870,7 @@
       if (typeof original !== 'function' || original.__fireSEntitlementRead) return;
       var wrapped = function () {
         if (inspectionAccessLocked()) {
-          openRequiredScreen();
-          deny((last && last.reason) || 'subscription_required');
+          pinLockedHome();
           return;
         }
         return original.apply(this, arguments);
@@ -830,6 +966,7 @@
       'openInspectionsCommand',
       'openScheduleCommand',
       'openReports',
+      'openReportsCommand',
       'showReports',
       'showProjectList',
       'showProjects',
@@ -842,14 +979,26 @@
       'showServices',
       'showCompanyTeam',
       'showFindingsCentre',
-      'openPremisesCommandCentre'
+      'openPremisesCommandCentre',
+      'openGateway',
+      'fsExecutiveOpenGateway',
+      'openOverdueCommand',
+      'openFindingsCommand',
+      'openSitesCommand',
+      'showProjectForm',
+      'openLatestReport'
     ];
     names.forEach(function (name) {
       var original = root[name];
       if (typeof original !== 'function' || original.__fireSEntitlementNav) return;
       var wrapped = function () {
+        if (name === 'showHome') {
+          var result = original.apply(this, arguments);
+          if (inspectionAccessLocked()) pinLockedHome();
+          return result;
+        }
         if (inspectionAccessLocked()) {
-          return sendLockedActionToSubscribe();
+          return pinLockedHome();
         }
         return original.apply(this, arguments);
       };
@@ -873,7 +1022,7 @@
       if (inspectionAccessLocked() && !isAllowedLockedTarget(t)) {
         ev.preventDefault();
         ev.stopPropagation();
-        sendLockedActionToSubscribe();
+        pinLockedHome();
         return;
       }
       var id = t.id || '';
@@ -899,18 +1048,37 @@
         deny(info.reason);
       }
     }, true);
+    document.addEventListener('pointerdown', function (ev) {
+      if (!inspectionAccessLocked()) return;
+      if (isAllowedLockedTarget(ev.target)) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      pinLockedHome();
+    }, true);
     setTimeout(function () {
       wrapNewInspection();
       wrapOpenProject();
       wrapNavFns();
-      refresh().then(guardDirectUrl);
+      refresh().then(function () {
+        guardDirectUrl();
+        if (inspectionAccessLocked()) pinLockedHome();
+      });
     }, 400);
     setTimeout(function () {
       wrapNewInspection();
       wrapOpenProject();
       wrapNavFns();
+      if (inspectionAccessLocked()) pinLockedHome();
     }, 900);
     setTimeout(wrapNavFns, 1800);
+    setInterval(function () {
+      if (!inspectionAccessLocked()) return;
+      wrapNavFns();
+      wrapOpenProject();
+      hideHomeInspectionCards();
+      if (nodeIsShown(document.getElementById('fireSSubscribeSection'))) return;
+      if (inspectionWorkspaceIsOpen()) pinLockedHome();
+    }, 400);
   }
 
   if (document.readyState === 'loading') {
@@ -933,6 +1101,7 @@
     inspectionAccessLocked: inspectionAccessLocked,
     isAllowedLockedTarget: isAllowedLockedTarget,
     sendLockedActionToSubscribe: sendLockedActionToSubscribe,
+    pinLockedHome: pinLockedHome,
     displayCopy: displayCopy,
     humanMessage: humanMessage,
     parseRpcError: parseRpcError,

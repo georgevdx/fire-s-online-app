@@ -47,7 +47,7 @@ assert.ok(/id="fireSSubscriptionRequiredSection"/.test(stagingHtml));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingHtml));
 assert.ok(/georgevdx@gmail\.com/.test(stagingHtml));
 assert.ok(/Inspections, reports, premises and photos stay/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-cancel-buttons/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-home-lock/.test(stagingHtml));
 assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits on toets first');
 
 assert.ok(/getCompanyEntitlement/.test(stagingJs));
@@ -82,7 +82,12 @@ function fakeEl(id) {
       textContent: '',
       className: '',
       innerHTML: '',
-      addEventListener: function () {}
+      addEventListener: function () {},
+      querySelector: function () { return null; },
+      insertBefore: function () {},
+      setAttribute: function () {},
+      removeAttribute: function () {},
+      classList: { add: function () {}, toggle: function () {}, contains: function () { return false; } }
     };
   }
   return nodes[id];
@@ -95,7 +100,7 @@ const sandbox = {
     readyState: 'complete',
     addEventListener: function () {},
     getElementById: fakeEl,
-    body: { classList: { toggle: function () {}, contains: function () { return false; } }, appendChild: function () {} },
+    body: { classList: { add: function () {}, toggle: function () {}, contains: function () { return false; } }, appendChild: function () {} },
     createElement: function () {
       return { id: '', className: '', hidden: true, innerHTML: '', addEventListener: function () {}, style: {} };
     }
@@ -112,7 +117,11 @@ const sandbox = {
   alert: function () {},
   setTimeout: function () {
     return 0;
-  }
+  },
+  setInterval: function () {
+    return 0;
+  },
+  clearInterval: function () {}
 };
 sandbox.window = sandbox;
 sandbox.currentUserProfile = {
@@ -190,8 +199,9 @@ assert.ok(/cancelled/i.test(api.statusLabel({ status: 'subscription_cancelled' }
   assert.strictEqual(api.operationallyAllowed(), false);
 
   api.guardDirectUrl();
-  assert.strictEqual(nodes.fireSSubscriptionRequiredSection.hidden, false, 'direct #newInspection URL must open Subscription required');
-  assert.strictEqual(nodes.fireSSubscriptionRequiredScreenStatus.textContent.indexOf('cancelled') >= 0, true);
+  assert.strictEqual(nodes.homeSection.hidden, false, 'direct #newInspection URL must keep the user on Home');
+  assert.strictEqual(nodes.projectFormSection.hidden, true, 'inspection form must stay closed after expiry');
+  assert.ok(nodes.fireSHomeLockPanel && nodes.fireSHomeLockPanel.hidden === false, 'Home lock panel must show Subscribe');
 
   sandbox.currentUserProfile.role = 'super_admin';
   sandbox.isSuperAdmin = function () { return true; };

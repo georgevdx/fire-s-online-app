@@ -192,21 +192,59 @@ body.fire-s-entitlement-blocked #inspectorV4Root {
   pointer-events: none !important;
 }
 
+body.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn),
+body.fire-s-entitlement-blocked #mainCommandCentre .main-stat-card,
+body.fire-s-entitlement-blocked #mainCommandCentre .main-command-stats,
 body.fire-s-entitlement-blocked #cmdInspectionsBtn,
 body.fire-s-entitlement-blocked #cmdScheduleBtn,
 body.fire-s-entitlement-blocked #cmdReportsBtn,
-body.fire-s-entitlement-blocked #cmdFindingsBtn,
-body.fire-s-entitlement-blocked #cmdOverdueBtn,
-body.fire-s-entitlement-blocked #cmdDashboardBtn,
+body.fire-s-entitlement-blocked #cmdCompanyDetailsBtn,
+body.fire-s-entitlement-blocked #cmdCompanyBtn,
 body.fire-s-entitlement-blocked #cmdTestSamplesBtn,
 body.fire-s-entitlement-blocked #cmdManagementDashboardBtn,
 body.fire-s-entitlement-blocked #cmdServicesBtn,
+body.fire-s-entitlement-blocked #cmdDashboardBtn,
+body.fire-s-entitlement-blocked #cmdFindingsBtn,
+body.fire-s-entitlement-blocked #cmdOverdueBtn,
 body.fire-s-entitlement-blocked #cmdInspectorsBtn,
-body.fire-s-entitlement-blocked #cmdCompanyBtn,
-body.fire-s-entitlement-blocked #cmdCompanyDetailsBtn,
-body.fire-s-entitlement-blocked #newInspectionBtn,
-body.fire-s-entitlement-blocked #newProjectBtn {
-  pointer-events: none;
+body.fire-s-entitlement-blocked #cmdComplianceInspectionsBtn,
+body.fire-s-entitlement-blocked #cmdComplianceFindingsBtn,
+body.fire-s-entitlement-blocked #cmdComplianceOverdueBtn,
+body.fire-s-entitlement-blocked #cmdComplianceSitesBtn,
+body.fire-s-entitlement-blocked #fireSOwnerLists,
+body.fire-s-entitlement-blocked #fireSOwnerKpiRow,
+body.fire-s-entitlement-blocked #inspectorBoardHomeBar,
+body.fire-s-entitlement-blocked .home-recent-activity,
+body.fire-s-entitlement-blocked .attention-site-row {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+body.fire-s-entitlement-blocked #cmdSubscribeBtn,
+body.fire-s-entitlement-blocked #cmdUserManualBtn,
+body.fire-s-entitlement-blocked #fireSHomeLockPanel,
+body.fire-s-entitlement-blocked #fireSHomeLockSubscribe {
+  pointer-events: auto !important;
+}
+
+.fire-s-home-lock-panel {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+.fire-s-home-lock-panel[hidden] {
+  display: none !important;
+}
+
+.fire-s-home-lock-panel h3,
+.fire-s-home-lock-panel p {
+  margin: 0;
 }
 
 .fire-s-subscription-required-section,

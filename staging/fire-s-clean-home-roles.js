@@ -73,6 +73,10 @@
   }
 
   function showGatewayCard(title, copy) {
+    if (inspectionHomeLocked()) {
+      hide('cmdInspectionsBtn');
+      return;
+    }
     const btn = gatewayButton();
     const grid = document.querySelector('#mainCommandCentre .main-command-grid');
     if (btn && grid && grid.firstElementChild !== btn) {
@@ -353,8 +357,36 @@
     if (el) el.textContent = text;
   }
 
+  function inspectionHomeLocked() {
+    try {
+      return !!(
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        window.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function applyLockedSubscribeHome() {
+    ALL_CMD_IDS.forEach(function (id) {
+      if (id === 'cmdSubscribeBtn' || id === 'cmdUserManualBtn') show(id);
+      else hide(id);
+    });
+    hide('inspectorBoardHomeBar');
+    hide('fireSOwnerLists');
+    setStatsVisible(false);
+    show('cmdSubscribeBtn');
+    show('cmdUserManualBtn');
+  }
+
   function show(id) {
     if (id === 'cmdReportsBtn') {
+      hide(id);
+      return;
+    }
+    if (inspectionHomeLocked() && id !== 'cmdSubscribeBtn' && id !== 'cmdUserManualBtn') {
       hide(id);
       return;
     }
@@ -1027,7 +1059,7 @@
       return;
     }
     paintRecoveryBody(false);
-    if (isGatewayOrFormVisible()) return;
+    if (!inspectionHomeLocked() && isGatewayOrFormVisible()) return;
 
     wrapAllCommandCards();
 
@@ -1040,6 +1072,11 @@
     else if (role === 'company_owner' || role === 'super_admin') applyOwnerHome(role);
     else if (role === 'viewer') applyViewerHome();
     else applyGuestHome();
+
+    if (inspectionHomeLocked()) {
+      applyLockedSubscribeHome();
+      return;
+    }
 
     assertGatewayOnFrontPage(role);
 
