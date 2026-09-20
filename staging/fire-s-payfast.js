@@ -118,9 +118,9 @@
       '<body style="font-family:Arial,sans-serif;max-width:40rem;margin:2rem auto;line-height:1.45">' +
       '<h1>PayFast cannot take this payment</h1>' +
       '<p>This checkout still uses the same email as the PayFast merchant. PayFast then shows 400: merchant is unable to receive payments from the same account.</p>' +
-      '<p><strong>Redeploy <code>payfast-checkout</code> on Fire-S Test</strong>, then open the toets-blad with <code>?v=203</code> and tap Pay on PayFast again.</p>' +
-      '<p>Or pay from a Fire-S login that is not the PayFast merchant email. Do not create a new company.</p>' +
-      '<p><a href="./?v=203">Back to Fire-S</a></p>' +
+      '<p><strong>Run <code>SUPABASE_payfast_sandbox_buyer.sql</code> on Fire-S Test</strong>. Update <code>fire_s_payfast_sandbox_secrets</code> with the same sandbox merchant id, key and passphrase already on payfast-checkout. Then open the toets-blad with <code>?v=204</code> and tap Pay on PayFast again.</p>' +
+      '<p>Do not create a new company.</p>' +
+      '<p><a href="./?v=204">Back to Fire-S</a></p>' +
       '</body></html>'
     );
   }
@@ -195,7 +195,7 @@
         ok: false,
         reason: 'same-account',
         error:
-          'PayFast cannot take a payment from the merchant email. Redeploy payfast-checkout on Fire-S Test, or pay from a login that is not the PayFast merchant email. Then refresh with ?v=203.'
+          'PayFast cannot take a payment from the merchant email. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test, then refresh with ?v=204 and tap Pay again.'
       };
     }
     // Full auto-submit HTML is what opened PayFast before. Write that page
@@ -222,6 +222,27 @@
     } catch (_) {
       return '';
     }
+  }
+
+  async function sandboxSignedHtml(info) {
+    var sb = root.supabaseClient;
+    if (!sb || !sb.rpc) return '';
+    var interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
+    var kind = text(info && info.kind) || 'subscribe';
+    var res;
+    try {
+      res = await sb.rpc('fire_s_sandbox_payfast_html', {
+        p_interval: interval,
+        p_kind: kind
+      });
+    } catch (_) {
+      return '';
+    }
+    if (res && res.error) return '';
+    var data = res && res.data;
+    if (typeof data === 'string' && /payfast/i.test(data)) return data;
+    var row = Array.isArray(data) ? data[0] : data;
+    return text(row && (row.html || row.out_html || row));
   }
 
   async function accessToken() {
@@ -274,6 +295,17 @@
       raw = await res.text();
     } catch (_) {}
     if (res && res.ok && raw && (/text\/html/i.test(type) || /^\s*</.test(raw))) {
+      if (merchantPaysSelf(raw)) {
+        var sqlHtml = '';
+        try {
+          sqlHtml = await sandboxSignedHtml(info);
+        } catch (_) {
+          sqlHtml = '';
+        }
+        if (sqlHtml && !merchantPaysSelf(sqlHtml)) {
+          return submitHostedCheckout(sqlHtml);
+        }
+      }
       return submitHostedCheckout(raw);
     }
     var errBody = {};

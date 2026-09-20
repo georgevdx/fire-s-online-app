@@ -78,7 +78,7 @@ assert.ok(
 assert.ok(/m\.user_id = NEW\.user_id/.test(openCompany), 'same login must be able to reactivate');
 assert.ok(/lower\(trim\(c\.name\)\)/.test(openCompany), 'existing company is found by name');
 assert.ok(/cid \|\| name/.test(subscribe), 'existing company must still open PayFast if prepare is blocked');
-assert.ok(/1\.3\.103-toets/.test(env), 'Toets-blad version must be 1.3.103-toets');
+assert.ok(/1\.3\.104-toets/.test(env), 'Toets-blad version must be 1.3.104-toets');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {

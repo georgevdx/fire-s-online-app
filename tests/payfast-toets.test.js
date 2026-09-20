@@ -18,7 +18,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.103-toets/.test(envSrc), 'Toets-blad version must be 1.3.103-toets');
+assert.ok(/1\.3\.104-toets/.test(envSrc), 'Toets-blad version must be 1.3.104-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -35,6 +35,8 @@ assert.ok(!/passphrase\s*:/.test(envSrc), 'Toets env must not ship a PayFast pas
 assert.ok(!/merchant_key/.test(payfastSrc), 'PWA PayFast module must not post merchant_key itself');
 assert.ok(/function submitHostedCheckout\(/.test(payfastSrc), 'PayFast must open hosted checkout HTML');
 assert.ok(/submitHostedCheckout\(raw\)/.test(payfastSrc), 'HTML checkout responses must open PayFast');
+assert.ok(/function sandboxSignedHtml\(/.test(payfastSrc), 'merchant-email checkout must fall back to SQL-signed test buyer');
+assert.ok(/fire_s_sandbox_payfast_html/.test(payfastSrc));
 assert.ok(/doc\.write\(html\)/.test(payfastSrc), 'Hosted PayFast HTML must replace this page so the auto-submit runs');
 assert.ok(/HTMLFormElement\.prototype\.submit/.test(payfastSrc), 'PayFast form fallback must call the real submit');
 assert.ok(!/generateSignature/.test(payfastSrc), 'Browser must not sign PayFast requests');
@@ -118,7 +120,7 @@ assert.ok(
     '<form action="https://sandbox.payfast.co.za/eng/process"><input type="hidden" name="email_address" value="johandb@live.com"></form>';
   const blocked = pf.submitHostedCheckout(merchantHtml);
   assert.ok(blocked && blocked.ok === false && blocked.reason === 'same-account');
-  assert.ok(/Redeploy/.test(written), written);
+  assert.ok(/SUPABASE_payfast_sandbox_buyer\.sql/.test(written), written);
   assert.ok(!/form id="payfast"/.test(written));
 
   const buyerHtml =

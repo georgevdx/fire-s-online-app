@@ -142,10 +142,10 @@ assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on toets first');
-assert.ok(/Version 1\.3\.103-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.104-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
-assert.ok(/fire-s-subscribe\.js\?v=1-32-same-account/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-103-pay/.test(stagingHtml));
+assert.ok(/fire-s-subscribe\.js\?v=1-33-sql-buyer/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-104-pay/.test(stagingHtml));
 assert.ok(/fire-s-subscribe\.css\?v=1-12-company/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
