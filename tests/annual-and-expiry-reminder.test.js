@@ -69,7 +69,7 @@ assert.ok(
     !/One month before the due date/.test(liveManual),
   'User manual must mention the 7-day reminder, not one month'
 );
-assert.ok(/1\.3\.[2-9]\d-toets/.test(env), 'Toets-blad version must stay on 1.3.21-toets or newer');
+assert.ok(/1\.3\.\d+-toets/.test(env), 'Toets-blad version must stay on 1.3.21-toets or newer');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'

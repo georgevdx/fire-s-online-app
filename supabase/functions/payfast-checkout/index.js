@@ -295,7 +295,38 @@ Deno.serve(async (req) => {
       body = {};
     }
 
-    const companyRow = await myCompany(req, env, user);
+    let companyRow = await myCompany(req, env, user);
+    if (!companyRow || !(companyRow.out_company_id || companyRow.company_id || companyRow.id)) {
+      const hintName = String(body.companyName || body.company || '').trim();
+      if (hintName) {
+        const named = await restGet(
+          req,
+          env,
+          '/rest/v1/companies?select=id,name&name=eq.' + encodeURIComponent(hintName)
+        );
+        const namedRow = Array.isArray(named) ? named[0] : named;
+        if (namedRow && namedRow.id) {
+          const role = await profileRole(req, env, user && user.id);
+          const mems = await restGet(
+            req,
+            env,
+            '/rest/v1/company_members?select=role&company_id=eq.' +
+              encodeURIComponent(namedRow.id) +
+              '&user_id=eq.' +
+              encodeURIComponent(user && user.id || '')
+          );
+          const mem = Array.isArray(mems) ? mems[0] : mems;
+          const memRole = String((mem && mem.role) || '').toLowerCase();
+          if (role === 'super_admin' || canCheckout(memRole, 'subscribe')) {
+            companyRow = {
+              out_company_id: namedRow.id,
+              out_company_name: namedRow.name || hintName,
+              out_member_role: role === 'super_admin' ? 'super_admin' : memRole
+            };
+          }
+        }
+      }
+    }
     const companyId = String(
       (companyRow && (companyRow.out_company_id || companyRow.company_id || companyRow.id)) || ''
     ).trim();
@@ -304,7 +335,9 @@ Deno.serve(async (req) => {
         ''
     ).trim();
     if (!companyId) {
-      const err = new Error('Create your company first, then pay on PayFast.');
+      const err = new Error(
+        'This company already exists. Reactivate it on PayFast — do not create a new company.'
+      );
       err.status = 400;
       throw err;
     }

@@ -123,27 +123,49 @@
     el.textContent = noCompanyPayMessage();
   }
 
+  function existingCompanyPayError(serverErr) {
+    var name = companyName() || 'This company';
+    var raw = String(serverErr || '');
+    if (/create your company first/i.test(raw) || /no company/i.test(raw) || /Company is required/i.test(raw)) {
+      return (
+        name +
+        ' already exists. Reactivate it — do not create a new company. ' +
+        'Run SUPABASE_payfast_open_company.sql on Fire-S Test, refresh with ?v=200, then tap Pay on PayFast again.'
+      );
+    }
+    return raw;
+  }
+
   function preparePayCompany() {
     var sb = window.supabaseClient;
     var cid = linkedCompanyId();
+    var name = companyName();
     if (!sb || !sb.rpc) return Promise.resolve();
     return Promise.resolve(
-      sb.rpc('fire_s_prepare_payfast_company', cid ? { p_company_id: cid } : {})
-    )
-      .then(function (res) {
-        if (!res || res.error || !res.data) return;
-        var row = Array.isArray(res.data) ? res.data[0] : res.data;
-        var id = String((row && (row.out_company_id || row.company_id)) || '').trim();
-        var name = String((row && (row.out_company_name || row.company_name || row.name)) || '').trim();
-        try {
-          if (id && window.currentUserProfile) {
-            window.currentUserProfile.companyId = id;
-            if (name) window.currentUserProfile.companyName = name;
-          }
-        } catch (_) {}
-        paintCompanyLine();
+      sb.rpc('fire_s_prepare_payfast_company', {
+        p_company_id: cid || null,
+        p_company_name: name || null
       })
-      .catch(function () {});
+    ).then(function (res) {
+      if (res && res.error) {
+        var msg = String((res.error && res.error.message) || '');
+        if (/could not find the function|schema cache|PGRST202|404/i.test(msg)) {
+          throw new Error(existingCompanyPayError('create your company first'));
+        }
+        throw new Error(existingCompanyPayError(msg) || msg);
+      }
+      if (!res || !res.data) return;
+      var row = Array.isArray(res.data) ? res.data[0] : res.data;
+      var id = String((row && (row.out_company_id || row.company_id)) || '').trim();
+      var found = String((row && (row.out_company_name || row.company_name || row.name)) || '').trim();
+      try {
+        if (id && window.currentUserProfile) {
+          window.currentUserProfile.companyId = id;
+          if (found) window.currentUserProfile.companyName = found;
+        }
+      } catch (_) {}
+      paintCompanyLine();
+    });
   }
 
   function payNow() {
@@ -176,10 +198,11 @@
       .then(function (res) {
         if (res && res.ok === false) {
           var err = String((res && res.error) || '');
-          if (
-            !linkedCompanyId() &&
-            (/create your company first/i.test(err) || /no company/i.test(err))
-          ) {
+          if (linkedCompanyId() || companyName()) {
+            setMessage(existingCompanyPayError(err) || 'PayFast did not open. Try Pay on PayFast again.', true);
+            return;
+          }
+          if (/create your company first/i.test(err) || /no company/i.test(err)) {
             paintCompanyLine();
             setMessage(noCompanyPayMessage(), true);
             return;
@@ -192,7 +215,12 @@
         }
       })
       .catch(function (err) {
-        setMessage((err && err.message) || 'PayFast is not ready on the server.', true);
+        var msg = (err && err.message) || 'PayFast is not ready on the server.';
+        if (linkedCompanyId() || companyName()) {
+          setMessage(existingCompanyPayError(msg), true);
+          return;
+        }
+        setMessage(msg, true);
       });
   }
 

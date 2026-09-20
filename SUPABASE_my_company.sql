@@ -36,6 +36,29 @@ begin
       and lower(coalesce(p.role, '')) = 'super_admin'
   ) into v_super;
 
+  -- Company already chosen for PayFast on this login. Reactivate it; do not create a new one.
+  begin
+    select i.company_id, c.name,
+      case
+        when v_super then 'super_admin'::text
+        else coalesce(m.role::text, 'company_owner')
+      end
+      into v_id, v_name, v_role
+    from public.fire_s_payfast_checkout_intent i
+    join public.companies c on c.id = i.company_id
+    left join public.company_members m
+      on m.company_id = i.company_id
+     and m.user_id = v_uid
+    where i.user_id = v_uid
+    limit 1;
+  exception when others then
+    v_id := null;
+  end;
+  if v_id is not null then
+    return query select v_id, v_name, v_role;
+    return;
+  end if;
+
   -- Owner + cancelled/expired first so Subscribe/Reactivate bills the company
   -- already on this login, not a larger staff company or a shell.
   select

@@ -35,6 +35,8 @@ assert.ok(/activates_on_return_url: false/.test(checkout));
 assert.ok(!/fire_s_activate_paid_subscription/.test(checkout));
 assert.ok(/SUPABASE_SERVICE_ROLE_KEY/.test(checkout));
 assert.ok(/Only the Owner can pay on PayFast/.test(checkout));
+assert.ok(/already exists/.test(checkout), 'checkout must reactivate an existing company, not ask to create one');
+assert.ok(!/Create your company first/.test(checkout));
 assert.ok(/company_members/.test(checkout), 'checkout must fall back to company_members');
 assert.ok(/super_admin/.test(checkout), 'Super Admin must be able to pay for a cancelled company');
 assert.ok(/exception when others/.test(sql), 'missing sync must not block cancelled checkout');

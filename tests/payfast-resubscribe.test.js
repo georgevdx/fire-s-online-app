@@ -64,11 +64,16 @@ assert.ok(/p_company_id: cid/.test(subscribe));
 assert.ok(/rpc\('fire_s_get_company_billing', args\)/.test(subscribe));
 assert.ok(/function preparePayCompany\(/.test(subscribe));
 assert.ok(/fire_s_prepare_payfast_company/.test(subscribe));
+assert.ok(/p_company_name/.test(subscribe), 'PayFast must find the existing company by name');
+assert.ok(/function existingCompanyPayError\(/.test(subscribe));
+assert.ok(/already exists/.test(subscribe), 'cancelled company must reactivate, not create a new one');
 assert.ok(/preparePayCompany\(\)/.test(subscribe), 'Pay must attach the linked company before PayFast opens');
-assert.ok(/!linkedCompanyId\(\)/.test(subscribe), 'linked company must not show the bills-the-company lecture');
+assert.ok(/linkedCompanyId\(\) \|\| companyName\(\)/.test(subscribe), 'existing company must reactivate, not create a new name');
 assert.ok(/fire_s_prepare_payfast_company/.test(openCompany));
+assert.ok(/fire_s_payfast_checkout_intent/.test(openCompany));
 assert.ok(/on conflict \(company_id, user_id\)/.test(openCompany));
-assert.ok(/1\.3\.99-toets/.test(env), 'Toets-blad version must be 1.3.99-toets');
+assert.ok(/lower\(trim\(c\.name\)\)/.test(openCompany), 'existing company is found by name');
+assert.ok(/1\.3\.100-toets/.test(env), 'Toets-blad version must be 1.3.100-toets');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
@@ -161,6 +166,34 @@ function fakeEl(id, nodes) {
     /This login pays for Toets Logo/.test(nodes.fireSSubscribeCompanyLine.textContent),
     nodes.fireSSubscribeCompanyLine.textContent
   );
+
+  var alerts = [];
+  sandbox.alert = function (msg) {
+    alerts.push(String(msg || ''));
+  };
+  sandbox.supabaseClient.rpc = async function (name) {
+    if (name === 'fire_s_prepare_payfast_company') {
+      return { error: { message: 'Could not find the function public.fire_s_prepare_payfast_company' }, data: null };
+    }
+    return { error: { message: 'Create your company first, then pay on PayFast.' }, data: null };
+  };
+  sandbox.fireSPayfast = {
+    isEnabled: function () { return true; },
+    startCheckout: async function () {
+      return { ok: false, error: 'Create your company first, then pay on PayFast.' };
+    }
+  };
+  sandbox.window.fireSPayfast = sandbox.fireSPayfast;
+  sandbox.fireSStartSubscribeCheckout();
+  var shown = '';
+  for (var i = 0; i < 20; i += 1) {
+    await Promise.resolve();
+    shown = String((nodes.fireSSubscribeMessage && nodes.fireSSubscribeMessage.textContent) || alerts[0] || '');
+    if (/already exists/.test(shown)) break;
+  }
+  assert.ok(/Toets Logo already exists/.test(shown), shown);
+  assert.ok(/Reactivate/.test(shown), shown);
+  assert.ok(!/Create your company first/.test(shown), shown);
   console.log('payfast-resubscribe.test.js: ok');
 })().catch(function (err) {
   console.error(err);

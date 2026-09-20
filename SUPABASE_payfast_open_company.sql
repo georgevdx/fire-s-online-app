@@ -7,6 +7,17 @@
 
 begin;
 
+create table if not exists public.fire_s_payfast_checkout_intent (
+  user_id uuid primary key,
+  company_id uuid not null references public.companies (id),
+  company_name text,
+  updated_at timestamptz not null default now()
+);
+
+revoke all on table public.fire_s_payfast_checkout_intent from public;
+revoke all on table public.fire_s_payfast_checkout_intent from anon;
+revoke all on table public.fire_s_payfast_checkout_intent from authenticated;
+
 drop function if exists public.fire_s_my_company();
 
 create or replace function public.fire_s_my_company()
@@ -36,6 +47,29 @@ begin
     where p.id = v_uid
       and lower(coalesce(p.role, '')) = 'super_admin'
   ) into v_super;
+
+  -- Company already chosen for PayFast on this login. Reactivate it; do not create a new one.
+  begin
+    select i.company_id, c.name,
+      case
+        when v_super then 'super_admin'::text
+        else coalesce(m.role::text, 'company_owner')
+      end
+      into v_id, v_name, v_role
+    from public.fire_s_payfast_checkout_intent i
+    join public.companies c on c.id = i.company_id
+    left join public.company_members m
+      on m.company_id = i.company_id
+     and m.user_id = v_uid
+    where i.user_id = v_uid
+    limit 1;
+  exception when others then
+    v_id := null;
+  end;
+  if v_id is not null then
+    return query select v_id, v_name, v_role;
+    return;
+  end if;
 
   -- Owner + cancelled/expired first so Subscribe/Reactivate bills the company
   -- already on this login, not a larger staff company or a shell.
@@ -130,7 +164,13 @@ $$;
 
 grant execute on function public.fire_s_my_company() to authenticated;
 
-create or replace function public.fire_s_prepare_payfast_company(p_company_id uuid default null)
+drop function if exists public.fire_s_prepare_payfast_company(uuid);
+drop function if exists public.fire_s_prepare_payfast_company(uuid, text);
+
+create or replace function public.fire_s_prepare_payfast_company(
+  p_company_id uuid default null,
+  p_company_name text default null
+)
 returns table (
   out_company_id uuid,
   out_company_name text,
@@ -144,7 +184,7 @@ declare
   v_uid uuid := auth.uid();
   v_super boolean := false;
   v_company uuid := p_company_id;
-  v_name text;
+  v_name text := nullif(trim(p_company_name), '');
   v_role text;
   v_member text;
 begin
@@ -165,7 +205,17 @@ begin
     where c.id = v_company;
     if v_name is null then
       v_company := null;
+      v_name := nullif(trim(p_company_name), '');
     end if;
+  end if;
+
+  -- Existing cancelled company, looked up by the name already on this login.
+  if v_company is null and v_name is not null then
+    select c.id, c.name into v_company, v_name
+    from public.companies c
+    where lower(trim(c.name)) = lower(trim(v_name))
+    order by coalesce(c.created_at, now()) desc
+    limit 1;
   end if;
 
   if v_company is not null then
@@ -209,6 +259,14 @@ begin
         else excluded.role
       end;
 
+    insert into public.fire_s_payfast_checkout_intent (user_id, company_id, company_name, updated_at)
+    values (v_uid, v_company, v_name, now())
+    on conflict (user_id)
+    do update set
+      company_id = excluded.company_id,
+      company_name = excluded.company_name,
+      updated_at = now();
+
     return query select v_company, v_name, v_role;
     return;
   end if;
@@ -219,10 +277,10 @@ begin
 end;
 $$;
 
-grant execute on function public.fire_s_prepare_payfast_company(uuid) to authenticated;
+grant execute on function public.fire_s_prepare_payfast_company(uuid, text) to authenticated;
 
-comment on function public.fire_s_prepare_payfast_company(uuid) is
-  'Attach this login to the company it already pays for, then PayFast can open. Does not delete inspections.';
+comment on function public.fire_s_prepare_payfast_company(uuid, text) is
+  'Remember the existing company on this login so PayFast can reactivate it. Does not create a new company. Does not delete inspections.';
 
 commit;
 

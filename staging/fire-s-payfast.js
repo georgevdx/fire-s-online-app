@@ -204,7 +204,8 @@
         body: JSON.stringify({
           kind: text(info && info.kind) || 'subscribe',
           interval: interval,
-          seatEmail: text(info && info.seatEmail)
+          seatEmail: text(info && info.seatEmail),
+          companyName: text(info && info.company)
         })
       });
     } catch (err) {
