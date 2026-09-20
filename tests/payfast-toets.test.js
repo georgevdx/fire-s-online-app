@@ -18,7 +18,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.102-toets/.test(envSrc), 'Toets-blad version must be 1.3.102-toets');
+assert.ok(/1\.3\.103-toets/.test(envSrc), 'Toets-blad version must be 1.3.103-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -111,6 +111,21 @@ assert.ok(
   const result = pf.submitHostedCheckout(htmlDoc);
   assert.ok(result && result.ok, 'Hosted PayFast HTML must open');
   assert.ok(written.indexOf('sandbox.payfast.co.za/eng/process') !== -1, 'PayFast auto-submit HTML must be written into this page');
+
+  sandbox.currentUserProfile = { email: 'johandb@live.com' };
+  sandbox.window.currentUserProfile = sandbox.currentUserProfile;
+  const merchantHtml =
+    '<form action="https://sandbox.payfast.co.za/eng/process"><input type="hidden" name="email_address" value="johandb@live.com"></form>';
+  const blocked = pf.submitHostedCheckout(merchantHtml);
+  assert.ok(blocked && blocked.ok === false && blocked.reason === 'same-account');
+  assert.ok(/Redeploy/.test(written), written);
+  assert.ok(!/form id="payfast"/.test(written));
+
+  const buyerHtml =
+    '<form id="payfast" method="POST" action="https://sandbox.payfast.co.za/eng/process"><input type="hidden" name="email_address" value="fires-toets-buyer@example.com"></form><script>document.getElementById("payfast").submit();</script>';
+  const buyer = pf.submitHostedCheckout(buyerHtml);
+  assert.ok(buyer && buyer.ok, 'test buyer email must still open PayFast');
+  assert.ok(written.indexOf('fires-toets-buyer@example.com') !== -1);
 })();
 
 console.log('payfast-toets.test.js: ok');

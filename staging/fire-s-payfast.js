@@ -83,6 +83,48 @@
     } catch (_) {}
   }
 
+  function ownerEmail() {
+    try {
+      return text(root.currentUserProfile && root.currentUserProfile.email).toLowerCase();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function hostedField(html, name) {
+    var src = String(html || '');
+    var named = new RegExp(
+      "name=[\"']" + name + "[\"'][\\s\\S]{0,120}?value=[\"']([^\"']*)[\"']",
+      'i'
+    );
+    var valued = new RegExp(
+      "value=[\"']([^\"']*)[\"'][\\s\\S]{0,120}?name=[\"']" + name + "[\"']",
+      'i'
+    );
+    var match = named.exec(src) || valued.exec(src);
+    return match ? text(match[1]) : '';
+  }
+
+  function merchantPaysSelf(html) {
+    var posted = hostedField(html, 'email_address').toLowerCase();
+    var owner = ownerEmail();
+    if (!posted || !owner) return false;
+    return posted === owner;
+  }
+
+  function sameAccountBlockHtml() {
+    return (
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fire-S PayFast</title></head>' +
+      '<body style="font-family:Arial,sans-serif;max-width:40rem;margin:2rem auto;line-height:1.45">' +
+      '<h1>PayFast cannot take this payment</h1>' +
+      '<p>This checkout still uses the same email as the PayFast merchant. PayFast then shows 400: merchant is unable to receive payments from the same account.</p>' +
+      '<p><strong>Redeploy <code>payfast-checkout</code> on Fire-S Test</strong>, then open the toets-blad with <code>?v=203</code> and tap Pay on PayFast again.</p>' +
+      '<p>Or pay from a Fire-S login that is not the PayFast merchant email. Do not create a new company.</p>' +
+      '<p><a href="./?v=203">Back to Fire-S</a></p>' +
+      '</body></html>'
+    );
+  }
+
   function submitLiveForm(html) {
     var doc = root.document;
     if (!doc || !doc.createElement) return false;
@@ -141,6 +183,21 @@
   function submitHostedCheckout(html) {
     var doc = root.document;
     if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
+    if (merchantPaysSelf(html)) {
+      try {
+        if (typeof doc.open === 'function' && typeof doc.write === 'function') {
+          doc.open();
+          doc.write(sameAccountBlockHtml());
+          doc.close();
+        }
+      } catch (_) {}
+      return {
+        ok: false,
+        reason: 'same-account',
+        error:
+          'PayFast cannot take a payment from the merchant email. Redeploy payfast-checkout on Fire-S Test, or pay from a login that is not the PayFast merchant email. Then refresh with ?v=203.'
+      };
+    }
     // Full auto-submit HTML is what opened PayFast before. Write that page
     // first. Do not return success from a silent form.submit() and skip this.
     try {

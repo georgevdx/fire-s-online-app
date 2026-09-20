@@ -46,6 +46,8 @@ assert.ok(/Never read amount, price, plan, companyId or mPaymentId from the brow
 assert.ok(/assertSandboxCheckout/.test(sign));
 assert.ok(/function payfastBuyerEmail/.test(sign));
 assert.ok(/fires-toets-buyer@example\.com/.test(sign), 'sandbox must not pay from the merchant email');
+assert.ok(/function merchantPaysSelf\(/.test(client), 'old checkout HTML must not post the merchant email to PayFast');
+assert.ok(/same-account/.test(client));
 
 assert.ok(!/cat\.markPaid/.test(client));
 assert.ok(/Access updates when the server confirms/.test(client));
