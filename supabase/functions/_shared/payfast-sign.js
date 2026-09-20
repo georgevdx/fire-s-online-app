@@ -127,6 +127,18 @@ export function resolveAuthoritativeCheckout(trusted, untrustedBody) {
   };
 }
 
+/** PayFast refuses checkout when email_address is the merchant account. */
+export function payfastBuyerEmail(cfg, realEmail) {
+  const owner = text(realEmail).toLowerCase();
+  if (cfg && (cfg.sandbox === true || cfg.mode === 'sandbox')) {
+    const forced = text(cfg.sandboxBuyerEmail).toLowerCase();
+    const buyer = forced || 'fires-toets-buyer@example.com';
+    if (owner && buyer === owner) return 'fires-toets-buyer@example.com';
+    return buyer;
+  }
+  return owner || 'test@test.com';
+}
+
 export function assertSandboxCheckout(cfg) {
   if (!cfg || cfg.mode !== 'sandbox') {
     throw new Error('PayFast checkout is sandbox-only until go-live.');
@@ -144,6 +156,7 @@ export function buildSignedCheckoutFields(cfg, info) {
   const company = text(info && info.company) || 'Fire-S';
   const email = text(info && info.email).toLowerCase();
   const seatEmail = text(info && info.seatEmail).toLowerCase();
+  const payerEmail = payfastBuyerEmail(cfg, email);
   const itemName = interval === 'annual' ? 'Fire-S annual login' : 'Fire-S monthly login';
   const desc =
     kind === 'seat' ? 'Extra login ' + (seatEmail || email) : 'Owner login ' + email;
@@ -162,7 +175,7 @@ export function buildSignedCheckoutFields(cfg, info) {
     return_url: text(cfg.returnUrl),
     cancel_url: text(cfg.cancelUrl),
     notify_url: text(cfg.notifyUrl),
-    email_address: email || 'test@test.com',
+    email_address: payerEmail,
     m_payment_id: mPaymentId,
     amount: amount,
     item_name: itemName,

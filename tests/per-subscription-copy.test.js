@@ -23,7 +23,7 @@ const privacy = read('staging/privacy.html');
 const liveCatalog = read('fire-s-subscriptions.js');
 const liveHtml = read('index.html');
 
-assert.ok(/1\.3\.101-toets/.test(env), 'Toets-blad version must stay on 1.3.101-toets');
+assert.ok(/1\.3\.102-toets/.test(env), 'Toets-blad version must stay on 1.3.102-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'

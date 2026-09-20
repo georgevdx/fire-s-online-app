@@ -148,6 +148,7 @@ export function loadPayfastConfig(env) {
     merchantId,
     merchantKey,
     passphrase,
+    sandboxBuyerEmail: mode === 'sandbox' ? envGet(env, 'PAYFAST_SANDBOX_BUYER_EMAIL') : '',
     publicUrl,
     returnUrl,
     cancelUrl,

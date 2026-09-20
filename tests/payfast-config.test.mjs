@@ -5,6 +5,7 @@ import {
   assertSandboxCheckout,
   buildSignedCheckoutFields,
   generateSignature,
+  payfastBuyerEmail,
   resolveAuthoritativeCheckout,
   signatureParamString,
   amountForInterval
@@ -100,6 +101,9 @@ assert.strictEqual(fields.subscription_type, '1');
 assert.strictEqual(fields.frequency, '3');
 assert.strictEqual(fields.notify_url, sandboxCfg.notifyUrl);
 assert.strictEqual(fields.custom_str1, 'company-uuid');
+assert.strictEqual(fields.custom_str2, 'owner@acme.test');
+assert.strictEqual(fields.email_address, 'fires-toets-buyer@example.com');
+assert.notStrictEqual(fields.email_address, 'owner@acme.test');
 assert.ok(fields.signature && fields.signature.length === 32);
 
 const unsigned = Object.assign({}, fields);
@@ -129,6 +133,17 @@ assert.strictEqual(trusted.amount, '250.00');
 assert.strictEqual(trusted.amountNumber, 250);
 assert.strictEqual(trusted.companyId, 'co-1');
 assert.ok(trusted.mPaymentId.indexOf('evil') === -1);
+
+assert.strictEqual(payfastBuyerEmail(sandboxCfg, 'johandb@live.com'), 'fires-toets-buyer@example.com');
+assert.strictEqual(payfastBuyerEmail(liveCfg, 'johandb@live.com'), 'johandb@live.com');
+const liveFields = buildSignedCheckoutFields(liveCfg, {
+  kind: 'subscribe',
+  interval: 'monthly',
+  company: 'Acme Fire',
+  companyId: 'company-uuid',
+  email: 'owner@acme.test'
+});
+assert.strictEqual(liveFields.email_address, 'owner@acme.test');
 
 assertSandboxCheckout(sandboxCfg);
 assert.throws(

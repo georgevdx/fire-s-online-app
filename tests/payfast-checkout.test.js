@@ -44,6 +44,8 @@ assert.ok(/Cancelled \/ expired companies must be able to start PayFast again/.t
 
 assert.ok(/Never read amount, price, plan, companyId or mPaymentId from the browser/.test(sign));
 assert.ok(/assertSandboxCheckout/.test(sign));
+assert.ok(/function payfastBuyerEmail/.test(sign));
+assert.ok(/fires-toets-buyer@example\.com/.test(sign), 'sandbox must not pay from the merchant email');
 
 assert.ok(!/cat\.markPaid/.test(client));
 assert.ok(/Access updates when the server confirms/.test(client));

@@ -234,7 +234,7 @@
           <li>Tap <strong>Subscribe</strong>, then pay on PayFast. Card details stay with PayFast.</li>
           <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>On the toets-blad PayFast is the sandbox (no real money). A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>On the toets-blad PayFast is the sandbox (no real money). PayFast cannot take a payment from the merchant email, so the sandbox pays as a test buyer. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
             : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
         }
