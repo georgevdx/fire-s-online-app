@@ -126,11 +126,18 @@
   function existingCompanyPayError(serverErr) {
     var name = companyName() || 'This company';
     var raw = String(serverErr || '');
-    if (/create your company first/i.test(raw) || /no company/i.test(raw) || /Company is required/i.test(raw)) {
+    if (
+      /create your company first/i.test(raw) ||
+      /no company/i.test(raw) ||
+      /Company is required/i.test(raw) ||
+      /FIRE_S_ENTITLEMENT/i.test(raw) ||
+      /add company logins/i.test(raw) ||
+      /subscription_required/i.test(raw)
+    ) {
       return (
         name +
         ' already exists. Reactivate it — do not create a new company. ' +
-        'Run SUPABASE_payfast_open_company.sql on Fire-S Test, refresh with ?v=200, then tap Pay on PayFast again.'
+        'Run SUPABASE_payfast_open_company.sql on Fire-S Test, refresh with ?v=201, then tap Pay on PayFast again.'
       );
     }
     return raw;
@@ -149,6 +156,9 @@
     ).then(function (res) {
       if (res && res.error) {
         var msg = String((res.error && res.error.message) || '');
+        if (cid || name) {
+          return;
+        }
         if (/could not find the function|schema cache|PGRST202|404/i.test(msg)) {
           throw new Error(existingCompanyPayError('create your company first'));
         }

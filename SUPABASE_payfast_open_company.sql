@@ -2,8 +2,8 @@
 -- Run on Fire-S Test (SQL Editor) AFTER SUPABASE_payfast_resubscribe.sql.
 -- Do not run on live.
 -- The deployed payfast-checkout function calls fire_s_my_company().
--- This attaches Super Admin / the owner to that cancelled company so checkout
--- finds it, then PayFast can open. Inspections stay. Nothing is deleted.
+-- This remembers the cancelled company for checkout. It does not add a login.
+-- Inspections stay. Nothing is deleted.
 
 begin;
 
@@ -248,17 +248,8 @@ begin
 
     v_role := case when v_super then 'super_admin' else coalesce(v_member, 'company_owner') end;
 
-    insert into public.company_members (company_id, user_id, role, status)
-    values (v_company, v_uid, case when v_super then 'super_admin' else coalesce(v_member, 'company_owner') end, 'active')
-    on conflict (company_id, user_id)
-    do update set
-      status = 'active',
-      role = case
-        when lower(coalesce(company_members.role, '')) in ('company_owner', 'owner', 'super_admin')
-        then company_members.role
-        else excluded.role
-      end;
-
+    -- Remember the existing company only. Do not insert company_members here:
+    -- that trigger thinks we are adding a paid login and blocks PayFast.
     insert into public.fire_s_payfast_checkout_intent (user_id, company_id, company_name, updated_at)
     values (v_uid, v_company, v_name, now())
     on conflict (user_id)
@@ -280,7 +271,54 @@ $$;
 grant execute on function public.fire_s_prepare_payfast_company(uuid, text) to authenticated;
 
 comment on function public.fire_s_prepare_payfast_company(uuid, text) is
-  'Remember the existing company on this login so PayFast can reactivate it. Does not create a new company. Does not delete inspections.';
+  'Remember the existing company on this login so PayFast can reactivate it. Does not create a new company. Does not add a login. Does not delete inspections.';
+
+create or replace function public.fire_s_company_members_entitlement_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_info jsonb;
+begin
+  if auth.uid() is null then
+    return NEW;
+  end if;
+  if public.fire_s_is_super_admin() then
+    return NEW;
+  end if;
+  if tg_op <> 'INSERT' then
+    return NEW;
+  end if;
+  if not exists (
+    select 1
+    from public.company_members m
+    where m.company_id = NEW.company_id
+      and m.id is distinct from NEW.id
+  ) then
+    return NEW;
+  end if;
+  if exists (
+    select 1
+    from public.company_members m
+    where m.company_id = NEW.company_id
+      and m.user_id = NEW.user_id
+      and m.id is distinct from NEW.id
+  ) then
+    return NEW;
+  end if;
+
+  v_info := public.fire_s_compute_entitlement(NEW.company_id);
+  if coalesce((v_info->>'can_create')::boolean, false) is not true
+     and coalesce((v_info->>'allowed')::boolean, false) is not true then
+    raise exception 'FIRE_S_ENTITLEMENT:%:%',
+      coalesce(v_info->>'reason', 'subscription_required'),
+      'A Fire-S subscription is required to add company logins';
+  end if;
+  return NEW;
+end;
+$$;
 
 commit;
 

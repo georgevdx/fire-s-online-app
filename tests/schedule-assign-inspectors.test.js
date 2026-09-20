@@ -28,7 +28,7 @@ const liveManual = read('fire-s-user-manual.js');
 const css = read('staging/styles.css');
 const liveCss = read('styles.css');
 
-assert.ok(/1\.3\.100-toets/.test(env), 'Toets-blad version must stay on 1.3.100-toets');
+assert.ok(/1\.3\.101-toets/.test(env), 'Toets-blad version must stay on 1.3.101-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv) &&
     /bounceLegacyToetsQuery/.test(liveEnv),

@@ -26,6 +26,7 @@ assert.ok(/fire_s_inspection_starts_new_cycle/.test(sql));
 assert.ok(/A subscription is required to start a new inspection cycle/.test(sql));
 assert.ok(/A subscription is required to start new inspections/.test(sql));
 assert.ok(/A Fire-S subscription is required to add company logins/.test(sql));
+assert.ok(/m\.user_id = NEW\.user_id/.test(sql), 'existing login must reactivate without adding a seat');
 assert.ok(/keep_data/.test(sql));
 assert.ok(/super_admin/.test(sql));
 assert.ok(/fire_s_require_company_write/.test(sql));
@@ -47,7 +48,7 @@ assert.ok(/id="fireSSubscriptionRequiredSection"/.test(stagingHtml));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingHtml));
 assert.ok(/georgevdx@gmail\.com/.test(stagingHtml));
 assert.ok(/Inspections, reports, premises and photos stay/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-100-pay/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-101-pay/.test(stagingHtml));
 assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits on toets first');
 
 assert.ok(/getCompanyEntitlement/.test(stagingJs));

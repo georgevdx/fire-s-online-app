@@ -71,9 +71,14 @@ assert.ok(/preparePayCompany\(\)/.test(subscribe), 'Pay must attach the linked c
 assert.ok(/linkedCompanyId\(\) \|\| companyName\(\)/.test(subscribe), 'existing company must reactivate, not create a new name');
 assert.ok(/fire_s_prepare_payfast_company/.test(openCompany));
 assert.ok(/fire_s_payfast_checkout_intent/.test(openCompany));
-assert.ok(/on conflict \(company_id, user_id\)/.test(openCompany));
+assert.ok(
+  /Do not insert company_members here/.test(openCompany),
+  'PayFast prepare must not add a login on a cancelled company'
+);
+assert.ok(/m\.user_id = NEW\.user_id/.test(openCompany), 'same login must be able to reactivate');
 assert.ok(/lower\(trim\(c\.name\)\)/.test(openCompany), 'existing company is found by name');
-assert.ok(/1\.3\.100-toets/.test(env), 'Toets-blad version must be 1.3.100-toets');
+assert.ok(/cid \|\| name/.test(subscribe), 'existing company must still open PayFast if prepare is blocked');
+assert.ok(/1\.3\.101-toets/.test(env), 'Toets-blad version must be 1.3.101-toets');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
@@ -168,19 +173,26 @@ function fakeEl(id, nodes) {
   );
 
   var alerts = [];
+  var checkoutCalls = 0;
   sandbox.alert = function (msg) {
     alerts.push(String(msg || ''));
   };
   sandbox.supabaseClient.rpc = async function (name) {
     if (name === 'fire_s_prepare_payfast_company') {
-      return { error: { message: 'Could not find the function public.fire_s_prepare_payfast_company' }, data: null };
+      return {
+        error: {
+          message: 'FIRE_S_ENTITLEMENT:subscription_required:A Fire-S subscription is required to add company logins'
+        },
+        data: null
+      };
     }
     return { error: { message: 'Create your company first, then pay on PayFast.' }, data: null };
   };
   sandbox.fireSPayfast = {
     isEnabled: function () { return true; },
     startCheckout: async function () {
-      return { ok: false, error: 'Create your company first, then pay on PayFast.' };
+      checkoutCalls += 1;
+      return { ok: true };
     }
   };
   sandbox.window.fireSPayfast = sandbox.fireSPayfast;
@@ -188,12 +200,13 @@ function fakeEl(id, nodes) {
   var shown = '';
   for (var i = 0; i < 20; i += 1) {
     await Promise.resolve();
-    shown = String((nodes.fireSSubscribeMessage && nodes.fireSSubscribeMessage.textContent) || alerts[0] || '');
-    if (/already exists/.test(shown)) break;
+    shown = String((nodes.fireSSubscribeMessage && nodes.fireSSubscribeMessage.textContent) || '');
+    if (checkoutCalls) break;
   }
-  assert.ok(/Toets Logo already exists/.test(shown), shown);
-  assert.ok(/Reactivate/.test(shown), shown);
-  assert.ok(!/Create your company first/.test(shown), shown);
+  assert.strictEqual(checkoutCalls, 1, 'cancelled Toets Logo must still open PayFast');
+  assert.ok(!/add company logins/.test(shown), shown);
+  assert.ok(!/FIRE_S_ENTITLEMENT/.test(shown), shown);
+  assert.ok(!/Create your company first/.test(alerts.join(' ')), alerts.join(' '));
   console.log('payfast-resubscribe.test.js: ok');
 })().catch(function (err) {
   console.error(err);

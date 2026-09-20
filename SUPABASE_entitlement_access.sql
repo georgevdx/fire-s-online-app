@@ -143,6 +143,17 @@ begin
     return NEW;
   end if;
 
+  -- Same login already on this company: upsert / reactivate, not a new paid seat.
+  if exists (
+    select 1
+    from public.company_members m
+    where m.company_id = NEW.company_id
+      and m.user_id = NEW.user_id
+      and m.id is distinct from NEW.id
+  ) then
+    return NEW;
+  end if;
+
   v_info := public.fire_s_compute_entitlement(NEW.company_id);
   if coalesce((v_info->>'can_create')::boolean, false) is not true
      and coalesce((v_info->>'allowed')::boolean, false) is not true then
