@@ -17,7 +17,7 @@ const css = read('staging/fire-s-subscribe.css');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.98-toets/.test(env), 'Toets-blad version must be 1.3.98-toets');
+assert.ok(/1\.3\.99-toets/.test(env), 'Toets-blad version must be 1.3.99-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must stay 1.3.65'
@@ -103,6 +103,8 @@ assert.ok(
   'locked Subscription Back Home must return to Home, not stay stuck'
 );
 assert.ok(/role === 'new_company' && ownerEmail\(\)/.test(subscribe), 'cancelled owner can pay while companyId is still loading');
+assert.ok(/function preparePayCompany\(/.test(subscribe), 'PayFast must attach the linked company before checkout');
+assert.ok(/staffMustSignOut/.test(entitlement), 'cancelled staff must stay signed out');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {

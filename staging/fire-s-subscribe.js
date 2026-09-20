@@ -123,6 +123,29 @@
     el.textContent = noCompanyPayMessage();
   }
 
+  function preparePayCompany() {
+    var sb = window.supabaseClient;
+    var cid = linkedCompanyId();
+    if (!sb || !sb.rpc) return Promise.resolve();
+    return Promise.resolve(
+      sb.rpc('fire_s_prepare_payfast_company', cid ? { p_company_id: cid } : {})
+    )
+      .then(function (res) {
+        if (!res || res.error || !res.data) return;
+        var row = Array.isArray(res.data) ? res.data[0] : res.data;
+        var id = String((row && (row.out_company_id || row.company_id)) || '').trim();
+        var name = String((row && (row.out_company_name || row.company_name || row.name)) || '').trim();
+        try {
+          if (id && window.currentUserProfile) {
+            window.currentUserProfile.companyId = id;
+            if (name) window.currentUserProfile.companyName = name;
+          }
+        } catch (_) {}
+        paintCompanyLine();
+      })
+      .catch(function () {});
+  }
+
   function payNow() {
     var email = ownerEmail();
     if (!canManage() && !email) {
@@ -141,30 +164,36 @@
     }
     paintCompanyLine();
     setMessage('Opening PayFast…');
-    Promise.resolve(
-      pf.startCheckout({
-        kind: 'subscribe',
-        company: companyName() || 'Fire-S',
-        email: email,
-        interval: interval
+    preparePayCompany()
+      .then(function () {
+        return pf.startCheckout({
+          kind: 'subscribe',
+          company: companyName() || 'Fire-S',
+          email: email,
+          interval: interval
+        });
       })
-    ).then(function (res) {
-      if (res && res.ok === false) {
-        var err = String((res && res.error) || '');
-        if (/create your company first/i.test(err) || /no company/i.test(err)) {
-          paintCompanyLine();
-          setMessage(noCompanyPayMessage(), true);
+      .then(function (res) {
+        if (res && res.ok === false) {
+          var err = String((res && res.error) || '');
+          if (
+            !linkedCompanyId() &&
+            (/create your company first/i.test(err) || /no company/i.test(err))
+          ) {
+            paintCompanyLine();
+            setMessage(noCompanyPayMessage(), true);
+            return;
+          }
+          setMessage(err || 'PayFast did not open. Try Pay on PayFast again.', true);
           return;
         }
-        setMessage(err || 'PayFast is not ready on the server.', true);
-        return;
-      }
-      if (!(res && res.ok)) {
-        setMessage('PayFast did not open. Try Pay on PayFast again.', true);
-      }
-    }).catch(function (err) {
-      setMessage((err && err.message) || 'PayFast is not ready on the server.', true);
-    });
+        if (!(res && res.ok)) {
+          setMessage('PayFast did not open. Try Pay on PayFast again.', true);
+        }
+      })
+      .catch(function (err) {
+        setMessage((err && err.message) || 'PayFast is not ready on the server.', true);
+      });
   }
 
   function homeRole() {

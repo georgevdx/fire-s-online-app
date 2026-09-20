@@ -22,6 +22,9 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_super boolean := false;
+  v_id uuid;
+  v_name text;
+  v_role text;
 begin
   if v_uid is null then
     raise exception 'Not authenticated';
@@ -36,7 +39,43 @@ begin
 
   -- Owner + cancelled/expired first so Subscribe/Reactivate bills the company
   -- already on this login, not a larger staff company or a shell.
-  return query
+  select
+    c.id,
+    c.name,
+    case
+      when v_super then 'super_admin'::text
+      else m.role::text
+    end
+    into v_id, v_name, v_role
+  from public.company_members as m
+  join public.companies as c on c.id = m.company_id
+  left join public.fire_s_company_subscriptions as s on s.company_id = c.id
+  where m.user_id = v_uid
+    and coalesce(m.status, 'active') = 'active'
+  order by
+    case
+      when lower(coalesce(s.status, '')) in ('cancelled', 'expired', 'past_due', 'unpaid')
+       and lower(coalesce(m.role, '')) in ('company_owner', 'owner', 'super_admin')
+      then 0
+      else 1
+    end,
+    case lower(coalesce(m.role, ''))
+      when 'company_owner' then 0
+      when 'owner' then 1
+      when 'super_admin' then 2
+      when 'manager' then 3
+      else 4
+    end,
+    (
+      select count(*)::int
+      from public.company_members as cm
+      where cm.company_id = m.company_id
+        and coalesce(cm.status, 'active') = 'active'
+    ) desc,
+    c.name asc
+  limit 1;
+
+  if v_id is null then
     select
       c.id,
       c.name,
@@ -44,33 +83,48 @@ begin
         when v_super then 'super_admin'::text
         else m.role::text
       end
+      into v_id, v_name, v_role
     from public.company_members as m
     join public.companies as c on c.id = m.company_id
-    left join public.fire_s_company_subscriptions as s on s.company_id = c.id
     where m.user_id = v_uid
-      and coalesce(m.status, 'active') = 'active'
     order by
-      case
-        when lower(coalesce(s.status, '')) in ('cancelled', 'expired', 'past_due', 'unpaid')
-         and lower(coalesce(m.role, '')) in ('company_owner', 'owner', 'super_admin')
-        then 0
-        else 1
-      end,
       case lower(coalesce(m.role, ''))
         when 'company_owner' then 0
         when 'owner' then 1
         when 'super_admin' then 2
-        when 'manager' then 3
-        else 4
+        else 3
       end,
-      (
-        select count(*)::int
-        from public.company_members as cm
-        where cm.company_id = m.company_id
-          and coalesce(cm.status, 'active') = 'active'
-      ) desc,
-      c.name asc
+      c.updated_at desc nulls last
     limit 1;
+  end if;
+
+  if v_id is null then
+    select c.id, c.name, case when v_super then 'super_admin'::text else 'company_owner'::text end
+      into v_id, v_name, v_role
+    from public.inspections i
+    join public.companies c on c.id = i.company_id
+    where i.user_id = v_uid
+      and i.company_id is not null
+    order by i.updated_at desc nulls last
+    limit 1;
+  end if;
+
+  if v_id is null and v_super then
+    select c.id, c.name, 'super_admin'::text
+      into v_id, v_name, v_role
+    from public.companies c
+    left join public.fire_s_company_subscriptions s on s.company_id = c.id
+    where lower(coalesce(s.status, ''))
+      in ('cancelled', 'expired', 'past_due', 'unpaid')
+    order by coalesce(c.updated_at, c.created_at) desc nulls last
+    limit 1;
+  end if;
+
+  if v_id is null then
+    return;
+  end if;
+
+  return query select v_id, v_name, v_role;
 end;
 $$;
 

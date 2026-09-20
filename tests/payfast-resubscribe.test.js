@@ -18,6 +18,7 @@ function sliceFn(src, name) {
 }
 
 const resubscribe = read('SUPABASE_payfast_resubscribe.sql');
+const openCompany = read('SUPABASE_payfast_open_company.sql');
 const myCompany = read('SUPABASE_my_company.sql');
 const lifecycle = read('SUPABASE_subscription_lifecycle.sql');
 const checkout = read('supabase/functions/payfast-checkout/index.js');
@@ -26,10 +27,16 @@ const env = read('staging/fire-s-env.js');
 
 const myCompanyResub = sliceFn(resubscribe, 'fire_s_my_company');
 const myCompanyCanonical = sliceFn(myCompany, 'fire_s_my_company');
+const myCompanyOpen = sliceFn(openCompany, 'fire_s_my_company');
 assert.strictEqual(
   myCompanyResub.replace(/\s+/g, ' '),
   myCompanyCanonical.replace(/\s+/g, ' '),
   'fire_s_my_company in resubscribe SQL must match SUPABASE_my_company.sql'
+);
+assert.strictEqual(
+  myCompanyOpen.replace(/\s+/g, ' '),
+  myCompanyCanonical.replace(/\s+/g, ' '),
+  'fire_s_my_company in open-company SQL must match SUPABASE_my_company.sql'
 );
 
 assert.ok(/cancelled', 'expired', 'past_due', 'unpaid/.test(myCompanyResub));
@@ -55,7 +62,13 @@ assert.ok(/function pickOwnedCompany/.test(checkout));
 assert.ok(/function billingFromEntitlement\(/.test(subscribe));
 assert.ok(/p_company_id: cid/.test(subscribe));
 assert.ok(/rpc\('fire_s_get_company_billing', args\)/.test(subscribe));
-assert.ok(/1\.3\.98-toets/.test(env), 'Toets-blad version must be 1.3.98-toets');
+assert.ok(/function preparePayCompany\(/.test(subscribe));
+assert.ok(/fire_s_prepare_payfast_company/.test(subscribe));
+assert.ok(/preparePayCompany\(\)/.test(subscribe), 'Pay must attach the linked company before PayFast opens');
+assert.ok(/!linkedCompanyId\(\)/.test(subscribe), 'linked company must not show the bills-the-company lecture');
+assert.ok(/fire_s_prepare_payfast_company/.test(openCompany));
+assert.ok(/on conflict \(company_id, user_id\)/.test(openCompany));
+assert.ok(/1\.3\.99-toets/.test(env), 'Toets-blad version must be 1.3.99-toets');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {

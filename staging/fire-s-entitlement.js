@@ -181,6 +181,66 @@
     return false;
   }
 
+  function memberRole() {
+    try {
+      return text(root.currentUserProfile && root.currentUserProfile.role).toLowerCase();
+    } catch (_) {}
+    return '';
+  }
+
+  function isPayingOwner() {
+    if (isSuperAdmin()) return true;
+    var role = memberRole();
+    return role === 'company_owner' || role === 'owner' || role === 'admin';
+  }
+
+  var staffSignOutStarted = false;
+  function staffMustSignOut() {
+    if (isLocalWorkspace() || isSuperAdmin() || isPayingOwner()) return false;
+    if (memberRole() === 'new_company' || !companyId()) return false;
+    if (accessGateOpen()) return false;
+    if (!hasSnapshot()) return false;
+    if (last && last.staff_must_sign_out === true) return true;
+    var status = text(last && last.status);
+    var reason = text(last && last.reason);
+    var dead =
+      status === 'subscription_cancelled' ||
+      status === 'subscription_required' ||
+      status === 'trial_expired' ||
+      reason === 'subscription_cancelled' ||
+      reason === 'subscription_required' ||
+      reason === 'trial_expired' ||
+      (status === 'subscription_past_due' && last && last.allowed === false);
+    return dead && inspectionAccessLocked();
+  }
+
+  function enforceStaffSignOut() {
+    if (!staffMustSignOut()) {
+      staffSignOutStarted = false;
+      return false;
+    }
+    if (staffSignOutStarted) return true;
+    staffSignOutStarted = true;
+    try {
+      root.alert(
+        'This company subscription is cancelled. Ask the Owner to subscribe again on PayFast. You stay signed out until then. Inspections stay in the cloud.'
+      );
+    } catch (_) {}
+    try {
+      if (typeof root.logoutUser === 'function') {
+        root.logoutUser();
+        return true;
+      }
+    } catch (_) {}
+    try {
+      var sb = getSb();
+      if (sb && sb.auth && typeof sb.auth.signOut === 'function') {
+        sb.auth.signOut({ scope: 'local' });
+      }
+    } catch (_) {}
+    return true;
+  }
+
   function inspectionAccessLocked() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (accessGateOpen()) return false;
@@ -958,6 +1018,9 @@
     } catch (_) {}
     showBlockerIfNeeded();
     paintSubscribeHints(copy);
+    try {
+      enforceStaffSignOut();
+    } catch (_) {}
   }
 
   function paintSubscribeHints(copy) {
@@ -1291,6 +1354,8 @@
     canRead: canRead,
     canExport: canExport,
     inspectionAccessLocked: inspectionAccessLocked,
+    staffMustSignOut: staffMustSignOut,
+    enforceStaffSignOut: enforceStaffSignOut,
     homeWorkAllowed: homeWorkAllowed,
     syncHomeLayer: syncHomeLayer,
     isAllowedLockedTarget: isAllowedLockedTarget,
