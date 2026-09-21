@@ -44,6 +44,7 @@ assert.ok(/fire_s_get_company_billing/.test(sql));
 const compute = sliceFn(sql, 'fire_s_compute_entitlement');
 assert.ok(/past_due_grace/.test(compute));
 assert.ok(/cancelled_until_period_end/.test(compute));
+assert.ok(/fire_s_cancel_keeps_access\(\)/.test(compute));
 assert.ok(/v_sub_status = 'cancelled'/.test(compute));
 assert.ok(/in_grace/.test(compute));
 assert.ok(/access_until/.test(compute));
@@ -142,10 +143,10 @@ assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on toets first');
-assert.ok(/Version 1\.3\.106-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.107-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
 assert.ok(/fire-s-subscribe\.js\?v=1-35-hide-ok/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-106-pay/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-107-lock/.test(stagingHtml));
 assert.ok(/fire-s-subscribe\.css\?v=1-12-company/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
@@ -248,8 +249,7 @@ const cancelCopy = ent.fireSEntitlement.displayCopy({
   can_read: true,
   backendReady: true
 });
-assert.strictEqual(cancelCopy.urgency, 'mid');
-assert.ok(/paid-through/i.test(cancelCopy.detail));
+assert.strictEqual(cancelCopy.urgency, 'block');
 assert.ok(/locked until a new subscription is active/i.test(cancelCopy.detail));
 
 const cancelExpiredCopy = ent.fireSEntitlement.displayCopy({

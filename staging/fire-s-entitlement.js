@@ -115,10 +115,19 @@
     return !!(last && last.backendReady);
   }
 
+  function isCancelledCompany() {
+    var status = text(last && last.status);
+    var reason = text(last && last.reason);
+    return status === 'subscription_cancelled' ||
+      reason === 'subscription_cancelled' ||
+      reason === 'cancelled_until_period_end';
+  }
+
   function operationallyAllowed() {
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (isCancelledCompany()) return false;
     return last.allowed === true;
   }
 
@@ -126,6 +135,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (isCancelledCompany()) return false;
     return last.can_finalise === true;
   }
 
@@ -133,6 +143,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (isCancelledCompany()) return false;
     return last.can_create === true;
   }
 
@@ -140,6 +151,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (isCancelledCompany()) return false;
     return last.can_read === true || last.allowed === true;
   }
 
@@ -147,6 +159,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (isCancelledCompany()) return false;
     return last.can_export === true || last.can_read === true || last.allowed === true;
   }
 
@@ -247,9 +260,7 @@
     if (!hasSnapshot()) return isCloudCompanyUser();
     var status = text(last && last.status);
     var reason = text(last && last.reason);
-    if (reason === 'cancelled_until_period_end' && (last.allowed === true || last.can_read === true)) {
-      return false;
-    }
+    if (isCancelledCompany()) return true;
     if (reason === 'past_due_grace' && last.allowed === true) return false;
     if (reason === 'trial_limit_reached') return false;
     if (status === 'trial_active' && last.allowed === true) return false;
@@ -599,7 +610,7 @@
       return 'A payment did not go through. Fire-S stays available during the grace period. Subscribe on PayFast.';
     }
     if (reason === 'cancelled_until_period_end') {
-      return 'This subscription is cancelled. Access continues until the paid-through date. After that, inspections stay in the cloud and stay locked until a new subscription is active.';
+      return 'This subscription is cancelled. Inspections stay in the cloud and stay locked until a new subscription is active.';
     }
     if (reason === 'subscription_cancelled') {
       return 'This subscription is cancelled. Inspections stay in the cloud and stay locked until a new subscription is active.';
@@ -662,12 +673,6 @@
     if (reason === 'past_due_grace' || (status === 'subscription_past_due' && data.allowed === true)) {
       headline = 'Payment past due';
       detail = humanMessage('past_due_grace', data);
-      urgency = 'mid';
-      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
-    }
-    if (reason === 'cancelled_until_period_end' && (data.allowed === true || data.can_read === true)) {
-      headline = 'Subscription cancelled';
-      detail = 'This subscription is cancelled. Access continues until the paid-through date. After that, inspections stay in the cloud and stay locked until a new subscription is active.';
       urgency = 'mid';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
