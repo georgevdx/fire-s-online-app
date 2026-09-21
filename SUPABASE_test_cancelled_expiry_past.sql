@@ -1,8 +1,13 @@
--- Fire-S Test only. Sit live later.
+-- Fire-S Test only. Do not run on live. Sit live later.
 -- Run AFTER SUPABASE_cancel_lock_inspections.sql.
 --
--- The inspection block starts AFTER expiry (current_period_end).
--- For this test, move that date to yesterday so the block shows NOW.
+-- TEST SHORTCUT ONLY. The inspection block starts AFTER expiry
+-- (current_period_end). This file moves that date to yesterday so the
+-- block shows NOW. That is not the live rule.
+--
+-- Live / sit-live rule: cancel keeps access until the paid-through date.
+-- Undo this shortcut with SUPABASE_restore_cancelled_expiry.sql before
+-- you sit live, so expiry is last payment + 1 month (or 1 year).
 -- Cloud inspection rows stay (keep_data). Nothing is deleted.
 
 begin;
