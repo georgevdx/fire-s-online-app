@@ -127,7 +127,31 @@ assert.ok(/s\.status = 'cancelled'/.test(testExpirySql));
 assert.ok(/fire_s_refresh_entitlement_status/.test(testExpirySql));
 assert.ok(/block_is_on/.test(testExpirySql));
 assert.ok(/keep_data/.test(testExpirySql));
+assert.ok(/SUPABASE_restore_cancelled_expiry\.sql/.test(testExpirySql), 'test shortcut must name the restore file');
+assert.ok(/Do not run on live/.test(testExpirySql));
 assert.ok(!/delete from public\.inspections/.test(testExpirySql));
+
+const restoreExpirySql = read('SUPABASE_restore_cancelled_expiry.sql');
+assert.ok(/last_payment_at/.test(restoreExpirySql), 'restore must use the last successful payment');
+assert.ok(/interval '1 month'/.test(restoreExpirySql));
+assert.ok(/interval '1 year'/.test(restoreExpirySql));
+assert.ok(/subscription_paid_through/.test(restoreExpirySql));
+assert.ok(/fire_s_refresh_entitlement_status/.test(restoreExpirySql));
+assert.ok(/cancelled_until_period_end/.test(restoreExpirySql));
+assert.ok(/access_until_paid_through/.test(restoreExpirySql));
+assert.ok(/keep_data/.test(restoreExpirySql));
+assert.ok(/Do not run on live/.test(restoreExpirySql));
+assert.ok(/SUPABASE_test_cancelled_expiry_past\.sql/.test(restoreExpirySql));
+assert.ok(!/now\(\) - interval '1 day'/.test(restoreExpirySql), 'restore must not keep the yesterday shortcut');
+assert.ok(!/delete from public\.inspections/.test(restoreExpirySql));
+assert.ok(
+  /status = 'cancelled' then\s+return v_period/s.test(sliceFn(lockSql, 'fire_s_subscription_access_until')),
+  'live cancel must keep access until current_period_end, not lock immediately'
+);
+assert.ok(
+  /v_sub_status = 'cancelled'\s+and v_access is not null\s+and v_now < v_access then/s.test(compute),
+  'compute must allow cancelled companies until the paid-through date'
+);
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
@@ -304,6 +328,36 @@ assert.strictEqual(ent.fireSEntitlement.homeWorkAllowed(), false);
     true,
     'Subscription required must lock inspection buttons even if can_read is still true'
   );
+
+  const paidThroughClient = loadEntitlement();
+  paidThroughClient.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: true,
+          can_create: true,
+          can_finalise: true,
+          can_write_draft: true,
+          can_read: true,
+          can_export: true,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'cancelled_until_period_end',
+          super_admin: false,
+          backendReady: true
+        }
+      };
+    }
+  };
+  await paidThroughClient.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(
+    paidThroughClient.fireSEntitlement.inspectionAccessLocked(),
+    false,
+    'cancelled companies stay open until the paid-through date'
+  );
+  assert.strictEqual(paidThroughClient.fireSEntitlement.canRead(), true);
+  assert.strictEqual(paidThroughClient.fireSEntitlement.operationallyAllowed(), true);
 
   client.currentUserProfile.role = 'super_admin';
   client.isSuperAdmin = function () { return true; };
