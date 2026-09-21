@@ -348,9 +348,47 @@
     } catch (_) {}
   }
 
+  function hideReturnBanner() {
+    try {
+      var bar = root.document && root.document.getElementById('fireSPayfastReturnBanner');
+      if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    } catch (_) {}
+  }
+
+  function subscriptionLooksCancelled() {
+    try {
+      var cat = root.fireSSubscriptionCatalog;
+      if (cat && typeof cat.billingStatus === 'function' && cat.billingStatus() === 'cancelled') {
+        return true;
+      }
+    } catch (_) {}
+    try {
+      var ent = root.fireSEntitlement;
+      var snap = ent && typeof ent.snapshot === 'function' ? ent.snapshot() : null;
+      var status = text(snap && snap.status).toLowerCase();
+      var reason = text(snap && snap.reason).toLowerCase();
+      if (
+        status === 'subscription_cancelled' ||
+        reason === 'subscription_cancelled' ||
+        reason === 'cancelled_until_period_end'
+      ) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   function paintReturnBanner() {
     var status = queryStatus();
-    if (status !== 'ok' && status !== 'cancel') return;
+    if (subscriptionLooksCancelled() && status !== 'ok') {
+      hideReturnBanner();
+      if (status === 'cancel') stripPayfastQuery();
+      return;
+    }
+    if (status !== 'ok' && status !== 'cancel') {
+      if (subscriptionLooksCancelled()) hideReturnBanner();
+      return;
+    }
     var doc = root.document;
     if (!doc || !doc.body) return;
     var bar = doc.getElementById('fireSPayfastReturnBanner');
@@ -394,7 +432,8 @@
     startCheckout: startCheckout,
     submitHostedCheckout: submitHostedCheckout,
     queryStatus: queryStatus,
-    paintReturnBanner: paintReturnBanner
+    paintReturnBanner: paintReturnBanner,
+    hideReturnBanner: hideReturnBanner
   };
 
   if (root.document && root.document.body) {

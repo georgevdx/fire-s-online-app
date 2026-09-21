@@ -310,6 +310,11 @@ html.fire-s-entitlement-blocked #fireSSubscribePayActions {
   z-index: 6;
 }
 
+html.fire-s-entitlement-blocked #fireSPayfastReturnBanner,
+body.fire-s-entitlement-blocked #fireSPayfastReturnBanner {
+  display: none !important;
+}
+
 html.fire-s-access-open #fireSHomeLockPanel,
 body.fire-s-access-open #fireSHomeLockPanel {
   display: none !important;

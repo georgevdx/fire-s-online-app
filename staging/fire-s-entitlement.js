@@ -1016,6 +1016,15 @@
     try {
       syncHomeLayer();
     } catch (_) {}
+    try {
+      var cancelled =
+        text(last && last.status) === 'subscription_cancelled' ||
+        text(last && last.reason) === 'subscription_cancelled' ||
+        text(last && last.reason) === 'cancelled_until_period_end';
+      if (cancelled && root.fireSPayfast && typeof root.fireSPayfast.hideReturnBanner === 'function') {
+        root.fireSPayfast.hideReturnBanner();
+      }
+    } catch (_) {}
     showBlockerIfNeeded();
     paintSubscribeHints(copy);
     try {

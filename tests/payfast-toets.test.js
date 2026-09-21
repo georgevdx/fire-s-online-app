@@ -18,7 +18,7 @@ const getStarted = read('staging/fire-s-get-started.js');
 const liveHtml = read('index.html');
 const liveEnv = read('fire-s-env.js');
 
-assert.ok(/1\.3\.105-toets/.test(envSrc), 'Toets-blad version must be 1.3.105-toets');
+assert.ok(/1\.3\.106-toets/.test(envSrc), 'Toets-blad version must be 1.3.106-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -128,6 +128,30 @@ assert.ok(
   const buyer = pf.submitHostedCheckout(buyerHtml);
   assert.ok(buyer && buyer.ok, 'test buyer email must still open PayFast');
   assert.ok(written.indexOf('fires-toets-buyer@example.com') !== -1);
+})();
+
+(function testHideOkBannerWhenCancelled() {
+  const banner = { id: 'fireSPayfastReturnBanner', parentNode: { removed: false } };
+  banner.parentNode.removeChild = function (node) {
+    banner.parentNode.removed = node === banner;
+  };
+  sandbox.document.getElementById = function (id) {
+    return id === 'fireSPayfastReturnBanner' ? banner : null;
+  };
+  sandbox.document.body = { firstChild: banner, insertBefore: function () {} };
+  sandbox.fireSSubscriptionCatalog = {
+    billingStatus: function () {
+      return 'cancelled';
+    }
+  };
+  sandbox.window.fireSSubscriptionCatalog = sandbox.fireSSubscriptionCatalog;
+  assert.ok(typeof pf.hideReturnBanner === 'function');
+  pf.hideReturnBanner();
+  assert.ok(banner.parentNode.removed, 'cancelled subscription must drop the green PayFast received bar');
+  sandbox.location.search = '';
+  sandbox.location.href = 'https://georgevdx.github.io/fire-s-online-app/staging/';
+  pf.paintReturnBanner();
+  assert.ok(banner.parentNode.removed, 'paint must not put the received bar back while cancelled');
 })();
 
 console.log('payfast-toets.test.js: ok');

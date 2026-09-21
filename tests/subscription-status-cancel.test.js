@@ -26,7 +26,7 @@ const liveCss = read('fire-s-subscribe.css');
 const liveManual = read('fire-s-user-manual.js');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.105-toets/.test(env), 'Toets-blad version must be 1.3.105-toets');
+assert.ok(/1\.3\.106-toets/.test(env), 'Toets-blad version must be 1.3.106-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 after sit dit live'
@@ -93,9 +93,19 @@ assert.ok(
 assert.ok(
   /PayFast received this payment\. Access updates when the server confirms/.test(payfast) &&
     /PayFast payment was cancelled\. This company and its inspections stay saved/.test(payfast) &&
+    /function hideReturnBanner\(/.test(payfast) &&
+    /subscriptionLooksCancelled/.test(payfast) &&
     /cat\.markUnpaid/.test(payfast) &&
     !/cat\.markPaid/.test(payfast),
   'PayFast return must not mark the browser as paid; cancel keeps company data'
+);
+assert.ok(
+  /hideReturnBanner/.test(subscribe) && /subscription_cancelled/.test(read('staging/fire-s-entitlement.js')),
+  'Cancelled subscription must drop the green PayFast received bar'
+);
+assert.ok(
+  /#fireSPayfastReturnBanner/.test(read('staging/fire-s-entitlement.css')),
+  'Locked Home must hide the leftover PayFast received bar'
 );
 
 assert.ok(

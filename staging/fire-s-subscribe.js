@@ -614,6 +614,13 @@
     }
     var required = byId('fireSSubscriptionRequiredPanel');
     if (required) required.hidden = true;
+    if (cancelled) {
+      try {
+        if (window.fireSPayfast && typeof window.fireSPayfast.hideReturnBanner === 'function') {
+          window.fireSPayfast.hideReturnBanner();
+        }
+      } catch (_) {}
+    }
     paintPayfastControls();
   }
 
@@ -656,6 +663,11 @@
       }
     } catch (_) {}
     setMessage('Cancelled. Auto-renew is off. Company name and inspections stay saved. Login with this same email to subscribe again.');
+    try {
+      if (window.fireSPayfast && typeof window.fireSPayfast.hideReturnBanner === 'function') {
+        window.fireSPayfast.hideReturnBanner();
+      }
+    } catch (_) {}
     paintSubscribeStatus();
     paintPayfastControls();
     refreshCardCopy();
