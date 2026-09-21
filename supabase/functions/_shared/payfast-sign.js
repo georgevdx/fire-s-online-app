@@ -40,7 +40,7 @@ export const PAYFAST_FIELD_ORDER = [
 
 export function phpUrlEncode(value) {
   return encodeURIComponent(String(value == null ? '' : value).trim())
-    .replace(/[!'()*]/g, function (ch) {
+    .replace(/[!'()*~]/g, function (ch) {
       return '%' + ch.charCodeAt(0).toString(16).toUpperCase();
     })
     .replace(/%20/g, '+')

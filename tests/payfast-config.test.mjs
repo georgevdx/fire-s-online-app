@@ -6,6 +6,7 @@ import {
   buildSignedCheckoutFields,
   generateSignature,
   payfastBuyerEmail,
+  phpUrlEncode,
   resolveAuthoritativeCheckout,
   signatureParamString,
   amountForInterval
@@ -105,6 +106,9 @@ assert.strictEqual(fields.custom_str2, 'owner@acme.test');
 assert.strictEqual(fields.email_address, 'fires-toets-buyer@example.com');
 assert.notStrictEqual(fields.email_address, 'owner@acme.test');
 assert.ok(fields.signature && fields.signature.length === 32);
+assert.strictEqual(phpUrlEncode('~'), '%7E');
+assert.strictEqual(phpUrlEncode('a b'), 'a+b');
+assert.strictEqual(phpUrlEncode("!'()*"), '%21%27%28%29%2A');
 
 const unsigned = Object.assign({}, fields);
 delete unsigned.signature;

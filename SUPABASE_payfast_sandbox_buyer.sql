@@ -2,10 +2,14 @@
 -- PayFast refuses checkout when email_address is the merchant account.
 -- This signs a sandbox checkout as fires-toets-buyer@example.com.
 --
--- 1. Run this file on Fire-S Test (SQL Editor).
--- 2. UPDATE the one secrets row with the SAME sandbox merchant id, key
---    and passphrase already set on the payfast-checkout Edge Function.
--- 3. Refresh the toets-blad with ?v=204 and tap Pay on PayFast.
+-- 1. Run this whole file on Fire-S Test (SQL Editor). Secrets already in
+--    fire_s_payfast_sandbox_secrets stay (this does not wipe them).
+-- 2. The three values must be the SAME sandbox Merchant ID, Merchant Key
+--    and Salt Passphrase already on payfast-checkout, from
+--    https://sandbox.payfast.co.za → Settings → Salt Passphrase.
+--    Not the merchant key. Not extra quotes. Not the docs example unless
+--    that example is truly your sandbox salt.
+-- 3. Refresh the toets-blad with ?v=205 and tap Pay on PayFast.
 --
 -- Secrets stay in this table. Authenticated clients cannot read them.
 -- Inspections stay. Nothing is deleted.
@@ -28,6 +32,8 @@ revoke all on table public.fire_s_payfast_sandbox_secrets from public;
 revoke all on table public.fire_s_payfast_sandbox_secrets from anon;
 revoke all on table public.fire_s_payfast_sandbox_secrets from authenticated;
 
+-- PHP urlencode(trim($val)): A-Za-z0-9 and -_. stay, space becomes +,
+-- everything else (including ~) is uppercase %XX. PayFast verifies with this.
 create or replace function public.fire_s_payfast_php_encode(p_value text)
 returns text
 language plpgsql
@@ -47,7 +53,7 @@ begin
     if (v_b >= 48 and v_b <= 57)
        or (v_b >= 65 and v_b <= 90)
        or (v_b >= 97 and v_b <= 122)
-       or v_b in (45, 46, 95, 126) then
+       or v_b in (45, 46, 95) then
       v_out := v_out || convert_from(substring(v_bytes from v_i + 1 for 1), 'UTF8');
     elsif v_b = 32 then
       v_out := v_out || '+';
@@ -66,6 +72,26 @@ immutable
 as $$
   select replace(replace(replace(replace(replace(coalesce(p_value, ''),
     '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;'), '''', '&#39;');
+$$;
+
+create or replace function public.fire_s_payfast_clean_secret(p_value text)
+returns text
+language plpgsql
+immutable
+as $$
+declare
+  v text := coalesce(p_value, '');
+begin
+  v := replace(replace(v, chr(65279), ''), chr(160), ' ');
+  v := btrim(v);
+  if length(v) >= 2 and (
+       (substring(v from 1 for 1) = '"' and right(v, 1) = '"')
+    or (substring(v from 1 for 1) = '''' and right(v, 1) = '''')
+  ) then
+    v := btrim(substring(v from 2 for length(v) - 2));
+  end if;
+  return v;
+end;
 $$;
 
 create or replace function public.fire_s_sandbox_payfast_html(
@@ -100,12 +126,16 @@ declare
   v_notify text := 'https://ejqgzpkfcwocmtvwufwp.supabase.co/functions/v1/payfast-itn';
   v_process text := 'https://sandbox.payfast.co.za/eng/process';
   v_freq text;
+  -- Official hosted-checkout attribute order. Blank values are skipped.
   v_names text[] := ARRAY[
     'merchant_id', 'merchant_key', 'return_url', 'cancel_url', 'notify_url',
-    'email_address', 'm_payment_id', 'amount', 'item_name', 'item_description',
+    'name_first', 'name_last', 'email_address', 'cell_number', 'm_payment_id',
+    'amount', 'item_name', 'item_description',
+    'custom_int1', 'custom_int2', 'custom_int3', 'custom_int4', 'custom_int5',
     'custom_str1', 'custom_str2', 'custom_str3', 'custom_str4', 'custom_str5',
-    'subscription_type', 'recurring_amount', 'frequency', 'cycles',
-    'subscription_notify_webhook'
+    'email_confirmation', 'confirmation_address', 'payment_method',
+    'subscription_type', 'billing_date', 'recurring_amount', 'frequency', 'cycles',
+    'subscription_notify_email', 'subscription_notify_webhook', 'subscription_notify_buyer'
   ];
   v_vals text[];
   v_i int;
@@ -127,16 +157,21 @@ begin
     raise exception 'Sign in first, then pay on PayFast.';
   end if;
 
-  select s.merchant_id, s.merchant_key, s.passphrase
+  select
+    public.fire_s_payfast_clean_secret(s.merchant_id),
+    public.fire_s_payfast_clean_secret(s.merchant_key),
+    public.fire_s_payfast_clean_secret(s.passphrase)
     into v_mid, v_mkey, v_pass
   from public.fire_s_payfast_sandbox_secrets s
   where s.id = 1;
-  if nullif(trim(coalesce(v_mid, '')), '') is null
-     or nullif(trim(coalesce(v_mkey, '')), '') is null
-     or nullif(trim(coalesce(v_pass, '')), '') is null
+  if v_mid is null or v_mid = ''
+     or v_mkey is null or v_mkey = ''
+     or v_pass is null or v_pass = ''
      or v_mid ilike 'PASTE_%'
-     or v_mkey ilike 'PASTE_%' then
-    raise exception 'Paste the PayFast sandbox merchant id, key and passphrase into fire_s_payfast_sandbox_secrets, then tap Pay again.';
+     or v_mkey ilike 'PASTE_%'
+     or v_pass ilike 'PASTE_%'
+     or v_pass ilike 'YOUR_%' then
+    raise exception 'Paste the PayFast sandbox merchant id, merchant key and Salt Passphrase into fire_s_payfast_sandbox_secrets (same trio as payfast-checkout), then tap Pay again.';
   end if;
 
   begin
@@ -175,11 +210,17 @@ begin
   v_freq := case when v_interval = 'annual' then '6' else '3' end;
   v_vals := ARRAY[
     v_mid, v_mkey, v_return, v_cancel, v_notify,
-    'fires-toets-buyer@example.com', v_ref, v_amount, v_item, v_desc,
+    '', '', 'fires-toets-buyer@example.com', '', v_ref,
+    v_amount, v_item, v_desc,
+    '', '', '', '', '',
     left(v_company::text, 255), left(v_email, 255), v_interval, left(v_kind, 255), left(v_email, 255),
-    '1', v_amount, v_freq, '0',
-    'true'
+    '', '', '',
+    '1', '', v_amount, v_freq, '0',
+    '', 'true', ''
   ];
+  if array_length(v_names, 1) is distinct from array_length(v_vals, 1) then
+    raise exception 'PayFast checkout fields are out of order. The payment was not sent.';
+  end if;
 
   for v_i in 1 .. array_length(v_names, 1) loop
     if nullif(v_vals[v_i], '') is null then
@@ -221,19 +262,28 @@ revoke all on function public.fire_s_sandbox_payfast_html(text, text) from publi
 revoke all on function public.fire_s_sandbox_payfast_html(text, text) from anon;
 grant execute on function public.fire_s_sandbox_payfast_html(text, text) to authenticated;
 
+revoke all on function public.fire_s_payfast_php_encode(text) from public;
+revoke all on function public.fire_s_payfast_php_encode(text) from anon;
+revoke all on function public.fire_s_payfast_php_encode(text) from authenticated;
+revoke all on function public.fire_s_payfast_clean_secret(text) from public;
+revoke all on function public.fire_s_payfast_clean_secret(text) from anon;
+revoke all on function public.fire_s_payfast_clean_secret(text) from authenticated;
+
 comment on function public.fire_s_sandbox_payfast_html(text, text) is
-  'Toets sandbox checkout as a test buyer. Does not create a company. Does not add a login. Does not delete inspections.';
+  'Toets sandbox checkout as a test buyer. PHP urlencode signature. Does not create a company. Does not add a login. Does not delete inspections.';
 
 commit;
 
 notify pgrst, 'reload schema';
 
--- Paste the same sandbox secrets already on payfast-checkout, then run this update:
+-- Paste the same sandbox secrets already on payfast-checkout, then run this update.
+-- passphrase is the Salt Passphrase from sandbox Settings, not the merchant key.
+-- Do not wrap the values in extra quotes.
 -- update public.fire_s_payfast_sandbox_secrets
 --    set merchant_id = 'YOUR_SANDBOX_MERCHANT_ID',
 --        merchant_key = 'YOUR_SANDBOX_MERCHANT_KEY',
---        passphrase = 'YOUR_SANDBOX_PASSPHRASE',
+--        passphrase = 'YOUR_SANDBOX_SALT_PASSPHRASE',
 --        updated_at = now()
 --  where id = 1;
 
-select 'fire_s sandbox buyer checkout ready — update fire_s_payfast_sandbox_secrets' as status;
+select 'fire_s sandbox buyer checkout ready — confirm Salt Passphrase in fire_s_payfast_sandbox_secrets' as status;

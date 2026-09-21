@@ -118,9 +118,9 @@
       '<body style="font-family:Arial,sans-serif;max-width:40rem;margin:2rem auto;line-height:1.45">' +
       '<h1>PayFast cannot take this payment</h1>' +
       '<p>This checkout still uses the same email as the PayFast merchant. PayFast then shows 400: merchant is unable to receive payments from the same account.</p>' +
-      '<p><strong>Run <code>SUPABASE_payfast_sandbox_buyer.sql</code> on Fire-S Test</strong>. Update <code>fire_s_payfast_sandbox_secrets</code> with the same sandbox merchant id, key and passphrase already on payfast-checkout. Then open the toets-blad with <code>?v=204</code> and tap Pay on PayFast again.</p>' +
+      '<p><strong>Run <code>SUPABASE_payfast_sandbox_buyer.sql</code> on Fire-S Test</strong>. Put the same sandbox Merchant ID, Merchant Key and <strong>Salt Passphrase</strong> already on payfast-checkout into <code>fire_s_payfast_sandbox_secrets</code>. Then open the toets-blad with <code>?v=205</code> and tap Pay on PayFast again.</p>' +
       '<p>Do not create a new company.</p>' +
-      '<p><a href="./?v=204">Back to Fire-S</a></p>' +
+      '<p><a href="./?v=205">Back to Fire-S</a></p>' +
       '</body></html>'
     );
   }
@@ -195,7 +195,7 @@
         ok: false,
         reason: 'same-account',
         error:
-          'PayFast cannot take a payment from the merchant email. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test, then refresh with ?v=204 and tap Pay again.'
+          'PayFast cannot take a payment from the merchant email. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test, then refresh with ?v=205 and tap Pay again.'
       };
     }
     // Full auto-submit HTML is what opened PayFast before. Write that page
