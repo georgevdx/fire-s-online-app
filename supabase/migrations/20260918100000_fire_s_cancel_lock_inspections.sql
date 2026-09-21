@@ -1,10 +1,10 @@
--- Fire-S: after expiry, cancel locks inspection access.
+-- Fire-S: cancel locks inspection access until a new subscription.
 -- Run AFTER SUPABASE_subscription_lifecycle.sql on Fire-S Test.
 --
 -- Cancelled companies KEEP every inspection row in the cloud (keep_data).
--- App access continues until current_period_end. After that expiry date
--- the app and inspection SELECT cannot open old or new inspections until a
--- new subscription is active, or a valid trial remains.
+-- The paid-through date (current_period_end) stays on the row for billing.
+-- App and inspection SELECT stay closed until a new subscription is active,
+-- unless cancel_keeps_access_until_paid_through is true.
 -- Super Admin keeps access. Nothing is deleted. Sit live later.
 
 begin;
@@ -18,7 +18,7 @@ alter table public.fire_s_entitlement_config
   alter column cancel_keeps_access_until_paid_through set default false;
 
 comment on column public.fire_s_entitlement_config.cancel_keeps_access_until_paid_through is
-  'Cancelled companies keep app access only until current_period_end. After that date can_read is false. Rows stay (keep_data).';
+  'When true, cancelled companies keep app access until current_period_end. When false (default), cancel locks inspections immediately. Rows stay (keep_data).';
 
 create or replace function public.fire_s_cancel_keeps_access()
 returns boolean
@@ -169,6 +169,7 @@ begin
     v_can_create := true;
     v_in_grace := true;
   elsif v_sub_status = 'cancelled'
+        and public.fire_s_cancel_keeps_access()
         and v_access is not null
         and v_now < v_access then
     v_status := 'subscription_cancelled';

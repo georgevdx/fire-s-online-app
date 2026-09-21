@@ -109,12 +109,12 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-106-pay/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.css\?v=1-3-106-pay/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-107-lock/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.css\?v=1-3-107-lock/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
-assert.ok(/app\.js\?v=1-3-106-pay/.test(stagingHtml));
-assert.ok(/Version 1\.3\.106-toets/.test(stagingHtml));
+assert.ok(/app\.js\?v=1-3-107-lock/.test(stagingHtml));
+assert.ok(/Version 1\.3\.107-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
 assert.ok(!/inspectionAccessLocked/.test(liveApp), 'live openProject waits for sit dit live');
 assert.ok(/inspectionAccessLocked\(\)/.test(stagingApp));
@@ -137,20 +137,16 @@ assert.ok(/interval '1 month'/.test(restoreExpirySql));
 assert.ok(/interval '1 year'/.test(restoreExpirySql));
 assert.ok(/subscription_paid_through/.test(restoreExpirySql));
 assert.ok(/fire_s_refresh_entitlement_status/.test(restoreExpirySql));
-assert.ok(/cancelled_until_period_end/.test(restoreExpirySql));
-assert.ok(/access_until_paid_through/.test(restoreExpirySql));
+assert.ok(/inspections_locked/.test(restoreExpirySql));
 assert.ok(/keep_data/.test(restoreExpirySql));
 assert.ok(/Do not run on live/.test(restoreExpirySql));
 assert.ok(/SUPABASE_test_cancelled_expiry_past\.sql/.test(restoreExpirySql));
 assert.ok(!/now\(\) - interval '1 day'/.test(restoreExpirySql), 'restore must not keep the yesterday shortcut');
 assert.ok(!/delete from public\.inspections/.test(restoreExpirySql));
+assert.ok(/fire_s_cancel_keeps_access\(\)/.test(compute), 'paid-through access is only when the keep-access flag is on');
 assert.ok(
-  /status = 'cancelled' then\s+return v_period/s.test(sliceFn(lockSql, 'fire_s_subscription_access_until')),
-  'live cancel must keep access until current_period_end, not lock immediately'
-);
-assert.ok(
-  /v_sub_status = 'cancelled'\s+and v_access is not null\s+and v_now < v_access then/s.test(compute),
-  'compute must allow cancelled companies until the paid-through date'
+  /v_sub_status = 'cancelled'\s+and public\.fire_s_cancel_keeps_access\(\)\s+and v_access is not null\s+and v_now < v_access then/s.test(compute),
+  'default cancel must lock inspections even before the paid-through date'
 );
 
 function fakeEl(id, nodes) {
@@ -250,7 +246,8 @@ const oldPaidThroughCopy = ent.fireSEntitlement.displayCopy({
   can_read: true,
   backendReady: true
 });
-assert.strictEqual(oldPaidThroughCopy.urgency, 'mid', 'before expiry the company can still work, with a cancelled banner');
+assert.strictEqual(oldPaidThroughCopy.urgency, 'block', 'cancelled companies stay locked until a new subscription is active');
+assert.ok(/locked until a new subscription is active/i.test(oldPaidThroughCopy.detail));
 assert.strictEqual(
   ent.fireSEntitlement.inspectionAccessLocked(),
   true,
@@ -353,11 +350,11 @@ assert.strictEqual(ent.fireSEntitlement.homeWorkAllowed(), false);
   await paidThroughClient.fireSEntitlement.getCompanyEntitlement('co1');
   assert.strictEqual(
     paidThroughClient.fireSEntitlement.inspectionAccessLocked(),
-    false,
-    'cancelled companies stay open until the paid-through date'
+    true,
+    'cancelled companies stay locked until a new subscription is active'
   );
-  assert.strictEqual(paidThroughClient.fireSEntitlement.canRead(), true);
-  assert.strictEqual(paidThroughClient.fireSEntitlement.operationallyAllowed(), true);
+  assert.strictEqual(paidThroughClient.fireSEntitlement.canRead(), false);
+  assert.strictEqual(paidThroughClient.fireSEntitlement.operationallyAllowed(), false);
 
   client.currentUserProfile.role = 'super_admin';
   client.isSuperAdmin = function () { return true; };

@@ -1,18 +1,18 @@
 -- Fire-S Test only. Do not run on live.
 -- Undo of SUPABASE_test_cancelled_expiry_past.sql
 --
--- That test file moved cancelled expiry to yesterday so the lock showed NOW.
--- This puts the expiry back to the real paid-through date:
+-- That test file moved cancelled expiry to yesterday. This puts the
+-- expiry back to the real paid-through date:
 --   last successful payment + 1 month  (or + 1 year if the plan is annual)
 --
--- After this, a cancelled company still works until that date.
--- After that date the app locks. Inspections stay. Nothing is deleted.
+-- Cancel still LOCKS inspections until a new subscription is active.
+-- The date is only for billing. Inspections stay. Nothing is deleted.
 -- Sit live later. Do not sit the yesterday-expiry test live.
 --
 -- 1. Open Fire-S Test → SQL Editor (the toets project, not live).
 -- 2. Run this WHOLE file as-is. Do not change anything.
--- 3. Refresh the toets-blad. Look at the last table: access_until_paid_through
---    must be true, and reason must be cancelled_until_period_end.
+-- 3. Last table: expiry_restored is the real date, inspections_locked
+--    is true, keep_data is true.
 
 begin;
 
@@ -95,9 +95,8 @@ select
   public.fire_s_compute_entitlement(s.company_id)->>'keep_data' as keep_data,
   public.fire_s_compute_entitlement(s.company_id)->>'access_until' as access_until,
   (
-    s.current_period_end > now()
-    and (public.fire_s_compute_entitlement(s.company_id)->>'reason') = 'cancelled_until_period_end'
-    and (public.fire_s_compute_entitlement(s.company_id)->>'can_read')::boolean = true
-  ) as access_until_paid_through
+    (public.fire_s_compute_entitlement(s.company_id)->>'can_read')::boolean = false
+    and (public.fire_s_compute_entitlement(s.company_id)->>'keep_data')::boolean = true
+  ) as inspections_locked
 from public.fire_s_company_subscriptions s
 where s.status = 'cancelled';

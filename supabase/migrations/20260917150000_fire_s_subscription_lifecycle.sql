@@ -45,7 +45,7 @@ alter table public.fire_s_company_subscriptions
 comment on column public.fire_s_entitlement_config.payment_grace_days is
   'Days of paid access after a failed renewal. One row, not scattered in app code.';
 comment on column public.fire_s_entitlement_config.cancel_keeps_access_until_paid_through is
-  'Cancelled companies keep app access only until current_period_end. After that date can_read is false. Rows stay (keep_data).';
+  'When true, cancelled companies keep app access until current_period_end. When false (default), cancel locks inspections immediately. Rows stay (keep_data).';
 
 create or replace function public.fire_s_payment_grace_days()
 returns integer
@@ -209,6 +209,7 @@ begin
     v_can_create := true;
     v_in_grace := true;
   elsif v_sub_status = 'cancelled'
+        and public.fire_s_cancel_keeps_access()
         and v_access is not null
         and v_now < v_access then
     v_status := 'subscription_cancelled';
