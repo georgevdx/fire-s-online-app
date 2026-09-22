@@ -5053,17 +5053,26 @@ let fireSCloudPullGeneration = 0;
 
 async function safeDownloadNewerCloudInspections(options) {
     if (!navigator.onLine) {
-      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      try {
+        window.__fireSCloudPullSettled = !!(
+          window.__fireSCloudBuildingFilter &&
+          window.__fireSCloudBuildingFilter.ready
+        );
+      } catch (_) {}
       return;
     }
     if (typeof supabaseClient === 'undefined') {
-      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      try {
+        window.__fireSCloudPullSettled = !!(
+          window.__fireSCloudBuildingFilter &&
+          window.__fireSCloudBuildingFilter.ready
+        );
+      } catch (_) {}
       return;
     }
     if (fireSCloudPullInFlight) return;
     fireSCloudPullInFlight = true;
     try { window.__fireSCloudPullSettled = false; } catch (_) {}
-    try { window.__fireSCloudBuildingFilter = null; } catch (_) {}
     const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
@@ -5073,7 +5082,12 @@ async function safeDownloadNewerCloudInspections(options) {
       await supabaseClient.auth.getUser();
 
     if (userError || !userData || !userData.user) {
-      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      try {
+        window.__fireSCloudPullSettled = !!(
+          window.__fireSCloudBuildingFilter &&
+          window.__fireSCloudBuildingFilter.ready
+        );
+      } catch (_) {}
       return;
     }
 
@@ -5197,7 +5211,12 @@ async function safeDownloadNewerCloudInspections(options) {
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
       if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
-      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      try {
+        window.__fireSCloudPullSettled = !!(
+          window.__fireSCloudBuildingFilter &&
+          window.__fireSCloudBuildingFilter.ready
+        );
+      } catch (_) {}
       finishPremisesProgress();
       return;
     }
@@ -5266,7 +5285,12 @@ async function safeDownloadNewerCloudInspections(options) {
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
-    try { window.__fireSCloudPullSettled = true; } catch (_) {}
+    try {
+      window.__fireSCloudPullSettled = !!(
+        window.__fireSCloudBuildingFilter &&
+        window.__fireSCloudBuildingFilter.ready
+      );
+    } catch (_) {}
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
@@ -26643,23 +26667,33 @@ function fireSApplyCloudBuildingFilter(cloudRows) {
     if (key) keys[key] = true;
   });
   try {
-    window.__fireSCloudBuildingFilter =
-      Object.keys(ids).length || Object.keys(keys).length
-        ? { ids: ids, keys: keys }
-        : null;
+    window.__fireSCloudBuildingFilter = {
+      ids: ids,
+      keys: keys,
+      ready: true
+    };
   } catch (_) {}
+}
+
+function fireSCloudBuildingFilterReady() {
+  try {
+    const filter = window.__fireSCloudBuildingFilter;
+    return !!(filter && filter.ready === true);
+  } catch (_) {
+    return false;
+  }
 }
 
 function fireSFilterToCloudBuildings(list) {
   const unique = fireSUniqueCurrentBuildings(list);
   let filter = null;
   try { filter = window.__fireSCloudBuildingFilter; } catch (_) {}
-  if (!filter || (!filter.ids && !filter.keys)) return unique;
+  if (!filter || filter.ready !== true) return unique;
   const ids = filter.ids || {};
   const keys = filter.keys || {};
   const hasIds = Object.keys(ids).length > 0;
   const hasKeys = Object.keys(keys).length > 0;
-  if (!hasIds && !hasKeys) return unique;
+  if (!hasIds && !hasKeys) return [];
   return unique.filter(project => {
     if (hasIds && ids[String((project && project.id) || '').trim()]) return true;
     const key = fireSPremisesBuildingKey(project);
@@ -27051,6 +27085,7 @@ window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
 window.fireSCloudBackedBuildings = fireSCloudBackedBuildings;
 window.fireSFilterToCloudBuildings = fireSFilterToCloudBuildings;
 window.fireSApplyCloudBuildingFilter = fireSApplyCloudBuildingFilter;
+window.fireSCloudBuildingFilterReady = fireSCloudBuildingFilterReady;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
 window.fireSHasLiveCurrentInspection = fireSHasLiveCurrentInspection;
 window.fireSIsScheduledNewPremisesOnly = fireSIsScheduledNewPremisesOnly;

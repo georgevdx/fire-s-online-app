@@ -23,7 +23,7 @@ assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
   'Live Fire-S must be 1.3.65 so signed-out Access is shown'
 );
-assert.ok(/1\.3\.107-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.107-toets');
+assert.ok(/1\.3\.108-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.108-toets');
 
 Object.keys(files).forEach(function (name) {
   const src = files[name];

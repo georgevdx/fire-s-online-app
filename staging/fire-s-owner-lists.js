@@ -267,15 +267,11 @@
     try {
       if (typeof root.fireSFilterToCloudBuildings === 'function') {
         const unique = root.fireSFilterToCloudBuildings(source);
-        if (Array.isArray(unique)) {
-          return source.filter(project => unique.indexOf(project) !== -1);
-        }
+        if (Array.isArray(unique)) return unique;
       }
       if (typeof root.fireSUniqueCurrentBuildings === 'function') {
         const unique = root.fireSUniqueCurrentBuildings(source);
-        if (Array.isArray(unique)) {
-          return source.filter(project => unique.indexOf(project) !== -1);
-        }
+        if (Array.isArray(unique)) return unique;
       }
     } catch (_) {}
     const seen = Object.create(null);
@@ -286,6 +282,17 @@
       seen[key] = true;
       return true;
     });
+  }
+
+  function companyCloudListReady() {
+    try {
+      if (root.__fireSCloudPullSettled !== true) return false;
+      if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
+      const filter = root.__fireSCloudBuildingFilter;
+      return !!(filter && filter.ready === true);
+    } catch (_) {
+      return false;
+    }
   }
 
   function buildModel(projects, today) {
@@ -546,7 +553,7 @@
       pullState.loading = !!root.__fireSOwnerListsPullProgress.loading;
       pullState.done = !!root.__fireSOwnerListsPullProgress.done;
     }
-    if (root.__fireSCloudPullSettled === true) {
+    if (root.__fireSCloudPullSettled === true && companyCloudListReady()) {
       pullState.loading = false;
       pullState.done = true;
     }
@@ -658,10 +665,9 @@
       hidePanel(panel);
       return;
     }
-    // undefined used to paint the laptop's local 8 before the company pull
-    // finished and Recycle hide dropped it to 7. Wait for the settled unique
-    // list so phone and laptop lock the same building number.
-    if (root.__fireSCloudPullSettled !== true) {
+    // Laptop leftover locals must not paint 7 while the phone still has the
+    // company cloud's 5. Wait until that cloud building list is ready.
+    if (!companyCloudListReady()) {
       pullState.loading = true;
       pullState.done = false;
       const countEl = byId('fireSOwnerListsCount');
