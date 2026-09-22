@@ -15,9 +15,9 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 
 assert.ok(
   /id="fireSOwnerListsLookup"/.test(stagingHtml) &&
-    /list="fireSOwnerListsLookupOptions"/.test(stagingHtml) &&
     /id="fireSOwnerListsLookupMatches"/.test(stagingHtml) &&
-    /placeholder="Type a premises name"/.test(stagingHtml),
+    /placeholder="Type a premises name"/.test(stagingHtml) &&
+    !/fireSOwnerListsLookupOptions/.test(stagingHtml),
   'Home All buildings must have a premises lookup text field'
 );
 assert.ok(

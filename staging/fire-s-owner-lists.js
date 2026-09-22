@@ -468,14 +468,6 @@
     return best;
   }
 
-  function fillLookupOptions(rows) {
-    const list = byId('fireSOwnerListsLookupOptions');
-    if (!list) return;
-    list.innerHTML = (rows || []).map(row =>
-      `<option value="${esc(row.name)}"></option>`
-    ).join('');
-  }
-
   function renderLookupMatches(matches, needle) {
     const host = byId('fireSOwnerListsLookupMatches');
     const hint = byId('fireSOwnerListsLookupHint');
@@ -509,7 +501,6 @@
     const needle = lookupNeedle();
     const matches = needle ? rankedLookupMatches(model.all, needle) : [];
     const rows = needle ? matches : model.all;
-    fillLookupOptions(model.all);
     renderLookupMatches(matches, needle);
     if (!rows.length) {
       allBody.innerHTML = emptyRow(
