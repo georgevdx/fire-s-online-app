@@ -19,7 +19,7 @@ assert.ok(
 );
 assert.ok(
   /app\.js\?v=1-3-108-count/.test(html) &&
-    /Version 1\.3\.109-toets/.test(html),
+    /Version 1\.3\.110-toets/.test(html),
   'Toets must cache-bust exclusive Action vs Overdue without bumping the displayed version'
 );
 

@@ -14,7 +14,7 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 const stagingApp = read('staging/app.js');
 
 assert.ok(
-  /fire-s-owner-lists\.js\?v=1-8-upcoming/.test(stagingHtml) &&
+  /fire-s-owner-lists\.js\?v=1-9-overdue/.test(stagingHtml) &&
     /function rowsForUniqueBuildings\(/.test(stagingLists) &&
     /Loading upcoming inspections/.test(stagingLists) &&
     /Loading buildings with deficiencies/.test(stagingLists) &&
@@ -83,6 +83,18 @@ const stored = [
     organisationName: 'Far Site',
     scheduledDate: '2026-12-01',
     answers: []
+  },
+  {
+    id: 'late',
+    organisationName: 'Late Hall',
+    scheduledDate: '2026-09-01',
+    answers: []
+  },
+  {
+    id: 'local-new',
+    organisationName: 'Brand New Yard',
+    scheduledDate: '2026-09-20',
+    answers: []
   }
 ];
 
@@ -137,22 +149,32 @@ assert.ok(
 );
 
 sandbox.__fireSCloudPullSettled = true;
-sandbox.fireSApplyCloudBuildingFilter(stored.map(function (row) {
-  return { id: row.id, inspection_data: row };
-}));
+sandbox.fireSApplyCloudBuildingFilter(
+  stored.filter(function (row) { return row.id !== 'local-new'; }).map(function (row) {
+    return { id: row.id, inspection_data: row };
+  })
+);
 sandbox.fireSRefreshOwnerLists();
 
 assert.strictEqual(
   el(elements, 'fireSOwnerListsCount').textContent,
-  '3 buildings on the company inspection list',
+  '4 buildings on the company inspection list',
   'Greenfield School remains one building even with a later scheduled row'
 );
 
 const model = sandbox.fireSBuildOwnerListModel(stored, '2026-09-16');
 assert.strictEqual(
   model.upcoming.map(function (row) { return row.due; }).slice().sort().join(','),
-  '2026-09-25,2026-09-28',
-  'Upcoming must use the scheduled sibling, not drop it when a newer draft has no date'
+  '2026-09-01,2026-09-20,2026-09-25,2026-09-28',
+  'Upcoming must include overdue, a local booking not yet in the cloud unique list, and the next 30 days'
+);
+assert.ok(
+  model.upcoming.some(function (row) { return row.name.indexOf('Late Hall') !== -1; }),
+  'Overdue bookings must appear on Upcoming, not vanish because the date is before today'
+);
+assert.ok(
+  model.upcoming.some(function (row) { return row.name.indexOf('Brand New Yard') !== -1; }),
+  'A newly scheduled local site must still appear on Upcoming before the cloud unique list has it'
 );
 assert.ok(
   model.upcoming.some(function (row) { return row.id === 'school-next' || row.id === 'school-done'; }),

@@ -9,8 +9,8 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var WANT = '1.3.109-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-109';
+        var WANT = '1.3.110-toets';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-110';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -117,7 +117,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-107-toets-now">
+  <link rel="stylesheet" href="styles.css?v=1-3-110-datepick">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -142,7 +142,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.109-toets</p>
+      <p class="brand-version">Version 1.3.110-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -166,7 +166,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.109-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.110-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -242,7 +242,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.109-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.110-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -522,6 +522,7 @@
 
       <div class="fire-s-owner-lists-block">
         <h4>Upcoming inspections (next 30 days)</h4>
+        <p class="fire-s-owner-lists-hint">Includes overdue bookings.</p>
         <div class="fire-s-owner-lists-scroll">
           <table class="fire-s-owner-lists-table fire-s-owner-lists-upcoming" id="fireSOwnerListsUpcoming">
             <thead>
@@ -1444,7 +1445,7 @@
   </div>
 
   <label for="scheduleDate">Scheduled Date</label>
-  <input id="scheduleDate" type="date">
+  <input id="scheduleDate" class="fire-s-date-input" type="date" lang="en-ZA" autocomplete="off">
 
   <label for="scheduleInspectorSelect">Assign to inspector</label>
   <select id="scheduleInspectorSelect">
@@ -1499,12 +1500,12 @@
     <div class="inspection-date-filter-grid">
       <label>
         From
-        <input id="inspectionDateFrom" type="date">
+        <input id="inspectionDateFrom" class="fire-s-date-input" type="date" lang="en-ZA" autocomplete="off">
       </label>
 
       <label>
         To
-        <input id="inspectionDateTo" type="date">
+        <input id="inspectionDateTo" class="fire-s-date-input" type="date" lang="en-ZA" autocomplete="off">
       </label>
     </div>
 
@@ -1712,7 +1713,10 @@
       Inspection Date
       <input
         id="inspectionDate"
+        class="fire-s-date-input"
         type="date"
+        lang="en-ZA"
+        autocomplete="off"
       >
     </label>
   </div>
@@ -1859,7 +1863,7 @@
       </select>
 
       <label for="followUpDate">Corrective Follow-up Date</label>
-      <input type="date" id="followUpDate">
+      <input type="date" id="followUpDate" class="fire-s-date-input" lang="en-ZA" autocomplete="off">
 
       <label for="followUpNotes">Corrective Follow-up Notes</label>
       <textarea
@@ -1920,7 +1924,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-109-lists"></script>
+  <script src="fire-s-env.js?v=1-3-110-datepick"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1939,11 +1943,11 @@
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-46-subscribe-bars"></script>
-  <script src="fire-s-owner-lists.js?v=1-8-upcoming"></script>
+  <script src="fire-s-owner-lists.js?v=1-9-overdue"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-21-isolate"></script>
-  <script src="fire-s-schedule-assign.js?v=1-2-exist-sched"></script>
+  <script src="fire-s-schedule-assign.js?v=1-3-datepicker"></script>
   <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-19-subtype"></script>
@@ -1966,7 +1970,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-74-toets-109')
+        navigator.serviceWorker.register('./service-worker.js?v=108-75-toets-110')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

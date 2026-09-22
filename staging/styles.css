@@ -15714,3 +15714,35 @@ html[data-fire-s-theme="dark"] .fire-s-subscribe-seat-note {
   color: #e2e8f0 !important;
   -webkit-text-fill-color: #e2e8f0 !important;
 }
+
+/* Native date pickers sit on white paper. Dark color-scheme hid the calendar icon. */
+input[type="date"],
+input.fire-s-date-input {
+  color-scheme: light;
+  min-height: 44px;
+  min-width: 10.5rem;
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input.fire-s-date-input::-webkit-calendar-picker-indicator {
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+  opacity: 1 !important;
+  display: block !important;
+  cursor: pointer;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-left: 0.35rem;
+  background-color: transparent;
+  filter: none;
+}
+html[data-fire-s-theme="dark"] input[type="date"],
+html[data-fire-s-theme="dark"] input.fire-s-date-input,
+html[data-fire-s-theme="dark"] .schedule-new-panel input[type="date"],
+html[data-fire-s-theme="dark"] #nextInspectionCard input[type="date"] {
+  color-scheme: light !important;
+  color: #0f172a !important;
+  background: #ffffff !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
