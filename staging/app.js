@@ -1768,6 +1768,19 @@ function updateRecurringCyclePreview() {
   if (!enabled) {
     preview.textContent = 'Recurring cycle not active.';
     preview.className = 'recurring-cycle-preview';
+    if (document.getElementById('scheduledInspectionsBoard')) {
+      renderScheduledInspectionsBoard();
+    }
+    return;
+  }
+
+  if (currentProject?.recurringCycleOccurrenceCancelled === true) {
+    preview.textContent =
+      'Cycle active, but this booked cycle inspection was cancelled.';
+    preview.className = 'recurring-cycle-preview recurring-cycle-preview-warning';
+    if (document.getElementById('scheduledInspectionsBoard')) {
+      renderScheduledInspectionsBoard();
+    }
     return;
   }
 
@@ -1775,6 +1788,9 @@ function updateRecurringCyclePreview() {
     preview.textContent =
       'Recurring cycle active. Enter repeat number and unit to calculate the next cycle.';
     preview.className = 'recurring-cycle-preview recurring-cycle-preview-warning';
+    if (document.getElementById('scheduledInspectionsBoard')) {
+      renderScheduledInspectionsBoard();
+    }
     return;
   }
 

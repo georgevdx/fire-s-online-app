@@ -35,7 +35,8 @@ assert.ok(
   /function fireSListProjectScheduleEntries\(/.test(stagingApp) &&
     /function fireSApplyCancelScheduledInspection\(/.test(stagingApp) &&
     /function fireSHasBookedInspection\(/.test(stagingApp) &&
-    /Recurring cycle bookings also appear here/.test(stagingApp),
+    /Recurring cycle bookings also appear here/.test(stagingApp) &&
+    /Cycle active, but this booked cycle inspection was cancelled/.test(stagingApp),
   'Toets must list cycle bookings separately and allow cancel'
 );
 assert.ok(
