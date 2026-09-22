@@ -91,7 +91,7 @@ assert.ok(/body\.fire-s-entitlement-blocked #homeSection \.home-hero/.test(stagi
 assert.ok(/body\.fire-s-entitlement-blocked #fireSTrialBanner/.test(stagingCss));
 assert.ok(/body\.fire-s-entitlement-blocked #fireSEntitlementBlocker/.test(stagingCss));
 assert.ok(/inspectionHomeLocked\(\) \|\| !canShowLists\(\)/.test(read('staging/fire-s-owner-lists.js')));
-assert.ok(/fire-s-owner-lists\.js\?v=1-7-same-count/.test(stagingHtml));
+assert.ok(/fire-s-owner-lists\.js\?v=1-8-upcoming/.test(stagingHtml));
 assert.ok(/inspectionAccessLocked\(\)\) \{\s*banner\.hidden = true/s.test(stagingEntitlement));
 assert.ok(/z-index: 2147483500/.test(stagingCss));
 assert.ok(/stay locked until a new subscription is active/.test(stagingEntitlement));
@@ -114,7 +114,7 @@ assert.ok(/fire-s-entitlement\.css\?v=1-3-107-lock/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
 assert.ok(/app\.js\?v=1-3-108-count/.test(stagingHtml));
-assert.ok(/Version 1\.3\.108-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.109-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.65/.test(liveHtml));
 assert.ok(!/inspectionAccessLocked/.test(liveApp), 'live openProject waits for sit dit live');
 assert.ok(/inspectionAccessLocked\(\)/.test(stagingApp));

@@ -17,7 +17,7 @@ assert.ok(/function enforceStaffSignOut\(/.test(entitlement));
 assert.ok(/function isPayingOwner\(/.test(entitlement));
 assert.ok(/logoutUser/.test(entitlement), 'cancelled staff must be signed out');
 assert.ok(/You stay signed out until then/.test(entitlement));
-assert.ok(/1\.3\.108-toets/.test(env), 'Toets-blad version must be 1.3.108-toets');
+assert.ok(/1\.3\.109-toets/.test(env), 'Toets-blad version must be 1.3.109-toets');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
