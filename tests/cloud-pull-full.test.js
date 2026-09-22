@@ -48,7 +48,7 @@ assertPullSource(
   liveLists,
   'Live',
   '1-3-65-count',
-  '1-2-stable-home',
+  '1-3-home-lookup',
   '108-72-count',
   'fire-s-108-72-count'
 );
