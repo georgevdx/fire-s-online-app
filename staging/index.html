@@ -14,10 +14,15 @@
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
-          var stagingRegs = (regs || []).filter(function (reg) {
-            return /\/staging(\/|$)/i.test(String(reg && reg.scope || ''));
+          var dropRegs = (regs || []).filter(function (reg) {
+            var scope = String(reg && reg.scope || '');
+            try {
+              return String(location.href).indexOf(scope) === 0;
+            } catch (_) {
+              return /staging|fire-s-online-app/i.test(scope);
+            }
           });
-          return Promise.all(stagingRegs.map(function (reg) {
+          return Promise.all(dropRegs.map(function (reg) {
             return reg.unregister();
           })).then(function () {
             return caches.keys();
@@ -29,7 +34,7 @@
               return caches.delete(key);
             })).then(function () {
               try { localStorage.setItem(FLAG, WANT); } catch (_) {}
-              if (stagingRegs.length || toetsKeys.length) location.reload();
+              if (dropRegs.length || toetsKeys.length) location.reload();
             });
           });
         }).catch(function () {});
@@ -1961,24 +1966,9 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
-          console.log('Fire-S staging skips the live service worker.');
-          navigator.serviceWorker.getRegistrations().then(function (regs) {
-            return Promise.all((regs || []).filter(function (reg) {
-              return /\/staging(\/|$)/i.test(String(reg && reg.scope || ''));
-            }).map(function (reg) { return reg.unregister(); }));
-          }).then(function () {
-            return caches.keys();
-          }).then(function (keys) {
-            return Promise.all((keys || []).filter(function (key) {
-              return /toets/i.test(String(key || ''));
-            }).map(function (key) { return caches.delete(key); }));
-          }).catch(function () {});
-          return;
-        }
         navigator.serviceWorker.register('./service-worker.js?v=108-73-toets-108')
           .then(() => {
-            console.log('Fire-S service worker registered.');
+            console.log('Fire-S toets service worker registered.');
           })
           .catch(error => {
             console.warn('Service worker registration failed:', error);

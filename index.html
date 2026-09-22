@@ -2,8 +2,43 @@
 <html lang="en" class="fire-s-booting">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fire-S Fire Safety App</title>
+  <script>
+    (function fireSDropStuckLiveCache() {
+      try {
+        var WANT = '1-3-home-lookup';
+        var FLAG = 'fireS.liveCacheDrop.1-3-home-lookup';
+        if (localStorage.getItem(FLAG) === WANT) return;
+        if (!('serviceWorker' in navigator)) {
+          try { localStorage.setItem(FLAG, WANT); } catch (_) {}
+          return;
+        }
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          var liveRegs = (regs || []).filter(function (reg) {
+            return !/\/staging(\/|$)/i.test(String(reg && reg.scope || ''));
+          });
+          return Promise.all(liveRegs.map(function (reg) {
+            return reg.unregister();
+          })).then(function () {
+            return caches.keys();
+          }).then(function (keys) {
+            var liveKeys = (keys || []).filter(function (key) {
+              return /fire-s-108/i.test(String(key || '')) && !/toets/i.test(String(key || ''));
+            });
+            return Promise.all(liveKeys.map(function (key) {
+              return caches.delete(key);
+            })).then(function () {
+              try { localStorage.setItem(FLAG, WANT); } catch (_) {}
+              if (liveRegs.length || liveKeys.length) location.reload();
+            });
+          });
+        }).catch(function () {});
+      } catch (e) {}
+    })();
+  </script>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-512.png">
   <meta name="theme-color" content="#b71c1c">
@@ -1852,7 +1887,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-72-count')
+        navigator.serviceWorker.register('./service-worker.js?v=108-74-drop')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

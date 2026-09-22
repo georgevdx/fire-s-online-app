@@ -1,7 +1,5 @@
-const CACHE = 'fire-s-108-72-count';
+const CACHE = 'fire-s-108-74-drop';
 const PRECACHE = [
-  './',
-  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -35,10 +33,17 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (url.origin !== self.location.origin) return;
+  // Live must not hijack the toets-blad. Staging has its own worker.
+  if (/\/staging(\/|$)/i.test(url.pathname || '')) return;
+  const path = url.pathname || '';
+  const isDoc =
+    req.mode === 'navigate' ||
+    path.endsWith('/') ||
+    /\.html$/i.test(path);
   event.respondWith(
-    fetch(req)
+    fetch(req, isDoc ? { cache: 'no-store' } : undefined)
       .then(res => {
-        if (res && res.ok) {
+        if (res && res.ok && !isDoc) {
           const copy = res.clone();
           caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => undefined);
         }
