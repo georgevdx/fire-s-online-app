@@ -22,8 +22,8 @@ const liveCatalog = read('fire-s-subscriptions.js');
 const stagingCatalog = read('staging/fire-s-subscriptions.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
-  'Live Fire-S must be 1.3.65'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
+  'Live Fire-S must be 1.3.66'
 );
 assert.ok(/1\.3\.110-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.110-toets');
 

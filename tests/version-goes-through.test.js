@@ -15,11 +15,11 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-home-lookup/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-66-payfast/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
-    /service-worker\.js\?v=108-74-drop/.test(liveHtml) &&
-    /fire-s-108-74-drop/.test(liveSw),
-  'Live must drop the stuck service worker even while the displayed version stays 1.3.65'
+    /service-worker\.js\?v=108-75-live-payfast/.test(liveHtml) &&
+    /fire-s-108-75-live-payfast/.test(liveSw),
+  'Live must drop the stuck service worker so a phone can tell it has 1.3.66'
 );
 assert.ok(
   /\/staging\(\\\/\|\$\)\/i\.test\(url\.pathname/.test(liveSw) ||
@@ -46,9 +46,9 @@ assert.ok(
   'Toets must drop any worker that still controls the toets page, including a live hijack'
 );
 assert.ok(
-  /Version 1\.3\.65/.test(liveHtml) &&
+  /Version 1\.3\.66/.test(liveHtml) &&
     /Version 1\.3\.110-toets/.test(stagingHtml),
-  'Displayed versions stay 1.3.65 live and 1.3.110-toets so a phone can tell it has this build'
+  'Displayed versions stay 1.3.66 live and 1.3.110-toets so a phone can tell it has this build'
 );
 
 console.log('version-goes-through.test.js: ok');

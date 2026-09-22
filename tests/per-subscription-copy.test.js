@@ -25,8 +25,8 @@ const liveHtml = read('index.html');
 
 assert.ok(/1\.3\.110-toets/.test(env), 'Toets-blad version must stay on 1.3.110-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
-  'Live Fire-S must be 1.3.65 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
+  'Live Fire-S must be 1.3.66 after sit dit live'
 );
 
 const priceFiles = [html, catalogSrc, subscribe, notify, getStarted, roles, manual, terms, privacy];
@@ -106,11 +106,11 @@ assert.ok(
 );
 assert.ok(/Fire-S invoices the owner/.test(terms), 'Toets terms must still say Fire-S invoices the owner');
 assert.ok(
-  /R250 per subscription/.test(liveCatalog) &&
+  /R250 per month per login/.test(liveCatalog) &&
     /R250 per subscription/.test(liveHtml) &&
     !/R349 per email/.test(liveCatalog) &&
     !/R349 per email/.test(liveHtml),
-  'Live root must say R250 per subscription'
+  'Live root must say R250 per login / per subscription'
 );
 assert.ok(
   !/Company S/.test(read('terms.html')) &&

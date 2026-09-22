@@ -148,6 +148,74 @@ export function assertSandboxCheckout(cfg) {
   }
 }
 
+export function assertLiveCheckout(cfg) {
+  if (!cfg || cfg.mode !== 'live') {
+    throw new Error('PayFast live checkout requires PAYFAST_MODE=live and PAYFAST_ALLOW_LIVE=true.');
+  }
+  if (!/www\.payfast\.co\.za/i.test(text(cfg.processUrl))) {
+    throw new Error('PayFast live checkout must use www.payfast.co.za.');
+  }
+}
+
+export function assertCheckoutMode(cfg) {
+  if (cfg && cfg.mode === 'live') {
+    assertLiveCheckout(cfg);
+    return;
+  }
+  assertSandboxCheckout(cfg);
+}
+
+export function itnParamString(params, passphrase) {
+  const parts = [];
+  const walk = function (value, key) {
+    if (String(key) === 'signature') return;
+    const val = text(value);
+    if (!val) return;
+    parts.push(key + '=' + phpUrlEncode(val));
+  };
+  if (params && typeof params.forEach === 'function' && typeof params.get === 'function') {
+    params.forEach(walk);
+  } else {
+    Object.keys(params || {}).forEach(function (key) {
+      walk(params[key], key);
+    });
+  }
+  let getString = parts.join('&');
+  if (text(passphrase)) getString += '&passphrase=' + phpUrlEncode(passphrase);
+  return getString;
+}
+
+export function verifyItnSignature(params, passphrase, postedSignature) {
+  const expected = md5hex(itnParamString(params, passphrase));
+  return text(postedSignature).toLowerCase() === expected;
+}
+
+export function parseItnFields(params) {
+  const get = function (name) {
+    if (params && typeof params.get === 'function') return text(params.get(name));
+    return text(params && params[name]);
+  };
+  const amountRaw = get('amount_gross') || get('amount') || get('recurring_amount');
+  const kind = get('custom_str4').toLowerCase();
+  const companyRaw = get('custom_str1');
+  const uuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyRaw)
+      ? companyRaw
+      : '';
+  return {
+    merchantId: get('merchant_id'),
+    mPaymentId: get('m_payment_id'),
+    payfastPaymentId: get('pf_payment_id'),
+    paymentStatus: get('payment_status'),
+    amount: amountRaw ? Number(amountRaw) : null,
+    companyId: uuid || null,
+    token: get('token'),
+    planCode: kind === 'seat' ? 'seat' : 'standard',
+    billingInterval: get('custom_str3').toLowerCase() === 'annual' ? 'annual' : 'monthly',
+    email: get('custom_str2') || get('email_address')
+  };
+}
+
 export function buildSignedCheckoutFields(cfg, info) {
   const interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
   const amount = amountForInterval(interval);

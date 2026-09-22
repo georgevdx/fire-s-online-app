@@ -49,7 +49,7 @@ assert.ok(/Subscribe \/ Reactivate/.test(stagingHtml));
 assert.ok(/georgevdx@gmail\.com/.test(stagingHtml));
 assert.ok(/Inspections, reports, premises and photos stay/.test(stagingHtml));
 assert.ok(/fire-s-entitlement\.js\?v=1-3-107-lock/.test(stagingHtml));
-assert.ok(!/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits on toets first');
+assert.ok(/id="fireSSubscriptionRequiredSection"/.test(liveHtml), 'required screen sits live');
 
 assert.ok(/getCompanyEntitlement/.test(stagingJs));
 assert.ok(/openRequiredScreen/.test(stagingJs));
@@ -70,7 +70,7 @@ assert.ok(!/currentCompanyAccess\?\.status === 'active' \|\|/.test(stagingApp.ma
 assert.ok(/function canViewReports\(\) \{[\s\S]*isSuperAdmin[\s\S]*fireSEntitlementGate\('export'\)[\s\S]*viewer/.test(stagingApp));
 assert.ok(/inspectionAccessLocked\(\)/.test(stagingApp));
 const liveCanView = liveApp.match(/function canViewReports\(\) \{[\s\S]*?\n\}/);
-assert.ok(liveCanView && /hasActiveCompanyAccess/.test(liveCanView[0]), 'live report gate unchanged until sit dit live');
+assert.ok(liveCanView && /fireSEntitlementGate\('export'\)/.test(liveCanView[0]), 'live report gate must use entitlement');
 
 const store = {};
 const nodes = {};

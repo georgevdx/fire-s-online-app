@@ -1,6 +1,6 @@
 import { loadPayfastConfig, publicPayfastConfig } from '../_shared/payfast-config.js';
 import {
-  assertSandboxCheckout,
+  assertCheckoutMode,
   buildSignedCheckoutFields,
   checkoutAutoPostHtml,
   resolveAuthoritativeCheckout
@@ -39,10 +39,13 @@ function envObject() {
     'PAYFAST_SANDBOX_MERCHANT_KEY',
     'PAYFAST_SANDBOX_PASSPHRASE',
     'PAYFAST_SANDBOX_PROCESS_URL',
+    'PAYFAST_SANDBOX_VALIDATE_URL',
+    'PAYFAST_SANDBOX_BUYER_EMAIL',
     'PAYFAST_LIVE_MERCHANT_ID',
     'PAYFAST_LIVE_MERCHANT_KEY',
     'PAYFAST_LIVE_PASSPHRASE',
     'PAYFAST_LIVE_PROCESS_URL',
+    'PAYFAST_LIVE_VALIDATE_URL',
     'PAYFAST_MERCHANT_ID',
     'PAYFAST_MERCHANT_KEY',
     'PAYFAST_PASSPHRASE',
@@ -278,7 +281,7 @@ Deno.serve(async (req) => {
   try {
     const env = envObject();
     const cfg = loadPayfastConfig(env);
-    assertSandboxCheckout(cfg);
+    assertCheckoutMode(cfg);
 
     const user = await getUser(req, env);
     const email = String((user && user.email) || '').trim().toLowerCase();
@@ -380,7 +383,7 @@ Deno.serve(async (req) => {
       billing_interval: checkout.interval,
       amount: checkout.amount,
       kind: checkout.kind,
-      mode: 'sandbox',
+      mode: cfg.mode,
       notify_url: cfg.notifyUrl,
       activates_on_return_url: false
     });

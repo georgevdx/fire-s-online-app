@@ -1,8 +1,8 @@
 /* ============================================================
    Fire-S subscriber plans
    Shared by Access, Home, User manual and Play Store listing.
-   Card payment is not taken in the app yet. The chosen plan is stored
-   on the company so Company S can bill later.
+   Owner pays on PayFast. Status is active, unpaid or cancelled.
+   Cancel and failed payment never delete company info or inspections.
    ============================================================ */
 (function fireSSubscriptions(root) {
   'use strict';
@@ -15,13 +15,13 @@
   var INTERVALS = [
     {
       id: 'monthly',
-      name: 'Monthly · R250 per subscription',
-      summary: 'R250 every month, per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Same email on phone and desktop is one login.'
+      name: 'Monthly · R250 per month per login',
+      summary: 'Subscription per month per login is R250. Phone and desktop with the same email count as one login. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.'
     },
     {
       id: 'annual',
-      name: 'Annual · R2 500 per subscription · 2 months free',
-      summary: 'R2 500 once a year, per subscription. That is 2 months free (you save R500). The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Same email on phone and desktop is one login.'
+      name: 'Annual · R2 500 per year per login · 2 months free',
+      summary: 'Subscription per year per login is R2 500. That is 2 months free (you save R500). Phone and desktop with the same email count as one login. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.'
     }
   ];
 
@@ -31,7 +31,7 @@
       name: 'Fire-S seat',
       audience: 'Every email',
       seats: 'One subscription, paid by the owner',
-      summary: 'R250 per month or R2 500 per year, per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.',
+      summary: 'Subscription per month per login is R250, or R2 500 per year per login. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.',
       includes: [
         'One login on phone and desktop',
         'Inspection Gateway, Q&A, photos, GPS and client PDF',
@@ -159,9 +159,9 @@
 
   function priceLabel(interval) {
     if (normalizeInterval(interval) === 'annual') {
-      return formatRand(SEAT_PRICE_ANNUAL) + ' per subscription per year';
+      return formatRand(SEAT_PRICE_ANNUAL) + ' per year per login';
     }
-    return formatRand(SEAT_PRICE_MONTHLY) + ' per subscription per month';
+    return formatRand(SEAT_PRICE_MONTHLY) + ' per month per login';
   }
 
   function normalizeInterval(id) {
@@ -299,10 +299,7 @@
       var live = root.currentCompanyAccess && root.currentCompanyAccess.billingStatus;
       if (live) return text(live).toLowerCase();
     } catch (_) {}
-    var stored = text(readStored(STATUS_KEY)).toLowerCase();
-    if (stored) return stored;
-    // Live invoices the owner — a company with a due date is billed until cancelled.
-    return currentRenewsOn() ? 'active' : 'unpaid';
+    return text(readStored(STATUS_KEY)).toLowerCase() || 'unpaid';
   }
 
   function persistBillingMeta() {
@@ -346,7 +343,7 @@
   }
 
   function cancelBilling() {
-    // Never delete companies, inspections, or people. Cancel only stops invoices.
+    // Never delete companies, inspections, or people. Cancel only stops auto-renew.
     ensureRenewsOn();
     rememberStatus('cancelled');
     try {
@@ -373,7 +370,7 @@
       return (
         'Cancelled. This login stays until ' +
         when +
-        '. Company S will not invoice for the next period. Subscribe again with this same company name — do not choose a new name on Access.'
+        '. It will not auto-renew. Subscribe again with this same company name — do not choose a new name on Access.'
       );
     }
     if (status === 'active') {
@@ -387,14 +384,14 @@
       return (
         'This login is active for one month until ' +
         when +
-        '. It renews automatically until you cancel. Company S invoices you.'
+        '. It renews automatically until you cancel.'
       );
     }
-    return 'This company and its inspections stay saved.';
+    return 'Payment is not through yet. This company and its inspections stay saved.';
   }
 
   function statusKeepDataNote() {
-    return 'Cancelling a subscription does not delete the company name or inspections. That data stays in the cloud.';
+    return 'Cancelling or a failed payment does not delete the company name or inspections. That data stays in the cloud.';
   }
 
   function statusCopy() {
@@ -467,8 +464,8 @@
   function bothPriceLines(selectedId) {
     var selected = normalizeInterval(selectedId || currentIntervalId());
     return {
-      monthly: 'Monthly · ' + formatRand(SEAT_PRICE_MONTHLY) + ' per subscription',
-      annual: 'Annual · ' + formatRand(SEAT_PRICE_ANNUAL) + ' per subscription · 2 months free',
+      monthly: 'Monthly · ' + formatRand(SEAT_PRICE_MONTHLY) + ' per month per login',
+      annual: 'Annual · ' + formatRand(SEAT_PRICE_ANNUAL) + ' per year per login · 2 months free',
       selected: selected,
       saveNote: 'Annual saves R500 (2 months free).'
     };
@@ -624,11 +621,7 @@
     var id = rememberPlan(planId);
     var interval = rememberInterval(intervalId);
     var markPaid = options && options.markPaid === true;
-    if (markPaid) {
-      startBillingPeriod(interval);
-      if (billingStatus() !== 'cancelled') rememberStatus('active');
-    }
-    persistBillingMeta();
+    if (markPaid) startBillingPeriod(interval);
     var sb = getSb();
     var cid = companyId();
     if (!sb || !cid) return { ok: true, local: true, plan: id, interval: interval };
@@ -700,7 +693,7 @@
     annualPrice: SEAT_PRICE_ANNUAL,
     defaultPlanId: DEFAULT_PLAN,
     defaultIntervalId: DEFAULT_INTERVAL,
-    note: 'The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. R250 per month or R2 500 per year per subscription. Each new email is a new subscription. No VAT — Company S is not VAT-registered. Phone and desktop share that login. Only one instrument at a time may use that email. The app does not take a card yet; Company S invoices the owner.',
-    billingNote: 'R250 / month or R2 500 / year per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Only one instrument at a time. No VAT. Phone and desktop share that login. No card is taken in Fire-S yet.'
+    note: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Only one instrument at a time may use that email. Each extra person is another subscription, paid by the owner on PayFast. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Card details stay with PayFast.',
+    billingNote: 'Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Only one instrument at a time. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. After Subscribe, pay on PayFast. Card details stay with PayFast.'
   };
 })(window);

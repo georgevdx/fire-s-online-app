@@ -30,9 +30,9 @@ const liveCss = read('styles.css');
 
 assert.ok(/1\.3\.110-toets/.test(env), 'Toets-blad version must stay on 1.3.110-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv) &&
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv) &&
     /bounceLegacyToetsQuery/.test(liveEnv),
-  'Live Fire-S must be 1.3.65 and keep the old toets-link bounce'
+  'Live Fire-S must be 1.3.66 and keep the old toets-link bounce'
 );
 assert.ok(
   !/1\.3\.23/.test(liveEnv),

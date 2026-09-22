@@ -142,9 +142,9 @@ assert.ok(!/token/.test(billingPage));
 assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
-assert.ok(!/id="fireSCompanyBillingPanel"/.test(liveHtml), 'billing page sits on toets first');
+assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.110-toets/.test(stagingHtml));
-assert.ok(/Version 1\.3\.65/.test(liveHtml));
+assert.ok(/Version 1\.3\.66/.test(liveHtml));
 assert.ok(/fire-s-subscribe\.js\?v=1-35-hide-ok/.test(stagingHtml));
 assert.ok(/fire-s-entitlement\.js\?v=1-3-107-lock/.test(stagingHtml));
 assert.ok(/fire-s-subscribe\.css\?v=1-12-company/.test(stagingHtml));
@@ -167,8 +167,8 @@ assert.ok(!/passphrase/.test(stagingSubscribe));
 assert.ok(/past_due_grace/.test(stagingEntitlement));
 assert.ok(/cancelled_until_period_end/.test(stagingEntitlement));
 assert.ok(/Payment past due — grace period/.test(stagingEntitlement));
-assert.ok(!/past_due_grace/.test(liveEntitlement), 'live entitlement waits for sit dit live');
-assert.ok(!/function paintCompanyBilling\(/.test(liveSubscribe), 'live subscribe waits for sit dit live');
+assert.ok(/past_due_grace/.test(liveEntitlement), 'live entitlement must sit the billing lifecycle');
+assert.ok(/function paintCompanyBilling\(/.test(liveSubscribe), 'live subscribe must sit company billing');
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
