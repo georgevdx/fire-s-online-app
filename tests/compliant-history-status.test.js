@@ -24,7 +24,7 @@ assert.ok(
 );
 assert.ok(
   /app\.js\?v=1-3-108-count/.test(html) &&
-    /Version 1\.3\.108-toets/.test(html),
+    /Version 1\.3\.109-toets/.test(html),
   'Toets must cache-bust Compliant + report overlay without bumping the displayed version'
 );
 assert.ok(

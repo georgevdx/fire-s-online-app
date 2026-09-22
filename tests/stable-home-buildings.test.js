@@ -16,12 +16,12 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.108-toets/.test(stagingHtml) &&
+  /Version 1\.3\.109-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-108-count/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-7-same-count/.test(stagingHtml) &&
-    /1\.3\.108-toets/.test(stagingEnv) &&
-    /fire-s-108-73-toets-108/.test(stagingSw),
-  'Toets must show 1.3.108-toets so a phone can tell it has the one company building count'
+    /fire-s-owner-lists\.js\?v=1-8-upcoming/.test(stagingHtml) &&
+    /1\.3\.109-toets/.test(stagingEnv) &&
+    /fire-s-108-74-toets-109/.test(stagingSw),
+  'Toets must show 1.3.109-toets so a phone can tell it has the one company building count'
 );
 assert.ok(
   /function fireSPremisesBuildingKey\(project\)/.test(stagingApp) &&
@@ -30,7 +30,7 @@ assert.ok(
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
     /cache: 'no-store'/.test(stagingSw) &&
-    /fireS\.toetsCacheDrop\.1-3-108/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-109/.test(stagingHtml),
   'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
 );
 assert.ok(

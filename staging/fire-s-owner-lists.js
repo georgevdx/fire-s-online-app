@@ -191,8 +191,23 @@
         if (fromUltra) return fromUltra;
       }
     } catch (_) {}
-    if (project && project.scheduledDate) return dateKey(project.scheduledDate);
-    if (project && project.followUpDate) return dateKey(project.followUpDate);
+    const fields = [
+      project && project.scheduledDate,
+      project && project.followUpDate,
+      project && project.nextInspectionDate,
+      project && project.nextDueDate,
+      project && project.dueDate
+    ];
+    for (let i = 0; i < fields.length; i += 1) {
+      const key = dateKey(fields[i]);
+      if (key) return key;
+    }
+    try {
+      if (project && project.recurringCycleEnabled === true &&
+          typeof root.getNextRecurringCycleDate === 'function') {
+        return dateKey(root.getNextRecurringCycleDate(project));
+      }
+    } catch (_) {}
     return '';
   }
 
@@ -247,15 +262,41 @@
     return !live && !scheduled;
   }
 
+  function answerLists(project) {
+    const lists = [];
+    if (Array.isArray(project && project.answers)) lists.push(project.answers);
+    const history = Array.isArray(project && project.inspectionHistory)
+      ? project.inspectionHistory
+      : [];
+    history.forEach(item => {
+      if (Array.isArray(item && item.answers)) lists.push(item.answers);
+      if (item && item.snapshot && Array.isArray(item.snapshot.answers)) {
+        lists.push(item.snapshot.answers);
+      }
+    });
+    return lists;
+  }
+
+  function countNoAnswers(answers) {
+    return (Array.isArray(answers) ? answers : []).filter(answer => {
+      const value = text(
+        answer && (answer.answer || answer.value || answer.result || answer.finding)
+      ).toLowerCase();
+      return value === 'no' || value === 'non-compliant' || value === 'fail';
+    }).length;
+  }
+
   function deficiencyCount(project) {
+    let best = 0;
     try {
       if (typeof root.getProjectNoFindingCount === 'function') {
-        return Number(root.getProjectNoFindingCount(project) || 0);
+        best = Math.max(best, Number(root.getProjectNoFindingCount(project) || 0));
       }
     } catch (_) {}
-    return (project && Array.isArray(project.answers) ? project.answers : []).filter(answer =>
-      text(answer && answer.answer).toLowerCase() === 'no'
-    ).length;
+    answerLists(project).forEach(list => {
+      best = Math.max(best, countNoAnswers(list));
+    });
+    return best;
   }
 
   function compareName(a, b) {
@@ -284,6 +325,30 @@
     });
   }
 
+  function buildingKey(project) {
+    try {
+      if (typeof root.fireSPremisesBuildingKey === 'function') {
+        const key = text(root.fireSPremisesBuildingKey(project));
+        if (key) return key;
+      }
+    } catch (_) {}
+    return text(buildingName(project)).toLowerCase() || ('id:' + text(project && project.id));
+  }
+
+  function rowsForUniqueBuildings(projects) {
+    const unique = uniqueActive(projects);
+    const allowed = Object.create(null);
+    unique.forEach(project => {
+      const key = buildingKey(project);
+      if (key) allowed[key] = true;
+    });
+    return (Array.isArray(projects) ? projects : []).filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      const key = buildingKey(project);
+      return !!(key && allowed[key]);
+    });
+  }
+
   function companyCloudListReady() {
     try {
       if (root.__fireSCloudPullSettled !== true) return false;
@@ -299,39 +364,70 @@
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
     const active = uniqueActive(projects);
+    const rows = rowsForUniqueBuildings(projects);
+    const openIdByKey = Object.create(null);
+    active.forEach(project => {
+      const key = buildingKey(project);
+      if (key) openIdByKey[key] = project && project.id;
+    });
+
+    const lastByKey = Object.create(null);
+    rows.forEach(project => {
+      const key = buildingKey(project);
+      if (!key) return;
+      const last = lastInspectedKey(project);
+      if (!last) return;
+      if (!lastByKey[key] || last > lastByKey[key]) lastByKey[key] = last;
+    });
 
     const all = active
-      .map(project => ({
-        id: project && project.id,
-        name: buildingName(project),
-        lastInspected: lastInspectedKey(project)
-      }))
-      .sort((a, b) => compareName(a.name, b.name) || compareName(a.id, b.id));
-
-    const upcoming = active
-      .filter(project => {
-        if (isRecycleLeftover(project)) return false;
-        const due = nextDueKey(project);
-        return !!(due && due >= todayIso && due <= endIso);
-      })
       .map(project => {
-        const due = nextDueKey(project);
+        const key = buildingKey(project);
         return {
           id: project && project.id,
+          name: buildingName(project),
+          lastInspected: (key && lastByKey[key]) || lastInspectedKey(project)
+        };
+      })
+      .sort((a, b) => compareName(a.name, b.name) || compareName(a.id, b.id));
+
+    const upcomingByKey = Object.create(null);
+    rows.forEach(project => {
+      const due = nextDueKey(project);
+      if (!due || due < todayIso || due > endIso) return;
+      const key = buildingKey(project);
+      if (!key) return;
+      const current = upcomingByKey[key];
+      if (!current || due < current.due) {
+        upcomingByKey[key] = {
+          id: openIdByKey[key] || (project && project.id),
           name: buildingName(project),
           due,
           days: daysUntil(due, todayIso)
         };
-      })
+      }
+    });
+    const upcoming = Object.keys(upcomingByKey)
+      .map(key => upcomingByKey[key])
       .sort((a, b) => compareName(a.due, b.due) || compareName(a.name, b.name));
 
-    const deficiencies = active
-      .map(project => ({
-        id: project && project.id,
-        name: buildingName(project),
-        count: deficiencyCount(project)
-      }))
-      .filter(row => row.count > 0)
+    const deficiencyByKey = Object.create(null);
+    rows.forEach(project => {
+      const count = deficiencyCount(project);
+      if (count < 1) return;
+      const key = buildingKey(project);
+      if (!key) return;
+      const current = deficiencyByKey[key];
+      if (!current || count > current.count) {
+        deficiencyByKey[key] = {
+          id: openIdByKey[key] || (project && project.id),
+          name: buildingName(project),
+          count
+        };
+      }
+    });
+    const deficiencies = Object.keys(deficiencyByKey)
+      .map(key => deficiencyByKey[key])
       .sort((a, b) => (b.count - a.count) || compareName(a.name, b.name));
 
     return {
@@ -420,6 +516,17 @@
 
   function emptyRow(columns, message) {
     return `<tr class="fire-s-owner-lists-empty"><td colspan="${columns}">${esc(message)}</td></tr>`;
+  }
+
+  function paintLoadingLists() {
+    const allBody = byId('fireSOwnerListsAllBody');
+    const upcomingBody = byId('fireSOwnerListsUpcomingBody');
+    const deficiencyBody = byId('fireSOwnerListsDeficiencyBody');
+    if (allBody) allBody.innerHTML = emptyRow(2, 'Loading buildings…');
+    if (upcomingBody) upcomingBody.innerHTML = emptyRow(2, 'Loading upcoming inspections…');
+    if (deficiencyBody) {
+      deficiencyBody.innerHTML = emptyRow(2, 'Loading buildings with deficiencies…');
+    }
   }
 
   function rowHtml(projectId, cells, extraClass) {
@@ -672,6 +779,7 @@
       pullState.done = false;
       const countEl = byId('fireSOwnerListsCount');
       if (countEl) writeCount(countEl, pullState.loaded);
+      paintLoadingLists();
       showPanel(panel);
       return;
     }
