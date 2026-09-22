@@ -59,7 +59,7 @@ assertPullSource(
   stagingLists,
   'Toets',
   '1-3-107-lock',
-  '1-5-home-lock',
+  '1-6-home-lookup',
   '108-71-toets-107',
   'fire-s-108-71-toets-107'
 );

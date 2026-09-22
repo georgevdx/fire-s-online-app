@@ -91,7 +91,7 @@ assert.ok(/body\.fire-s-entitlement-blocked #homeSection \.home-hero/.test(stagi
 assert.ok(/body\.fire-s-entitlement-blocked #fireSTrialBanner/.test(stagingCss));
 assert.ok(/body\.fire-s-entitlement-blocked #fireSEntitlementBlocker/.test(stagingCss));
 assert.ok(/inspectionHomeLocked\(\) \|\| !canShowLists\(\)/.test(read('staging/fire-s-owner-lists.js')));
-assert.ok(/fire-s-owner-lists\.js\?v=1-5-home-lock/.test(stagingHtml));
+assert.ok(/fire-s-owner-lists\.js\?v=1-6-home-lookup/.test(stagingHtml));
 assert.ok(/inspectionAccessLocked\(\)\) \{\s*banner\.hidden = true/s.test(stagingEntitlement));
 assert.ok(/z-index: 2147483500/.test(stagingCss));
 assert.ok(/stay locked until a new subscription is active/.test(stagingEntitlement));
