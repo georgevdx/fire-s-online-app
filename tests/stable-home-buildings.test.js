@@ -16,12 +16,12 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.107-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-107-lock/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-5-home-lock/.test(stagingHtml) &&
-    /1\.3\.107-toets/.test(stagingEnv) &&
-    /fire-s-108-71-toets-107/.test(stagingSw),
-  'Toets must show 1.3.107-toets so a phone can tell it has the one company building count'
+  /Version 1\.3\.108-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-108-count/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-7-same-count/.test(stagingHtml) &&
+    /1\.3\.108-toets/.test(stagingEnv) &&
+    /fire-s-108-73-toets-108/.test(stagingSw),
+  'Toets must show 1.3.108-toets so a phone can tell it has the one company building count'
 );
 assert.ok(
   /function fireSPremisesBuildingKey\(project\)/.test(stagingApp) &&
@@ -30,14 +30,24 @@ assert.ok(
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
     /cache: 'no-store'/.test(stagingSw) &&
-    /fireS\.toetsCacheDrop\.1-3-107/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-108/.test(stagingHtml),
   'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
+);
+assert.ok(
+  /ready: true/.test(stagingApp) &&
+    /filter\.ready !== true/.test(stagingApp) &&
+    /function fireSCloudBuildingFilterReady\(/.test(stagingApp) &&
+    !/window\.__fireSCloudBuildingFilter = null/.test(stagingApp),
+  'A finished company pull must lock the cloud building filter so laptop leftovers cannot paint a different Home count'
 );
 assert.ok(
   /__fireSCloudPullSettled !== true/.test(stagingLists) &&
     /function uniqueActive\(projects\)/.test(stagingLists) &&
-    /fireSFilterToCloudBuildings/.test(stagingLists),
-  'Toets Home must show Loading until the company pull settles on the cloud building list'
+    /function companyCloudListReady\(/.test(stagingLists) &&
+    /filter && filter\.ready === true/.test(stagingLists) &&
+    /fireSFilterToCloudBuildings/.test(stagingLists) &&
+    /return unique;/.test(stagingLists),
+  'Toets Home must show Loading until the company cloud building list is ready, then count that unique list'
 );
 assert.ok(
   /company inspection list/.test(stagingLists) &&
@@ -242,6 +252,74 @@ assert.strictEqual(
   el(listElements, 'fireSOwnerListsCount').textContent,
   '3 buildings on the company inspection list',
   'A later setProjects after settle may update the unique building count'
+);
+
+const phoneLaptopEls = {};
+const laptopSeven = sevenLocal.slice();
+const splitSandbox = {
+  fireSIsDeletedPremises(project) {
+    return !!(project && (project.deletedAt || project.deleteType === 'entire_premises'));
+  },
+  document: {
+    readyState: 'complete',
+    getElementById(id) {
+      return el(phoneLaptopEls, id);
+    },
+    addEventListener() {},
+    body: {
+      classList: {
+        contains(name) {
+          return name === 'fire-s-role-owner';
+        }
+      }
+    }
+  },
+  setTimeout() {},
+  getProjects() {
+    return laptopSeven.slice();
+  },
+  setProjects(list) {
+    laptopSeven.splice(0, laptopSeven.length);
+    (list || []).forEach(function (row) {
+      laptopSeven.push(row);
+    });
+  }
+};
+splitSandbox.window = splitSandbox;
+splitSandbox.global = splitSandbox;
+vm.runInNewContext(
+  stagingApp.slice(helperStart, helperEnd) + `
+    window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
+    window.fireSFilterToCloudBuildings = fireSFilterToCloudBuildings;
+    window.fireSApplyCloudBuildingFilter = fireSApplyCloudBuildingFilter;
+    window.fireSCloudBuildingFilterReady = fireSCloudBuildingFilterReady;
+    window.fireSIsHiddenFromCurrentLists = fireSIsHiddenFromCurrentLists;
+  ` + stagingLists,
+  splitSandbox
+);
+
+splitSandbox.__fireSCloudPullSettled = true;
+splitSandbox.fireSRefreshOwnerLists();
+assert.strictEqual(
+  el(phoneLaptopEls, 'fireSOwnerListsCount').textContent,
+  'Loading buildings…',
+  'Laptop must not finish as 7 local buildings before the company cloud list is locked'
+);
+
+splitSandbox.fireSApplyCloudBuildingFilter(fiveCloud);
+splitSandbox.fireSRefreshOwnerLists();
+assert.strictEqual(
+  el(phoneLaptopEls, 'fireSOwnerListsCount').textContent,
+  '5 buildings on the company inspection list',
+  'Phone and laptop Home must both show the unique company cloud buildings, not laptop leftovers'
+);
+
+splitSandbox.fireSApplyCloudBuildingFilter([]);
+splitSandbox.fireSRefreshOwnerLists();
+assert.strictEqual(
+  el(phoneLaptopEls, 'fireSOwnerListsCount').textContent,
+  'No buildings on the company inspection list yet.',
+  'A ready empty company cloud must not fall back to the laptop local 7'
 );
 
 console.log('stable-home-buildings.test.js: ok');

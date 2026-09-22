@@ -234,3 +234,91 @@ html[data-fire-s-theme="dark"] tr.fire-s-owner-lists-row[data-project-id]:hover 
 html[data-fire-s-theme="dark"] tr.fire-s-owner-lists-row[data-project-id]:focus td {
   background: #334155;
 }
+
+.fire-s-owner-lists-lookup {
+  margin: 0 0 10px;
+}
+
+.fire-s-owner-lists-lookup label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4b5563;
+}
+
+.fire-s-owner-lists-lookup input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.fire-s-owner-lists-lookup input:focus {
+  outline: none;
+  border-color: #b71c1c;
+  box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.16);
+}
+
+.fire-s-owner-lists-lookup-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.fire-s-owner-lists-lookup-matches[hidden] {
+  display: none !important;
+}
+
+.fire-s-owner-lists-lookup-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fire-s-owner-lists-lookup-hit:hover,
+.fire-s-owner-lists-lookup-hit:focus {
+  background: #e2e8f0;
+}
+
+tr.fire-s-owner-lists-row.is-lookup-hit td {
+  background: #fef3c7;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-lookup label {
+  color: #e2e8f0;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-lookup input,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-lookup-hit {
+  background: #0f172a;
+  border-color: #64748b;
+  color: #f8fafc;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-lookup-hit:hover,
+html[data-fire-s-theme="dark"] .fire-s-owner-lists-lookup-hit:focus {
+  background: #334155;
+}
+
+html[data-fire-s-theme="dark"] tr.fire-s-owner-lists-row.is-lookup-hit td {
+  background: #854d0e;
+}

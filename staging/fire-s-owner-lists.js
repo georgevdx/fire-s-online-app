@@ -267,15 +267,11 @@
     try {
       if (typeof root.fireSFilterToCloudBuildings === 'function') {
         const unique = root.fireSFilterToCloudBuildings(source);
-        if (Array.isArray(unique)) {
-          return source.filter(project => unique.indexOf(project) !== -1);
-        }
+        if (Array.isArray(unique)) return unique;
       }
       if (typeof root.fireSUniqueCurrentBuildings === 'function') {
         const unique = root.fireSUniqueCurrentBuildings(source);
-        if (Array.isArray(unique)) {
-          return source.filter(project => unique.indexOf(project) !== -1);
-        }
+        if (Array.isArray(unique)) return unique;
       }
     } catch (_) {}
     const seen = Object.create(null);
@@ -286,6 +282,17 @@
       seen[key] = true;
       return true;
     });
+  }
+
+  function companyCloudListReady() {
+    try {
+      if (root.__fireSCloudPullSettled !== true) return false;
+      if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
+      const filter = root.__fireSCloudBuildingFilter;
+      return !!(filter && filter.ready === true);
+    } catch (_) {
+      return false;
+    }
   }
 
   function buildModel(projects, today) {
@@ -415,10 +422,110 @@
     return `<tr class="fire-s-owner-lists-empty"><td colspan="${columns}">${esc(message)}</td></tr>`;
   }
 
-  function rowHtml(projectId, cells) {
+  function rowHtml(projectId, cells, extraClass) {
     const id = esc(projectId || '');
     const openLabel = id ? 'Open this building' : '';
-    return `<tr class="fire-s-owner-lists-row"${id ? ` data-project-id="${id}" tabindex="0" role="button" aria-label="${esc(openLabel)}"` : ''}>${cells}</tr>`;
+    const klass = extraClass ? ` fire-s-owner-lists-row ${esc(extraClass)}` : ' fire-s-owner-lists-row';
+    return `<tr class="${klass.trim()}"${id ? ` data-project-id="${id}" tabindex="0" role="button" aria-label="${esc(openLabel)}"` : ''}>${cells}</tr>`;
+  }
+
+  let lastModel = null;
+
+  function lookupNeedle() {
+    return text(byId('fireSOwnerListsLookup') && byId('fireSOwnerListsLookup').value);
+  }
+
+  function nameMatchesLookup(name, needle) {
+    const q = text(needle).toLowerCase();
+    if (!q) return true;
+    return text(name).toLowerCase().indexOf(q) !== -1;
+  }
+
+  function lookupScore(name, needle) {
+    const n = text(name).toLowerCase();
+    const q = text(needle).toLowerCase();
+    if (!q || !n) return 99;
+    if (n === q) return 0;
+    if (n.indexOf(q) === 0) return 1;
+    if (n.indexOf(q) !== -1) return 2;
+    return 99;
+  }
+
+  function rankedLookupMatches(rows, needle) {
+    const q = text(needle);
+    if (!q) return [];
+    return (rows || [])
+      .filter(row => nameMatchesLookup(row && row.name, q))
+      .map(row => ({
+        id: row && row.id,
+        name: row && row.name,
+        lastInspected: row && row.lastInspected,
+        score: lookupScore(row && row.name, q)
+      }))
+      .sort((a, b) => a.score - b.score || compareName(a.name, b.name) || compareName(a.id, b.id));
+  }
+
+  function pickLookupTarget(rows, needle, requireExact) {
+    const ranked = rankedLookupMatches(rows, needle);
+    if (!ranked.length) return null;
+    const best = ranked[0];
+    if (requireExact && best.score !== 0) return null;
+    const same = ranked.filter(row => row.score === best.score);
+    if (same.length !== 1) return null;
+    return best;
+  }
+
+  function renderLookupMatches(matches, needle) {
+    const host = byId('fireSOwnerListsLookupMatches');
+    const hint = byId('fireSOwnerListsLookupHint');
+    const q = text(needle);
+    if (hint) {
+      if (!q) {
+        hint.textContent = 'Type a premises. All buildings jumps to that site. Enter or tap a match to open it.';
+      } else if (!matches.length) {
+        hint.textContent = 'No building matches “' + q + '”.';
+      } else if (matches.length === 1) {
+        hint.textContent = 'All buildings is on this premises. Enter or tap to open it.';
+      } else {
+        hint.textContent = matches.length + ' buildings match. Type more of the name, then Enter or tap one.';
+      }
+    }
+    if (!host) return;
+    if (!q || !matches.length) {
+      host.hidden = true;
+      host.innerHTML = '';
+      return;
+    }
+    host.hidden = false;
+    host.innerHTML = matches.slice(0, 8).map(row =>
+      `<button type="button" class="fire-s-owner-lists-lookup-hit" data-project-id="${esc(row.id)}">${esc(row.name)}</button>`
+    ).join('');
+  }
+
+  function renderAllRows(model) {
+    const allBody = byId('fireSOwnerListsAllBody');
+    if (!allBody || !model) return;
+    const needle = lookupNeedle();
+    const matches = needle ? rankedLookupMatches(model.all, needle) : [];
+    const rows = needle ? matches : model.all;
+    renderLookupMatches(matches, needle);
+    if (!rows.length) {
+      allBody.innerHTML = emptyRow(
+        2,
+        needle ? 'No building matches that lookup.' : 'No buildings on the company inspection list yet.'
+      );
+      return;
+    }
+    allBody.innerHTML = rows.map((row, index) => rowHtml(row.id, [
+      `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
+      `<td class="fire-s-owner-lists-meta">${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
+    ].join(''), needle && index === 0 ? 'is-lookup-hit' : '')).join('');
+    try {
+      const first = allBody.querySelector && allBody.querySelector('tr[data-project-id]');
+      if (needle && first && typeof first.scrollIntoView === 'function') {
+        first.scrollIntoView({ block: 'nearest' });
+      }
+    } catch (_) {}
   }
 
   function daysLabel(days) {
@@ -437,7 +544,6 @@
     }
 
     const countEl = byId('fireSOwnerListsCount');
-    const allBody = byId('fireSOwnerListsAllBody');
     const upcomingBody = byId('fireSOwnerListsUpcomingBody');
     const deficiencyBody = byId('fireSOwnerListsDeficiencyBody');
 
@@ -447,7 +553,7 @@
       pullState.loading = !!root.__fireSOwnerListsPullProgress.loading;
       pullState.done = !!root.__fireSOwnerListsPullProgress.done;
     }
-    if (root.__fireSCloudPullSettled === true) {
+    if (root.__fireSCloudPullSettled === true && companyCloudListReady()) {
       pullState.loading = false;
       pullState.done = true;
     }
@@ -456,14 +562,8 @@
       writeCount(countEl, model.count);
     }
 
-    if (allBody) {
-      allBody.innerHTML = model.all.length
-        ? model.all.map(row => rowHtml(row.id, [
-            `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
-            `<td class="fire-s-owner-lists-meta">${esc(row.lastInspected ? formatDate(row.lastInspected) : 'Not inspected yet')}</td>`
-          ].join(''))).join('')
-        : emptyRow(2, 'No buildings on the company inspection list yet.');
-    }
+    lastModel = model;
+    renderAllRows(model);
 
     if (upcomingBody) {
       upcomingBody.innerHTML = model.upcoming.length
@@ -502,18 +602,53 @@
     } catch (_) {}
   }
 
+  function applyLookup() {
+    if (!lastModel) return;
+    renderAllRows(lastModel);
+  }
+
+  function navigateLookup(force) {
+    if (!lastModel) return null;
+    const target = pickLookupTarget(lastModel.all, lookupNeedle(), !force);
+    if (!target) {
+      applyLookup();
+      return null;
+    }
+    applyLookup();
+    openBuilding(target.id);
+    return target;
+  }
+
+  function bindLookup() {
+    const input = byId('fireSOwnerListsLookup');
+    if (!input || input.__fireSOwnerListsLookupBound) return;
+    input.__fireSOwnerListsLookupBound = true;
+    input.addEventListener('input', function fireSOwnerListsLookupInput() {
+      applyLookup();
+    });
+    input.addEventListener('change', function fireSOwnerListsLookupChange() {
+      navigateLookup(false);
+    });
+    input.addEventListener('keydown', function fireSOwnerListsLookupKey(event) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      navigateLookup(true);
+    });
+  }
+
   function bindPanel(panel) {
     if (!panel || panel.__fireSOwnerListsBound) return;
     panel.__fireSOwnerListsBound = true;
     panel.addEventListener('click', event => {
-      const row = event.target && event.target.closest && event.target.closest('tr[data-project-id]');
+      const row = event.target && event.target.closest && event.target.closest('[data-project-id]');
       if (!row) return;
       event.preventDefault();
       openBuilding(row.getAttribute('data-project-id'));
     });
     panel.addEventListener('keydown', event => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
-      const row = event.target && event.target.closest && event.target.closest('tr[data-project-id]');
+      if (event.target && event.target.id === 'fireSOwnerListsLookup') return;
+      const row = event.target && event.target.closest && event.target.closest('[data-project-id]');
       if (!row) return;
       event.preventDefault();
       openBuilding(row.getAttribute('data-project-id'));
@@ -525,14 +660,14 @@
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);
+    bindLookup();
     if (inspectionHomeLocked() || !canShowLists()) {
       hidePanel(panel);
       return;
     }
-    // undefined used to paint the laptop's local 8 before the company pull
-    // finished and Recycle hide dropped it to 7. Wait for the settled unique
-    // list so phone and laptop lock the same building number.
-    if (root.__fireSCloudPullSettled !== true) {
+    // Laptop leftover locals must not paint 7 while the phone still has the
+    // company cloud's 5. Wait until that cloud building list is ready.
+    if (!companyCloudListReady()) {
       pullState.loading = true;
       pullState.done = false;
       const countEl = byId('fireSOwnerListsCount');
@@ -595,6 +730,10 @@
   root.fireSBuildOwnerListModel = buildModel;
   root.fireSOwnerListBuildingName = buildingName;
   root.fireSRefreshOwnerLists = refresh;
+  root.fireSPickOwnerListLookupTarget = pickLookupTarget;
+  root.fireSRankOwnerListLookupMatches = rankedLookupMatches;
+  root.fireSApplyOwnerListLookup = applyLookup;
+  root.fireSNavigateOwnerListLookup = navigateLookup;
 
   wrapRefreshTargets();
 
