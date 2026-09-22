@@ -94,4 +94,33 @@ assert.ok(
   'Finalised means completed or finalised, not merely scheduled'
 );
 
+const cycleList = sandbox.fireSScheduledPriorityList(
+  [
+    {
+      id: 'cycled',
+      projectName: 'Cycle shop',
+      completedAt: '2026-08-20T10:00:00.000Z',
+      recurringCycleEnabled: true,
+      recurringCycleNextDate: '2026-12-01',
+      assignedInspectorEmail: 'samplejdb@outlook.com'
+    },
+    {
+      id: 'spent',
+      projectName: 'Spent site',
+      scheduledDate: '2026-08-01',
+      completedAt: '2026-08-20T10:00:00.000Z',
+      assignedInspectorEmail: 'samplejdb@outlook.com'
+    }
+  ],
+  sample
+);
+assert.ok(
+  cycleList.some(item => item.id === 'cycled'),
+  'A finished visit must still list the booked recurring cycle'
+);
+assert.ok(
+  !cycleList.some(item => item.id === 'spent'),
+  'A finished visit with no remaining booking must leave the list'
+);
+
 console.log('scheduled-priority-list.test.js: ok');

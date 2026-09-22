@@ -84,17 +84,51 @@
   }
 
   function scheduleStamp(project) {
-    var d = text(
-      (project && (project.scheduledDate || project.followUpDate || project.nextInspectionDate)) ||
-        ''
-    ).slice(0, 10);
+    var d = '';
+    try {
+      if (typeof root.fireSSoonestScheduleDate === 'function') {
+        d = text(root.fireSSoonestScheduleDate(project)).slice(0, 10);
+      }
+    } catch (_) {}
+    if (!d) {
+      d = text(
+        (project &&
+          (project.recurringCycleNextDate ||
+            project.scheduledDate ||
+            project.followUpDate ||
+            project.nextInspectionDate)) ||
+          ''
+      ).slice(0, 10);
+    }
     return d || '0000-01-01';
+  }
+
+  function hasOpenBooking(project) {
+    try {
+      if (typeof root.fireSHasBookedInspection === 'function') {
+        return !!root.fireSHasBookedInspection(project);
+      }
+    } catch (_) {}
+    if (!project) return false;
+    if (text(project.recurringCycleNextDate) && project.recurringCycleOccurrenceCancelled !== true) {
+      return true;
+    }
+    if (lower(project.scheduleType) === 'recurring_cycle' && text(project.scheduledDate)) {
+      return true;
+    }
+    if (lower(project.followUpRequired) === 'yes' && text(project.followUpDate)) {
+      return true;
+    }
+    return false;
   }
 
   function scheduledPriorityList(projects, identity) {
     return (Array.isArray(projects) ? projects : [])
       .filter(function (project) {
-        return isMyInspection(project, identity) && !isFinalizedInspection(project);
+        return (
+          isMyInspection(project, identity) &&
+          (!isFinalizedInspection(project) || hasOpenBooking(project))
+        );
       })
       .slice()
       .sort(function (a, b) {
@@ -263,6 +297,14 @@
     });
     var started = hasInspectionWorkStarted(project);
     var finalized = isFinalizedInspection(project);
+    if (
+      !text(next.recurringCycleNextDate) &&
+      (next.recurringCycleEnabled === true ||
+        lower(next.scheduleType) === 'recurring_cycle') &&
+      text(next.scheduledDate)
+    ) {
+      next.recurringCycleNextDate = text(next.scheduledDate).slice(0, 10);
+    }
     next.scheduledDate = text(details.date).slice(0, 10);
     next.scheduledStatus = 'scheduled';
     next.scheduleType = 'existing_site';

@@ -1466,7 +1466,7 @@
       </div>
     </div>
 
-  <p id="scheduleBookedHeading" class="schedule-booked-heading">Already booked</p>
+  <p id="scheduleBookedHeading" class="schedule-booked-heading">Already booked — including recurring cycle</p>
 
   <input
     id="projectSearch"
@@ -1816,7 +1816,8 @@
       <h3>Existing-Site Scheduling Centre</h3>
       <p>
         Scheduling for this existing site only. Use corrective follow-up for NO findings,
-        or recurring cycle for routine repeat inspections.
+        or recurring cycle for routine repeat inspections. The cycle stands apart and
+        can stay booked next to a dedicated inspection.
       </p>
     </div>
 
@@ -1850,12 +1851,12 @@
       ></textarea>
     </div>
 
-    <div class="schedule-option-card schedule-option-recurring">
-      <div class="schedule-option-label">Routine</div>
+    <div class="schedule-option-card schedule-option-recurring schedule-option-recurring-standout">
+      <div class="schedule-option-label">Recurring cycle</div>
       <h4>Set Recurring Inspection Cycle</h4>
       <p>
-        Use for routine repeat inspections for this same site,
-        for example every 6 months or yearly.
+        This cycle stands apart from a corrective follow-up or a dedicated
+        scheduled inspection. Both can stay booked, on different dates.
       </p>
 
       <div class="recurring-cycle-fields">
@@ -1894,6 +1895,19 @@
 </div>
     </div>
   </div>
+</div>
+
+<div class="form-section scheduling-booked-board" id="scheduledInspectionsBoard">
+  <div class="scheduled-board-header">
+    <h3>Booked inspections on this site</h3>
+    <p>
+      Scroll here under the Scheduling Centre. A recurring cycle stays listed
+      even when a corrective follow-up or dedicated inspection is also booked.
+    </p>
+  </div>
+  <p class="scheduled-board-empty">
+    No future or overdue inspection is booked on this site yet.
+  </p>
 </div>
     <section class="card" id="reportSection" style="display:none;">
       <h2>Inspection Report</h2>
