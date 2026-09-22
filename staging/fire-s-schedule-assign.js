@@ -291,6 +291,7 @@
     function wrapped() {
       var result = orig.apply(this, arguments);
       fillInspectorSelect();
+      bindDatePickers();
       return result;
     }
     wrapped.__fireSAssignWrapped = true;
@@ -317,11 +318,40 @@
       btn.addEventListener('click', function () {
         setTimeout(fillInspectorSelect, 80);
         setTimeout(fillInspectorSelect, 400);
+        setTimeout(bindDatePickers, 80);
       });
     });
+    bindDatePickers();
   }
 
+  function bindDatePickers() {
+    var ids = [
+      'scheduleDate',
+      'followUpDate',
+      'inspectionDate',
+      'inspectionDateFrom',
+      'inspectionDateTo'
+    ];
+    ids.forEach(function (id) {
+      var field = root.document && root.document.getElementById(id);
+      if (!field || field.__fireSDatePickerBound) return;
+      field.__fireSDatePickerBound = true;
+      try {
+        field.setAttribute('type', 'date');
+        field.setAttribute('lang', 'en-ZA');
+        field.classList.add('fire-s-date-input');
+      } catch (_) {}
+      function openPicker() {
+        try {
+          if (typeof field.showPicker === 'function') field.showPicker();
+        } catch (_) {}
+      }
+      field.addEventListener('click', openPicker);
+      field.addEventListener('focus', openPicker);
+    });
+  }
   root.fireSIsMyInspection = isMyInspection;
+  root.fireSBindDatePickers = bindDatePickers;
   root.fireSIsFinalizedInspection = isFinalizedInspection;
   root.fireSScheduledPriorityList = scheduledPriorityList;
   root.fireSReadScheduleAssignee = readScheduleAssignee;

@@ -51,7 +51,7 @@ function assertLookupMarkup(label, html, css, lists, jsTag) {
 }
 
 assertLookupMarkup('Live', liveHtml, liveCss, liveLists, '1-3-home-lookup');
-assertLookupMarkup('Toets', stagingHtml, stagingCss, stagingLists, '1-8-upcoming');
+assertLookupMarkup('Toets', stagingHtml, stagingCss, stagingLists, '1-9-overdue');
 assert.ok(
   /Version 1\.3\.65/.test(liveHtml) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),

@@ -80,6 +80,22 @@
     const raw = text(value);
     if (!raw) return '';
     if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+    const dmy = raw.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);
+    if (dmy) {
+      let day = Number(dmy[1]);
+      let month = Number(dmy[2]);
+      const year = dmy[3];
+      if (day > 12 && month <= 12) {
+        /* already DMY */
+      } else if (month > 12 && day <= 12) {
+        const swap = day;
+        day = month;
+        month = swap;
+      }
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      }
+    }
     const date = new Date(raw);
     if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
     const year = date.getFullYear();
@@ -102,11 +118,6 @@
 
   function todayKey(now) {
     if (now) return dateKey(now);
-    try {
-      if (typeof root.getTodayDateString === 'function') {
-        return dateKey(root.getTodayDateString());
-      }
-    } catch (_) {}
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -186,6 +197,12 @@
 
   function nextDueKey(project) {
     try {
+      if (typeof root.getProjectScheduleDate === 'function') {
+        const fromSchedule = dateKey(root.getProjectScheduleDate(project));
+        if (fromSchedule) return fromSchedule;
+      }
+    } catch (_) {}
+    try {
       if (typeof root.fireSUltraNextInspectionDate === 'function') {
         const fromUltra = dateKey(root.fireSUltraNextInspectionDate(project));
         if (fromUltra) return fromUltra;
@@ -195,6 +212,8 @@
       project && project.scheduledDate,
       project && project.followUpDate,
       project && project.nextInspectionDate,
+      project && project.nextDate,
+      project && project.inspectionDueDate,
       project && project.nextDueDate,
       project && project.dueDate
     ];
@@ -203,8 +222,10 @@
       if (key) return key;
     }
     try {
-      if (project && project.recurringCycleEnabled === true &&
-          typeof root.getNextRecurringCycleDate === 'function') {
+      if (
+        (project && (project.recurringCycleEnabled === true || text(project.recurringCycleEnabled).toLowerCase() === 'yes')) &&
+        typeof root.getNextRecurringCycleDate === 'function'
+      ) {
         return dateKey(root.getNextRecurringCycleDate(project));
       }
     } catch (_) {}
@@ -349,6 +370,28 @@
     });
   }
 
+  function isCloudCompanyRow(project) {
+    try {
+      if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
+      const filter = root.__fireSCloudBuildingFilter;
+      if (!filter || filter.ready !== true) return true;
+      const ids = filter.ids || {};
+      const keys = filter.keys || {};
+      if (ids[String((project && project.id) || '').trim()]) return true;
+      const key = buildingKey(project);
+      if (key && keys[key]) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function scheduleRows(projects) {
+    return (Array.isArray(projects) ? projects : []).filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      if (isCloudCompanyRow(project)) return true;
+      return !!nextDueKey(project);
+    });
+  }
+
   function companyCloudListReady() {
     try {
       if (root.__fireSCloudPullSettled !== true) return false;
@@ -365,6 +408,7 @@
     const endIso = addDays(todayIso, 30);
     const active = uniqueActive(projects);
     const rows = rowsForUniqueBuildings(projects);
+    const dueRows = scheduleRows(projects);
     const openIdByKey = Object.create(null);
     active.forEach(project => {
       const key = buildingKey(project);
@@ -392,9 +436,9 @@
       .sort((a, b) => compareName(a.name, b.name) || compareName(a.id, b.id));
 
     const upcomingByKey = Object.create(null);
-    rows.forEach(project => {
+    dueRows.forEach(project => {
       const due = nextDueKey(project);
-      if (!due || due < todayIso || due > endIso) return;
+      if (!due || due > endIso) return;
       const key = buildingKey(project);
       if (!key) return;
       const current = upcomingByKey[key];
@@ -638,6 +682,10 @@
   function daysLabel(days) {
     if (days === 0) return 'Today';
     if (days === 1) return '1 day';
+    if (typeof days === 'number' && days < 0) {
+      const n = Math.abs(days);
+      return n === 1 ? '1 day overdue' : n + ' days overdue';
+    }
     if (typeof days === 'number') return `${days} days`;
     return '';
   }
@@ -678,7 +726,7 @@
             `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
             `<td class="fire-s-owner-lists-meta"><span class="fire-s-owner-lists-date">${esc(formatDate(row.due))}</span><span class="fire-s-owner-lists-days">${esc(daysLabel(row.days))}</span></td>`
           ].join(''))).join('')
-        : emptyRow(2, 'No inspections due in the next 30 days.');
+        : emptyRow(2, 'No overdue or upcoming inspections in the next 30 days.');
     }
 
     if (deficiencyBody) {
