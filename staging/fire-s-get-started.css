@@ -343,6 +343,11 @@ html[data-fire-s-theme="dark"] .fire-s-legal-links a {
 }
 
 /* Access is the guest / new-company / pending surface */
+html.fire-s-access-open #cmdChangePasswordBtn,
+body.fire-s-access-open #cmdChangePasswordBtn {
+  display: none !important;
+}
+
 body.fire-s-clean-home.fire-s-role-owner #fireSGetStarted,
 body.fire-s-clean-home.fire-s-role-manager #fireSGetStarted,
 body.fire-s-clean-home.fire-s-role-inspector #fireSGetStarted {

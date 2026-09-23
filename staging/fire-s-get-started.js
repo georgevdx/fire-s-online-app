@@ -326,6 +326,16 @@
       if (document.body) document.body.classList.add('fire-s-access-open');
     } catch (_) {}
     try {
+      var changePw = byId('cmdChangePasswordBtn');
+      if (changePw) {
+        changePw.hidden = true;
+        changePw.setAttribute('aria-hidden', 'true');
+        if (changePw.style && typeof changePw.style.setProperty === 'function') {
+          changePw.style.setProperty('display', 'none', 'important');
+        }
+      }
+    } catch (_) {}
+    try {
       var lock = byId('fireSHomeLockPanel');
       if (lock) {
         lock.hidden = true;

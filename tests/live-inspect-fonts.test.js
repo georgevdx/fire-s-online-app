@@ -68,8 +68,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.66/.test(read('index.html')) &&
-    /Version 1\.3\.113-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.66 live and 1.3.113-toets'
+    /Version 1\.3\.114-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.66 live and 1.3.114-toets'
 );
 
 console.log('live-inspect-fonts.test.js: ok');

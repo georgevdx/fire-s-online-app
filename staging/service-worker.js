@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-75-toets-114';
+const CACHE = 'fire-s-108-75-toets-115';
 const PRECACHE = [
   './manifest.json',
   './icon-192.png',

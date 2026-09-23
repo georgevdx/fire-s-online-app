@@ -182,7 +182,16 @@
     // While auth/profile is still loading, do not hide management navigation.
     // This prevents the old fallback-to-inspector logic from winning.
     if (state === 'loading') {
-      CARD_IDS.forEach(showCard);
+      CARD_IDS.forEach(function (id) {
+        var accessOpen = false;
+        try {
+          accessOpen =
+            document.documentElement.classList.contains('fire-s-access-open') ||
+            document.body.classList.contains('fire-s-access-open');
+        } catch (_) {}
+        if (id === 'cmdChangePasswordBtn' && accessOpen) hideCard(id);
+        else showCard(id);
+      });
       return;
     }
 

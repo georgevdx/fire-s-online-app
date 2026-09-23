@@ -13,6 +13,10 @@ const team = read('staging/fire-s-company-team.js');
 const subscribe = read('staging/fire-s-subscribe.js');
 const change = read('staging/fire-s-change-password.js');
 const roles = read('staging/fire-s-clean-home-roles.js');
+const entitlementJs = read('staging/fire-s-entitlement.js');
+const entitlementCss = read('staging/fire-s-entitlement.css');
+const getStarted = read('staging/fire-s-get-started.js');
+const getStartedCss = read('staging/fire-s-get-started.css');
 const sql = read('STAGING_STAFF_TEMP_PASSWORD.sql');
 const bootstrap = read('STAGING_BOOTSTRAP.sql');
 const env = read('staging/fire-s-env.js');
@@ -69,15 +73,24 @@ assert.ok(
   /cmdChangePasswordBtn/.test(roles) &&
     /applyInspectorHome[\s\S]*cmdChangePasswordBtn/.test(roles) &&
     /applyViewerHome[\s\S]*cmdChangePasswordBtn/.test(roles) &&
-    /applyOwnerHome[\s\S]*cmdChangePasswordBtn/.test(roles),
-  'Inspector, Viewer and Owner Home must show Change password'
+    /applyOwnerHome[\s\S]*cmdChangePasswordBtn/.test(roles) &&
+    /applyLockedSubscribeHome[\s\S]*show\('cmdChangePasswordBtn'\)/.test(roles),
+  'Inspector, Viewer, Owner and locked signed-in Home must show Change password'
+);
+assert.ok(
+  /accessPageOpen\(\) \|\| !isSignedInUser\(\)/.test(roles) &&
+    /html\.fire-s-access-open #cmdChangePasswordBtn/.test(entitlementCss) &&
+    /html\.fire-s-access-open #cmdChangePasswordBtn/.test(getStartedCss) &&
+    /var changePw = byId\('cmdChangePasswordBtn'\)/.test(getStarted) &&
+    /if \(accessGateOpen\(\)\) \{[\s\S]*hideNode\(document\.getElementById\('cmdChangePasswordBtn'\)\)/.test(entitlementJs),
+  'Access must hide Change password until the person is signed in'
 );
 assert.ok(
   /Choose your own password/.test(change) &&
     /Your owner gave you a temporary password/.test(change),
   'After Login with a temporary password the inspector must choose and confirm a new one'
 );
-assert.ok(/1\.3\.113-toets/.test(env), 'Toets-blad version must be 1.3.113-toets for this password flow');
+assert.ok(/1\.3\.114-toets/.test(env), 'Toets-blad version must be 1.3.114-toets for this password flow');
 assert.ok(
   !/id="fireSSeatPassword"/.test(liveHtml) &&
     !/id="cmdChangePasswordBtn"/.test(liveHtml) &&

@@ -358,8 +358,26 @@
     if (el) el.textContent = text;
   }
 
+  function accessPageOpen() {
+    try {
+      if (document.documentElement && document.documentElement.classList.contains('fire-s-access-open')) {
+        return true;
+      }
+      if (document.body && document.body.classList.contains('fire-s-access-open')) {
+        return true;
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSShouldShowAccess === 'function' && window.fireSShouldShowAccess()) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   function inspectionHomeLocked() {
     try {
+      if (accessPageOpen() || !isSignedInUser()) return false;
       if (
         window.fireSEntitlement &&
         typeof window.fireSEntitlement.homeWorkAllowed === 'function'
@@ -1107,6 +1125,11 @@
       return;
     }
     paintRecoveryBody(false);
+    if (accessPageOpen() || !isSignedInUser()) {
+      wrapAllCommandCards();
+      applyGuestHome();
+      return;
+    }
     if (inspectionHomeLocked()) {
       wrapAllCommandCards();
       applyLockedSubscribeHome();
