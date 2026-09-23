@@ -23,6 +23,7 @@ const liveTeam = read('fire-s-company-team.js');
 
 assert.ok(/create table if not exists public.fire_s_entitlement_config/.test(sql));
 assert.ok(/trial_inspection_limit integer not null default 3/.test(sql));
+assert.ok(/add column if not exists trial_ends_at timestamptz/.test(sql));
 assert.ok(/trial_days integer not null default 14/.test(sql));
 assert.ok(/fire_s_check_company_entitlement/.test(sql));
 assert.ok(/fire_s_activate_paid_subscription/.test(sql));
