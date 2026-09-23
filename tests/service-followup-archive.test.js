@@ -53,16 +53,17 @@ assert.ok(
     /hideSupportAdminPanels\('serviceRequestsList'\)/.test(stagingApp) &&
     /hideSupportAdminPanels\('betaFeedbackList'\)/.test(stagingApp) &&
     /hideSupportAdminPanels\('supportArchiveList'\)/.test(stagingApp) &&
+    /hideSupportAdminPanels\('feedbackCommentsList'\)/.test(stagingApp) &&
     /supportAdminPanelIsOpen\('serviceRequestsList'\) && !forceOpen/.test(stagingApp) &&
     /supportAdminPanelIsOpen\('betaFeedbackList'\) && !forceOpen/.test(stagingApp),
-  'Saved requests, reported issues and archive must open one at a time'
+  'Saved requests, reported issues, comments and archive must open one at a time'
 );
 assert.ok(
   /fireSMarkServiceRequestFollowedUp/.test(stagingApp) &&
     /await renderServiceRequestsList\(true\)/.test(stagingApp) &&
     /function renderSupportArchiveList/.test(stagingApp) &&
     /purgeExpiredSupportArchiveCloud/.test(stagingApp) &&
-    /filter\(item => !isArchivedSupportIssue\(item\)\)/.test(stagingApp),
+    /!isArchivedSupportIssue\(item\) && !isFeedbackComment\(item\)/.test(stagingApp),
   'Followed-up requests must leave the active list and closed issues must move to archive'
 );
 

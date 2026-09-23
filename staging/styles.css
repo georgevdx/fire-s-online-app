@@ -14790,18 +14790,33 @@ html[data-fire-s-theme="light"] #projectListSection .ultra-premises-dates small 
 }
 
 /* Dark Mode: dark type on white Home tiles, Command Centre, continue dialog. */
-html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn):not(#cmdServicesBtn) {
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) {
   background: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
-html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn):not(#cmdServicesBtn) .command-title,
-html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn):not(#cmdServicesBtn) .command-icon,
-html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn):not(#cmdServicesBtn) span {
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-title,
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-icon,
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) span {
   color: #0f172a !important;
 }
-html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn):not(#cmdServicesBtn) .command-copy {
+html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-copy {
   color: #334155 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary),
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.fire-s-consultant-services-card {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 42%, #f59e0b 72%, #ea580c 100%) !important;
+  border-color: #c2410c !important;
+  color: #7c2d12 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) .command-title,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) .command-icon,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) span {
+  color: #7c2d12 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) .command-copy {
+  color: #9a3412 !important;
 }
 html[data-fire-s-theme="dark"] #mainCommandCentre #cmdInspectionsBtn .command-title,
 html[data-fire-s-theme="dark"] #mainCommandCentre #cmdInspectionsBtn .command-copy,
