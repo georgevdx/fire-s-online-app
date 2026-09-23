@@ -19,11 +19,11 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.65/.test(liveHtml) &&
-    /app\.js\?v=1-3-65-count/.test(liveHtml) &&
-    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv) &&
-    /fire-s-108-74-drop/.test(liveSw),
-  'Live must keep 1.3.65 and drop the old Home cache so the phone count fix sits'
+  /Version 1\.3\.66/.test(liveHtml) &&
+    /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv) &&
+    /fire-s-108-75-live-payfast/.test(liveSw),
+  'Live must keep 1.3.66 and drop the old Home cache so the phone count fix sits'
 );
 assert.ok(
   /Version 1\.3\.110-toets/.test(stagingHtml) &&

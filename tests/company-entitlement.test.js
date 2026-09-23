@@ -54,16 +54,16 @@ assert.ok(/DEFAULT_TRIAL_INSPECTION_LIMIT: 3/.test(js));
 assert.ok(/DEFAULT_TRIAL_DAYS: 14/.test(js));
 assert.ok(/fire_s_check_company_entitlement/.test(js));
 assert.ok(/must not GRANT access from localStorage/.test(js) || /must not GRANT access/.test(js));
-assert.ok(/VIEW PLANS \/ SUBSCRIBE/.test(js));
+assert.ok(/Subscribe \/ Reactivate/.test(js));
 assert.ok(/Your Fire-S trial ends tomorrow/.test(js));
 assert.ok(/Your Fire-S free trial has ended/.test(js));
 assert.ok(/You have completed the inspections included in your Fire-S free trial/.test(js));
-assert.ok(/projectListSection: true/.test(js), 'Live list stays visible until sit dit live');
+assert.ok(!/projectListSection: true/.test(js), 'Live cancelled list must lock until a new subscription is active');
 assert.ok(!/projectListSection: true/.test(stagingJs), 'Cancelled toets must lock the inspection list until a new subscription is active');
 assert.ok(/getCompanyEntitlement/.test(stagingJs), 'Toets Phase 6 central getter');
 assert.ok(/fire_s_get_company_entitlement/.test(stagingJs));
 assert.ok(/Subscribe \/ Reactivate/.test(stagingJs));
-assert.ok(!/getCompanyEntitlement/.test(js), 'Live entitlement client waits for sit dit live');
+assert.ok(/getCompanyEntitlement/.test(js), 'Live entitlement client uses the server getter');
 
 assert.ok(/fire-s-entitlement\.css/.test(liveHtml) && /fire-s-entitlement\.js/.test(liveHtml));
 assert.ok(/fire-s-entitlement\.css/.test(stagingHtml) && /fire-s-entitlement\.js/.test(stagingHtml));
@@ -73,7 +73,7 @@ assert.ok(/id="fireSLoginViewPlansBtn"/.test(liveHtml));
 assert.ok(/id="fireSAdminEntitlementPanel"/.test(liveHtml) && /id="fireSAdminEntitlementPanel"/.test(stagingHtml));
 assert.ok(/id="fireSTrialSubscribeNote"/.test(liveHtml));
 assert.ok(/Subscribing New Company/.test(liveHtml));
-assert.ok(!/PayFast/.test(liveHtml.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/)[0]));
+assert.ok(/PayFast/.test(liveHtml.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/)[0]));
 
 assert.ok(/markPaid: false/.test(liveStarted), 'Creating a company must not mark the browser as paid');
 assert.ok(/fireSEntitlementGate/.test(liveApp));
@@ -103,6 +103,12 @@ const sandbox = {
   setTimeout: function (fn) { return fn(); }
 };
 sandbox.window = sandbox;
+sandbox.currentUserProfile = {
+  id: 'u1',
+  email: 'a@b.c',
+  companyId: 'co1',
+  role: 'company_owner'
+};
 sandbox.document.body = sandbox.document.body;
 vm.runInNewContext(js, sandbox);
 
@@ -172,7 +178,7 @@ assert.ok(parsed.entitlement);
 store['fireS.billingStatus'] = 'active';
 store['fireS.trialExpiresAt'] = '2099-01-01';
 assert.strictEqual(api.hasSnapshot(), false, 'localStorage must not make entitlement ready');
-assert.strictEqual(api.operationallyAllowed(), null, 'missing RPC must not invent access');
+assert.strictEqual(api.operationallyAllowed(), false, 'missing RPC must not invent access');
 
 assert.ok(/\.fire-s-trial-banner/.test(css));
 assert.ok(/fire-s-entitlement-blocker/.test(css));

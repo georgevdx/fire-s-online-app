@@ -134,12 +134,12 @@ assert.ok(
 );
 
 assert.ok(
-  /Version 1\.3\.65/.test(liveHtml) &&
-    /app\.js\?v=1-3-65-count/.test(liveHtml) &&
-    /service-worker\.js\?v=108-74-drop/.test(liveHtml) &&
-    /fire-s-108-74-drop/.test(read('service-worker.js')) &&
-    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(read('fire-s-env.js')),
-  'Live must sit the comment form without bumping 1.3.65'
+  /Version 1\.3\.66/.test(liveHtml) &&
+    /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
+    /service-worker\.js\?v=108-75-live-payfast/.test(liveHtml) &&
+    /fire-s-108-75-live-payfast/.test(read('service-worker.js')) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(read('fire-s-env.js')),
+  'Live must sit the comment form and show 1.3.66'
 );
 
 console.log('simple-feedback-comment.test.js: ok');

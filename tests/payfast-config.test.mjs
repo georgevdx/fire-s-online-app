@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { loadPayfastConfig, resolvePayfastMode, processUrlForMode, publicPayfastConfig } from '../supabase/functions/_shared/payfast-config.js';
 import {
   assertSandboxCheckout,
+  assertCheckoutMode,
   buildSignedCheckoutFields,
   generateSignature,
   payfastBuyerEmail,
@@ -150,6 +151,7 @@ const liveFields = buildSignedCheckoutFields(liveCfg, {
 assert.strictEqual(liveFields.email_address, 'owner@acme.test');
 
 assertSandboxCheckout(sandboxCfg);
+assert.doesNotThrow(() => assertCheckoutMode(liveCfg));
 assert.throws(
   () => assertSandboxCheckout(liveCfg),
   /sandbox-only/

@@ -19,11 +19,11 @@ const liveEnv = read('fire-s-env.js');
 
 assert.ok(/1\.3\.110-toets/.test(env), 'Toets-blad version must be 1.3.110-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
-  'Live Fire-S must stay 1.3.65'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
+  'Live Fire-S must stay 1.3.66'
 );
-assert.ok(/Version 1\.3\.65/.test(liveHtml), 'Live HTML stays 1.3.65');
-assert.ok(!/fireSStartSubscribeCheckout/.test(read('fire-s-subscribe.js')), 'live Subscribe wait for sit dit live');
+assert.ok(/Version 1\.3\.66/.test(liveHtml), 'Live HTML stays 1.3.66');
+assert.ok(/fireSPayfast/.test(read('fire-s-subscribe.js')), 'live Subscribe must open PayFast');
 
 const page = html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/);
 assert.ok(page, 'Subscription page must exist');

@@ -27,7 +27,7 @@ assert.ok(!/fire_s_activate_paid_subscription/.test(sql));
 assert.ok(!/delete from public\.inspections/.test(sql));
 assert.ok(/CHECKOUT_STARTED/.test(sql));
 
-assert.ok(/assertSandboxCheckout/.test(checkout));
+assert.ok(/assertCheckoutMode/.test(checkout));
 assert.ok(/fire_s_begin_payfast_checkout/.test(checkout));
 assert.ok(/beginPending/.test(checkout));
 assert.ok(/resolveAuthoritativeCheckout/.test(checkout));

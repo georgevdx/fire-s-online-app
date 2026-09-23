@@ -38,14 +38,14 @@ assert.ok(
 );
 
 assert.ok(
-  /Version 1\.3\.65/.test(liveHtml),
-  'Displayed live version stays 1.3.65'
+  /Version 1\.3\.66/.test(liveHtml),
+  'Displayed live version stays 1.3.66'
 );
 
 assert.ok(
-  !/fire-s-payfast\.js/.test(liveHtml) &&
+  /fire-s-payfast\.js/.test(liveHtml) &&
     !/sample-company-s-logo\.svg/.test(liveHtml),
-  'Sitting dark-type live must not pull toets extras onto live HTML'
+  'Live must load PayFast and must not pull toets sample-logo extras'
 );
 
 console.log('live-dark-type.test.js: ok');

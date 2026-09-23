@@ -6663,9 +6663,17 @@ function isViewer() {
 
 function hasActiveCompanyAccess() {
   if (isSuperAdmin()) return true;
-
-  return currentCompanyAccess?.status === 'active' ||
-    currentCompanyAccess?.status === 'trial';
+  try {
+    if (window.fireSEntitlement) {
+      if (typeof window.fireSEntitlement.isLocalWorkspace === 'function' && window.fireSEntitlement.isLocalWorkspace()) {
+        return true;
+      }
+      if (window.fireSEntitlement.hasSnapshot && window.fireSEntitlement.hasSnapshot()) {
+        return window.fireSEntitlement.operationallyAllowed() === true;
+      }
+    }
+  } catch (_) {}
+  return false;
 }
 
 function fireSEntitlementGate(kind) {
@@ -6676,6 +6684,8 @@ function fireSEntitlementGate(kind) {
     if (kind === 'create') return window.fireSEntitlement.canCreate();
     if (kind === 'finalise') return window.fireSEntitlement.canFinalise();
     if (kind === 'allowed') return window.fireSEntitlement.operationallyAllowed();
+    if (kind === 'read') return window.fireSEntitlement.canRead ? window.fireSEntitlement.canRead() : window.fireSEntitlement.operationallyAllowed();
+    if (kind === 'export') return window.fireSEntitlement.canExport ? window.fireSEntitlement.canExport() : window.fireSEntitlement.operationallyAllowed();
   } catch (_) {}
   return null;
 }
@@ -6698,17 +6708,19 @@ function canEditInspection() {
 
   if (isSuperAdmin()) return true;
 
-  if (!hasActiveCompanyAccess()) return false;
-
   try {
+    if (window.fireSEntitlement && window.fireSEntitlement.isLocalWorkspace && window.fireSEntitlement.isLocalWorkspace()) {
+      return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
+    }
     var snap = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
-    if (snap && snap.backendReady && snap.can_write_draft === false && snap.allowed === false) {
-      return false;
+    if (snap && snap.backendReady) {
+      if (snap.can_read !== true && snap.allowed !== true) return false;
+      if (snap.can_write_draft !== true && snap.allowed !== true) return false;
+      return ['company_owner', 'manager', 'inspector'].includes(getCurrentUserRole());
     }
   } catch (_) {}
 
-  return ['company_owner', 'manager', 'inspector']
-    .includes(getCurrentUserRole());
+  return false;
 }
 
 function canViewReports() {
@@ -6716,7 +6728,17 @@ function canViewReports() {
 
   if (isSuperAdmin()) return true;
 
-  if (!hasActiveCompanyAccess()) return false;
+  try {
+    if (window.fireSEntitlement && window.fireSEntitlement.isLocalWorkspace && window.fireSEntitlement.isLocalWorkspace()) {
+      return ['company_owner', 'manager', 'inspector', 'viewer'].includes(getCurrentUserRole());
+    }
+    if (window.fireSEntitlement && window.fireSEntitlement.hasSnapshot && window.fireSEntitlement.hasSnapshot()) {
+      if (fireSEntitlementGate('export') === false) return false;
+      if (fireSEntitlementGate('read') === false) return false;
+    } else if (window.fireSEntitlement && typeof window.fireSEntitlement.isLocalWorkspace === 'function' && !window.fireSEntitlement.isLocalWorkspace()) {
+      return false;
+    }
+  } catch (_) {}
 
   return ['company_owner', 'manager', 'inspector', 'viewer']
     .includes(getCurrentUserRole());
@@ -16536,6 +16558,18 @@ function showInspectionOpenGate(projectId, focusMode) {
 function openProject(projectId, focusMode, options = {}) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
+  try {
+    if (
+      window.fireSEntitlement &&
+      typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+      window.fireSEntitlement.inspectionAccessLocked()
+    ) {
+      if (typeof window.fireSEntitlement.openRequiredScreen === 'function') {
+        window.fireSEntitlement.openRequiredScreen();
+      }
+      return;
+    }
+  } catch (_) {}
   const projects = getProjects();
   const project = resolveProjectOpenIdentifier(projectId);
   if (!project) {
@@ -37981,6 +38015,17 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
 
   function syncKpiCards(){
+    try {
+      if (
+        window.fireSEntitlement &&
+        (
+          (typeof window.fireSEntitlement.homeWorkAllowed === 'function' && window.fireSEntitlement.homeWorkAllowed() !== true) ||
+          (typeof window.fireSEntitlement.inspectionAccessLocked === 'function' && window.fireSEntitlement.inspectionAccessLocked())
+        )
+      ) {
+        return true;
+      }
+    } catch (_) {}
     const counts = {
       compliant: count('compliant'),
       scheduled: count('scheduled-new'),
@@ -39161,6 +39206,22 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   function renderKpis(){
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
+    try {
+      if (
+        window.fireSEntitlement &&
+        (
+          (typeof window.fireSEntitlement.homeWorkAllowed === 'function' && window.fireSEntitlement.homeWorkAllowed() !== true) ||
+          (typeof window.fireSEntitlement.inspectionAccessLocked === 'function' && window.fireSEntitlement.inspectionAccessLocked())
+        )
+      ) {
+        const lockedRow = document.getElementById('fireSOwnerKpiRow');
+        if (lockedRow) {
+          lockedRow.hidden = true;
+          lockedRow.style.setProperty('display', 'none', 'important');
+        }
+        return;
+      }
+    } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';

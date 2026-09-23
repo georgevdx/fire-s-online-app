@@ -231,10 +231,10 @@
           <li>Type the company name, your email and a password. You pay R250 / month (or R2 500 / year) for that subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
-          <li>Tap <strong>Subscribe</strong>.</li>
+          <li>Tap <strong>Subscribe</strong>, then pay on PayFast. Card details stay with PayFast.</li>
           <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
         </ol>
-        <p>No card is taken in the app yet. Company S invoices the owner R250 per subscription per month, or R2 500 per year. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. No VAT is added. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p>After Subscribe, pay on PayFast. Card details stay with PayFast. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
             : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
         }
@@ -320,7 +320,7 @@
         <ol>
           <li>Home → <strong>Company personnel</strong>.</li>
           <li>On the <strong>People</strong> tab: Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
-          <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
+          <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>, then pay that extra login on PayFast. They do not pay.</li>
           <li>Tell them: Open Fire-S → <strong>2. Create password</strong> → same email → choose a password → Login. They must not tap Subscribe on Access.</li>
           <li>Change a role or Remove a person on the same People list.</li>
           <li>Tap <strong>Stats</strong> to select an inspector, view the whole team, or Compare volume, completion and overdue work.</li>
@@ -357,11 +357,11 @@
           showFees()
             ? `<p>Fire-S is a paid subscription: <strong>R250 per month</strong> or <strong>R2 500 per year</strong> (2 months free), per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Phone and desktop share that login — do not enter the same email twice.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
-        <p>New companies: only the owner taps <strong>3. Subscribe</strong> on Access. Inspectors and managers never Subscribe. When the owner adds an email in Personnel, that tap is the new subscription for that person. Company S invoices the owner. No VAT is added. No card is taken in the app yet.</p>
-        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free). An annual subscription renews automatically until you cancel.</p>
+        <p>New companies: only the owner taps <strong>Subscribing New Company</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
+        <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date. An annual subscription renews automatically until you cancel.</p>
         <p>Seven days before the expiry date, Owner Home shows a reminder. Tap <strong>Renew</strong> to keep this login, or <strong>Cancel subscription</strong> to stop. Close hides the reminder until the next expiry date.</p>
-        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Invoices for the next period stop. The login stays until the expiry date already shown. Cancelling does not delete the company name or inspections — that data stays in the cloud.</p>
-        <p>To subscribe again: Login with the <strong>same owner email</strong>. Do not tap Subscribe on Access and do not type a new company name. Open Home → <strong>Subscription</strong>, choose Monthly or Annual, tap <strong>Subscribe again</strong>. Company S invoices you. Inspections stay in this same company.</p>
+        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops. The login stays until the expiry date already shown. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud.</p>
+        <p>To subscribe again: Login with the <strong>same owner email</strong>. Do not tap Subscribing New Company on Access and do not type a new company name. Open Home → <strong>Subscription</strong>, choose Monthly or Annual, tap <strong>Subscribe again</strong>, then pay on PayFast. Inspections stay in this same company.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}

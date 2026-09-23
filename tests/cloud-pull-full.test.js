@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-65-count',
+  '1-3-66-payfast',
   '1-3-home-lookup',
-  '108-74-drop',
-  'fire-s-108-74-drop'
+  '108-75-live-payfast',
+  'fire-s-108-75-live-payfast'
 );
 assertPullSource(
   stagingApp,

@@ -73,9 +73,9 @@ function checkTree(dir) {
   );
   assert.ok(
     /billed_to/.test(notify) &&
-      /Invoice the owner/.test(notify) &&
+      (/Invoice the owner/.test(notify) || /pays on PayFast/.test(notify)) &&
       /Inspectors and other staff do not pay/.test(notify),
-    label + ': Company S notify must invoice the owner, not the inspector'
+    label + ': notify must bill the owner on PayFast, not the inspector'
   );
   assert.ok(
     /function notifyOwnerPaysSubscription\(/.test(team) &&

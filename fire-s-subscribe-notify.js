@@ -1,7 +1,7 @@
 /* ============================================================
    Fire-S — email Company S when a company subscribes
    or the owner adds a new subscribed email. Does not block the owner.
-   Company S invoices the owner — inspectors do not pay.
+   The owner pays on PayFast. Inspectors do not pay.
    First live send asks Johan to click Activate in johandb@live.com.
    ============================================================ */
 (function fireSSubscribeNotify(root) {
@@ -39,8 +39,8 @@
     var billedTo = billedToEmail(info);
     return {
       _subject: isSeat
-        ? 'Fire-S: new subscription — invoice the owner'
-        : 'Fire-S: new company subscribed — invoice the owner',
+        ? 'Fire-S: new subscription — owner pays on PayFast'
+        : 'Fire-S: new company subscribed — owner pays on PayFast',
       _template: 'table',
       _captcha: 'false',
       event: isSeat ? 'New subscription (new email)' : 'New Subscribe',
@@ -50,12 +50,12 @@
       role: role,
       billing: priceLine(interval),
       pay_how:
-        'Company S invoices the OWNER for every subscribed email. Inspectors and other staff do not pay. No card in the app. No VAT.',
+        'The OWNER pays on PayFast for every subscribed email. Inspectors and other staff do not pay. Card details stay with PayFast.',
       note: isSeat
-        ? 'This is a new subscription for this email. Invoice the owner (' +
+        ? 'This is a new subscription for this email. The owner (' +
           billedTo +
-          '), not the inspector or staff email.'
-        : 'First subscription. Invoice this owner.'
+          ') pays on PayFast, not the inspector or staff email.'
+        : 'First subscription. Owner pays on PayFast.'
     };
   }
 

@@ -52,12 +52,17 @@
     name: staging ? 'staging' : 'production',
     isStaging: staging,
     isProduction: !staging,
-    appVersion: staging ? '1.3.27-toets' : '1.3.65',
+    appVersion: staging ? '1.3.27-toets' : '1.3.66',
     supabaseUrl: staging ? stagingUrl : PROD_URL,
     supabaseAnonKey: staging ? stagingAnon : PROD_ANON,
     cloudReady: staging ? stagingCloudReady : true,
     notifyCompanyS: !staging,
-    storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth'
+    storageKey: staging ? 'sb-fires-staging-auth' : 'sb-fires-production-auth',
+    payfast: {
+      enabled: true,
+      mode: staging ? 'sandbox' : 'live',
+      checkoutFunction: 'payfast-checkout'
+    }
   };
 
   function paintVersion() {

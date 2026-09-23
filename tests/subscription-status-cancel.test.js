@@ -28,8 +28,8 @@ const liveTerms = read('terms.html');
 
 assert.ok(/1\.3\.110-toets/.test(env), 'Toets-blad version must be 1.3.110-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
-  'Live Fire-S must be 1.3.65 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
+  'Live Fire-S must be 1.3.66 after sit dit live'
 );
 assert.ok(/fireSSubscribeCancelBtn/.test(liveHtml), 'Live Subscription must offer Cancel subscription');
 
@@ -40,8 +40,8 @@ assert.ok(
     /id="fireSSubscribeCancelPanel"/.test(livePage[0]) &&
     /Only the Owner can cancel/.test(livePage[0]) &&
     /company name and inspections stay/.test(livePage[0]) &&
-    !/PayFast/.test(livePage[0]),
-  'Live cancel copy must keep company data and must not mention PayFast'
+    /PayFast/.test(livePage[0]),
+  'Live cancel copy must keep company data and pay on PayFast'
 );
 
 const page = html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/);
@@ -137,8 +137,8 @@ assert.ok(
   /function paintSubscribeStatus\(/.test(liveSubscribe) &&
     /function cancelSubscription\(/.test(liveSubscribe) &&
     /Company name and inspections stay in the cloud/.test(liveSubscribe) &&
-    !/PayFast/.test(liveSubscribe),
-  'Live cancel must keep company data and stay on invoices, not PayFast'
+    /PayFast/.test(liveSubscribe),
+  'Live cancel must keep company data and pay on PayFast'
 );
 assert.ok(
   /Never delete companies, inspections, or people/.test(liveCatalogSrc) &&
@@ -240,7 +240,7 @@ liveCat.rememberInterval('monthly');
 liveCat.markPaid('monthly');
 assert.strictEqual(liveCat.billingStatus(), 'active');
 assert.ok(/renews automatically until you cancel/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
-assert.ok(/invoices you/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
+assert.ok(!/Company S invoices you/.test(liveCat.statusHeadline()), liveCat.statusHeadline());
 assert.ok(/does not delete the company name or inspections/.test(liveCat.statusKeepDataNote()));
 const liveCancelFn = liveCatalogSrc.match(/function cancelBilling\(\)[\s\S]*?function reactivateBilling/);
 assert.ok(liveCancelFn && !/\.delete\(/.test(liveCancelFn[0]) && !/from\('inspections'\)/.test(liveCancelFn[0]));

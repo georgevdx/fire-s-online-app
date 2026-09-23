@@ -71,9 +71,9 @@ assertDateAndStatusLayout('Toets', stagingApp, stagingHtml, stagingCss);
 assertDateAndStatusLayout('Live', liveApp, liveHtml, liveCss);
 
 assert.ok(
-  /Version 1\.3\.65/.test(liveHtml) &&
+  /Version 1\.3\.66/.test(liveHtml) &&
     /1\.3\.110-toets/.test(stagingHtml),
-  'Live displayed version stays 1.3.65; toets stays 1.3.110-toets'
+  'Live displayed version stays 1.3.66; toets stays 1.3.110-toets'
 );
 
 assert.ok(

@@ -110,8 +110,8 @@ assert.ok(
 );
 
 assert.ok(
-  /fire-s-subscribe\.js\?v=1-16-subtype/.test(read('index.html')) &&
-    /fire-s-subscriptions\.js\?v=1-16-subtype/.test(read('index.html')),
+  /fire-s-subscribe\.js\?v=1-35-live/.test(read('index.html')) &&
+    /fire-s-subscriptions\.js\?v=1-17-live/.test(read('index.html')),
   'Live must cache-bust the current-subscription type paint'
 );
 assert.ok(
@@ -121,9 +121,9 @@ assert.ok(
 );
 
 assert.ok(
-  /Version 1\.3\.65/.test(read('index.html')) &&
+  /Version 1\.3\.66/.test(read('index.html')) &&
     /Version 1\.3\.110-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.65 live and 1.3.110-toets'
+  'Displayed versions stay 1.3.66 live and 1.3.110-toets'
 );
 
 assert.ok(

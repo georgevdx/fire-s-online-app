@@ -20,8 +20,8 @@ const liveTerms = read('terms.html');
 
 assert.ok(/1\.3\.110-toets/.test(env), 'Toets-blad version must be 1.3.110-toets');
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(liveEnv),
-  'Live Fire-S must be 1.3.65 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
+  'Live Fire-S must be 1.3.66 after sit dit live'
 );
 
 assert.ok(
@@ -60,7 +60,7 @@ assert.ok(
   'Toets terms must show the moderate prices'
 );
 assert.ok(
-  /R250 per month/.test(liveHtml) && /R2 500 per year/.test(liveHtml),
+  /R250/.test(liveHtml) && /R2 500/.test(liveHtml),
   'Live Subscribe copy must show R250 / R2 500'
 );
 assert.ok(

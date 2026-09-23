@@ -17,13 +17,13 @@ const manual = read('fire-s-user-manual.js');
 const roles = read('fire-s-clean-home-roles.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.65'/.test(env),
-  'Live Fire-S must be 1.3.65 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(env),
+  'Live Fire-S must be 1.3.66 after sit dit live'
 );
-assert.ok(!/fire-s-payfast\.js/.test(html), 'Live root must not load PayFast');
+assert.ok(/fire-s-payfast\.js/.test(html), 'Live root must load PayFast');
 assert.ok(
-  /R250 \/ month \(or R2 500 \/ year\)/.test(html) && /No card is taken yet/.test(html),
-  'Live Subscribe must stay on invoices at R250 / R2 500'
+  /After Subscribe, pay on PayFast/.test(html) && /R250/.test(html) && /R2 500/.test(html),
+  'Live Subscribe must take payment on PayFast at R250 / R2 500'
 );
 
 const gate = html.match(/id="fireSGetStarted"[\s\S]*?id="mainCommandCentre"/);
