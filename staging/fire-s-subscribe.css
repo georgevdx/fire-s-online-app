@@ -266,6 +266,30 @@
   color: #64748b;
 }
 
+.fire-s-change-password-section {
+  display: grid;
+  gap: 12px;
+}
+
+.fire-s-change-password-intro h3 {
+  margin: 0 0 6px;
+}
+
+.fire-s-change-password-intro p,
+.fire-s-change-password-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.fire-s-change-password-fields input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
 .fire-s-expiry-reminder {
   display: grid;
   gap: 10px;

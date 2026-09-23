@@ -47,6 +47,7 @@
     'cmdManagementDashboardBtn',
     'cmdSubscribeBtn',
     'cmdUserManualBtn',
+    'cmdChangePasswordBtn',
     'cmdServicesBtn',
     'cmdDashboardBtn',
     'cmdFindingsBtn',
@@ -377,7 +378,7 @@
 
   function applyLockedSubscribeHome() {
     ALL_CMD_IDS.forEach(function (id) {
-      if (id === 'cmdSubscribeBtn' || id === 'cmdUserManualBtn') show(id);
+      if (id === 'cmdSubscribeBtn' || id === 'cmdUserManualBtn' || id === 'cmdChangePasswordBtn') show(id);
       else hide(id);
     });
     hide('inspectorBoardHomeBar');
@@ -402,6 +403,7 @@
     }
     show('cmdSubscribeBtn');
     show('cmdUserManualBtn');
+    show('cmdChangePasswordBtn');
   }
 
   function show(id) {
@@ -409,7 +411,7 @@
       hide(id);
       return;
     }
-    if (inspectionHomeLocked() && id !== 'cmdSubscribeBtn' && id !== 'cmdUserManualBtn') {
+    if (inspectionHomeLocked() && id !== 'cmdSubscribeBtn' && id !== 'cmdUserManualBtn' && id !== 'cmdChangePasswordBtn') {
       hide(id);
       return;
     }
@@ -621,10 +623,16 @@
       'Find, continue or start an inspection.'
     );
     show('cmdUserManualBtn');
+    show('cmdChangePasswordBtn');
     cardText(
       'cmdUserManualBtn',
       'User manual',
       'Download the inspection guide as a PDF.'
+    );
+    cardText(
+      'cmdChangePasswordBtn',
+      'Change password',
+      'Choose a new password and type it again to confirm.'
     );
 
     try {
@@ -743,6 +751,11 @@
       'cmdUserManualBtn',
       'User manual',
       'Download the subscriber guide as a PDF.'
+    );
+    cardText(
+      'cmdChangePasswordBtn',
+      'Change password',
+      'Choose a new password and type it again to confirm.'
     );
     cardText(
       'cmdServicesBtn',
@@ -868,6 +881,11 @@
       'Download the subscriber guide as a PDF.'
     );
     cardText(
+      'cmdChangePasswordBtn',
+      'Change password',
+      'Choose a new password and type it again to confirm.'
+    );
+    cardText(
       'cmdServicesBtn',
       'Request Fire Consultant Services',
       'Consultancy, a comment about the app, or support.'
@@ -942,6 +960,7 @@
     show('cmdFindingsBtn');
     show('cmdOverdueBtn');
     show('cmdUserManualBtn');
+    show('cmdChangePasswordBtn');
     hide('cmdScheduleBtn');
     hide('cmdCompanyDetailsBtn');
     hide('cmdCompanyBtn');
@@ -960,6 +979,11 @@
       'cmdUserManualBtn',
       'User manual',
       'Download the subscriber guide as a PDF.'
+    );
+    cardText(
+      'cmdChangePasswordBtn',
+      'Change password',
+      'Choose a new password and type it again to confirm.'
     );
     showGatewayCard(
       'Inspection Gateway',

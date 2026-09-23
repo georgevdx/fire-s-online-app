@@ -205,7 +205,7 @@ body.fire-s-entitlement-blocked #inspectorV4Root {
   pointer-events: none !important;
 }
 
-html.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn),
+html.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn):not(#cmdChangePasswordBtn),
 html.fire-s-entitlement-blocked #mainCommandCentre .main-stat-card,
 html.fire-s-entitlement-blocked #mainCommandCentre .main-command-stats,
 html.fire-s-entitlement-blocked #cmdInspectionsBtn,
@@ -229,7 +229,7 @@ html.fire-s-entitlement-blocked #fireSOwnerKpiRow,
 html.fire-s-entitlement-blocked #inspectorBoardHomeBar,
 html.fire-s-entitlement-blocked .home-recent-activity,
 html.fire-s-entitlement-blocked .attention-site-row,
-body.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn),
+body.fire-s-entitlement-blocked #mainCommandCentre .main-command-card:not(#cmdSubscribeBtn):not(#cmdUserManualBtn):not(#cmdChangePasswordBtn),
 body.fire-s-entitlement-blocked #mainCommandCentre .main-stat-card,
 body.fire-s-entitlement-blocked #mainCommandCentre .main-command-stats,
 body.fire-s-entitlement-blocked #cmdInspectionsBtn,
@@ -289,6 +289,7 @@ body.fire-s-entitlement-blocked #fireSEntitlementBlocker {
 
 body.fire-s-entitlement-blocked #cmdSubscribeBtn,
 body.fire-s-entitlement-blocked #cmdUserManualBtn,
+body.fire-s-entitlement-blocked #cmdChangePasswordBtn,
 body.fire-s-entitlement-blocked #fireSHomeLockPanel,
 body.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
 body.fire-s-entitlement-blocked #fireSSubscribeSection,
@@ -298,6 +299,7 @@ body.fire-s-entitlement-blocked #fireSBillingSubscribeBtn,
 body.fire-s-entitlement-blocked #fireSSubscribePayActions,
 html.fire-s-entitlement-blocked #cmdSubscribeBtn,
 html.fire-s-entitlement-blocked #cmdUserManualBtn,
+html.fire-s-entitlement-blocked #cmdChangePasswordBtn,
 html.fire-s-entitlement-blocked #fireSHomeLockPanel,
 html.fire-s-entitlement-blocked #fireSHomeLockSubscribe,
 html.fire-s-entitlement-blocked #fireSSubscribeSection,

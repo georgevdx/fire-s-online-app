@@ -38,6 +38,7 @@
     'cmdManagementDashboardBtn',
     'cmdSubscribeBtn',
     'cmdUserManualBtn',
+    'cmdChangePasswordBtn',
     'cmdServicesBtn',
     'cmdFindingsBtn',
     'cmdOverdueBtn'
@@ -200,6 +201,7 @@
         'cmdSubscribeBtn'
       ].forEach(hideCard);
       showCard('cmdUserManualBtn');
+      showCard('cmdChangePasswordBtn');
 
       document.body.classList.add('fire-s-role-inspector');
       return;

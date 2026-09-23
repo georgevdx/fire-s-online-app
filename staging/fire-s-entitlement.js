@@ -349,6 +349,8 @@
       '#fireSHomeLockSubscribe',
       '#cmdSubscribeBtn',
       '#cmdUserManualBtn',
+      '#cmdChangePasswordBtn',
+      '#fireSChangePasswordSection',
       '#userManualSection',
       '#companyLetterheadSection',
       '#logoutBtn',
@@ -441,6 +443,7 @@
     });
     showNode(document.getElementById('cmdSubscribeBtn'), 'flex');
     showNode(document.getElementById('cmdUserManualBtn'), 'flex');
+    showNode(document.getElementById('cmdChangePasswordBtn'), 'flex');
   }
 
   function ensureHomeLockPanel() {

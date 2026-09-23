@@ -37,7 +37,7 @@ assert.ok(
 );
 assert.ok(
   /fireSIndependentReportOverlayOpen/.test(phoneBack) &&
-    /fire-s-phone-back\.js\?v=1-3-report-overlay/.test(html),
+    /fire-s-phone-back.js\?v=1-4-temp-pw/.test(html),
   'Phone Back must close the report overlay first'
 );
 assert.ok(
@@ -104,7 +104,7 @@ assert.ok(
   'The report body must not keep a second Export PDF button; the overlay bar already has one'
 );
 assert.ok(
-  /app\.js\?v=1-3-112-feedback/.test(html),
+  /app\.js\?v=1-3-113-temp-pw/.test(html),
   'Toets must cache-bust the independent report overlay'
 );
 
