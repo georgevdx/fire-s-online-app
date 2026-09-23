@@ -691,6 +691,7 @@
       'testSamplesSection',
       'inspectorBoardSection',
       'userManualSection',
+      'fireSChangePasswordSection',
       'managementDashboardSection',
       'reportSection'
     ].forEach(function (id) {
@@ -788,7 +789,7 @@
     }
     if (intro) {
       intro.innerHTML = isSeat
-        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. After you tap Subscribe this email, pay that extra login on PayFast. They never open this page.'
+        ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. Type a temporary password twice. After you tap Subscribe this email, pay that extra login on PayFast. Tell them the temporary password. They Login, then choose their own password. They never open this page.'
         : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Only one instrument at a time may use that email. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
     }
     paintSubscribeStatus();
@@ -845,6 +846,8 @@
     setMessage('');
     var emailInput = byId('fireSSeatEmail');
     var roleSelect = byId('fireSSeatRole');
+    var passwordInput = byId('fireSSeatPassword');
+    var password2Input = byId('fireSSeatPassword2');
     if (mode === 'seat') {
       if (emailInput) {
         emailInput.value = '';
@@ -853,6 +856,8 @@
         } catch (_) {}
       }
       if (roleSelect) roleSelect.value = 'inspector';
+      if (passwordInput) passwordInput.value = '';
+      if (password2Input) password2Input.value = '';
     }
     try {
       if (typeof window.updateFloatingBackButton === 'function') {
@@ -864,12 +869,28 @@
   async function subscribeSeat() {
     var emailInput = byId('fireSSeatEmail');
     var roleSelect = byId('fireSSeatRole');
+    var passwordInput = byId('fireSSeatPassword');
+    var password2Input = byId('fireSSeatPassword2');
     var email = String((emailInput && emailInput.value) || '')
       .trim()
       .toLowerCase();
     var role = String((roleSelect && roleSelect.value) || 'inspector').trim() || 'inspector';
+    var password = String((passwordInput && passwordInput.value) || '');
+    var passwordAgain = String((password2Input && password2Input.value) || '');
     if (!email || email.indexOf('@') < 0) {
       setMessage('Enter a valid email address.', true);
+      return;
+    }
+    if (!password || !passwordAgain) {
+      setMessage('Type a temporary password twice so they can Login.', true);
+      return;
+    }
+    if (password.length < 6) {
+      setMessage('Temporary password must be at least 6 characters.', true);
+      return;
+    }
+    if (password !== passwordAgain) {
+      setMessage('The two temporary passwords do not match.', true);
       return;
     }
     if (typeof window.fireSAddPersonnelSeat !== 'function') {

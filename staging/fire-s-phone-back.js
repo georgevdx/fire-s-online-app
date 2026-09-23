@@ -112,6 +112,15 @@
       return;
     }
 
+    if (isShown(byId('fireSChangePasswordSection'))) {
+      try {
+        if (typeof window.fireSChangePasswordGoBack === 'function') {
+          window.fireSChangePasswordGoBack();
+          return;
+        }
+      } catch (_) {}
+    }
+
     if (isShown(byId('fireSSubscribeSection'))) {
       try {
         if (typeof window.fireSSubscribeGoBack === 'function') {
@@ -127,6 +136,7 @@
       isShown(byId('findingsCentreSection')) ||
       isShown(byId('testSamplesSection')) ||
       isShown(byId('userManualSection')) ||
+      isShown(byId('fireSChangePasswordSection')) ||
       isShown(byId('fireSSubscribeSection')) ||
       isShown(byId('managementDashboardSection')) ||
       isShown(byId('companyLetterheadSection')) ||

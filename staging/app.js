@@ -7284,7 +7284,8 @@ async function loadUserAccessProfile() {
           membership?.role || 'inspector'
         ),
         companyId,
-        companyName: immediateName
+        companyName: immediateName,
+        mustChangePassword: !!(user.user_metadata && user.user_metadata.must_change_password)
       };
 
       currentCompanyAccess = {
@@ -7307,6 +7308,11 @@ async function loadUserAccessProfile() {
       try {
         if (typeof window.fireSApplyCleanHomeRoles === 'function') {
           window.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.fireSMaybeForceChangePassword === 'function') {
+          window.fireSMaybeForceChangePassword();
         }
       } catch (_) {}
 
@@ -7336,7 +7342,8 @@ async function loadUserAccessProfile() {
         membership?.role || profile.role || 'inspector'
       ),
       companyId,
-      companyName: immediateName
+      companyName: immediateName,
+      mustChangePassword: !!(user.user_metadata && user.user_metadata.must_change_password)
     };
 
     currentCompanyAccess = {
@@ -7358,6 +7365,11 @@ async function loadUserAccessProfile() {
     try {
       if (typeof window.fireSApplyCleanHomeRoles === 'function') {
         window.fireSApplyCleanHomeRoles();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSMaybeForceChangePassword === 'function') {
+        window.fireSMaybeForceChangePassword();
       }
     } catch (_) {}
 

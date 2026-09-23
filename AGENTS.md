@@ -15,7 +15,7 @@ Do not wipe toets-only files or behaviour to match live:
 - `staging/fire-s-payfast.js` and `staging/fire-s-md5.js`
 - Create password is not on Access; owner sets it on Subscribe New Company with confirm
 - New-inspection stay-on-form (not sat live yet)
-- Displayed version **1.3.112-toets**
+- Displayed version **1.3.113-toets**
 
 Do not run `scripts/sync-toets-blad.sh` as a blanket copy. That overwrites toets extras.
 

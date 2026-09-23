@@ -18,6 +18,7 @@
     'inspectorBoardSection',
     'managementDashboardSection',
     'fireSSubscribeSection',
+    'fireSChangePasswordSection',
     'reportSection'
   ];
 
@@ -173,7 +174,7 @@
         <strong>Contents</strong>
         <ol>
           <li>First visual — Loading</li>
-          <li>Access — Login, create password, register company</li>
+          <li>Access — Login, passwords, register company</li>
           <li>Home for each level</li>
           <li>Inspection Gateway</li>
           <li>Fill an inspection (first to last action)</li>
@@ -212,14 +213,17 @@
           <li>Wait one minute before you tap Forgot password again.</li>
           <li>Type a new password twice, tap <strong>Save</strong>, then <strong>Login</strong>.</li>
         </ol>
-        <h3>Create password (staff, first time)</h3>
+        <h3>Staff password (first time)</h3>
         <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>
         <ol>
-          <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
+          <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager and gives you a temporary password. That is the subscription. The owner pays.</li>
           <li>You can be anywhere. Open Fire-S on your phone.</li>
-          <li>On Access, type that same email and the password your owner set, then tap <strong>Login</strong>. If you do not have a password yet, tap <strong>Forgot password</strong>.</li>
+          <li>On Access, type that same email and the temporary password, then tap <strong>Login</strong>.</li>
+          <li>Fire-S asks you to choose your own password. Type it twice and tap <strong>Save password</strong>.</li>
           <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
         </ol>
+        <h3>Change password later</h3>
+        <p>Any signed-in Inspector, Manager, Owner or Viewer can open Home → <strong>Change password</strong>, type a new password twice, and save it.</p>
         <h3>Subscribe (Owner only)</h3>
         ${
           showFees()
@@ -317,8 +321,8 @@
         <ol>
           <li>Home → <strong>Company personnel</strong>.</li>
           <li>On the <strong>People</strong> tab: Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
-          <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
-          <li>Tell them: Open Fire-S → Access → type the same email → Login. If they do not have a password yet, tap <strong>Forgot password</strong>. They must not tap Subscribe on Access.</li>
+          <li>Type their email, choose Inspector or Manager, type a <strong>temporary password</strong> twice, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
+          <li>Tell them: Open Fire-S → Access → type the same email and that temporary password → Login. They then choose their own password and confirm it. They must not tap Subscribe on Access.</li>
           <li>Change a role or Remove a person on the same People list.</li>
           <li>Tap <strong>Stats</strong> to select an inspector, view the whole team, or Compare volume, completion and overdue work.</li>
           <li>To send someone to a premises: Home → <strong>Schedule</strong> → fill the site → <strong>Assign to inspector</strong> → Save. They get an email with the address and date.</li>
@@ -365,7 +369,7 @@
           Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays.
         </div>`
             : `<p>Your owner pays for Fire-S. Inspectors and other staff do not pay and never Subscribe. You never see the subscription fees. Phone and desktop share your login — do not enter the same email twice.</p>
-        <p>If your owner added your email, use <strong>Login</strong>. If you do not have a password yet, tap <strong>Forgot password</strong>. Do not tap Subscribe.</p>`
+        <p>If your owner added your email, use <strong>Login</strong> with the temporary password they gave you. Then choose your own password. Do not tap Subscribe.</p>`
         }
         <h3>Install Fire-S on a phone</h3>
         <ol>

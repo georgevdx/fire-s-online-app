@@ -53,6 +53,7 @@
         'Start, continue and complete inspections',
         'Fill Q&A, photos, GPS and comments',
         'Make and share the client PDF for their work',
+        'Change their own password',
         'Download the User manual'
       ],
       cannot: [
@@ -74,7 +75,8 @@
         'Add Inspectors and Managers',
         'Edit company details for the PDF',
         'Open Company personnel to add people and check inspector stats',
-        'Open the Management dashboard on tablet or PC'
+        'Open the Management dashboard on tablet or PC',
+        'Change their own password'
       ],
       cannot: [
         'Remove the Owner'
@@ -90,7 +92,8 @@
         'Set the company name, address, logo and numbers',
         'Add, change or remove staff',
         'Use the Executive dashboard and Power BI export',
-        'Load or delete test samples'
+        'Load or delete test samples',
+        'Change their own password'
       ],
       cannot: []
     },
@@ -101,6 +104,7 @@
       can: [
         'Open Inspection Gateway in review mode',
         'Read reports and compliance numbers',
+        'Change their own password',
         'Download the User manual'
       ],
       cannot: [

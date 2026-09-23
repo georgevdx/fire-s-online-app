@@ -221,13 +221,23 @@
   async function finishAddedPerson(email, role, status, emailInput, roleSelect, notify) {
     if (emailInput) emailInput.value = '';
     if (roleSelect) roleSelect.value = 'inspector';
-    if (status === 'invited' || status === 'reopened') {
+    try {
+      const pw = byId('fireSSeatPassword');
+      const pw2 = byId('fireSSeatPassword2');
+      if (pw) pw.value = '';
+      if (pw2) pw2.value = '';
+    } catch (_) {}
+    if (status === 'created') {
       setMessage(
-        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → type that email → Login. If they have no password yet, they tap Forgot password. They must not Subscribe.`
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). Tell them the temporary password. They Login with it, then choose their own password and confirm it. They must not Subscribe.`
+      );
+    } else if (status === 'invited' || status === 'reopened') {
+      setMessage(
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → type that email and the temporary password → Login. Then they choose their own password. They must not Subscribe.`
       );
     } else {
       setMessage(
-        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They Login with that email. They must not Subscribe.`
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They already have a login. Their existing password still works. They can Change password on Home. They must not Subscribe.`
       );
     }
     await refreshTeam();
@@ -1383,12 +1393,25 @@
 
       const emailInput = byId('fireSSeatEmail');
       const roleSelect = byId('fireSSeatRole');
+      const passwordInput = byId('fireSSeatPassword');
+      const password2Input = byId('fireSSeatPassword2');
       const email = text(emailOverride || (emailInput && emailInput.value)).toLowerCase();
       const role = text(roleOverride || (roleSelect && roleSelect.value)) || 'inspector';
+      const password = text(passwordInput && passwordInput.value);
+      const passwordAgain = text(password2Input && password2Input.value);
       const ctx = companyContext();
 
       if (!email || !email.includes('@')) {
         throw new Error('Enter a valid email address.');
+      }
+      if (!password || !passwordAgain) {
+        throw new Error('Type a temporary password twice so they can Login.');
+      }
+      if (password.length < 6) {
+        throw new Error('Temporary password must be at least 6 characters.');
+      }
+      if (password !== passwordAgain) {
+        throw new Error('The two temporary passwords do not match.');
       }
       if (!ctx.companyId) {
         throw new Error('Save your company first, then add people.');
@@ -1422,11 +1445,25 @@
         supabaseClient.rpc('fire_s_add_member_by_email', {
           p_company_id: ctx.companyId,
           p_email: email,
-          p_role: role
+          p_role: role,
+          p_password: password
         }),
-        6000,
+        8000,
         'Add member'
       );
+
+      if (rpc.error) {
+        const missingFn = text(rpc.error.message).toLowerCase();
+        if (
+          missingFn.indexOf('could not find the function') >= 0 ||
+          missingFn.indexOf('schema cache') >= 0 ||
+          missingFn.indexOf('p_password') >= 0
+        ) {
+          throw new Error(
+            'Run STAGING_STAFF_TEMP_PASSWORD.sql in Fire-S Test SQL Editor, then try again.'
+          );
+        }
+      }
 
       if (!rpc.error && rpc.data) {
         const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
@@ -1442,7 +1479,7 @@
         await finishAddedPerson(
           email,
           role,
-          status === 'invited' ? 'invited' : 'added',
+          status === 'created' ? 'created' : status === 'invited' ? 'invited' : 'added',
           emailInput,
           roleSelect,
           true

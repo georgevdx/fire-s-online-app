@@ -423,6 +423,11 @@
           window.renderHomeCommandCentre();
         }
       } catch (_) {}
+      try {
+        if (typeof window.fireSMaybeForceChangePassword === 'function') {
+          window.fireSMaybeForceChangePassword();
+        }
+      } catch (_) {}
     }, 300);
   }
 
