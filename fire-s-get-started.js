@@ -5,7 +5,7 @@
  * Cloud menu no longer owns auth for normal users.
  *
  * Modes:
- *   login     → Access page (email, password, Login, plus Create password / Subscribe)
+ *   login     → Access page (email, password, Login, Subscribe New Company)
  *   create    → invited staff, first time
  *   register  → new business owner
  *   company   → signed in, still need company name
@@ -309,6 +309,10 @@
     }
     if (root) root.style.display = 'none';
     try {
+      document.documentElement.classList.remove('fire-s-access-open');
+      if (document.body) document.body.classList.remove('fire-s-access-open');
+    } catch (_) {}
+    try {
       if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
         window.fireSMaybeOpenDesktopWorkspace();
       }
@@ -317,6 +321,19 @@
 
   function showAccess() {
     if (root) root.style.display = '';
+    try {
+      document.documentElement.classList.add('fire-s-access-open');
+      if (document.body) document.body.classList.add('fire-s-access-open');
+    } catch (_) {}
+    try {
+      var lock = byId('fireSHomeLockPanel');
+      if (lock) {
+        lock.hidden = true;
+        if (lock.style && typeof lock.style.setProperty === 'function') {
+          lock.style.setProperty('display', 'none', 'important');
+        }
+      }
+    } catch (_) {}
   }
 
   function refreshHomeChrome() {
@@ -711,7 +728,7 @@
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
         ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
-        : 'Start a 14-day free trial. Creates your owner login and this company name. No card is required to begin. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R250 / month (or R2 500 / year) per subscription after the trial. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Phone and desktop share that email.';
+        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. After Subscribe, pay on PayFast.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';
@@ -725,18 +742,12 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
-  function setCreatePasswordVisible(show) {
+  function setCreatePasswordVisible() {
     var btn = byId('fireSSwitchToCreateBtn');
     if (!btn) return;
-    if (show) {
-      btn.hidden = false;
-      btn.removeAttribute('hidden');
-      btn.style.display = '';
-    } else {
-      btn.hidden = true;
-      btn.setAttribute('hidden', '');
-      btn.style.display = 'none';
-    }
+    btn.hidden = true;
+    btn.setAttribute('hidden', '');
+    btn.style.display = 'none';
   }
 
   function rememberEmailHasPassword(email, hasPassword) {
@@ -766,22 +777,7 @@
   }
 
   async function refreshCreatePasswordButton() {
-    var email = loginEmailValue();
-    if (!looksLikeEmail(email)) {
-      setCreatePasswordVisible(false);
-      return;
-    }
-    if (createPasswordKnown[email] === true) {
-      setCreatePasswordVisible(false);
-      return;
-    }
-    var hasPassword = await emailHasRegisteredPassword(email);
-    if (loginEmailValue() !== email) return;
-    if (hasPassword === true) {
-      setCreatePasswordVisible(false);
-      return;
-    }
-    setCreatePasswordVisible(true);
+    setCreatePasswordVisible(false);
   }
 
   function scheduleCreatePasswordCheck() {
@@ -818,10 +814,10 @@
     paintLoginForm();
     setTitle(
       'Access',
-      'Type your email and password, then Login. First time on this email: Create password appears if no password is registered yet. New company: Subscribe under Forgot password.'
+      'Type your email and password, then Login. New company owner: Subscribe under Forgot password. The owner creates and confirms the password on Subscribe New Company.'
     );
     showPanel('fireSGetStartedLoginFields');
-    refreshCreatePasswordButton();
+    setCreatePasswordVisible(false);
     setStatus('');
   }
 
@@ -1471,6 +1467,7 @@
     var company = text(byId('fireSGetStartedCompany') && byId('fireSGetStartedCompany').value);
     var email = text(byId('fireSGetStartedEmail') && byId('fireSGetStartedEmail').value).toLowerCase();
     var password = (byId('fireSGetStartedPassword') && byId('fireSGetStartedPassword').value) || '';
+    var password2 = (byId('fireSGetStartedPassword2') && byId('fireSGetStartedPassword2').value) || '';
     if (!company) {
       setStatus('Enter a company name.', true);
       return;
@@ -1479,8 +1476,16 @@
       setStatus('Enter your owner email and password.', true);
       return;
     }
+    if (!password2) {
+      setStatus('Confirm the password.', true);
+      return;
+    }
     if (password.length < 6) {
       setStatus('Password must be at least 6 characters.', true);
+      return;
+    }
+    if (password !== password2) {
+      setStatus('The two passwords do not match.', true);
       return;
     }
     if (!agreedToLegal('fireSRegisterAgree')) {
@@ -1879,14 +1884,13 @@
 
     var switchCreate = byId('fireSSwitchToCreateBtn');
     if (switchCreate) {
+      setCreatePasswordVisible(false);
       switchCreate.addEventListener('click', showCreatePassword);
     }
     var loginEmail = byId('fireSLoginEmail');
     if (loginEmail) {
-      loginEmail.addEventListener('input', scheduleCreatePasswordCheck);
-      loginEmail.addEventListener('change', scheduleCreatePasswordCheck);
-      loginEmail.addEventListener('blur', function () {
-        refreshCreatePasswordButton();
+      loginEmail.addEventListener('input', function () {
+        setCreatePasswordVisible(false);
       });
     }
     var switchLogin = byId('fireSSwitchToLoginBtn');

@@ -22,7 +22,7 @@
 
   function applyPullProgress(loaded, total, done) {
     const nextLoaded = Math.max(0, Number(loaded) || 0);
-    const nextDone = !!done;
+    const nextDone = !!done && companyCloudListReady();
     if (pullState.done && !nextDone) return;
     pullState.loaded = nextLoaded;
     pullState.done = nextDone;
@@ -42,19 +42,14 @@
   }
 
   function writeCount(countEl, visibleCount) {
-    if (pullState.loading && !pullState.done) {
-      const shown = Math.max(visibleCount || 0, pullState.loaded);
-      if (shown <= 0) {
-        countEl.textContent = 'Loading buildings…';
-        return;
-      }
-      countEl.textContent = 'Loading buildings… ' + shown;
+    if (!companyCloudListReady() || (pullState.loading && !pullState.done)) {
+      countEl.textContent = 'Loading buildings…';
       return;
     }
     const n = visibleCount || 0;
     countEl.textContent = n
-      ? n + (n === 1 ? ' building on your inspection list' : ' buildings on your inspection list')
-      : 'No buildings on your inspection list yet.';
+      ? n + (n === 1 ? ' building on the company inspection list' : ' buildings on the company inspection list')
+      : 'No buildings on the company inspection list yet.';
   }
 
   root.fireSSetOwnerListsPullProgress = applyPullProgress;
@@ -85,6 +80,22 @@
     const raw = text(value);
     if (!raw) return '';
     if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+    const dmy = raw.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);
+    if (dmy) {
+      let day = Number(dmy[1]);
+      let month = Number(dmy[2]);
+      const year = dmy[3];
+      if (day > 12 && month <= 12) {
+        /* already DMY */
+      } else if (month > 12 && day <= 12) {
+        const swap = day;
+        day = month;
+        month = swap;
+      }
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      }
+    }
     const date = new Date(raw);
     if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
     const year = date.getFullYear();
@@ -107,11 +118,6 @@
 
   function todayKey(now) {
     if (now) return dateKey(now);
-    try {
-      if (typeof root.getTodayDateString === 'function') {
-        return dateKey(root.getTodayDateString());
-      }
-    } catch (_) {}
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -191,18 +197,48 @@
 
   function nextDueKey(project) {
     try {
+      if (typeof root.getProjectScheduleDate === 'function') {
+        const fromSchedule = dateKey(root.getProjectScheduleDate(project));
+        if (fromSchedule) return fromSchedule;
+      }
+    } catch (_) {}
+    try {
       if (typeof root.fireSUltraNextInspectionDate === 'function') {
         const fromUltra = dateKey(root.fireSUltraNextInspectionDate(project));
         if (fromUltra) return fromUltra;
       }
     } catch (_) {}
-    if (project && project.scheduledDate) return dateKey(project.scheduledDate);
-    if (project && project.followUpDate) return dateKey(project.followUpDate);
+    const fields = [
+      project && project.scheduledDate,
+      project && project.followUpDate,
+      project && project.nextInspectionDate,
+      project && project.nextDate,
+      project && project.inspectionDueDate,
+      project && project.nextDueDate,
+      project && project.dueDate
+    ];
+    for (let i = 0; i < fields.length; i += 1) {
+      const key = dateKey(fields[i]);
+      if (key) return key;
+    }
+    try {
+      if (
+        (project && (project.recurringCycleEnabled === true || text(project.recurringCycleEnabled).toLowerCase() === 'yes')) &&
+        typeof root.getNextRecurringCycleDate === 'function'
+      ) {
+        return dateKey(root.getNextRecurringCycleDate(project));
+      }
+    } catch (_) {}
     return '';
   }
 
   function isDeleted(project) {
     if (!project) return true;
+    try {
+      if (typeof root.fireSIsHiddenFromCurrentLists === 'function') {
+        return !!root.fireSIsHiddenFromCurrentLists(project);
+      }
+    } catch (_) {}
     try {
       if (typeof root.fireSIsDeletedPremises === 'function') {
         return !!root.fireSIsDeletedPremises(project);
@@ -217,6 +253,11 @@
   }
 
   function isRecycleLeftover(project) {
+    try {
+      if (typeof root.fireSIsHiddenFromCurrentLists === 'function') {
+        return !!root.fireSIsHiddenFromCurrentLists(project);
+      }
+    } catch (_) {}
     try {
       if (typeof root.fireSIsEmptyRecycleLeftoverPremises === 'function') {
         return !!root.fireSIsEmptyRecycleLeftoverPremises(project);
@@ -242,60 +283,280 @@
     return !live && !scheduled;
   }
 
-  function deficiencyCount(project) {
+  function answerLists(project) {
+    const lists = [];
+    if (Array.isArray(project && project.answers)) lists.push(project.answers);
+    const history = Array.isArray(project && project.inspectionHistory)
+      ? project.inspectionHistory
+      : [];
+    history.forEach(item => {
+      if (Array.isArray(item && item.answers)) lists.push(item.answers);
+      if (item && item.snapshot && Array.isArray(item.snapshot.answers)) {
+        lists.push(item.snapshot.answers);
+      }
+    });
+    return lists;
+  }
+
+  function countNoAnswers(answers) {
+    return (Array.isArray(answers) ? answers : []).filter(answer => {
+      const value = text(
+        answer && (answer.answer || answer.value || answer.result || answer.finding)
+      ).toLowerCase();
+      return value === 'no' || value === 'non-compliant' || value === 'fail';
+    }).length;
+  }
+
+  function hasAnsweredChecklist(source) {
+    const answers = Array.isArray(source && source.answers)
+      ? source.answers
+      : (source && source.snapshot && Array.isArray(source.snapshot.answers)
+        ? source.snapshot.answers
+        : []);
+    return answers.some(answer => {
+      const value = text(
+        answer && (answer.answer || answer.value || answer.result || answer.finding)
+      ).toLowerCase();
+      return value === 'yes' || value === 'no' || value === 'na' || value === 'n/a' ||
+        value === 'non-compliant' || value === 'fail';
+    });
+  }
+
+  function isCompletedCycle(source) {
+    const status = text(
+      source && (source.status || source.inspectionStatus || source.scheduledStatus || source.archiveStatus)
+    ).toLowerCase();
+    return !!(
+      source && (
+        source.completedAt ||
+        source.finalisedAt ||
+        source.inspectionFinalisedAt ||
+        /complete|closed|finalis/.test(status)
+      )
+    );
+  }
+
+  function cycleTimestamp(cycle) {
+    const parsed = Date.parse(
+      (cycle && (
+        cycle.completedAt ||
+        cycle.finalisedAt ||
+        cycle.inspectionFinalisedAt ||
+        cycle.archivedAt ||
+        cycle.inspectionDate ||
+        cycle.date
+      )) || ''
+    );
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function latestCompletedCycle(project) {
     try {
-      if (typeof root.getProjectNoFindingCount === 'function') {
-        return Number(root.getProjectNoFindingCount(project) || 0);
+      if (typeof root.fireSLatestCompletedCycle === 'function') {
+        const cycle = root.fireSLatestCompletedCycle(project);
+        if (cycle) return cycle;
       }
     } catch (_) {}
-    return (project && Array.isArray(project.answers) ? project.answers : []).filter(answer =>
-      text(answer && answer.answer).toLowerCase() === 'no'
-    ).length;
+    if (isCompletedCycle(project) && hasAnsweredChecklist(project)) return project;
+    const history = Array.isArray(project && project.inspectionHistory)
+      ? project.inspectionHistory
+      : [];
+    let best = null;
+    let bestTs = -1;
+    history.forEach(item => {
+      if (!item) return;
+      const source = item.snapshot && hasAnsweredChecklist(item.snapshot) ? item.snapshot : item;
+      if (!hasAnsweredChecklist(source)) return;
+      const ts = cycleTimestamp(item) || cycleTimestamp(source);
+      if (!best || ts >= bestTs) {
+        best = source;
+        bestTs = ts;
+      }
+    });
+    return best;
+  }
+
+  function lastCycleDeficiencyCount(rows) {
+    try {
+      if (typeof root.fireSLastInspectionActionCountForBuilding === 'function' && rows && rows[0]) {
+        return Number(root.fireSLastInspectionActionCountForBuilding(rows, rows[0]) || 0);
+      }
+    } catch (_) {}
+    let best = null;
+    let bestTs = -1;
+    (Array.isArray(rows) ? rows : []).forEach(project => {
+      const cycle = latestCompletedCycle(project);
+      if (!cycle) return;
+      const ts = cycleTimestamp(cycle);
+      if (!best || ts >= bestTs) {
+        best = cycle;
+        bestTs = ts;
+      }
+    });
+    if (!best) return 0;
+    return countNoAnswers(best.answers || (best.snapshot && best.snapshot.answers));
   }
 
   function compareName(a, b) {
     return text(a).localeCompare(text(b), undefined, { sensitivity: 'base' });
   }
 
+  function uniqueActive(projects) {
+    const source = Array.isArray(projects) ? projects : [];
+    try {
+      if (typeof root.fireSVisibleCompanyBuildings === 'function') {
+        const unique = root.fireSVisibleCompanyBuildings(source);
+        if (Array.isArray(unique)) return unique;
+      }
+      if (typeof root.fireSFilterToCloudBuildings === 'function') {
+        const unique = root.fireSFilterToCloudBuildings(source);
+        if (Array.isArray(unique)) return unique;
+      }
+      if (typeof root.fireSUniqueCurrentBuildings === 'function') {
+        const unique = root.fireSUniqueCurrentBuildings(source);
+        if (Array.isArray(unique)) return unique;
+      }
+    } catch (_) {}
+    const seen = Object.create(null);
+    return source.filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      const key = text(buildingName(project)).toLowerCase() || ('id:' + text(project.id));
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function buildingKey(project) {
+    try {
+      if (typeof root.fireSPremisesBuildingKey === 'function') {
+        const key = text(root.fireSPremisesBuildingKey(project));
+        if (key) return key;
+      }
+    } catch (_) {}
+    return text(buildingName(project)).toLowerCase() || ('id:' + text(project && project.id));
+  }
+
+  function rowsForUniqueBuildings(projects) {
+    const unique = uniqueActive(projects);
+    const allowed = Object.create(null);
+    unique.forEach(project => {
+      const key = buildingKey(project);
+      if (key) allowed[key] = true;
+    });
+    return (Array.isArray(projects) ? projects : []).filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      const key = buildingKey(project);
+      return !!(key && allowed[key]);
+    });
+  }
+
+  function isCloudCompanyRow(project) {
+    try {
+      if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
+      const filter = root.__fireSCloudBuildingFilter;
+      if (!filter || filter.ready !== true) return true;
+      const ids = filter.ids || {};
+      const keys = filter.keys || {};
+      if (ids[String((project && project.id) || '').trim()]) return true;
+      const key = buildingKey(project);
+      if (key && keys[key]) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function scheduleRows(projects) {
+    return (Array.isArray(projects) ? projects : []).filter(project => {
+      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+      if (isCloudCompanyRow(project)) return true;
+      return !!nextDueKey(project);
+    });
+  }
+
+  function companyCloudListReady() {
+    try {
+      if (root.__fireSCloudPullSettled !== true) return false;
+      if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
+      const filter = root.__fireSCloudBuildingFilter;
+      return !!(filter && filter.ready === true);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function buildModel(projects, today) {
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
-    const active = (Array.isArray(projects) ? projects : []).filter(project =>
-      !isDeleted(project) && !isRecycleLeftover(project)
-    );
+    const active = uniqueActive(projects);
+    const rows = rowsForUniqueBuildings(projects);
+    const dueRows = scheduleRows(projects);
+    const openIdByKey = Object.create(null);
+    active.forEach(project => {
+      const key = buildingKey(project);
+      if (key) openIdByKey[key] = project && project.id;
+    });
+
+    const lastByKey = Object.create(null);
+    rows.forEach(project => {
+      const key = buildingKey(project);
+      if (!key) return;
+      const last = lastInspectedKey(project);
+      if (!last) return;
+      if (!lastByKey[key] || last > lastByKey[key]) lastByKey[key] = last;
+    });
 
     const all = active
-      .map(project => ({
-        id: project && project.id,
-        name: buildingName(project),
-        lastInspected: lastInspectedKey(project)
-      }))
-      .sort((a, b) => compareName(a.name, b.name) || compareName(a.id, b.id));
-
-    const upcoming = active
-      .filter(project => {
-        if (isRecycleLeftover(project)) return false;
-        const due = nextDueKey(project);
-        return !!(due && due >= todayIso && due <= endIso);
-      })
       .map(project => {
-        const due = nextDueKey(project);
+        const key = buildingKey(project);
         return {
           id: project && project.id,
+          name: buildingName(project),
+          lastInspected: (key && lastByKey[key]) || lastInspectedKey(project)
+        };
+      })
+      .sort((a, b) => compareName(a.name, b.name) || compareName(a.id, b.id));
+
+    const upcomingByKey = Object.create(null);
+    dueRows.forEach(project => {
+      const due = nextDueKey(project);
+      if (!due || due > endIso) return;
+      const key = buildingKey(project);
+      if (!key) return;
+      const current = upcomingByKey[key];
+      if (!current || due < current.due) {
+        upcomingByKey[key] = {
+          id: openIdByKey[key] || (project && project.id),
           name: buildingName(project),
           due,
           days: daysUntil(due, todayIso)
         };
-      })
+      }
+    });
+    const upcoming = Object.keys(upcomingByKey)
+      .map(key => upcomingByKey[key])
       .sort((a, b) => compareName(a.due, b.due) || compareName(a.name, b.name));
 
-    const deficiencies = active
-      .map(project => ({
-        id: project && project.id,
-        name: buildingName(project),
-        count: deficiencyCount(project)
-      }))
-      .filter(row => row.count > 0)
+    const rowsByKey = Object.create(null);
+    rows.forEach(project => {
+      const key = buildingKey(project);
+      if (!key) return;
+      if (!rowsByKey[key]) rowsByKey[key] = [];
+      rowsByKey[key].push(project);
+    });
+    const deficiencyByKey = Object.create(null);
+    Object.keys(rowsByKey).forEach(key => {
+      const group = rowsByKey[key];
+      const count = lastCycleDeficiencyCount(group);
+      if (count < 1) return;
+      const named = group[0];
+      deficiencyByKey[key] = {
+        id: openIdByKey[key] || (named && named.id),
+        name: buildingName(named),
+        count
+      };
+    });
+    const deficiencies = Object.keys(deficiencyByKey)
+      .map(key => deficiencyByKey[key])
       .sort((a, b) => (b.count - a.count) || compareName(a.name, b.name));
 
     return {
@@ -353,6 +614,21 @@
     }
   }
 
+  function inspectionHomeLocked() {
+    try {
+      if (root.fireSEntitlement && typeof root.fireSEntitlement.homeWorkAllowed === 'function') {
+        return root.fireSEntitlement.homeWorkAllowed() !== true;
+      }
+      return !!(
+        root.fireSEntitlement &&
+        typeof root.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        root.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function hidePanel(panel) {
     if (!panel) return;
     panel.hidden = true;
@@ -369,6 +645,17 @@
 
   function emptyRow(columns, message) {
     return `<tr class="fire-s-owner-lists-empty"><td colspan="${columns}">${esc(message)}</td></tr>`;
+  }
+
+  function paintLoadingLists() {
+    const allBody = byId('fireSOwnerListsAllBody');
+    const upcomingBody = byId('fireSOwnerListsUpcomingBody');
+    const deficiencyBody = byId('fireSOwnerListsDeficiencyBody');
+    if (allBody) allBody.innerHTML = emptyRow(2, 'Loading buildings…');
+    if (upcomingBody) upcomingBody.innerHTML = emptyRow(2, 'Loading upcoming inspections…');
+    if (deficiencyBody) {
+      deficiencyBody.innerHTML = emptyRow(2, 'Loading buildings with deficiencies…');
+    }
   }
 
   function rowHtml(projectId, cells, extraClass) {
@@ -461,7 +748,7 @@
     if (!rows.length) {
       allBody.innerHTML = emptyRow(
         2,
-        needle ? 'No building matches that lookup.' : 'No buildings on your inspection list yet.'
+        needle ? 'No building matches that lookup.' : 'No buildings on the company inspection list yet.'
       );
       return;
     }
@@ -480,6 +767,10 @@
   function daysLabel(days) {
     if (days === 0) return 'Today';
     if (days === 1) return '1 day';
+    if (typeof days === 'number' && days < 0) {
+      const n = Math.abs(days);
+      return n === 1 ? '1 day overdue' : n + ' days overdue';
+    }
     if (typeof days === 'number') return `${days} days`;
     return '';
   }
@@ -502,6 +793,10 @@
       pullState.loading = !!root.__fireSOwnerListsPullProgress.loading;
       pullState.done = !!root.__fireSOwnerListsPullProgress.done;
     }
+    if (root.__fireSCloudPullSettled === true && companyCloudListReady()) {
+      pullState.loading = false;
+      pullState.done = true;
+    }
 
     if (countEl) {
       writeCount(countEl, model.count);
@@ -516,7 +811,7 @@
             `<td class="fire-s-owner-lists-name">${esc(row.name)}</td>`,
             `<td class="fire-s-owner-lists-meta"><span class="fire-s-owner-lists-date">${esc(formatDate(row.due))}</span><span class="fire-s-owner-lists-days">${esc(daysLabel(row.days))}</span></td>`
           ].join(''))).join('')
-        : emptyRow(2, 'No inspections due in the next 30 days.');
+        : emptyRow(2, 'No overdue or upcoming inspections in the next 30 days.');
     }
 
     if (deficiencyBody) {
@@ -602,15 +897,27 @@
 
   function refresh() {
     if (root.__fireSHomeCountsFrozen) return;
-    if (root.__fireSCloudPullSettled === false) return;
     const panel = byId('fireSOwnerLists');
     if (!panel) return;
     bindPanel(panel);
     bindLookup();
-    if (!canShowLists()) {
+    if (inspectionHomeLocked() || !canShowLists()) {
       hidePanel(panel);
       return;
     }
+    // Laptop leftover locals must not paint 7 while the phone still has the
+    // company cloud's 5. Wait until that cloud building list is ready.
+    if (!companyCloudListReady()) {
+      pullState.loading = true;
+      pullState.done = false;
+      const countEl = byId('fireSOwnerListsCount');
+      if (countEl) writeCount(countEl, pullState.loaded);
+      paintLoadingLists();
+      showPanel(panel);
+      return;
+    }
+    pullState.loading = false;
+    pullState.done = true;
     renderModel(buildModel(loadProjects(), todayKey()));
   }
 
@@ -621,6 +928,10 @@
       const result = original.apply(this, arguments);
       const after = function fireSOwnerListsAfterSync() {
         if (root.__fireSHomeCountsFrozen) return;
+        if (inspectionHomeLocked()) {
+          try { refresh(); } catch (_) {}
+          return;
+        }
         try { refresh(); } catch (_) {}
         if (name !== 'setProjects' || wrapped.__fireSOwnerListsRefreshing) return;
         wrapped.__fireSOwnerListsRefreshing = true;

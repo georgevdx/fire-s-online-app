@@ -45,21 +45,24 @@ const liveLogin = liveHtml.match(
 );
 assert.ok(liveLogin, 'Live Access login block must exist');
 assert.ok(
-  liveLogin[0].indexOf('id="fireSLoginSubscribeBtn"') <
-    liveLogin[0].indexOf('Forgot password: check Inbox'),
-  'Live Access must keep Subscribing New Company above Forgot password'
+  liveLogin[0].indexOf('id="fireSForgotPasswordBtn"') <
+    liveLogin[0].indexOf('id="fireSLoginSubscribeBtn"') &&
+    liveLogin[0].indexOf('Forgot password: check Inbox') <
+      liveLogin[0].indexOf('id="fireSLoginSubscribeBtn"'),
+  'Live Access must put Subscribing New Company under Forgot password'
 );
 assert.ok(
-  /\bhidden\b/.test(
-    liveHtml.match(/id="fireSSwitchToCreateBtn"[^>]*>/)[0]
-  ),
-  'Live Create password must start hidden until an unknown email is typed'
+  liveLogin[0].indexOf('id="fireSSwitchToCreateBtn"') === -1 &&
+    liveLogin[0].indexOf('First time? Create password') === -1,
+  'Live Access must not show First time? Create password'
 );
 assert.ok(
-  /function refreshCreatePasswordButton\(/.test(liveStarted) &&
-    /function setCreatePasswordVisible\(/.test(liveStarted) &&
-    /fire_s_email_has_login/.test(liveStarted),
-  'Live Access must show Create password only after an email with no registered password'
+  /setCreatePasswordVisible\(false\)/.test(liveStarted) &&
+    !/setCreatePasswordVisible\(true\)/.test(liveStarted) &&
+    !/loginEmail\.addEventListener\('input', scheduleCreatePasswordCheck\)/.test(
+      liveStarted
+    ),
+  'Live Access must never reveal Create password after a click or typed email'
 );
 
 console.log('toets-create-password-when-new.test.js: ok');

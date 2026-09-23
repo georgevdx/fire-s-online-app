@@ -74,10 +74,11 @@ assert.ok(
   'Live and toets must hide the duplicate Command Centre line and use the same company building pull'
 );
 assert.ok(
-  /__fireSCloudPullSettled === false/.test(liveLists) &&
+  /__fireSCloudPullSettled !== true/.test(liveLists) &&
     /__fireSCloudPullSettled !== true/.test(stagingLists) &&
+    /function fireSUniqueCurrentBuildings\(/.test(liveApp) &&
     /function fireSUniqueCurrentBuildings\(/.test(stagingApp),
-  'Toets Home waits for a settled unique building count; live still skips only a known-incomplete pull'
+  'Live and toets Home wait for a settled unique building count'
 );
 assert.ok(
   /const GATEWAY_COPY = 'Open, continue, search and manage inspections\.'/.test(liveFlow) &&

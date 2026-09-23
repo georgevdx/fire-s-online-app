@@ -97,4 +97,70 @@ assert.ok(
   'Only the Super User can open saved requests, reported issues, archive and feedback comments'
 );
 
+const liveHtml = read('index.html');
+const liveEnv = read('fire-s-env.js');
+const liveSw = read('service-worker.js');
+const liveStarted = read('fire-s-get-started.js');
+const liveStartedCss = read('fire-s-get-started.css');
+const liveStyles = read('styles.css');
+const liveApp = read('app.js');
+const liveHomeRoles = read('fire-s-clean-home-roles.js');
+
+assert.ok(
+  /Version 1\.3\.67/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv) &&
+    /fireS\.liveCacheDrop\.1-3-67/.test(liveHtml) &&
+    /service-worker\.js\?v=108-75-live-67/.test(liveHtml) &&
+    /fire-s-108-75-live-67/.test(liveSw) &&
+    !/PayFast sandbox/.test(liveHtml),
+  'Live must sit the Access/services build as 1.3.67 without PayFast sandbox copy'
+);
+
+const liveLogin = liveHtml.match(
+  /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
+);
+assert.ok(liveLogin, 'Live Access login fields must exist');
+assert.ok(
+  liveLogin[0].indexOf('First time? Create password') === -1 &&
+    liveLogin[0].indexOf('id="fireSSwitchToCreateBtn"') === -1 &&
+    /setCreatePasswordVisible\(false\)/.test(liveStarted) &&
+    !/setCreatePasswordVisible\(true\)/.test(liveStarted),
+  'Live Access must not show First time? Create password'
+);
+
+const liveGuest = liveHtml.match(
+  /id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/
+);
+assert.ok(liveGuest, 'Live Subscribe New Company fields must exist');
+assert.ok(
+  /id="fireSGetStartedPassword"/.test(liveGuest[0]) &&
+    /id="fireSGetStartedPassword2"/.test(liveGuest[0]) &&
+    /Confirm password/.test(liveGuest[0]),
+  'Live Subscribe New Company must ask the owner to confirm the password'
+);
+
+assert.ok(
+  /id="cmdServicesBtn"/.test(liveHtml) &&
+    /Request Fire Consultant Services/.test(liveHtml) &&
+    /Request Fire Consultant Services/.test(liveHomeRoles) &&
+    /#mainCommandCentre #cmdServicesBtn/.test(liveStyles) &&
+    /linear-gradient\(135deg, #fde68a/.test(liveStyles) &&
+    /Request Fire Consultant Services/.test(liveLogin[0]) &&
+    /linear-gradient\(180deg, #fbbf24/.test(liveStartedCss),
+  'Live Home and Access must show catchy Request Fire Consultant Services'
+);
+
+const liveServices = liveHtml.match(
+  /id="servicesSection"[\s\S]*?id="projectListSection"/
+);
+assert.ok(liveServices, 'Live Additional Services section must exist');
+assert.ok(
+  /class="service-requests-admin" hidden/.test(liveServices[0]) &&
+    /id="viewFeedbackCommentsBtn"/.test(liveServices[0]) &&
+    /View Feedback comments/.test(liveServices[0]) &&
+    /function paintServiceSuperUserChrome\(/.test(liveApp) &&
+    /function renderFeedbackCommentsList\(/.test(liveApp),
+  'Live Additional Services admin lists must stay hidden unless Super User, and include View Feedback comments'
+);
+
 console.log('access-services-feedback.test.js: ok');

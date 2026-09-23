@@ -135,6 +135,21 @@
     } catch (_) {}
   }
 
+  function inspectionHomeLocked() {
+    try {
+      if (window.fireSEntitlement && typeof window.fireSEntitlement.homeWorkAllowed === 'function') {
+        return window.fireSEntitlement.homeWorkAllowed() !== true;
+      }
+      return !!(
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        window.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function paint() {
     if (painting) return;
     painting = true;
@@ -143,10 +158,23 @@
       const box = byId('fireSDesktopAccess');
       const urlEl = byId('fireSDesktopAccessUrl');
       const note = byId('fireSDesktopAccessNote');
+      if (inspectionHomeLocked()) {
+        if (box) {
+          box.hidden = true;
+          box.setAttribute('aria-hidden', 'true');
+          if (box.style && typeof box.style.setProperty === 'function') {
+            box.style.setProperty('display', 'none', 'important');
+          }
+        }
+        return;
+      }
       if (box) {
         const url = desktopAddress();
         if (urlEl && urlEl.textContent !== url) urlEl.textContent = url;
         const hide = !isManagement();
+        if (box.style && typeof box.style.removeProperty === 'function') {
+          box.style.removeProperty('display');
+        }
         if (box.hidden !== hide) box.hidden = hide;
         if (note && !note.dataset.fireSCopied) {
           const next = wantsDesktop()

@@ -13,14 +13,13 @@ After a sit-live, copy the same workflow onto the toets-blad so the two apps do 
 Do not wipe toets-only files or behaviour to match live:
 
 - `staging/fire-s-payfast.js` and `staging/fire-s-md5.js`
-- Create password is not on Access; owner sets it on Subscribe New Company with confirm
-- New-inspection stay-on-form (not sat live yet)
+- PayFast sandbox on the toets-blad
 - Displayed version **1.3.112-toets**
 
 Do not run `scripts/sync-toets-blad.sh` as a blanket copy. That overwrites toets extras.
 
 ## Live constraints
 
-- Displayed live version stays **1.3.66** unless the user asks to bump it.
+- Displayed live version stays **1.3.67** unless the user asks to bump it.
 - Do not delete inspections.
 - `createNewProject` stays a blank form.

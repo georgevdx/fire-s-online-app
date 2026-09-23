@@ -223,7 +223,7 @@
     if (roleSelect) roleSelect.value = 'inspector';
     if (status === 'invited' || status === 'reopened') {
       setMessage(
-        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → type that email → First time? Create password appears if they have no password yet, then Login. They must not Subscribe.`
+        `${email} is a new subscription you (the owner) pay for (${roleLabel(role)}). They work remotely: Access → type that email → Login. If they have no password yet, they tap Forgot password. They must not Subscribe.`
       );
     } else {
       setMessage(
@@ -1392,6 +1392,10 @@
       }
       if (!ctx.companyId) {
         throw new Error('Save your company first, then add people.');
+      }
+      if (window.fireSEntitlement && window.fireSEntitlement.assertCanCreate) {
+        const allowed = await window.fireSEntitlement.assertCanCreate();
+        if (allowed === false) return;
       }
       if (role === 'company_owner' && !canAssignOwner()) {
         throw new Error('Only an Owner can add another Owner.');

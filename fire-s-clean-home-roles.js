@@ -73,6 +73,10 @@
   }
 
   function showGatewayCard(title, copy) {
+    if (inspectionHomeLocked()) {
+      hide('cmdInspectionsBtn');
+      return;
+    }
     const btn = gatewayButton();
     const grid = document.querySelector('#mainCommandCentre .main-command-grid');
     if (btn && grid && grid.firstElementChild !== btn) {
@@ -353,8 +357,59 @@
     if (el) el.textContent = text;
   }
 
+  function inspectionHomeLocked() {
+    try {
+      if (
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.homeWorkAllowed === 'function'
+      ) {
+        return window.fireSEntitlement.homeWorkAllowed() !== true;
+      }
+      return !!(
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        window.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function applyLockedSubscribeHome() {
+    ALL_CMD_IDS.forEach(function (id) {
+      if (id === 'cmdSubscribeBtn' || id === 'cmdUserManualBtn') show(id);
+      else hide(id);
+    });
+    hide('inspectorBoardHomeBar');
+    hide('fireSOwnerLists');
+    hide('fireSOwnerKpiRow');
+    hide('fireSDesktopAccess');
+    const personnel = document.querySelector('#mainCommandCentre .main-command-personnel');
+    if (personnel) {
+      personnel.hidden = true;
+      personnel.setAttribute('aria-hidden', 'true');
+      personnel.style.setProperty('display', 'none', 'important');
+    }
+    setStatsVisible(false);
+    hideManagementOverlays();
+    const homeHero = document.querySelector('#homeSection .home-hero');
+    if (homeHero) homeHero.style.setProperty('display', 'none', 'important');
+    const shell = byId('inspectorV4Shell');
+    if (shell) {
+      shell.style.setProperty('display', 'none', 'important');
+      shell.setAttribute('hidden', 'true');
+      shell.setAttribute('aria-hidden', 'true');
+    }
+    show('cmdSubscribeBtn');
+    show('cmdUserManualBtn');
+  }
+
   function show(id) {
     if (id === 'cmdReportsBtn') {
+      hide(id);
+      return;
+    }
+    if (inspectionHomeLocked() && id !== 'cmdSubscribeBtn' && id !== 'cmdUserManualBtn') {
       hide(id);
       return;
     }
@@ -521,7 +576,8 @@
       'executiveSnapshotPanel',
       'fireSExecutiveDashboard1115',
       'inspectorBoardHomeBar',
-      'fireSOwnerLists'
+      'fireSOwnerLists',
+      'fireSDesktopAccess'
     ].forEach(id => {
       const el = byId(id);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -690,7 +746,7 @@
     );
     cardText(
       'cmdServicesBtn',
-      'Support',
+      'Request Fire Consultant Services',
       'Write a comment, request review or operational support.'
     );
 
@@ -813,7 +869,7 @@
     );
     cardText(
       'cmdServicesBtn',
-      'Services / Support',
+      'Request Fire Consultant Services',
       'Consultancy, a comment about the app, or support.'
     );
 
@@ -847,14 +903,14 @@
     setText('#mainCommandCentre .main-command-top h3', 'Access');
     setText(
       '#mainCommandSubtitle',
-      'Use Access below. Login, Create password and Subscribe are on this one page. Cloud is only for sync after you are signed in.'
+      'Use Access below. Login and Subscribe New Company are on this one page. Cloud is only for sync after you are signed in.'
     );
     try {
       if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
         setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
         setText(
           '#mainCommandSubtitle',
-          'One Access page: Login, Create password or Subscribe.'
+          'One Access page: Login or Subscribe. Owner password is created on Subscribe New Company.'
         );
       }
     } catch (_) {}
@@ -924,7 +980,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'Use Access: type your email. First time? Create password appears if this email has no password yet, then Login. You do not Subscribe. Your owner pays for this email.'
+      'Use Access: type your email and password, then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);
@@ -937,7 +993,7 @@
   function applyNewCompanyHome() {
     showHomeHero();
     setBodyRole('fire-s-role-new-company', 'new_company');
-    setHero('Fire-S · New Company', 'SUBSCRIBE', 'You pay monthly (R250) or annual (R2 500) per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.');
+    setHero('Fire-S · New Company', 'SUBSCRIBE', 'Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast.');
     setText('#mainCommandCentre .main-command-kicker', 'First-day setup');
     setText('#mainCommandCentre .main-command-top h3', 'Subscribe');
     setText(
@@ -1027,6 +1083,11 @@
       return;
     }
     paintRecoveryBody(false);
+    if (inspectionHomeLocked()) {
+      wrapAllCommandCards();
+      applyLockedSubscribeHome();
+      return;
+    }
     if (isGatewayOrFormVisible()) return;
 
     wrapAllCommandCards();
@@ -1211,6 +1272,10 @@
 
   function cleanHomeRender() {
     if (isGatewayOrFormVisible()) return;
+    if (inspectionHomeLocked()) {
+      applyCleanHome();
+      return;
+    }
     if (typeof previousRender === 'function' && !previousRender.__fireSCleanHome) {
       try {
         previousRender();

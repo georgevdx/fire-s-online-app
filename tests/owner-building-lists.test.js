@@ -60,7 +60,8 @@ assert.ok(
   'Upcoming list must use a 30-day window'
 );
 assert.ok(
-  /text\(answer && answer\.answer\)\.toLowerCase\(\) === 'no'/.test(js),
+  /function countNoAnswers\(/.test(js) &&
+    /value === 'no' \|\| value === 'non-compliant' \|\| value === 'fail'/.test(js),
   'Deficiency list must count No answers'
 );
 assert.ok(
@@ -112,7 +113,7 @@ assert.ok(
   'Home building count and KPI cards must refresh after cloud setProjects'
 );
 assert.ok(
-  /fire-s-owner-lists\.js\?v=1-3-home-lookup/.test(html),
+  /fire-s-owner-lists\.js\?v=1-3-67/.test(html),
   'Home must cache-bust the phone owner-list refresh'
 );
 
@@ -155,6 +156,8 @@ function el(id) {
 
 const sandbox = {
   window: {},
+  __fireSCloudPullSettled: true,
+  __fireSCloudBuildingFilter: { ready: true },
   document: {
     readyState: 'complete',
     getElementById(id) {
@@ -194,6 +197,7 @@ const model = build([
     organisationName: 'Greenfield School',
     siteName: '',
     inspectionDate: '2026-08-01',
+    completedAt: '2026-08-01',
     lastSaved: '2026-08-24T10:00:00',
     followUpDate: '2026-09-05',
     answers: [{ answer: 'No' }, { answer: 'No' }, { answer: 'Yes' }]
@@ -252,15 +256,16 @@ assert.equal(
   'A building that was never inspected must have an empty last-inspected date'
 );
 assert.deepStrictEqual(
-  model.upcoming.map(row => row.id),
-  ['clinic', 'school', 'mall'],
-  'Upcoming must be due in the next 30 days, not overdue, far, deleted, or recycle leftovers'
+  Array.from(model.upcoming.map(row => row.id)),
+  ['overdue', 'clinic', 'school', 'mall'],
+  'Upcoming must include overdue bookings and the next 30 days, not far, deleted, or recycle leftovers'
 );
-assert.equal(model.upcoming[0].days, 6);
-assert.equal(model.upcoming[1].days, 12);
-assert.equal(model.upcoming[2].days, 17);
+assert.equal(model.upcoming[0].days, -23);
+assert.equal(model.upcoming[1].days, 6);
+assert.equal(model.upcoming[2].days, 12);
+assert.equal(model.upcoming[3].days, 17);
 assert.deepStrictEqual(
-  model.deficiencies.map(row => ({ id: row.id, count: row.count })),
+  Array.from(model.deficiencies.map(row => ({ id: row.id, count: row.count }))),
   [{ id: 'school', count: 2 }],
   'Only buildings with No answers belong on the deficiency list'
 );
@@ -298,6 +303,8 @@ function phoneEl(id) {
 
 const phoneSandbox = {
   window: {},
+  __fireSCloudPullSettled: true,
+  __fireSCloudBuildingFilter: { ready: true },
   document: {
     readyState: 'complete',
     getElementById(id) {
@@ -336,7 +343,7 @@ stored.push({
 phoneSandbox.fireSRefreshOwnerLists();
 assert.equal(
   phoneEl('fireSOwnerListsCount').textContent,
-  '1 building on your inspection list',
+  '1 building on the company inspection list',
   'phone Home must show leftover local buildings'
 );
 
@@ -346,7 +353,7 @@ phoneSandbox.setProjects([
 ]);
 assert.equal(
   phoneEl('fireSOwnerListsCount').textContent,
-  '2 buildings on your inspection list',
+  '2 buildings on the company inspection list',
   'cloud setProjects must refresh the Home building count'
 );
 

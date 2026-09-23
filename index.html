@@ -9,8 +9,8 @@
   <script>
     (function fireSDropStuckLiveCache() {
       try {
-        var WANT = '1.3.66';
-        var FLAG = 'fireS.liveCacheDrop.1-3-66-payfast';
+        var WANT = '1.3.67';
+        var FLAG = 'fireS.liveCacheDrop.1-3-67';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) {
           try { localStorage.setItem(FLAG, WANT); } catch (_) {}
@@ -115,7 +115,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-65-count">
+  <link rel="stylesheet" href="styles.css?v=1-3-67">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -123,9 +123,9 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-19-legal">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=1-3-67">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-12-payfast-live">
-  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-sitlive">
+  <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-sitlive-67">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
   <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
@@ -140,6 +140,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
+      <p class="brand-version">Version 1.3.67</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -163,7 +164,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.66</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.67</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -239,7 +240,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.66</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.67</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -304,7 +305,7 @@
     <div class="fire-s-get-started-kicker">Fire-S Access</div>
     <h3 id="fireSGetStartedTitle">Access</h3>
     <p id="fireSGetStartedHelp">
-      Type your email and password, then Login. First time after your owner added you: Create password. New business owner: Subscribe.
+      Type your email and password, then Login. New business owner: Subscribe under Forgot password. The owner creates and confirms the password on Subscribe New Company.
     </p>
 
     <div id="fireSGetStartedChoices" class="fire-s-get-started-choices" hidden>
@@ -340,11 +341,10 @@
         >Show password</button>
       </div>
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
-      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn" hidden>First time? Create password</button>
-      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
-      <button id="fireSLoginViewPlansBtn" type="button" class="secondary-btn">View Plans & Pricing</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
       <p class="fire-s-get-started-note fire-s-access-forgot-note">Forgot password: check Inbox and Junk. The email is often from Supabase. Open the link — Fire-S opens. Tap Forgot password once, then wait a minute.</p>
+      <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
+      <button id="fireSLoginViewPlansBtn" type="button" class="secondary-btn">View Plans & Pricing</button>
       <button id="fireSLoginInstallBtn" type="button" class="secondary-btn">Install on this phone</button>
       <div id="fireSAccessExtraServices" class="fire-s-access-extra-services">
         <button
@@ -354,7 +354,7 @@
           aria-expanded="false"
           aria-controls="fireSAccessExtraServicesPanel"
         >
-          Additional services
+          Request Fire Consultant Services
         </button>
         <div id="fireSAccessExtraServicesPanel" class="fire-s-access-extra-services-panel" hidden>
           <button type="button" class="fire-s-access-service-btn" data-access-service="Fire Safety Consultancy">
@@ -410,8 +410,9 @@
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <input id="fireSGetStartedPassword2" type="password" placeholder="Confirm password" autocomplete="new-password">
       <div class="fire-s-plan-picker">
-        <p class="fire-s-plan-picker-label">You pay monthly or annually · R250 per subscription</p>
+        <p class="fire-s-plan-picker-label">Subscription per month per login is R250</p>
         <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
         <p class="fire-s-plan-billing-note">Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. After Subscribe, pay on PayFast. Card details stay with PayFast.</p>
       </div>
@@ -426,17 +427,17 @@
         View Plans & Pricing
       </button>
       <button id="fireSRegisterSwitchToLoginBtn" type="button" class="secondary-btn">
-        Already have an account? Sign In
+        I already subscribed — Login
       </button>
     </div>
 
     <div id="fireSGetStartedCompanyOnly" class="fire-s-get-started-fields" style="display:none;">
       <p class="fire-s-get-started-note">
-        You are signed in. You pay monthly (R250) or annual (R2 500) per subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.
+        You are signed in. Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.
       </p>
       <input id="fireSGetStartedCompanyOnlyName" type="text" placeholder="Company name" autocomplete="organization">
       <div class="fire-s-plan-picker">
-        <p class="fire-s-plan-picker-label">You pay monthly or annually · R250 per subscription</p>
+        <p class="fire-s-plan-picker-label">Subscription per month per login is R250</p>
         <div id="fireSCompanyOnlyBillingOptions" class="fire-s-plan-options" data-interval-name="fireSCompanyOnlyBilling"></div>
         <p class="fire-s-plan-billing-note">Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. After Subscribe, pay on PayFast. Card details stay with PayFast.</p>
       </div>
@@ -486,7 +487,8 @@
     <div id="fireSOwnerKpiRow" class="fire-s-owner-kpi-row fs-prod-kpi-row" aria-label="Fire-S dashboard summary" hidden></div>
 
     <section id="fireSOwnerLists" class="fire-s-owner-lists" hidden aria-label="Building inspection lists">
-      <p id="fireSOwnerListsCount" class="fire-s-owner-lists-count">Buildings on your inspection list</p>
+      <p id="fireSOwnerListsCount" class="fire-s-owner-lists-count">Company buildings</p>
+      <p class="fire-s-owner-lists-hint" id="fireSOwnerListsCountHint">Phone and laptop show this same company list. Recycle Bin buildings are not counted.</p>
 
       <div class="fire-s-owner-lists-block">
         <h4>All buildings</h4>
@@ -518,6 +520,7 @@
 
       <div class="fire-s-owner-lists-block">
         <h4>Upcoming inspections (next 30 days)</h4>
+        <p class="fire-s-owner-lists-hint">Includes overdue bookings.</p>
         <div class="fire-s-owner-lists-scroll">
           <table class="fire-s-owner-lists-table fire-s-owner-lists-upcoming" id="fireSOwnerListsUpcoming">
             <thead>
@@ -697,10 +700,10 @@
         </span>
       </button>
 
-      <button type="button" class="main-command-card" id="cmdServicesBtn">
-        <span class="command-icon">🛠️</span>
+      <button type="button" class="main-command-card fire-s-consultant-services-card" id="cmdServicesBtn">
+        <span class="command-icon">🔥</span>
         <span class="command-text">
-          <span class="command-title">Services / Support</span>
+          <span class="command-title">Request Fire Consultant Services</span>
           <span class="command-copy">Request support, or write a comment about the app or a problem.</span>
         </span>
       </button>
@@ -762,7 +765,7 @@
   <div class="startup-route-grid">
     <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
       <span class="route-title">Access</span>
-      <span class="route-copy">Login, create password, or register a company.</span>
+      <span class="route-copy">Type email and password to Login. Subscribe New Company on this same page.</span>
     </button>
 
     <button
@@ -843,9 +846,7 @@
 <section id="fireSSubscribeSection" class="card fire-s-subscribe-section" style="display:none;">
   <div class="toolbar">
     <h2 id="fireSSubscribeHeading">Subscription</h2>
-    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">
-      Back Home
-    </button>
+    <button id="fireSSubscribeBackBtn" type="button" class="back-home-btn">Back Home</button>
   </div>
   <div class="fire-s-subscribe-intro">
     <div class="fire-s-subscribe-kicker" id="fireSSubscribeKicker">Paid seats</div>
@@ -941,6 +942,7 @@
     </p>
     <button id="fireSSubscribeSeatBtn" type="button" class="cloud-primary-btn">Subscribe this email</button>
   </div>
+  <button id="fireSSubscribeSaveBtn" type="button" class="cloud-primary-btn">Save billing</button>
 </section>
 <section id="managementDashboardSection" class="card management-dashboard-section" style="display:none;">
   <div class="toolbar">
@@ -1103,7 +1105,7 @@
   <div id="companyTeamAddPanel" class="company-team-add">
     <div class="cloud-section-title">Add people</div>
     <p class="company-team-hint" style="margin-top:0;">
-      Each new email is a new subscription under this company name. You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email, choose Inspector or Manager, and see the fees. One person is one company. Only you (the owner) can Remove someone. That deletes their email and password from the cloud. Then they can Subscribe under another company name. Cancelling a subscription does not delete this company or its inspections.
+      Each new email is a new subscription under this company name. You (the owner) pay — inspectors do not. They never Subscribe. Tap Add inspector / manager to open the subscription page. There you type the email, choose Inspector or Manager, and see the fees. One person is one company. Only you (the owner) can Remove someone. A manager cannot remove the Owner. The Owner can remove a Manager. Remove deletes their email and password from the cloud. Then they can Subscribe under another company name. Cancelling a subscription does not delete this company or its inspections.
     </p>
     <button id="companyTeamStartSeatBtn" type="button" class="cloud-primary-btn" style="width:100%; margin-top:10px;">
       Add inspector / manager
@@ -1239,7 +1241,7 @@
       </button>
     </div>
   </div>
-  <div class="service-requests-admin">
+  <div class="service-requests-admin" hidden>
     <button id="viewServiceRequestsBtn" type="button" class="secondary-btn">
       View Saved Service Requests
     </button>
@@ -1249,6 +1251,10 @@
 
     <button id="viewBetaFeedbackBtn" type="button" class="secondary-btn">
       View reported issues
+    </button>
+
+    <button id="viewFeedbackCommentsBtn" type="button" class="secondary-btn">
+      View Feedback comments
     </button>
 
     <button id="viewSupportArchiveBtn" type="button" class="secondary-btn">
@@ -1261,6 +1267,8 @@
     <div id="serviceRequestsList" class="service-requests-list" style="display:none;"></div>
 
     <div id="betaFeedbackList" class="service-requests-list" style="display:none;"></div>
+
+    <div id="feedbackCommentsList" class="service-requests-list" style="display:none;"></div>
 
     <div id="supportArchiveList" class="service-requests-list" style="display:none;"></div>
   </div>
@@ -1408,7 +1416,7 @@
   </div>
 
   <label for="scheduleDate">Scheduled Date</label>
-  <input id="scheduleDate" type="date">
+  <input id="scheduleDate" class="fire-s-date-input" type="date" lang="en-ZA" autocomplete="off">
 
   <label for="scheduleInspectorSelect">Assign to inspector</label>
   <select id="scheduleInspectorSelect">
@@ -1463,12 +1471,12 @@
     <div class="inspection-date-filter-grid">
       <label>
         From
-        <input id="inspectionDateFrom" type="date">
+        <input id="inspectionDateFrom" class="fire-s-date-input" type="date" lang="en-ZA" autocomplete="off">
       </label>
 
       <label>
         To
-        <input id="inspectionDateTo" type="date">
+        <input id="inspectionDateTo" class="fire-s-date-input" type="date" lang="en-ZA" autocomplete="off">
       </label>
     </div>
 
@@ -1676,7 +1684,10 @@
       Inspection Date
       <input
         id="inspectionDate"
+        class="fire-s-date-input"
         type="date"
+        lang="en-ZA"
+        autocomplete="off"
       >
     </label>
   </div>
@@ -1823,7 +1834,7 @@
       </select>
 
       <label for="followUpDate">Corrective Follow-up Date</label>
-      <input type="date" id="followUpDate">
+      <input type="date" id="followUpDate" class="fire-s-date-input" lang="en-ZA" autocomplete="off">
 
       <label for="followUpNotes">Corrective Follow-up Notes</label>
       <textarea
@@ -1884,7 +1895,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-66-payfast"></script>
+  <script src="fire-s-env.js?v=1-3-67"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1899,33 +1910,33 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-66-payfast"></script>
+  <script src="app.js?v=1-3-67"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-    <script src="fire-s-clean-home-roles.js?v=2-43-comment"></script>
-  <script src="fire-s-owner-lists.js?v=1-3-home-lookup"></script>
+  <script src="fire-s-clean-home-roles.js?v=1-3-67"></script>
+  <script src="fire-s-owner-lists.js?v=1-3-67"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-8-payfast"></script>
-  <script src="fire-s-company-team.js?v=2-21-ownerlock"></script>
-  <script src="fire-s-schedule-assign.js?v=1-2-exist-sched"></script>
+  <script src="fire-s-company-team.js?v=1-3-67"></script>
+  <script src="fire-s-schedule-assign.js?v=1-3-67"></script>
   <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
   <script src="fire-s-subscriptions.js?v=1-17-live"></script>
   <script src="fire-s-payfast.js?v=1-14-live"></script>
   <script src="fire-s-subscribe.js?v=1-35-live"></script>
-  <script src="fire-s-user-manual.js?v=1-40-payfast"></script>
+  <script src="fire-s-user-manual.js?v=1-3-67"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-53-payfast"></script>
+  <script src="fire-s-get-started.js?v=1-3-67"></script>
   <script src="fire-s-startup-stability.js?v=1-14-stay"></script>
   <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
   <script src="fire-s-phone-back.js?v=1-3-report-overlay"></script>
   <script src="fire-s-global-flow.js?v=1-1-copy"></script>
-  <script src="fire-s-desktop-access.js?v=1-3-keep-dash"></script>
+  <script src="fire-s-desktop-access.js?v=1-3-67"></script>
   <script src="fire-s-gateway-still.js?v=1-0-sync"></script>
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-1-qaexpand"></script>
-  <script src="fire-s-entitlement.js?v=1-3-107-lock"></script>
+  <script src="fire-s-entitlement.js?v=1-3-67"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1933,7 +1944,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-75-live-payfast')
+        navigator.serviceWorker.register('./service-worker.js?v=108-75-live-67')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })
