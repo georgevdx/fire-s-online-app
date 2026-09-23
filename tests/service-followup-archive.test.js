@@ -22,14 +22,14 @@ assert.ok(
   storeSrc === stagingStoreSrc,
   'Live and toets must share the same service-request store'
 );
-assert.ok(/1\.3\.110-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.110-toets');
+assert.ok(/1\.3\.111-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.111-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
   'Live Fire-S must be 1.3.66 after sit dit live'
 );
 assert.ok(
-  /app\.js\?v=1-3-108-count/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-110-datepick/.test(stagingHtml) &&
+  /app\.js\?v=1-3-111-services/.test(stagingHtml) &&
+    /fire-s-env\.js\?v=1-3-111-toets/.test(stagingHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(stagingHtml),
   'Toets-blad must cache-bust the archive follow-up files'
 );
@@ -53,16 +53,17 @@ assert.ok(
     /hideSupportAdminPanels\('serviceRequestsList'\)/.test(stagingApp) &&
     /hideSupportAdminPanels\('betaFeedbackList'\)/.test(stagingApp) &&
     /hideSupportAdminPanels\('supportArchiveList'\)/.test(stagingApp) &&
+    /hideSupportAdminPanels\('feedbackCommentsList'\)/.test(stagingApp) &&
     /supportAdminPanelIsOpen\('serviceRequestsList'\) && !forceOpen/.test(stagingApp) &&
     /supportAdminPanelIsOpen\('betaFeedbackList'\) && !forceOpen/.test(stagingApp),
-  'Saved requests, reported issues and archive must open one at a time'
+  'Saved requests, reported issues, comments and archive must open one at a time'
 );
 assert.ok(
   /fireSMarkServiceRequestFollowedUp/.test(stagingApp) &&
     /await renderServiceRequestsList\(true\)/.test(stagingApp) &&
     /function renderSupportArchiveList/.test(stagingApp) &&
     /purgeExpiredSupportArchiveCloud/.test(stagingApp) &&
-    /filter\(item => !isArchivedSupportIssue\(item\)\)/.test(stagingApp),
+    /!isArchivedSupportIssue\(item\) && !isFeedbackComment\(item\)/.test(stagingApp),
   'Followed-up requests must leave the active list and closed issues must move to archive'
 );
 

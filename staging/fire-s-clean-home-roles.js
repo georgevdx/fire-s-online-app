@@ -746,7 +746,7 @@
     );
     cardText(
       'cmdServicesBtn',
-      'Support',
+      'Request Fire Consultant Services',
       'Write a comment, request review or operational support.'
     );
 
@@ -869,7 +869,7 @@
     );
     cardText(
       'cmdServicesBtn',
-      'Services / Support',
+      'Request Fire Consultant Services',
       'Consultancy, a comment about the app, or support.'
     );
 
@@ -903,14 +903,14 @@
     setText('#mainCommandCentre .main-command-top h3', 'Access');
     setText(
       '#mainCommandSubtitle',
-      'Use Access below. Login, Create password and Subscribe are on this one page. Cloud is only for sync after you are signed in.'
+      'Use Access below. Login and Subscribe New Company are on this one page. Cloud is only for sync after you are signed in.'
     );
     try {
       if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) {
         setText('#mainCommandCentre .main-command-kicker', 'Toets-blad');
         setText(
           '#mainCommandSubtitle',
-          'One Access page: Login, Create password or Subscribe.'
+          'One Access page: Login or Subscribe. Owner password is created on Subscribe New Company.'
         );
       }
     } catch (_) {}
@@ -980,7 +980,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Join the company');
     setText(
       '#mainCommandSubtitle',
-      'Use Access: type your email. First time? Create password appears if this email has no password yet, then Login. You do not Subscribe. Your owner pays for this email.'
+      'Use Access: type your email and password, then Login. You do not Subscribe. Your owner pays for this email.'
     );
     setText('#mainCommandAccessStatus', 'Login ready · not in a company yet');
     setStatsVisible(false);

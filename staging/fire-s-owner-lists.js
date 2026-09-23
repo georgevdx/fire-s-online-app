@@ -22,7 +22,7 @@
 
   function applyPullProgress(loaded, total, done) {
     const nextLoaded = Math.max(0, Number(loaded) || 0);
-    const nextDone = !!done;
+    const nextDone = !!done && companyCloudListReady();
     if (pullState.done && !nextDone) return;
     pullState.loaded = nextLoaded;
     pullState.done = nextDone;
@@ -42,7 +42,7 @@
   }
 
   function writeCount(countEl, visibleCount) {
-    if (pullState.loading && !pullState.done) {
+    if (!companyCloudListReady() || (pullState.loading && !pullState.done)) {
       countEl.textContent = 'Loading buildings…';
       return;
     }
@@ -307,17 +307,94 @@
     }).length;
   }
 
-  function deficiencyCount(project) {
-    let best = 0;
+  function hasAnsweredChecklist(source) {
+    const answers = Array.isArray(source && source.answers)
+      ? source.answers
+      : (source && source.snapshot && Array.isArray(source.snapshot.answers)
+        ? source.snapshot.answers
+        : []);
+    return answers.some(answer => {
+      const value = text(
+        answer && (answer.answer || answer.value || answer.result || answer.finding)
+      ).toLowerCase();
+      return value === 'yes' || value === 'no' || value === 'na' || value === 'n/a' ||
+        value === 'non-compliant' || value === 'fail';
+    });
+  }
+
+  function isCompletedCycle(source) {
+    const status = text(
+      source && (source.status || source.inspectionStatus || source.scheduledStatus || source.archiveStatus)
+    ).toLowerCase();
+    return !!(
+      source && (
+        source.completedAt ||
+        source.finalisedAt ||
+        source.inspectionFinalisedAt ||
+        /complete|closed|finalis/.test(status)
+      )
+    );
+  }
+
+  function cycleTimestamp(cycle) {
+    const parsed = Date.parse(
+      (cycle && (
+        cycle.completedAt ||
+        cycle.finalisedAt ||
+        cycle.inspectionFinalisedAt ||
+        cycle.archivedAt ||
+        cycle.inspectionDate ||
+        cycle.date
+      )) || ''
+    );
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function latestCompletedCycle(project) {
     try {
-      if (typeof root.getProjectNoFindingCount === 'function') {
-        best = Math.max(best, Number(root.getProjectNoFindingCount(project) || 0));
+      if (typeof root.fireSLatestCompletedCycle === 'function') {
+        const cycle = root.fireSLatestCompletedCycle(project);
+        if (cycle) return cycle;
       }
     } catch (_) {}
-    answerLists(project).forEach(list => {
-      best = Math.max(best, countNoAnswers(list));
+    if (isCompletedCycle(project) && hasAnsweredChecklist(project)) return project;
+    const history = Array.isArray(project && project.inspectionHistory)
+      ? project.inspectionHistory
+      : [];
+    let best = null;
+    let bestTs = -1;
+    history.forEach(item => {
+      if (!item) return;
+      const source = item.snapshot && hasAnsweredChecklist(item.snapshot) ? item.snapshot : item;
+      if (!hasAnsweredChecklist(source)) return;
+      const ts = cycleTimestamp(item) || cycleTimestamp(source);
+      if (!best || ts >= bestTs) {
+        best = source;
+        bestTs = ts;
+      }
     });
     return best;
+  }
+
+  function lastCycleDeficiencyCount(rows) {
+    try {
+      if (typeof root.fireSLastInspectionActionCountForBuilding === 'function' && rows && rows[0]) {
+        return Number(root.fireSLastInspectionActionCountForBuilding(rows, rows[0]) || 0);
+      }
+    } catch (_) {}
+    let best = null;
+    let bestTs = -1;
+    (Array.isArray(rows) ? rows : []).forEach(project => {
+      const cycle = latestCompletedCycle(project);
+      if (!cycle) return;
+      const ts = cycleTimestamp(cycle);
+      if (!best || ts >= bestTs) {
+        best = cycle;
+        bestTs = ts;
+      }
+    });
+    if (!best) return 0;
+    return countNoAnswers(best.answers || (best.snapshot && best.snapshot.answers));
   }
 
   function compareName(a, b) {
@@ -327,6 +404,10 @@
   function uniqueActive(projects) {
     const source = Array.isArray(projects) ? projects : [];
     try {
+      if (typeof root.fireSVisibleCompanyBuildings === 'function') {
+        const unique = root.fireSVisibleCompanyBuildings(source);
+        if (Array.isArray(unique)) return unique;
+      }
       if (typeof root.fireSFilterToCloudBuildings === 'function') {
         const unique = root.fireSFilterToCloudBuildings(source);
         if (Array.isArray(unique)) return unique;
@@ -455,20 +536,24 @@
       .map(key => upcomingByKey[key])
       .sort((a, b) => compareName(a.due, b.due) || compareName(a.name, b.name));
 
-    const deficiencyByKey = Object.create(null);
+    const rowsByKey = Object.create(null);
     rows.forEach(project => {
-      const count = deficiencyCount(project);
-      if (count < 1) return;
       const key = buildingKey(project);
       if (!key) return;
-      const current = deficiencyByKey[key];
-      if (!current || count > current.count) {
-        deficiencyByKey[key] = {
-          id: openIdByKey[key] || (project && project.id),
-          name: buildingName(project),
-          count
-        };
-      }
+      if (!rowsByKey[key]) rowsByKey[key] = [];
+      rowsByKey[key].push(project);
+    });
+    const deficiencyByKey = Object.create(null);
+    Object.keys(rowsByKey).forEach(key => {
+      const group = rowsByKey[key];
+      const count = lastCycleDeficiencyCount(group);
+      if (count < 1) return;
+      const named = group[0];
+      deficiencyByKey[key] = {
+        id: openIdByKey[key] || (named && named.id),
+        name: buildingName(named),
+        count
+      };
     });
     const deficiencies = Object.keys(deficiencyByKey)
       .map(key => deficiencyByKey[key])

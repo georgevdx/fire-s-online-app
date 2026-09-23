@@ -18,7 +18,7 @@ assert.ok(
     /id="followUpDate"[^>]*type="date"|type="date" id="followUpDate"/.test(stagingHtml) &&
     /class="fire-s-date-input"/.test(stagingHtml) &&
     /fire-s-schedule-assign\.js\?v=1-3-datepicker/.test(stagingHtml) &&
-    /styles\.css\?v=1-3-110-datepick/.test(stagingHtml),
+    /styles\.css\?v=1-3-111-services/.test(stagingHtml),
   'Toets scheduling must keep native date inputs and cache-bust the picker CSS'
 );
 assert.ok(

@@ -8,13 +8,15 @@ function read(name) {
   return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
 }
 
-function assertSnapshotAndCards(label, app, css) {
+function assertSnapshotAndCards(label, app, css, opts) {
+  const photosTile = opts && opts.photosTile;
   assert.ok(
     /stat\('Premises', data\.count, premisesHint/.test(app) &&
       /currently shown/.test(app) &&
-      /stat\('Photos', data\.photos/.test(app) &&
-      /on file/.test(app),
-    label + ': Premises and Photos tiles must show a number plus a short label'
+      (photosTile
+        ? /stat\('Photos', data\.photos/.test(app) && /on file/.test(app)
+        : !/stat\('Photos', data\.photos/.test(app) && /action premises/.test(app)),
+    label + ': Premises tile must show a number plus a short label'
   );
   assert.ok(
     /<small>Last<\/small>/.test(app) &&
@@ -42,7 +44,7 @@ function assertSnapshotAndCards(label, app, css) {
   );
 }
 
-assertSnapshotAndCards('Live', read('app.js'), read('styles.css'));
-assertSnapshotAndCards('Toets', read('staging/app.js'), read('staging/styles.css'));
+assertSnapshotAndCards('Live', read('app.js'), read('styles.css'), { photosTile: true });
+assertSnapshotAndCards('Toets', read('staging/app.js'), read('staging/styles.css'), { photosTile: false });
 
 console.log('snapshot-card-contrast.test.js: ok');
