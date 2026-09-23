@@ -67,11 +67,11 @@ assertLegalLinks(
 );
 
 assert.ok(
-  /Version 1\.3\.66/.test(read('index.html')) &&
-    /1\.3\.66/.test(read('fire-s-env.js')) &&
+  /Version 1\.3\.67/.test(read('index.html')) &&
+    /1\.3\.67/.test(read('fire-s-env.js')) &&
     /1\.3\.112-toets/.test(read('staging/index.html')) &&
     /1\.3\.112-toets/.test(read('staging/fire-s-env.js')),
-  'Live must show 1.3.66 and toets 1.3.112-toets so a phone can tell it has this sit'
+  'Live must show 1.3.67 and toets 1.3.112-toets so a phone can tell it has this sit'
 );
 
 console.log('sit-live-qa-access.test.js: ok');

@@ -53,8 +53,8 @@ assert.strictEqual(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-65-count/.test(read('index.html')) &&
-    /fire-s-fit-text\.css\?v=1-19-sitlive/.test(read('index.html')) &&
+  /styles\.css\?v=1-3-67/.test(read('index.html')) &&
+    /fire-s-fit-text\.css\?v=1-19-sitlive-67/.test(read('index.html')) &&
     /fire-s-dark-type\.css\?v=1-3-rephead/.test(read('index.html')),
   'Live must cache-bust open-inspection font CSS'
 );
@@ -67,9 +67,9 @@ assert.ok(
 );
 
 assert.ok(
-  /Version 1\.3\.66/.test(read('index.html')) &&
+  /Version 1\.3\.67/.test(read('index.html')) &&
     /Version 1\.3\.112-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.66 live and 1.3.112-toets'
+  'Displayed versions stay 1.3.67 live and 1.3.112-toets'
 );
 
 console.log('live-inspect-fonts.test.js: ok');

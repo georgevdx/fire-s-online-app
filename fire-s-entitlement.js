@@ -257,7 +257,10 @@
   function inspectionAccessLocked() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (accessGateOpen()) return false;
-    if (!hasSnapshot()) return isCloudCompanyUser();
+    // Do not flash the red Home lock while the entitlement RPC is still
+    // loading. Paid companies would see Cancelled / Subscription required
+    // and then the real Home once the snapshot arrives.
+    if (!hasSnapshot()) return false;
     var status = text(last && last.status);
     var reason = text(last && last.reason);
     if (isCancelledCompany()) return true;
@@ -487,7 +490,7 @@
     try {
       if (text(root.currentUserProfile && root.currentUserProfile.id) === 'local-user') return true;
     } catch (_) {}
-    if (!hasSnapshot()) return false;
+    if (!hasSnapshot()) return true;
     return inspectionAccessLocked() === false;
   }
 

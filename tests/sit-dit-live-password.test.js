@@ -17,8 +17,8 @@ const manual = read('fire-s-user-manual.js');
 const roles = read('fire-s-clean-home-roles.js');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(env),
-  'Live Fire-S must be 1.3.66 after sit dit live'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(env),
+  'Live Fire-S must be 1.3.67 after sit dit live'
 );
 assert.ok(/fire-s-payfast\.js/.test(html), 'Live root must load PayFast');
 assert.ok(
@@ -32,13 +32,17 @@ assert.ok(
   /id="fireSGetStartedLoginFields"/.test(gate[0]) &&
     /id="fireSLoginEmail"/.test(gate[0]) &&
     /id="fireSDoLoginBtn"/.test(gate[0]) &&
-    /First time\? Create password/.test(gate[0]) &&
+    !/First time\? Create password/.test(gate[0]) &&
+    !/id="fireSSwitchToCreateBtn"/.test(gate[0]) &&
+    /id="fireSGetStartedPassword2"/.test(gate[0]) &&
+    /Confirm password/.test(gate[0]) &&
+    /Request Fire Consultant Services/.test(gate[0]) &&
     /Subscribing New Company/.test(gate[0]) &&
     /check Inbox and Junk/.test(gate[0]) &&
     /id="fireSGetStartedResetFields"/.test(gate[0]) &&
     /id="fireSDoResetBtn"/.test(gate[0]) &&
     /Save new password/.test(gate[0]),
-  'Live Access must be one page with Login, Forgot password, Junk note, and Choose a new password'
+  'Live Access must be one page with Login, confirm password on Subscribe, consultant services, Forgot password, Junk note, and Choose a new password'
 );
 assert.ok(
   /fire-s-access-subscribe-btn/.test(gate[0]) &&

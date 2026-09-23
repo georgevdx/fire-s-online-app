@@ -2046,6 +2046,16 @@ button.readiness-chip:focus {
 
 .service-requests-admin {
   margin-top: 14px;
+  display: none !important;
+}
+
+body.fire-s-service-super .service-requests-admin,
+body.fire-s-service-super .service-requests-admin:not([hidden]) {
+  display: block !important;
+}
+
+.service-requests-admin[hidden] {
+  display: none !important;
 }
 
 .service-requests-list {
@@ -11623,6 +11633,26 @@ body.fire-s-inspector-mission-lock-121e #mainCommandCentre #cmdInspectionsBtn {
   color: #ffffff !important;
 }
 
+#mainCommandCentre #cmdServicesBtn,
+#mainCommandCentre #cmdServicesBtn.main-command-card,
+#mainCommandCentre #cmdServicesBtn.fire-s-consultant-services-card {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 42%, #f59e0b 72%, #ea580c 100%) !important;
+  border: 2px solid #c2410c !important;
+  color: #7c2d12 !important;
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.38) !important;
+}
+
+#mainCommandCentre #cmdServicesBtn .command-title,
+#mainCommandCentre #cmdServicesBtn .command-icon {
+  color: #7c2d12 !important;
+  font-weight: 900;
+}
+
+#mainCommandCentre #cmdServicesBtn .command-copy {
+  color: #9a3412 !important;
+  font-weight: 700;
+}
+
 #mainCommandCentre .main-command-card,
 #mainCommandCentre .command-centre-card,
 #mainCommandCentre .main-command-card:hover,
@@ -12572,6 +12602,13 @@ button,
   line-height: 1.15;
   white-space: normal;
   word-break: normal;
+}
+.fire-s-136a8-card.action .fire-s-136a8-card-top span,
+.fire-s-136a5-card.action .fire-s-136a5-card-top span,
+.fire-s-action-status-label {
+  background: #b91c1c;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
 }
 .fire-s-136a8-card p {
   margin: 5px 0 8px;
@@ -14711,6 +14748,19 @@ html[data-fire-s-theme="dark"] #projectListSection .choice-status-pill {
   border: 1px solid #94a3b8 !important;
 }
 
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a8-card.action .fire-s-136a8-card-top span,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card.action .fire-s-136a8-card-top span,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-136a5-card.action .fire-s-136a5-card-top span,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card.action .fire-s-136a5-card-top span,
+html[data-fire-s-theme="dark"] #projectListSection .fire-s-action-status-label,
+html[data-fire-s-theme="light"] #projectListSection .fire-s-action-status-label {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  font-weight: 900 !important;
+}
+
 html[data-fire-s-theme="light"] #projectListSection .fire-s-136a8-card,
 html[data-fire-s-theme="light"] #projectListSection .fire-s-136a5-card,
 html[data-fire-s-theme="light"] #projectListSection .ultra-premises-card,
@@ -14752,6 +14802,21 @@ html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primar
 }
 html[data-fire-s-theme="dark"] #mainCommandCentre .main-command-card:not(.primary):not(#cmdInspectionsBtn) .command-copy {
   color: #334155 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary),
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.fire-s-consultant-services-card {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 42%, #f59e0b 72%, #ea580c 100%) !important;
+  border-color: #c2410c !important;
+  color: #7c2d12 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) .command-title,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) .command-icon,
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) span {
+  color: #7c2d12 !important;
+}
+html[data-fire-s-theme="dark"] #mainCommandCentre #cmdServicesBtn.main-command-card:not(.primary) .command-copy {
+  color: #9a3412 !important;
 }
 html[data-fire-s-theme="dark"] #mainCommandCentre #cmdInspectionsBtn .command-title,
 html[data-fire-s-theme="dark"] #mainCommandCentre #cmdInspectionsBtn .command-copy,
@@ -15693,4 +15758,36 @@ html[data-fire-s-theme="dark"] .fire-s-subscribe-seat-label,
 html[data-fire-s-theme="dark"] .fire-s-subscribe-seat-note {
   color: #e2e8f0 !important;
   -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+/* Native date pickers sit on white paper. Dark color-scheme hid the calendar icon. */
+input[type="date"],
+input.fire-s-date-input {
+  color-scheme: light;
+  min-height: 44px;
+  min-width: 10.5rem;
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input.fire-s-date-input::-webkit-calendar-picker-indicator {
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+  opacity: 1 !important;
+  display: block !important;
+  cursor: pointer;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-left: 0.35rem;
+  background-color: transparent;
+  filter: none;
+}
+html[data-fire-s-theme="dark"] input[type="date"],
+html[data-fire-s-theme="dark"] input.fire-s-date-input,
+html[data-fire-s-theme="dark"] .schedule-new-panel input[type="date"],
+html[data-fire-s-theme="dark"] #nextInspectionCard input[type="date"] {
+  color-scheme: light !important;
+  color: #0f172a !important;
+  background: #ffffff !important;
+  -webkit-text-fill-color: #0f172a !important;
 }

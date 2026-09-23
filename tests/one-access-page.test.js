@@ -84,7 +84,9 @@ assert.ok(
 
 assert.ok(
   /id="fireSGetStartedLoginFields"/.test(liveHtml) &&
-    /First time\? Create password/.test(liveHtml) &&
+    !/First time\? Create password/.test(liveHtml) &&
+    /Request Fire Consultant Services/.test(liveHtml) &&
+    /id="fireSGetStartedPassword2"/.test(liveHtml) &&
     /display: none !important/.test(
       liveCss.match(/\.fire-s-get-started-choices \{[\s\S]*?\}/)[0]
     ) &&
@@ -133,7 +135,7 @@ function loginOrder(src, label, subscribeBeforeForgotNote, expectCreate) {
   );
 }
 loginOrder(html, 'Toets Access', false, false);
-loginOrder(liveHtml, 'Live Access', true, true);
+loginOrder(liveHtml, 'Live Access', false, false);
 
 assert.ok(
   /subscribeBtn\.style\.display = ''/.test(getStarted) &&
@@ -194,7 +196,7 @@ function extraServices(src, label, buttonLabel) {
   );
 }
 extraServices(html, 'Toets Access', 'Request Fire Consultant Services');
-extraServices(liveHtml, 'Live Access', 'Additional services');
+extraServices(liveHtml, 'Live Access', 'Request Fire Consultant Services');
 assert.ok(
   /#fireSAccessExtraServicesBtn\.fire-s-access-extra-services-btn/.test(css) &&
     /#fireSAccessExtraServicesBtn\.fire-s-access-extra-services-btn/.test(liveCss) &&

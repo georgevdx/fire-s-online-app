@@ -47,10 +47,10 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-66-payfast',
-  '1-3-home-lookup',
-  '108-75-live-payfast',
-  'fire-s-108-75-live-payfast'
+  '1-3-67',
+  '1-3-67',
+  '108-75-live-67',
+  'fire-s-108-75-live-67'
 );
 assertPullSource(
   stagingApp,
@@ -68,12 +68,15 @@ assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHom
 assert.ok(
   /A short phone pull must not become the finished Home count/.test(liveApp) &&
     /A short phone pull must not become the finished Home count/.test(stagingApp) &&
-    /__fireSCloudPullSettled === false/.test(liveLists) &&
+    /__fireSCloudPullSettled !== true/.test(liveLists) &&
     /__fireSCloudPullSettled !== true/.test(stagingLists) &&
+    /function fireSUniqueCurrentBuildings\(/.test(liveApp) &&
     /function fireSUniqueCurrentBuildings\(/.test(stagingApp) &&
+    /fireSFilterToCloudBuildings\(visible\)/.test(liveApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
+    /Keep Loading until the company pull is complete/.test(liveApp) &&
     /Keep Loading until the company pull is complete/.test(stagingApp),
-  'Toets Home must wait for a settled unique building count so laptop 8 then 7 cannot wriggle'
+  'Live and toets Home must wait for a settled unique building count so laptop 8 then 7 cannot wriggle'
 );
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingLists));
 assert.ok(/getVisibleProjectsForCurrentUser\(list\)/.test(liveApp) && /getVisibleProjectsForCurrentUser\(list\)/.test(stagingApp));
@@ -83,10 +86,11 @@ assert.ok(
   'Cloud pull must not import empty Recycle leftover premises'
 );
 assert.ok(
-  /!isDeleted\(project\) && !isRecycleLeftover\(project\)/.test(liveLists) &&
+  /isDeleted\(project\) \|\| isRecycleLeftover\(project\)/.test(liveLists) &&
     /isDeleted\(project\) \|\| isRecycleLeftover\(project\)/.test(stagingLists) &&
+    /function uniqueActive\(projects\)/.test(liveLists) &&
     /function uniqueActive\(projects\)/.test(stagingLists),
-  'Home building count must hide Recycle leftovers and count unique buildings on toets'
+  'Home building count must hide Recycle leftovers and count unique buildings on live and toets'
 );
 
 function rowsFor(count, prefix) {
@@ -257,24 +261,32 @@ async function runFetchCases(appSrc, label) {
       addEventListener() {}
     },
     setTimeout() {},
-    getProjects() { return []; }
+    getProjects() { return []; },
+    __fireSCloudPullSettled: false,
+    __fireSCloudBuildingFilter: { ready: false }
   };
   vm.runInNewContext(liveLists, listSandbox);
   listSandbox.fireSSetOwnerListsPullProgress(0, 124, false);
   assert.strictEqual(countEl.textContent, 'Loading buildings…');
   listSandbox.fireSSetOwnerListsPullProgress(40, 124, false);
-  assert.strictEqual(countEl.textContent, 'Loading buildings… 40');
+  assert.strictEqual(
+    countEl.textContent,
+    'Loading buildings…',
+    'Home must stay on Loading until the unique company building list is ready'
+  );
+  listSandbox.__fireSCloudPullSettled = true;
+  listSandbox.__fireSCloudBuildingFilter = { ready: true };
   listSandbox.fireSSetOwnerListsPullProgress(110, 124, true);
-  assert.strictEqual(countEl.textContent, '110 buildings on your inspection list');
+  assert.strictEqual(countEl.textContent, '110 buildings on the company inspection list');
   listSandbox.fireSSetOwnerListsPullProgress(86, 124, false);
   assert.strictEqual(
     countEl.textContent,
-    '110 buildings on your inspection list',
+    '110 buildings on the company inspection list',
     'a stale Loading 86 of 124 update must not replace the finished Home count'
   );
   assert.ok(!/ of /.test(countEl.textContent), 'Home must never show an inventory total such as 124');
   listSandbox.fireSSetOwnerListsPullProgress(110, 110, true);
-  assert.strictEqual(countEl.textContent, '110 buildings on your inspection list');
+  assert.strictEqual(countEl.textContent, '110 buildings on the company inspection list');
 
   console.log('cloud-pull-full.test.js: ok');
 })().catch(function (err) {

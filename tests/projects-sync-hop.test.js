@@ -56,13 +56,13 @@ assertNoSyncHop(liveApp, 'Live');
 assertNoSyncHop(stagingApp, 'Toets');
 
 assert.ok(
-  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
-  'Live Fire-S must be 1.3.66'
+  /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv),
+  'Live Fire-S must be 1.3.67'
 );
 assert.ok(/1\.3\.112-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.112-toets');
 assert.ok(
-  /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
-    /fire-s-env\.js\?v=1-3-66-payfast/.test(liveHtml),
+  /app\.js\?v=1-3-67/.test(liveHtml) &&
+    /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must cache-bust the projects sync-hop fix'
 );
 assert.ok(

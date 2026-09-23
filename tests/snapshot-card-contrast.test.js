@@ -44,7 +44,7 @@ function assertSnapshotAndCards(label, app, css, opts) {
   );
 }
 
-assertSnapshotAndCards('Live', read('app.js'), read('styles.css'), { photosTile: true });
+assertSnapshotAndCards('Live', read('app.js'), read('styles.css'), { photosTile: false });
 assertSnapshotAndCards('Toets', read('staging/app.js'), read('staging/styles.css'), { photosTile: false });
 
 console.log('snapshot-card-contrast.test.js: ok');

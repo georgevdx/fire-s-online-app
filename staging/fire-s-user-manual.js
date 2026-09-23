@@ -212,7 +212,7 @@
           <li>Wait one minute before you tap Forgot password again.</li>
           <li>Type a new password twice, tap <strong>Save</strong>, then <strong>Login</strong>.</li>
         </ol>
-        <h3>Create password (staff, first time)</h3>
+        <h3>Staff (first time)</h3>
         <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>
         <ol>
           <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
@@ -233,10 +233,10 @@
         </ol>
         <p>On the toets-blad PayFast is the sandbox (no real money). PayFast cannot take a payment from the merchant email, so the sandbox pays as a test buyer. A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
-            : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
+            : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login. If you do not have a password yet, tap Forgot password. Your owner pays. You do not see the subscription fees.</p>`
         }
         <h3>Waiting</h3>
-        <p>After Create password you should land on Inspector Home. If you see Almost ready, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
+        <p>After Login you should land on Inspector Home. If you see Almost ready, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
       </article>
 
       <article class="user-manual-chapter">

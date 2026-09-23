@@ -19,11 +19,11 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.66/.test(liveHtml) &&
-    /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
-    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv) &&
-    /fire-s-108-75-live-payfast/.test(liveSw),
-  'Live must keep 1.3.66 and drop the old Home cache so the phone count fix sits'
+  /Version 1\.3\.67/.test(liveHtml) &&
+    /app\.js\?v=1-3-67/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv) &&
+    /fire-s-108-75-live-67/.test(liveSw),
+  'Live must keep 1.3.67 and drop the old Home cache so the phone count fix sits'
 );
 assert.ok(
   /Version 1\.3\.112-toets/.test(stagingHtml) &&
@@ -60,7 +60,7 @@ function assertSameCountSource(app, label, alwaysUnion) {
     label + ' must re-queue laptop-only premises after a complete company pull'
   );
 }
-assertSameCountSource(liveApp, 'Live', false);
+assertSameCountSource(liveApp, 'Live', true);
 assertSameCountSource(stagingApp, 'Toets', true);
 
 function rowsFor(count, prefix, companyId) {
@@ -242,7 +242,7 @@ async function runAppCases(appSrc, label) {
     label + ': company Home must keep company rows, own untagged leftovers, and untagged legacy buildings'
   );
 
-  if (label === 'Toets') {
+  if (label === 'Live' || label === 'Toets') {
     const fiveOnly = rowsFor(5, 'co', 'co-1');
     const openFail = loadFetch(appSrc, function spec(args) {
       if (!args.filtered) {
@@ -258,7 +258,7 @@ async function runAppCases(appSrc, label) {
     assert.strictEqual(
       stalled.incomplete,
       true,
-      'Toets: if the open cloud list times out, Home must not finish as 5 while the laptop has 7'
+      'if the open cloud list times out, Home must not finish as 5 while the laptop has 7'
     );
   }
 }
