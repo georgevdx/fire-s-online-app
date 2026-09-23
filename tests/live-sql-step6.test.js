@@ -9,6 +9,7 @@ function read(name) {
 }
 
 const check = read('SUPABASE_live_step6_check.sql');
+const hotfix = read('SUPABASE_live_fix_trial_ends_at.sql');
 const prepare = read('SUPABASE_live_payfast_prepare.sql');
 const openCompany = read('SUPABASE_payfast_open_company.sql');
 const resubscribe = read('SUPABASE_payfast_resubscribe.sql');
@@ -37,5 +38,9 @@ assert.ok(/Do not run on live/.test(openCompany));
 assert.ok(/Do not run on live/.test(resubscribe));
 assert.ok(/fire_s_begin_payfast_checkout/.test(checkout));
 assert.ok(/fire_s_apply_payfast_itn/.test(lifecycle));
+
+assert.ok(/add column if not exists trial_ends_at/.test(hotfix));
+assert.ok(/fire_s_compute_entitlement/.test(hotfix));
+assert.ok(!/delete from public\.inspections/.test(hotfix));
 
 console.log('live-sql-step6.test.js: ok');

@@ -37,6 +37,7 @@ on conflict (id) do nothing;
 -- ---------------------------------------------------------------------------
 alter table public.companies add column if not exists trial_started_at timestamptz;
 alter table public.companies add column if not exists trial_expires_at timestamptz;
+alter table public.companies add column if not exists trial_ends_at timestamptz;
 alter table public.companies add column if not exists trial_inspection_limit integer;
 alter table public.companies add column if not exists trial_inspections_used integer not null default 0;
 alter table public.companies add column if not exists entitlement_status text;
@@ -408,8 +409,9 @@ begin
   v_expires := v_started + make_interval(days => v_days);
 
   update public.companies c
-     set trial_started_at = v_started,
+     set          trial_started_at = v_started,
          trial_expires_at = v_expires,
+         trial_ends_at = v_expires,
          trial_inspection_limit = v_limit,
          trial_inspections_used = 0,
          entitlement_status = 'trial_active',
@@ -762,6 +764,7 @@ begin
   if tg_op = 'INSERT' then
     NEW.trial_started_at := null;
     NEW.trial_expires_at := null;
+    NEW.trial_ends_at := null;
     NEW.trial_inspection_limit := null;
     NEW.trial_inspections_used := 0;
     NEW.entitlement_status := null;
@@ -778,6 +781,7 @@ begin
 
   NEW.trial_started_at := OLD.trial_started_at;
   NEW.trial_expires_at := OLD.trial_expires_at;
+  NEW.trial_ends_at := OLD.trial_ends_at;
   NEW.trial_inspection_limit := OLD.trial_inspection_limit;
   NEW.trial_inspections_used := OLD.trial_inspections_used;
   NEW.entitlement_status := OLD.entitlement_status;
