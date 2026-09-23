@@ -322,6 +322,14 @@ body.fire-s-access-open #fireSHomeLockPanel {
   display: none !important;
 }
 
+html.fire-s-access-open #cmdChangePasswordBtn,
+body.fire-s-access-open #cmdChangePasswordBtn,
+html.fire-s-access-open #mainCommandCentre #cmdChangePasswordBtn,
+body.fire-s-access-open #mainCommandCentre #cmdChangePasswordBtn {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 .fire-s-home-lock-panel {
   display: grid;
   gap: 10px;

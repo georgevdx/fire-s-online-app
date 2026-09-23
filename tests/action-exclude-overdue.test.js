@@ -18,8 +18,8 @@ assert.ok(
   'Action Required must not also count an Overdue premises on toets or live'
 );
 assert.ok(
-  /app\.js\?v=1-3-113-temp-pw/.test(html) &&
-    /Version 1\.3\.113-toets/.test(html),
+  /app\.js\?v=1-3-114-hide-pw/.test(html) &&
+    /Version 1\.3\.114-toets/.test(html),
   'Toets must cache-bust exclusive Action vs Overdue without bumping the displayed version'
 );
 

@@ -22,7 +22,7 @@ const stagingManual = read('staging/fire-s-user-manual.js');
 const liveEnv = read('fire-s-env.js');
 const stagingEnv = read('staging/fire-s-env.js');
 
-assert.ok(/1\.3\.113-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.113-toets');
+assert.ok(/1\.3\.114-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.114-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
   'Live Fire-S must be 1.3.66'
@@ -70,9 +70,9 @@ assert.ok(
   'Live must show Version 1.3.66 in the header without waiting for a script'
 );
 assert.ok(
-  /id="appVersion" class="brand-version">Version 1\.3\.113-toets</.test(stagingHtml) &&
-    /id="cloudVersion">1\.3\.113-toets</.test(stagingHtml),
-  'Toets-blad must show Version 1.3.113-toets in the header without waiting for a script'
+  /id="appVersion" class="brand-version">Version 1\.3\.114-toets</.test(stagingHtml) &&
+    /id="cloudVersion">1\.3\.114-toets</.test(stagingHtml),
+  'Toets-blad must show Version 1.3.114-toets in the header without waiting for a script'
 );
 assertExistingScheduleUi(
   stagingHtml,

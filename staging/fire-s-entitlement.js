@@ -443,7 +443,11 @@
     });
     showNode(document.getElementById('cmdSubscribeBtn'), 'flex');
     showNode(document.getElementById('cmdUserManualBtn'), 'flex');
-    showNode(document.getElementById('cmdChangePasswordBtn'), 'flex');
+    if (accessGateOpen()) {
+      hideNode(document.getElementById('cmdChangePasswordBtn'));
+    } else {
+      showNode(document.getElementById('cmdChangePasswordBtn'), 'flex');
+    }
   }
 
   function ensureHomeLockPanel() {

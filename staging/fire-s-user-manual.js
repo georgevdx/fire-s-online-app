@@ -223,7 +223,7 @@
           <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
         </ol>
         <h3>Change password later</h3>
-        <p>Any signed-in Inspector, Manager, Owner or Viewer can open Home → <strong>Change password</strong>, type a new password twice, and save it.</p>
+        <p>Change password is not on Access. After Login, any Inspector, Manager, Owner or Viewer can open Home → <strong>Change password</strong>, type a new password twice, and save it.</p>
         <h3>Subscribe (Owner only)</h3>
         ${
           showFees()

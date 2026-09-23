@@ -26,7 +26,7 @@ const liveCss = read('fire-s-subscribe.css');
 const liveManual = read('fire-s-user-manual.js');
 const liveTerms = read('terms.html');
 
-assert.ok(/1\.3\.113-toets/.test(env), 'Toets-blad version must be 1.3.113-toets');
+assert.ok(/1\.3\.114-toets/.test(env), 'Toets-blad version must be 1.3.114-toets');
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
   'Live Fire-S must be 1.3.66 after sit dit live'
