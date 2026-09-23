@@ -11337,6 +11337,72 @@ function setBetaFeedbackUserMessage(text) {
   }
 }
 
+function unwrapBetaFeedbackRow(row) {
+  if (!row || typeof row !== 'object') return {};
+  let bag = row.payload;
+  if (typeof bag === 'string') {
+    try {
+      bag = JSON.parse(bag);
+    } catch (_) {
+      bag = {};
+    }
+  }
+  if (!bag || typeof bag !== 'object' || Array.isArray(bag)) bag = {};
+  function pick(key) {
+    const top = row[key];
+    if (top !== undefined && top !== null && String(top).trim() !== '') return top;
+    return bag[key];
+  }
+  return {
+    id: row.id,
+    created_at: row.created_at || bag.created_at || '',
+    app_version: pick('app_version') || '',
+    issue_type: pick('issue_type') || '',
+    priority: pick('priority') || '',
+    device: pick('device') || '',
+    browser: pick('browser') || '',
+    online_status: pick('online_status') || '',
+    inspection_number: pick('inspection_number') || '',
+    what_happened: pick('what_happened') || '',
+    expected_result: pick('expected_result') || '',
+    reported_by_email: pick('reported_by_email') || '',
+    reported_by_user_id: pick('reported_by_user_id') || '',
+    status: pick('status') || row.status || 'new',
+    followup_note: pick('followup_note') || '',
+    followed_up_at: pick('followed_up_at') || ''
+  };
+}
+
+function betaFeedbackInsertRow(fields) {
+  if (fireSStaging) {
+    return {
+      status: fields.status || 'new',
+      followup_note: fields.followup_note || null,
+      payload: fields
+    };
+  }
+  return fields;
+}
+
+async function loadBetaFeedbackRows(limit) {
+  if (!supabaseClient || !supabaseClient.from) {
+    return { data: [], error: { message: 'Cloud is not ready yet.' } };
+  }
+  let query = supabaseClient
+    .from('beta_feedback')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (limit) query = query.limit(limit);
+  const result = await query;
+  if (result && result.error) {
+    return { data: [], error: result.error };
+  }
+  return {
+    data: ((result && result.data) || []).map(unwrapBetaFeedbackRow),
+    error: null
+  };
+}
+
 async function submitBetaFeedback() {
   const comment =
     document.getElementById('betaComment')?.value.trim() || '';
@@ -11375,9 +11441,19 @@ async function submitBetaFeedback() {
       status: 'new'
     };
 
-    const { error } = await supabaseClient
+    let { error } = await supabaseClient
       .from('beta_feedback')
-      .insert(payload);
+      .insert(betaFeedbackInsertRow(payload));
+
+    if (error && fireSStaging === false) {
+      const retry = await supabaseClient
+        .from('beta_feedback')
+        .insert({
+          status: payload.status || 'new',
+          payload
+        });
+      if (!retry.error) error = null;
+    }
 
     if (error) {
       console.error('Beta feedback submit failed:', error);
@@ -11681,26 +11757,7 @@ async function renderBetaFeedbackList(forceOpen) {
   list.innerHTML =
     '<div class="empty-state">Loading beta feedback...</div>';
 
-  const { data, error } = await supabaseClient
-    .from('beta_feedback')
-    .select(`
-      id,
-      created_at,
-      app_version,
-      issue_type,
-      priority,
-      device,
-      browser,
-      online_status,
-      inspection_number,
-      what_happened,
-      expected_result,
-      reported_by_email,
-      status,
-      followup_note
-    `)
-    .order('created_at', { ascending: false })
-    .limit(50);
+  const { data, error } = await loadBetaFeedbackRows(50);
 
   if (error) {
     console.error('Beta feedback load failed:', error);
@@ -11912,23 +11969,11 @@ async function renderFeedbackCommentsList(forceOpen) {
   list.innerHTML =
     '<div class="empty-state">Loading feedback comments...</div>';
 
-  const { data, error } = await supabaseClient
-    .from('beta_feedback')
-    .select(`
-      id,
-      created_at,
-      app_version,
-      issue_type,
-      what_happened,
-      reported_by_email,
-      status
-    `)
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const { data, error } = await loadBetaFeedbackRows(100);
 
   if (error) {
     list.innerHTML =
-      `<div class="empty-state">Could not load feedback comments: ${escapeHtml(error.message)}</div>`;
+      '<div class="empty-state">Could not load feedback comments. Please try again.</div>';
     return;
   }
 
@@ -12353,24 +12398,9 @@ async function renderSupportArchiveList(forceOpen) {
     }
 
     try {
-      const result = await supabaseClient
-        .from('beta_feedback')
-        .select(`
-          id,
-          created_at,
-          app_version,
-          issue_type,
-          priority,
-          what_happened,
-          expected_result,
-          reported_by_email,
-          status,
-          followup_note,
-          followed_up_at
-        `)
-        .order('created_at', { ascending: false });
+      const result = await loadBetaFeedbackRows();
       if (result && !result.error) {
-        issueRows = ((result && result.data) || []).filter(isArchivedSupportIssue);
+        issueRows = (result.data || []).filter(isArchivedSupportIssue);
       }
     } catch (_) {
       issueRows = [];
