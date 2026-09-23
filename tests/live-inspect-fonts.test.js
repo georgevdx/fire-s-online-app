@@ -60,7 +60,7 @@ assert.ok(
 );
 
 assert.ok(
-  /styles\.css\?v=1-3-110-datepick/.test(read('staging/index.html')) &&
+  /styles\.css\?v=1-3-111-services/.test(read('staging/index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-actovd/.test(read('staging/index.html')) &&
     /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
   'Toets must cache-bust open-inspection font CSS'
@@ -68,8 +68,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.66/.test(read('index.html')) &&
-    /Version 1\.3\.110-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.66 live and 1.3.110-toets'
+    /Version 1\.3\.111-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.66 live and 1.3.111-toets'
 );
 
 console.log('live-inspect-fonts.test.js: ok');

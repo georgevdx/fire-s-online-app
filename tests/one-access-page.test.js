@@ -20,7 +20,7 @@ const liveCss = read('fire-s-get-started.css');
 const liveApp = read('app.js');
 const liveManual = read('fire-s-user-manual.js');
 
-assert.ok(/1\.3\.110-toets/.test(env), 'Toets-blad version must be 1.3.110-toets');
+assert.ok(/1\.3\.111-toets/.test(env), 'Toets-blad version must be 1.3.111-toets');
 assert.ok(
   /function showChoices\(\) \{\s*showLogin\(\);/.test(liveStarted) &&
     /else if \(preferredMode === 'choices'\) mode = 'login'/.test(liveStarted),
@@ -33,9 +33,9 @@ assert.ok(
   /id="fireSGetStartedLoginFields"/.test(gate[0]) &&
     /id="fireSLoginEmail"/.test(gate[0]) &&
     /id="fireSDoLoginBtn"/.test(gate[0]) &&
-    /First time\? Create password/.test(gate[0]) &&
+    !/First time\? Create password/.test(gate[0]) &&
     /Subscribing New Company/.test(gate[0]),
-  'The one Access page must include Login fields plus Create password and Subscribe'
+  'The one Access page must include Login and Subscribe, without Create password'
 );
 assert.ok(
   /fire-s-access-subscribe-btn/.test(gate[0]) &&
@@ -77,8 +77,9 @@ assert.ok(
 assert.ok(
   /one <strong>Access<\/strong> page/.test(manual) &&
     /no separate Login page/.test(manual) &&
-    /First time\? Create password/.test(manual),
-  'User manual must describe one Access page'
+    /Request Fire Consultant Services/.test(manual) &&
+    !/First time\? Create password/.test(manual),
+  'User manual must describe one Access page without Create password'
 );
 
 assert.ok(
@@ -93,7 +94,7 @@ assert.ok(
   'Live root must use the same one Access page after sit dit live'
 );
 
-function loginOrder(src, label, subscribeBeforeForgotNote) {
+function loginOrder(src, label, subscribeBeforeForgotNote, expectCreate) {
   const block = src.match(
     /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
   );
@@ -111,6 +112,17 @@ function loginOrder(src, label, subscribeBeforeForgotNote) {
     );
     return;
   }
+  if (!expectCreate) {
+    assert.ok(
+      login >= 0 &&
+        create === -1 &&
+        forgot > login &&
+        forgotNote > forgot &&
+        sub > forgotNote,
+      label + ' must put Subscribing New Company under Forgot password without Create password'
+    );
+    return;
+  }
   assert.ok(
     login >= 0 &&
       create > login &&
@@ -120,8 +132,8 @@ function loginOrder(src, label, subscribeBeforeForgotNote) {
     label + ' must put Subscribing New Company under Forgot password'
   );
 }
-loginOrder(html, 'Toets Access', false);
-loginOrder(liveHtml, 'Live Access', true);
+loginOrder(html, 'Toets Access', false, false);
+loginOrder(liveHtml, 'Live Access', true, true);
 
 assert.ok(
   /subscribeBtn\.style\.display = ''/.test(getStarted) &&
@@ -157,14 +169,15 @@ assert.ok(
   'Live Subscribe tap must show the Subscribe fields'
 );
 
-function extraServices(src, label) {
+function extraServices(src, label, buttonLabel) {
   const block = src.match(
     /id="fireSGetStartedLoginFields"[\s\S]*?id="fireSGetStartedResetFields"/
   );
   assert.ok(block, label + ' must keep Access login fields');
+  const labelRe = new RegExp(buttonLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   assert.ok(
     /id="fireSAccessExtraServicesBtn"/.test(block[0]) &&
-      /Additional services/.test(block[0]) &&
+      labelRe.test(block[0]) &&
       /data-access-service="Fire Safety Consultancy"/.test(block[0]) &&
       /data-access-service="Rational Fire Design Support"/.test(block[0]) &&
       /data-access-service="Fire Plan Assistance \(Assist with approval from Local Government\)/.test(
@@ -173,15 +186,15 @@ function extraServices(src, label) {
       /id="fireSAccessServiceSendBtn"/.test(block[0]) &&
       !/View saved requests/.test(block[0]) &&
       !/id="fireSAccessServiceViewBtn"/.test(block[0]),
-    label + ' must use an Additional services button with three request buttons'
+    label + ' must use a ' + buttonLabel + ' button with three request buttons'
   );
   assert.ok(
     !/<summary>/.test(block[0]) && !/<details/.test(block[0]),
     label + ' must not keep the old static extra-services list'
   );
 }
-extraServices(html, 'Toets Access');
-extraServices(liveHtml, 'Live Access');
+extraServices(html, 'Toets Access', 'Request Fire Consultant Services');
+extraServices(liveHtml, 'Live Access', 'Additional services');
 assert.ok(
   /#fireSAccessExtraServicesBtn\.fire-s-access-extra-services-btn/.test(css) &&
     /#fireSAccessExtraServicesBtn\.fire-s-access-extra-services-btn/.test(liveCss) &&

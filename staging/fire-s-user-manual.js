@@ -198,9 +198,8 @@
         <p>If you are not signed in, Home shows one <strong>Access</strong> page. There is no separate Login page after that. On Access you:</p>
         <ol>
           <li>Type your email and password, then tap <strong>Login</strong>.</li>
-          <li><strong>First time? Create password</strong> stays hidden until you type an email that does not already have a password. Then it appears for that first-time email.</li>
-          <li>Or tap <strong>Forgot password</strong>, then <strong>Subscribing New Company</strong> if you are a new business owner.</li>
-          <li>Or tap <strong>Additional services</strong>, then tap a service such as <strong>Fire Safety Consultancy</strong>, <strong>Rational Fire Design Support</strong>, or <strong>Fire Plan Assistance (Assist with approval from Local Government)</strong> and send the request. After Login, the super user sees those requests under Additional Services → View Saved Service Requests.</li>
+          <li>Or tap <strong>Forgot password</strong>, then <strong>Subscribing New Company</strong> if you are a new business owner. The owner creates the password there and must type it twice to confirm.</li>
+          <li>Or tap <strong>Request Fire Consultant Services</strong>, then tap a service such as <strong>Fire Safety Consultancy</strong>, <strong>Rational Fire Design Support</strong>, or <strong>Fire Plan Assistance (Assist with approval from Local Government)</strong> and send the request. After Login, the super user sees those requests under Additional Services → View Saved Service Requests.</li>
         </ol>
         <h3>Login</h3>
         <ol>
@@ -218,9 +217,7 @@
         <ol>
           <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager. That is the subscription. The owner pays.</li>
           <li>You can be anywhere. Open Fire-S on your phone.</li>
-          <li>On Access, type the same email. <strong>First time? Create password</strong> appears only if that email has no password yet.</li>
-          <li>Type that same email and choose a password.</li>
-          <li>Tap <strong>Create password</strong>, then <strong>Login</strong>.</li>
+          <li>On Access, type that same email and the password your owner set, then tap <strong>Login</strong>. If you do not have a password yet, tap <strong>Forgot password</strong>.</li>
           <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
         </ol>
         <h3>Subscribe (Owner only)</h3>
@@ -228,7 +225,7 @@
           showFees()
             ? `<ol>
           <li>On Access tap <strong>Subscribing New Company</strong>.</li>
-          <li>Type the company name, your email and a password. Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company.</li>
+          <li>Type the company name, your email, a password, then type the same password again to confirm. Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company.</li>
           <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
           <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
           <li>Tap <strong>Subscribe</strong>, then pay on PayFast. Card details stay with PayFast.</li>
@@ -301,7 +298,7 @@
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
           <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — open the premises. If a report is ready, tap Latest Report or Export PDF. There is no Reports card under Schedule.</li>
-          <li><strong>Support</strong> — request help, or write a comment if you reviewed the app or found a problem.</li>
+          <li><strong>Request Fire Consultant Services</strong> — request consultancy, write a comment if you reviewed the app or found a problem, or ask for support.</li>
         </ul>
       </article>
 
@@ -321,7 +318,7 @@
           <li>Home → <strong>Company personnel</strong>.</li>
           <li>On the <strong>People</strong> tab: Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
           <li>Type their email, choose Inspector or Manager, then tap <strong>Subscribe this email</strong>. Company S invoices you, not them.</li>
-          <li>Tell them: Open Fire-S → Access → type the same email. If it is their first time, <strong>First time? Create password</strong> appears → choose a password → Login. They must not tap Subscribe on Access.</li>
+          <li>Tell them: Open Fire-S → Access → type the same email → Login. If they do not have a password yet, tap <strong>Forgot password</strong>. They must not tap Subscribe on Access.</li>
           <li>Change a role or Remove a person on the same People list.</li>
           <li>Tap <strong>Stats</strong> to select an inspector, view the whole team, or Compare volume, completion and overdue work.</li>
           <li>To send someone to a premises: Home → <strong>Schedule</strong> → fill the site → <strong>Assign to inspector</strong> → Save. They get an email with the address and date.</li>
@@ -368,7 +365,7 @@
           Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays.
         </div>`
             : `<p>Your owner pays for Fire-S. Inspectors and other staff do not pay and never Subscribe. You never see the subscription fees. Phone and desktop share your login — do not enter the same email twice.</p>
-        <p>If your owner added your email, use <strong>Create password</strong> then <strong>Login</strong>. Do not tap Subscribe.</p>`
+        <p>If your owner added your email, use <strong>Login</strong>. If you do not have a password yet, tap <strong>Forgot password</strong>. Do not tap Subscribe.</p>`
         }
         <h3>Install Fire-S on a phone</h3>
         <ol>

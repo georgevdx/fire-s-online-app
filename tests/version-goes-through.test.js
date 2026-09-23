@@ -34,8 +34,8 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-111/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-75-toets-111/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-112/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-75-toets-112/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),
   'Toets-blad must register its own service worker so live cannot keep an old 1.3.107 page'
@@ -47,8 +47,8 @@ assert.ok(
 );
 assert.ok(
   /Version 1\.3\.66/.test(liveHtml) &&
-    /Version 1\.3\.110-toets/.test(stagingHtml),
-  'Displayed versions stay 1.3.66 live and 1.3.110-toets so a phone can tell it has this build'
+    /Version 1\.3\.111-toets/.test(stagingHtml),
+  'Displayed versions stay 1.3.66 live and 1.3.111-toets so a phone can tell it has this build'
 );
 
 console.log('version-goes-through.test.js: ok');

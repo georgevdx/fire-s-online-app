@@ -23,8 +23,8 @@ assert.ok(
   'Home and Gateway Compliant counts must use the History-aware matcher'
 );
 assert.ok(
-  /app\.js\?v=1-3-111-home/.test(html) &&
-    /Version 1\.3\.110-toets/.test(html),
+  /app\.js\?v=1-3-111-services/.test(html) &&
+    /Version 1\.3\.111-toets/.test(html),
   'Toets must cache-bust Compliant + report overlay without bumping the displayed version'
 );
 assert.ok(

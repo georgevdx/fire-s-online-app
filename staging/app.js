@@ -6237,6 +6237,14 @@ function initApp() {
     });
   }
 
+  const viewFeedbackCommentsBtn = document.getElementById('viewFeedbackCommentsBtn');
+
+  if (viewFeedbackCommentsBtn) {
+    viewFeedbackCommentsBtn.addEventListener('click', function () {
+      renderFeedbackCommentsList();
+    });
+  }
+
   const viewSupportArchiveBtn = document.getElementById('viewSupportArchiveBtn');
 
   if (viewSupportArchiveBtn) {
@@ -6860,6 +6868,22 @@ function isServiceRequestSuperUser(emailOverride) {
 
 function canViewServiceRequests(emailOverride) {
   return isServiceRequestSuperUser(emailOverride);
+}
+
+function paintServiceSuperUserChrome() {
+  const allowed = canViewServiceRequests();
+  try {
+    document.body.classList.toggle('fire-s-service-super', allowed);
+  } catch (_) {}
+  const admin = document.querySelector('#servicesSection .service-requests-admin');
+  if (!admin) return;
+  if (allowed) {
+    admin.hidden = false;
+    admin.removeAttribute('hidden');
+  } else {
+    admin.hidden = true;
+    admin.setAttribute('hidden', '');
+  }
 }
 
 function withTimeout(promise, timeoutMs = 5000) {
@@ -10913,6 +10937,9 @@ function showHome() {
   updateBetaNotesPanel();
   updateBetaQuickTestPanel();
   refreshRcHomePanels();
+  if (typeof paintServiceSuperUserChrome === 'function') {
+    paintServiceSuperUserChrome();
+  }
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
@@ -10957,6 +10984,9 @@ function showServices() {
 const viewBetaFeedbackBtn =
   document.getElementById('viewBetaFeedbackBtn');
 
+const viewFeedbackCommentsBtn =
+  document.getElementById('viewFeedbackCommentsBtn');
+
 const viewSupportArchiveBtn =
   document.getElementById('viewSupportArchiveBtn');
 
@@ -10966,8 +10996,15 @@ const serviceRequestsList =
 const betaFeedbackList =
   document.getElementById('betaFeedbackList');
 
+const feedbackCommentsList =
+  document.getElementById('feedbackCommentsList');
+
 const supportArchiveList =
   document.getElementById('supportArchiveList');
+
+if (typeof paintServiceSuperUserChrome === 'function') {
+  paintServiceSuperUserChrome();
+}
 
 const canViewAdminSupport =
   canViewServiceRequests();
@@ -10988,6 +11025,11 @@ if (viewBetaFeedbackBtn) {
     canViewAdminSupport ? 'block' : 'none';
 }
 
+if (viewFeedbackCommentsBtn) {
+  viewFeedbackCommentsBtn.style.display =
+    canViewAdminSupport ? 'block' : 'none';
+}
+
 if (viewSupportArchiveBtn) {
   viewSupportArchiveBtn.style.display =
     canViewAdminSupport ? 'block' : 'none';
@@ -11005,6 +11047,10 @@ if (serviceRequestsList && !canViewAdminSupport) {
 
 if (betaFeedbackList && !canViewAdminSupport) {
   betaFeedbackList.style.display = 'none';
+}
+
+if (feedbackCommentsList && !canViewAdminSupport) {
+  feedbackCommentsList.style.display = 'none';
 }
 
 if (supportArchiveList && !canViewAdminSupport) {
@@ -11370,6 +11416,7 @@ function readLocalServiceRequestsFallback() {
 const SUPPORT_ADMIN_PANEL_IDS = [
   'serviceRequestsList',
   'betaFeedbackList',
+  'feedbackCommentsList',
   'supportArchiveList'
 ];
 
@@ -11377,6 +11424,7 @@ function setSupportAdminButtonState(openId) {
   const map = {
     serviceRequestsList: 'viewServiceRequestsBtn',
     betaFeedbackList: 'viewBetaFeedbackBtn',
+    feedbackCommentsList: 'viewFeedbackCommentsBtn',
     supportArchiveList: 'viewSupportArchiveBtn'
   };
   Object.keys(map).forEach(panelId => {
@@ -11409,6 +11457,10 @@ function isArchivedSupportIssue(item) {
   }
   const status = String((item && item.status) || '').toLowerCase();
   return status === 'closed' || status === 'followed_up';
+}
+
+function isFeedbackComment(item) {
+  return String((item && item.issue_type) || '').toLowerCase() === 'comment';
 }
 
 function formatSupportArchiveDate(value) {
@@ -11659,7 +11711,9 @@ async function renderBetaFeedbackList(forceOpen) {
     return;
   }
 
-  const allFeedbackItems = (data || []).filter(item => !isArchivedSupportIssue(item));
+  const allFeedbackItems = (data || []).filter(
+    item => !isArchivedSupportIssue(item) && !isFeedbackComment(item)
+  );
 
   if (currentBetaFeedbackFilter === 'closed' || currentBetaFeedbackFilter === 'followed_up') {
     currentBetaFeedbackFilter = 'all';
@@ -11838,6 +11892,88 @@ const feedbackItems =
   `;
 }
 
+async function renderFeedbackCommentsList(forceOpen) {
+  if (!canViewServiceRequests()) {
+    alert('Feedback comments are super user only. Only georgevdx@gmail.com and georgevdx@hotmail.com can open this list.');
+    return;
+  }
+
+  const list = document.getElementById('feedbackCommentsList');
+  if (!list) return;
+
+  if (supportAdminPanelIsOpen('feedbackCommentsList') && !forceOpen) {
+    hideSupportAdminPanels();
+    return;
+  }
+
+  hideSupportAdminPanels('feedbackCommentsList');
+  list.style.display = 'block';
+  setSupportAdminButtonState('feedbackCommentsList');
+  list.innerHTML =
+    '<div class="empty-state">Loading feedback comments...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('beta_feedback')
+    .select(`
+      id,
+      created_at,
+      app_version,
+      issue_type,
+      what_happened,
+      reported_by_email,
+      status
+    `)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    list.innerHTML =
+      `<div class="empty-state">Could not load feedback comments: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+
+  const comments = (data || []).filter(
+    item => isFeedbackComment(item) && !isArchivedSupportIssue(item)
+  );
+
+  if (!comments.length) {
+    list.innerHTML = '<div class="empty-state">No feedback comments yet.</div>';
+    return;
+  }
+
+  list.innerHTML = `
+    <div class="beta-feedback-list">
+      ${comments.map(item => `
+        <div class="beta-feedback-item">
+          <div class="beta-feedback-top">
+            <div>
+              <strong>Review</strong>
+              <div class="beta-feedback-subtitle">
+                ${item.created_at ? escapeHtml(new Date(item.created_at).toLocaleString()) : '-'}
+              </div>
+            </div>
+            <span class="beta-feedback-status-pill">
+              ${escapeHtml(item.status || 'new')}
+            </span>
+          </div>
+          <div class="beta-feedback-version-line">
+            <strong>Version:</strong>
+            ${escapeHtml(item.app_version || '-')}
+          </div>
+          <div class="beta-feedback-message-card">
+            <strong>Comment</strong>
+            <p>${escapeHtml(item.what_happened || '-')}</p>
+          </div>
+          <div class="beta-feedback-reporter-line">
+            <strong>From:</strong>
+            ${escapeHtml(item.reported_by_email || '-')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 async function updateBetaFeedbackStatus(feedbackId) {
   if (!canViewServiceRequests()) {
     alert('Only Fire-S admin can update beta feedback.');
@@ -11909,7 +12045,11 @@ async function updateBetaFeedbackStatus(feedbackId) {
       alert('Beta feedback updated.');
     }
 
-    await renderBetaFeedbackList(true);
+    if (supportAdminPanelIsOpen('feedbackCommentsList')) {
+      await renderFeedbackCommentsList(true);
+    } else {
+      await renderBetaFeedbackList(true);
+    }
 
   } catch (error) {
     console.error('Beta feedback update crashed:', error);
@@ -25915,7 +26055,7 @@ function setHomeActionCardLabels() {
     cmdScheduleBtn: 'Schedule',
     cmdReportsBtn: 'Reports',
     cmdCompanyBtn: 'Company',
-    cmdServicesBtn: 'Services / Support'
+    cmdServicesBtn: 'Request Fire Consultant Services'
   };
 
   Object.entries(labelMap).forEach(([id, label]) => {

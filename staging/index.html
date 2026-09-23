@@ -9,8 +9,8 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var WANT = '1.3.110-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-111';
+        var WANT = '1.3.111-toets';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-112';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -117,7 +117,7 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-110-datepick">
+  <link rel="stylesheet" href="styles.css?v=1-3-111-services">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-24-noreports">
@@ -125,7 +125,7 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-19-legal">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-20-confirm">
   <link rel="stylesheet" href="fire-s-subscribe.css?v=1-12-company">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-actovd">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
@@ -142,7 +142,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.110-toets</p>
+      <p class="brand-version">Version 1.3.111-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -166,7 +166,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.110-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.111-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -242,7 +242,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.110-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.111-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -307,7 +307,7 @@
     <div class="fire-s-get-started-kicker">Fire-S Access</div>
     <h3 id="fireSGetStartedTitle">Access</h3>
     <p id="fireSGetStartedHelp">
-      Type your email and password, then Login. First time on this email: Create password appears if no password is registered yet. New business owner: Subscribe under Forgot password.
+      Type your email and password, then Login. New business owner: Subscribe under Forgot password. The owner creates and confirms the password on Subscribe New Company.
     </p>
 
     <div id="fireSGetStartedChoices" class="fire-s-get-started-choices" hidden>
@@ -343,7 +343,6 @@
         >Show password</button>
       </div>
       <button id="fireSDoLoginBtn" type="button" class="cloud-primary-btn">Login</button>
-      <button id="fireSSwitchToCreateBtn" type="button" class="secondary-btn" hidden>First time? Create password</button>
       <button id="fireSForgotPasswordBtn" type="button" class="secondary-btn">Forgot password</button>
       <p class="fire-s-get-started-note fire-s-access-forgot-note">Forgot password: check Inbox and Junk. The email is often from Supabase. Open the link — Fire-S opens. Tap Forgot password once, then wait a minute.</p>
       <button id="fireSLoginSubscribeBtn" type="button" class="secondary-btn fire-s-access-subscribe-btn">Subscribing New Company</button>
@@ -357,7 +356,7 @@
           aria-expanded="false"
           aria-controls="fireSAccessExtraServicesPanel"
         >
-          Additional services
+          Request Fire Consultant Services
         </button>
         <div id="fireSAccessExtraServicesPanel" class="fire-s-access-extra-services-panel" hidden>
           <button type="button" class="fire-s-access-service-btn" data-access-service="Fire Safety Consultancy">
@@ -413,6 +412,7 @@
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
+      <input id="fireSGetStartedPassword2" type="password" placeholder="Confirm password" autocomplete="new-password">
       <div class="fire-s-plan-picker">
         <p class="fire-s-plan-picker-label">Subscription per month per login is R250</p>
         <div id="fireSRegisterBillingOptions" class="fire-s-plan-options" data-interval-name="fireSRegisterBilling"></div>
@@ -702,10 +702,10 @@
         </span>
       </button>
 
-      <button type="button" class="main-command-card" id="cmdServicesBtn">
-        <span class="command-icon">🛠️</span>
+      <button type="button" class="main-command-card fire-s-consultant-services-card" id="cmdServicesBtn">
+        <span class="command-icon">🔥</span>
         <span class="command-text">
-          <span class="command-title">Services / Support</span>
+          <span class="command-title">Request Fire Consultant Services</span>
           <span class="command-copy">Request support, or write a comment about the app or a problem.</span>
         </span>
       </button>
@@ -1276,7 +1276,7 @@
       </button>
     </div>
   </div>
-  <div class="service-requests-admin">
+  <div class="service-requests-admin" hidden>
     <button id="viewServiceRequestsBtn" type="button" class="secondary-btn">
       View Saved Service Requests
     </button>
@@ -1286,6 +1286,10 @@
 
     <button id="viewBetaFeedbackBtn" type="button" class="secondary-btn">
       View reported issues
+    </button>
+
+    <button id="viewFeedbackCommentsBtn" type="button" class="secondary-btn">
+      View Feedback comments
     </button>
 
     <button id="viewSupportArchiveBtn" type="button" class="secondary-btn">
@@ -1298,6 +1302,8 @@
     <div id="serviceRequestsList" class="service-requests-list" style="display:none;"></div>
 
     <div id="betaFeedbackList" class="service-requests-list" style="display:none;"></div>
+
+    <div id="feedbackCommentsList" class="service-requests-list" style="display:none;"></div>
 
     <div id="supportArchiveList" class="service-requests-list" style="display:none;"></div>
   </div>
@@ -1924,7 +1930,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-110-datepick"></script>
+  <script src="fire-s-env.js?v=1-3-111-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -1939,14 +1945,14 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-111-home"></script>
+  <script src="app.js?v=1-3-111-services"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-46-subscribe-bars"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-47-consultant"></script>
   <script src="fire-s-owner-lists.js?v=1-10-last-def"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
-  <script src="fire-s-company-team.js?v=2-21-isolate"></script>
+  <script src="fire-s-company-team.js?v=2-22-forgot"></script>
   <script src="fire-s-schedule-assign.js?v=1-3-datepicker"></script>
   <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
@@ -1954,10 +1960,10 @@
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-14-hide-ok"></script>
   <script src="fire-s-subscribe.js?v=1-35-hide-ok"></script>
-  <script src="fire-s-user-manual.js?v=1-44-comment"></script>
+  <script src="fire-s-user-manual.js?v=1-45-access"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-53-access-lock"></script>
+  <script src="fire-s-get-started.js?v=2-54-no-create"></script>
   <script src="fire-s-startup-stability.js?v=1-13-logo-splash"></script>
   <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
   <script src="fire-s-phone-back.js?v=1-3-report-overlay"></script>
@@ -1970,7 +1976,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-75-toets-111')
+        navigator.serviceWorker.register('./service-worker.js?v=108-75-toets-112')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

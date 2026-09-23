@@ -10,7 +10,6 @@ function read(name) {
 
 const html = read('staging/index.html');
 const started = read('staging/fire-s-get-started.js');
-const css = read('staging/fire-s-get-started.css');
 const liveHtml = read('index.html');
 const liveStarted = read('fire-s-get-started.js');
 
@@ -20,34 +19,25 @@ const toetsLogin = html.match(
 assert.ok(toetsLogin, 'Toets Access login block must exist');
 const fields = toetsLogin[0];
 const login = fields.indexOf('id="fireSDoLoginBtn"');
-const create = fields.indexOf('id="fireSSwitchToCreateBtn"');
 const forgot = fields.indexOf('id="fireSForgotPasswordBtn"');
 const forgotNote = fields.indexOf('Forgot password: check Inbox');
 const sub = fields.indexOf('id="fireSLoginSubscribeBtn"');
 assert.ok(
-  login >= 0 &&
-    create > login &&
-    forgot > create &&
-    forgotNote > forgot &&
-    sub > forgotNote,
+  login >= 0 && forgot > login && forgotNote > forgot && sub > forgotNote,
   'Toets Access must put Subscribing New Company under Forgot password'
 );
 assert.ok(
-  /id="fireSSwitchToCreateBtn"[^>]*\bhidden\b/.test(fields),
-  'Toets Create password must start hidden on Access'
+  fields.indexOf('id="fireSSwitchToCreateBtn"') === -1 &&
+    fields.indexOf('First time? Create password') === -1,
+  'Toets Access must not show First time? Create password'
 );
 assert.ok(
-  /#fireSSwitchToCreateBtn\[hidden\]/.test(css),
-  'Toets CSS must keep a hidden Create password button off the Access screen'
-);
-
-assert.ok(
-  /function setCreatePasswordVisible\(/.test(started) &&
-    /function refreshCreatePasswordButton\(/.test(started) &&
-    /fire_s_email_has_login/.test(started) &&
-    /scheduleCreatePasswordCheck/.test(started) &&
-    /rememberEmailHasPassword\(email, true\)/.test(started),
-  'Toets Access must show Create password only after an email with no registered password'
+  /setCreatePasswordVisible\(false\)/.test(started) &&
+    !/setCreatePasswordVisible\(true\)/.test(started) &&
+    !/loginEmail\.addEventListener\('input', scheduleCreatePasswordCheck\)/.test(
+      started
+    ),
+  'Toets Access must never reveal Create password after a click or typed email'
 );
 
 const liveLogin = liveHtml.match(
