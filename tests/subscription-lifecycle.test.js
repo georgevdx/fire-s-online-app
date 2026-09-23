@@ -145,9 +145,9 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.113-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.66/.test(liveHtml));
-assert.ok(/fire-s-subscribe\.js\?v=1-35-hide-ok/.test(stagingHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-111-noshock/.test(stagingHtml));
-assert.ok(/fire-s-subscribe\.css\?v=1-12-company/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.js\?v=1-36-temp-pw/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-113-temp-pw/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.css\?v=1-13-temp-pw/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
 assert.ok(/\.fire-s-company-billing-list/.test(stagingCss));

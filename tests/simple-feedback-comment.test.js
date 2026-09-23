@@ -124,7 +124,7 @@ assertCommentForm(
 assert.ok(
   /Version 1\.3\.113-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-113-temp-pw/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-112-toets/.test(stagingHtml) &&
+    /fire-s-env.js\?v=1-3-113-toets/.test(stagingHtml) &&
     /service-worker\.js\?v=108-75-toets-114/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
     /TOETS-BLAD 1\.3\.113-toets/.test(read('staging/fire-s-env.js')) &&

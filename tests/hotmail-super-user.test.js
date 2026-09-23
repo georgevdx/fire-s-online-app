@@ -57,7 +57,7 @@ assert.ok(
   /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-66-payfast/.test(liveHtml) &&
     /app\.js\?v=1-3-113-temp-pw/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-112-toets/.test(stagingHtml),
+    /fire-s-env.js\?v=1-3-113-toets/.test(stagingHtml),
   'Live and toets must cache-bust the Hotmail super-user app'
 );
 

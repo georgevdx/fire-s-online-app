@@ -67,7 +67,7 @@ assert.ok(
 );
 assert.ok(
   /app\.js\?v=1-3-113-temp-pw/.test(stagingHtml) &&
-    /fire-s-env\.js\?v=1-3-112-toets/.test(stagingHtml),
+    /fire-s-env.js\?v=1-3-113-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the projects sync-hop fix'
 );
 

@@ -607,9 +607,13 @@ begin
     if found then
       update public.profiles set role = v_role where id = v_target;
       update public.company_invites
-         set status = 'accepted'
+         set status = 'accepted',
+             role = v_role
        where company_id = p_company_id
-         and lower(trim(email)) = v_email;
+         and lower(trim(email)) = v_email
+         and lower(coalesce(status, 'pending')) in (
+           'pending', 'cancelled', 'canceled', 'expired', 'declined', 'rejected'
+         );
       return query select v_target, v_email, v_role, 'added'::text;
       return;
     end if;
@@ -643,8 +647,13 @@ begin
       end;
     end if;
     update public.company_invites
-       set status = 'accepted'
-     where company_id = p_company_id and lower(trim(email)) = v_email;
+       set status = 'accepted',
+           role = v_role
+     where company_id = p_company_id
+       and lower(trim(email)) = v_email
+       and lower(coalesce(status, 'pending')) in (
+         'pending', 'cancelled', 'canceled', 'expired', 'declined', 'rejected'
+       );
     return query select
       v_target,
       v_email,
