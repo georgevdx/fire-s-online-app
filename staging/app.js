@@ -5147,13 +5147,13 @@ async function safeDownloadNewerCloudInspections(options) {
       if (incomplete && localBefore > 0) return;
       try {
         if (typeof window.fireSSetOwnerListsPullProgress === 'function') {
-          window.fireSSetOwnerListsPullProgress(visibleCount, visibleCount, !incomplete);
+          window.fireSSetOwnerListsPullProgress(visibleCount, visibleCount, false);
         } else if (visibleCount) {
           window.__fireSOwnerListsPullProgress = {
             loaded: visibleCount,
             total: visibleCount,
-            loading: incomplete,
-            done: !incomplete
+            loading: true,
+            done: false
           };
         }
       } catch (_) {}
@@ -26701,6 +26701,141 @@ function fireSFilterToCloudBuildings(list) {
   });
 }
 
+function fireSChecklistAnswerValue(answer) {
+  return String(
+    (answer && (answer.answer || answer.value || answer.result || answer.finding)) || ''
+  ).trim().toLowerCase();
+}
+
+function fireSHasAnsweredChecklist(source) {
+  const answers = Array.isArray(source && source.answers)
+    ? source.answers
+    : (source && source.snapshot && Array.isArray(source.snapshot.answers)
+      ? source.snapshot.answers
+      : []);
+  return answers.some(answer => {
+    const value = fireSChecklistAnswerValue(answer);
+    return value === 'yes' || value === 'no' || value === 'na' || value === 'n/a' ||
+      value === 'non-compliant' || value === 'fail';
+  });
+}
+
+function fireSIsCompletedInspectionCycle(source) {
+  const status = String(
+    (source && (source.status || source.inspectionStatus || source.scheduledStatus || source.archiveStatus)) || ''
+  ).trim().toLowerCase();
+  return !!(
+    source && (
+      source.completedAt ||
+      source.finalisedAt ||
+      source.inspectionFinalisedAt ||
+      status.indexOf('complete') !== -1 ||
+      status.indexOf('closed') !== -1 ||
+      status.indexOf('finalis') !== -1
+    )
+  );
+}
+
+function fireSCycleTimestamp(cycle) {
+  const parsed = Date.parse(
+    (cycle && (
+      cycle.completedAt ||
+      cycle.finalisedAt ||
+      cycle.inspectionFinalisedAt ||
+      cycle.archivedAt ||
+      cycle.inspectionDate ||
+      cycle.date
+    )) || ''
+  );
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function fireSOpenItemCount(cycle) {
+  const src = cycle || {};
+  const answers = Array.isArray(src.answers)
+    ? src.answers
+    : (src.snapshot && Array.isArray(src.snapshot.answers) ? src.snapshot.answers : []);
+  const nos = answers.filter(answer => {
+    const value = fireSChecklistAnswerValue(answer);
+    return value === 'no' || value === 'non-compliant' || value === 'fail';
+  }).length;
+  if (nos > 0) return nos;
+  const findings = Array.isArray(src.findings) ? src.findings : [];
+  const openFindings = findings.filter(f => !/closed|complete|completed|resolved|done/i.test(String(f && f.status || ''))).length;
+  if (openFindings > 0) return openFindings;
+  const actions = Array.isArray(src.actions) ? src.actions : [];
+  return actions.filter(a => !/closed|complete|completed|resolved|done/i.test(String(a && a.status || ''))).length;
+}
+
+function fireSLatestCompletedCycleOf(project) {
+  if (fireSIsCompletedInspectionCycle(project) && fireSHasAnsweredChecklist(project)) return project;
+  const history = Array.isArray(project && project.inspectionHistory) ? project.inspectionHistory : [];
+  let best = null;
+  let bestTs = -1;
+  history.forEach(item => {
+    if (!item) return;
+    const source = item.snapshot && fireSHasAnsweredChecklist(item.snapshot) ? item.snapshot : item;
+    if (!fireSHasAnsweredChecklist(source)) return;
+    const ts = fireSCycleTimestamp(item) || fireSCycleTimestamp(source);
+    if (!best || ts >= bestTs) {
+      best = source;
+      bestTs = ts;
+    }
+  });
+  return best;
+}
+
+function fireSLatestCompletedCycleForBuilding(list, project) {
+  const key = fireSPremisesBuildingKey(project);
+  const rows = (Array.isArray(list) ? list : []).filter(row => {
+    if (!row) return false;
+    if (typeof fireSIsHiddenFromCurrentLists === 'function' && fireSIsHiddenFromCurrentLists(row)) {
+      return false;
+    }
+    return fireSPremisesBuildingKey(row) === key;
+  });
+  const source = rows.length ? rows : (project ? [project] : []);
+  let best = null;
+  let bestTs = -1;
+  source.forEach(row => {
+    const cycle = fireSLatestCompletedCycleOf(row);
+    if (!cycle) return;
+    const ts = fireSCycleTimestamp(cycle);
+    if (!best || ts >= bestTs) {
+      best = cycle;
+      bestTs = ts;
+    }
+  });
+  return best;
+}
+
+function fireSLastInspectionActionCountForBuilding(list, project) {
+  const cycle = fireSLatestCompletedCycleForBuilding(list, project);
+  return fireSOpenItemCount(cycle);
+}
+
+function fireSVisibleCompanyBuildings(list) {
+  try {
+    if (typeof fireSFilterToCloudBuildings === 'function' && fireSCloudBuildingFilterReady()) {
+      const unique = fireSFilterToCloudBuildings(list);
+      if (Array.isArray(unique)) return unique;
+    }
+  } catch (_) {}
+  try {
+    if (typeof fireSUniqueCurrentBuildings === 'function') {
+      const unique = fireSUniqueCurrentBuildings(list);
+      if (Array.isArray(unique)) return unique;
+    }
+  } catch (_) {}
+  return Array.isArray(list) ? list : [];
+}
+
+function fireSPremisesRequiringAction(list) {
+  const source = Array.isArray(list) ? list : [];
+  const unique = fireSVisibleCompanyBuildings(source);
+  return unique.filter(project => fireSLastInspectionActionCountForBuilding(source, project) > 0);
+}
+
 function fireSIsInspectionOverdue(project) {
   if (!project) return false;
   if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
@@ -27086,6 +27221,11 @@ window.fireSCloudBackedBuildings = fireSCloudBackedBuildings;
 window.fireSFilterToCloudBuildings = fireSFilterToCloudBuildings;
 window.fireSApplyCloudBuildingFilter = fireSApplyCloudBuildingFilter;
 window.fireSCloudBuildingFilterReady = fireSCloudBuildingFilterReady;
+window.fireSVisibleCompanyBuildings = fireSVisibleCompanyBuildings;
+window.fireSLatestCompletedCycleOf = fireSLatestCompletedCycleOf;
+window.fireSLatestCompletedCycleForBuilding = fireSLatestCompletedCycleForBuilding;
+window.fireSLastInspectionActionCountForBuilding = fireSLastInspectionActionCountForBuilding;
+window.fireSPremisesRequiringAction = fireSPremisesRequiringAction;
 window.fireSHasRecycledCurrentInspection = fireSHasRecycledCurrentInspection;
 window.fireSHasLiveCurrentInspection = fireSHasLiveCurrentInspection;
 window.fireSIsScheduledNewPremisesOnly = fireSIsScheduledNewPremisesOnly;
@@ -29282,15 +29422,38 @@ if (!window.fireSMobileSmartCardsApplied) {
     return 'Critical';
   }
 
+  function uniquePremises(projects) {
+    try {
+      if (typeof window.fireSVisibleCompanyBuildings === 'function') {
+        const unique = window.fireSVisibleCompanyBuildings(projects);
+        if (Array.isArray(unique)) return unique;
+      }
+      if (typeof window.fireSFilterToCloudBuildings === 'function') {
+        const unique = window.fireSFilterToCloudBuildings(projects);
+        if (Array.isArray(unique)) return unique;
+      }
+      if (typeof window.fireSUniqueCurrentBuildings === 'function') {
+        const unique = window.fireSUniqueCurrentBuildings(projects);
+        if (Array.isArray(unique)) return unique;
+      }
+    } catch (_) {}
+    return Array.isArray(projects) ? projects : [];
+  }
+
   function calc(projects) {
-    const count = projects.length;
-    const scores = projects.map(healthScore).filter(score => score > 0);
+    const unique = uniquePremises(projects);
+    const count = unique.length;
+    const scores = unique.map(healthScore).filter(score => score > 0);
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-    const actions = projects.reduce((sum, p) => sum + openActionCount(p), 0);
-    const overdue = projects.filter(isOverdue).length;
-    const photos = projects.reduce((sum, p) => sum + photoCount(p), 0);
-    const attention = projects.filter(p => healthScore(p) > 0 && healthScore(p) < 75).length;
-    return { count, avg, actions, overdue, photos, attention };
+    let actions = unique.filter(p => openActionCount(p) > 0).length;
+    try {
+      if (typeof window.fireSPremisesRequiringAction === 'function') {
+        actions = window.fireSPremisesRequiringAction(projects).length;
+      }
+    } catch (_) {}
+    const overdue = unique.filter(isOverdue).length;
+    const attention = unique.filter(p => healthScore(p) > 0 && healthScore(p) < 75).length;
+    return { count, avg, actions, overdue, attention };
   }
 
   function projectMatchesExecFilter(project, filter) {
@@ -29431,9 +29594,8 @@ if (!window.fireSMobileSmartCardsApplied) {
       <div class="fire-s-exec-grid">
         ${stat('Premises', data.count, premisesHint, 'neutral')}
         ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone)}
-        ${stat('Open Actions', data.actions, data.actions ? 'open work' : 'clear', data.actions ? 'risk' : 'good')}
+        ${stat('Open Actions', data.actions, data.actions === 1 ? '1 premises' : 'action premises', data.actions ? 'risk' : 'good')}
         ${stat('Overdue', data.overdue, data.overdue ? 'open overdue' : 'none', data.overdue ? 'risk' : 'good')}
-        ${stat('Photos', data.photos, data.photos === 1 ? '1 on file' : 'on file', 'neutral')}
         ${stat('Attention', data.attention, 'health < 75%', data.attention ? 'watch' : 'good')}
       </div>
       <div class="fire-s-exec-bar"><i style="width:${Math.max(0, Math.min(100, data.avg || 0))}%"></i></div>
@@ -30229,19 +30391,35 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function snapshotData() {
     const projects = visibleProjectsSafe();
-    const scores = projects.map(compliance).filter(v => typeof v === 'number');
+    const unique = (function uniqueSnapshotPremises(list) {
+      try {
+        if (typeof window.fireSVisibleCompanyBuildings === 'function') {
+          const next = window.fireSVisibleCompanyBuildings(list);
+          if (Array.isArray(next)) return next;
+        }
+        if (typeof window.fireSUniqueCurrentBuildings === 'function') {
+          const next = window.fireSUniqueCurrentBuildings(list);
+          if (Array.isArray(next)) return next;
+        }
+      } catch (_) {}
+      return Array.isArray(list) ? list : [];
+    }(projects));
+    const scores = unique.map(compliance).filter(v => typeof v === 'number');
     const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : null;
-    const actions = projects.reduce((s, p) => s + actionCount(p), 0);
-    const photoTotal = projects.reduce((s, p) => s + photos(p), 0);
-    const critical = projects.filter(p => riskLabel(p) === 'Critical' || riskLabel(p) === 'High').length;
+    let actions = unique.filter(p => actionCount(p) > 0).length;
+    try {
+      if (typeof window.fireSPremisesRequiringAction === 'function') {
+        actions = window.fireSPremisesRequiringAction(projects).length;
+      }
+    } catch (_) {}
+    const critical = unique.filter(p => riskLabel(p) === 'Critical' || riskLabel(p) === 'High').length;
 
     return {
-      count: projects.length,
+      count: unique.length,
       health: avg,
       actions,
-      photos: photoTotal,
       critical,
-      last: projects.map(lastInspection).filter(Boolean).sort().pop() || ''
+      last: unique.map(lastInspection).filter(Boolean).sort().pop() || ''
     };
   }
 
@@ -30274,9 +30452,8 @@ if (!window.fireSMobileSmartCardsApplied) {
       <div class="fire-s-snapshot-grid-v1111">
         ${tile('Premises', data.count, 'visible records', 'neutral')}
         ${tile('Building Health', healthText, healthSub, data.health !== null && data.health < 75 ? 'watch' : 'good')}
-        ${tile('Open Actions', data.actions, data.actions ? 'requires follow-up' : 'none open', data.actions ? 'risk' : 'good')}
+        ${tile('Open Actions', data.actions, data.actions === 1 ? '1 premises' : 'action premises', data.actions ? 'risk' : 'good')}
         ${tile('Risk Sites', data.critical, 'high / critical', data.critical ? 'risk' : 'good')}
-        ${tile('Photos', data.photos, 'evidence items', 'neutral')}
         ${tile('Last Inspection', displayDate(data.last), 'latest activity', 'neutral')}
       </div>
       <div class="fire-s-snapshot-note-v1111">Snapshot tiles are information only and do not filter or navigate.</div>
@@ -39417,6 +39594,12 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     return actions.filter(a => !/closed|complete|completed|resolved|done/i.test(String(a?.status || ''))).length;
   }
   function latestInspectionActionCount(p){
+    try {
+      if (typeof window.fireSLastInspectionActionCountForBuilding === 'function') {
+        const list = typeof window.getProjects === 'function' ? window.getProjects() : getProjects();
+        return Number(window.fireSLastInspectionActionCountForBuilding(list, p)) || 0;
+      }
+    } catch (_) {}
     const cycle = latestCompletedCycle(p);
     const fromCycle = openItemCount(cycle);
     if (fromCycle > 0) return fromCycle;
@@ -39438,6 +39621,12 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       // Same exclusive bucket as the card pill: Overdue wins over ACTION.
       // Laptop/phone must not count one overdue premises inside Action Required.
       if (matches(p, 'overdue')) return false;
+      try {
+        if (typeof window.fireSLastInspectionActionCountForBuilding === 'function') {
+          const list = typeof window.getProjects === 'function' ? window.getProjects() : getProjects();
+          return Number(window.fireSLastInspectionActionCountForBuilding(list, p)) > 0;
+        }
+      } catch (_) {}
       const cycle = latestCompletedCycle(p);
       return hasOpenActions(p) || (cycle ? hasOpenActions(cycle) : false);
     }
@@ -39732,6 +39921,18 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     if (typeof window.fireSIsEmptyRecycleLeftoverPremises === 'function') {
       list = list.filter(project => !window.fireSIsEmptyRecycleLeftoverPremises(project));
     }
+    try {
+      if (typeof window.fireSVisibleCompanyBuildings === 'function') {
+        const unique = window.fireSVisibleCompanyBuildings(list);
+        if (Array.isArray(unique)) list = unique;
+      } else if (typeof window.fireSFilterToCloudBuildings === 'function') {
+        const unique = window.fireSFilterToCloudBuildings(list);
+        if (Array.isArray(unique)) list = unique;
+      } else if (typeof window.fireSUniqueCurrentBuildings === 'function') {
+        const unique = window.fireSUniqueCurrentBuildings(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 

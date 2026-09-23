@@ -34,8 +34,8 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-110/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-75-toets-110/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-111/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-75-toets-111/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),
   'Toets-blad must register its own service worker so live cannot keep an old 1.3.107 page'

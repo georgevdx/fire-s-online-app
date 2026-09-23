@@ -15,8 +15,8 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 
 assert.ok(
   /Version 1\.3\.110-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-108-count/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-9-overdue/.test(stagingHtml),
+    /app\.js\?v=1-3-111-home/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml),
   'Toets must cache-bust Recycle-hide Home lists as 1.3.110-toets'
 );
 assert.ok(

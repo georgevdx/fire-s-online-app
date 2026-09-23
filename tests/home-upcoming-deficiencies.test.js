@@ -14,7 +14,7 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 const stagingApp = read('staging/app.js');
 
 assert.ok(
-  /fire-s-owner-lists\.js\?v=1-9-overdue/.test(stagingHtml) &&
+  /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
     /function rowsForUniqueBuildings\(/.test(stagingLists) &&
     /Loading upcoming inspections/.test(stagingLists) &&
     /Loading buildings with deficiencies/.test(stagingLists) &&
@@ -201,6 +201,57 @@ assert.ok(
 assert.ok(
   !/Far Site/.test(el(elements, 'fireSOwnerListsUpcomingBody').innerHTML),
   'A date outside 30 days must not appear on upcoming'
+);
+
+const threePlaces = [
+  {
+    id: 'hall-a',
+    organisationName: 'Civic Hall',
+    completedAt: '2026-07-01',
+    answers: [{ answer: 'No' }, { answer: 'No' }]
+  },
+  {
+    id: 'clinic-a',
+    organisationName: 'River Clinic',
+    completedAt: '2026-07-02',
+    answers: [{ answer: 'No' }, { answer: 'No' }]
+  },
+  {
+    id: 'yard-a',
+    organisationName: 'Depot Yard',
+    completedAt: '2026-07-03',
+    answers: [{ answer: 'No' }, { answer: 'No' }]
+  }
+];
+sandbox.fireSApplyCloudBuildingFilter(
+  threePlaces.map(function (row) {
+    return { id: row.id, inspection_data: row };
+  })
+);
+const threeModel = sandbox.fireSBuildOwnerListModel(threePlaces, '2026-09-16');
+assert.strictEqual(
+  threeModel.deficiencies.length,
+  3,
+  '6 No answers at 3 places must count as 3 action premises on Buildings with deficiencies'
+);
+
+const cleared = stored.concat([
+  {
+    id: 'school-clear',
+    organisationName: 'Greenfield School',
+    completedAt: '2026-09-21',
+    answers: [{ answer: 'Yes' }, { answer: 'Yes' }, { answer: 'Yes' }]
+  }
+]);
+sandbox.fireSApplyCloudBuildingFilter(
+  cleared.filter(function (row) { return row.id !== 'local-new'; }).map(function (row) {
+    return { id: row.id, inspection_data: row };
+  })
+);
+const clearedModel = sandbox.fireSBuildOwnerListModel(cleared, '2026-09-16');
+assert.ok(
+  !clearedModel.deficiencies.some(function (row) { return row.name.indexOf('Greenfield School') !== -1; }),
+  'A later completed all-clear inspection must drop the building from deficiencies'
 );
 
 console.log('home-upcoming-deficiencies.test.js: ok');

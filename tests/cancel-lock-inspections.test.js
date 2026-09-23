@@ -91,7 +91,7 @@ assert.ok(/body\.fire-s-entitlement-blocked #homeSection \.home-hero/.test(stagi
 assert.ok(/body\.fire-s-entitlement-blocked #fireSTrialBanner/.test(stagingCss));
 assert.ok(/body\.fire-s-entitlement-blocked #fireSEntitlementBlocker/.test(stagingCss));
 assert.ok(/inspectionHomeLocked\(\) \|\| !canShowLists\(\)/.test(read('staging/fire-s-owner-lists.js')));
-assert.ok(/fire-s-owner-lists\.js\?v=1-9-overdue/.test(stagingHtml));
+assert.ok(/fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml));
 assert.ok(/inspectionAccessLocked\(\)\) \{\s*banner\.hidden = true/s.test(stagingEntitlement));
 assert.ok(/z-index: 2147483500/.test(stagingCss));
 assert.ok(/stay locked until a new subscription is active/.test(stagingEntitlement));
@@ -100,7 +100,7 @@ assert.ok(/class="fire-s-booting fire-s-entitlement-blocked"/.test(stagingHtml),
 assert.ok(/html\.fire-s-entitlement-blocked #fireSDesktopAccess/.test(stagingCss));
 assert.ok(/html\.fire-s-entitlement-blocked #mainCommandCentre \.main-command-top/.test(stagingCss));
 assert.ok(/function homeWorkAllowed\(/.test(stagingEntitlement));
-assert.ok(/if \(!hasSnapshot\(\)\) return isCloudCompanyUser\(\)/.test(stagingEntitlement));
+assert.ok(/if \(!hasSnapshot\(\)\) return false/.test(stagingEntitlement), 'do not flash the red Home lock while entitlement is still loading');
 assert.ok(/function hideDesktopAccess\(/.test(stagingEntitlement));
 assert.ok(/homeWorkAllowed/.test(read('staging/fire-s-desktop-access.js')));
 assert.ok(/homeWorkAllowed/.test(stagingApp), 'KPI paints must not revive the executive layer while locked');
@@ -109,11 +109,11 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-107-lock/.test(stagingHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-111-noshock/.test(stagingHtml));
 assert.ok(/fire-s-entitlement\.css\?v=1-3-107-lock/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
-assert.ok(/app\.js\?v=1-3-108-count/.test(stagingHtml));
+assert.ok(/app\.js\?v=1-3-111-home/.test(stagingHtml));
 assert.ok(/Version 1\.3\.110-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.66/.test(liveHtml));
 assert.ok(/inspectionAccessLocked/.test(liveApp), 'live openProject must lock unpaid inspections');
@@ -250,10 +250,10 @@ assert.strictEqual(oldPaidThroughCopy.urgency, 'block', 'cancelled companies sta
 assert.ok(/locked until a new subscription is active/i.test(oldPaidThroughCopy.detail));
 assert.strictEqual(
   ent.fireSEntitlement.inspectionAccessLocked(),
-  true,
-  'logged-in cloud Home must be subscribe-only before the server snapshot arrives'
+  false,
+  'paid Home must not flash the red lock while the entitlement RPC is still loading'
 );
-assert.strictEqual(ent.fireSEntitlement.homeWorkAllowed(), false);
+assert.strictEqual(ent.fireSEntitlement.homeWorkAllowed(), true);
 
 (async function runCancelledRpc() {
   const client = loadEntitlement();

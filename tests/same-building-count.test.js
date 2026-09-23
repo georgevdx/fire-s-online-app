@@ -27,9 +27,9 @@ assert.ok(
 );
 assert.ok(
   /Version 1\.3\.110-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-108-count/.test(stagingHtml) &&
+    /app\.js\?v=1-3-111-home/.test(stagingHtml) &&
     /1\.3\.110-toets/.test(stagingEnv) &&
-    /fire-s-108-75-toets-110/.test(stagingSw),
+    /fire-s-108-75-toets-111/.test(stagingSw),
   'Toets must show 1.3.110-toets so a phone can tell it has dropped 1.3.82-toets'
 );
 
