@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-66-payfast',
   '1-3-home-lookup',
-  '108-75-live-payfast',
-  'fire-s-108-75-live-payfast'
+  '108-76-live-cancel',
+  'fire-s-108-76-live-cancel'
 );
 assertPullSource(
   stagingApp,
@@ -60,8 +60,8 @@ assertPullSource(
   'Toets',
   '1-3-114-hide-pw',
   '1-10-last-def',
-  '108-75-toets-115',
-  'fire-s-108-75-toets-115'
+  '108-76-toets-cancel',
+  'fire-s-108-76-toets-cancel'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));

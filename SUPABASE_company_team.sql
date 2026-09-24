@@ -178,7 +178,7 @@ as $$
     from public.company_members m
     where m.company_id = p_company_id
       and m.user_id = auth.uid()
-      and m.role in ('company_owner', 'manager', 'super_admin')
+      and m.role in ('company_owner', 'owner', 'manager', 'super_admin')
       and coalesce(m.status, 'active') = 'active'
   );
 $$;

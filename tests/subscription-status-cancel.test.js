@@ -43,6 +43,18 @@ assert.ok(
     /PayFast/.test(livePage[0]),
   'Live cancel copy must keep company data and pay on PayFast'
 );
+assert.ok(
+  livePage[0].indexOf('id="fireSSubscribePayActions"') < livePage[0].indexOf('id="fireSSubscribeCancelPanel"') &&
+    livePage[0].indexOf('id="fireSSubscribeCancelPanel"') < livePage[0].indexOf('id="fireSCompanyBillingPanel"'),
+  'Live Cancel subscription must sit under Pay, above Company billing'
+);
+assert.ok(/canManage\(\) \|\| !!data\.can_cancel/.test(liveSubscribe));
+assert.ok(/can_cancel: canManage\(\)/.test(liveSubscribe));
+assert.ok(
+  /'owner'/.test(read('SUPABASE_live_cancel_owner.sql')) &&
+    /fire_s_can_manage_company/.test(read('SUPABASE_live_cancel_owner.sql')),
+  'Live SQL must let membership role owner cancel'
+);
 
 const page = html.match(/id="fireSSubscribeSection"[\s\S]*?id="managementDashboardSection"/);
 assert.ok(page, 'Subscription page must exist');
@@ -53,6 +65,11 @@ assert.ok(
     /Tap <strong>Cancel subscription<\/strong>/.test(page[0]) &&
     /company name and inspections stay/.test(page[0]),
   'Owner must see active-status copy and numbered cancel steps on Subscription'
+);
+assert.ok(
+  page[0].indexOf('id="fireSSubscribePayActions"') < page[0].indexOf('id="fireSSubscribeCancelPanel"') &&
+    page[0].indexOf('id="fireSSubscribeCancelPanel"') < page[0].indexOf('id="fireSCompanyBillingPanel"'),
+  'Cancel subscription must sit under Pay, above Company billing'
 );
 assert.ok(
   /A manager cannot remove the Owner/.test(html) &&

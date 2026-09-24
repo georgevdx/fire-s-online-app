@@ -15,10 +15,10 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-66-payfast/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-66-cancel/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
-    /service-worker\.js\?v=108-75-live-payfast/.test(liveHtml) &&
-    /fire-s-108-75-live-payfast/.test(liveSw),
+    /service-worker\.js\?v=108-76-live-cancel/.test(liveHtml) &&
+    /fire-s-108-76-live-cancel/.test(liveSw),
   'Live must drop the stuck service worker so a phone can tell it has 1.3.66'
 );
 assert.ok(
@@ -34,8 +34,8 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-115/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-75-toets-115/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-116/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-76-toets-cancel/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),
   'Toets-blad must register its own service worker so live cannot keep an old 1.3.107 page'

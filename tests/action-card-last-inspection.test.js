@@ -46,7 +46,7 @@ assert.ok(
 );
 assert.ok(
   /app\.js\?v=1-3-114-hide-pw/.test(html) &&
-    /service-worker\.js\?v=108-75-toets-115/.test(html) &&
+    /service-worker\.js\?v=108-76-toets-cancel/.test(html) &&
     /Version 1\.3\.114-toets/.test(html),
   'Toets must cache-bust last-inspection Actions without bumping the displayed version'
 );

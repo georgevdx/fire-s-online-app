@@ -10,7 +10,7 @@
     (function fireSDropStuckToetsCache() {
       try {
         var WANT = '1.3.114-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-115';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-116';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -921,6 +921,17 @@
     <p id="fireSPayfastHint" class="fire-s-payfast-hint">PayFast sandbox on this toets-blad — no real money. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test. The passphrase must be the sandbox Salt Passphrase (same trio as payfast-checkout). Then refresh with ?v=205 and pay again. Card details stay with PayFast.</p>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
+  <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel" hidden>
+    <h4>Cancel this subscription</h4>
+    <ol>
+      <li>Only the Owner can cancel.</li>
+      <li>Tap <strong>Cancel subscription</strong>.</li>
+      <li>Confirm. Auto-renew stops.</li>
+      <li>The company name and inspections stay in the cloud.</li>
+      <li>You can pay on PayFast again later if you want the login active.</li>
+    </ol>
+    <button id="fireSSubscribeCancelBtn" type="button" class="secondary-btn">Cancel subscription</button>
+  </div>
   <section id="fireSCompanyBillingPanel" class="fire-s-company-billing" aria-labelledby="fireSCompanyBillingTitle">
     <h3 id="fireSCompanyBillingTitle">Company billing</h3>
     <dl class="fire-s-company-billing-list">
@@ -938,17 +949,6 @@
       <button type="button" class="secondary-btn" id="fireSBillingCancelBtn">Cancel subscription</button>
     </div>
   </section>
-  <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel" hidden>
-    <h4>Cancel this subscription</h4>
-    <ol>
-      <li>Only the Owner can cancel.</li>
-      <li>Tap <strong>Cancel subscription</strong>.</li>
-      <li>Confirm. Auto-renew stops.</li>
-      <li>The company name and inspections stay in the cloud.</li>
-      <li>You can pay on PayFast again later if you want the login active.</li>
-    </ol>
-    <button id="fireSSubscribeCancelBtn" type="button" class="secondary-btn">Cancel subscription</button>
-  </div>
   <div id="fireSSubscribeAgainPanel" class="fire-s-subscribe-again" hidden>
     <h4>Subscribe again</h4>
     <ol>
@@ -1991,7 +1991,7 @@
   <script src="fire-s-subscriptions.js?v=1-20-temp-pw"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-14-hide-ok"></script>
-  <script src="fire-s-subscribe.js?v=1-36-temp-pw"></script>
+  <script src="fire-s-subscribe.js?v=1-37-cancel"></script>
   <script src="fire-s-user-manual.js?v=1-47-hide-access"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
@@ -2009,7 +2009,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-75-toets-115')
+        navigator.serviceWorker.register('./service-worker.js?v=108-76-toets-cancel')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

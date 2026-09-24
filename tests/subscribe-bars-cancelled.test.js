@@ -40,6 +40,11 @@ assert.ok(
   'Pay actions must sit above Company billing so the two bars are on screen'
 );
 assert.ok(
+  page[0].indexOf('id="fireSSubscribePayActions"') < page[0].indexOf('id="fireSSubscribeCancelPanel"') &&
+    page[0].indexOf('id="fireSSubscribeCancelPanel"') < page[0].indexOf('id="fireSCompanyBillingPanel"'),
+  'Cancel subscription must sit under Pay so the owner sees it without scrolling past billing'
+);
+assert.ok(
   /id="fireSSubscribeAgainPanel"/.test(page[0]) && /id="fireSSubscribeCancelPanel"/.test(page[0]),
   'Cancel and Subscribe again markup may stay, but JS must hide them when cancelled'
 );

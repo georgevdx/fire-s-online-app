@@ -125,19 +125,19 @@ assert.ok(
   /Version 1\.3\.114-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-114-hide-pw/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-114-toets/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-75-toets-115/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-76-toets-cancel/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
     /TOETS-BLAD 1\.3\.114-toets/.test(read('staging/fire-s-env.js')) &&
     /1\.3\.114-toets/.test(read('staging/fire-s-env.js')) &&
-    /fire-s-108-75-toets-115/.test(read('staging/service-worker.js')),
+    /fire-s-108-76-toets-cancel/.test(read('staging/service-worker.js')),
   'Toets-blad must show 1.3.114-toets and drop the stuck 1.3.78 cache'
 );
 
 assert.ok(
   /Version 1\.3\.66/.test(liveHtml) &&
     /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
-    /service-worker\.js\?v=108-75-live-payfast/.test(liveHtml) &&
-    /fire-s-108-75-live-payfast/.test(read('service-worker.js')) &&
+    /service-worker\.js\?v=108-76-live-cancel/.test(liveHtml) &&
+    /fire-s-108-76-live-cancel/.test(read('service-worker.js')) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(read('fire-s-env.js')),
   'Live must sit the comment form and show 1.3.66'
 );

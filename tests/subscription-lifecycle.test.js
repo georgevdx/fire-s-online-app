@@ -145,7 +145,9 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.114-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.66/.test(liveHtml));
-assert.ok(/fire-s-subscribe.js\?v=1-36-temp-pw/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.js\?v=1-37-cancel/.test(stagingHtml));
+assert.ok(/canManage\(\) \|\| !!data\.can_cancel/.test(stagingSubscribe));
+assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
 assert.ok(/fire-s-entitlement.js\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/fire-s-subscribe.css\?v=1-13-temp-pw/.test(stagingHtml));
 

@@ -467,7 +467,7 @@
       }
     } catch (_) {}
     if (cancelBtn) {
-      var allowCancel = data.can_cancel == null ? canManage() : !!data.can_cancel;
+      var allowCancel = canManage() || !!data.can_cancel;
       cancelBtn.hidden = !allowCancel || cancelled;
     }
     var billingActions = byId('fireSCompanyBillingActions');
@@ -498,6 +498,7 @@
         grace_ends_at: entitlement.grace_ends_at,
         access_until: entitlement.access_until,
         can_subscribe: true,
+        can_cancel: canManage(),
         keep_data: true
       };
     } catch (_) {

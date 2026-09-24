@@ -22,14 +22,14 @@ assert.ok(
   /Version 1\.3\.66/.test(liveHtml) &&
     /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv) &&
-    /fire-s-108-75-live-payfast/.test(liveSw),
+    /fire-s-108-76-live-cancel/.test(liveSw),
   'Live must keep 1.3.66 and drop the old Home cache so the phone count fix sits'
 );
 assert.ok(
   /Version 1\.3\.114-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-114-hide-pw/.test(stagingHtml) &&
     /1\.3\.114-toets/.test(stagingEnv) &&
-    /fire-s-108-75-toets-115/.test(stagingSw),
+    /fire-s-108-76-toets-cancel/.test(stagingSw),
   'Toets must show 1.3.114-toets so a phone can tell it has dropped 1.3.82-toets'
 );
 

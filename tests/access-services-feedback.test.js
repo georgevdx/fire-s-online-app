@@ -21,9 +21,9 @@ assert.ok(
   /Version 1\.3\.114-toets/.test(html) &&
     /appVersion: staging \? '1\.3\.114-toets'/.test(env) &&
     /TOETS-BLAD 1\.3\.114-toets/.test(env) &&
-    /fireS\.toetsCacheDrop\.1-3-115/.test(html) &&
-    /service-worker\.js\?v=108-75-toets-115/.test(html) &&
-    /fire-s-108-75-toets-115/.test(sw),
+    /fireS\.toetsCacheDrop\.1-3-116/.test(html) &&
+    /service-worker\.js\?v=108-76-toets-cancel/.test(html) &&
+    /fire-s-108-76-toets-cancel/.test(sw),
   'Toets must leave 1.3.110 so a phone can tell it has this Access/services build'
 );
 
