@@ -136,8 +136,8 @@ assert.ok(
 assert.ok(
   /Version 1\.3\.66/.test(liveHtml) &&
     /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
-    /service-worker\.js\?v=108-76-live-cancel/.test(liveHtml) &&
-    /fire-s-108-76-live-cancel/.test(read('service-worker.js')) &&
+    /service-worker\.js\?v=108-77-live-buyer/.test(liveHtml) &&
+    /fire-s-108-77-live-buyer/.test(read('service-worker.js')) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(read('fire-s-env.js')),
   'Live must sit the comment form and show 1.3.66'
 );

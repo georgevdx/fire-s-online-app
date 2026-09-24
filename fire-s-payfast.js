@@ -109,10 +109,21 @@
   }
 
   function merchantPaysSelf(html) {
+    if (text(cfg().mode).toLowerCase() === 'live') return false;
     var posted = hostedField(html, 'email_address').toLowerCase();
     var owner = ownerEmail();
     if (!posted || !owner) return false;
     return posted === owner;
+  }
+
+  function liveCheckoutHtml(html) {
+    if (text(cfg().mode).toLowerCase() !== 'live') return html;
+    var owner = ownerEmail();
+    var posted = hostedField(html, 'email_address').toLowerCase();
+    if (!owner || !posted || posted !== owner) return html;
+    return String(html || '')
+      .replace(/\s*<input[^>]*\bname=["']email_address["'][^>]*>/gi, '')
+      .replace(/\s*<input[^>]*\bvalue=["'][^"']*["'][^>]*\bname=["']email_address["'][^>]*>/gi, '');
   }
 
   function sameAccountBlockHtml() {
@@ -186,6 +197,7 @@
   function submitHostedCheckout(html) {
     var doc = root.document;
     if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
+    html = liveCheckoutHtml(html);
     if (merchantPaysSelf(html)) {
       try {
         if (typeof doc.open === 'function' && typeof doc.write === 'function') {

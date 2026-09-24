@@ -51,6 +51,7 @@ assert.ok(/PAYFAST_MODE=sandbox/.test(envExample));
 assert.ok(/PAYFAST_ALLOW_LIVE=false/.test(envExample));
 assert.ok(/PAYFAST_SANDBOX_MERCHANT_KEY=/.test(envExample));
 assert.ok(/PAYFAST_NOTIFY_URL=/.test(envExample));
+assert.ok(/PAYFAST_LIVE_BUYER_EMAIL=/.test(envExample));
 assert.ok(/NEVER prefix these with VITE_/.test(envExample));
 assert.ok(!/jt7NOE43FZPn/.test(envExample));
 assert.ok(!/46f0cd694581a/.test(envExample));

@@ -15,10 +15,10 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-66-cancel/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-66-buyer/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
-    /service-worker\.js\?v=108-76-live-cancel/.test(liveHtml) &&
-    /fire-s-108-76-live-cancel/.test(liveSw),
+    /service-worker\.js\?v=108-77-live-buyer/.test(liveHtml) &&
+    /fire-s-108-77-live-buyer/.test(liveSw),
   'Live must drop the stuck service worker so a phone can tell it has 1.3.66'
 );
 assert.ok(

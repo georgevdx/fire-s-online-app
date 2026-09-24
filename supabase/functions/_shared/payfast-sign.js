@@ -136,6 +136,8 @@ export function payfastBuyerEmail(cfg, realEmail) {
     if (owner && buyer === owner) return 'fires-toets-buyer@example.com';
     return buyer;
   }
+  const liveBuyer = text(cfg && cfg.liveBuyerEmail).toLowerCase();
+  if (liveBuyer && liveBuyer !== owner) return liveBuyer;
   return owner || 'test@test.com';
 }
 

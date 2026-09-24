@@ -77,6 +77,7 @@ const liveCfg = loadPayfastConfig({
   SUPABASE_URL: 'https://ispsdmglyylcwkufphnv.supabase.co'
 });
 assert.strictEqual(liveCfg.mode, 'live');
+assert.strictEqual(liveCfg.liveBuyerEmail, '');
 assert.strictEqual(liveCfg.processUrl, 'https://www.payfast.co.za/eng/process');
 assert.ok(liveCfg.returnUrl.indexOf('/fire-s-online-app/index.html') !== -1);
 
@@ -141,6 +142,13 @@ assert.ok(trusted.mPaymentId.indexOf('evil') === -1);
 
 assert.strictEqual(payfastBuyerEmail(sandboxCfg, 'johandb@live.com'), 'fires-toets-buyer@example.com');
 assert.strictEqual(payfastBuyerEmail(liveCfg, 'johandb@live.com'), 'johandb@live.com');
+assert.strictEqual(
+  payfastBuyerEmail(
+    Object.assign({}, liveCfg, { liveBuyerEmail: 'accounts@acme.test' }),
+    'johandb@live.com'
+  ),
+  'accounts@acme.test'
+);
 const liveFields = buildSignedCheckoutFields(liveCfg, {
   kind: 'subscribe',
   interval: 'monthly',

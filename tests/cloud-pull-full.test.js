@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-66-payfast',
   '1-3-home-lookup',
-  '108-76-live-cancel',
-  'fire-s-108-76-live-cancel'
+  '108-77-live-buyer',
+  'fire-s-108-77-live-buyer'
 );
 assertPullSource(
   stagingApp,
