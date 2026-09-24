@@ -5,6 +5,7 @@ import {
   assertSandboxCheckout,
   assertCheckoutMode,
   buildSignedCheckoutFields,
+  checkoutAutoPostHtml,
   generateSignature,
   payfastBuyerEmail,
   phpUrlEncode,
@@ -141,13 +142,20 @@ assert.strictEqual(trusted.companyId, 'co-1');
 assert.ok(trusted.mPaymentId.indexOf('evil') === -1);
 
 assert.strictEqual(payfastBuyerEmail(sandboxCfg, 'johandb@live.com'), 'fires-toets-buyer@example.com');
-assert.strictEqual(payfastBuyerEmail(liveCfg, 'johandb@live.com'), 'johandb@live.com');
+assert.strictEqual(payfastBuyerEmail(liveCfg, 'johandb@live.com'), '');
 assert.strictEqual(
   payfastBuyerEmail(
     Object.assign({}, liveCfg, { liveBuyerEmail: 'accounts@acme.test' }),
     'johandb@live.com'
   ),
   'accounts@acme.test'
+);
+assert.strictEqual(
+  payfastBuyerEmail(
+    Object.assign({}, liveCfg, { liveBuyerEmail: 'johandb@live.com' }),
+    'johandb@live.com'
+  ),
+  ''
 );
 const liveFields = buildSignedCheckoutFields(liveCfg, {
   kind: 'subscribe',
@@ -156,7 +164,33 @@ const liveFields = buildSignedCheckoutFields(liveCfg, {
   companyId: 'company-uuid',
   email: 'owner@acme.test'
 });
-assert.strictEqual(liveFields.email_address, 'owner@acme.test');
+assert.ok(!Object.prototype.hasOwnProperty.call(liveFields, 'email_address'));
+assert.ok(!/email_address=/.test(signatureParamString(liveFields, liveCfg.passphrase)));
+assert.ok(!/email_address/.test(checkoutAutoPostHtml(liveCfg.processUrl, liveFields)));
+const liveUnsigned = Object.assign({}, liveFields);
+delete liveUnsigned.signature;
+assert.strictEqual(
+  generateSignature(liveUnsigned, liveCfg.passphrase),
+  liveFields.signature
+);
+const strippedAfterSign = Object.assign({}, liveFields, { email_address: 'owner@acme.test' });
+delete strippedAfterSign.signature;
+assert.notStrictEqual(
+  generateSignature(strippedAfterSign, liveCfg.passphrase),
+  liveFields.signature,
+  'adding or removing email_address after signing must not be posted to PayFast'
+);
+const liveBuyerFields = buildSignedCheckoutFields(
+  Object.assign({}, liveCfg, { liveBuyerEmail: 'accounts@acme.test' }),
+  {
+    kind: 'subscribe',
+    interval: 'monthly',
+    company: 'Acme Fire',
+    companyId: 'company-uuid',
+    email: 'owner@acme.test'
+  }
+);
+assert.strictEqual(liveBuyerFields.email_address, 'accounts@acme.test');
 
 assertSandboxCheckout(sandboxCfg);
 assert.doesNotThrow(() => assertCheckoutMode(liveCfg));

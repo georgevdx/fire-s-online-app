@@ -86,37 +86,6 @@
     } catch (_) {}
   }
 
-  function ownerEmail() {
-    try {
-      return text(root.currentUserProfile && root.currentUserProfile.email).toLowerCase();
-    } catch (_) {
-      return '';
-    }
-  }
-
-  function hostedField(html, name) {
-    var src = String(html || '');
-    var named = new RegExp(
-      "name=[\"']" + name + "[\"'][\\s\\S]{0,120}?value=[\"']([^\"']*)[\"']",
-      'i'
-    );
-    var valued = new RegExp(
-      "value=[\"']([^\"']*)[\"'][\\s\\S]{0,120}?name=[\"']" + name + "[\"']",
-      'i'
-    );
-    var match = named.exec(src) || valued.exec(src);
-    return match ? text(match[1]) : '';
-  }
-
-  function liveCheckoutHtml(html) {
-    var owner = ownerEmail();
-    var posted = hostedField(html, 'email_address').toLowerCase();
-    if (!owner || !posted || posted !== owner) return html;
-    return String(html || '')
-      .replace(/\s*<input[^>]*\bname=["']email_address["'][^>]*>/gi, '')
-      .replace(/\s*<input[^>]*\bvalue=["'][^"']*["'][^>]*\bname=["']email_address["'][^>]*>/gi, '');
-  }
-
   function submitLiveForm(html) {
     var doc = root.document;
     if (!doc || !doc.createElement) return false;
@@ -175,8 +144,8 @@
   function submitHostedCheckout(html) {
     var doc = root.document;
     if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
-    html = liveCheckoutHtml(html);
-    // Live never shows the toets sandbox same-account page.
+    // Post the signed HTML unchanged. Removing a signed field such as
+    // email_address makes PayFast return 400 signature mismatch.
     // Full auto-submit HTML is what opened PayFast before. Write that page
     // first. Do not return success from a silent form.submit() and skip this.
     try {

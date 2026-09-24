@@ -138,7 +138,10 @@ export function payfastBuyerEmail(cfg, realEmail) {
   }
   const liveBuyer = text(cfg && cfg.liveBuyerEmail).toLowerCase();
   if (liveBuyer && liveBuyer !== owner) return liveBuyer;
-  return owner || 'test@test.com';
+  // Live: omit email_address unless a distinct buyer email is configured.
+  // Posting the owner email hits PayFast 400 same-account. Stripping it
+  // after signing hits PayFast 400 signature mismatch.
+  return '';
 }
 
 export function assertSandboxCheckout(cfg) {
@@ -245,7 +248,6 @@ export function buildSignedCheckoutFields(cfg, info) {
     return_url: text(cfg.returnUrl),
     cancel_url: text(cfg.cancelUrl),
     notify_url: text(cfg.notifyUrl),
-    email_address: payerEmail,
     m_payment_id: mPaymentId,
     amount: amount,
     item_name: itemName,
@@ -261,6 +263,7 @@ export function buildSignedCheckoutFields(cfg, info) {
     cycles: '0',
     subscription_notify_webhook: 'true'
   };
+  if (payerEmail) fields.email_address = payerEmail;
   fields.signature = generateSignature(fields, cfg.passphrase);
   return fields;
 }

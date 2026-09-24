@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-67',
   '1-3-home-lookup',
-  '108-78-live-67',
-  'fire-s-108-78-live-67'
+  '108-79-live-sig',
+  'fire-s-108-79-live-sig'
 );
 assertPullSource(
   stagingApp,
