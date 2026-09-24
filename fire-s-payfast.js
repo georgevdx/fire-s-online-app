@@ -108,35 +108,13 @@
     return match ? text(match[1]) : '';
   }
 
-  function merchantPaysSelf(html) {
-    if (text(cfg().mode).toLowerCase() === 'live') return false;
-    var posted = hostedField(html, 'email_address').toLowerCase();
-    var owner = ownerEmail();
-    if (!posted || !owner) return false;
-    return posted === owner;
-  }
-
   function liveCheckoutHtml(html) {
-    if (text(cfg().mode).toLowerCase() !== 'live') return html;
     var owner = ownerEmail();
     var posted = hostedField(html, 'email_address').toLowerCase();
     if (!owner || !posted || posted !== owner) return html;
     return String(html || '')
       .replace(/\s*<input[^>]*\bname=["']email_address["'][^>]*>/gi, '')
       .replace(/\s*<input[^>]*\bvalue=["'][^"']*["'][^>]*\bname=["']email_address["'][^>]*>/gi, '');
-  }
-
-  function sameAccountBlockHtml() {
-    return (
-      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fire-S PayFast</title></head>' +
-      '<body style="font-family:Arial,sans-serif;max-width:40rem;margin:2rem auto;line-height:1.45">' +
-      '<h1>PayFast cannot take this payment</h1>' +
-      '<p>This checkout still uses the same email as the PayFast merchant. PayFast then shows 400: merchant is unable to receive payments from the same account.</p>' +
-      '<p><strong>Run <code>SUPABASE_payfast_sandbox_buyer.sql</code> on Fire-S Test</strong>. Put the same sandbox Merchant ID, Merchant Key and <strong>Salt Passphrase</strong> already on payfast-checkout into <code>fire_s_payfast_sandbox_secrets</code>. Then open the toets-blad with <code>?v=205</code> and tap Pay on PayFast again.</p>' +
-      '<p>Do not create a new company.</p>' +
-      '<p><a href="./?v=205">Back to Fire-S</a></p>' +
-      '</body></html>'
-    );
   }
 
   function submitLiveForm(html) {
@@ -198,21 +176,7 @@
     var doc = root.document;
     if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
     html = liveCheckoutHtml(html);
-    if (merchantPaysSelf(html)) {
-      try {
-        if (typeof doc.open === 'function' && typeof doc.write === 'function') {
-          doc.open();
-          doc.write(sameAccountBlockHtml());
-          doc.close();
-        }
-      } catch (_) {}
-      return {
-        ok: false,
-        reason: 'same-account',
-        error:
-          'PayFast cannot take a payment from the merchant email. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test, then refresh with ?v=205 and tap Pay again.'
-      };
-    }
+    // Live never shows the toets sandbox same-account page.
     // Full auto-submit HTML is what opened PayFast before. Write that page
     // first. Do not return success from a silent form.submit() and skip this.
     try {
@@ -237,27 +201,6 @@
     } catch (_) {
       return '';
     }
-  }
-
-  async function sandboxSignedHtml(info) {
-    var sb = root.supabaseClient;
-    if (!sb || !sb.rpc) return '';
-    var interval = text(info && info.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
-    var kind = text(info && info.kind) || 'subscribe';
-    var res;
-    try {
-      res = await sb.rpc('fire_s_sandbox_payfast_html', {
-        p_interval: interval,
-        p_kind: kind
-      });
-    } catch (_) {
-      return '';
-    }
-    if (res && res.error) return '';
-    var data = res && res.data;
-    if (typeof data === 'string' && /payfast/i.test(data)) return data;
-    var row = Array.isArray(data) ? data[0] : data;
-    return text(row && (row.html || row.out_html || row));
   }
 
   async function accessToken() {
@@ -310,17 +253,6 @@
       raw = await res.text();
     } catch (_) {}
     if (res && res.ok && raw && (/text\/html/i.test(type) || /^\s*</.test(raw))) {
-      if (merchantPaysSelf(raw)) {
-        var sqlHtml = '';
-        try {
-          if (text(cfg().mode).toLowerCase() !== 'live') sqlHtml = await sandboxSignedHtml(info);
-        } catch (_) {
-          sqlHtml = '';
-        }
-        if (sqlHtml && !merchantPaysSelf(sqlHtml)) {
-          return submitHostedCheckout(sqlHtml);
-        }
-      }
       return submitHostedCheckout(raw);
     }
     var errBody = {};
