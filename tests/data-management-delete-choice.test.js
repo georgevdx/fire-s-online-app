@@ -69,9 +69,9 @@ assert.ok(
     /Delete immediately/.test(liveApp) &&
     /async function purgeExpiredRecycleAutomatically\(/.test(liveApp) &&
     /delete-data-management-v16/.test(liveApp) &&
-    /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
-    /Version 1\.3\.66/.test(liveHtml),
-  'Live Data Management must offer Recycle Bin or Delete immediately and show 1.3.66'
+    /app\.js\?v=1-3-67/.test(liveHtml) &&
+    /Version 1\.3\.67/.test(liveHtml),
+  'Live Data Management must offer Recycle Bin or Delete immediately and show 1.3.67'
 );
 
 function fakeEl() {

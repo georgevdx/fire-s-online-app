@@ -21,6 +21,6 @@ Do not run `scripts/sync-toets-blad.sh` as a blanket copy. That overwrites toets
 
 ## Live constraints
 
-- Displayed live version stays **1.3.66** unless the user asks to bump it.
+- Displayed live version stays **1.3.67** unless the user asks to bump it.
 - Do not delete inspections.
 - `createNewProject` stays a blank form.

@@ -38,8 +38,8 @@ assert.ok(
 );
 
 assert.ok(
-  /Version 1\.3\.66/.test(liveHtml),
-  'Displayed live version stays 1.3.66'
+  /Version 1\.3\.67/.test(liveHtml),
+  'Displayed live version stays 1.3.67'
 );
 
 assert.ok(

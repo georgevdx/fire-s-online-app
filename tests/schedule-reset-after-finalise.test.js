@@ -57,9 +57,9 @@ assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
     /persistFinalisedLifecycle[\s\S]*fireSApplyScheduleAfterVisit\(row/.test(liveApp) &&
     /list\.map\(project => fireSApplyScheduleAfterVisit\(project\)\)/.test(liveApp) &&
-    /app\.js\?v=1-3-66-payfast/.test(liveHtml) &&
-    /Version 1\.3\.66/.test(liveHtml),
-  'Live must reset schedule after finalise and show 1.3.66'
+    /app\.js\?v=1-3-67/.test(liveHtml) &&
+    /Version 1\.3\.67/.test(liveHtml),
+  'Live must reset schedule after finalise and show 1.3.67'
 );
 
 function sliceFn(src, name, nextName) {

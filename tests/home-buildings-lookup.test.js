@@ -53,9 +53,9 @@ function assertLookupMarkup(label, html, css, lists, jsTag) {
 assertLookupMarkup('Live', liveHtml, liveCss, liveLists, '1-3-home-lookup');
 assertLookupMarkup('Toets', stagingHtml, stagingCss, stagingLists, '1-10-last-def');
 assert.ok(
-  /Version 1\.3\.66/.test(liveHtml) &&
-    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.66'/.test(liveEnv),
-  'Live must keep displayed version 1.3.66 after sitting PayFast live'
+  /Version 1\.3\.67/.test(liveHtml) &&
+    /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv),
+  'Live must keep displayed version 1.3.67 after sitting PayFast live'
 );
 
 function el(store, id) {

@@ -115,7 +115,7 @@ assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
 assert.ok(/app\.js\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/Version 1\.3\.114-toets/.test(stagingHtml));
-assert.ok(/Version 1\.3\.66/.test(liveHtml));
+assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/inspectionAccessLocked/.test(liveApp), 'live openProject must lock unpaid inspections');
 assert.ok(/inspectionAccessLocked\(\)/.test(stagingApp));
 assert.ok(/fireSEntitlementGate\('read'\)/.test(stagingApp));
