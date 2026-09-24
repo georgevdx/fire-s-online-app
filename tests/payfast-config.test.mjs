@@ -187,7 +187,7 @@ assert.deepStrictEqual(
 );
 
 const missingErr = new Error(
-  'PayFast live is missing server secrets: PAYFAST_LIVE_MERCHANT_ID, PAYFAST_LIVE_MERCHANT_KEY, PAYFAST_LIVE_PASSPHRASE. Paste Merchant ID, Merchant Key and Salt Passphrase from www.payfast.co.za Settings → Developer Settings into those names on the live Supabase project (ispsdmglyylcwkufphnv). Do not leave the Update box empty before Save.'
+  'PayFast live is missing server secrets: PAYFAST_LIVE_MERCHANT_ID, PAYFAST_LIVE_MERCHANT_KEY, PAYFAST_LIVE_PASSPHRASE. Paste Merchant ID, Merchant Key and Security Passphrase from www.payfast.co.za Settings → Developer Settings into those names on the live Supabase project (ispsdmglyylcwkufphnv). Do not leave the Update box empty before Save.'
 );
 assert.strictEqual(safePayfastErrorMessage(missingErr), missingErr.message);
 assert.strictEqual(

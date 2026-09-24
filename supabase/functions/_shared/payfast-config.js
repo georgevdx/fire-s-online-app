@@ -201,7 +201,7 @@ export function loadPayfastConfig(env) {
         mode +
         ' is missing server secrets: ' +
         missing.join(', ') +
-        '. Paste Merchant ID, Merchant Key and Salt Passphrase from ' +
+        '. Paste Merchant ID, Merchant Key and Security Passphrase from ' +
         source +
         '. Do not leave the Update box empty before Save.'
     );
