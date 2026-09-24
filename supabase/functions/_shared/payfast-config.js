@@ -194,8 +194,8 @@ export function loadPayfastConfig(env) {
   if (missing.length) {
     const source =
       mode === 'live'
-        ? 'www.payfast.co.za Settings → Integration into those names on the live Supabase project (ispsdmglyylcwkufphnv)'
-        : 'sandbox.payfast.co.za Settings → Integration into those names on Fire-S Test';
+        ? 'www.payfast.co.za Settings → Developer Settings into those names on the live Supabase project (ispsdmglyylcwkufphnv)'
+        : 'sandbox.payfast.co.za Settings → Developer Settings into those names on Fire-S Test';
     const err = new Error(
       'PayFast ' +
         mode +
