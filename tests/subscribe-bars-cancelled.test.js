@@ -31,9 +31,11 @@ assert.ok(
   /id="fireSSubscribePayActions"/.test(page[0]) &&
     /id="fireSBillingSubscribeBtn"/.test(page[0]) &&
     /id="fireSPayfastPayBtn"/.test(page[0]) &&
+    /id="fireSSubscribeBillingHowTo"/.test(page[0]) &&
+    /id="fireSSubscribeCancelBtn"/.test(page[0]) &&
     /Subscribe \/ Reactivate/.test(page[0]) &&
     /Pay R250 on PayFast/.test(page[0]),
-  'Cancelled Subscribe must keep Subscribe/Reactivate and Pay on PayFast together'
+  'Cancelled Subscribe must keep Subscribe/Reactivate, Pay on PayFast, how-to steps and Cancel'
 );
 assert.ok(
   page[0].indexOf('id="fireSSubscribePayActions"') < page[0].indexOf('id="fireSCompanyBillingPanel"'),

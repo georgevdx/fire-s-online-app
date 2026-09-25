@@ -30,7 +30,7 @@ assert.ok(
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
     /cache: 'no-store'/.test(stagingSw) &&
-    /fireS\.toetsCacheDrop\.1-3-117/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-118/.test(stagingHtml),
   'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
 );
 assert.ok(

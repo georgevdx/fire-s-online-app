@@ -18,7 +18,7 @@ assert.ok(
   /Version 1\.3\.114-toets/.test(html) &&
     /appVersion: staging \? '1\.3\.114-toets'/.test(env) &&
     /app\.js\?v=1-3-114-hide-pw/.test(html) &&
-    /fireS\.toetsCacheDrop\.1-3-117/.test(html),
+    /fireS\.toetsCacheDrop\.1-3-118/.test(html),
   'Toets must cache-bust the Fire-S Test feedback payload fix as 1.3.114-toets'
 );
 

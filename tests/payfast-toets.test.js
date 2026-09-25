@@ -28,15 +28,22 @@ assert.ok(/fire-s-payfast\.js/.test(html), 'Toets-blad must load the PayFast mod
 assert.ok(/id="fireSPayfastPayBtn"/.test(html), 'Subscription page must have Pay on PayFast');
 assert.ok(/PayFast sandbox/.test(html), 'Toets Subscribe copy must say sandbox — no real money');
 assert.ok(/startCheckout/.test(getStarted) && /startCheckout/.test(subscribe), 'Subscribe flows must open PayFast');
+assert.ok(/function openPayfastCheckout/.test(getStarted), 'Pay on PayFast must open checkout after sign-in');
 assert.ok(/function paintSubscribePayButtons/.test(getStarted), 'Subscribe form must show Pay on PayFast');
 const guest = html.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
 assert.ok(
   guest &&
     /id="fireSGetStartedCreateBtn"/.test(guest[0]) &&
+    /Start Free Trial/.test(guest[0]) &&
+    /id="fireSGetStartedPayBtn"/.test(guest[0]) &&
     /Pay R250 on PayFast/.test(guest[0]) &&
+    /id="fireSAccessBillingHowTo"/.test(guest[0]) &&
+    /Start a free trial/.test(guest[0]) &&
+    /Cancel subscription/.test(guest[0]) &&
     !/id="fireSRegisterViewPlansBtn"/.test(guest[0]),
-  'Toets Subscribe form must pay on PayFast and not duplicate View Plans'
+  'Toets Subscribe form must keep trial, pay on PayFast, and cancel steps'
 );
+assert.ok(!/Subscribe is not finished yet/.test(getStarted), 'Pay must not loop on the same Subscribe page');
 assert.ok(!/VAT/.test(payfastSrc), 'PayFast module must not mention VAT to subscribers');
 
 assert.ok(!/merchantKey/.test(envSrc), 'Toets env must not ship a merchant key');

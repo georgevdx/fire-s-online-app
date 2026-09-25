@@ -181,7 +181,7 @@
     }
   }
 
-  function savePendingSubscribe(company, email, intervalId) {
+  function savePendingSubscribe(company, email, intervalId, wantPay) {
     try {
       localStorage.setItem(
         PENDING_SUBSCRIBE_KEY,
@@ -189,6 +189,7 @@
           company: company,
           email: email,
           interval: intervalId || 'monthly',
+          wantPay: !!wantPay,
           at: Date.now()
         })
       );
@@ -713,10 +714,10 @@
   }
 
   function paintSubscribePayButtons() {
-    var registerBtn = byId('fireSGetStartedCreateBtn');
-    if (registerBtn) registerBtn.textContent = subscribePayLabel('fireSRegisterBillingOptions');
-    var finishBtn = byId('fireSGetStartedFinishBtn');
-    if (finishBtn) finishBtn.textContent = subscribePayLabel('fireSCompanyOnlyBillingOptions');
+    var payBtn = byId('fireSGetStartedPayBtn');
+    if (payBtn) payBtn.textContent = subscribePayLabel('fireSRegisterBillingOptions');
+    var finishPay = byId('fireSGetStartedFinishPayBtn');
+    if (finishPay) finishPay.textContent = subscribePayLabel('fireSCompanyOnlyBillingOptions');
   }
 
   function chosenPlan(containerId) {
@@ -765,8 +766,8 @@
     var guestNote = byId('fireSRegisterNote');
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
-        ? 'One Subscribe creates the login and the company. Then tap Pay on PayFast. Use the same email you already use for Supabase.'
-        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Tap Pay on PayFast. Card details stay with PayFast.';
+        ? 'One Subscribe creates the login and the company. Then Start Free Trial, or Pay on PayFast. Use the same email you already use for Supabase.'
+        : 'Creates your owner login and this company name. Start a free trial, or pay on PayFast. One person is one company. If you already belong to a company, only that Owner can remove you.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';
@@ -1423,7 +1424,33 @@
     );
   }
 
-  async function createCompanyAfterSignIn(company, email, intervalPickerId, intervalOverride) {
+  async function openPayfastCheckout(company, email, intervalId) {
+    if (
+      !window.fireSPayfast ||
+      !window.fireSPayfast.isEnabled ||
+      !window.fireSPayfast.isEnabled() ||
+      !window.fireSPayfast.startCheckout
+    ) {
+      setStatus('PayFast is not ready. Login, then Home → Subscription → Pay on PayFast.', true);
+      return false;
+    }
+    setStatus('Opening PayFast…');
+    var paid = await window.fireSPayfast.startCheckout({
+      kind: 'subscribe',
+      company: company || 'Fire-S',
+      email: email,
+      interval: intervalId || 'monthly'
+    });
+    if (paid && paid.ok) return true;
+    setStatus(
+      (paid && paid.error) ||
+        'PayFast did not open. Login, then Home → Subscription → Pay on PayFast.',
+      true
+    );
+    return false;
+  }
+
+  async function createCompanyAfterSignIn(company, email, intervalPickerId, intervalOverride, wantPay) {
     var sb = getSb();
     if (!sb || !sb.rpc) throw new Error('Cloud is not ready yet. Wait a moment and try again.');
     setStatus('Creating company…');
@@ -1444,19 +1471,9 @@
     await saveChosenPlan(planId, intervalId);
     notifySubscribe(company, email, intervalId);
     clearPendingSubscribe();
-    if (window.fireSPayfast && window.fireSPayfast.isEnabled && window.fireSPayfast.isEnabled()) {
-      setStatus('Opening PayFast…');
-      var paid = await window.fireSPayfast.startCheckout({
-        kind: 'subscribe',
-        company: company,
-        email: email,
-        interval: intervalId
-      });
-      if (paid && paid.ok) return;
-      setStatus(
-        (paid && paid.error) ||
-          'PayFast is not ready on the server. Free trial started. Opening Fire-S…'
-      );
+    if (wantPay) {
+      await openPayfastCheckout(company, email, intervalId);
+      return;
     }
     setStatus('Free trial started. Opening Fire-S…');
     mode = 'choices';
@@ -1482,7 +1499,8 @@
         text(pending.company),
         text(pending.email),
         null,
-        text(pending.interval) || 'monthly'
+        text(pending.interval) || 'monthly',
+        pending.wantPay === true
       );
       return true;
     } catch (_) {
@@ -1501,7 +1519,8 @@
     return loginTry;
   }
 
-  async function doRegisterCompany() {
+  async function doRegisterCompany(wantPay) {
+    wantPay = wantPay === true;
     var company = text(byId('fireSGetStartedCompany') && byId('fireSGetStartedCompany').value);
     var email = text(byId('fireSGetStartedEmail') && byId('fireSGetStartedEmail').value).toLowerCase();
     var password = (byId('fireSGetStartedPassword') && byId('fireSGetStartedPassword').value) || '';
@@ -1536,8 +1555,8 @@
       return;
     }
     var intervalId = chosenInterval('fireSRegisterBillingOptions');
-    savePendingSubscribe(company, email, intervalId);
-    setStatus('Creating owner account…');
+    savePendingSubscribe(company, email, intervalId, wantPay);
+    setStatus(wantPay ? 'Preparing PayFast…' : 'Creating owner account…');
     beginLoginInFlight();
     await paintSplashFrame();
     try {
@@ -1566,10 +1585,20 @@
         await refreshMembership();
         if (hasCompany()) {
           clearPendingSubscribe();
+          if (wantPay) {
+            await openPayfastCheckout(company, email, intervalId);
+            return;
+          }
           await finishSignedInSession('Signed in with existing login.');
           return;
         }
-        await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions', intervalId);
+        await createCompanyAfterSignIn(
+          company,
+          email,
+          'fireSRegisterBillingOptions',
+          intervalId,
+          wantPay
+        );
         return;
       }
       if (up.error) throw up.error;
@@ -1577,21 +1606,32 @@
         setStatus('Finishing Subscribe…');
         var signedIn = await signInAfterSignUp(email, password);
         if (!signedIn) {
-          if (isStagingEnv()) {
-            setStatus('Subscribe is not finished yet. Tap Subscribe once more.', true);
-          } else {
-            setStatus('Check your email to confirm, then Login and finish company setup.', false);
-          }
+          setStatus(
+            wantPay
+              ? 'PayFast needs a signed-in session. Login with this owner email, then Home → Subscription → Pay on PayFast.'
+              : 'This email already has a login. Login, then continue. Do not type a new company name.',
+            true
+          );
           return;
         }
       }
       await refreshMembership();
       if (hasCompany()) {
         clearPendingSubscribe();
+        if (wantPay) {
+          await openPayfastCheckout(company, email, intervalId);
+          return;
+        }
         await finishSignedInSession('Subscribed.');
         return;
       }
-      await createCompanyAfterSignIn(company, email, 'fireSRegisterBillingOptions', intervalId);
+      await createCompanyAfterSignIn(
+        company,
+        email,
+        'fireSRegisterBillingOptions',
+        intervalId,
+        wantPay
+      );
     } catch (e) {
       setStatus(authErrorMessage(e), true);
     } finally {
@@ -1599,7 +1639,8 @@
     }
   }
 
-  async function doFinishCompanyOnly() {
+  async function doFinishCompanyOnly(wantPay) {
+    wantPay = wantPay === true;
     var company = text(
       byId('fireSGetStartedCompanyOnlyName') && byId('fireSGetStartedCompanyOnlyName').value
     );
@@ -1615,7 +1656,9 @@
       await createCompanyAfterSignIn(
         company,
         profile() && profile().email,
-        'fireSCompanyOnlyBillingOptions'
+        'fireSCompanyOnlyBillingOptions',
+        null,
+        wantPay
       );
     } catch (e) {
       setStatus((e && e.message) || 'Could not create company.', true);
@@ -1973,8 +2016,28 @@
         doForgotPassword(true);
       });
     }
-    if (registerBtn) registerBtn.addEventListener('click', doRegisterCompany);
-    if (finishBtn) finishBtn.addEventListener('click', doFinishCompanyOnly);
+    if (registerBtn) {
+      registerBtn.addEventListener('click', function () {
+        doRegisterCompany(false);
+      });
+    }
+    var registerPay = byId('fireSGetStartedPayBtn');
+    if (registerPay) {
+      registerPay.addEventListener('click', function () {
+        doRegisterCompany(true);
+      });
+    }
+    if (finishBtn) {
+      finishBtn.addEventListener('click', function () {
+        doFinishCompanyOnly(false);
+      });
+    }
+    var finishPay = byId('fireSGetStartedFinishPayBtn');
+    if (finishPay) {
+      finishPay.addEventListener('click', function () {
+        doFinishCompanyOnly(true);
+      });
+    }
     if (checkBtn) checkBtn.addEventListener('click', doCheckAgain);
     var startCompanyBtn = byId('fireSWaitingStartCompanyBtn');
     if (startCompanyBtn) {

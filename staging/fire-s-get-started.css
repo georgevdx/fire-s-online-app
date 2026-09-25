@@ -397,3 +397,34 @@ body.fire-s-clean-home.fire-s-role-new-company .startup-route-grid,
 body.fire-s-clean-home.fire-s-role-pending-member .startup-route-grid {
   display: none !important;
 }
+
+.fire-s-billing-howto {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #334155;
+}
+
+.fire-s-billing-howto h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.fire-s-billing-howto p {
+  margin: 10px 0 4px;
+  font-size: 0.92rem;
+}
+
+.fire-s-billing-howto ol {
+  margin: 0 0 8px;
+  padding-left: 1.25rem;
+}
+
+.fire-s-billing-howto li {
+  margin: 3px 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}

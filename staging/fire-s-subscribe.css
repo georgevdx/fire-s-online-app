@@ -449,6 +449,10 @@ body.fire-s-role-inspector #fireSPayfastReturnBanner {
   display: none !important;
 }
 
+.fire-s-subscribe-intro .fire-s-billing-howto {
+  margin: 12px 0 0;
+}
+
 .fire-s-subscribe-pay-actions .cloud-primary-btn {
   min-height: 48px;
   width: 100%;

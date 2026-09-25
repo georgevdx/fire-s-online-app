@@ -18,7 +18,7 @@ assert.ok(
   /app\.js\?v=1-3-114-hide-pw/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
     /fire-s-entitlement.js\?v=1-3-114-hide-pw/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-117/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-118/.test(stagingHtml) &&
     /Version 1\.3\.114-toets/.test(stagingHtml),
   'Toets must cache-bust last-inspection Home counts without bumping the displayed version'
 );

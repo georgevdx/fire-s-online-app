@@ -465,11 +465,11 @@
       }
     } catch (_) {}
     if (cancelBtn) {
-      var allowCancel = canManage() || !!data.can_cancel;
-      cancelBtn.hidden = !allowCancel || cancelled;
+      cancelBtn.hidden = false;
+      cancelBtn.disabled = !(canManage() || !!data.can_cancel) || cancelled;
     }
     var billingActions = byId('fireSCompanyBillingActions');
-    if (billingActions) billingActions.hidden = cancelled || mode === 'seat';
+    if (billingActions) billingActions.hidden = mode === 'seat';
   }
 
   function billingFromEntitlement() {
@@ -549,9 +549,15 @@
     var againPanel = byId('fireSSubscribeAgainPanel');
     var save = byId('fireSSubscribeSaveBtn');
     if (!box) return;
-    if (mode === 'seat' || !cat || !cat.statusHeadline) {
+    if (mode === 'seat') {
       box.hidden = true;
       if (cancelPanel) cancelPanel.hidden = true;
+      if (againPanel) againPanel.hidden = true;
+      return;
+    }
+    if (cancelPanel) cancelPanel.hidden = false;
+    if (!cat || !cat.statusHeadline) {
+      box.hidden = true;
       if (againPanel) againPanel.hidden = true;
       return;
     }
@@ -599,11 +605,16 @@
       }
     }
     if (keep) keep.textContent = cat.statusKeepDataNote();
-    if (cancelPanel) cancelPanel.hidden = !canManage() || cancelled;
+    if (cancelPanel) cancelPanel.hidden = false;
     if (againPanel) againPanel.hidden = true;
     if (cancelBtn) {
-      cancelBtn.disabled = cancelled;
-      cancelBtn.textContent = cancelled ? 'Already cancelled' : 'Cancel subscription';
+      cancelBtn.hidden = false;
+      cancelBtn.disabled = !canManage() || cancelled;
+      cancelBtn.textContent = cancelled
+        ? 'Already cancelled'
+        : canManage()
+          ? 'Cancel subscription'
+          : 'Only the Owner can cancel';
     }
     if (save && mode !== 'seat') {
       save.style.display = cancelled ? 'none' : '';
@@ -791,8 +802,10 @@
     if (intro) {
       intro.innerHTML = isSeat
         ? 'This person is another subscription: <strong>R250 per month per login</strong>, or <strong>R2 500 per year</strong>. Phone and desktop with the same email count as one login. Type a temporary password twice. After you tap Subscribe this email, pay that extra login on PayFast. Tell them the temporary password. They Login, then choose their own password. They never open this page.'
-        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Only one instrument at a time may use that email. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money). Read the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.';
+        : 'Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free). Phone and desktop with the same email count as one login. Only one instrument at a time may use that email. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money).';
     }
+    var howto = byId('fireSSubscribeBillingHowTo');
+    if (howto) howto.style.display = isSeat ? 'none' : '';
     paintSubscribeStatus();
   }
 

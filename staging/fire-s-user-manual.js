@@ -227,15 +227,25 @@
         <h3>Subscribe (Owner only)</h3>
         ${
           showFees()
-            ? `<ol>
+            ? `<p><strong>Start a free trial</strong></p>
+        <ol>
           <li>On Access tap <strong>Subscribing New Company</strong>.</li>
-          <li>Type the company name, your email, a password, then type the same password again to confirm. Subscription per month per login is R250. Per year per login is R2 500. The main subscriber (owner) may invite inspectors to subscribe under the main company.</li>
-          <li>Tap <strong>Monthly</strong> or <strong>Annual</strong>.</li>
-          <li>Tick the box that you agree to the Terms and the Privacy policy.</li>
-          <li>Tap <strong>Subscribe</strong>, then pay on PayFast. Card details stay with PayFast.</li>
-          <li>If you are already signed in, type the company name, choose Monthly or Annual, tick the box, then tap <strong>Subscribe</strong>.</li>
+          <li>Type the company name, your email, a password, then type the same password again. Choose monthly (R250) or annual (R2 500).</li>
+          <li>Tick the Terms box.</li>
+          <li>Tap <strong>Start Free Trial</strong>. No card yet.</li>
         </ol>
-        <p>On the toets-blad PayFast is the sandbox (no real money). PayFast cannot take a payment from the merchant email, so the sandbox pays as a test buyer. A second phone uses Login with the same email — do not Subscribe again.</p>
+        <p><strong>Pay on PayFast</strong></p>
+        <ol>
+          <li>If the company already exists: Login, then Home → <strong>Subscription</strong> → <strong>Pay on PayFast</strong>.</li>
+          <li>If this is a new company you may tap <strong>Pay on PayFast</strong> on the Subscribe form after you fill it in. Fire-S opens PayFast. Card details stay with PayFast.</li>
+        </ol>
+        <p><strong>Cancel subscription</strong></p>
+        <ol>
+          <li>Login as the owner.</li>
+          <li>Open Home → <strong>Subscription</strong>.</li>
+          <li>Tap <strong>Cancel subscription</strong> and confirm. Inspections stay. Do not create a new company.</li>
+        </ol>
+        <p>On the toets-blad PayFast is the sandbox (no real money). A second phone uses Login with the same email — do not Subscribe again.</p>
         <p>Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a> before you subscribe.</p>`
             : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
         }

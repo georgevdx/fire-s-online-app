@@ -21,7 +21,7 @@ assert.ok(
   /Version 1\.3\.114-toets/.test(html) &&
     /appVersion: staging \? '1\.3\.114-toets'/.test(env) &&
     /TOETS-BLAD 1\.3\.114-toets/.test(env) &&
-    /fireS\.toetsCacheDrop\.1-3-117/.test(html) &&
+    /fireS\.toetsCacheDrop\.1-3-118/.test(html) &&
     /service-worker\.js\?v=108-76-toets-cancel/.test(html) &&
     /fire-s-108-76-toets-cancel/.test(sw),
   'Toets must leave 1.3.110 so a phone can tell it has this Access/services build'
@@ -50,7 +50,7 @@ assert.ok(
   'Subscribe New Company must ask the owner to confirm the password'
 );
 const register = started.match(
-  /async function doRegisterCompany\(\) \{[\s\S]*?async function doFinishCompanyOnly/
+  /async function doRegisterCompany\([^)]*\) \{[\s\S]*?async function doFinishCompanyOnly/
 );
 assert.ok(register, 'doRegisterCompany must exist');
 assert.ok(

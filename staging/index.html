@@ -10,7 +10,7 @@
     (function fireSDropStuckToetsCache() {
       try {
         var WANT = '1.3.114-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-117';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-118';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -125,8 +125,8 @@
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
-  <link rel="stylesheet" href="fire-s-get-started.css?v=2-21-hide-access">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-13-temp-pw">
+  <link rel="stylesheet" href="fire-s-get-started.css?v=2-22-howto">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-14-howto">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-actovd">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -407,8 +407,30 @@
     <div id="fireSGetStartedGuestFields" class="fire-s-get-started-fields" style="display:none;">
       <button type="button" class="fire-s-get-started-back" data-fire-s-back>← Back to Access</button>
       <p id="fireSRegisterNote" class="fire-s-get-started-note">
-        Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Already cancelled? Do not type a new company name. Login with the same owner email, then tap Pay on PayFast on Subscription. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Tap Pay on PayFast. Card details stay with PayFast.
+        One Subscribe creates the login and the company. Use the same email you already use for Supabase. This toets-blad uses the PayFast sandbox (no real money).
       </p>
+      <div id="fireSAccessBillingHowTo" class="fire-s-billing-howto">
+        <h4>How to start a trial, pay, and cancel</h4>
+        <p><strong>Start a free trial</strong></p>
+        <ol>
+          <li>Type your company name, owner email and password twice.</li>
+          <li>Choose monthly (R250) or annual (R2 500).</li>
+          <li>Tick the Terms box.</li>
+          <li>Tap <strong>Start Free Trial</strong>. No card yet.</li>
+        </ol>
+        <p><strong>Pay on PayFast</strong></p>
+        <ol>
+          <li>If you already have this company: Access → <strong>Login</strong>, then Home → <strong>Subscription</strong> → <strong>Pay on PayFast</strong>.</li>
+          <li>If this is a new company: fill this form, then tap <strong>Pay on PayFast</strong>. Fire-S opens PayFast. Card details stay with PayFast.</li>
+        </ol>
+        <p><strong>Cancel subscription</strong></p>
+        <ol>
+          <li>Login with the owner email.</li>
+          <li>Open Home → <strong>Subscription</strong>.</li>
+          <li>Tap <strong>Cancel subscription</strong> and confirm.</li>
+          <li>Do not type a new company name. Inspections stay. Pay on PayFast later to use this company again.</li>
+        </ol>
+      </div>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
       <input id="fireSGetStartedEmail" type="email" placeholder="Your email (owner) · one seat" autocomplete="username">
       <input id="fireSGetStartedPassword" type="password" placeholder="Choose a password" autocomplete="new-password">
@@ -423,6 +445,9 @@
         <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.</span>
       </label>
       <button id="fireSGetStartedCreateBtn" type="button" class="cloud-primary-btn">
+        Start Free Trial
+      </button>
+      <button id="fireSGetStartedPayBtn" type="button" class="cloud-primary-btn">
         Pay R250 on PayFast
       </button>
       <button id="fireSRegisterSwitchToLoginBtn" type="button" class="secondary-btn">
@@ -445,6 +470,9 @@
         <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.</span>
       </label>
       <button id="fireSGetStartedFinishBtn" type="button" class="cloud-primary-btn">
+        Start Free Trial
+      </button>
+      <button id="fireSGetStartedFinishPayBtn" type="button" class="cloud-primary-btn">
         Pay R250 on PayFast
       </button>
     </div>
@@ -882,12 +910,30 @@
       Subscription per month per login is <strong>R250</strong>. Per year per login is <strong>R2 500</strong> (2 months free).
       Phone and desktop with the same email count as one login. Only one instrument at a time may use that email. Each extra person is another subscription.
       The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S.
-      After Subscribe, pay on PayFast. Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money).
-      Read the
-      <a href="terms.html" target="_blank" rel="noopener">Terms and conditions</a>
-      and the
-      <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.
+      Card details stay with PayFast. This toets-blad uses the PayFast sandbox (no real money).
     </p>
+    <div id="fireSSubscribeBillingHowTo" class="fire-s-billing-howto">
+      <h4>How to start a trial, pay, and cancel</h4>
+      <p><strong>Start a free trial</strong></p>
+      <ol>
+        <li>New company: Access → <strong>Subscribing New Company</strong>.</li>
+        <li>Type company name, owner email and password twice, choose monthly or annual, tick Terms.</li>
+        <li>Tap <strong>Start Free Trial</strong>. No card yet.</li>
+      </ol>
+      <p><strong>Pay on PayFast</strong></p>
+      <ol>
+        <li>Stay on this Subscription page.</li>
+        <li>Choose monthly (R250) or annual (R2 500).</li>
+        <li>Tap <strong>Pay on PayFast</strong>.</li>
+        <li>Pay on the PayFast page. Card details stay with PayFast.</li>
+      </ol>
+      <p><strong>Cancel subscription</strong></p>
+      <ol>
+        <li>Only the Owner can cancel.</li>
+        <li>Tap <strong>Cancel subscription</strong> under Pay on PayFast.</li>
+        <li>Confirm. Auto-renew stops. Inspections stay. Do not create a new company.</li>
+      </ol>
+    </div>
   </div>
   <p id="fireSTrialSubscribeNote" class="fire-s-trial-subscribe-note" hidden></p>
   <aside id="fireSSubscriptionRequiredPanel" class="fire-s-subscription-required-panel" hidden>
@@ -918,7 +964,7 @@
     <p id="fireSPayfastHint" class="fire-s-payfast-hint">PayFast sandbox on this toets-blad — no real money. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test. The passphrase must be the sandbox Salt Passphrase (same trio as payfast-checkout). Then refresh with ?v=205 and pay again. Card details stay with PayFast.</p>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
-  <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel" hidden>
+  <div id="fireSSubscribeCancelPanel" class="fire-s-subscribe-cancel">
     <h4>Cancel this subscription</h4>
     <ol>
       <li>Only the Owner can cancel.</li>
@@ -1988,11 +2034,11 @@
   <script src="fire-s-subscriptions.js?v=1-20-temp-pw"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-14-hide-ok"></script>
-  <script src="fire-s-subscribe.js?v=1-37-cancel"></script>
-  <script src="fire-s-user-manual.js?v=1-47-hide-access"></script>
+  <script src="fire-s-subscribe.js?v=1-38-howto"></script>
+  <script src="fire-s-user-manual.js?v=1-48-howto"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-57-subpay"></script>
+  <script src="fire-s-get-started.js?v=2-58-howto"></script>
   <script src="fire-s-change-password.js?v=1-0-temp-pw"></script>
   <script src="fire-s-startup-stability.js?v=1-13-logo-splash"></script>
   <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
