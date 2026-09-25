@@ -1183,6 +1183,15 @@ finalComments,
         photos: currentPhotos,
         lastSaved: new Date().toISOString()
       };
+      if (typeof fireSStampRecurringCycleSchedule === 'function') {
+        projects[index] = fireSStampRecurringCycleSchedule(
+          projects[index],
+          projects[index].recurringCycleEnabled,
+          projects[index].recurringCycleNumber,
+          projects[index].recurringCycleUnit,
+          projects[index].recurringCycleNotes
+        );
+      }
     }
   }
 
@@ -1381,6 +1390,23 @@ function getProjectScheduleStatus(project) {
 }
 
 function getProjectScheduleDisplay(project) {
+  const entries =
+    typeof fireSListProjectScheduleEntries === 'function'
+      ? fireSListProjectScheduleEntries(project)
+      : [];
+
+  if (entries.length) {
+    const first = entries[0];
+    return {
+      hasDisplay: true,
+      className: first.className,
+      chip: first.chip,
+      title: first.title,
+      detail: first.detail,
+      entries
+    };
+  }
+
   const scheduleStatus =
     getProjectScheduleStatus(project);
 
@@ -1403,7 +1429,8 @@ function getProjectScheduleDisplay(project) {
         className: `schedule-display schedule-display-follow-up ${scheduleStatus.className}`,
         chip: dateText ? `FOLLOW-UP · ${dateText}` : 'FOLLOW-UP',
         title: scheduleStatus.label,
-        detail: 'Corrective follow-up after findings.'
+        detail: 'Corrective follow-up after findings.',
+        entries
       };
     }
 
@@ -1413,7 +1440,8 @@ function getProjectScheduleDisplay(project) {
         className: `schedule-display schedule-display-cycle ${scheduleStatus.className}`,
         chip: dateText ? `CYCLE · ${dateText}` : 'CYCLE',
         title: scheduleStatus.label,
-        detail: 'Routine recurring inspection cycle.'
+        detail: 'Routine recurring inspection cycle.',
+        entries
       };
     }
 
@@ -1423,7 +1451,8 @@ function getProjectScheduleDisplay(project) {
         className: `schedule-display schedule-display-new-site ${scheduleStatus.className}`,
         chip: dateText ? `NEW SITE · ${dateText}` : 'NEW SITE',
         title: scheduleStatus.label,
-        detail: 'New site inspection scheduled.'
+        detail: 'New site inspection scheduled.',
+        entries
       };
     }
 
@@ -1432,7 +1461,8 @@ function getProjectScheduleDisplay(project) {
       className: `schedule-display schedule-display-general ${scheduleStatus.className}`,
       chip: dateText ? `SCHEDULED · ${dateText}` : 'SCHEDULED',
       title: scheduleStatus.label,
-      detail: 'Inspection scheduled.'
+      detail: 'Inspection scheduled.',
+      entries
     };
   }
 
@@ -1442,7 +1472,8 @@ function getProjectScheduleDisplay(project) {
       className: 'schedule-display schedule-display-completed',
       chip: 'COMPLETED',
       title: 'Inspection completed',
-      detail: 'Inspection completed and archived.'
+      detail: 'Inspection completed and archived.',
+      entries
     };
   }
 
@@ -1451,7 +1482,8 @@ function getProjectScheduleDisplay(project) {
     className: '',
     chip: '',
     title: '',
-    detail: ''
+    detail: '',
+    entries
   };
 }
 
@@ -1616,17 +1648,52 @@ function fireSCurrentScheduleIsFollowUp(project) {
   );
 }
 
+function fireSCycleDateAfterVisit(project, completedAt, visitDay) {
+  if (project.recurringCycleOccurrenceCancelled === true) {
+    const cancelledAt = normaliseDateString(project.recurringCycleCancelledAtVisit);
+    if (!visitDay || visitDay === cancelledAt || (cancelledAt && visitDay <= cancelledAt)) {
+      return '';
+    }
+  }
+  const existingCycle = normaliseDateString(
+    project.recurringCycleNextDate ||
+    (String(project.scheduleType || '').toLowerCase() === 'recurring_cycle'
+      ? project.scheduledDate
+      : '')
+  );
+  const computed = getNextRecurringCycleDate(
+    project,
+    completedAt || project.completedAt || visitDay
+  );
+  return existingCycle && visitDay && existingCycle > visitDay
+    ? existingCycle
+    : computed;
+}
+
 function fireSScheduleAfterVisitPatch(project, completedAt) {
   if (!project) return null;
 
   const visitDay = fireSLastVisitDay(project, completedAt);
   const wasFinalised = fireSInspectionWasFinalised(project);
-  const keepFollowUp =
-    !fireSCurrentScheduleIsFollowUp(project) &&
+  const followDate = normaliseDateString(project.followUpDate);
+  const liveFollowUp =
     project.followUpRequired === 'Yes' &&
-    project.followUpDate;
+    followDate &&
+    !(visitDay && followDate <= visitDay);
+  const cycleNextDate =
+    fireSIsCycledInspection(project) && (visitDay || wasFinalised)
+      ? fireSCycleDateAfterVisit(project, completedAt, visitDay)
+      : fireSIsCycledInspection(project)
+        ? normaliseDateString(project.recurringCycleNextDate)
+        : '';
+  const cyclePatch = cycleNextDate
+    ? {
+        recurringCycleNextDate: cycleNextDate,
+        recurringCycleOccurrenceCancelled: false
+      }
+    : {};
 
-  if (keepFollowUp) {
+  if (liveFollowUp) {
     return fireSSchedulePatchIfChanged(project, {
       scheduledDate: project.followUpDate,
       scheduledStatus: 'scheduled',
@@ -1636,18 +1703,16 @@ function fireSScheduleAfterVisitPatch(project, completedAt) {
       scheduledNote: project.followUpNotes || '',
       followUpRequired: 'Yes',
       followUpDate: project.followUpDate,
-      followUpNotes: project.followUpNotes || ''
+      followUpNotes: project.followUpNotes || '',
+      ...cyclePatch
     });
   }
 
   if (fireSIsCycledInspection(project)) {
-    if (!visitDay && !wasFinalised) return null;
-    const existing = normaliseDateString(project.scheduledDate);
-    const computed = getNextRecurringCycleDate(
-      project,
-      completedAt || project.completedAt || visitDay
-    );
-    const nextDate = existing && visitDay && existing > visitDay ? existing : computed;
+    if (!visitDay && !wasFinalised) {
+      return fireSSchedulePatchIfChanged(project, cyclePatch);
+    }
+    const nextDate = cycleNextDate;
     if (nextDate) {
       return fireSSchedulePatchIfChanged(project, {
         scheduledDate: nextDate,
@@ -1656,9 +1721,7 @@ function fireSScheduleAfterVisitPatch(project, completedAt) {
         scheduledReason: 'recurring_cycle',
         scheduleFreshInspection: true,
         scheduledNote: 'Recurring cycle scheduled for ' + nextDate,
-        followUpRequired: 'No',
-        followUpDate: '',
-        followUpNotes: ''
+        ...cyclePatch
       });
     }
   }
@@ -1676,7 +1739,9 @@ function fireSScheduleAfterVisitPatch(project, completedAt) {
     scheduledNote: '',
     followUpRequired: 'No',
     followUpDate: '',
-    followUpNotes: ''
+    followUpNotes: '',
+    recurringCycleNextDate: '',
+    recurringCycleOccurrenceCancelled: false
   });
 }
 
@@ -1703,6 +1768,19 @@ function updateRecurringCyclePreview() {
   if (!enabled) {
     preview.textContent = 'Recurring cycle not active.';
     preview.className = 'recurring-cycle-preview';
+    if (document.getElementById('scheduledInspectionsBoard')) {
+      renderScheduledInspectionsBoard();
+    }
+    return;
+  }
+
+  if (currentProject?.recurringCycleOccurrenceCancelled === true) {
+    preview.textContent =
+      'Cycle active, but this booked cycle inspection was cancelled.';
+    preview.className = 'recurring-cycle-preview recurring-cycle-preview-warning';
+    if (document.getElementById('scheduledInspectionsBoard')) {
+      renderScheduledInspectionsBoard();
+    }
     return;
   }
 
@@ -1710,6 +1788,9 @@ function updateRecurringCyclePreview() {
     preview.textContent =
       'Recurring cycle active. Enter repeat number and unit to calculate the next cycle.';
     preview.className = 'recurring-cycle-preview recurring-cycle-preview-warning';
+    if (document.getElementById('scheduledInspectionsBoard')) {
+      renderScheduledInspectionsBoard();
+    }
     return;
   }
 
@@ -1729,7 +1810,562 @@ function updateRecurringCyclePreview() {
     nextDate
       ? 'recurring-cycle-preview recurring-cycle-preview-ready'
       : 'recurring-cycle-preview recurring-cycle-preview-warning';
+
+  const board = document.getElementById('scheduledInspectionsBoard');
+  if (board) renderScheduledInspectionsBoard();
 }
+
+function fireSIsDedicatedScheduleType(type) {
+  const value = String(type || '').trim().toLowerCase();
+  return (
+    value === 'new_site' ||
+    value === 'existing_site' ||
+    value === 'new_inspection' ||
+    value === 'new site' ||
+    value === 'scheduled_new'
+  );
+}
+
+function fireSScheduleEntryStatus(dateValue) {
+  const date = normaliseDateString(dateValue);
+  if (!date) {
+    return {
+      hasSchedule: false,
+      label: 'not scheduled',
+      className: 'schedule-none',
+      date: ''
+    };
+  }
+
+  const today = getTodayDateString();
+  if (date < today) {
+    return {
+      hasSchedule: true,
+      label: 'overdue',
+      className: 'schedule-overdue',
+      date
+    };
+  }
+  if (date === today) {
+    return {
+      hasSchedule: true,
+      label: 'due today',
+      className: 'schedule-today',
+      date
+    };
+  }
+  return {
+    hasSchedule: true,
+    label: 'scheduled',
+    className: 'schedule-upcoming',
+    date
+  };
+}
+
+function fireSGetRecurringCycleBookedDate(project) {
+  if (!project) return '';
+  if (project.recurringCycleOccurrenceCancelled === true) return '';
+  if (!fireSIsCycledInspection(project)) return '';
+
+  const stored = normaliseDateString(project.recurringCycleNextDate);
+  if (stored) return stored;
+
+  if (getProjectScheduleType(project) === 'recurring_cycle') {
+    const date = normaliseDateString(project.scheduledDate);
+    const visitDay = fireSLastVisitDay(project);
+    if (visitDay && date && date <= visitDay) return '';
+    return date;
+  }
+
+  return '';
+}
+
+function fireSGetFollowUpBookedDate(project) {
+  if (!project) return '';
+  if (String(project.followUpRequired || '') !== 'Yes') return '';
+  const date = normaliseDateString(project.followUpDate);
+  const visitDay = fireSLastVisitDay(project);
+  if (visitDay && date && date <= visitDay) return '';
+  return date;
+}
+
+function fireSGetDedicatedBookedDate(project) {
+  if (!project) return '';
+  const type = getProjectScheduleType(project);
+  if (type === 'recurring_cycle' || type === 'follow_up') return '';
+  const date = normaliseDateString(project.scheduledDate);
+  if (!date) return '';
+  const visitDay = fireSLastVisitDay(project);
+  if (visitDay && date <= visitDay) return '';
+  const status = String(project.scheduledStatus || '').toLowerCase();
+  if (
+    status === 'scheduled' ||
+    project.scheduleFreshInspection === true ||
+    fireSIsDedicatedScheduleType(type)
+  ) {
+    return date;
+  }
+  return '';
+}
+
+function fireSFormatScheduleChipDate(dateValue) {
+  try {
+    if (typeof formatInspectionDate === 'function') {
+      return formatInspectionDate(dateValue);
+    }
+  } catch (_) {}
+  return String(dateValue || '').slice(0, 10);
+}
+
+function fireSListProjectScheduleEntries(project) {
+  if (!project) return [];
+  const effective = project;
+
+  const entries = [];
+  const cycleDate = fireSGetRecurringCycleBookedDate(effective);
+  if (cycleDate) {
+    const status = fireSScheduleEntryStatus(cycleDate);
+    const dateText = fireSFormatScheduleChipDate(cycleDate);
+    entries.push({
+      kind: 'recurring_cycle',
+      date: cycleDate,
+      title: 'Cycle ' + status.label,
+      chip: dateText ? 'CYCLE · ' + dateText : 'CYCLE',
+      detail: 'Routine recurring inspection cycle.',
+      className: 'schedule-display schedule-display-cycle ' + status.className,
+      cancelable: true
+    });
+  }
+
+  const followDate = fireSGetFollowUpBookedDate(effective);
+  if (followDate) {
+    const status = fireSScheduleEntryStatus(followDate);
+    const dateText = fireSFormatScheduleChipDate(followDate);
+    entries.push({
+      kind: 'follow_up',
+      date: followDate,
+      title: 'Follow-up ' + status.label,
+      chip: dateText ? 'FOLLOW-UP · ' + dateText : 'FOLLOW-UP',
+      detail: 'Corrective follow-up after findings.',
+      className: 'schedule-display schedule-display-follow-up ' + status.className,
+      cancelable: true
+    });
+  }
+
+  const dedicatedDate = fireSGetDedicatedBookedDate(effective);
+  if (dedicatedDate) {
+    const type = getProjectScheduleType(effective);
+    const status = fireSScheduleEntryStatus(dedicatedDate);
+    const dateText = fireSFormatScheduleChipDate(dedicatedDate);
+    const isNew = type === 'new_inspection' || type === 'new_site';
+    entries.push({
+      kind: 'dedicated',
+      date: dedicatedDate,
+      title: (isNew ? 'New inspection ' : 'Scheduled inspection ') + status.label,
+      chip: dateText
+        ? (isNew ? 'NEW SITE · ' : 'SCHEDULED · ') + dateText
+        : (isNew ? 'NEW SITE' : 'SCHEDULED'),
+      detail: isNew
+        ? 'New site inspection scheduled.'
+        : 'Dedicated inspection scheduled.',
+      className:
+        'schedule-display ' +
+        (isNew ? 'schedule-display-new-site ' : 'schedule-display-general ') +
+        status.className,
+      cancelable: true
+    });
+  }
+
+  return entries;
+}
+
+function fireSHasBookedInspection(project) {
+  return fireSListProjectScheduleEntries(project).length > 0;
+}
+
+function fireSSoonestScheduleDate(project) {
+  const dates = fireSListProjectScheduleEntries(project)
+    .map(entry => entry.date)
+    .filter(Boolean)
+    .sort();
+  return dates.length ? dates[0] : '';
+}
+
+function fireSRenderBookedScheduleRowsHtml(project) {
+  const entries = fireSListProjectScheduleEntries(project);
+  if (!entries.length) return '';
+  const projectIdJs = JSON.stringify(project?.id || '');
+  const escape =
+    typeof escapeHtml === 'function'
+      ? escapeHtml
+      : value => String(value || '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch]));
+  return `
+    <div class="schedule-display-stack">
+      ${entries.map(entry => `
+        <span class="${escape(entry.className)}">
+          <strong>${escape(entry.chip)}</strong>
+          <small>${escape(entry.detail)}</small>
+          ${
+            entry.cancelable
+              ? `<button
+                   type="button"
+                   class="schedule-cancel-btn"
+                   onclick='event.stopPropagation(); fireSCancelScheduledInspection(${projectIdJs}, ${JSON.stringify(entry.kind || '')})'
+                 >Cancel</button>`
+              : ''
+          }
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
+function fireSStampRecurringCycleSchedule(project, enabled, cycleNumber, cycleUnit, cycleNotes) {
+  const next = project && typeof project === 'object' ? { ...project } : {};
+  next.recurringCycleEnabled = enabled === true;
+  next.recurringCycleNumber = cycleNumber || '';
+  next.recurringCycleUnit = cycleUnit || '';
+  next.recurringCycleNotes = String(cycleNotes || '').trim();
+
+  if (!next.recurringCycleEnabled) {
+    next.recurringCycleNextDate = '';
+    next.recurringCycleOccurrenceCancelled = false;
+    if (getProjectScheduleType(next) === 'recurring_cycle') {
+      next.scheduledDate = '';
+      next.scheduledStatus = next.completedAt ? 'completed' : 'created';
+      next.scheduleType = '';
+      next.scheduledReason = '';
+      next.scheduleFreshInspection = false;
+      next.scheduledNote = '';
+    }
+    return next;
+  }
+
+  const numberChanged =
+    String(project?.recurringCycleNumber || '') !== String(next.recurringCycleNumber || '');
+  const unitChanged =
+    String(project?.recurringCycleUnit || '') !== String(next.recurringCycleUnit || '');
+  const cancelled = project?.recurringCycleOccurrenceCancelled === true;
+  const keepCancelled = cancelled && !numberChanged && !unitChanged;
+  if (keepCancelled) {
+    next.recurringCycleNextDate = '';
+    next.recurringCycleOccurrenceCancelled = true;
+    next.recurringCycleCancelledAtVisit =
+      project?.recurringCycleCancelledAtVisit || '';
+    return next;
+  }
+
+  if (!next.recurringCycleNumber || !next.recurringCycleUnit) {
+    return next;
+  }
+
+  const existing = normaliseDateString(project?.recurringCycleNextDate);
+  const computed = addRecurringCycleToDate(
+    project?.inspectionDate ||
+      project?.completedAt ||
+      new Date().toISOString(),
+    next.recurringCycleNumber,
+    next.recurringCycleUnit
+  );
+  const nextDate =
+    existing && !numberChanged && !unitChanged ? existing : computed;
+  if (!nextDate) return next;
+
+  next.recurringCycleNextDate = nextDate;
+  next.recurringCycleOccurrenceCancelled = false;
+  next.recurringCycleCancelledAtVisit = '';
+
+  const occupyingType = getProjectScheduleType(next);
+  if (occupyingType !== 'follow_up' && !fireSIsDedicatedScheduleType(occupyingType)) {
+    next.scheduledDate = nextDate;
+    next.scheduledStatus = 'scheduled';
+    next.scheduleType = 'recurring_cycle';
+    next.scheduledReason = 'recurring_cycle';
+    next.scheduleFreshInspection = true;
+    next.scheduledNote = 'Recurring cycle scheduled for ' + nextDate;
+  }
+
+  return next;
+}
+
+function getSchedulingCentreProjectView() {
+  const project = currentProject || {};
+  const followUpRequired =
+    document.getElementById('followUpRequired')?.value ||
+    project.followUpRequired ||
+    'No';
+  const cycleEnabled =
+    document.getElementById('recurringCycleEnabled')?.value === 'Yes' ||
+    project.recurringCycleEnabled === true;
+  return {
+    ...project,
+    followUpRequired,
+    followUpDate:
+      document.getElementById('followUpDate')?.value ||
+      project.followUpDate ||
+      '',
+    followUpNotes:
+      document.getElementById('followUpNotes')?.value ||
+      project.followUpNotes ||
+      '',
+    recurringCycleEnabled: cycleEnabled,
+    recurringCycleNumber:
+      document.getElementById('recurringCycleNumber')?.value ||
+      project.recurringCycleNumber ||
+      '',
+    recurringCycleUnit:
+      document.getElementById('recurringCycleUnit')?.value ||
+      project.recurringCycleUnit ||
+      '',
+    recurringCycleNotes:
+      document.getElementById('recurringCycleNotes')?.value ||
+      project.recurringCycleNotes ||
+      '',
+    recurringCycleNextDate: project.recurringCycleNextDate || '',
+    recurringCycleOccurrenceCancelled:
+      project.recurringCycleOccurrenceCancelled === true
+  };
+}
+
+function renderScheduledInspectionsBoard() {
+  const board = document.getElementById('scheduledInspectionsBoard');
+  if (!board) return;
+
+  const project = getSchedulingCentreProjectView();
+  const liveCycle =
+    project.recurringCycleEnabled === true &&
+    project.recurringCycleOccurrenceCancelled !== true &&
+    !fireSGetRecurringCycleBookedDate(project) &&
+    project.recurringCycleNumber &&
+    project.recurringCycleUnit
+      ? fireSStampRecurringCycleSchedule(project, true, project.recurringCycleNumber, project.recurringCycleUnit, project.recurringCycleNotes)
+      : project;
+  const entries = fireSListProjectScheduleEntries(liveCycle);
+  const projectIdJs = JSON.stringify(project.id || currentProjectId || '');
+
+  if (!entries.length) {
+    board.hidden = false;
+    board.innerHTML = `
+      <div class="scheduled-board-header">
+        <h3>Booked inspections on this site</h3>
+        <p>
+          Corrective follow-ups, dedicated bookings and the recurring cycle
+          stay listed separately. Scroll here after the Scheduling Centre.
+        </p>
+      </div>
+      <p class="scheduled-board-empty">
+        No future or overdue inspection is booked on this site yet.
+      </p>
+    `;
+    return;
+  }
+
+  board.hidden = false;
+  board.innerHTML = `
+    <div class="scheduled-board-header">
+      <h3>Booked inspections on this site</h3>
+      <p>
+        A site can show more than one booked inspection, on different dates.
+        The recurring cycle stays visible next to a corrective or dedicated booking.
+      </p>
+    </div>
+    <div class="scheduled-board-list">
+      ${entries.map(entry => `
+        <article class="scheduled-board-item scheduled-board-item-${escapeHtml(entry.kind)}">
+          <div>
+            <span class="scheduled-board-kind">${escapeHtml(entry.kind === 'recurring_cycle' ? 'Recurring cycle' : entry.kind === 'follow_up' ? 'Corrective follow-up' : 'Dedicated inspection')}</span>
+            <strong>${escapeHtml(entry.chip)}</strong>
+            <small>${escapeHtml(entry.detail)} ${escapeHtml(entry.title)}.</small>
+          </div>
+          ${
+            entry.cancelable
+              ? `<button
+                   type="button"
+                   class="schedule-cancel-btn"
+                   onclick='event.stopPropagation(); fireSCancelScheduledInspection(${projectIdJs}, ${JSON.stringify(entry.kind)})'
+                 >Cancel this inspection</button>`
+              : ''
+          }
+        </article>
+      `).join('')}
+    </div>
+  `;
+}
+
+function fireSApplyCancelScheduledInspection(project, kind) {
+  const cancelKind = String(kind || '').trim();
+  if (!project || !cancelKind) return project;
+
+  const entries = fireSListProjectScheduleEntries(project);
+  const entry = entries.find(item => item.kind === cancelKind);
+  if (!entry) return project;
+
+  const next = { ...project };
+  if (cancelKind === 'follow_up') {
+    next.followUpRequired = 'No';
+    next.followUpDate = '';
+    next.followUpNotes = '';
+    if (getProjectScheduleType(next) === 'follow_up') {
+      const cycleDate = fireSGetRecurringCycleBookedDate({
+        ...next,
+        followUpRequired: 'No',
+        followUpDate: ''
+      });
+      if (cycleDate) {
+        next.scheduledDate = cycleDate;
+        next.scheduledStatus = 'scheduled';
+        next.scheduleType = 'recurring_cycle';
+        next.scheduledReason = 'recurring_cycle';
+        next.scheduleFreshInspection = true;
+        next.scheduledNote = 'Recurring cycle scheduled for ' + cycleDate;
+      } else {
+        next.scheduledDate = '';
+        next.scheduledStatus = next.completedAt ? 'completed' : 'created';
+        next.scheduleType = '';
+        next.scheduledReason = '';
+        next.scheduleFreshInspection = false;
+        next.scheduledNote = '';
+      }
+    }
+  } else if (cancelKind === 'recurring_cycle') {
+    next.recurringCycleNextDate = '';
+    next.recurringCycleOccurrenceCancelled = true;
+    next.recurringCycleCancelledAtVisit = fireSLastVisitDay(next) || '';
+    if (getProjectScheduleType(next) === 'recurring_cycle') {
+      if (next.followUpRequired === 'Yes' && next.followUpDate) {
+        next.scheduledDate = next.followUpDate;
+        next.scheduledStatus = 'scheduled';
+        next.scheduleType = 'follow_up';
+        next.scheduledReason = 'follow_up';
+        next.scheduleFreshInspection = true;
+        next.scheduledNote = next.followUpNotes || '';
+      } else {
+        next.scheduledDate = '';
+        next.scheduledStatus = next.completedAt ? 'completed' : 'created';
+        next.scheduleType = '';
+        next.scheduledReason = '';
+        next.scheduleFreshInspection = false;
+        next.scheduledNote = '';
+      }
+    }
+  } else if (cancelKind === 'dedicated') {
+    next.scheduledDate = '';
+    next.scheduledStatus = next.completedAt ? 'completed' : 'created';
+    next.scheduleType = '';
+    next.scheduledReason = '';
+    next.scheduleFreshInspection = false;
+    next.scheduledNote = '';
+    const cycleDate = fireSGetRecurringCycleBookedDate(next);
+    if (cycleDate) {
+      next.scheduledDate = cycleDate;
+      next.scheduledStatus = 'scheduled';
+      next.scheduleType = 'recurring_cycle';
+      next.scheduledReason = 'recurring_cycle';
+      next.scheduleFreshInspection = true;
+      next.scheduledNote = 'Recurring cycle scheduled for ' + cycleDate;
+    }
+  }
+
+  next.syncPending = true;
+  next.syncError = false;
+  next.lastSaved = new Date().toISOString();
+  return next;
+}
+
+function fireSCancelScheduledInspection(projectId, kind) {
+  const id = String(projectId || currentProjectId || '');
+  const cancelKind = String(kind || '').trim();
+  if (!id || !cancelKind) return;
+
+  const projects = getProjects();
+  const index = projects.findIndex(item => String(item.id) === id);
+  if (index === -1) {
+    alert('That inspection could not be found. Refresh and try again.');
+    return;
+  }
+
+  const project = projects[index];
+  const entries = fireSListProjectScheduleEntries(project);
+  const entry = entries.find(item => item.kind === cancelKind);
+  if (!entry) {
+    alert('That booking is no longer on this site.');
+    return;
+  }
+
+  const label =
+    cancelKind === 'recurring_cycle'
+      ? 'recurring cycle'
+      : cancelKind === 'follow_up'
+        ? 'corrective follow-up'
+        : 'dedicated';
+  const confirmed = confirm(
+    'Cancel the ' +
+      label +
+      ' inspection on ' +
+      entry.date +
+      '? This future or overdue booking is removed. The site stays saved.'
+  );
+  if (!confirmed) return;
+
+  const next = fireSApplyCancelScheduledInspection(project, cancelKind);
+  projects[index] = next;
+  setProjects(projects);
+
+  if (String(currentProjectId || '') === id) {
+    currentProject = next;
+    window.currentProject = next;
+    try {
+      if (cancelKind === 'follow_up') {
+        const required = document.getElementById('followUpRequired');
+        const dateField = document.getElementById('followUpDate');
+        const notes = document.getElementById('followUpNotes');
+        if (required) required.value = 'No';
+        if (dateField) dateField.value = '';
+        if (notes) notes.value = '';
+      }
+    } catch (_) {}
+  }
+
+  renderScheduledInspectionsBoard();
+  if (typeof renderProjectsList === 'function') renderProjectsList();
+  if (typeof updateDashboardSelection === 'function') updateDashboardSelection();
+  try {
+    if (typeof window.fireSKeepScheduleBookedCards === 'function') {
+      window.fireSKeepScheduleBookedCards();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSInspectorV4 === 'function') window.fireSInspectorV4();
+  } catch (_) {}
+
+  uploadSingleInspection(next).catch(error => {
+    console.warn('Cancel scheduled inspection upload failed:', error);
+  });
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent =
+      'Cancelled the ' + label + ' inspection on ' + entry.date + '.';
+  }
+}
+
+try {
+  window.fireSListProjectScheduleEntries = fireSListProjectScheduleEntries;
+  window.fireSHasBookedInspection = fireSHasBookedInspection;
+  window.fireSSoonestScheduleDate = fireSSoonestScheduleDate;
+  window.fireSApplyCancelScheduledInspection = fireSApplyCancelScheduledInspection;
+  window.fireSCancelScheduledInspection = fireSCancelScheduledInspection;
+  window.fireSStampRecurringCycleSchedule = fireSStampRecurringCycleSchedule;
+  window.fireSGetRecurringCycleBookedDate = fireSGetRecurringCycleBookedDate;
+  window.fireSRenderBookedScheduleRowsHtml = fireSRenderBookedScheduleRowsHtml;
+  window.renderScheduledInspectionsBoard = renderScheduledInspectionsBoard;
+} catch (_) {}
 
 function getProjectInspectionDate(project) {
   return (
@@ -6526,6 +7162,9 @@ if (cancelScheduledInspectionBtn) {
       getEl('followUpNotes').value = '';
     }
 
+    if (typeof renderScheduledInspectionsBoard === 'function') {
+      renderScheduledInspectionsBoard();
+    }
     scheduleAutoSave();
   });
   getEl('followUpDate').addEventListener('input', () => {
@@ -6536,6 +7175,9 @@ if (cancelScheduledInspectionBtn) {
     followUpRequired.value = 'Yes';
   }
 
+  if (typeof renderScheduledInspectionsBoard === 'function') {
+    renderScheduledInspectionsBoard();
+  }
   scheduleAutoSave();
 });
   getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
@@ -15126,14 +15768,32 @@ const scheduledLabel =
 
   const scheduleDisplay =
   getProjectScheduleDisplay(project);
+const scheduleEntries =
+  Array.isArray(scheduleDisplay.entries) && scheduleDisplay.entries.length
+    ? scheduleDisplay.entries
+    : (scheduleDisplay.hasDisplay ? [scheduleDisplay] : []);
+const projectIdJs = JSON.stringify(project.id || '');
 
 const scheduleHtml =
-  scheduleDisplay.hasDisplay
+  scheduleEntries.length
     ? `
-      <span class="${escapeHtml(scheduleDisplay.className)}">
-        <strong>${escapeHtml(scheduleDisplay.chip)}</strong>
-        <small>${escapeHtml(scheduleDisplay.detail)}</small>
-      </span>
+      <div class="schedule-display-stack">
+        ${scheduleEntries.map(entry => `
+          <span class="${escapeHtml(entry.className)}">
+            <strong>${escapeHtml(entry.chip)}</strong>
+            <small>${escapeHtml(entry.detail)}</small>
+            ${
+              entry.cancelable
+                ? `<button
+                     type="button"
+                     class="schedule-cancel-btn"
+                     onclick='event.stopPropagation(); fireSCancelScheduledInspection(${projectIdJs}, ${JSON.stringify(entry.kind || '')})'
+                   >Cancel</button>`
+                : ''
+            }
+          </span>
+        `).join('')}
+      </div>
     `
     : '';
       const projectTitle =
@@ -15151,7 +15811,6 @@ const scheduleHtml =
       const inspectionDate =
         getProjectInspectionDate(project);
 
-      const projectIdJs = JSON.stringify(project.id || '');
       const visualClass = getInspectionCardVisualClass(project);
 
       return `
@@ -17709,6 +18368,15 @@ finalComments,
 photos: currentPhotos,
 lastSaved: new Date().toISOString()
     };
+    if (typeof fireSStampRecurringCycleSchedule === 'function') {
+      projects[index] = fireSStampRecurringCycleSchedule(
+        projects[index],
+        recurringCycleEnabled,
+        recurringCycleNumber,
+        recurringCycleUnit,
+        recurringCycleNotes
+      );
+    }
   }
 } else {
     const companyStamp = resolveProjectCompanyFields({}, accessMetadata);
@@ -17785,6 +18453,18 @@ recurringCycleNotes,
 finalComments,
 lastSaved: new Date().toISOString()
     };
+      if (typeof fireSStampRecurringCycleSchedule === 'function') {
+        Object.assign(
+          newProject,
+          fireSStampRecurringCycleSchedule(
+            newProject,
+            recurringCycleEnabled,
+            recurringCycleNumber,
+            recurringCycleUnit,
+            recurringCycleNotes
+          )
+        );
+      }
       currentProjectId = newProject.id;
       projects.push(newProject);
       const previousSiteInspections = projects.filter(
@@ -26616,6 +27296,10 @@ function fireSIsInspectionClosed(project) {
 }
 
 function fireSGetInspectionScheduledDate(project) {
+  if (typeof fireSSoonestScheduleDate === 'function') {
+    const soonest = fireSSoonestScheduleDate(project);
+    if (soonest) return soonest;
+  }
   const effective =
     typeof fireSApplyScheduleAfterVisit === 'function'
       ? fireSApplyScheduleAfterVisit(project)
@@ -26623,6 +27307,7 @@ function fireSGetInspectionScheduledDate(project) {
   return (
     effective?.scheduledDate ||
     effective?.followUpDate ||
+    effective?.recurringCycleNextDate ||
     ''
   );
 }
@@ -28325,8 +29010,13 @@ function fireSUltraLastInspectionDate(project) {
 }
 
 function fireSUltraNextInspectionDate(project) {
+  if (typeof fireSSoonestScheduleDate === 'function') {
+    const soonest = fireSSoonestScheduleDate(project);
+    if (soonest) return soonest;
+  }
   if (project?.scheduledDate) return project.scheduledDate;
   if (project?.followUpDate) return project.followUpDate;
+  if (project?.recurringCycleNextDate) return project.recurringCycleNextDate;
 
   if (project?.recurringCycleEnabled === true && typeof getNextRecurringCycleDate === 'function') {
     return getNextRecurringCycleDate(project);
@@ -29084,6 +29774,12 @@ if (!window.fireSMobileSmartCardsApplied) {
             <span class="${esc(risk.cls)}"><small>Risk</small><strong>${esc(risk.label)}</strong></span>
             <span><small>Last</small><strong>${esc(dateText(lastInspection(project)))}</strong></span>
           </div>
+
+          ${
+            typeof window.fireSRenderBookedScheduleRowsHtml === 'function'
+              ? window.fireSRenderBookedScheduleRowsHtml(project)
+              : ''
+          }
 
           <div class="premises-card-footer-v118b">
             <span>${esc(inspectionNumber)} · ${esc(inspector)}</span>
@@ -30058,9 +30754,14 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function nextInspectionDate(project) {
+    if (typeof window.fireSSoonestScheduleDate === 'function') {
+      const soonest = window.fireSSoonestScheduleDate(project);
+      if (soonest) return soonest;
+    }
     if (project?.followUpRequired === 'Yes' && project?.followUpDate) return project.followUpDate;
     if (project?.scheduledDate) return project.scheduledDate;
     if (project?.followUpDate) return project.followUpDate;
+    if (project?.recurringCycleNextDate) return project.recurringCycleNextDate;
     if (project?.recurringCycleEnabled === true && typeof getNextRecurringCycleDate === 'function') return getNextRecurringCycleDate(project);
     return '';
   }
@@ -33841,6 +34542,17 @@ function getInspectionCardChips(project) {
   if (expiryCounts.overdue > 0) chips.push({ className: 'inspection-chip-danger', text: `${expiryCounts.overdue} Expired` });
   if (expiryCounts.soon > 0) chips.push({ className: 'inspection-chip-warning', text: `${expiryCounts.soon} Due Soon` });
   if (fireSHasPreviousCycles(project)) chips.push({ className: 'inspection-chip-cycle', text: `${project.inspectionHistory.length} Previous Cycle${project.inspectionHistory.length === 1 ? '' : 's'}` });
+  if (typeof fireSListProjectScheduleEntries === 'function') {
+    fireSListProjectScheduleEntries(project).forEach(entry => {
+      if (entry.kind === 'recurring_cycle') {
+        chips.push({ className: 'inspection-chip-cycle', text: 'Cycle ' + entry.date });
+      } else if (entry.kind === 'follow_up') {
+        chips.push({ className: 'inspection-chip-followup', text: 'Follow-up ' + entry.date });
+      } else if (entry.kind === 'dedicated') {
+        chips.push({ className: 'inspection-chip-new-site', text: 'Scheduled ' + entry.date });
+      }
+    });
+  }
   if (chips.length === 0) chips.push({ className: 'inspection-chip-clear', text: project.completedAt ? 'Completed' : 'In Progress' });
   return chips;
 }
@@ -44934,14 +45646,29 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
   function isBookedPremises(project) {
     try {
+      if (typeof window.fireSHasBookedInspection === 'function') {
+        return !!window.fireSHasBookedInspection(project);
+      }
+    } catch (_) {}
+    try {
       if (typeof window.fireSIsScheduledNewPremises === 'function') {
         return !!window.fireSIsScheduledNewPremises(project);
       }
     } catch (_) {}
-    if (!project || project.completedAt) return false;
-    if (String(project.scheduledStatus || '').toLowerCase() !== 'scheduled') return false;
+    if (!project) return false;
+    if (String(project.scheduledStatus || '').toLowerCase() !== 'scheduled') {
+      if (project.recurringCycleEnabled === true && project.recurringCycleNextDate) return true;
+      if (project.followUpRequired === 'Yes' && project.followUpDate) return true;
+      return false;
+    }
     const type = String(project.scheduleType || '').toLowerCase();
-    return type === 'new_site' || type === 'existing_site' || type === 'new_inspection';
+    return (
+      type === 'new_site' ||
+      type === 'existing_site' ||
+      type === 'new_inspection' ||
+      type === 'recurring_cycle' ||
+      type === 'follow_up'
+    );
   }
 
   function inScheduleView() {
@@ -44975,7 +45702,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     if (!inScheduleView()) return;
     const empty = document.querySelector('#projectsList .empty-state');
     if (empty) {
-      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above.';
+      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above. Recurring cycle bookings also appear here.';
     }
   }
 
@@ -45001,7 +45728,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     if (!remaining.length && !list.querySelector('.empty-state')) {
       const empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above.';
+      empty.textContent = 'Nothing booked yet. Choose New site or Existing site above. Recurring cycle bookings also appear here.';
       list.appendChild(empty);
     } else {
       polishEmptyState();

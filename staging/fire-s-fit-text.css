@@ -1366,6 +1366,16 @@ html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-recurring .s
   background: #e8f5e9 !important;
 }
 
+html[data-fire-s-theme="dark"] #scheduledInspectionsBoard,
+html[data-fire-s-theme="dark"] #scheduledInspectionsBoard :is(h3, p, span, strong, small, div, article) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] .schedule-cancel-btn {
+  color: #b71c1c !important;
+  background: #ffffff !important;
+}
+
 html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-badge {
   color: #991b1b !important;
   background: #fee2e2 !important;

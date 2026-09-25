@@ -139,4 +139,21 @@ const followUp = apply({
 assert.strictEqual(followUp.scheduledDate, '2026-10-01', 'open follow-up after finish stays scheduled');
 assert.strictEqual(followUp.scheduleType, 'follow_up');
 
+const both = apply({
+  scheduledDate: '2026-08-01',
+  scheduledStatus: 'scheduled',
+  followUpRequired: 'Yes',
+  followUpDate: '2026-10-01',
+  recurringCycleEnabled: true,
+  recurringCycleNumber: 6,
+  recurringCycleUnit: 'months',
+  completedAt: '2026-09-14T08:00:00.000Z'
+});
+assert.strictEqual(both.scheduledDate, '2026-10-01', 'follow-up keeps its own date when a cycle is also active');
+assert.strictEqual(both.scheduleType, 'follow_up');
+assert.ok(
+  both.recurringCycleNextDate > '2026-09-14',
+  'cycle next date must stay booked next to the follow-up'
+);
+
 console.log('schedule-reset-after-finalise.test.js: ok');
