@@ -1,6 +1,13 @@
 import assert from 'node:assert';
 import crypto from 'node:crypto';
-import { loadPayfastConfig, resolvePayfastMode, processUrlForMode, publicPayfastConfig } from '../supabase/functions/_shared/payfast-config.js';
+import {
+  loadPayfastConfig,
+  missingMerchantSecretNames,
+  resolvePayfastMode,
+  processUrlForMode,
+  publicPayfastConfig,
+  safePayfastErrorMessage
+} from '../supabase/functions/_shared/payfast-config.js';
 import {
   assertSandboxCheckout,
   assertCheckoutMode,
@@ -157,6 +164,53 @@ const liveFields = buildSignedCheckoutFields(liveCfg, {
   email: 'owner@acme.test'
 });
 assert.strictEqual(liveFields.email_address, 'owner@acme.test');
+
+const missingLive = missingMerchantSecretNames({
+  PAYFAST_MODE: 'live',
+  PAYFAST_ALLOW_LIVE: 'true'
+});
+assert.deepStrictEqual(missingLive, [
+  'PAYFAST_LIVE_MERCHANT_ID',
+  'PAYFAST_LIVE_MERCHANT_KEY',
+  'PAYFAST_LIVE_PASSPHRASE'
+]);
+assert.deepStrictEqual(
+  missingMerchantSecretNames({
+    PAYFAST_MODE: 'live',
+    PAYFAST_ALLOW_LIVE: 'true',
+    PAYFAST_LIVE_MERCHANT_ID: '10000100',
+    PAYFAST_LIVE_MERCHANT_KEY: 'live-key',
+    PAYFAST_LIVE_PASSPHRASE: ''
+  }),
+  ['PAYFAST_LIVE_PASSPHRASE']
+);
+assert.deepStrictEqual(
+  missingMerchantSecretNames({
+    PAYFAST_MODE: 'sandbox',
+    PAYFAST_SANDBOX_MERCHANT_ID: 'test-sandbox-id',
+    PAYFAST_SANDBOX_MERCHANT_KEY: 'test-sandbox-key',
+    PAYFAST_SANDBOX_PASSPHRASE: 'test-sandbox-pass'
+  }),
+  []
+);
+
+const missingErr = new Error(
+  'PayFast live is missing server secrets: PAYFAST_LIVE_MERCHANT_ID, PAYFAST_LIVE_MERCHANT_KEY, PAYFAST_LIVE_PASSPHRASE. Paste Merchant ID, Merchant Key and Security Passphrase from www.payfast.co.za Settings → Developer Settings into those names on the live Supabase project (ispsdmglyylcwkufphnv). Do not leave the Update box empty before Save.'
+);
+assert.strictEqual(safePayfastErrorMessage(missingErr), missingErr.message);
+assert.strictEqual(
+  safePayfastErrorMessage(new Error('role SERVICE_ROLE leaked')),
+  'PayFast is not configured on the server.'
+);
+assert.throws(
+  () =>
+    loadPayfastConfig({
+      PAYFAST_MODE: 'live',
+      PAYFAST_ALLOW_LIVE: 'true',
+      SUPABASE_URL: 'https://ispsdmglyylcwkufphnv.supabase.co'
+    }),
+  /PAYFAST_LIVE_PASSPHRASE/
+);
 
 assertSandboxCheckout(sandboxCfg);
 assert.doesNotThrow(() => assertCheckoutMode(liveCfg));

@@ -65,6 +65,8 @@ assert.ok(!/merchant_key/.test(livePayfast));
 assert.ok(!/passphrase\s*:/.test(liveEnv));
 
 assert.ok(/assertCheckoutMode/.test(checkout));
+assert.ok(/missingSecrets/.test(checkout));
+assert.ok(/safePayfastErrorMessage/.test(checkout));
 assert.ok(!/assertSandboxCheckout\(cfg\)/.test(checkout));
 assert.ok(/mode: cfg\.mode/.test(checkout));
 
