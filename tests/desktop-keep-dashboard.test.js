@@ -94,7 +94,7 @@ assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-13-logo-splash/.test(stagingHtml) &&
     /fire-s-management-dashboard\.js\?v=1-7-desktop/.test(stagingHtml) &&
-    /fire-s-get-started.js\?v=2-58-howto/.test(stagingHtml) &&
+    /fire-s-get-started.js\?v=2-59-isolate/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-114-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
 );

@@ -7519,17 +7519,52 @@ function getAccessMetadata() {
   };
 }
 
-/** Prefer live membership company; never wipe an existing project company with null. */
+var FIRE_S_ISOLATE_COMPANY_KEY = 'fireS.isolateCompanyInspections.v1';
+
+function fireSReadIsolatedCompanies() {
+  try {
+    const raw = localStorage.getItem(FIRE_S_ISOLATE_COMPANY_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch (_) {
+    return {};
+  }
+}
+
+function fireSMarkCompanyIsolated(companyId) {
+  const cid = String(companyId || '').trim();
+  if (!cid) return;
+  try {
+    const map = fireSReadIsolatedCompanies();
+    map[cid] = 1;
+    localStorage.setItem(FIRE_S_ISOLATE_COMPANY_KEY, JSON.stringify(map));
+  } catch (_) {}
+}
+
+function fireSCompanyAdoptsLocalLeftovers(companyId) {
+  const cid = String(companyId || '').trim();
+  if (!cid) return true;
+  try {
+    const map = fireSReadIsolatedCompanies();
+    if (map[cid]) return false;
+  } catch (_) {}
+  return true;
+}
+
+window.fireSMarkCompanyIsolated = fireSMarkCompanyIsolated;
+window.fireSCompanyAdoptsLocalLeftovers = fireSCompanyAdoptsLocalLeftovers;
+
+/** Keep an inspection on its own company; only stamp untagged rows with membership. */
 function resolveProjectCompanyFields(project, accessMetadata) {
   const meta = accessMetadata || getAccessMetadata();
-  const companyId =
-    String(
-      meta.companyId ||
-        currentUserProfile?.companyId ||
-        (project && project.companyId) ||
-        (project && project.company_id) ||
-        ''
-    ).trim() || null;
+  const existing = String(
+    (project && (project.companyId || project.company_id)) || ''
+  ).trim();
+  const membershipId = String(
+    meta.companyId || currentUserProfile?.companyId || ''
+  ).trim();
+  const companyId = existing || membershipId || null;
   const rawName = String(
     (meta.companyId && meta.companyName) ||
       (companyId && currentUserProfile?.companyName) ||
@@ -7556,6 +7591,10 @@ function resolveProjectCompanyFields(project, accessMetadata) {
 function restampLocalInspectionsWithCompany(companyId, companyName) {
   const cid = String(companyId || '').trim();
   if (!cid) return 0;
+  const adoptLeftovers =
+    typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+      ? fireSCompanyAdoptsLocalLeftovers(cid)
+      : true;
 
   const projects = getProjects();
   let changed = 0;
@@ -7579,6 +7618,19 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
       return project;
     }
     if (existing) return project;
+    if (!adoptLeftovers) return project;
+    const profile =
+      typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
+    const mine =
+      typeof fireSProjectOwnedByProfile === 'function' &&
+      fireSProjectOwnedByProfile(project, profile);
+    const hasOwner = String(
+      project.createdByUserId ||
+        project.user_id ||
+        project.createdByEmail ||
+        ''
+    ).trim();
+    if (hasOwner && !mine) return project;
     changed += 1;
     queueInspectionForUpload(project.id);
     return {
@@ -7658,6 +7710,11 @@ function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
       project.companyId || project.company_id || ''
     ).trim();
     if (cid && projectCid && projectCid !== cid) return;
+    const adoptLeftovers =
+      typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+        ? fireSCompanyAdoptsLocalLeftovers(cid)
+        : true;
+    if (cid && !projectCid && !adoptLeftovers) return;
     if (cloudIds.has(String(project.id))) return;
     queueInspectionForUpload(project.id);
     queued += 1;
@@ -7704,30 +7761,30 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
   const mine = project => fireSProjectOwnedByProfile(project, profile);
 
   if (profileCompanyId) {
-    const matched = activeProjects.filter(project => {
+    const adoptLeftovers =
+      typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+        ? fireSCompanyAdoptsLocalLeftovers(profileCompanyId)
+        : true;
+    return activeProjects.filter(project => {
       const projectCompanyId = String(
         project.companyId || project.company_id || ''
       ).trim();
       if (projectCompanyId === profileCompanyId) return true;
-      if (!projectCompanyId) {
-        if (mine(project)) return true;
-        const hasOwner = String(
-          project.createdByUserId ||
-            project.user_id ||
-            project.createdByEmail ||
-            ''
-        ).trim();
-        if (!hasOwner) return true;
-      }
-      return false;
+      if (projectCompanyId) return false;
+      if (!adoptLeftovers) return false;
+      if (mine(project)) return true;
+      const hasOwner = String(
+        project.createdByUserId ||
+          project.user_id ||
+          project.createdByEmail ||
+          ''
+      ).trim();
+      return !hasOwner;
     });
-    if (matched.length) return matched;
-    const owned = activeProjects.filter(mine);
-    return owned.length ? owned : activeProjects;
   }
 
   const owned = activeProjects.filter(mine);
-  return owned.length ? owned : activeProjects;
+  return owned;
 }
 
 function getVisibleProjectsForCurrentUser(projects) {
@@ -7739,12 +7796,12 @@ function getVisibleProjectsForCurrentUser(projects) {
 }
 
 function getProjectCloudMetadata(project, userId) {
-  // Prefer the signed-in membership company — stale local companyId causes RLS failures.
-  const companyId =
-    currentUserProfile?.companyId ||
-    project.companyId ||
-    project.company_id ||
-    null;
+  // Keep an inspection on its own company. Untagged rows take the signed-in company.
+  const existingCompanyId = String(
+    (project && (project.companyId || project.company_id)) || ''
+  ).trim();
+  const membershipId = String(currentUserProfile?.companyId || '').trim();
+  const companyId = existingCompanyId || membershipId || null;
 
   return {
     company_id: companyId,
@@ -7776,7 +7833,11 @@ function getProjectCloudMetadata(project, userId) {
 
 function applyInspectionAccessFilter(query, userId) {
   const companyId = currentUserProfile?.companyId;
-  if (companyId && userId) {
+  const adoptLeftovers =
+    typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+      ? fireSCompanyAdoptsLocalLeftovers(companyId)
+      : true;
+  if (companyId && userId && adoptLeftovers) {
     const cid = String(companyId).replace(/[^a-zA-Z0-9-]/g, '');
     const uid = String(userId).replace(/[^a-zA-Z0-9-]/g, '');
     if (cid && uid) {

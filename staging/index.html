@@ -10,7 +10,7 @@
     (function fireSDropStuckToetsCache() {
       try {
         var WANT = '1.3.114-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-118';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-119';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -428,7 +428,7 @@
           <li>Login with the owner email.</li>
           <li>Open Home → <strong>Subscription</strong>.</li>
           <li>Tap <strong>Cancel subscription</strong> and confirm.</li>
-          <li>Do not type a new company name. Inspections stay. Pay on PayFast later to use this company again.</li>
+          <li>Already cancelled? Do not type a new company name. Login with the same owner email, then Home → Subscription → Pay on PayFast. Inspections stay. Pay on PayFast later to use this company again.</li>
         </ol>
       </div>
       <input id="fireSGetStartedCompany" type="text" placeholder="Company name" autocomplete="organization">
@@ -2020,14 +2020,14 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-114-hide-pw"></script>
+  <script src="app.js?v=1-3-114-isolate"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-6-priority"></script>
   <script src="fire-s-clean-home-roles.js?v=2-49-hide-access"></script>
   <script src="fire-s-owner-lists.js?v=1-10-last-def"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
-  <script src="fire-s-company-team.js?v=2-23-temp-pw"></script>
+  <script src="fire-s-company-team.js?v=2-24-isolate"></script>
   <script src="fire-s-schedule-assign.js?v=1-3-datepicker"></script>
   <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
   <script src="fire-s-test-samples.js?v=1-4-subscribe"></script>
@@ -2038,7 +2038,7 @@
   <script src="fire-s-user-manual.js?v=1-48-howto"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
-  <script src="fire-s-get-started.js?v=2-58-howto"></script>
+  <script src="fire-s-get-started.js?v=2-59-isolate"></script>
   <script src="fire-s-change-password.js?v=1-0-temp-pw"></script>
   <script src="fire-s-startup-stability.js?v=1-13-logo-splash"></script>
   <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>

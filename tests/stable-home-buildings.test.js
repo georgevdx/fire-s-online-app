@@ -17,7 +17,7 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /Version 1\.3\.114-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-114-hide-pw/.test(stagingHtml) &&
+    /app\.js\?v=1-3-114-isolate/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
     /1\.3\.114-toets/.test(stagingEnv) &&
     /fire-s-108-76-toets-cancel/.test(stagingSw),
@@ -30,7 +30,7 @@ assert.ok(
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
     /cache: 'no-store'/.test(stagingSw) &&
-    /fireS\.toetsCacheDrop\.1-3-118/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-119/.test(stagingHtml),
   'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
 );
 assert.ok(

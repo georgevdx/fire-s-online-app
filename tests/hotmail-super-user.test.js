@@ -56,7 +56,7 @@ assert.ok(/1\.3\.114-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.11
 assert.ok(
   /app\.js\?v=1-3-67/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml) &&
-    /app\.js\?v=1-3-114-hide-pw/.test(stagingHtml) &&
+    /app\.js\?v=1-3-114-isolate/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-114-toets/.test(stagingHtml),
   'Live and toets must cache-bust the Hotmail super-user app'
 );

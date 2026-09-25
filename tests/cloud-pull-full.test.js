@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-114-hide-pw',
+  '1-3-114-isolate',
   '1-10-last-def',
   '108-76-toets-cancel',
   'fire-s-108-76-toets-cancel'

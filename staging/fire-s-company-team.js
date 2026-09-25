@@ -1690,6 +1690,14 @@
 
       setFreshCompanyMode(false);
 
+      if (company?.id && (useFreshRpc || !alreadyLinked)) {
+        try {
+          if (typeof window.fireSMarkCompanyIsolated === 'function') {
+            window.fireSMarkCompanyIsolated(company.id);
+          }
+        } catch (_) {}
+      }
+
       try {
         if (typeof window.loadUserAccessProfile === 'function') {
           await window.loadUserAccessProfile();

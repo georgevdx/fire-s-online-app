@@ -646,6 +646,18 @@
     } catch (_) {}
   }
 
+  function companyNamesMatch(a, b) {
+    return text(a).toLowerCase() === text(b).toLowerCase();
+  }
+
+  function markCreatedCompanyIsolated(companyId) {
+    try {
+      if (typeof window.fireSMarkCompanyIsolated === 'function' && companyId) {
+        window.fireSMarkCompanyIsolated(companyId);
+      }
+    } catch (_) {}
+  }
+
   function rememberCompany(name, companyId) {
     try {
       if (typeof window.fireSRememberCompanyName === 'function' && companyId) {
@@ -1453,9 +1465,11 @@
   async function createCompanyAfterSignIn(company, email, intervalPickerId, intervalOverride, wantPay) {
     var sb = getSb();
     if (!sb || !sb.rpc) throw new Error('Cloud is not ready yet. Wait a moment and try again.');
-    setStatus('Creating company…');
+    var existingId = text(profile() && profile().companyId);
+    var existingName = text(profile() && profile().companyName);
     var planId = 'standard';
     var intervalId = intervalOverride || chosenInterval(intervalPickerId) || 'monthly';
+    setStatus('Creating company…');
     var rpc = await sb.rpc('fire_s_create_company', {
       p_name: company,
       p_plan: planId
@@ -1465,9 +1479,40 @@
     }
     if (rpc.error) throw rpc.error;
     var companyRow = parseCompanyRpc(rpc, company);
-    if (companyRow) rememberCompany(companyRow.name || company, companyRow.id);
+    var returnedId = text(companyRow && companyRow.id);
+    var returnedName = text(companyRow && companyRow.name) || company;
+    var sameCompany =
+      !!(existingId && returnedId && existingId === returnedId) &&
+      companyNamesMatch(returnedName, company);
+    var needFresh =
+      !sameCompany &&
+      !!(
+        (existingId && !companyNamesMatch(existingName, company)) ||
+        (companyRow && !companyNamesMatch(returnedName, company))
+      );
+    if (needFresh) {
+      setStatus('Starting a clean company…');
+      rpc = await sb.rpc('fire_s_start_fresh_company', { p_name: company });
+      if (rpc.error) throw rpc.error;
+      companyRow = parseCompanyRpc(rpc, company);
+      returnedId = text(companyRow && companyRow.id);
+      returnedName = text(companyRow && companyRow.name) || company;
+      sameCompany = false;
+    }
+    var createdNew = !sameCompany;
+    if (createdNew && returnedId) markCreatedCompanyIsolated(returnedId);
+    if (companyRow) rememberCompany(createdNew ? company : returnedName, returnedId);
     await refreshMembership();
-    rememberCompany(company, (profile() && profile().companyId) || (companyRow && companyRow.id));
+    var liveId = text(profile() && profile().companyId) || returnedId;
+    if (createdNew) {
+      if (liveId) markCreatedCompanyIsolated(liveId);
+      rememberCompany(company, liveId);
+    } else {
+      rememberCompany(
+        text(profile() && profile().companyName) || returnedName,
+        liveId
+      );
+    }
     await saveChosenPlan(planId, intervalId);
     notifySubscribe(company, email, intervalId);
     clearPendingSubscribe();
@@ -1584,6 +1629,17 @@
         }
         await refreshMembership();
         if (hasCompany()) {
+          var existingLoginName = text(profile() && profile().companyName);
+          if (!companyNamesMatch(existingLoginName, company)) {
+            await createCompanyAfterSignIn(
+              company,
+              email,
+              'fireSRegisterBillingOptions',
+              intervalId,
+              wantPay
+            );
+            return;
+          }
           clearPendingSubscribe();
           if (wantPay) {
             await openPayfastCheckout(company, email, intervalId);
@@ -1617,6 +1673,17 @@
       }
       await refreshMembership();
       if (hasCompany()) {
+        var existingSignupName = text(profile() && profile().companyName);
+        if (!companyNamesMatch(existingSignupName, company)) {
+          await createCompanyAfterSignIn(
+            company,
+            email,
+            'fireSRegisterBillingOptions',
+            intervalId,
+            wantPay
+          );
+          return;
+        }
         clearPendingSubscribe();
         if (wantPay) {
           await openPayfastCheckout(company, email, intervalId);

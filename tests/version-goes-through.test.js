@@ -34,7 +34,7 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-118/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-119/.test(stagingHtml) &&
     /service-worker\.js\?v=108-76-toets-cancel/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),

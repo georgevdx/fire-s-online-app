@@ -47,7 +47,7 @@ leftoverNames.forEach((name, idx) => {
 
 assert.ok(
   /Version 1\.3\.114-toets/.test(html) &&
-    /app\.js\?v=1-3-114-hide-pw/.test(html),
+    /app\.js\?v=1-3-114-isolate/.test(html),
   'Toets must cache-bust the hidden Command Centre summary and stable Home counts'
 );
 
