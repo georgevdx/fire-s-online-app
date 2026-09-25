@@ -28,6 +28,15 @@ assert.ok(/fire-s-payfast\.js/.test(html), 'Toets-blad must load the PayFast mod
 assert.ok(/id="fireSPayfastPayBtn"/.test(html), 'Subscription page must have Pay on PayFast');
 assert.ok(/PayFast sandbox/.test(html), 'Toets Subscribe copy must say sandbox — no real money');
 assert.ok(/startCheckout/.test(getStarted) && /startCheckout/.test(subscribe), 'Subscribe flows must open PayFast');
+assert.ok(/function paintSubscribePayButtons/.test(getStarted), 'Subscribe form must show Pay on PayFast');
+const guest = html.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
+assert.ok(
+  guest &&
+    /id="fireSGetStartedCreateBtn"/.test(guest[0]) &&
+    /Pay R250 on PayFast/.test(guest[0]) &&
+    !/id="fireSRegisterViewPlansBtn"/.test(guest[0]),
+  'Toets Subscribe form must pay on PayFast and not duplicate View Plans'
+);
 assert.ok(!/VAT/.test(payfastSrc), 'PayFast module must not mention VAT to subscribers');
 
 assert.ok(!/merchantKey/.test(envSrc), 'Toets env must not ship a merchant key');

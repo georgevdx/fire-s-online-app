@@ -68,9 +68,15 @@ assert.ok(/getCompanyEntitlement/.test(js), 'Live entitlement client uses the se
 
 assert.ok(/fire-s-entitlement\.css/.test(liveHtml) && /fire-s-entitlement\.js/.test(liveHtml));
 assert.ok(/fire-s-entitlement\.css/.test(stagingHtml) && /fire-s-entitlement\.js/.test(stagingHtml));
-assert.ok(/Start Free Trial/.test(liveHtml) && /Start Free Trial/.test(stagingHtml));
-assert.ok(/View Plans & Pricing/.test(liveHtml) && /View Plans & Pricing/.test(stagingHtml));
-assert.ok(/id="fireSLoginViewPlansBtn"/.test(liveHtml));
+assert.ok(/id="fireSGetStartedCreateBtn"/.test(liveHtml) && /id="fireSGetStartedCreateBtn"/.test(stagingHtml));
+const liveGuest = liveHtml.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
+const stagingGuest = stagingHtml.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
+assert.ok(liveGuest && /Pay R250 on PayFast/.test(liveGuest[0]), 'Live Subscribe form must show Pay on PayFast');
+assert.ok(stagingGuest && /Pay R250 on PayFast/.test(stagingGuest[0]), 'Toets Subscribe form must show Pay on PayFast');
+assert.ok(liveGuest && !/id="fireSRegisterViewPlansBtn"/.test(liveGuest[0]), 'Live Subscribe must not duplicate View Plans');
+assert.ok(stagingGuest && !/id="fireSRegisterViewPlansBtn"/.test(stagingGuest[0]), 'Toets Subscribe must not duplicate View Plans');
+assert.ok(/id="fireSLoginViewPlansBtn"/.test(liveHtml) && /View Plans & Pricing/.test(liveHtml));
+assert.ok(/id="fireSLoginViewPlansBtn"/.test(stagingHtml) && /View Plans & Pricing/.test(stagingHtml));
 assert.ok(/id="fireSAdminEntitlementPanel"/.test(liveHtml) && /id="fireSAdminEntitlementPanel"/.test(stagingHtml));
 assert.ok(/id="fireSTrialSubscribeNote"/.test(liveHtml));
 assert.ok(/Subscribing New Company/.test(liveHtml));

@@ -33,7 +33,7 @@ assert.ok(
     /id="cloudVersion">1\.3\.114-toets</.test(html) &&
     /getElementById\('cloudVersion'\)/.test(env) &&
     /function fireSDropStuckToetsCache\(/.test(html) &&
-    /fireS\.toetsCacheDrop\.1-3-116/.test(html) &&
+    /fireS\.toetsCacheDrop\.1-3-117/.test(html) &&
     /TOETS-BLAD 1\.3\.114-toets/.test(env),
   'Toets-blad HTML must show 1.3.114-toets before scripts run'
 );

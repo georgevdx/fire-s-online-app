@@ -662,6 +662,29 @@
     var box = byId(containerId);
     if (!cat || !cat.renderBillingPicker || !box) return;
     cat.renderBillingPicker(box, selectedId || (cat.defaultIntervalId || 'monthly'));
+    box.querySelectorAll('.fire-s-plan-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        paintSubscribePayButtons();
+      });
+    });
+    paintSubscribePayButtons();
+  }
+
+  function subscribePayLabel(containerId) {
+    var interval = chosenInterval(containerId) || 'monthly';
+    try {
+      if (window.fireSPayfast && typeof window.fireSPayfast.payLabel === 'function') {
+        return window.fireSPayfast.payLabel(interval);
+      }
+    } catch (_) {}
+    return interval === 'annual' ? 'Pay R2 500 on PayFast' : 'Pay R250 on PayFast';
+  }
+
+  function paintSubscribePayButtons() {
+    var registerBtn = byId('fireSGetStartedCreateBtn');
+    if (registerBtn) registerBtn.textContent = subscribePayLabel('fireSRegisterBillingOptions');
+    var finishBtn = byId('fireSGetStartedFinishBtn');
+    if (finishBtn) finishBtn.textContent = subscribePayLabel('fireSCompanyOnlyBillingOptions');
   }
 
   function chosenPlan(containerId) {
@@ -710,8 +733,8 @@
     var guestNote = byId('fireSRegisterNote');
     if (guestNote) {
       guestNote.textContent = isStagingEnv()
-        ? 'One Subscribe creates the login and the company. Use the same email you already use for Supabase.'
-        : 'Start a 14-day free trial. Creates your owner login and this company name. No card is required to begin. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. You (the owner) pay R250 / month (or R2 500 / year) per subscription after the trial. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Phone and desktop share that email.';
+        ? 'One Subscribe creates the login and the company. Then tap Pay on PayFast. Use the same email you already use for Supabase.'
+        : 'Creates your owner login and this company name. One person is one company. If you already belong to a company, only that Owner can remove you. Then you can Subscribe here. Subscription per month per login is R250. Per year per login is R2 500. Phone and desktop with the same email count as one login. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company. Please see the user manual in Fire-S. Tap Pay on PayFast. Card details stay with PayFast.';
     }
     var loginLink = byId('fireSRegisterSwitchToLoginBtn');
     if (loginLink) loginLink.style.display = '';

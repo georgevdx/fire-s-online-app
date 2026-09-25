@@ -22,7 +22,7 @@ assert.ok(
 );
 assert.ok(/fire-s-payfast\.js/.test(html), 'Live root must load PayFast');
 assert.ok(
-  /After Subscribe, pay on PayFast/.test(html) && /R250/.test(html) && /R2 500/.test(html),
+  /Tap Pay on PayFast/.test(html) && /R250/.test(html) && /R2 500/.test(html),
   'Live Subscribe must take payment on PayFast at R250 / R2 500'
 );
 
