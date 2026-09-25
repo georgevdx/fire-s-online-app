@@ -73,8 +73,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.67/.test(read('index.html')) &&
-    /Version 1\.3\.114-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.67 live and 1.3.114-toets'
+    /Version 1\.3\.115-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.67 live and 1.3.115-toets'
 );
 
 console.log('qa-schedule-fonts.test.js: ok');

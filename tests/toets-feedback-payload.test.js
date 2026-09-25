@@ -15,11 +15,11 @@ const env = read('staging/fire-s-env.js');
 const bootstrap = read('STAGING_BOOTSTRAP.sql');
 
 assert.ok(
-  /Version 1\.3\.114-toets/.test(html) &&
-    /appVersion: staging \? '1\.3\.114-toets'/.test(env) &&
-    /app\.js\?v=1-3-114-isolate/.test(html) &&
-    /fireS\.toetsCacheDrop\.1-3-119/.test(html),
-  'Toets must cache-bust the Fire-S Test feedback payload fix as 1.3.114-toets'
+  /Version 1\.3\.115-toets/.test(html) &&
+    /appVersion: staging \? '1\.3\.115-toets'/.test(env) &&
+    /app\.js\?v=1-3-115-clean/.test(html) &&
+    /fireS\.toetsCacheDrop\.1-3-120/.test(html),
+  'Toets must cache-bust the Fire-S Test feedback payload fix as 1.3.115-toets'
 );
 
 assert.ok(
@@ -57,13 +57,13 @@ const row = sandbox.unwrapBetaFeedbackRow({
   payload: {
     issue_type: 'Comment',
     what_happened: 'The dark theme is hard to read',
-    app_version: '1.3.114-toets',
+    app_version: '1.3.115-toets',
     reported_by_email: 'owner@example.com'
   }
 });
 assert.strictEqual(row.issue_type, 'Comment');
 assert.strictEqual(row.what_happened, 'The dark theme is hard to read');
-assert.strictEqual(row.app_version, '1.3.114-toets');
+assert.strictEqual(row.app_version, '1.3.115-toets');
 assert.strictEqual(row.reported_by_email, 'owner@example.com');
 
 const insertStart = app.indexOf('function betaFeedbackInsertRow(fields) {');

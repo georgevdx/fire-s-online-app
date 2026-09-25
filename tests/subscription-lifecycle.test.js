@@ -143,7 +143,7 @@ assert.ok(!/PAYFAST_/.test(billingPage));
 
 assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
-assert.ok(/Version 1\.3\.114-toets/.test(stagingHtml));
+assert.ok(/Version 1\.3\.115-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/fire-s-subscribe.js\?v=1-38-howto/.test(stagingHtml));
 assert.ok(/canManage\(\) \|\| !!data\.can_cancel/.test(stagingSubscribe));

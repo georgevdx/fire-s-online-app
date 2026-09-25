@@ -75,9 +75,9 @@ assert.ok(
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv) &&
-    /1\.3\.114-toets/.test(stagingHtml) &&
-    /1\.3\.114-toets/.test(stagingEnv),
-  'Live must show 1.3.67 and toets 1.3.114-toets so a phone can tell it has this build'
+    /1\.3\.115-toets/.test(stagingHtml) &&
+    /1\.3\.115-toets/.test(stagingEnv),
+  'Live must show 1.3.67 and toets 1.3.115-toets so a phone can tell it has this build'
 );
 
 console.log('sit-live-home-gateway.test.js: ok');

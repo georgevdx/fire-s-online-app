@@ -90,7 +90,7 @@ assert.ok(
     /Your owner gave you a temporary password/.test(change),
   'After Login with a temporary password the inspector must choose and confirm a new one'
 );
-assert.ok(/1\.3\.114-toets/.test(env), 'Toets-blad version must be 1.3.114-toets for this password flow');
+assert.ok(/1\.3\.115-toets/.test(env), 'Toets-blad version must be 1.3.115-toets for this password flow');
 assert.ok(
   !/id="fireSSeatPassword"/.test(liveHtml) &&
     !/id="cmdChangePasswordBtn"/.test(liveHtml) &&

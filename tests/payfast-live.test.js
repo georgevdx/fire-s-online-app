@@ -78,7 +78,7 @@ assert.ok(!/VITE_PAYFAST/.test(itn));
 
 assert.ok(/PayFast sandbox/.test(stagingHtml), 'Toets must stay sandbox');
 assert.ok(/mode: 'sandbox'/.test(stagingEnv));
-assert.ok(/1\.3\.114-toets/.test(stagingEnv));
+assert.ok(/1\.3\.115-toets/.test(stagingEnv));
 
 const sandboxCfg = { mode: 'sandbox', processUrl: 'https://sandbox.payfast.co.za/eng/process' };
 const liveCfg = { mode: 'live', processUrl: 'https://www.payfast.co.za/eng/process' };
