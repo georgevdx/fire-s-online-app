@@ -22,8 +22,11 @@ assert.ok(
 );
 assert.ok(/fire-s-payfast\.js/.test(html), 'Live root must load PayFast');
 assert.ok(
-  /Tap Pay on PayFast/.test(html) && /R250/.test(html) && /R2 500/.test(html),
-  'Live Subscribe must take payment on PayFast at R250 / R2 500'
+  /Start Free Trial/.test(html) &&
+    /Pay R250 on PayFast/.test(html) &&
+    /R250/.test(html) &&
+    /R2 500/.test(html),
+  'Live Subscribe must offer Start Free Trial and Pay on PayFast at R250 / R2 500'
 );
 
 const gate = html.match(/id="fireSGetStarted"[\s\S]*?id="mainCommandCentre"/);
