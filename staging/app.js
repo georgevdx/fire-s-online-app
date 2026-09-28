@@ -5093,7 +5093,16 @@ async function safeDownloadNewerCloudInspections(options) {
 
     const localProjects = getProjects();
     const localBefore = localProjects.length;
-    const freezeHomeCounts = localBefore > 0;
+    let companyLocals = localBefore;
+    try {
+      if (typeof fireSHomeCountableProjects === 'function') {
+        companyLocals = fireSHomeCountableProjects(localProjects).length;
+      } else if (typeof getVisibleProjectsForCurrentUser === 'function') {
+        const visible = getVisibleProjectsForCurrentUser(localProjects);
+        if (Array.isArray(visible)) companyLocals = visible.length;
+      }
+    } catch (_) {}
+    const freezeHomeCounts = companyLocals > 0;
     if (freezeHomeCounts) {
       try { window.__fireSHomeCountsFrozen = true; } catch (_) {}
     }
@@ -7532,6 +7541,24 @@ function fireSReadIsolatedCompanies() {
   }
 }
 
+function fireSResetHomeForNewCompany() {
+  try {
+    window.__fireSCloudBuildingFilter = { ids: {}, keys: {}, ready: true };
+    window.__fireSCloudPullSettled = true;
+    window.__fireSHomeCountsFrozen = false;
+  } catch (_) {}
+  try {
+    if (typeof window.fireSProductionRenderKpis === 'function') {
+      window.fireSProductionRenderKpis();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSRefreshOwnerLists === 'function') {
+      window.fireSRefreshOwnerLists();
+    }
+  } catch (_) {}
+}
+
 function fireSMarkCompanyIsolated(companyId) {
   const cid = String(companyId || '').trim();
   if (!cid) return;
@@ -7540,6 +7567,7 @@ function fireSMarkCompanyIsolated(companyId) {
     map[cid] = 1;
     localStorage.setItem(FIRE_S_ISOLATE_COMPANY_KEY, JSON.stringify(map));
   } catch (_) {}
+  fireSResetHomeForNewCompany();
 }
 
 function fireSCompanyAdoptsLocalLeftovers(companyId) {
@@ -7554,6 +7582,7 @@ function fireSCompanyAdoptsLocalLeftovers(companyId) {
 
 window.fireSMarkCompanyIsolated = fireSMarkCompanyIsolated;
 window.fireSCompanyAdoptsLocalLeftovers = fireSCompanyAdoptsLocalLeftovers;
+window.fireSResetHomeForNewCompany = fireSResetHomeForNewCompany;
 
 /** Keep an inspection on its own company; only stamp untagged rows with membership. */
 function resolveProjectCompanyFields(project, accessMetadata) {
@@ -26944,6 +26973,26 @@ function fireSFilterToCloudBuildings(list) {
   });
 }
 
+function fireSHomeCountableProjects(projects) {
+  let list = Array.isArray(projects) ? projects : [];
+  try {
+    if (typeof getVisibleProjectsForCurrentUser === 'function') {
+      const visible = getVisibleProjectsForCurrentUser(list);
+      if (Array.isArray(visible)) list = visible;
+    }
+  } catch (_) {}
+  try {
+    if (typeof fireSFilterToCloudBuildings === 'function') {
+      list = fireSFilterToCloudBuildings(list);
+    }
+  } catch (_) {}
+  return Array.isArray(list) ? list : [];
+}
+
+try {
+  window.fireSHomeCountableProjects = fireSHomeCountableProjects;
+} catch (_) {}
+
 function fireSChecklistAnswerValue(answer) {
   return String(
     (answer && (answer.answer || answer.value || answer.result || answer.finding)) || ''
@@ -37861,6 +37910,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     try {
       const list = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
       const safe = Array.isArray(list) ? list : [];
+      if (typeof fireSHomeCountableProjects === 'function') return fireSHomeCountableProjects(safe) || [];
       return typeof getVisibleProjectsForCurrentUser === 'function' ? (getVisibleProjectsForCurrentUser(safe) || []) : safe;
     } catch (_) { return []; }
   }
@@ -38266,7 +38316,9 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
-      if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
+      if (typeof window.fireSHomeCountableProjects === 'function') {
+        list = window.fireSHomeCountableProjects(list) || [];
+      } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
     return Array.isArray(list) ? list : [];
@@ -38609,7 +38661,9 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
-      if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
+      if (typeof window.fireSHomeCountableProjects === 'function') {
+        list = window.fireSHomeCountableProjects(list) || [];
+      } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
     return Array.isArray(list) ? list : [];
@@ -38985,7 +39039,9 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
-      if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
+      if (typeof window.fireSHomeCountableProjects === 'function') {
+        list = window.fireSHomeCountableProjects(list) || [];
+      } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
     return Array.isArray(list) ? list : [];
@@ -39303,7 +39359,9 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
     try {
-      if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
+      if (typeof window.fireSHomeCountableProjects === 'function') {
+        list = window.fireSHomeCountableProjects(list) || [];
+      } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
     return Array.isArray(list) ? list : [];
@@ -39641,7 +39699,18 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     let list = [];
     try { if (typeof window.getProjects === 'function') list = window.getProjects(); else if (typeof getProjects === 'function') list = getProjects(); else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]'); } catch(_) { list = []; }
     if (!Array.isArray(list)) list = [];
-    try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || []; } catch(_) {}
+    try {
+      if (typeof window.fireSHomeCountableProjects === 'function') {
+        list = window.fireSHomeCountableProjects(list) || [];
+      } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') {
+        list = window.getVisibleProjectsForCurrentUser(list) || [];
+      }
+    } catch(_) {}
+    try {
+      if (typeof window.fireSFilterToCloudBuildings === 'function') {
+        list = window.fireSFilterToCloudBuildings(list) || list;
+      }
+    } catch(_) {}
     if (typeof window.fireSIsDeletedPremises === 'function') {
       list = (Array.isArray(list) ? list : []).filter(project => !window.fireSIsDeletedPremises(project));
     }
@@ -39883,7 +39952,18 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       else list = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
     } catch (_) { list = []; }
     if (!Array.isArray(list)) list = [];
-    try { if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || list; } catch (_) {}
+    try {
+      if (typeof window.fireSHomeCountableProjects === 'function') {
+        list = window.fireSHomeCountableProjects(list) || list;
+      } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') {
+        list = window.getVisibleProjectsForCurrentUser(list) || list;
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSFilterToCloudBuildings === 'function') {
+        list = window.fireSFilterToCloudBuildings(list) || list;
+      }
+    } catch (_) {}
     if (typeof window.fireSIsDeletedPremises === 'function') {
       list = list.filter(project => !window.fireSIsDeletedPremises(project));
     }
