@@ -1,4 +1,9 @@
-import { loadPayfastConfig, publicPayfastConfig } from '../_shared/payfast-config.js';
+import {
+  loadPayfastConfig,
+  missingMerchantSecretNames,
+  publicPayfastConfig,
+  safePayfastErrorMessage
+} from '../_shared/payfast-config.js';
 import {
   assertCheckoutMode,
   buildSignedCheckoutFields,
@@ -66,11 +71,7 @@ function envObject() {
 }
 
 function safeMessage(err) {
-  const message = String((err && err.message) || 'PayFast is not ready.');
-  if (/passphrase|merchant_key|merchant key|service_role|SERVICE_ROLE/i.test(message)) {
-    return 'PayFast is not configured on the server.';
-  }
-  return message;
+  return safePayfastErrorMessage(err);
 }
 
 function logEvent(event, extra) {
@@ -400,17 +401,25 @@ Deno.serve(async (req) => {
   } catch (err) {
     const status = Number(err && err.status) || 400;
     const safe = safeMessage(err);
-    logEvent('CHECKOUT_FAILED', { error: safe, status: status });
+    const missing = Array.isArray(err && err.missingSecrets)
+      ? err.missingSecrets
+      : missingMerchantSecretNames(envObject());
+    logEvent('CHECKOUT_FAILED', {
+      error: safe,
+      status: status,
+      missing_secrets: missing
+    });
     return json(
       {
         error: safe,
         activated: false,
+        missingSecrets: missing,
         public: publicPayfastConfig(
           (function () {
             try {
               return loadPayfastConfig(envObject());
             } catch (_) {
-              return { mode: 'sandbox' };
+              return { mode: 'sandbox', configured: false };
             }
           })()
         )

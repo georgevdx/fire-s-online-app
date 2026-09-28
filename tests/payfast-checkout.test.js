@@ -28,6 +28,9 @@ assert.ok(!/delete from public\.inspections/.test(sql));
 assert.ok(/CHECKOUT_STARTED/.test(sql));
 
 assert.ok(/assertCheckoutMode/.test(checkout));
+assert.ok(/missingMerchantSecretNames/.test(checkout));
+assert.ok(/safePayfastErrorMessage/.test(checkout));
+assert.ok(!/passphrase\|merchant_key\|merchant key/.test(checkout));
 assert.ok(/fire_s_begin_payfast_checkout/.test(checkout));
 assert.ok(/beginPending/.test(checkout));
 assert.ok(/resolveAuthoritativeCheckout/.test(checkout));
