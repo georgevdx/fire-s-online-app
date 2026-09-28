@@ -48,6 +48,33 @@ assert.ok(/pays on PayFast/.test(read('fire-s-subscribe-notify.js')));
 assert.ok(/1-8-payfast/.test(liveHtml));
 assert.ok(/1-40-payfast/.test(liveHtml));
 
+const liveGetStarted = read('fire-s-get-started.js');
+const liveGuest = liveHtml.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
+assert.ok(
+  liveGuest &&
+    /id="fireSGetStartedCreateBtn"/.test(liveGuest[0]) &&
+    /Start Free Trial/.test(liveGuest[0]) &&
+    /id="fireSGetStartedPayBtn"/.test(liveGuest[0]) &&
+    /Pay R250 on PayFast/.test(liveGuest[0]) &&
+    !/id="fireSRegisterViewPlansBtn"/.test(liveGuest[0]),
+  'Live Subscribe must show Start Free Trial and Pay R250 on PayFast'
+);
+const liveCompanyOnly = liveHtml.match(/id="fireSGetStartedCompanyOnly"[\s\S]*?id="fireSGetStartedWaiting"/);
+assert.ok(
+  liveCompanyOnly &&
+    /Start Free Trial/.test(liveCompanyOnly[0]) &&
+    /id="fireSGetStartedFinishPayBtn"/.test(liveCompanyOnly[0]) &&
+    /Pay R250 on PayFast/.test(liveCompanyOnly[0]),
+  'Signed-in company form must keep trial and Pay on PayFast'
+);
+assert.ok(/function openPayfastCheckout/.test(liveGetStarted), 'Pay on PayFast must open checkout after sign-in');
+assert.ok(/doRegisterCompany\(false\)/.test(liveGetStarted) && /doRegisterCompany\(true\)/.test(liveGetStarted));
+assert.ok(/var payBtn = byId\('fireSGetStartedPayBtn'\)/.test(liveGetStarted), 'Pay label must not overwrite Start Free Trial');
+assert.ok(!/registerBtn\.textContent = subscribePayLabel/.test(liveGetStarted));
+assert.ok(/if \(wantPay\)/.test(liveGetStarted), 'Start Free Trial must skip PayFast');
+assert.ok(/fire-s-get-started\.js\?v=2-55-trialpay/.test(liveHtml));
+assert.ok(/fireS\.liveCacheDrop\.1-3-67-trialpay/.test(liveHtml));
+
 const fetchBody = livePayfast.match(/body:\s*JSON\.stringify\(\{[\s\S]*?\}\)/);
 assert.ok(fetchBody, 'Live PayFast POST body must exist');
 assert.ok(!/amount/.test(fetchBody[0]), 'Browser must not send a price');

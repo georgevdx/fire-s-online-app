@@ -71,7 +71,8 @@ assert.ok(/fire-s-entitlement\.css/.test(stagingHtml) && /fire-s-entitlement\.js
 assert.ok(/id="fireSGetStartedCreateBtn"/.test(liveHtml) && /id="fireSGetStartedCreateBtn"/.test(stagingHtml));
 const liveGuest = liveHtml.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
 const stagingGuest = stagingHtml.match(/id="fireSGetStartedGuestFields"[\s\S]*?id="fireSGetStartedCompanyOnly"/);
-assert.ok(liveGuest && /Pay R250 on PayFast/.test(liveGuest[0]), 'Live Subscribe form must show Pay on PayFast');
+assert.ok(liveGuest && /Start Free Trial/.test(liveGuest[0]), 'Live Subscribe form must keep Start Free Trial');
+assert.ok(liveGuest && /id="fireSGetStartedPayBtn"/.test(liveGuest[0]) && /Pay R250 on PayFast/.test(liveGuest[0]), 'Live Subscribe form must show Pay on PayFast');
 assert.ok(stagingGuest && /Start Free Trial/.test(stagingGuest[0]), 'Toets Subscribe form must keep Start Free Trial');
 assert.ok(stagingGuest && /Pay R250 on PayFast/.test(stagingGuest[0]), 'Toets Subscribe form must show Pay on PayFast');
 assert.ok(stagingGuest && /id="fireSAccessBillingHowTo"/.test(stagingGuest[0]), 'Toets Subscribe must explain trial, pay and cancel');
