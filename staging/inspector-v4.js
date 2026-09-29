@@ -204,7 +204,7 @@
     // No search: every open booking for this inspector, soonest date first.
     const open=openList(all);
     if(!open.length){
-      next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
+      next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you yet. When the owner or manager books one for you, it appears here.</div>`;
       results.innerHTML='';
       return;
     }

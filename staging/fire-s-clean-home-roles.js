@@ -116,7 +116,7 @@
     }
     const copy =
       role === 'inspector'
-        ? 'Find, continue or start an inspection.'
+        ? 'Your inspections only. Bookings from the owner or manager appear here.'
         : role === 'viewer'
           ? 'Search and open completed inspection work.'
           : 'Open, continue, search and manage inspections.';
@@ -624,7 +624,7 @@
     setText('#mainCommandCentre .main-command-top h3', 'Find or Start an Inspection');
     setText(
       '#mainCommandSubtitle',
-      'Use Inspection Gateway below, or the Inspector Work Area.'
+      'Home lists the inspections booked for you.'
     );
     setText('#mainCommandAccessStatus', 'Inspector access');
     setStatsVisible(false);
@@ -638,7 +638,7 @@
     // Keep Gateway visible so inspectors always have a clear entry.
     showGatewayCard(
       'Inspection Gateway',
-      'Find, continue or start an inspection.'
+      'Your inspections only. Bookings from the owner or manager appear here.'
     );
     show('cmdUserManualBtn');
     show('cmdChangePasswordBtn');

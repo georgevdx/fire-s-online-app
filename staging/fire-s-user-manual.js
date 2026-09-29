@@ -259,7 +259,7 @@
         <ul>
           <li><strong>Owner</strong> — Executive Command Centre. Same as Manager, plus company control. Home shows a desktop address. On a computer that address opens the Management dashboard.</li>
           <li><strong>Manager</strong> — Operations Centre. Stats, inspections, people, company details, dashboard. Home shows the same desktop address.</li>
-          <li><strong>Inspector</strong> — Home shows <strong>Scheduled priority</strong>: every inspection you booked or that was assigned to you, soonest date first. Finish and finalise one and it leaves this list. Open <strong>Inspection Gateway</strong> to see the company's inspections.</li>
+          <li><strong>Inspector</strong> — Home shows <strong>Scheduled priority</strong>: every inspection you booked or that the owner or manager assigned to you, soonest date first. Finish and finalise one and it leaves this list. You do not see another inspector’s inspections. Inspection Gateway shows the same list: yours, plus anything directed to you.</li>
           <li><strong>Viewer</strong> — Review only. Reports and status, no editing of people or inspections.</li>
         </ul>
         <p>Top stats (Owner / Manager): Compliant Sites, Premises Requiring Action, Overdue Inspections, Inspections This Month. Tap a number to open that list.</p>
@@ -310,7 +310,7 @@
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
-          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
+          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. Owner and Manager also see <strong>Booked inspections</strong> on Home and on Schedule, with the inspector’s name. An inspector only sees their own inspections, including ones directed to them.</li>
           <li><strong>Reports</strong> — open the premises. If a report is ready, tap Latest Report or Export PDF. There is no Reports card under Schedule.</li>
           <li><strong>Request Fire Consultant Services</strong> — request consultancy, write a comment if you reviewed the app or found a problem, or ask for support.</li>
         </ul>
