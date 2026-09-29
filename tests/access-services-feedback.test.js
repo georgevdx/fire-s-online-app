@@ -88,6 +88,14 @@ assert.ok(
 assert.ok(
   /\.service-requests-admin \{[\s\S]*?display: none !important;/.test(styles) &&
     /body\.fire-s-service-super \.service-requests-admin/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewServiceRequestsBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewBetaFeedbackBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewFeedbackCommentsBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewSupportArchiveBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #serviceRequestsSuperUserNote/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #supportArchiveNote/.test(styles) &&
+    /styles\.css\?v=1-3-116-superonly/.test(html) &&
+    /fire-s-service-super-only\.js\?v=1-0-superonly/.test(html) &&
     /function paintServiceSuperUserChrome\(/.test(app) &&
     /classList\.toggle\('fire-s-service-super'/.test(app) &&
     /function isFeedbackComment\(/.test(app) &&

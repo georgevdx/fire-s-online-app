@@ -2049,12 +2049,27 @@ button.readiness-chip:focus {
   display: none !important;
 }
 
-body.fire-s-service-super .service-requests-admin,
 body.fire-s-service-super .service-requests-admin:not([hidden]) {
   display: block !important;
 }
 
-.service-requests-admin[hidden] {
+.service-requests-admin[hidden],
+body.fire-s-service-super .service-requests-admin[hidden] {
+  display: none !important;
+}
+
+/* Saved requests, reported issues, feedback comments and the archive
+   stay invisible unless the signed-in email is a service super user. */
+body:not(.fire-s-service-super) #viewServiceRequestsBtn,
+body:not(.fire-s-service-super) #viewBetaFeedbackBtn,
+body:not(.fire-s-service-super) #viewFeedbackCommentsBtn,
+body:not(.fire-s-service-super) #viewSupportArchiveBtn,
+body:not(.fire-s-service-super) #serviceRequestsSuperUserNote,
+body:not(.fire-s-service-super) #supportArchiveNote,
+body:not(.fire-s-service-super) #serviceRequestsList,
+body:not(.fire-s-service-super) #betaFeedbackList,
+body:not(.fire-s-service-super) #feedbackCommentsList,
+body:not(.fire-s-service-super) #supportArchiveList {
   display: none !important;
 }
 
