@@ -221,6 +221,22 @@
     );
   }
 
+  function premisesLabel(project) {
+    const site = text(project?.siteName || project?.branchName || project?.locationName);
+    const org = text(
+      project?.organisationName ||
+      project?.organizationName ||
+      project?.businessName ||
+      project?.clientName ||
+      project?.premisesName
+    );
+    const named = text(project?.projectName);
+    const same = (left, right) => left.toLocaleLowerCase('en-ZA') === right.toLocaleLowerCase('en-ZA');
+    if (org && site && !same(org, site)) return org + ' — ' + site;
+    if (named && site && !same(named, site)) return named;
+    return org || named || site || 'Unnamed premises';
+  }
+
   function occupancyOf(project) {
     return text(project?.occupancy) || 'Unspecified';
   }
@@ -356,6 +372,7 @@
       records.push({
         projectId: project?.id || '',
         site: siteName(project),
+        premises: premisesLabel(project),
         inspector: inspectorName(project),
         responsible: text(match?.responsible) || inspectorName(project),
         occupancy: occupancyOf(project),
@@ -1344,6 +1361,7 @@
         projectRows.push({
           projectId: project.id,
           site: siteName(project),
+          premises: premisesLabel(project),
           inspector: inspectorName(project),
           status: complianceStatus(project),
           findings: localActions.length,
@@ -1356,10 +1374,10 @@
     const body = mode === 'actions'
       ? (actionRows.length
         ? `<div style="overflow-x:auto"><table class="pbi-table">
-            <thead><tr><th>Site</th><th>Item</th><th>Priority</th><th>Age</th><th>Responsible</th><th></th></tr></thead>
+            <thead><tr><th>Premises</th><th>Item</th><th>Priority</th><th>Age</th><th>Responsible</th><th></th></tr></thead>
             <tbody>${actionRows.slice(0, 20).map(row => `
               <tr>
-                <td>${esc(row.site)}</td>
+                <td>${esc(row.premises || row.site)}</td>
                 <td>${esc(row.category)} · ${esc(row.question || row.itemNumber)}</td>
                 <td>${esc(row.priority)}</td>
                 <td>${row.ageDays}d</td>
@@ -1370,10 +1388,10 @@
         : '<div class="pbi-empty">No Action Items in this slice.</div>')
       : (projectRows.length
         ? `<div style="overflow-x:auto"><table class="pbi-table">
-            <thead><tr><th>Site</th><th>Inspector</th><th>Status</th><th>Actions</th><th>Due</th><th></th></tr></thead>
+            <thead><tr><th>Premises</th><th>Inspector</th><th>Status</th><th>Actions</th><th>Due</th><th></th></tr></thead>
             <tbody>${projectRows.slice(0, 20).map(row => `
               <tr>
-                <td>${esc(row.site)}</td>
+                <td>${esc(row.premises || row.site)}</td>
                 <td>${esc(row.inspector)}</td>
                 <td>${esc(row.status)}</td>
                 <td>${row.findings}</td>
