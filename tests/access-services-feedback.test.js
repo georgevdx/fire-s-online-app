@@ -18,12 +18,12 @@ const app = read('staging/app.js');
 const homeRoles = read('staging/fire-s-clean-home-roles.js');
 
 assert.ok(
-  /Version 1\.3\.116-toets/.test(html) &&
-    /appVersion: staging \? '1\.3\.116-toets'/.test(env) &&
-    /TOETS-BLAD 1\.3\.116-toets/.test(env) &&
+  /Version 1\.3\.117-toets/.test(html) &&
+    /appVersion: staging \? '1\.3\.117-toets'/.test(env) &&
+    /TOETS-BLAD 1\.3\.117-toets/.test(env) &&
     /fireS\.toetsCacheDrop\.1-3-121/.test(html) &&
-    /service-worker\.js\?v=108-78-toets-homekpi/.test(html) &&
-    /fire-s-108-78-toets-homekpi/.test(sw),
+    /service-worker\.js\?v=108-79-toets-117/.test(html) &&
+    /fire-s-108-79-toets-117/.test(sw),
   'Toets must leave 1.3.110 so a phone can tell it has this Access/services build'
 );
 
@@ -88,6 +88,14 @@ assert.ok(
 assert.ok(
   /\.service-requests-admin \{[\s\S]*?display: none !important;/.test(styles) &&
     /body\.fire-s-service-super \.service-requests-admin/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewServiceRequestsBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewBetaFeedbackBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewFeedbackCommentsBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #viewSupportArchiveBtn/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #serviceRequestsSuperUserNote/.test(styles) &&
+    /body:not\(\.fire-s-service-super\) #supportArchiveNote/.test(styles) &&
+    /styles\.css\?v=1-3-116-superonly/.test(html) &&
+    /fire-s-service-super-only\.js\?v=1-0-superonly/.test(html) &&
     /function paintServiceSuperUserChrome\(/.test(app) &&
     /classList\.toggle\('fire-s-service-super'/.test(app) &&
     /function isFeedbackComment\(/.test(app) &&

@@ -1,0 +1,110 @@
+#fireSBookedOut,
+.fire-s-booked-out {
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+#fireSBookedOut[hidden] {
+  display: none !important;
+}
+
+body.fire-s-role-owner #fireSBookedOut:not([hidden]),
+body.fire-s-role-manager #fireSBookedOut:not([hidden]) {
+  display: block !important;
+}
+
+#fireSBookedOut h4 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.fire-s-booked-out-hint {
+  margin: 0 0 10px;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.fire-s-booked-out-scroll {
+  overflow-x: auto;
+}
+
+.fire-s-booked-out-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.fire-s-booked-out-table th,
+.fire-s-booked-out-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.fire-s-booked-out-table th {
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.fire-s-booked-out-row {
+  cursor: pointer;
+}
+
+.fire-s-booked-out-row:hover,
+.fire-s-booked-out-row:focus {
+  background: #fef2f2;
+  outline: none;
+}
+
+.fire-s-booked-out-empty td {
+  color: #64748b;
+}
+
+.fire-s-booked-for {
+  margin-top: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #b71c1c;
+}
+
+html[data-fire-s-theme="dark"] #fireSBookedOut,
+html[data-fire-s-theme="dark"] .fire-s-booked-out {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #64748b;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-booked-out-hint,
+html[data-fire-s-theme="dark"] .fire-s-booked-out-table th,
+html[data-fire-s-theme="dark"] .fire-s-booked-out-empty td {
+  color: #cbd5e1;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-booked-out-table td,
+html[data-fire-s-theme="dark"] .fire-s-booked-out-table th {
+  border-bottom-color: #334155;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-booked-out-row:hover,
+html[data-fire-s-theme="dark"] .fire-s-booked-out-row:focus {
+  background: #3f1d1d;
+}
+
+body.fire-s-role-inspector #fireSBookedOut,
+body.fire-s-inspector-v4 #fireSBookedOut {
+  display: none !important;
+}
+
+body.fire-s-schedule-view #cancelScheduledInspectionBtn {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 6;
+}

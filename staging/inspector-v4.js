@@ -10,9 +10,21 @@
     if(real==='super_admin') { try { return String(localStorage.getItem(ROLE_PREF_KEY)||real).toLowerCase().trim(); } catch(e){} }
     return real;
   }
+  function cleanRole(){
+    try { return String(document.body?.dataset?.fireSCleanHomeRole || '').toLowerCase(); } catch(e){ return ''; }
+  }
+  function isManagement(){
+    const clean=cleanRole();
+    if(clean==='owner'||clean==='manager'||clean==='super_admin') return true;
+    try {
+      if(document.body?.classList?.contains('fire-s-role-owner')) return true;
+      if(document.body?.classList?.contains('fire-s-role-manager')) return true;
+    } catch(e){}
+    return ['owner','company_owner','manager','super_admin','admin'].includes(role());
+  }
   function isInspector(){ 
     try {
-      const clean = String(document.body?.dataset?.fireSCleanHomeRole || '').toLowerCase();
+      const clean = cleanRole();
       if (clean) return clean === 'inspector';
     } catch(e){}
     try {
@@ -84,6 +96,27 @@
     if(d) return 'Scheduled · '+d.slice(0,10);
     return 'Previous inspection available';
   }
+  function assignee(p){
+    const who=text(p&&p.assignedInspectorName);
+    const email=text(p&&(p.assignedInspectorEmail||p.assigned_inspector_email));
+    if(who && email && who.toLowerCase()!==email.toLowerCase()) return who;
+    return who || email || 'Not assigned yet';
+  }
+  function managementBookings(list){
+    return (list||[]).filter(p=>{
+      if(!p||isFinalized(p)) return false;
+      const status=text(p.scheduledStatus).toLowerCase();
+      if(status==='completed'||status==='cancelled'||status==='canceled') return false;
+      if(status==='scheduled') return true;
+      if(text(p.assignedInspectorEmail||p.assigned_inspector_email)||text(p.assignedInspectorUserId||p.assigned_inspector_user_id)) return true;
+      return !!text(p.scheduledDate||p.followUpDate);
+    }).slice().sort((a,b)=>{
+      const ad=text(a.scheduledDate||a.followUpDate||a.nextInspectionDate).slice(0,10)||'9999-99-99';
+      const bd=text(b.scheduledDate||b.followUpDate||b.nextInspectionDate).slice(0,10)||'9999-99-99';
+      if(ad!==bd) return ad<bd?-1:1;
+      return name(a).localeCompare(name(b));
+    });
+  }
   function action(p){ return !isFinalized(p)?'CONTINUE →':(scheduled(p)?'START →':'OPEN →'); }
   function openList(list){
     try { if(typeof window.fireSScheduledPriorityList==='function') return window.fireSScheduledPriorityList(list, identity())||[]; } catch(e){}
@@ -112,30 +145,86 @@
     return haystack(p).includes(q);
   }
   function open(p){
-    if(!p) return;
+    if(!p||p.id==null||p.id==='') return;
     try { if(typeof window.openProject==='function') return window.openProject(p.id); } catch(e){}
     try { if(typeof openProject==='function') return openProject(p.id); } catch(e){}
+  }
+  function bindCards(){
+    document.querySelectorAll('[data-v4-open]').forEach(btn=>{
+      const id=btn.dataset.v4Open;
+      btn.onclick=event=>{
+        if(event&&event.preventDefault) event.preventDefault();
+        const match=(projects()||[]).find(p=>String(p.id)===String(id));
+        open(match||{id:id});
+      };
+    });
   }
   function newPremises(){
     try { if(typeof showProjectList==='function') showProjectList(); } catch(e){}
     setTimeout(()=>{ const b=document.getElementById('newProjectBtn'); if(b) b.click(); },80);
   }
-  function cardHtml(p, kind){
+  function cardHtml(p, kind, showWho){
     const cls=kind==='next'?'inspector-v4-next':'inspector-v4-result';
     const head=kind==='next'?`<div class="inspector-v4-label">Scheduled priority</div>`:'';
-    return `<button type="button" class="${cls}" data-v4-open="${esc(p.id)}">${head}<div class="inspector-v4-title">${esc(name(p))}</div><div class="inspector-v4-meta">${esc(site(p))}${site(p)?' · ':''}${esc(label(p))}</div><span class="inspector-v4-action">${esc(action(p))}</span></button>`;
+    const bits=[];
+    if(site(p)) bits.push(site(p));
+    if(showWho) bits.push(assignee(p));
+    const when=label(p);
+    if(when) bits.push(when);
+    return `<button type="button" class="${cls}" data-v4-open="${esc(p.id)}">${head}<div class="inspector-v4-title">${esc(name(p))}</div><div class="inspector-v4-meta">${esc(bits.join(' · '))}</div><span class="inspector-v4-action">${esc(action(p))}</span></button>`;
+  }
+  function hideInspectorShell(){
+    document.body.classList.remove('fire-s-inspector-v4');
+    const shell=document.getElementById('inspectorV4Shell');
+    if(shell){
+      shell.style.setProperty('display','none','important');
+      shell.setAttribute('hidden','true');
+      shell.setAttribute('aria-hidden','true');
+    }
+  }
+  function placeManagement(host){
+    const kpi=document.getElementById('fireSOwnerKpiRow');
+    const lists=document.getElementById('fireSOwnerLists');
+    const centre=document.getElementById('mainCommandCentre');
+    if(kpi&&kpi.parentNode){
+      if(host.previousSibling!==kpi) kpi.parentNode.insertBefore(host, kpi.nextSibling);
+      return;
+    }
+    if(lists&&lists.parentNode){
+      if(host.nextSibling!==lists) lists.parentNode.insertBefore(host, lists);
+      return;
+    }
+    if(centre&&host.parentNode!==centre) centre.appendChild(host);
+  }
+  function renderManagement(){
+    const existing=document.getElementById('fireSManagementPriority');
+    if(!isManagement()||isInspector()){
+      if(existing&&existing.parentNode) existing.parentNode.removeChild(existing);
+      return;
+    }
+    const centre=document.getElementById('mainCommandCentre');
+    if(!centre) return;
+    let host=existing;
+    if(!host){
+      host=document.createElement('div');
+      host.id='fireSManagementPriority';
+      host.className='fire-s-management-priority inspector-v4-list';
+    }
+    placeManagement(host);
+    const bookings=managementBookings(projects());
+    host.innerHTML=bookings.length
+      ? bookings.map((p,i)=>cardHtml(p, i===0?'next':'result', true)).join('')
+      : `<div class="inspector-v4-next"><div class="inspector-v4-label">Scheduled priority</div><div class="inspector-v4-empty">No inspection is scheduled for an inspector yet.</div></div>`;
+    bindCards();
   }
   function build(){
     if(!isInspector()) {
-      document.body.classList.remove('fire-s-inspector-v4');
-      const shell=document.getElementById('inspectorV4Shell');
-      if(shell){
-        shell.style.setProperty('display','none','important');
-        shell.setAttribute('hidden','true');
-        shell.setAttribute('aria-hidden','true');
-      }
+      hideInspectorShell();
+      renderManagement();
       return;
     }
+    const mgmt=document.getElementById('fireSManagementPriority');
+    if(mgmt&&mgmt.parentNode) mgmt.parentNode.removeChild(mgmt);
     const centre=document.getElementById('mainCommandCentre'); if(!centre) return;
     document.body.classList.add('fire-s-inspector-v4');
     let shell=document.getElementById('inspectorV4Shell');
@@ -195,26 +284,36 @@
       results.innerHTML=matches.length
         ? matches.map(p=>cardHtml(p,'result')).join('')
         : `<div class="inspector-v4-empty">No premises match “${esc(q)}”. Try another name or use + NEW PREMISES.</div>`;
-      document.querySelectorAll('[data-v4-open]').forEach(btn=>{
-        btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));
-      });
+      bindCards();
       return;
     }
 
     // No search: every open booking for this inspector, soonest date first.
-    const open=openList(all);
-    if(!open.length){
-      next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you. Open Inspection Gateway to see company inspections.</div>`;
+    // Keep this name off `open` — that function opens the inspection.
+    const bookings=openList(all);
+    if(!bookings.length){
+      next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you yet. When the owner or manager books one for you, it appears here.</div>`;
       results.innerHTML='';
       return;
     }
-    next.innerHTML=`<div class="inspector-v4-list">${open.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
+    next.innerHTML=`<div class="inspector-v4-list">${bookings.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
     results.innerHTML='';
-    document.querySelectorAll('[data-v4-open]').forEach(btn=>{
-      btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));
+    bindCards();
+  }
+  function watchHome(){
+    ['showHome','fireSApplyCleanHomeRoles','refreshCleanHomeRoles','renderHomeCommandCentre'].forEach(name=>{
+      const current=window[name];
+      if(typeof current!=='function'||current.__fireSPriorityWatch) return;
+      function wrapped(){
+        const result=current.apply(this, arguments);
+        setTimeout(build, 40);
+        return result;
+      }
+      wrapped.__fireSPriorityWatch=true;
+      window[name]=wrapped;
     });
   }
-  function init(){ setTimeout(build,150); setTimeout(build,700); }
+  function init(){ watchHome(); setTimeout(build,150); setTimeout(build,700); setTimeout(build,1600); }
   document.addEventListener('DOMContentLoaded',init);
   document.addEventListener('click',e=>{ if(e.target.closest('#projectsHomeBtn,.back-home-btn')) setTimeout(build,100); });
   window.fireSInspectorV4=build;

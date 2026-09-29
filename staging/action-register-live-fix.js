@@ -83,7 +83,9 @@
 
       actions.push({
         actionId: `LIVE-${String(itemIndex + 1).padStart(3, '0')}`,
-        actionKey: `${project?.id || 'current'}|${itemIndex}|${question}`,
+        actionKey: window.FireSActionRequestStability?.canonicalKey
+          ? window.FireSActionRequestStability.canonicalKey(project, itemIndex, item['Item Number'] || String(itemIndex + 1), question)
+          : `${project?.id || 'premises'}|${itemIndex}|${item['Item Number'] || String(itemIndex + 1)}|${norm(question)}`,
         premisesId: project?.id || '',
         inspectionId: project?.id || '',
         itemIndex,
@@ -118,7 +120,10 @@
     real.forEach(a => byKey.set(a.actionKey || a.actionId, a));
     live.forEach(a => {
       const key = a.actionKey || a.actionId;
-      if (!byKey.has(key)) byKey.set(key, a);
+      const already = window.FireSActionRequestStability?.sameItem
+        ? Array.from(byKey.values()).some(saved => window.FireSActionRequestStability.sameItem(saved, a))
+        : byKey.has(key);
+      if (!already && !byKey.has(key)) byKey.set(key, a);
     });
 
     const merged = Array.from(byKey.values());
@@ -244,6 +249,10 @@
   }
 
   function forceSyncAndRender() {
+    if (window.FireSActionRegisterHardFix?.run) {
+      window.FireSActionRegisterHardFix.run();
+      return;
+    }
     patchActionRegister();
 
     if (window.FireSActionSyncFix?.syncCurrentProject) {

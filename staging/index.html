@@ -9,7 +9,7 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var WANT = '1.3.116-toets';
+        var WANT = '1.3.117-toets';
         var FLAG = 'fireS.toetsCacheDrop.1-3-121';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
@@ -117,11 +117,12 @@
     document.documentElement.classList.add('fire-s-booting');
     document.documentElement.classList.remove('fire-s-ready');
   </script>
-  <link rel="stylesheet" href="styles.css?v=1-3-111-services">
+  <link rel="stylesheet" href="styles.css?v=1-3-116-superonly">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="inspector-v4.css?v=4-7-priority">
   <link rel="stylesheet" href="fire-s-clean-home-roles.css?v=1-26-hide-access">
   <link rel="stylesheet" href="fire-s-owner-lists.css?v=1-3-home-lookup">
+  <link rel="stylesheet" href="fire-s-booking-visibility.css?v=1-2-schedule-back">
   <link rel="stylesheet" href="fire-s-simple-cloud-sync.css?v=1-1-menu-on-screen">
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
@@ -142,7 +143,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.116-toets</p>
+      <p class="brand-version">Version 1.3.117-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -166,7 +167,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.116-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.117-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -242,7 +243,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.116-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.117-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -1486,7 +1487,7 @@
   <h3 id="schedulePanelTitle">Schedule Inspection</h3>
 
   <p class="form-help-text" id="schedulePanelHelp">
-    Book a future inspection for a new site or for a site that already exists. Pick the inspector who must visit. They get an email with the premises details.
+    Book a future inspection for a new site or for a site that already exists. Pick the inspector who must visit. They get an email and the booking appears on their Home. You see who each inspection is booked for.
   </p>
 
   <div class="schedule-mode-toggle" role="tablist" aria-label="Schedule new or existing site">
@@ -1558,8 +1559,8 @@
       Save Scheduled Inspection
     </button>
 
-    <button id="cancelScheduledInspectionBtn" type="button" class="compact-action-btn compact-action-secondary">
-      Cancel
+    <button id="cancelScheduledInspectionBtn" type="button" class="compact-action-btn compact-action-secondary" aria-label="Back to Home">
+      Back
     </button>
   </div>
 </div>
@@ -2005,7 +2006,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-116-toets"></script>
+  <script src="fire-s-env.js?v=1-3-117-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -2015,18 +2016,20 @@
   <script src="building-passport-assets.js"></script>
   <script src="passport-consolidation.js?v=104-5-hide-during-fill"></script>
   <script src="premises-workspace.js?v=105-1-hide-during-fill"></script>
-  <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
-  <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
-  <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
+  <script src="action-sync-fix.js?v=105-4-action-stable"></script>
+  <script src="action-register-live-fix.js?v=105-4-action-stable"></script>
+  <script src="action-register-hard-fix.js?v=105-4-action-stable"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
   <script src="app.js?v=1-3-116-homekpi"></script>
+  <script src="fire-s-service-super-only.js?v=1-0-superonly"></script>
+  <script src="action-request-stability.js?v=1-0-actions"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
-  <script src="inspector-v4.js?v=4-6-priority"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-49-hide-access"></script>
+  <script src="inspector-v4.js?v=4-9-priority-who"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-50-booking"></script>
   <script src="fire-s-owner-lists.js?v=1-10-last-def"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
-  <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
+  <script src="fire-s-subscribe-notify.js?v=1-7-own-booking"></script>
   <script src="fire-s-company-team.js?v=2-24-isolate"></script>
   <script src="fire-s-schedule-assign.js?v=1-3-datepicker"></script>
   <script src="fire-s-company-letterhead.js?v=1-6-isolate"></script>
@@ -2035,7 +2038,7 @@
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-14-hide-ok"></script>
   <script src="fire-s-subscribe.js?v=1-38-howto"></script>
-  <script src="fire-s-user-manual.js?v=1-48-howto"></script>
+  <script src="fire-s-user-manual.js?v=1-49-booking"></script>
   <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-59-isolate"></script>
@@ -2049,10 +2052,11 @@
   <script src="fire-s-qa-gates.js?v=1-1-single-action"></script>
   <script src="fire-s-finish-unlock.js?v=1-1-qaexpand"></script>
   <script src="fire-s-entitlement.js?v=1-3-114-hide-pw"></script>
+  <script src="fire-s-booking-visibility.js?v=1-2-schedule-back"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-78-toets-homekpi')
+        navigator.serviceWorker.register('./service-worker.js?v=108-79-toets-117')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

@@ -35,10 +35,11 @@ const FireSActionEngine = (function () {
       })
       .reduce((max, number) => Math.max(max, number), 0);
 
-    const stored = Number(localStorage.getItem(key) || '0');
+    var stored = 0;
+    try { stored = Number(localStorage.getItem(key) || '0'); } catch (_) { stored = 0; }
     const next = Math.max(stored, highestExisting) + 1;
 
-    localStorage.setItem(key, String(next));
+    try { localStorage.setItem(key, String(next)); } catch (_) {}
 
     return `AC-${year}-${String(next).padStart(6, '0')}`;
   }
