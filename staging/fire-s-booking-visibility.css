@@ -13,8 +13,15 @@
   display: none !important;
 }
 
+body.fire-s-role-inspector #fireSBookedOut,
+body.fire-s-inspector-v4 #fireSBookedOut {
+  display: none !important;
+}
+
 body.fire-s-role-owner #fireSBookedOut:not([hidden]),
-body.fire-s-role-manager #fireSBookedOut:not([hidden]) {
+body.fire-s-role-manager #fireSBookedOut:not([hidden]),
+body.fire-s-clean-home.fire-s-role-owner #fireSBookedOut:not([hidden]),
+body.fire-s-clean-home.fire-s-role-manager #fireSBookedOut:not([hidden]) {
   display: block !important;
 }
 
@@ -96,11 +103,6 @@ html[data-fire-s-theme="dark"] .fire-s-booked-out-table th {
 html[data-fire-s-theme="dark"] .fire-s-booked-out-row:hover,
 html[data-fire-s-theme="dark"] .fire-s-booked-out-row:focus {
   background: #3f1d1d;
-}
-
-body.fire-s-role-inspector #fireSBookedOut,
-body.fire-s-inspector-v4 #fireSBookedOut {
-  display: none !important;
 }
 
 body.fire-s-schedule-view #cancelScheduledInspectionBtn {

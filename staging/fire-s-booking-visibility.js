@@ -166,10 +166,15 @@
   function isBookedOut(project) {
     if (!project || isFinalized(project)) return false;
     var status = lower(project.scheduledStatus);
+    if (status === 'completed' || status === 'cancelled' || status === 'canceled') return false;
     var assigned = lower(
       project.assignedInspectorEmail || project.assigned_inspector_email
     );
-    return status === 'scheduled' || !!assigned;
+    var assignedId = text(
+      project.assignedInspectorUserId || project.assigned_inspector_user_id
+    );
+    if (status === 'scheduled' || assigned || assignedId) return true;
+    return !!text(project.scheduledDate || project.followUpDate);
   }
 
   function premisesName(project) {
@@ -239,11 +244,9 @@
       list = [];
     }
     try {
-      if (
-        typeof root.getVisibleProjectsForCurrentUser === 'function' &&
-        root.currentUserProfile
-      ) {
-        return root.getVisibleProjectsForCurrentUser(list) || [];
+      if (typeof root.getVisibleProjectsForCurrentUser === 'function') {
+        var visible = root.getVisibleProjectsForCurrentUser(list);
+        if (Array.isArray(visible)) return visible;
       }
     } catch (_) {}
     return Array.isArray(list) ? list : [];
@@ -265,14 +268,14 @@
     panel = doc.createElement('section');
     panel.id = 'fireSBookedOut';
     panel.className = 'fire-s-booked-out';
-    panel.setAttribute('aria-label', 'Booked inspections');
+    panel.setAttribute('aria-label', 'Scheduled for inspectors');
     panel.hidden = true;
     panel.innerHTML =
-      '<h4>Booked inspections</h4>' +
-      '<p class="fire-s-booked-out-hint">Inspections booked out, and which inspector must visit. The inspector gets an email and sees the booking on their Home.</p>' +
+      '<h4>Scheduled for inspectors</h4>' +
+      '<p class="fire-s-booked-out-hint">Each inspection booked for an inspector, who must visit, and the date.</p>' +
       '<div class="fire-s-booked-out-scroll">' +
       '<table class="fire-s-booked-out-table">' +
-      '<thead><tr><th scope="col">Premises</th><th scope="col">Date</th><th scope="col">Inspector</th></tr></thead>' +
+      '<thead><tr><th scope="col">Inspection</th><th scope="col">Inspector</th><th scope="col">Date</th></tr></thead>' +
       '<tbody id="fireSBookedOutBody"></tbody>' +
       '</table></div>';
     panel.addEventListener('click', function (event) {
@@ -322,8 +325,8 @@
     }
     var lists = byId('fireSOwnerLists');
     if (lists && lists.parentNode) {
-      if (panel.previousSibling !== lists) {
-        lists.parentNode.insertBefore(panel, lists.nextSibling);
+      if (panel.nextSibling !== lists) {
+        lists.parentNode.insertBefore(panel, lists);
       }
       return;
     }
@@ -372,9 +375,9 @@
                 '<td>' +
                 esc(row.name) +
                 '</td><td>' +
-                esc(row.date || 'No date') +
-                '</td><td>' +
                 esc(row.inspector) +
+                '</td><td>' +
+                esc(row.date || 'No date') +
                 '</td></tr>'
               );
             })
