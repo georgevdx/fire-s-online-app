@@ -975,18 +975,18 @@
     if (!list.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
     const yTitle = (axis && axis.y) || 'Action items';
     const xTitle = (axis && axis.x) || 'Age';
-    const width = 640;
-    const height = 210;
-    const padL = 42;
-    const padR = 10;
+    const width = 720;
+    const height = 268;
+    const padL = 52;
+    const padR = 18;
     const padT = 16;
-    const padB = 56;
+    const padB = 48;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const totals = list.map(row => seriesList.reduce((sum, item) => sum + (Number(row[item.key]) || 0), 0));
     const { top, ticks } = axisTicks(Math.max(1, ...totals));
     const groupW = plotW / Math.max(1, list.length);
-    const barW = Math.max(16, Math.min(42, groupW - 12));
+    const barW = Math.max(28, Math.min(72, groupW * 0.55));
     const columns = list.map((row, groupIndex) => {
       const x = padL + groupIndex * groupW + (groupW - barW) / 2;
       let yCursor = padT + plotH;
@@ -1011,8 +1011,8 @@
     const legend = seriesList.map(item =>
       `<button type="button" class="pbi-legend-btn" ${drillAttr({ type: 'priority', key: item.key })}><i class="pbi-swatch" style="background:${item.color}"></i>${esc(item.key)}</button>`
     ).join('');
-    return `<div>
-      <svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="196" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+    return `<div class="pbi-chart-block">
+      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="280" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
         ${yGrid(padL, padT, plotW, plotH, ticks, top)}
         <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>

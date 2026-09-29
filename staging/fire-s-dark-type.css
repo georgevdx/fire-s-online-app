@@ -180,8 +180,6 @@ html[data-fire-s-theme="dark"] .section-header * {
   color: #ffffff !important;
 }
 
-html[data-fire-s-theme="dark"] .pbi-open-btn,
-html[data-fire-s-theme="dark"] .pbi-shell .pbi-open-btn,
 html[data-fire-s-theme="dark"] .cloud-primary-btn,
 html[data-fire-s-theme="dark"] .company-team-add .cloud-primary-btn,
 html[data-fire-s-theme="dark"] .fire-s-cc-quick-primary,
@@ -730,4 +728,78 @@ html[data-fire-s-theme="dark"] #fireSIndependentReportOverlay #fireSReportOverla
 html[data-fire-s-theme="dark"] #fireSIndependentReportOverlay #reportSection > h2,
 html[data-fire-s-theme="dark"] #fireSIndependentReportOverlay #reportSection > p {
   display: none !important;
+}
+
+/* Saved Additional Services entries sit on light paper so the review text stays readable. */
+html[data-fire-s-theme="dark"] :is(
+  .service-request-card,
+  .service-request-detail-card,
+  .service-request-list-item,
+  .support-archive-item,
+  .beta-feedback-item
+) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] :is(
+  .service-request-card,
+  .service-request-detail-card,
+  .service-request-list-item,
+  .support-archive-item,
+  .beta-feedback-item
+) :is(p, span, strong, small, label, li, div, legend) {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] :is(
+  .service-request-card,
+  .beta-feedback-item,
+  .support-archive-item
+) :is(input, select, textarea) {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] .service-request-title,
+html[data-fire-s-theme="dark"] .service-request-category,
+html[data-fire-s-theme="dark"] .service-request-list-category,
+html[data-fire-s-theme="dark"] .beta-feedback-message-card strong {
+  color: #b71c1c !important;
+  -webkit-text-fill-color: #b71c1c !important;
+}
+
+html[data-fire-s-theme="dark"] .beta-feedback-expected strong {
+  color: #1e3a8a !important;
+  -webkit-text-fill-color: #1e3a8a !important;
+}
+
+html[data-fire-s-theme="dark"] .beta-feedback-message-card {
+  background: #fef2f2 !important;
+}
+
+html[data-fire-s-theme="dark"] .beta-feedback-expected {
+  background: #eff6ff !important;
+}
+
+html[data-fire-s-theme="dark"] :is(
+  .service-request-card,
+  .service-request-detail-card,
+  .beta-feedback-item
+) :is(.secondary-btn, .service-request-followed-btn, .beta-feedback-admin-actions > button) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Filtered-list Open is a white button. Dark Mode must not paint that label white. */
+html[data-fire-s-theme="dark"] .pbi-open-btn,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-open-btn {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
 }

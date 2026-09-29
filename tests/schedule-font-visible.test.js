@@ -34,12 +34,12 @@ assertScheduleFonts('Toets dark-type', read('staging/fire-s-dark-type.css'));
 assert.ok(
   /styles\.css\?v=1-3-65-count/.test(read('index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-sitlive/.test(read('index.html')) &&
-    /fire-s-dark-type\.css\?v=1-3-rephead/.test(read('index.html')),
+    /fire-s-dark-type\.css\?v=1-5-open-label/.test(read('index.html')),
   'Live must cache-bust Schedule font CSS'
 );
 assert.ok(
   /styles\.css\?v=1-3-116-superonly/.test(read('staging/index.html')) &&
-    /fire-s-dark-type\.css\?v=1-8-rephead/.test(read('staging/index.html')),
+    /fire-s-dark-type\.css\?v=1-10-open-label/.test(read('staging/index.html')),
   'Toets must cache-bust Schedule font CSS'
 );
 
