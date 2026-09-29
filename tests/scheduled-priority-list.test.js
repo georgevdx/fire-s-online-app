@@ -304,4 +304,26 @@ assert.deepStrictEqual(
 searched[0].onclick({ preventDefault() {} });
 assert.deepStrictEqual(opened, ['soon', 'later'], 'A search card opens the matching inspection');
 
+documentStub.body.dataset.fireSCleanHomeRole = 'manager';
+documentStub.body.classList.add('fire-s-role-manager');
+ui.currentUserProfile = { role: 'manager', email: 'boss@example.com', id: 'mgr' };
+ui.fireSInspectorV4();
+const roster = documentStub.getElementById('fireSManagementPriority');
+const rosterHtml = (roster && roster._html) || '';
+assert.ok(roster && /Scheduled priority/.test(rosterHtml), 'Manager Home shows Scheduled priority');
+assert.ok(
+  /Shop 12/.test(rosterHtml) &&
+    /insp@example.com/.test(rosterHtml) &&
+    /2026-08-26/.test(rosterHtml),
+  'Scheduled priority shows the inspection, who it is booked for, and the date'
+);
+assert.ok(
+  /Warehouse/.test(rosterHtml) && /other@example.com/.test(rosterHtml) && /2026-08-02/.test(rosterHtml),
+  'Manager Scheduled priority includes every inspector’s booking'
+);
+assert.ok(
+  rosterHtml.indexOf('Warehouse') < rosterHtml.indexOf('Shop 12'),
+  'Soonest date stays first'
+);
+
 console.log('scheduled-priority-list.test.js: ok');
