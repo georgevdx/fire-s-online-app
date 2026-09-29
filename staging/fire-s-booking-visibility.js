@@ -465,10 +465,85 @@
     root[name] = wrapped;
   }
 
+  var SCHEDULE_FIELDS = [
+    'scheduleOrganisationName',
+    'scheduleSiteName',
+    'scheduleDate',
+    'scheduleOccupancy',
+    'scheduleAddress',
+    'scheduleContactPerson',
+    'scheduleContactTel',
+    'scheduleExistingPremisesSearch'
+  ];
+
+  function discardUnsavedSchedule() {
+    var doc = root.document;
+    if (!doc || !doc.getElementById) return;
+    SCHEDULE_FIELDS.forEach(function (id) {
+      var field = doc.getElementById(id);
+      if (field) field.value = '';
+    });
+    var inspectorSelect = doc.getElementById('scheduleInspectorSelect');
+    if (inspectorSelect) inspectorSelect.value = '';
+    var premisesSelect = doc.getElementById('scheduleExistingPremisesSelect');
+    if (premisesSelect) premisesSelect.value = '';
+    var summary = doc.getElementById('scheduleExistingPremisesSummary');
+    if (summary) {
+      summary.hidden = true;
+      summary.textContent = '';
+    }
+    var typeField = doc.getElementById('scheduleInspectionType');
+    if (typeField) typeField.value = 'General Fire Inspection';
+    try {
+      if (typeof root.cancelScheduleNewInspection === 'function') {
+        root.cancelScheduleNewInspection();
+      }
+    } catch (_) {}
+  }
+
+  function backFromSchedule(event) {
+    if (event && event.preventDefault) event.preventDefault();
+    discardUnsavedSchedule();
+    try {
+      if (root.document && root.document.body && root.document.body.classList) {
+        root.document.body.classList.remove('fire-s-schedule-view');
+      }
+    } catch (_) {}
+    var panel = byId('scheduleNewPanel');
+    if (panel && panel.style) {
+      try {
+        panel.style.setProperty('display', 'none', 'important');
+      } catch (_) {
+        panel.style.display = 'none';
+      }
+    }
+    var list = byId('projectListSection');
+    if (list && list.style) list.style.display = 'none';
+    try {
+      if (typeof root.showHome === 'function') root.showHome();
+    } catch (_) {}
+    var home = byId('homeSection');
+    if (home && home.style) home.style.display = 'block';
+  }
+
+  function bindScheduleBack() {
+    var btn = byId('cancelScheduledInspectionBtn');
+    if (!btn || btn.__fireSScheduleBack) return;
+    btn.__fireSScheduleBack = true;
+    btn.textContent = 'Back';
+    btn.setAttribute('aria-label', 'Back to Home');
+    btn.addEventListener('click', backFromSchedule);
+  }
+
   function wrapPaint(name) {
     var current = root[name];
     if (typeof current !== 'function' || current.__fireSBookingPaint) return;
     function wrapped() {
+      if (name === 'showHome' && bodyHas('fire-s-schedule-view')) {
+        try {
+          discardUnsavedSchedule();
+        } catch (_) {}
+      }
       var result = current.apply(this, arguments);
       try {
         paintBookedList();
@@ -490,6 +565,7 @@
     wrapPaint('renderProjectsList');
     wrapPaint('fireSRefreshOwnerLists');
     wrapPaint('fireSKeepScheduleBookedCards');
+    bindScheduleBack();
     try {
       paintBookedList();
     } catch (_) {}
@@ -500,6 +576,7 @@
   root.fireSBookingInspectorLabel = inspectorLabel;
   root.fireSIsFieldInspectorForBooking = isFieldInspector;
   root.fireSPaintBookedInspections = paintBookedList;
+  root.fireSBackFromSchedule = backFromSchedule;
 
   if (root.document) {
     if (root.document.readyState === 'loading') {

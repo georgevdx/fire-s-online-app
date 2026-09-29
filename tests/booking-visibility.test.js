@@ -182,4 +182,81 @@ opened = '';
 inspectorBox.openProject('directed');
 assert.strictEqual(opened, 'directed');
 
+assert.ok(
+  /id="cancelScheduledInspectionBtn"[\s\S]{0,180}>\s*Back\s*</.test(html) &&
+    /fireSBackFromSchedule/.test(booking) &&
+    /function backFromSchedule\(/.test(booking),
+  'Schedule Cancel must be a Back button that leaves the unsaved form'
+);
+
+const backBox = boot(owner);
+const nodes = {};
+function field(id, value) {
+  const node = {
+    id: id,
+    value: value || '',
+    hidden: false,
+    textContent: '',
+    style: {
+      display: '',
+      setProperty: function (key, val) {
+        this[key] = val;
+      }
+    }
+  };
+  nodes[id] = node;
+  return node;
+}
+field('scheduleOrganisationName', 'Draft Org');
+field('scheduleSiteName', 'Draft Site');
+field('scheduleDate', '2026-10-09');
+field('scheduleNewPanel');
+field('projectListSection');
+field('homeSection');
+const kept = [
+  {
+    id: 'kept',
+    organisationName: 'Kept',
+    siteName: 'One',
+    scheduledStatus: 'scheduled'
+  }
+];
+backBox.__projects = kept.slice();
+backBox.getProjects = function () {
+  return kept;
+};
+let homeVisits = 0;
+backBox.showHome = function () {
+  homeVisits += 1;
+};
+backBox.document = {
+  body: {
+    classList: {
+      contains: function () {
+        return false;
+      },
+      remove: function () {}
+    }
+  },
+  getElementById: function (id) {
+    return nodes[id] || null;
+  },
+  querySelectorAll: function () {
+    return [];
+  },
+  createElement: function () {
+    return { style: {}, appendChild: function () {}, addEventListener: function () {} };
+  }
+};
+backBox.fireSBackFromSchedule();
+assert.strictEqual(nodes.scheduleOrganisationName.value, '');
+assert.strictEqual(nodes.scheduleSiteName.value, '');
+assert.strictEqual(nodes.scheduleDate.value, '');
+assert.strictEqual(nodes.scheduleNewPanel.style.display, 'none');
+assert.strictEqual(nodes.projectListSection.style.display, 'none');
+assert.strictEqual(nodes.homeSection.style.display, 'block');
+assert.strictEqual(homeVisits, 1);
+assert.strictEqual(kept.length, 1);
+assert.strictEqual(kept[0].id, 'kept');
+
 console.log('booking-visibility.test.js: ok');

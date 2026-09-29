@@ -102,3 +102,9 @@ body.fire-s-role-inspector #fireSBookedOut,
 body.fire-s-inspector-v4 #fireSBookedOut {
   display: none !important;
 }
+
+body.fire-s-schedule-view #cancelScheduledInspectionBtn {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 6;
+}
