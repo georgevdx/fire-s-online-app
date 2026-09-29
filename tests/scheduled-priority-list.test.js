@@ -23,8 +23,11 @@ assert.ok(
 );
 assert.ok(
   /Scheduled priority/.test(read('inspector-v4.js')) &&
-    /function openList\(/.test(read('inspector-v4.js')),
-  'Live inspector Home must show the Scheduled priority list'
+    /function openList\(/.test(read('inspector-v4.js')) &&
+    /function bindCards\(/.test(read('inspector-v4.js')) &&
+    !/const open=openList\(/.test(read('inspector-v4.js')) &&
+    /inspector-v4\.js\?v=4-10-live-open/.test(read('index.html')),
+  'Live Scheduled priority CONTINUE must open the inspection'
 );
 
 assert.ok(

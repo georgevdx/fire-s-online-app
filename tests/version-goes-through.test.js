@@ -17,8 +17,8 @@ assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
     /fireS\.liveCacheDrop\.1-3-67-subpay/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
-    /service-worker\.js\?v=108-79-live-sig/.test(liveHtml) &&
-    /fire-s-108-79-live-sig/.test(liveSw),
+    /service-worker\.js\?v=108-80-live-open/.test(liveHtml) &&
+    /fire-s-108-80-live-open/.test(liveSw),
   'Live must drop the stuck service worker so a phone can tell it has 1.3.67'
 );
 assert.ok(

@@ -1898,7 +1898,7 @@
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
   <script src="app.js?v=1-3-67"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
-  <script src="inspector-v4.js?v=4-6-priority"></script>
+  <script src="inspector-v4.js?v=4-10-live-open"></script>
     <script src="fire-s-clean-home-roles.js?v=2-43-comment"></script>
   <script src="fire-s-owner-lists.js?v=1-3-home-lookup"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
@@ -1930,7 +1930,7 @@
           console.log('Fire-S staging skips the live service worker.');
           return;
         }
-        navigator.serviceWorker.register('./service-worker.js?v=108-79-live-sig')
+        navigator.serviceWorker.register('./service-worker.js?v=108-80-live-open')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })
