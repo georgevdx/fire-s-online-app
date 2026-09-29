@@ -333,7 +333,7 @@ assert.strictEqual(minted, 'AC-' + new Date().getFullYear() + '-000001');
 const html = read('staging/index.html');
 assert.ok(/action-request-stability\.js\?v=1-0-actions/.test(html), 'toets must load the action stability script');
 assert.ok(/action-register-hard-fix\.js\?v=105-4-action-stable/.test(html));
-assert.ok(/Version 1\.3\.117-toets/.test(html), 'displayed toets version stays 1.3.117-toets');
+assert.ok(/Version 1\.3\.118-toets/.test(html), 'displayed toets version stays 1.3.118-toets');
 assert.ok(!/action-request-stability/.test(read('index.html')), 'live index must not load the toets action guard');
 
 console.log('action-request-stability.test.js: ok');
