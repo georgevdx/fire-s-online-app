@@ -50,8 +50,8 @@ assert.ok(
   'Toets must cache-bust schedule reset after finalise'
 );
 assert.ok(
-  /Version 1\.3\.116-toets/.test(stagingHtml),
-  'Displayed toets version stays 1.3.116-toets'
+  /Version 1\.3\.117-toets/.test(stagingHtml),
+  'Displayed toets version stays 1.3.117-toets'
 );
 assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
