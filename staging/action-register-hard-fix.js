@@ -110,8 +110,11 @@
   }
 
   function actionKey(project, itemIndex, itemNumber, question) {
+    if (window.FireSActionRequestStability?.canonicalKey) {
+      return window.FireSActionRequestStability.canonicalKey(project, itemIndex, itemNumber, question);
+    }
     return [
-      project?.id || 'current',
+      project?.id || 'premises',
       itemIndex,
       itemNumber || String(itemIndex + 1),
       norm(question)
@@ -201,24 +204,26 @@
       (existingActions || []).find(a => a.actionKey === item.actionKey);
 
     if (existing) {
-      if (norm(existing.status) === 'closed') {
-        return {
-          ...existing,
-          status: 'Open',
-          closedDate: '',
-          closedBy: '',
-          closeComment: '',
-          history: [
-            ...(existing.history || []),
-            { event: 'Reopened', date: new Date().toISOString(), note: 'Checklist answer is NO.' }
-          ]
-        };
+      const patch = {
+        actionKey: item.actionKey,
+        itemIndex: item.itemIndex,
+        itemNumber: item.itemNumber,
+        sectionName: item.sectionName || existing.sectionName,
+        question: item.question || existing.question,
+        finding: item.finding || existing.finding,
+        correctiveAction: item.correctiveAction || existing.correctiveAction,
+        reference: item.reference || existing.reference
+      };
+      if (window.FireSActionRequestStability?.keepUserEdits) {
+        return window.FireSActionRequestStability.keepUserEdits(existing, { ...existing, ...patch });
       }
-
       return {
         ...existing,
-        ...item,
-        status: existing.status || 'Open'
+        ...patch,
+        status: existing.status || 'Open',
+        dueDate: existing.dueDate || item.dueDate,
+        responsible: existing.responsible || item.responsible,
+        priority: existing.priority || item.priority
       };
     }
 
@@ -253,6 +258,22 @@
     const project = list[index];
     const existing = Array.isArray(project.actions) ? [...project.actions] : [];
     const noList = noItems(project);
+    if (window.FireSActionRequestStability?.absorb) {
+      const actions = window.FireSActionRequestStability.absorb(project, existing, noList, nextActionId);
+      if (JSON.stringify(project.actions || []) === JSON.stringify(actions)) return project;
+      list[index] = {
+        ...project,
+        actions,
+        actionEngineUpdatedAt: new Date().toISOString(),
+        syncPending: true,
+        lastSaved: new Date().toISOString()
+      };
+      setAllProjects(list);
+      if (typeof currentProject !== 'undefined' && currentProject?.id === project.id) {
+        currentProject = list[index];
+      }
+      return list[index];
+    }
     const noKeys = new Set(noList.map(item => item.actionKey));
     let changed = false;
 

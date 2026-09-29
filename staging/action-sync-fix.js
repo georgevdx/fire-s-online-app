@@ -181,6 +181,40 @@
 
     const existing = Array.isArray(project.actions) ? [...project.actions] : [];
     const answers = Array.isArray(project.answers) ? project.answers : [];
+
+    if (window.FireSActionRequestStability?.absorb) {
+      const noList = [];
+      answers.forEach((answer, index) => {
+        if (normal(answer?.answer) !== 'no') return;
+        const item = itemForAnswer(answer, index);
+        const itemIndex = Number.isFinite(Number(answer?.itemIndex)) ? Number(answer.itemIndex) : index;
+        const question = item['Checklist Item'] || answer?.question || answer?.item || `Checklist item ${itemIndex + 1}`;
+        const itemNumber = answer?.itemNumber || item['Item Number'] || String(itemIndex + 1);
+        const rule = ruleFor(item, answer);
+        noList.push({
+          itemIndex,
+          itemNumber,
+          sectionName: sectionFor(item, answer),
+          question,
+          finding: item['Non Compliance Text'] || answer?.note || question,
+          correctiveAction: item['Corrective Action'] || '',
+          reference: item.Reference || '',
+          priority: item.Severity || rule.priority || 'High',
+          responsible: rule.responsible || 'Building Owner',
+          dueDate: todayPlus(rule.dueDays)
+        });
+      });
+      const stableActions = window.FireSActionRequestStability.absorb(project, existing, noList, nextId);
+      if (JSON.stringify(existing) === JSON.stringify(stableActions)) return project;
+      return {
+        ...project,
+        actions: stableActions,
+        actionEngineUpdatedAt: new Date().toISOString(),
+        syncPending: true,
+        lastSaved: project.lastSaved || new Date().toISOString()
+      };
+    }
+
     const noKeys = new Set();
     let actions = [...existing];
     let changed = false;
