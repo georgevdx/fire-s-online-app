@@ -112,9 +112,19 @@
     return haystack(p).includes(q);
   }
   function open(p){
-    if(!p) return;
+    if(!p||p.id==null||p.id==='') return;
     try { if(typeof window.openProject==='function') return window.openProject(p.id); } catch(e){}
     try { if(typeof openProject==='function') return openProject(p.id); } catch(e){}
+  }
+  function bindCards(){
+    document.querySelectorAll('[data-v4-open]').forEach(btn=>{
+      const id=btn.dataset.v4Open;
+      btn.onclick=event=>{
+        if(event&&event.preventDefault) event.preventDefault();
+        const match=(projects()||[]).find(p=>String(p.id)===String(id));
+        open(match||{id:id});
+      };
+    });
   }
   function newPremises(){
     try { if(typeof showProjectList==='function') showProjectList(); } catch(e){}
@@ -195,24 +205,21 @@
       results.innerHTML=matches.length
         ? matches.map(p=>cardHtml(p,'result')).join('')
         : `<div class="inspector-v4-empty">No premises match “${esc(q)}”. Try another name or use + NEW PREMISES.</div>`;
-      document.querySelectorAll('[data-v4-open]').forEach(btn=>{
-        btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));
-      });
+      bindCards();
       return;
     }
 
     // No search: every open booking for this inspector, soonest date first.
-    const open=openList(all);
-    if(!open.length){
+    // Keep this name off `open` — that function opens the inspection.
+    const bookings=openList(all);
+    if(!bookings.length){
       next.innerHTML=`<div class="inspector-v4-empty">No inspection booked for you yet. When the owner or manager books one for you, it appears here.</div>`;
       results.innerHTML='';
       return;
     }
-    next.innerHTML=`<div class="inspector-v4-list">${open.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
+    next.innerHTML=`<div class="inspector-v4-list">${bookings.map((p,i)=>cardHtml(p, i===0?'next':'result')).join('')}</div>`;
     results.innerHTML='';
-    document.querySelectorAll('[data-v4-open]').forEach(btn=>{
-      btn.onclick=()=>open(all.find(p=>String(p.id)===String(btn.dataset.v4Open)));
-    });
+    bindCards();
   }
   function init(){ setTimeout(build,150); setTimeout(build,700); }
   document.addEventListener('DOMContentLoaded',init);
