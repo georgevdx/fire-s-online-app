@@ -9,7 +9,7 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var WANT = '1.3.118-toets';
+        var WANT = '1.3.119-toets';
         var FLAG = 'fireS.toetsCacheDrop.1-3-121';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
@@ -131,7 +131,7 @@
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
   <link rel="stylesheet" href="fire-s-user-manual.css?v=1-0">
-  <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-4-fit-layout">
+  <link rel="stylesheet" href="fire-s-management-dashboard.css?v=1-5-age-open">
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
   <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-114-hide-pw">
@@ -142,7 +142,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.118-toets</p>
+      <p class="brand-version">Version 1.3.119-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -166,7 +166,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.118-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.119-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -242,7 +242,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.118-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.119-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -2005,7 +2005,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-118-toets"></script>
+  <script src="fire-s-env.js?v=1-3-119-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -2036,7 +2036,7 @@
   <script src="fire-s-payfast.js?v=1-14-hide-ok"></script>
   <script src="fire-s-subscribe.js?v=1-38-howto"></script>
   <script src="fire-s-user-manual.js?v=1-48-howto"></script>
-  <script src="fire-s-management-dashboard.js?v=1-7-desktop"></script>
+  <script src="fire-s-management-dashboard.js?v=1-9-premises-name"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-59-isolate"></script>
   <script src="fire-s-change-password.js?v=1-0-temp-pw"></script>
@@ -2052,7 +2052,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-80-toets-118')
+        navigator.serviceWorker.register('./service-worker.js?v=108-80-toets-119')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

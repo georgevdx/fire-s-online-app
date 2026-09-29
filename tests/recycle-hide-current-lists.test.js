@@ -14,10 +14,10 @@ const stagingHtml = read('staging/index.html');
 const stagingLists = read('staging/fire-s-owner-lists.js');
 
 assert.ok(
-  /Version 1\.3\.118-toets/.test(stagingHtml) &&
+  /Version 1\.3\.119-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-116-homekpi/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml),
-  'Toets must cache-bust Recycle-hide Home lists as 1.3.118-toets'
+  'Toets must cache-bust Recycle-hide Home lists as 1.3.119-toets'
 );
 assert.ok(
   /function fireSIsHiddenFromCurrentLists\(project\)/.test(stagingApp) &&

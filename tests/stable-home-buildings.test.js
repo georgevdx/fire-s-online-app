@@ -16,12 +16,12 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.118-toets/.test(stagingHtml) &&
+  /Version 1\.3\.119-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-116-homekpi/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
-    /1\.3\.118-toets/.test(stagingEnv) &&
-    /fire-s-108-80-toets-118/.test(stagingSw),
-  'Toets must show 1.3.118-toets so a phone can tell it has the one company building count'
+    /1\.3\.119-toets/.test(stagingEnv) &&
+    /fire-s-108-80-toets-119/.test(stagingSw),
+  'Toets must show 1.3.119-toets so a phone can tell it has the one company building count'
 );
 assert.ok(
   /function fireSPremisesBuildingKey\(project\)/.test(stagingApp) &&

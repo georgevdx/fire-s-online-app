@@ -46,8 +46,8 @@ assert.ok(
 );
 assert.ok(
   /app\.js\?v=1-3-116-homekpi/.test(html) &&
-    /service-worker\.js\?v=108-80-toets-118/.test(html) &&
-    /Version 1\.3\.118-toets/.test(html),
+    /service-worker\.js\?v=108-80-toets-119/.test(html) &&
+    /Version 1\.3\.119-toets/.test(html),
   'Toets must cache-bust last-inspection Actions without bumping the displayed version'
 );
 

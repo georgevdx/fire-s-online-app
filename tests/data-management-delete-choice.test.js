@@ -61,7 +61,7 @@ assert.ok(
 );
 assert.ok(
   /app\.js\?v=1-3-116-homekpi/.test(html) &&
-    /Version 1\.3\.118-toets/.test(html),
+    /Version 1\.3\.119-toets/.test(html),
   'Toets must cache-bust Data Management delete without bumping the displayed version'
 );
 assert.ok(
