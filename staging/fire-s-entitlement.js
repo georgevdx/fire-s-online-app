@@ -492,11 +492,14 @@
   }
 
   function homeWorkAllowed() {
-    if (accessGateOpen()) return false;
     if (isSuperAdmin()) return true;
-    try {
-      if (text(root.currentUserProfile && root.currentUserProfile.id) === 'local-user') return true;
-    } catch (_) {}
+    if (isLocalWorkspace()) return true;
+    // Access / Login is not a subscription decision. Painting
+    // fire-s-entitlement-blocked while that gate is open leaves the class
+    // stuck after sign-in, so a paid company sees "Subscription required"
+    // and only then the real Home. No server snapshot yet means the same:
+    // wait, do not invent a lock.
+    if (accessGateOpen()) return true;
     if (!hasSnapshot()) return true;
     return inspectionAccessLocked() === false;
   }
@@ -723,6 +726,22 @@
     return { error: lastErr || { message: 'Entitlement RPC missing' } };
   }
 
+  function decisiveEntitlement(data) {
+    if (!data || typeof data !== 'object') return false;
+    if (data.allowed === true || data.can_read === true || data.can_create === true || data.can_finalise === true) {
+      return true;
+    }
+    return !!(text(data.status) || text(data.reason));
+  }
+
+  function holdPending(source) {
+    if (last && last.backendReady) return last;
+    last = emptySnapshot('subscription_required');
+    last.backendReady = false;
+    last.source = source || 'none';
+    return last;
+  }
+
   async function check(targetCompanyId) {
     var sb = getSb();
     var cid = text(targetCompanyId) || companyId();
@@ -737,21 +756,19 @@
       last.backendReady = false;
       last.source = 'local';
       last.authority = 'local';
+      paint();
       return last;
     }
     if (!sb || !sb.rpc || !cid) {
-      last = emptySnapshot('subscription_required');
-      last.backendReady = false;
-      last.source = 'none';
+      holdPending('none');
+      paint();
       return last;
     }
     try {
       var res = await rpcEntitlement(sb, cid);
       if (res && res.error) {
         var missing = /could not find the function|schema cache|PGRST202|404/i.test(text(res.error.message));
-        last = emptySnapshot('subscription_required');
-        last.backendReady = false;
-        last.source = missing ? 'missing-rpc' : 'rpc-error';
+        holdPending(missing ? 'missing-rpc' : 'rpc-error');
         last.error = text(res.error.message);
         paint();
         return last;
@@ -763,14 +780,20 @@
           data = JSON.parse(data);
         } catch (_) {}
       }
-      last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data || {});
+      // An empty or half-loaded RPC used to become a ready snapshot with
+      // allowed/can_read missing, which paints "Subscription required"
+      // until the real company row arrives.
+      if (!decisiveEntitlement(data)) {
+        holdPending('rpc-pending');
+        paint();
+        return last;
+      }
+      last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data);
       lastAt = Date.now();
       paint();
       return last;
     } catch (err) {
-      last = emptySnapshot('subscription_required');
-      last.backendReady = false;
-      last.source = 'rpc-error';
+      holdPending('rpc-error');
       last.error = text(err && err.message);
       paint();
       return last;
