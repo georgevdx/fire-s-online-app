@@ -314,6 +314,11 @@
       if (document.body) document.body.classList.remove('fire-s-access-open');
     } catch (_) {}
     try {
+      if (window.fireSEntitlement && typeof window.fireSEntitlement.syncHomeLayer === 'function') {
+        window.fireSEntitlement.syncHomeLayer();
+      }
+    } catch (_) {}
+    try {
       if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
         window.fireSMaybeOpenDesktopWorkspace();
       }
