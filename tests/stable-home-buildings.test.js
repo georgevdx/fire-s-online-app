@@ -49,10 +49,12 @@ assert.ok(
     /return unique;/.test(stagingLists),
   'Toets Home must show Loading until the company cloud building list is ready, then count that unique list'
 );
+assert.ok(/company inspection list/.test(stagingLists), 'Home count still names the company inspection list');
 assert.ok(
-  /company inspection list/.test(stagingLists) &&
-    /Phone and laptop show this same company list/.test(stagingHtml),
-  'Home must say this is the company list so phone and laptop are not two different truths'
+  !/Phone and laptop show this same company list/.test(stagingHtml) &&
+    !/id="fireSOwnerListsCountHint"/.test(stagingHtml) &&
+    !/Phone and laptop show this same company list/.test(read('index.html')),
+  'The phone and laptop hint under the building count stays off Toets and Live'
 );
 
 const helperStart = stagingApp.indexOf('function fireSHasRecycledCurrentInspection');
