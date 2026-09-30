@@ -139,7 +139,8 @@
       'projectListSection',
       'projectFormSection',
       'findingsCentreSection',
-      'reportSection'
+      'reportSection',
+      'fireSHiraSection'
     ].forEach(id => {
       const el = byId(id);
       if (!el) return;
