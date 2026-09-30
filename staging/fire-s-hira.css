@@ -1,0 +1,226 @@
+/* Toets-only OHS HIRA. Explicit colours so Dark Mode cannot wash the labels out. */
+.fire-s-hira-section {
+  display: block;
+  margin: 12px auto 28px;
+  max-width: 1100px;
+  padding: 16px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.fire-s-hira-section[hidden] {
+  display: none !important;
+}
+
+.fire-s-hira-kicker {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.fire-s-hira-lead,
+.fire-s-hira-note {
+  margin: 0 0 12px;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.fire-s-hira-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.fire-s-hira-tile {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.fire-s-hira-tile strong {
+  display: block;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.fire-s-hira-tile span {
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+.fire-s-hira-tile.is-critical strong { color: #991b1b; }
+.fire-s-hira-tile.is-high strong { color: #c2410c; }
+.fire-s-hira-tile.is-good strong { color: #166534; }
+
+.fire-s-hira-toolbar,
+.fire-s-hira-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.fire-s-hira-section button.hira-btn {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #b45309;
+  color: #fff;
+  font-weight: 700;
+}
+
+.fire-s-hira-section button.hira-btn.secondary {
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid #94a3b8;
+}
+
+.fire-s-hira-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 0.88rem;
+}
+
+.fire-s-hira-table th,
+.fire-s-hira-table td {
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+  text-align: left;
+  color: #0f172a;
+}
+
+.fire-s-hira-table th {
+  background: #fff7ed;
+}
+
+.fire-s-hira-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fire-s-hira-section label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.fire-s-hira-section input,
+.fire-s-hira-section select,
+.fire-s-hira-section textarea {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.fire-s-hira-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0 0 12px;
+}
+
+.fire-s-hira-checks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.fire-s-hira-checks input {
+  width: auto;
+}
+
+.fire-s-hira-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  margin: 0 0 12px;
+}
+
+.fire-s-hira-card h3,
+.fire-s-hira-card h4 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.fire-s-hira-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 0.78rem;
+}
+
+.fire-s-hira-matrix th,
+.fire-s-hira-matrix td {
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  padding: 6px 4px;
+  color: #0f172a;
+  background: #fff;
+}
+
+.fire-s-hira-matrix button {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+
+.fire-s-hira-matrix td.is-low { background: #dcfce7; }
+.fire-s-hira-matrix td.is-moderate { background: #fef9c3; }
+.fire-s-hira-matrix td.is-high { background: #ffedd5; }
+.fire-s-hira-matrix td.is-critical { background: #fee2e2; }
+.fire-s-hira-matrix td.is-picked { outline: 2px solid #0f172a; }
+
+.fire-s-hira-badge {
+  display: inline-block;
+  margin: 4px 8px 8px 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.fire-s-hira-badge.is-low { background: #dcfce7; }
+.fire-s-hira-badge.is-moderate { background: #fef9c3; }
+.fire-s-hira-badge.is-high { background: #ffedd5; }
+.fire-s-hira-badge.is-critical { background: #fee2e2; }
+
+.fire-s-hira-flow {
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.fire-s-hira-empty {
+  padding: 12px;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #334155;
+}

@@ -100,7 +100,7 @@ assert.ok(
 );
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
-    /fire-s-startup-stability\.js\?v=1-14-hold-sub/.test(stagingHtml) &&
+    /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
     /fire-s-management-dashboard\.js\?v=1-9-premises-name/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-60-hold-sub/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
