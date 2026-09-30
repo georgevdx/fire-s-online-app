@@ -38,6 +38,11 @@ function assertPersonnelCard(html, rolesJs, teamJs, boardJs, css, fitCss, manual
     label + ': People tab must still add and list personnel'
   );
   assert.ok(
+    !/id="mainCommandPersonnelStats"/.test(html) &&
+      !/id="cmdPersonnelInspectors"/.test(html),
+    label + ': Home must not show the Inspectors, Managers, Owners and People card'
+  );
+  assert.ok(
     /id="companyPersonnelStatsPanel"[\s\S]*id="inspectorBoardSelect"[\s\S]*id="inspectorBoardBody"/.test(
       html
     ),
