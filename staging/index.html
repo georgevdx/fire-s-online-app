@@ -136,6 +136,7 @@
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
   <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-114-hide-pw">
   <link rel="stylesheet" href="fire-s-dark-type.css?v=1-10-open-label">
+  <link rel="stylesheet" href="fire-s-hira.css?v=1-0-hira">
 </head>
 <body>
   <div id="fireSBootScreen" class="is-on" aria-live="polite">
@@ -670,6 +671,14 @@
         </span>
       </button>
 
+      <button type="button" class="main-command-card" id="cmdHiraBtn">
+        <span class="command-icon">🦺</span>
+        <span class="command-text">
+          <span class="command-title">OHS HIRA</span>
+          <span class="command-copy">Hazard identification and the 5×5 risk matrix. Toets only.</span>
+        </span>
+      </button>
+
       <button type="button" class="main-command-card" id="cmdTestSamplesBtn">
         <span class="command-icon">🧪</span>
         <span class="command-text">
@@ -722,6 +731,14 @@
     <div id="mainCommandMessage" class="main-command-message" style="display:none;"></div>
   </section>
 
+
+  <section id="fireSHiraSection" class="card fire-s-hira-section" style="display:none;" hidden>
+    <div class="toolbar">
+      <h2>OHS HIRA</h2>
+      <button type="button" id="fireSHiraBackBtn" class="back-home-btn">Back Home</button>
+    </div>
+    <div id="fireSHiraRoot"></div>
+  </section>
 
   <section id="findingsCentreSection" class="findings-centre" style="display:none;">
     <div class="findings-centre-header">
@@ -1998,7 +2015,7 @@
   <script src="app.js?v=1-3-116-homekpi"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-10-open-card"></script>
-  <script src="fire-s-clean-home-roles.js?v=2-49-hide-access"></script>
+  <script src="fire-s-clean-home-roles.js?v=2-51-hira"></script>
   <script src="fire-s-owner-lists.js?v=1-10-last-def"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-2-hotmail"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
@@ -2015,7 +2032,8 @@
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-60-hold-sub"></script>
   <script src="fire-s-change-password.js?v=1-0-temp-pw"></script>
-  <script src="fire-s-startup-stability.js?v=1-14-hold-sub"></script>
+  <script src="fire-s-startup-stability.js?v=1-15-hira"></script>
+  <script src="fire-s-hira.js?v=1-0-hira"></script>
   <script src="fire-s-screen-lock.js?v=1-7-new-insp"></script>
   <script src="fire-s-phone-back.js?v=1-4-temp-pw"></script>
   <script src="fire-s-global-flow.js?v=1-1-copy"></script>

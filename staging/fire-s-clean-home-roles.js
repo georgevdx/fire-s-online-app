@@ -43,6 +43,7 @@
     'cmdReportsBtn',
     'cmdCompanyDetailsBtn',
     'cmdCompanyBtn',
+    'cmdHiraBtn',
     'cmdTestSamplesBtn',
     'cmdManagementDashboardBtn',
     'cmdSubscribeBtn',
@@ -982,6 +983,7 @@
     hide('cmdScheduleBtn');
     hide('cmdCompanyDetailsBtn');
     hide('cmdCompanyBtn');
+    hide('cmdHiraBtn');
     hide('cmdTestSamplesBtn');
     hide('cmdManagementDashboardBtn');
     hide('cmdSubscribeBtn');
