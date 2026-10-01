@@ -38,7 +38,7 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml));
 assert.ok(/fire-s-subscriptions\.js\?v=1-17-live/.test(liveHtml));
 assert.ok(/fire-s-subscribe\.js\?v=1-36-cancel/.test(liveHtml));
 assert.ok(/fire-s-payfast\.js\?v=1-17-sig/.test(liveHtml));
-assert.ok(/fire-s-entitlement\.js\?v=1-3-107-lock/.test(liveHtml));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-67-sub-hold/.test(liveHtml));
 assert.ok(/service-worker\.js\?v=108-80-live-open/.test(liveHtml));
 assert.ok(/pay on PayFast/.test(read('fire-s-user-manual.js')));
 assert.ok(/pays on PayFast/.test(read('terms.html')));

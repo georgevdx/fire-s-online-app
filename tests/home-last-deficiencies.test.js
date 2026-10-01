@@ -17,7 +17,7 @@ const stagingEntitlement = read('staging/fire-s-entitlement.js');
 assert.ok(
   /app\.js\?v=1-3-122-company-wall/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
-    /fire-s-entitlement.js\?v=1-3-122-payfast-confirm/.test(stagingHtml) &&
+    /fire-s-entitlement.js\?v=1-3-123-paid-home/.test(stagingHtml) &&
     /fireS\.toetsCacheDrop\.1-3-121/.test(stagingHtml) &&
     /Version 1\.3\.119-toets/.test(stagingHtml),
   'Toets must cache-bust last-inspection Home counts without bumping the displayed version'

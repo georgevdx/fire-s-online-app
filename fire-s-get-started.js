@@ -309,6 +309,11 @@
     }
     if (root) root.style.display = 'none';
     try {
+      if (window.fireSEntitlement && typeof window.fireSEntitlement.syncHomeLayer === 'function') {
+        window.fireSEntitlement.syncHomeLayer();
+      }
+    } catch (_) {}
+    try {
       if (typeof window.fireSMaybeOpenDesktopWorkspace === 'function') {
         window.fireSMaybeOpenDesktopWorkspace();
       }
