@@ -257,7 +257,10 @@
   function inspectionAccessLocked() {
     if (isSuperAdmin() || isLocalWorkspace()) return false;
     if (accessGateOpen()) return false;
-    if (!hasSnapshot()) return isCloudCompanyUser();
+    // Do not flash the red Home lock while the entitlement RPC is still
+    // loading. A paid company would see Subscription required and then
+    // the real Home once the snapshot arrives.
+    if (!hasSnapshot()) return false;
     var status = text(last && last.status);
     var reason = text(last && last.reason);
     if (isCancelledCompany()) return true;
@@ -482,12 +485,15 @@
   }
 
   function homeWorkAllowed() {
-    if (accessGateOpen()) return false;
     if (isSuperAdmin()) return true;
-    try {
-      if (text(root.currentUserProfile && root.currentUserProfile.id) === 'local-user') return true;
-    } catch (_) {}
-    if (!hasSnapshot()) return false;
+    if (isLocalWorkspace()) return true;
+    // Access / Login is not a subscription decision. Painting
+    // fire-s-entitlement-blocked while that gate is open leaves the class
+    // stuck after sign-in, so a paid company sees "Subscription required"
+    // and only then the real Home. No server snapshot yet means the same:
+    // wait, do not invent a lock.
+    if (accessGateOpen()) return true;
+    if (!hasSnapshot()) return true;
     return inspectionAccessLocked() === false;
   }
 
@@ -639,6 +645,27 @@
     var detail = '';
     var urgency = 'none';
     var cta = 'Subscribe / Reactivate';
+    var subStatus = text(data.subscription_status).toLowerCase();
+    var recordedPayment = subStatus === 'active' || subStatus === 'subscription_active' || !!data.last_payment_at;
+    var checkoutPending = subStatus === 'payment_pending';
+
+    if (data.backendReady === false) {
+      return { headline: '', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
+    }
+
+    if (recordedPayment && (
+      status === 'trial_active' ||
+      status === 'trialing' ||
+      status === 'trial_expired' ||
+      status === 'payment_pending' ||
+      reason === 'trial_limit_reached' ||
+      reason === 'trial_expired'
+    )) {
+      return { headline: 'Subscription active', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
+    }
+    if (checkoutPending && status === 'trial_active' && reason !== 'trial_limit_reached') {
+      return { headline: 'Subscription active', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
+    }
 
     if (status === 'subscription_active' || data.allowed === true && status !== 'trial_active') {
       if (status === 'subscription_active') {
@@ -713,6 +740,55 @@
     return { error: lastErr || { message: 'Entitlement RPC missing' } };
   }
 
+  function decisiveEntitlement(data) {
+    if (!data || typeof data !== 'object') return false;
+    if (data.allowed === true || data.can_read === true || data.can_create === true || data.can_finalise === true) {
+      return true;
+    }
+    return !!(text(data.status) || text(data.reason));
+  }
+
+  function holdPending(source) {
+    if (last && last.backendReady) return last;
+    last = emptySnapshot('subscription_required');
+    last.backendReady = false;
+    last.source = source || 'none';
+    return last;
+  }
+
+  async function readCompanySubscription(sb, cid) {
+    try {
+      if (!sb || typeof sb.from !== 'function' || !cid) return null;
+      var res = await sb.from('fire_s_company_subscriptions').select('status,last_payment_at').eq('company_id', cid).maybeSingle();
+      return res && res.data ? res.data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applySubscriptionRow(data, row) {
+    if (!data || !row) return data;
+    if (row.status) data.subscription_status = row.status;
+    if (row.last_payment_at) data.last_payment_at = row.last_payment_at;
+    var sub = text(data.subscription_status).toLowerCase();
+    var paid = sub === 'active' || sub === 'subscription_active' || !!data.last_payment_at;
+    var pending = sub === 'payment_pending';
+    var status = text(data.status);
+    if (!(paid || pending)) return data;
+    if (status !== 'trial_active' && status !== 'trialing') return data;
+    if (!paid && data.allowed !== true) return data;
+    if (!paid && text(data.reason) === 'trial_limit_reached') return data;
+    data.status = 'subscription_active';
+    data.reason = '';
+    data.allowed = true;
+    data.can_read = true;
+    data.can_export = true;
+    data.can_write_draft = true;
+    if (data.can_create == null) data.can_create = true;
+    if (data.can_finalise == null) data.can_finalise = true;
+    return data;
+  }
+
   async function check(targetCompanyId) {
     var sb = getSb();
     var cid = text(targetCompanyId) || companyId();
@@ -727,21 +803,19 @@
       last.backendReady = false;
       last.source = 'local';
       last.authority = 'local';
+      paint();
       return last;
     }
     if (!sb || !sb.rpc || !cid) {
-      last = emptySnapshot('subscription_required');
-      last.backendReady = false;
-      last.source = 'none';
+      holdPending('none');
+      paint();
       return last;
     }
     try {
       var res = await rpcEntitlement(sb, cid);
       if (res && res.error) {
         var missing = /could not find the function|schema cache|PGRST202|404/i.test(text(res.error.message));
-        last = emptySnapshot('subscription_required');
-        last.backendReady = false;
-        last.source = missing ? 'missing-rpc' : 'rpc-error';
+        holdPending(missing ? 'missing-rpc' : 'rpc-error');
         last.error = text(res.error.message);
         paint();
         return last;
@@ -753,14 +827,21 @@
           data = JSON.parse(data);
         } catch (_) {}
       }
-      last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data || {});
+      // An empty or half-loaded RPC used to become a ready snapshot with
+      // allowed/can_read missing, which paints "Subscription required"
+      // until the real company row arrives.
+      if (!decisiveEntitlement(data)) {
+        holdPending('rpc-pending');
+        paint();
+        return last;
+      }
+      data = applySubscriptionRow(data, await readCompanySubscription(sb, cid));
+      last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data);
       lastAt = Date.now();
       paint();
       return last;
     } catch (err) {
-      last = emptySnapshot('subscription_required');
-      last.backendReady = false;
-      last.source = 'rpc-error';
+      holdPending('rpc-error');
       last.error = text(err && err.message);
       paint();
       return last;

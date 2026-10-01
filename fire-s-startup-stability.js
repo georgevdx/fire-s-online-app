@@ -39,6 +39,20 @@
     return false;
   }
 
+  function entitlementStillPending() {
+    try {
+      var api = window.fireSEntitlement;
+      if (!api || typeof api.hasSnapshot !== 'function') return false;
+      if (typeof api.isLocalWorkspace === 'function' && api.isLocalWorkspace()) return false;
+      var profile = window.currentUserProfile;
+      var id = profile && String(profile.id || '').trim();
+      var company = profile && String(profile.companyId || '').trim();
+      if (!id || id === 'local-user' || !company) return false;
+      return api.hasSnapshot() !== true;
+    } catch (_) {}
+    return false;
+  }
+
   function showSplash(message) {
     splashGen += 1;
     splashShownAt = Date.now();
@@ -148,6 +162,21 @@
       scheduleReveal(reason || 'min', BOOT_MIN_MS - elapsed);
       return;
     }
+    // Keep the logo up until the company entitlement answer arrives.
+    // Revealing earlier shows "Subscription required" and then the real Home.
+    if (
+      entitlementStillPending() &&
+      reason !== 'timeout' &&
+      Date.now() - startedAt < BOOT_SESSION_MAX_MS
+    ) {
+      try {
+        if (typeof window.fireSEntitlement.refresh === 'function') {
+          window.fireSEntitlement.refresh();
+        }
+      } catch (_) {}
+      scheduleReveal('entitlement', 300);
+      return;
+    }
     try {
       if (reason === 'home') window.__fireSSessionPending = false;
     } catch (_) {}
@@ -174,6 +203,12 @@
       }
     } catch (_) {}
 
+    try {
+      if (window.fireSEntitlement && typeof window.fireSEntitlement.syncHomeLayer === 'function') {
+        window.fireSEntitlement.syncHomeLayer();
+      }
+    } catch (_) {}
+
     hideSplash();
 
     try {
@@ -187,7 +222,19 @@
   }
 
   function hardStop() {
-    if (sessionStillRestoring() && Date.now() - startedAt < BOOT_SESSION_MAX_MS) {
+    if (
+      (sessionStillRestoring() || entitlementStillPending()) &&
+      Date.now() - startedAt < BOOT_SESSION_MAX_MS
+    ) {
+      try {
+        if (
+          entitlementStillPending() &&
+          window.fireSEntitlement &&
+          typeof window.fireSEntitlement.refresh === 'function'
+        ) {
+          window.fireSEntitlement.refresh();
+        }
+      } catch (_) {}
       hardStopTimer = setTimeout(hardStop, 400);
       return;
     }

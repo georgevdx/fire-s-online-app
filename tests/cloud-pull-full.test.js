@@ -47,7 +47,7 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-67',
+  '1-3-67-company-wall',
   '1-3-home-lookup',
   '108-80-live-open',
   'fire-s-108-80-live-open'
@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-116-homekpi',
+  '1-3-122-company-wall',
   '1-10-last-def',
   '108-80-toets-119',
   'fire-s-108-80-toets-119'

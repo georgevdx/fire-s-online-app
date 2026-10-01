@@ -123,8 +123,19 @@ visible = sandbox.fireSFilterProjectsForProfile(
 );
 assert.deepStrictEqual(
   visible.map(function (row) { return row.id; }).sort(),
-  ['insp-1', 'insp-2'],
-  'if company stamps mismatch, keep the user own inspections instead of an empty Gateway'
+  [],
+  'another company stamp must stay off this company list, even when this user created the inspection'
+);
+
+visible = sandbox.fireSFilterProjectsForProfile(
+  [owned, unstamped, otherCompany, stranger],
+  profile,
+  true
+);
+assert.deepStrictEqual(
+  visible.map(function (row) { return row.id; }).sort(),
+  ['insp-1', 'insp-2', 'insp-4'],
+  'a super admin signed into a company must not open another company list'
 );
 
 visible = sandbox.fireSFilterProjectsForProfile(

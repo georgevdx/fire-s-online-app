@@ -237,6 +237,19 @@ begin
     v_allowed := true;
     v_can_finalise := true;
     v_can_create := true;
+  elsif v_sub_status = 'payment_pending' then
+    v_status := 'payment_pending';
+    v_reason := null;
+    if v_sub.last_payment_at is not null
+       or (
+         v_row.trial_started_at is not null
+         and v_now < coalesce(v_ends, v_row.trial_started_at)
+         and v_used < v_limit
+       ) then
+      v_allowed := true;
+      v_can_finalise := true;
+      v_can_create := true;
+    end if;
   elsif v_row.trial_started_at is not null then
     if v_now >= coalesce(v_ends, v_row.trial_started_at) then
       v_status := 'trial_expired';

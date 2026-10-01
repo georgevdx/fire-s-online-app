@@ -4522,11 +4522,11 @@ Cloud error: ${cloudError || 'none'}`;
 
 function normaliseCloudSyncedProject(row) {
   const project = normaliseProjectPhotoSources(row?.inspection_data || {});
+  // Keep the row's own company. Never label another company's inspection as this one.
   const companyId =
     project.companyId ||
     project.company_id ||
     row?.company_id ||
-    currentUserProfile?.companyId ||
     null;
   return {
     ...project,
@@ -5145,8 +5145,27 @@ async function safeDownloadNewerCloudInspections(options) {
         expectedTotal = meta.expectedTotal;
       }
       const incomplete = !!(meta && meta.incomplete);
-      if (Array.isArray(cloudRows) && cloudRows.length) {
-        mergedProjects = mergeCloudRowsIntoProjects(localProjects, cloudRows);
+      const cid = String((currentUserProfile && currentUserProfile.companyId) || '').trim();
+      const rows = (Array.isArray(cloudRows) ? cloudRows : []).filter(row => {
+        const data = row && row.inspection_data;
+        const rowCid = String(
+          (data && (data.companyId || data.company_id)) ||
+            (row && (row.company_id || row.companyId)) ||
+            ''
+        ).trim();
+        if (rowCid && cid && rowCid !== cid) return false;
+        if (rowCid && !cid) return false;
+        if (!rowCid && cid) {
+          const adopt =
+            typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+              ? fireSCompanyAdoptsLocalLeftovers(cid)
+              : true;
+          return !!adopt;
+        }
+        return true;
+      });
+      if (rows.length) {
+        mergedProjects = mergeCloudRowsIntoProjects(localProjects, rows);
       }
       reportPremisesProgress(incomplete);
       const now = Date.now();
@@ -5165,6 +5184,14 @@ async function safeDownloadNewerCloudInspections(options) {
     );
     const data = pulled && pulled.data;
     const error = pulled && pulled.error;
+    try {
+      const blocked = {};
+      const foreign = Array.isArray(pulled && pulled.foreignIds) ? pulled.foreignIds : [];
+      foreign.forEach(id => {
+        if (id) blocked[String(id)] = true;
+      });
+      window.__fireSForeignCompanyInspectionIds = blocked;
+    } catch (_) {}
 
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
       console.error('Safe download failed:', error);
@@ -7166,6 +7193,17 @@ async function loadUserAccessProfile() {
     }
 
     const companyId = membership?.company_id || null;
+    if (
+      previousCompanyId &&
+      companyId &&
+      String(previousCompanyId) !== String(companyId)
+    ) {
+      fireSMarkCompanyIsolated(companyId);
+      try {
+        window.__fireSForeignCompanyInspectionIds = {};
+        window.__fireSCloudBuildingFilter = { ids: {}, keys: {}, ready: true };
+      } catch (_) {}
+    }
     fireSClearCompanyCacheIfMismatch(companyId);
     const embeddedCompany = membership?.companies;
     const embeddedRow = Array.isArray(embeddedCompany)
@@ -7453,6 +7491,10 @@ function resolveProjectCompanyFields(project, accessMetadata) {
 function restampLocalInspectionsWithCompany(companyId, companyName) {
   const cid = String(companyId || '').trim();
   if (!cid) return 0;
+  const adoptLeftovers =
+    typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+      ? fireSCompanyAdoptsLocalLeftovers(cid)
+      : true;
 
   const projects = getProjects();
   let changed = 0;
@@ -7476,6 +7518,19 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
       return project;
     }
     if (existing) return project;
+    if (!adoptLeftovers) return project;
+    const profile =
+      typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
+    const mine =
+      typeof fireSProjectOwnedByProfile === 'function' &&
+      fireSProjectOwnedByProfile(project, profile);
+    const hasOwner = String(
+      project.createdByUserId ||
+        project.user_id ||
+        project.createdByEmail ||
+        ''
+    ).trim();
+    if (hasOwner && !mine) return project;
     changed += 1;
     queueInspectionForUpload(project.id);
     return {
@@ -7496,6 +7551,62 @@ function restampLocalInspectionsWithCompany(companyId, companyName) {
   }
   return changed;
 }
+
+var FIRE_S_ISOLATE_COMPANY_KEY = 'fireS.isolateCompanyInspections.v1';
+
+function fireSReadIsolatedCompanies() {
+  try {
+    const raw = localStorage.getItem(FIRE_S_ISOLATE_COMPANY_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch (_) {
+    return {};
+  }
+}
+
+function fireSResetHomeForNewCompany() {
+  try {
+    window.__fireSCloudBuildingFilter = { ids: {}, keys: {}, ready: true };
+    window.__fireSCloudPullSettled = true;
+    window.__fireSHomeCountsFrozen = false;
+  } catch (_) {}
+  try {
+    if (typeof window.fireSProductionRenderKpis === 'function') {
+      window.fireSProductionRenderKpis();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSRefreshOwnerLists === 'function') {
+      window.fireSRefreshOwnerLists();
+    }
+  } catch (_) {}
+}
+
+function fireSMarkCompanyIsolated(companyId) {
+  const cid = String(companyId || '').trim();
+  if (!cid) return;
+  try {
+    const map = fireSReadIsolatedCompanies();
+    map[cid] = 1;
+    localStorage.setItem(FIRE_S_ISOLATE_COMPANY_KEY, JSON.stringify(map));
+  } catch (_) {}
+  fireSResetHomeForNewCompany();
+}
+
+function fireSCompanyAdoptsLocalLeftovers(companyId) {
+  const cid = String(companyId || '').trim();
+  if (!cid) return true;
+  try {
+    const map = fireSReadIsolatedCompanies();
+    if (map[cid]) return false;
+  } catch (_) {}
+  return true;
+}
+
+window.fireSMarkCompanyIsolated = fireSMarkCompanyIsolated;
+window.fireSCompanyAdoptsLocalLeftovers = fireSCompanyAdoptsLocalLeftovers;
+window.fireSResetHomeForNewCompany = fireSResetHomeForNewCompany;
 
 function fireSCloudRowInspectionId(row) {
   if (!row) return '';
@@ -7542,6 +7653,11 @@ function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
       project.companyId || project.company_id || ''
     ).trim();
     if (cid && projectCid && projectCid !== cid) return;
+    const adoptLeftovers =
+      typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+        ? fireSCompanyAdoptsLocalLeftovers(cid)
+        : true;
+    if (cid && !projectCid && !adoptLeftovers) return;
     if (cloudIds.has(String(project.id))) return;
     queueInspectionForUpload(project.id);
     queued += 1;
@@ -7579,37 +7695,52 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
     !fireSIsEmptyRecycleLeftoverPremises(project)
   );
 
-  if (isAdmin) return activeProjects;
-  if (fireSIsLocalProfileFallback(profile)) return activeProjects;
-
-  const profileCompanyId = String(profile.companyId || '').trim();
+  const profileCompanyId = String((profile && profile.companyId) || '').trim();
+  // A signed-in company sees only that company's inspections.
+  // Super-admin and a missing profile must not open another company's list.
+  if (!profileCompanyId && (isAdmin || fireSIsLocalProfileFallback(profile))) {
+    return activeProjects;
+  }
+  if (!profile) return [];
   const mine = project => fireSProjectOwnedByProfile(project, profile);
 
   if (profileCompanyId) {
-    const matched = activeProjects.filter(project => {
+    const adoptLeftovers =
+      typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+        ? fireSCompanyAdoptsLocalLeftovers(profileCompanyId)
+        : true;
+    return activeProjects.filter(project => {
+      try {
+        const blocked =
+          window.__fireSForeignCompanyInspectionIds || null;
+        if (
+          blocked &&
+          project &&
+          project.id &&
+          blocked[String(project.id)]
+        ) {
+          return false;
+        }
+      } catch (_) {}
       const projectCompanyId = String(
         project.companyId || project.company_id || ''
       ).trim();
       if (projectCompanyId === profileCompanyId) return true;
-      if (!projectCompanyId) {
-        if (mine(project)) return true;
-        const hasOwner = String(
-          project.createdByUserId ||
-            project.user_id ||
-            project.createdByEmail ||
-            ''
-        ).trim();
-        if (!hasOwner) return true;
-      }
-      return false;
+      if (projectCompanyId) return false;
+      if (!adoptLeftovers) return false;
+      if (mine(project)) return true;
+      const hasOwner = String(
+        project.createdByUserId ||
+          project.user_id ||
+          project.createdByEmail ||
+          ''
+      ).trim();
+      return !hasOwner;
     });
-    if (matched.length) return matched;
-    const owned = activeProjects.filter(mine);
-    return owned.length ? owned : activeProjects;
   }
 
   const owned = activeProjects.filter(mine);
-  return owned.length ? owned : activeProjects;
+  return owned;
 }
 
 function getVisibleProjectsForCurrentUser(projects) {
@@ -7621,12 +7752,12 @@ function getVisibleProjectsForCurrentUser(projects) {
 }
 
 function getProjectCloudMetadata(project, userId) {
-  // Prefer the signed-in membership company — stale local companyId causes RLS failures.
-  const companyId =
-    currentUserProfile?.companyId ||
-    project.companyId ||
-    project.company_id ||
-    null;
+  // Keep an inspection on its own company. Untagged rows take the signed-in company.
+  const existingCompanyId = String(
+    (project && (project.companyId || project.company_id)) || ''
+  ).trim();
+  const membershipId = String(currentUserProfile?.companyId || '').trim();
+  const companyId = existingCompanyId || membershipId || null;
 
   return {
     company_id: companyId,
@@ -7880,14 +8011,63 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     !!primary.incomplete ||
     otherCount > primaryLen;
 
-  if (!needSecondary) {
+  function scopeCompanyRows(rows) {
+    const activeCompanyId = String(
+      (currentUserProfile && currentUserProfile.companyId) || ''
+    ).trim();
+    const foreignIds = [];
+    const scoped = [];
+    (Array.isArray(rows) ? rows : []).forEach(row => {
+      const data = row && row.inspection_data;
+      const rowCompanyId = String(
+        (data && (data.companyId || data.company_id)) ||
+          (row && (row.company_id || row.companyId)) ||
+          ''
+      ).trim();
+      const id = String(
+        (row && row.id) ||
+          (data && data.id) ||
+          ''
+      ).trim();
+      if (rowCompanyId && activeCompanyId && rowCompanyId !== activeCompanyId) {
+        if (id) foreignIds.push(id);
+        return;
+      }
+      if (rowCompanyId && !activeCompanyId) {
+        if (id) foreignIds.push(id);
+        return;
+      }
+      if (!rowCompanyId && activeCompanyId) {
+        const adopt =
+          typeof fireSCompanyAdoptsLocalLeftovers === 'function'
+            ? fireSCompanyAdoptsLocalLeftovers(activeCompanyId)
+            : true;
+        if (!adopt) return;
+      }
+      scoped.push(row);
+    });
+    return { scoped: scoped, foreignIds: foreignIds };
+  }
+
+  function finishCompanyPull(rows, pullError, incomplete, pullExpected) {
+    const walled = scopeCompanyRows(rows);
+    const droppedForeign = walled.foreignIds.length > 0;
     return {
-      data: primary.data,
-      error: primary.error,
-      incomplete:
-        !!(expectedTotal && primaryLen < expectedTotal) || !!primary.incomplete,
-      expectedTotal: expectedTotal
+      data: walled.scoped,
+      foreignIds: walled.foreignIds,
+      error: walled.scoped.length ? null : pullError || null,
+      incomplete: droppedForeign ? false : !!incomplete,
+      expectedTotal: droppedForeign ? walled.scoped.length : pullExpected
     };
+  }
+
+  if (!needSecondary) {
+    return finishCompanyPull(
+      primary.data,
+      primary.error,
+      !!(expectedTotal && primaryLen < expectedTotal) || !!primary.incomplete,
+      expectedTotal
+    );
   }
 
   const secondaryExpected =
@@ -7896,12 +8076,12 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
       : filteredCount || expectedTotal;
   const secondary = await fetchAll(secondaryQuery, secondaryExpected);
   const merged = unionCloudRows(primary.data, secondary.data);
-  return {
-    data: merged,
-    error: merged.length ? null : primary.error || secondary.error,
-    incomplete: !!(expectedTotal && merged.length < expectedTotal),
-    expectedTotal: expectedTotal
-  };
+  return finishCompanyPull(
+    merged,
+    merged.length ? null : primary.error || secondary.error,
+    !!(expectedTotal && merged.length < expectedTotal),
+    expectedTotal
+  );
 }
 
 function applyInspectionDeleteFilter(query, userId) {
@@ -35228,16 +35408,6 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   function scopedProjects(){
     const all = rawProjects();
-    const role = viewAsRole();
-    const real = actualRole();
-
-    // In Role Test Mode, super_admin must be able to compare the UI without
-    // accidentally changing the physical dataset. Therefore manager/company_owner/
-    // super_admin use the same management scope; inspector uses the inspector scope.
-    if (real === 'super_admin' && role !== 'inspector') {
-      return all;
-    }
-
     try {
       if (typeof getVisibleProjectsForCurrentUser === 'function') {
         return getVisibleProjectsForCurrentUser(all);
@@ -35485,9 +35655,6 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   function scopedProjects(){
     const all = rawProjects();
-    const real = actualRole();
-    const role = viewAsRole();
-    if (real === 'super_admin' && role !== 'inspector') return all;
     try {
       if (typeof getVisibleProjectsForCurrentUser === 'function') {
         return getVisibleProjectsForCurrentUser(all);
