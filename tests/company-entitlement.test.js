@@ -178,6 +178,47 @@ const expired = api.displayCopy({
 });
 assert.ok(/Your Fire-S free trial has ended/.test(expired.detail));
 
+const subscribed = api.displayCopy({
+  status: 'trial_active',
+  reason: null,
+  allowed: true,
+  subscription_status: 'payment_pending',
+  trial_days_remaining: 14,
+  trial_inspections_remaining: 3,
+  trial_inspections_used: 0,
+  trial_inspection_limit: 3,
+  backendReady: true
+});
+assert.strictEqual(subscribed.show, false, 'a company that already subscribed must not keep the trial card');
+assert.ok(!/Trial/.test(subscribed.headline));
+
+const paidRow = api.displayCopy({
+  status: 'trial_active',
+  allowed: true,
+  subscription_status: 'active',
+  last_payment_at: '2026-09-30T00:00:00.000Z',
+  trial_days_remaining: 14,
+  trial_inspections_remaining: 3,
+  backendReady: true
+});
+assert.strictEqual(paidRow.show, false);
+
+const onlyTrial = api.displayCopy({
+  status: 'trial_active',
+  allowed: true,
+  subscription_status: 'trialing',
+  trial_days_remaining: 14,
+  trial_inspections_remaining: 3,
+  trial_inspections_used: 0,
+  trial_inspection_limit: 3,
+  backendReady: true
+});
+assert.ok(/Trial — 14 days remaining/.test(onlyTrial.headline), 'a company still on trial keeps the trial card');
+assert.strictEqual(onlyTrial.show, true);
+
+assert.strictEqual(api.homeWorkAllowed(), true, 'login must not paint Subscription required before the server answers');
+assert.strictEqual(api.inspectionAccessLocked(), false);
+
 const parsed = api.parseRpcError({
   message: 'FIRE_S_ENTITLEMENT:trial_limit_reached:You have completed the inspections included in your Fire-S free trial. Choose a subscription plan to continue using Fire-S.'
 });

@@ -652,6 +652,27 @@
     var detail = '';
     var urgency = 'none';
     var cta = 'Subscribe / Reactivate';
+    var subStatus = text(data.subscription_status).toLowerCase();
+    var recordedPayment = subStatus === 'active' || subStatus === 'subscription_active' || !!data.last_payment_at;
+    var checkoutPending = subStatus === 'payment_pending';
+
+    if (data.backendReady === false) {
+      return { headline: '', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
+    }
+
+    if (recordedPayment && (
+      status === 'trial_active' ||
+      status === 'trialing' ||
+      status === 'trial_expired' ||
+      status === 'payment_pending' ||
+      reason === 'trial_limit_reached' ||
+      reason === 'trial_expired'
+    )) {
+      return { headline: 'Subscription active', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
+    }
+    if (checkoutPending && status === 'trial_active' && reason !== 'trial_limit_reached') {
+      return { headline: 'Subscription active', detail: '', urgency: 'none', cta: cta, show: false, days: days, remaining: remaining, used: used, limit: limit };
+    }
 
     if (status === 'subscription_active' || data.allowed === true && status !== 'trial_active') {
       if (status === 'subscription_active') {
@@ -761,6 +782,39 @@
     return last;
   }
 
+  async function readCompanySubscription(sb, cid) {
+    try {
+      if (!sb || typeof sb.from !== 'function' || !cid) return null;
+      var res = await sb.from('fire_s_company_subscriptions').select('status,last_payment_at').eq('company_id', cid).maybeSingle();
+      return res && res.data ? res.data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applySubscriptionRow(data, row) {
+    if (!data || !row) return data;
+    if (row.status) data.subscription_status = row.status;
+    if (row.last_payment_at) data.last_payment_at = row.last_payment_at;
+    var sub = text(data.subscription_status).toLowerCase();
+    var paid = sub === 'active' || sub === 'subscription_active' || !!data.last_payment_at;
+    var pending = sub === 'payment_pending';
+    var status = text(data.status);
+    if (!(paid || pending)) return data;
+    if (status !== 'trial_active' && status !== 'trialing') return data;
+    if (!paid && data.allowed !== true) return data;
+    if (!paid && text(data.reason) === 'trial_limit_reached') return data;
+    data.status = 'subscription_active';
+    data.reason = '';
+    data.allowed = true;
+    data.can_read = true;
+    data.can_export = true;
+    data.can_write_draft = true;
+    if (data.can_create == null) data.can_create = true;
+    if (data.can_finalise == null) data.can_finalise = true;
+    return data;
+  }
+
   async function check(targetCompanyId) {
     var sb = getSb();
     var cid = text(targetCompanyId) || companyId();
@@ -807,6 +861,7 @@
         paint();
         return last;
       }
+      data = applySubscriptionRow(data, await readCompanySubscription(sb, cid));
       last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data);
       lastAt = Date.now();
       paint();
