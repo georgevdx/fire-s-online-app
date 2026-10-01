@@ -317,11 +317,87 @@
       btn.addEventListener('click', function () {
         setTimeout(fillInspectorSelect, 80);
         setTimeout(fillInspectorSelect, 400);
+        setTimeout(bindDatePickers, 80);
       });
+    });
+    bindDatePickers();
+  }
+
+  function prepareDateField(field) {
+    if (!field) return;
+    try {
+      field.setAttribute('type', 'date');
+      field.setAttribute('lang', 'en-ZA');
+    } catch (_) {}
+    try {
+      if (typeof field.getAttribute === 'function' && !field.getAttribute('autocomplete')) {
+        field.setAttribute('autocomplete', 'off');
+      }
+    } catch (_) {}
+    try {
+      if (field.classList) field.classList.add('fire-s-date-input');
+    } catch (_) {}
+  }
+
+  function openNativeDatePicker(field) {
+    if (!field || field.disabled || field.readOnly) return;
+    var now = Date.now();
+    if (field.__fireSPickerAt && now - field.__fireSPickerAt < 450) return;
+    field.__fireSPickerAt = now;
+    prepareDateField(field);
+    try {
+      if (typeof field.showPicker === 'function') field.showPicker();
+    } catch (_) {}
+  }
+
+  function dateFieldFromEvent(event) {
+    var node = event && event.target;
+    if (!node) return null;
+    if (typeof node.closest === 'function') {
+      var direct = node.closest('input[type="date"], input.expiry-date, input.fire-s-date-input');
+      if (direct) return direct;
+      var host = node.closest('label, .expiry-wrapper');
+      if (host && typeof host.querySelector === 'function') {
+        return host.querySelector('input[type="date"], input.expiry-date, input.fire-s-date-input');
+      }
+      return null;
+    }
+    var type = '';
+    try {
+      type = String((node.getAttribute && node.getAttribute('type')) || node.type || '').toLowerCase();
+    } catch (_) {}
+    return type === 'date' ? node : null;
+  }
+
+  function bindDatePickers() {
+    var doc = root.document;
+    if (!doc) return;
+    [
+      'scheduleDate',
+      'followUpDate',
+      'inspectionDate',
+      'inspectionDateFrom',
+      'inspectionDateTo'
+    ].forEach(function (id) {
+      var field = doc.getElementById(id);
+      if (!field || field.__fireSDatePickerBound) return;
+      field.__fireSDatePickerBound = true;
+      prepareDateField(field);
+      field.addEventListener('click', function () {
+        openNativeDatePicker(field);
+      });
+    });
+    if (doc.__fireSDateDelegate) return;
+    doc.__fireSDateDelegate = true;
+    doc.addEventListener('click', function (event) {
+      var field = dateFieldFromEvent(event);
+      if (!field) return;
+      openNativeDatePicker(field);
     });
   }
 
   root.fireSIsMyInspection = isMyInspection;
+  root.fireSBindDatePickers = bindDatePickers;
   root.fireSIsFinalizedInspection = isFinalizedInspection;
   root.fireSScheduledPriorityList = scheduledPriorityList;
   root.fireSReadScheduleAssignee = readScheduleAssignee;
