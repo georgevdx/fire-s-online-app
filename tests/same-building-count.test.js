@@ -20,7 +20,7 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv) &&
     /fire-s-108-80-live-open/.test(liveSw),
   'Live must keep 1.3.67 and drop the old Home cache so the phone count fix sits'
@@ -242,6 +242,21 @@ async function runAppCases(appSrc, label) {
     label + ': company Home must keep company rows, own untagged leftovers, and untagged legacy buildings'
   );
 
+  const own = rowsFor(2, 'mine', 'co-1');
+  const foreign = rowsFor(4, 'other', 'other-co');
+  const wall = loadFetch(appSrc, function spec(args) {
+    const source = args.filtered ? own : own.concat(foreign);
+    return {
+      data: source.slice(args.from, args.to + 1),
+      count: source.length,
+      error: null
+    };
+  });
+  const walled = await wall.fetch('user-1', 'inspection_data, updated_at, company_id');
+  assert.strictEqual(walled.data.length, 2, label + ' must not pull another company’s inspections');
+  assert.strictEqual(walled.foreignIds.length, 4, label + ' must remember the other company’s inspection ids');
+  assert.strictEqual(walled.incomplete, false, label + ': dropping another company must not keep Home loading');
+
   if (label === 'Toets') {
     const fiveOnly = rowsFor(5, 'co', 'co-1');
     const openFail = loadFetch(appSrc, function spec(args) {
@@ -261,20 +276,6 @@ async function runAppCases(appSrc, label) {
       'Toets: if the open cloud list times out, Home must not finish as 5 while the laptop has 7'
     );
 
-    const own = rowsFor(2, 'mine', 'co-1');
-    const foreign = rowsFor(4, 'other', 'other-co');
-    const wall = loadFetch(appSrc, function spec(args) {
-      const source = args.filtered ? own : own.concat(foreign);
-      return {
-        data: source.slice(args.from, args.to + 1),
-        count: source.length,
-        error: null
-      };
-    });
-    const walled = await wall.fetch('user-1', 'inspection_data, updated_at, company_id');
-    assert.strictEqual(walled.data.length, 2, 'Toets must not pull another company’s inspections');
-    assert.strictEqual(walled.foreignIds.length, 4, 'Toets must remember the other company’s inspection ids');
-    assert.strictEqual(walled.incomplete, false, 'Dropping another company must not keep Home loading');
   }
 }
 
