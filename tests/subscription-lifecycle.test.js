@@ -148,7 +148,7 @@ assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/fire-s-subscribe.js\?v=1-38-howto/.test(stagingHtml));
 assert.ok(/canManage\(\) \|\| !!data\.can_cancel/.test(stagingSubscribe));
 assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
-assert.ok(/fire-s-entitlement.js\?v=1-3-120-hold-sub/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-122-payfast-confirm/.test(stagingHtml));
 assert.ok(/fire-s-subscribe.css\?v=1-14-howto/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
