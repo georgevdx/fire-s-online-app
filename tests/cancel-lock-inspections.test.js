@@ -109,11 +109,11 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-120-hold-sub/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-122-payfast-confirm/.test(stagingHtml));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
-assert.ok(/app\.js\?v=1-3-116-homekpi/.test(stagingHtml));
+assert.ok(/app\.js\?v=1-3-122-company-wall/.test(stagingHtml));
 assert.ok(/Version 1\.3\.119-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/inspectionAccessLocked/.test(liveApp), 'live openProject must lock unpaid inspections');
@@ -254,6 +254,19 @@ assert.strictEqual(
   'paid Home must not flash the red lock while the entitlement RPC is still loading'
 );
 assert.strictEqual(ent.fireSEntitlement.homeWorkAllowed(), true);
+assert.ok(/function decisiveEntitlement\(/.test(stagingEntitlement), 'an empty entitlement RPC must not count as a lock');
+assert.ok(/entitlementStillPending/.test(read('staging/fire-s-startup-stability.js')));
+assert.ok(/syncHomeLayer/.test(read('staging/fire-s-get-started.js')));
+const openGate = ent.document.getElementById('fireSGetStarted');
+openGate.hidden = false;
+openGate.style.display = 'block';
+assert.strictEqual(
+  ent.fireSEntitlement.homeWorkAllowed(),
+  true,
+  'the login screen must not paint Subscription required before the server answers'
+);
+openGate.hidden = true;
+openGate.style.display = 'none';
 
 (async function runCancelledRpc() {
   const client = loadEntitlement();
@@ -355,6 +368,61 @@ assert.strictEqual(ent.fireSEntitlement.homeWorkAllowed(), true);
   );
   assert.strictEqual(paidThroughClient.fireSEntitlement.canRead(), false);
   assert.strictEqual(paidThroughClient.fireSEntitlement.operationallyAllowed(), false);
+
+  const flash = loadEntitlement();
+  flash.supabaseClient = {
+    rpc: async function () {
+      return { data: null };
+    }
+  };
+  const pendingInfo = await flash.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(pendingInfo.backendReady, false, 'empty RPC must stay pending');
+  assert.strictEqual(flash.fireSEntitlement.hasSnapshot(), false);
+  assert.strictEqual(flash.fireSEntitlement.inspectionAccessLocked(), false);
+  assert.strictEqual(flash.fireSEntitlement.homeWorkAllowed(), true);
+  const loginGate = flash.document.getElementById('fireSGetStarted');
+  loginGate.hidden = false;
+  loginGate.style.display = 'block';
+  assert.strictEqual(flash.fireSEntitlement.homeWorkAllowed(), true);
+  loginGate.hidden = true;
+  loginGate.style.display = 'none';
+  flash.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: true,
+          can_read: true,
+          can_create: true,
+          can_finalise: true,
+          status: 'subscription_active',
+          reason: '',
+          authority: 'server',
+          company_id: 'co1'
+        }
+      };
+    }
+  };
+  const paidInfo = await flash.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(paidInfo.backendReady, true);
+  assert.strictEqual(flash.fireSEntitlement.inspectionAccessLocked(), false);
+  assert.strictEqual(flash.fireSEntitlement.homeWorkAllowed(), true, 'a paid company must open once the real snapshot arrives');
+
+  const gateWhileLocked = client.document.getElementById('fireSGetStarted');
+  gateWhileLocked.hidden = false;
+  gateWhileLocked.style.display = 'block';
+  assert.strictEqual(
+    client.fireSEntitlement.homeWorkAllowed(),
+    true,
+    'login must not leave the subscription wall stuck on for a later paint'
+  );
+  gateWhileLocked.hidden = true;
+  gateWhileLocked.style.display = 'none';
+  assert.strictEqual(
+    client.fireSEntitlement.inspectionAccessLocked(),
+    true,
+    'a cancelled company still locks after Access closes'
+  );
+  assert.strictEqual(client.fireSEntitlement.homeWorkAllowed(), false);
 
   client.currentUserProfile.role = 'super_admin';
   client.isSuperAdmin = function () { return true; };

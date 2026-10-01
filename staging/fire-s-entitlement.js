@@ -671,6 +671,25 @@
       urgency = 'block';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: 0, remaining: remaining, used: used, limit: limit };
     }
+    try {
+      if (root.__fireSPayfastAwaitingConfirm && status === 'trial_active') {
+        headline = 'Confirming PayFast payment';
+        detail = 'PayFast received this payment. This company’s access updates when the server confirms.';
+        urgency = 'mid';
+        return {
+          headline: headline,
+          detail: detail,
+          urgency: urgency,
+          cta: 'Refresh access',
+          show: true,
+          days: days,
+          remaining: remaining,
+          used: used,
+          limit: limit
+        };
+      }
+    } catch (_) {}
+
     if (status === 'trial_active') {
       headline = 'Trial — ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining';
       detail = remaining + ' trial inspection' + (remaining === 1 ? '' : 's') + ' remaining';

@@ -381,6 +381,72 @@
     return false;
   }
 
+  var confirmTimer = null;
+
+  function subscriptionIsActive() {
+    try {
+      var ent = root.fireSEntitlement;
+      var snap = ent && typeof ent.snapshot === 'function' ? ent.snapshot() : null;
+      return text(snap && snap.status).toLowerCase() === 'subscription_active';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function refreshEntitlement() {
+    try {
+      if (root.fireSEntitlement && root.fireSEntitlement.refresh) {
+        return root.fireSEntitlement.refresh(true);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function stopPaymentConfirm(active) {
+    if (confirmTimer) {
+      clearInterval(confirmTimer);
+      confirmTimer = null;
+    }
+    try {
+      root.__fireSPayfastAwaitingConfirm = false;
+    } catch (_) {}
+    if (active) {
+      var bar = root.document && root.document.getElementById('fireSPayfastReturnBanner');
+      if (bar) {
+        bar.className = 'fire-s-payfast-return is-ok';
+        bar.textContent = 'Payment confirmed. This company’s subscription is active.';
+      }
+      refreshEntitlement();
+    }
+  }
+
+  function watchPaymentConfirm() {
+    try {
+      root.__fireSPayfastAwaitingConfirm = true;
+    } catch (_) {}
+    refreshEntitlement();
+    if (confirmTimer) clearInterval(confirmTimer);
+    var tries = 0;
+    confirmTimer = setInterval(function () {
+      tries += 1;
+      refreshEntitlement();
+      if (subscriptionIsActive()) {
+        stopPaymentConfirm(true);
+        return;
+      }
+      if (tries >= 15) {
+        if (confirmTimer) {
+          clearInterval(confirmTimer);
+          confirmTimer = null;
+        }
+        try {
+          root.__fireSPayfastAwaitingConfirm = false;
+        } catch (_) {}
+        refreshEntitlement();
+      }
+    }, 4000);
+  }
+
   function paintReturnBanner() {
     var status = queryStatus();
     if (subscriptionLooksCancelled() && status !== 'ok') {
@@ -418,11 +484,7 @@
     try {
       if (typeof root.fireSPaintSubscribeStatus === 'function') root.fireSPaintSubscribeStatus();
     } catch (_) {}
-    try {
-      if (status === 'ok' && root.fireSEntitlement && root.fireSEntitlement.refresh) {
-        root.fireSEntitlement.refresh(true);
-      }
-    } catch (_) {}
+    if (status === 'ok') watchPaymentConfirm();
     stripPayfastQuery();
   }
 

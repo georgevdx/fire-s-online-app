@@ -16,7 +16,7 @@ const stagingTeam = read('staging/fire-s-company-team.js');
 
 assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-116-homekpi/.test(stagingHtml) &&
+    /app\.js\?v=1-3-122-company-wall/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-60-hold-sub/.test(stagingHtml) &&
     /fireS\.toetsCacheDrop\.1-3-121/.test(stagingHtml),
   'Toets must cache-bust the clean new-company lists'
@@ -212,6 +212,19 @@ assert.ok(
     sandbox._queued.indexOf('plastic-view') === -1 &&
     sandbox._queued.indexOf('untagged-mine') === -1,
   'must not upload Plastic View into the new company'
+);
+
+visible = sandbox.fireSFilterProjectsForProfile(
+  leftovers,
+  sandbox.currentUserProfile,
+  true
+);
+assert.deepStrictEqual(
+  visible.map(function (row) {
+    return row.id;
+  }),
+  ['tester-row'],
+  'super admin on a company home must still hide the other company’s inspections'
 );
 
 console.log('new-company-isolate.test.js: ok');
