@@ -47,7 +47,7 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-67',
+  '1-3-67-company-wall',
   '1-3-home-lookup',
   '108-80-live-open',
   'fire-s-108-80-live-open'

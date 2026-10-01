@@ -69,7 +69,7 @@ assert.ok(
     /Delete immediately/.test(liveApp) &&
     /async function purgeExpiredRecycleAutomatically\(/.test(liveApp) &&
     /delete-data-management-v16/.test(liveApp) &&
-    /app\.js\?v=1-3-67/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
     /Version 1\.3\.67/.test(liveHtml),
   'Live Data Management must offer Recycle Bin or Delete immediately and show 1.3.67'
 );

@@ -61,7 +61,7 @@ assert.ok(
 );
 assert.ok(/1\.3\.119-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.119-toets');
 assert.ok(
-  /app\.js\?v=1-3-67/.test(liveHtml) &&
+  /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must cache-bust the projects sync-hop fix'
 );
