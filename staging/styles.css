@@ -5993,6 +5993,145 @@ html.pdf-exporting body {
   color: #2e7d32;
 }
 
+.schedule-option-recurring-standout {
+  background: linear-gradient(180deg, #f1f8f4 0%, #ffffff 42%);
+  border: 2px solid #2e7d32;
+  box-shadow: 0 10px 24px rgba(46, 125, 50, 0.16);
+}
+
+.schedule-option-recurring-standout .schedule-option-label {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.schedule-display-stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.schedule-display {
+  position: relative;
+}
+
+.schedule-cancel-btn {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #b71c1c;
+  border-radius: 999px;
+  background: #fff;
+  color: #b71c1c;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.schedule-cancel-btn:hover,
+.schedule-cancel-btn:focus {
+  background: #ffebee;
+}
+
+.scheduling-booked-board {
+  margin-top: 16px;
+  padding: 18px;
+  border: 2px solid #2e7d32;
+  border-radius: 18px;
+  background: #f8fff9;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.scheduled-board-header h3 {
+  margin: 0 0 6px;
+  color: #14532d;
+  font-size: 20px;
+}
+
+.scheduled-board-header p,
+.scheduled-board-empty {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.scheduled-board-empty {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px dashed #86efac;
+}
+
+.scheduled-board-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.scheduled-board-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+.scheduled-board-item-recurring_cycle {
+  border-color: #2e7d32;
+  background: #ecfdf3;
+}
+
+.scheduled-board-item-follow_up {
+  border-color: #ef6c00;
+  background: #fff8ed;
+}
+
+.scheduled-board-item-dedicated {
+  border-color: #1565c0;
+  background: #eef6ff;
+}
+
+.scheduled-board-kind {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #14532d;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scheduled-board-item-follow_up .scheduled-board-kind {
+  background: #ef6c00;
+}
+
+.scheduled-board-item-dedicated .scheduled-board-kind {
+  background: #1565c0;
+}
+
+.scheduled-board-item strong {
+  display: block;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.scheduled-board-item small {
+  display: block;
+  margin-top: 4px;
+  color: #475569;
+}
+
+@media (max-width: 700px) {
+  .scheduled-board-item {
+    display: grid;
+  }
+}
+
 .schedule-option-card label {
   margin-top: 10px;
   margin-bottom: 6px;
@@ -15536,6 +15675,25 @@ html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-followup .sc
 html[data-fire-s-theme="dark"] #nextInspectionCard .schedule-option-recurring .schedule-option-label {
   color: #2e7d32 !important;
   background: #e8f5e9 !important;
+}
+
+html[data-fire-s-theme="dark"] #scheduledInspectionsBoard,
+html[data-fire-s-theme="dark"] #scheduledInspectionsBoard :is(h3, p, span, strong, small, div, article) {
+  color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] #scheduledInspectionsBoard {
+  background: #f8fff9 !important;
+  border-color: #2e7d32 !important;
+}
+
+html[data-fire-s-theme="dark"] #scheduledInspectionsBoard .scheduled-board-header h3 {
+  color: #14532d !important;
+}
+
+html[data-fire-s-theme="dark"] .schedule-cancel-btn {
+  color: #b71c1c !important;
+  background: #ffffff !important;
 }
 
 html[data-fire-s-theme="dark"] #nextInspectionCard .scheduling-card-badge {
