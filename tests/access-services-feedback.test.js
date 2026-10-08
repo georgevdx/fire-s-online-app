@@ -94,7 +94,7 @@ assert.ok(
     /body:not\(\.fire-s-service-super\) #viewSupportArchiveBtn/.test(styles) &&
     /body:not\(\.fire-s-service-super\) #serviceRequestsSuperUserNote/.test(styles) &&
     /body:not\(\.fire-s-service-super\) #supportArchiveNote/.test(styles) &&
-    /styles\.css\?v=1-3-116-superonly/.test(html) &&
+    /styles\.css\?v=1-3-117-report-pages/.test(html) &&
     /fire-s-service-super-only\.js\?v=1-0-superonly/.test(html) &&
     /function paintServiceSuperUserChrome\(/.test(app) &&
     /classList\.toggle\('fire-s-service-super'/.test(app) &&

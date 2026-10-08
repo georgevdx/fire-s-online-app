@@ -17,7 +17,7 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-116-homekpi/.test(stagingHtml) &&
+    /app\.js\?v=1-3-117-report-pages/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
     /1\.3\.119-toets/.test(stagingEnv) &&
     /fire-s-108-80-toets-119/.test(stagingSw),
