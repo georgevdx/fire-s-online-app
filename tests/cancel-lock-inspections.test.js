@@ -113,7 +113,7 @@ assert.ok(/fire-s-entitlement.js\?v=1-3-120-hold-sub/.test(stagingHtml));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
-assert.ok(/app\.js\?v=1-3-116-homekpi/.test(stagingHtml));
+assert.ok(/app\.js\?v=1-3-117-report-pages/.test(stagingHtml));
 assert.ok(/Version 1\.3\.119-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/inspectionAccessLocked/.test(liveApp), 'live openProject must lock unpaid inspections');

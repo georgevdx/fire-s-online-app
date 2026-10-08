@@ -17,7 +17,7 @@ const bootstrap = read('STAGING_BOOTSTRAP.sql');
 assert.ok(
   /Version 1\.3\.119-toets/.test(html) &&
     /appVersion: staging \? '1\.3\.119-toets'/.test(env) &&
-    /app\.js\?v=1-3-116-homekpi/.test(html) &&
+    /app\.js\?v=1-3-117-report-pages/.test(html) &&
     /fireS\.toetsCacheDrop\.1-3-121/.test(html),
   'Toets must cache-bust the Fire-S Test feedback payload fix as 1.3.119-toets'
 );

@@ -1965,11 +1965,19 @@ function applyMeasuredA4Pagination(pdfClone) {
     Measure each logical report unit at the fixed export width and add only the
     space needed to start it on the next printable A4 page when necessary.
   */
-  const exportWidthPx = PDF_EXPORT_WIDTH_PX;
+  const exportWidthPx = Math.max(
+    1,
+    Math.round(pdfClone.getBoundingClientRect().width || PDF_EXPORT_WIDTH_PX)
+  );
   const printableWidthMm = 210 - 24;
   const printableHeightMm = 297 - 30;
-  const pageHeightPx = exportWidthPx * printableHeightMm / printableWidthMm;
+  /*
+    html2pdf slices the finished canvas with Math.floor(width * page ratio).
+    A fractional page height drifts off that cut and clips the sign-off.
+  */
+  const pageHeightPx = Math.floor(exportWidthPx * printableHeightMm / printableWidthMm);
   const tolerancePx = 4;
+  const pageGuardPx = 12;
 
   /*
     Some formal sections must start on a fresh page. A measured spacer is used
@@ -2012,6 +2020,9 @@ function applyMeasuredA4Pagination(pdfClone) {
     '.finding-photo-reference',
     '.report-conclusion-signoff',
     '.report-signoff',
+    '.formal-salutation',
+    '.formal-closing',
+    '.report-line',
     'table tr',
     'figure',
     'blockquote',
@@ -2041,7 +2052,7 @@ function applyMeasuredA4Pagination(pdfClone) {
     }
 
     const positionOnPage = ((elementTop % pageHeightPx) + pageHeightPx) % pageHeightPx;
-    const remainingOnPage = pageHeightPx - positionOnPage;
+    const remainingOnPage = pageHeightPx - positionOnPage - pageGuardPx;
 
     if (elementHeight <= remainingOnPage + tolerancePx) {
       return;
@@ -2050,7 +2061,7 @@ function applyMeasuredA4Pagination(pdfClone) {
     const spacer = document.createElement('div');
     spacer.className = 'pdf-measured-page-spacer';
     spacer.setAttribute('aria-hidden', 'true');
-    spacer.style.height = `${Math.ceil(remainingOnPage + 1)}px`;
+    spacer.style.height = `${Math.ceil(pageHeightPx - positionOnPage)}px`;
     element.before(spacer);
   });
 }
@@ -2798,35 +2809,16 @@ pdfClone
       orientation: 'portrait'
     },
 
+/*
+  Measured spacers are the only page breaks. html2pdf's css/legacy mode
+  uses a different page height and inserts a second gap, which slices the
+  inspector sign-off across two pages.
+*/
 pagebreak: {
-  mode: ['legacy', 'css'],
-  avoid: [
-    '.report-section-lead',
-    '.formal-letter-routing',
-    '.formal-subject',
-    '.formal-opening',
-    '.formal-closing',
-    '.report-answer',
-    '.report-line',
-    '.report-summary-grid',
-    '.report-summary-card',
-    '.report-section-summary',
-    '.executive-summary-card',
-    '.report-expiry-item',
-    '.action-item',
-    '.nc-item',
-    '.nc-heading',
-    '.findings-reference-note',
-    '.finding-code-reference',
-    '.finding-photo-reference',
-    '.report-signoff',
-    '.report-disclaimer',
-    'table tr',
-    'figure',
-    'blockquote',
-    'pre',
-    'li'
-  ]
+  mode: [],
+  before: [],
+  after: [],
+  avoid: []
 }
   };
 
@@ -19619,7 +19611,7 @@ const executiveSummaryHtml = `
   </div>
 
   <div class="report-disclaimer">
-    This report records observations made at the time of inspection. It should be read together with applicable fire safety legislation, standards, municipal by-laws, and competent professional judgement where required.
+    This report records observations made at the time of inspection. It should be read together with applicable fire safety legislation, standards, municipal by\u2011laws, and competent professional judgement where required.
   </div>
 
   <div class="report-generated">
@@ -23315,8 +23307,8 @@ reportContent.innerHTML = `
       <div class="findings-reference-note">
         <strong>Note:</strong>
         The findings below must be read together with the applicable fire safety legislation,
-        national standards and municipal fire-safety by-laws. Each finding identifies the
-        specific code, legislative or by-law provision on which the required action is based.
+        national standards and municipal fire-safety by\u2011laws. Each finding identifies the
+        specific code, legislative or by\u2011law provision on which the required action is based.
       </div>
       ${nonComplianceHtml}
     </div>
@@ -23352,7 +23344,7 @@ reportContent.innerHTML = `
           ${isLiveReport
             ? 'This report records observations made at the time of inspection.'
             : 'This archived report records observations made at the time of the previous inspection.'}
-          It should be read together with applicable fire safety legislation, standards, municipal by-laws, and competent professional judgement where required.
+          It should be read together with applicable fire safety legislation, standards, municipal by\u2011laws, and competent professional judgement where required.
         </div>
 
         <div class="report-generated">

@@ -170,7 +170,7 @@ assert.ok(
   'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(
-  /app\.js\?v=1-3-116-homekpi/.test(stagingHtml) &&
+  /app\.js\?v=1-3-117-report-pages/.test(stagingHtml) &&
     /inspection-lifecycle-engine\.js\?v=1-1-cc-place/.test(stagingHtml),
   'Toets-blad must keep the Command Centre close-and-delete actions'
 );
