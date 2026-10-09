@@ -5639,8 +5639,14 @@ html.pdf-exporting body {
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
+  /*
+    A spacer is only empty space. Marking it unbreakable makes html2pdf
+    push it again and opens a hole before the sign-off.
+  */
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  break-before: auto !important;
+  page-break-before: auto !important;
 }
 
 .pdf-export-mode .pdf-force-new-page {

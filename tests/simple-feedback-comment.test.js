@@ -123,7 +123,7 @@ assertCommentForm(
 
 assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-122-company-wall/.test(stagingHtml) &&
+    /app\.js\?v=1-3-123-pdf/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml) &&
     /service-worker\.js\?v=108-80-toets-119/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
@@ -135,7 +135,7 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-pdf/.test(liveHtml) &&
     /service-worker\.js\?v=108-80-live-open/.test(liveHtml) &&
     /fire-s-108-80-live-open/.test(read('service-worker.js')) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(read('fire-s-env.js')),

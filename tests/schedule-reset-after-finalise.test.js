@@ -46,7 +46,7 @@ assert.ok(
   'Overdue must still show the next cycle date after the previous inspection is closed'
 );
 assert.ok(
-  /app\.js\?v=1-3-122-company-wall/.test(stagingHtml),
+  /app\.js\?v=1-3-123-pdf/.test(stagingHtml),
   'Toets must cache-bust schedule reset after finalise'
 );
 assert.ok(
@@ -57,7 +57,7 @@ assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
     /persistFinalisedLifecycle[\s\S]*fireSApplyScheduleAfterVisit\(row/.test(liveApp) &&
     /list\.map\(project => fireSApplyScheduleAfterVisit\(project\)\)/.test(liveApp) &&
-    /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-pdf/.test(liveHtml) &&
     /Version 1\.3\.67/.test(liveHtml),
   'Live must reset schedule after finalise and show 1.3.67'
 );

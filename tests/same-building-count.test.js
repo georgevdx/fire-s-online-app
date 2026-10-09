@@ -20,14 +20,14 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-pdf/.test(liveHtml) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv) &&
     /fire-s-108-80-live-open/.test(liveSw),
   'Live must keep 1.3.67 and drop the old Home cache so the phone count fix sits'
 );
 assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-122-company-wall/.test(stagingHtml) &&
+    /app\.js\?v=1-3-123-pdf/.test(stagingHtml) &&
     /1\.3\.119-toets/.test(stagingEnv) &&
     /fire-s-108-80-toets-119/.test(stagingSw),
   'Toets must show 1.3.119-toets so a phone can tell it has dropped 1.3.82-toets'

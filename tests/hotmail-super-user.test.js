@@ -54,9 +54,9 @@ assert.ok(
 assert.ok(/1\.3\.67/.test(liveEnv), 'Live Fire-S must be 1.3.67');
 assert.ok(/1\.3\.119-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.119-toets');
 assert.ok(
-  /app\.js\?v=1-3-67-company-wall/.test(liveHtml) &&
+  /app\.js\?v=1-3-67-pdf/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml) &&
-    /app\.js\?v=1-3-122-company-wall/.test(stagingHtml) &&
+    /app\.js\?v=1-3-123-pdf/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Live and toets must cache-bust the Hotmail super-user app'
 );

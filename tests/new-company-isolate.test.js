@@ -16,7 +16,7 @@ const stagingTeam = read('staging/fire-s-company-team.js');
 
 assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-122-company-wall/.test(stagingHtml) &&
+    /app\.js\?v=1-3-123-pdf/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-60-hold-sub/.test(stagingHtml) &&
     /fireS\.toetsCacheDrop\.1-3-121/.test(stagingHtml),
   'Toets must cache-bust the clean new-company lists'

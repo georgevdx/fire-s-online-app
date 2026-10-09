@@ -19,7 +19,7 @@ assert.ok(
     /class="fire-s-date-input"/.test(stagingHtml) &&
     /fire-s-schedule-assign\.js\?v=1-4-date-picker/.test(stagingHtml) &&
     /fire-s-dark-type\.css\?v=1-11-date-picker/.test(stagingHtml) &&
-    /styles\.css\?v=1-3-111-services/.test(stagingHtml),
+    /styles\.css\?v=1-3-123-pdf/.test(stagingHtml),
   'Toets scheduling must keep native date inputs and cache-bust the picker CSS'
 );
 assert.ok(
