@@ -77,8 +77,29 @@
     try { if(typeof window.fireSIsFinalizedInspection==='function') return window.fireSIsFinalizedInspection(p); } catch(e){}
     return isComplete(p);
   }
-  function scheduled(p){ return text(p.scheduledDate||p.followUpDate||p.nextInspectionDate); }
+  function scheduled(p){
+    try {
+      if (typeof window.fireSSoonestScheduleDate === 'function') {
+        const soonest = text(window.fireSSoonestScheduleDate(p));
+        if (soonest) return soonest;
+      }
+    } catch(e){}
+    return text(p.recurringCycleNextDate||p.scheduledDate||p.followUpDate||p.nextInspectionDate);
+  }
+  function scheduleKinds(p){
+    try {
+      if (typeof window.fireSListProjectScheduleEntries === 'function') {
+        const entries = window.fireSListProjectScheduleEntries(p) || [];
+        if (entries.length) {
+          return entries.map(entry => text(entry.chip || entry.title)).join(' · ');
+        }
+      }
+    } catch(e){}
+    return '';
+  }
   function label(p){
+    const kinds = scheduleKinds(p);
+    if (kinds) return kinds;
     const d=scheduled(p);
     if(!isFinalized(p)) return d ? 'Scheduled · '+d.slice(0,10) : 'Inspection in progress';
     if(d) return 'Scheduled · '+d.slice(0,10);
