@@ -10,7 +10,7 @@
     (function fireSDropStuckToetsCache() {
       try {
         var WANT = '1.3.119-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-122';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-123';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -2035,7 +2035,7 @@
   <script src="fire-s-payfast.js?v=1-15-confirm"></script>
   <script src="fire-s-subscribe.js?v=1-42-trial-clear"></script>
   <script src="fire-s-user-manual.js?v=1-48-howto"></script>
-  <script src="fire-s-management-dashboard.js?v=1-10-dark-graphs"></script>
+  <script src="fire-s-management-dashboard.js?v=1-11-completed-stats"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
   <script src="fire-s-get-started.js?v=2-61-paid-days"></script>
   <script src="fire-s-change-password.js?v=1-0-temp-pw"></script>

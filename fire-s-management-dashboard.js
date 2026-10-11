@@ -95,12 +95,22 @@
   }
 
   function isCompleted(project) {
+    const done = ['completed', 'complete', 'closed', 'finalised', 'finalized', 'archived'];
+    const tokens = [
+      project?.status,
+      project?.inspectionStatus,
+      project?.scheduledStatus,
+      project?.archiveStatus,
+      project?.inspectionLifecycleStatus
+    ].map(lower);
     return !!(
       project?.completedAt ||
       project?.archivedAt ||
       project?.isArchived ||
-      lower(project?.status) === 'completed' ||
-      lower(project?.inspectionStatus) === 'completed'
+      project?.finalisedAt ||
+      project?.finalizedAt ||
+      project?.inspectionFinalisedAt ||
+      tokens.some(token => done.includes(token))
     );
   }
 
@@ -126,7 +136,11 @@
   }
 
   function answers(project) {
-    return Array.isArray(project?.answers) ? project.answers : [];
+    if (Array.isArray(project?.answers) && project.answers.length) return project.answers;
+    if (Array.isArray(project?.inspectionAnswers) && project.inspectionAnswers.length) {
+      return project.inspectionAnswers;
+    }
+    return [];
   }
 
   function photos(project) {
@@ -341,10 +355,60 @@
     return dateKey(date);
   }
 
+  function cycleTimestamp(cycle) {
+    const parsed = Date.parse(
+      cycle?.completedAt ||
+        cycle?.finalisedAt ||
+        cycle?.finalizedAt ||
+        cycle?.inspectionFinalisedAt ||
+        cycle?.archivedAt ||
+        cycle?.inspectionDate ||
+        cycle?.date ||
+        ''
+    );
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function latestCompletedCycle(project) {
+    if (isCompleted(project) && answeredCount(project) > 0) return project;
+    const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+    let best = null;
+    let bestTs = -1;
+    history.forEach(item => {
+      if (!item || answeredCount(item) === 0) return;
+      const ts = cycleTimestamp(item);
+      if (!best || ts >= bestTs) {
+        best = item;
+        bestTs = ts;
+      }
+    });
+    return best;
+  }
+
+  function scoredProject(project) {
+    const cycle = latestCompletedCycle(project);
+    if (!cycle || cycle === project) return project;
+    return {
+      ...project,
+      answers: Array.isArray(cycle.answers) ? cycle.answers : [],
+      inspectionAnswers: [],
+      photos: Array.isArray(cycle.photos) ? cycle.photos : photos(project),
+      actions: Array.isArray(cycle.actions) ? cycle.actions : project?.actions,
+      completedAt: cycle.completedAt || cycle.archivedAt || cycle.inspectionDate || project?.completedAt,
+      inspectionDate: cycle.inspectionDate || cycle.completedAt || project?.inspectionDate,
+      inspectorName: cycle.inspectorName || project?.inspectorName,
+      occupancy: cycle.occupancy || project?.occupancy,
+      finalComments: cycle.finalComments || project?.finalComments
+    };
+  }
+
   function complianceStatus(project) {
+    const cycle = latestCompletedCycle(project);
+    if (cycle) {
+      if (noCount(cycle) > 0) return 'Action Required';
+      return 'Compliant';
+    }
     if (isOverdue(project)) return 'Overdue';
-    if (noCount(project) > 0) return 'Action Required';
-    if (isCompleted(project) && answeredCount(project) > 0) return 'Compliant';
     return 'Not Yet Inspected';
   }
 
@@ -440,21 +504,23 @@
 
     list.forEach(project => {
       const name = inspectorName(project);
+      const cycle = latestCompletedCycle(project);
+      const scored = scoredProject(project);
       increment(inspectors, name);
-      if (isOverdue(project)) {
-        status.Overdue += 1;
-        increment(inspectorOverdue, name);
-      } else if (isCompleted(project)) {
+      if (cycle) {
         status.Completed += 1;
         increment(inspectorDone, name);
+      } else if (isOverdue(project)) {
+        status.Overdue += 1;
+        increment(inspectorOverdue, name);
       } else if (answeredCount(project) === 0) {
         status.Draft += 1;
       } else {
         status['In progress'] += 1;
       }
 
-      increment(occupancy, occupancyOf(project));
-      const nos = noCount(project);
+      increment(occupancy, occupancyOf(scored));
+      const nos = noCount(scored);
       increment(inspectorFindings, name, nos);
       increment(inspectorPhotos, name, photos(project).length);
       photoTotal += photos(project).length;
@@ -462,14 +528,14 @@
       if (project?.followUpRequired || project?.followUpDate) followUp += 1;
       if (project?.recurringCycleEnabled) recurring += 1;
 
-      yes += yesCount(project);
+      yes += yesCount(scored);
       no += nos;
-      na += naCount(project);
-      answered += answeredCount(project);
-      questions += answers(project).length;
+      na += naCount(scored);
+      answered += answeredCount(scored);
+      questions += answers(scored).length;
 
-      const checklist = checklistForProject(project);
-      answers(project).forEach(item => {
+      const checklist = checklistForProject(scored);
+      answers(scored).forEach(item => {
         if (isFindingItem(item, checklist)) {
           increment(categories, categoryOf(item, checklist));
         }
@@ -575,8 +641,10 @@
 
     list.forEach(project => {
       const status = complianceStatus(project);
+      const cycle = latestCompletedCycle(project);
+      const scored = scoredProject(project);
       portfolio[status] = (portfolio[status] || 0) + 1;
-      const actions = actionRecords(project);
+      const actions = actionRecords(scored);
       allActions.push(...actions);
       const findings = actions.length;
       const critical = actions.filter(item => item.priority === 'Critical').length;
@@ -590,8 +658,8 @@
         findings,
         critical,
         high,
-        overdue: isOverdue(project),
-        score: critical * 4 + high * 2 + (findings - critical - high) + (isOverdue(project) ? 5 : 0)
+        overdue: !cycle && isOverdue(project),
+        score: critical * 4 + high * 2 + (findings - critical - high) + (!cycle && isOverdue(project) ? 5 : 0)
       };
 
       actions.forEach(item => {
@@ -600,11 +668,11 @@
         categoryPremises[item.category].add(project.id || site);
       });
 
-      const when = activityDate(project);
+      const when = activityDate(cycle || project);
       const mk = monthKey(when);
       if (mk && Object.prototype.hasOwnProperty.call(months, mk)) {
         months[mk] += 1;
-        if (isCompleted(project)) {
+        if (cycle) {
           monthCompleted[mk] += 1;
           if (status === 'Compliant') monthCompliant[mk] += 1;
         }
@@ -627,7 +695,7 @@
         }
       });
 
-      if (isCompleted(project) && when) {
+      if (cycle && when) {
         feed.push({
           date: dateKey(when),
           projectId: project.id || '',
@@ -642,7 +710,7 @@
           kind: 'actions'
         });
       }
-      if (isOverdue(project)) {
+      if (!cycle && isOverdue(project)) {
         feed.push({
           date: due || today,
           projectId: project.id || '',
