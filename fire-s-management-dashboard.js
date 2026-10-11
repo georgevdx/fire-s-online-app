@@ -17,17 +17,17 @@
   ];
   const PRIORITIES = ['Critical', 'High', 'Medium', 'Low'];
   const PRIORITY_COLORS = {
-    Critical: '#7f1d1d',
-    High: '#b71c1c',
-    Medium: '#CA5010',
-    Low: '#F2C811'
+    Critical: '#ef4444',
+    High: '#f97316',
+    Medium: '#fbbf24',
+    Low: '#38bdf8'
   };
   const COMPLIANCE_STATUSES = ['Compliant', 'Action Required', 'Overdue', 'Not Yet Inspected'];
   const COMPLIANCE_COLORS = {
-    Compliant: '#0F7B0F',
-    'Action Required': '#CA5010',
-    Overdue: '#b71c1c',
-    'Not Yet Inspected': '#605e5c'
+    Compliant: '#22c55e',
+    'Action Required': '#fb923c',
+    Overdue: '#f87171',
+    'Not Yet Inspected': '#94a3b8'
   };
   const DUE_DAYS = { Critical: 7, High: 21, Medium: 30, Low: 60 };
   let activeDrill = null;
@@ -671,7 +671,7 @@
       const completed = monthCompleted[label] || 0;
       return {
         label,
-        value: completed ? Math.round((monthCompliant[label] / completed) * 100) : 0,
+        value: completed ? Math.round((monthCompliant[label] / completed) * 100) : null,
         completed,
         drill: { type: 'month', key: label }
       };
@@ -709,8 +709,7 @@
         drill: { type: 'category', key: label }
       }))
       .filter(row => row.value > 0)
-      .sort((a, b) => b.value - a.value || b.findings - a.findings)
-      .slice(0, 8);
+      .sort((a, b) => b.value - a.value || b.findings - a.findings);
 
     feed.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
@@ -777,7 +776,7 @@
     return ticks.map(tick => {
       const y = padT + plotH - (tick / top) * plotH;
       return `
-        <line x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" stroke="#edebe9" stroke-width="1"></line>
+        <line class="pbi-grid" x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" stroke="#edebe9" stroke-width="1"></line>
         <text class="pbi-tick" x="${padL - 6}" y="${y + 3}" text-anchor="end" font-size="9" fill="#605e5c">${tick}</text>
       `;
     }).join('');
@@ -823,22 +822,22 @@
       return `
         <g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">
           <text class="pbi-tick" x="${padL - 8}" y="${y + 13}" text-anchor="end" font-size="9" fill="#605e5c">${esc(formatTickLabel(item.label, labelMax))}</text>
-          <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${barFill(color, index)}" rx="1.5"></rect>
-          <text x="${padL + w + 4}" y="${y + 14}" font-size="9" fill="#252423">${item.value}</text>
+          <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${barFill(color, index)}" rx="3"></rect>
+          <text class="pbi-ink" x="${padL + w + 4}" y="${y + 14}" font-size="9" fill="#252423">${item.value}</text>
         </g>
       `;
     }).join('');
     const xTicks = ticks.map(tick => {
       const x = padL + (tick / top) * plotW;
       return `
-        <line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#f3f2f1" stroke-width="1"></line>
+        <line class="pbi-grid" x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#f3f2f1" stroke-width="1"></line>
         <text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" text-anchor="middle" font-size="9" fill="#605e5c">${tick}</text>
       `;
     }).join('');
     return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(210, height)}" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
       ${xTicks}
-      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       ${bars}
       <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
     </svg>`;
@@ -866,20 +865,26 @@
       const y = padT + plotH - h;
       return `
         <g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">
-          <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${barFill(color, index)}" rx="1.5"></rect>
-          <text x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${item.value}</text>
+          <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${barFill(color, index)}" rx="3"></rect>
+          <text class="pbi-ink" x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${item.value}</text>
           <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>
         </g>
       `;
     }).join('');
     return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
       ${yGrid(padL, padT, plotW, plotH, ticks, top)}
-      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       ${bars}
       <text class="pbi-axis-title" transform="rotate(-90 ${14} ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
       <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
     </svg>`;
+  }
+
+  function plotNumber(item) {
+    if (!item || item.value == null || item.value === '') return null;
+    const value = Number(item.value);
+    return Number.isFinite(value) ? value : null;
   }
 
   function lineChart(items, color, axis) {
@@ -887,6 +892,7 @@
     if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
     const yTitle = (axis && axis.y) || 'Count';
     const xTitle = (axis && axis.x) || 'Period';
+    const stroke = color || '#22c55e';
     const width = 480;
     const height = 188;
     const padL = 42;
@@ -900,27 +906,56 @@
       : axisTicks(maxValue(rows));
     const step = rows.length > 1 ? plotW / (rows.length - 1) : 0;
     const points = rows.map((item, index) => {
+      const value = plotNumber(item);
+      if (value == null || !top) return null;
+      return {
+        x: padL + index * step,
+        y: padT + plotH - Math.round((value / top) * plotH),
+        value,
+        item
+      };
+    });
+    const segments = [];
+    let current = [];
+    points.forEach(point => {
+      if (!point) {
+        if (current.length) segments.push(current);
+        current = [];
+        return;
+      }
+      current.push(point);
+    });
+    if (current.length) segments.push(current);
+    const base = padT + plotH;
+    const areas = segments.filter(seg => seg.length > 1).map(seg => {
+      const pts = [`${seg[0].x},${base}`]
+        .concat(seg.map(point => `${point.x},${point.y}`))
+        .concat([`${seg[seg.length - 1].x},${base}`]);
+      return `<polygon class="pbi-area" points="${pts.join(' ')}" fill="${stroke}" fill-opacity="0.18" stroke="none"></polygon>`;
+    }).join('');
+    const lines = segments.filter(seg => seg.length > 1).map(seg =>
+      `<polyline fill="none" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${seg.map(point => `${point.x},${point.y}`).join(' ')}"></polyline>`
+    ).join('');
+    const dots = points.map((point, index) => {
+      const item = rows[index];
       const x = padL + index * step;
-      const y = padT + plotH - Math.round((item.value / top) * plotH);
-      return `${x},${y}`;
-    }).join(' ');
-    const dots = rows.map((item, index) => {
-      const x = padL + index * step;
-      const y = padT + plotH - Math.round((item.value / top) * plotH);
       const showTick = rows.length <= 12 || index === 0 || index === rows.length - 1 || index % 2 === 0;
-      return `
-        <g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">
-          <circle cx="${x}" cy="${y}" r="6" fill="${color || '#118DFF'}" fill-opacity="0.01"></circle>
-          <circle cx="${x}" cy="${y}" r="2.5" fill="${color || '#118DFF'}"></circle>
-          ${showTick ? `<text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>` : ''}
-        </g>
-      `;
+      const mark = point
+        ? `<circle cx="${point.x}" cy="${point.y}" r="7" fill="${stroke}" fill-opacity="0.01"></circle>
+           <circle class="pbi-dot" cx="${point.x}" cy="${point.y}" r="3.2" fill="${stroke}" stroke="#ffffff" stroke-width="1.2"></circle>
+           <text class="pbi-ink" x="${point.x}" y="${Math.max(10, point.y - 8)}" font-size="8" text-anchor="middle" fill="#323130">${point.value}%</text>`
+        : '';
+      const tick = showTick
+        ? `<text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" font-size="8" text-anchor="middle" fill="#605e5c">${esc(shortAxisLabel(item.label))}</text>`
+        : '';
+      return `<g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">${mark}${tick}</g>`;
     }).join('');
     return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
       ${yGrid(padL, padT, plotW, plotH, ticks, top)}
-      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-      <polyline fill="none" stroke="${color || '#118DFF'}" stroke-width="2" points="${points}"></polyline>
+      <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      ${areas}
+      ${lines}
       ${dots}
       <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
       <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
@@ -961,8 +996,8 @@
         const x = groupX + (groupW - (seriesList.length * (barW + gap) - gap)) / 2 + seriesIndex * (barW + gap);
         const y = padT + plotH - h;
         return `
-          <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${item.color || barFill(null, seriesIndex)}" rx="1.5"></rect>
-          <text x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${value}</text>
+          <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${item.color || barFill(null, seriesIndex)}" rx="3"></rect>
+          <text class="pbi-ink" x="${x + barW / 2}" y="${y - 3}" font-size="8" text-anchor="middle" fill="#323130">${value}</text>
         `;
       }).join('');
       return `
@@ -976,8 +1011,8 @@
     return `<div>
       <svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="196" role="img" aria-label="${esc(seriesList.map(item => item.key).join(' vs '))} by ${esc(xTitle)}">
         ${yGrid(padL, padT, plotW, plotH, ticks, top)}
-        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-        <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+        <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+        <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         ${bars}
         <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
         <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 22}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
@@ -1021,7 +1056,7 @@
       const total = totals[groupIndex];
       return `
         ${stacks}
-        <text x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
+        <text class="pbi-ink" x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
         <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 14}" font-size="9" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
       `;
     }).join('');
@@ -1031,8 +1066,8 @@
     return `<div class="pbi-chart-block">
       <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="280" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
         ${yGrid(padL, padT, plotW, plotH, ticks, top)}
-        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-        <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+        <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+        <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         ${columns}
         <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
         <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 22}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
@@ -1042,13 +1077,14 @@
   }
 
   function paretoChart(items, color, axis) {
-    const rows = (items || []).slice(0, 8);
+    const all = items || [];
+    const rows = all.slice(0, 8);
     if (!rows.length) return '<div class="pbi-empty">No repeating findings yet.</div>';
     const yTitle = (axis && axis.y) || 'Premises';
     const xTitle = (axis && axis.x) || 'Finding';
     const width = 460;
     const padL = 168;
-    const padR = 36;
+    const padR = 56;
     const padT = 8;
     const padB = 34;
     const rowH = 22;
@@ -1056,32 +1092,30 @@
     const plotH = Math.max(48, rows.length * rowH);
     const height = padT + plotH + padB;
     const { top, ticks } = axisTicks(maxValue(rows));
-    const total = rows.reduce((sum, item) => sum + (Number(item.value) || 0), 0) || 1;
+    const total = all.reduce((sum, item) => sum + (Number(item.value) || 0), 0) || 1;
     let running = 0;
     const bars = rows.map((item, index) => {
       const y = padT + index * rowH;
       const w = Math.max(2, Math.round((item.value / top) * plotW));
       running += Number(item.value) || 0;
       const pct = Math.round((running / total) * 100);
-      const cumX = padL + (running / total) * plotW;
       return `
         <g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">
           <text class="pbi-tick" x="${padL - 8}" y="${y + 13}" text-anchor="end" font-size="9" fill="#605e5c">${esc(formatTickLabel(item.label, 28))}</text>
-          <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${color || '#CA5010'}" rx="1.5"></rect>
-          <text x="${padL + w + 4}" y="${y + 14}" font-size="9" fill="#252423">${item.value}</text>
-          <circle cx="${cumX}" cy="${y + 10}" r="2.5" fill="#118DFF"></circle>
-          <text x="${Math.min(width - 4, cumX + 8)}" y="${y + 13}" font-size="8" fill="#118DFF">${pct}%</text>
+          <rect x="${padL}" y="${y + 4}" width="${w}" height="12" fill="${color || '#fb923c'}" rx="3"></rect>
+          <text class="pbi-ink" x="${padL + w + 4}" y="${y + 14}" font-size="9" fill="#252423">${item.value}</text>
+          <text class="pbi-cum" x="${width - 8}" y="${y + 14}" text-anchor="end" font-size="9" fill="#38bdf8">${pct}%</text>
         </g>
       `;
     }).join('');
     return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(230, height)}" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
       ${ticks.map(tick => {
         const x = padL + (tick / top) * plotW;
-        return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#f3f2f1" stroke-width="1"></line>
+        return `<line class="pbi-grid" x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#f3f2f1" stroke-width="1"></line>
           <text class="pbi-tick" x="${x}" y="${padT + plotH + 12}" text-anchor="middle" font-size="9" fill="#605e5c">${tick}</text>`;
       }).join('')}
-      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
-      <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
+      <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       ${bars}
       <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
     </svg>`;
@@ -1117,31 +1151,52 @@
     }];
   }
 
+  function percentShares(rows) {
+    const total = rows.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    if (!total) return rows.map(() => 0);
+    const exact = rows.map(item => ((Number(item.value) || 0) / total) * 100);
+    const floors = exact.map(value => Math.floor(value));
+    let left = 100 - floors.reduce((sum, value) => sum + value, 0);
+    const order = exact
+      .map((value, index) => ({ index, frac: value - Math.floor(value) }))
+      .sort((a, b) => b.frac - a.frac || a.index - b.index);
+    const shares = floors.slice();
+    for (let i = 0; i < left; i += 1) shares[order[i].index] += 1;
+    return shares;
+  }
+
   function donutChart(map, colors) {
-    const rows = Object.keys(map).map(label => ({ label, value: map[label] })).filter(item => item.value > 0);
-    if (!rows.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
-    const total = rows.reduce((sum, item) => sum + item.value, 0) || 1;
+    const source = map || {};
+    const preferred = COMPLIANCE_STATUSES.filter(label => Object.prototype.hasOwnProperty.call(source, label));
+    const labels = preferred.concat(Object.keys(source).filter(label => preferred.indexOf(label) === -1));
+    const rows = (labels.length ? labels : Object.keys(source)).map(label => ({
+      label,
+      value: Number(source[label]) || 0
+    }));
+    const total = rows.reduce((sum, item) => sum + item.value, 0);
+    if (!total) return '<div class="pbi-empty">No data for this graph yet.</div>';
+    const shares = percentShares(rows);
     const r = 46;
     const c = 2 * Math.PI * r;
     let offset = 0;
-    const rings = rows.map((item, index) => {
+    const rings = rows.filter(item => item.value > 0).map((item, index) => {
       const len = (item.value / total) * c;
       const dash = `${len} ${c - len}`;
       const fill = (colors && colors[item.label]) || PALETTE[index % PALETTE.length];
-      const el = `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${fill}" stroke-width="14" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 70 70)"></circle>`;
+      const el = `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${fill}" stroke-width="16" stroke-linecap="butt" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 70 70)"></circle>`;
       offset += len;
       return el;
     }).join('');
     const legend = rows.map((item, index) => {
-      const pct = Math.round((item.value / total) * 100);
       const fill = (colors && colors[item.label]) || PALETTE[index % PALETTE.length];
-      return `<button type="button" class="pbi-legend-btn" ${drillAttr({ type: 'status', key: item.label })}><i class="pbi-swatch" style="background:${fill}"></i>${esc(item.label)} ${item.value} · ${pct}%</button>`;
+      return `<button type="button" class="pbi-legend-btn" ${drillAttr({ type: 'status', key: item.label })}><i class="pbi-swatch" style="background:${fill}"></i>${esc(item.label)} ${item.value} · ${shares[index]}%</button>`;
     }).join('');
     return `<div class="pbi-donut">
-      <svg class="pbi-chart" viewBox="0 0 140 140" width="118" height="118" role="img">
+      <svg class="pbi-chart" viewBox="0 0 140 140" width="128" height="128" role="img" aria-label="Compliance status, ${total} premises">
+        <circle class="pbi-donut-track" cx="70" cy="70" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="16"></circle>
         ${rings}
-        <text x="70" y="66" text-anchor="middle" font-size="16" font-weight="700" fill="#252423">${total}</text>
-        <text x="70" y="82" text-anchor="middle" font-size="9" fill="#605e5c">premises</text>
+        <text class="pbi-center" x="70" y="66" text-anchor="middle" font-size="18" font-weight="700" fill="#252423">${total}</text>
+        <text class="pbi-center-sub" x="70" y="82" text-anchor="middle" font-size="9" fill="#605e5c">premises</text>
       </svg>
       <div class="pbi-legend">${legend}</div>
     </div>`;
@@ -1451,8 +1506,8 @@
           )}
           ${tile(
             'Compliance trend',
-            'Compliant share of completed inspections each month',
-            lineChart(ops.trend, '#0F7B0F', { y: 'Compliance %', x: 'Month', top: 100 }),
+            'Compliant share of completed inspections. A blank month had no completed inspection.',
+            lineChart(ops.trend, '#22c55e', { y: 'Compliance %', x: 'Month', top: 100 }),
             'is-chart'
           )}
         </div>
@@ -1472,13 +1527,13 @@
           ${tile(
             'Worst performing premises',
             'Highest open actions and overdue first. Tap a bar.',
-            barChart(ops.worst, '#b71c1c', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
+            barChart(ops.worst, '#f87171', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
             'is-chart'
           )}
           ${tile(
             'Recurring findings',
-            'How many premises share the same section. Blue is the running %.',
-            paretoChart(ops.recurring, '#CA5010', { y: 'Premises', x: 'Section' }),
+            'Premises sharing a section. The % is the running share of every section.',
+            paretoChart(ops.recurring, '#fb923c', { y: 'Premises', x: 'Section' }),
             'is-chart'
           )}
         </div>

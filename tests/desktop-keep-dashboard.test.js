@@ -85,7 +85,7 @@ assert.ok(/1\.3\.119-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.11
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-3-keep-dash/.test(liveHtml) &&
     /fire-s-startup-stability\.js\?v=1-14-sub-hold/.test(liveHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-9-premises-name/.test(liveHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-10-dark-graphs/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-54-sub-hold/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must cache-bust the desktop landing fix'
@@ -93,10 +93,33 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-9-premises-name/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-10-dark-graphs/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-60-hold-sub/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
+);
+
+assert.strictEqual(liveDash, stagingDash, 'Live and toets management dashboard script must match');
+assert.ok(
+  /value: completed \? Math\.round\(\(monthCompliant\[label\] \/ completed\) \* 100\) : null/.test(liveDash),
+  'A month with no completed inspection must not plot as 0% compliance'
+);
+assert.ok(/function percentShares\(/.test(liveDash), 'Donut percents must use largest remainder');
+assert.ok(
+  /const total = all\.reduce/.test(liveDash),
+  'Pareto running % must use every section, not only the bars on screen'
+);
+const liveDashCss = read('fire-s-management-dashboard.css');
+const stagingDashCss = read('staging/fire-s-management-dashboard.css');
+assert.strictEqual(liveDashCss, stagingDashCss, 'Live and toets management dashboard styles must match');
+assert.ok(
+  /html\[data-fire-s-theme="dark"\] \.pbi-shell \.pbi-titlebar :is\(h3, p, span, button, div\)/.test(liveDashCss),
+  'Dark title bar text must outrank the paper-island colour'
+);
+assert.ok(
+  /fire-s-management-dashboard\.css\?v=1-6-dark-graphs/.test(liveHtml) &&
+    /fire-s-management-dashboard\.css\?v=1-6-dark-graphs/.test(stagingHtml),
+  'Dashboard styles must cache-bust with the dark graph update'
 );
 
 console.log('desktop-keep-dashboard.test.js: ok');

@@ -235,8 +235,9 @@ button.pbi-kpi.is-clickable:focus {
 .pbi-donut {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 14px 22px;
   width: 100%;
   min-height: 140px;
 }
@@ -244,6 +245,7 @@ button.pbi-kpi.is-clickable:focus {
 .pbi-legend {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 4px 10px;
   font-size: 0.72rem;
@@ -290,8 +292,27 @@ button.pbi-kpi.is-clickable:focus {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  width: auto;
-  max-width: none;
+  width: auto !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  padding: 1px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 0.75rem !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+}
+
+.pbi-donut .pbi-chart {
+  width: 128px !important;
+  height: 128px !important;
+  max-width: 128px;
+  flex: 0 0 128px;
+}
+
+.pbi-donut .pbi-legend {
+  flex: 1 1 200px;
 }
 
 .pbi-legend-btn:hover,
@@ -435,4 +456,159 @@ html.fire-s-desktop-view .pbi-kpi-row.is-four,
 body.fire-s-desktop-view .pbi-kpi-row,
 body.fire-s-desktop-view .pbi-kpi-row.is-four {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Dark management view: light title, navy tiles, chart ink that stays readable. */
+html[data-fire-s-theme="dark"] .pbi-shell {
+  background: #0b1220 !important;
+  border-color: #1e293b !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-titlebar {
+  background: linear-gradient(90deg, #111827 0%, #1e293b 100%) !important;
+  border-bottom: 2px solid #f2c811;
+  color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-titlebar :is(h3, p, span, button, div) {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  opacity: 1;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-titlebar p {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-titlebar .cloud-primary-btn {
+  background: #b91c1c !important;
+  border: 0;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-titlebar .secondary-btn {
+  background: #334155 !important;
+  border: 1px solid #475569;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-filters {
+  background: #0f172a !important;
+  border-bottom-color: #1e293b !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-filters label {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-filters select {
+  background: #0b1220 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-tile {
+  background: #111827 !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi.is-ok { border-left: 3px solid #22c55e; }
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi.is-warn { border-left: 3px solid #f87171; }
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi.is-gold { border-left: 3px solid #fbbf24; }
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-tile :is(h4, p, span, li, td, th, div),
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi :is(span, div),
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-legend,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-legend .pbi-legend-btn,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-feed-btn,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-feed-btn span,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-drill :is(h4, td, th, span) {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-tile h4,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi .pbi-kpi-value,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-drill h4 {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi.is-ok .pbi-kpi-value {
+  color: #4ade80 !important;
+  -webkit-text-fill-color: #4ade80 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi.is-warn .pbi-kpi-value {
+  color: #f87171 !important;
+  -webkit-text-fill-color: #f87171 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi.is-gold .pbi-kpi-value {
+  color: #fbbf24 !important;
+  -webkit-text-fill-color: #fbbf24 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi .pbi-kpi-label,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi .pbi-kpi-hint,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-insight,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-feed-date,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-empty,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-table th {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-table td,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-table th {
+  border-bottom-color: #1e293b !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-feed li + li {
+  border-top-color: #1e293b;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-feed-btn:hover,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-feed-btn:focus {
+  background: #1e293b;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-open-btn,
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-clear-btn {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-ink,
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-tick,
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-axis-title,
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-center,
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-center-sub {
+  fill: #e2e8f0 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-center {
+  fill: #f8fafc !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-grid,
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-axis {
+  stroke: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-cum {
+  fill: #38bdf8 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-dot {
+  stroke: #111827 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-chart .pbi-donut-track {
+  stroke: #1e293b !important;
 }
