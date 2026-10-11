@@ -60,7 +60,7 @@ assert.ok(
   'Toets-blad must cache-bust the phone Access files'
 );
 assert.ok(
-  /fire-s-get-started\.css\?v=2-19-legal/.test(liveHtml) &&
+  /fire-s-get-started\.css\?v=2-20-services-ink/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-54-sub-hold/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must cache-bust Show password Access files'

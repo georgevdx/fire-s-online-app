@@ -203,6 +203,10 @@ assert.ok(
   'Access extra services must style the parent button and the three service buttons'
 );
 assert.ok(
+  /\.fire-s-access-extra-services\.is-open #fireSAccessExtraServicesBtn[\s\S]*color: #0f172a/.test(liveCss),
+  'Live Additional services bar must use dark type on the white open bar'
+);
+assert.ok(
   /function wireAccessExtraServices\(/.test(getStarted) &&
     /function wireAccessExtraServices\(/.test(liveStarted) &&
     /fireSNotifyServiceRequest/.test(getStarted) &&
