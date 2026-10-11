@@ -277,9 +277,27 @@
 
   function hideCancelConfirm() {
     var box = byId('fireSSubscribeCancelConfirm');
-    var actions = byId('fireSSubscribeCancelActions');
+    var btn = byId('fireSSubscribeCancelBtn');
     if (box) box.hidden = true;
-    if (actions) actions.hidden = false;
+    if (btn) {
+      btn.hidden = false;
+      if (btn.style) btn.style.display = '';
+    }
+  }
+
+  function subscriptionAlreadyCancelled() {
+    var entitlement = null;
+    try {
+      entitlement = window.fireSEntitlement && window.fireSEntitlement.snapshot && window.fireSEntitlement.snapshot();
+    } catch (_) {}
+    if (entitlement && entitlement.backendReady) {
+      if (entitlement.status === 'subscription_active' || entitlement.status === 'subscription_past_due' || entitlement.status === 'trial_active') {
+        return false;
+      }
+      if (entitlement.status === 'subscription_cancelled') return true;
+    }
+    var cat = catalog();
+    return !!(cat && cat.billingStatus && cat.billingStatus() === 'cancelled');
   }
 
   function askCancelSubscription() {
@@ -289,7 +307,7 @@
       return;
     }
     var cat = catalog();
-    if (cat && cat.billingStatus && cat.billingStatus() === 'cancelled') {
+    if (subscriptionAlreadyCancelled()) {
       setMessage('This subscription is already cancelled. Company data stays saved.');
       paintSubscribeStatus();
       return;
@@ -310,9 +328,9 @@
         (when || 'the paid end date') +
         '. Company name and inspections stay in the cloud. You can subscribe again later on this page.';
     }
-    var actions = byId('fireSSubscribeCancelActions');
+    var btn = byId('fireSSubscribeCancelBtn');
     var box = byId('fireSSubscribeCancelConfirm');
-    if (actions) actions.hidden = true;
+    if (btn) btn.hidden = true;
     if (box) {
       box.hidden = false;
       try {
@@ -514,12 +532,9 @@
         window.fireSEntitlement &&
         window.fireSEntitlement.snapshot &&
         window.fireSEntitlement.snapshot();
-      if (entitlement && entitlement.backendReady && entitlement.status === 'subscription_cancelled') {
-        cancelled = true;
-      }
-    } catch (_) {}
-    try {
-      if (catalog() && catalog().billingStatus && catalog().billingStatus() === 'cancelled') {
+      if (entitlement && entitlement.backendReady && entitlement.status === 'subscription_active') {
+        cancelled = false;
+      } else if (entitlement && entitlement.backendReady && entitlement.status === 'subscription_cancelled') {
         cancelled = true;
       }
     } catch (_) {}
@@ -636,12 +651,12 @@
     } else {
       status = 'unpaid';
     }
-    var cancelled = status === 'cancelled';
-    if (!cancelled) {
-      try {
-        if (cat.billingStatus && cat.billingStatus() === 'cancelled') cancelled = true;
-      } catch (_) {}
-    }
+    var localCancelled = false;
+    try {
+      localCancelled = !!(cat.billingStatus && cat.billingStatus() === 'cancelled');
+    } catch (_) {}
+    var serverActive = status === 'active' || status === 'trial' || status === 'past_due';
+    var cancelled = status === 'cancelled' || (localCancelled && !serverActive);
     box.hidden = false;
     box.className = 'fire-s-subscribe-status is-' + status;
     if (title) {
@@ -669,7 +684,8 @@
     if (cancelled) hideCancelConfirm();
     if (againPanel) againPanel.hidden = true;
     if (cancelBtn) {
-      cancelBtn.hidden = false;
+      cancelBtn.hidden = !!cancelled;
+      if (cancelBtn.style) cancelBtn.style.display = cancelled ? 'none' : '';
       cancelBtn.disabled = !!cancelled;
       cancelBtn.textContent = cancelled ? 'Already cancelled' : 'Cancel subscription';
     }
@@ -700,7 +716,7 @@
       return;
     }
     if (!cat || !cat.cancelBilling) return;
-    if (cat.billingStatus && cat.billingStatus() === 'cancelled') {
+    if (subscriptionAlreadyCancelled()) {
       setMessage('This subscription is already cancelled. Company data stays saved.');
       paintSubscribeStatus();
       return;

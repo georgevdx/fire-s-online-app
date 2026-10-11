@@ -511,3 +511,11 @@ html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel-confirm p {
   color: #7f1d1d !important;
   -webkit-text-fill-color: #7f1d1d !important;
 }
+
+.fire-s-subscribe-cancel-confirm .secondary-btn,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel-confirm .secondary-btn,
+html[data-fire-s-theme="light"] .fire-s-subscribe-cancel-confirm .secondary-btn {
+  background: #334155 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}

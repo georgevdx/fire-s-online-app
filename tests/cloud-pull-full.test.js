@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-67-pdf',
   '1-3-home-lookup',
-  '108-80-live-open',
-  'fire-s-108-80-live-open'
+  '108-81-cancel',
+  'fire-s-108-81-cancel'
 );
 assertPullSource(
   stagingApp,

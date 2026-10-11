@@ -126,7 +126,7 @@
   <link rel="stylesheet" href="fire-s-company-team.css?v=1-8-isolate">
   <link rel="stylesheet" href="fire-s-inspector-board.css?v=1-1">
   <link rel="stylesheet" href="fire-s-get-started.css?v=2-22-howto">
-  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-15-cancel-confirm">
+  <link rel="stylesheet" href="fire-s-subscribe.css?v=1-16-cancel-show">
   <link rel="stylesheet" href="fire-s-fit-text.css?v=1-19-actovd">
   <link rel="stylesheet" href="fire-s-company-letterhead.css?v=1-2-isolate">
   <link rel="stylesheet" href="fire-s-test-samples.css?v=1-0">
@@ -953,6 +953,14 @@
     <p id="fireSSubscribeCompanyLine" class="fire-s-subscribe-company-line"></p>
     <button type="button" class="cloud-primary-btn" id="fireSBillingSubscribeBtn">Subscribe / Reactivate</button>
     <button id="fireSPayfastPayBtn" type="button" class="cloud-primary-btn">Pay R250 on PayFast</button>
+    <button id="fireSSubscribeCancelBtn" type="button" class="fire-s-cancel-go">Cancel subscription</button>
+    <div id="fireSSubscribeCancelConfirm" class="fire-s-subscribe-cancel-confirm" hidden>
+      <p id="fireSSubscribeCancelConfirmCopy">Confirm cancel? Auto-renew stops. This login stays until the paid end date. Company name and inspections stay in the cloud.</p>
+      <div class="fire-s-subscribe-cancel-actions">
+        <button id="fireSSubscribeCancelConfirmBtn" type="button" class="fire-s-cancel-go">Confirm cancel</button>
+        <button id="fireSSubscribeCancelKeepBtn" type="button" class="secondary-btn">Keep subscription</button>
+      </div>
+    </div>
     <p id="fireSPayfastHint" class="fire-s-payfast-hint">PayFast sandbox on this toets-blad — no real money. Run SUPABASE_payfast_sandbox_buyer.sql on Fire-S Test. The passphrase must be the sandbox Salt Passphrase (same trio as payfast-checkout). Then refresh with ?v=205 and pay again. Card details stay with PayFast.</p>
   </div>
   <div id="fireSSubscribeMessage" class="fire-s-subscribe-message" style="display:none;"></div>
@@ -965,16 +973,6 @@
       <li>The company name and inspections stay in the cloud.</li>
       <li>You can pay on PayFast again later if you want the login active.</li>
     </ol>
-    <div class="fire-s-subscribe-cancel-actions" id="fireSSubscribeCancelActions">
-      <button id="fireSSubscribeCancelBtn" type="button" class="fire-s-cancel-go">Cancel subscription</button>
-    </div>
-    <div id="fireSSubscribeCancelConfirm" class="fire-s-subscribe-cancel-confirm" hidden>
-      <p id="fireSSubscribeCancelConfirmCopy">Confirm cancel? Auto-renew stops. This login stays until the paid end date. Company name and inspections stay in the cloud.</p>
-      <div class="fire-s-subscribe-cancel-actions">
-        <button id="fireSSubscribeCancelConfirmBtn" type="button" class="fire-s-cancel-go">Confirm cancel</button>
-        <button id="fireSSubscribeCancelKeepBtn" type="button" class="secondary-btn">Keep subscription</button>
-      </div>
-    </div>
   </div>
   <section id="fireSCompanyBillingPanel" class="fire-s-company-billing" aria-labelledby="fireSCompanyBillingTitle">
     <h3 id="fireSCompanyBillingTitle">Company billing</h3>
@@ -2035,7 +2033,7 @@
   <script src="fire-s-subscriptions.js?v=1-20-temp-pw"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-15-confirm"></script>
-  <script src="fire-s-subscribe.js?v=1-39-cancel-confirm"></script>
+  <script src="fire-s-subscribe.js?v=1-40-cancel-show"></script>
   <script src="fire-s-user-manual.js?v=1-48-howto"></script>
   <script src="fire-s-management-dashboard.js?v=1-9-premises-name"></script>
   <script src="fire-s-inspector-board.js?v=1-5-assign"></script>
