@@ -267,6 +267,65 @@
     return false;
   }
 
+  function mayCancel() {
+    if (mode === 'seat') return false;
+    if (canManage()) return true;
+    // This page is this login's subscription. A signed-in payer can cancel it
+    // even when Home role paint has not caught up.
+    return !!ownerEmail();
+  }
+
+  function hideCancelConfirm() {
+    var box = byId('fireSSubscribeCancelConfirm');
+    var actions = byId('fireSSubscribeCancelActions');
+    if (box) box.hidden = true;
+    if (actions) actions.hidden = false;
+  }
+
+  function askCancelSubscription() {
+    if (mode === 'seat') return;
+    if (!mayCancel()) {
+      setMessage('Only the Owner can cancel this subscription. Sign in as the Owner first.', true);
+      return;
+    }
+    var cat = catalog();
+    if (cat && cat.billingStatus && cat.billingStatus() === 'cancelled') {
+      setMessage('This subscription is already cancelled. Company data stays saved.');
+      paintSubscribeStatus();
+      return;
+    }
+    var when = '';
+    try {
+      when =
+        cat && cat.formatLongDate
+          ? cat.formatLongDate(cat.currentRenewsOn())
+          : cat && cat.currentRenewsOn
+            ? cat.currentRenewsOn()
+            : '';
+    } catch (_) {}
+    var copy = byId('fireSSubscribeCancelConfirmCopy');
+    if (copy) {
+      copy.textContent =
+        'Confirm cancel? Auto-renew stops. This login stays until ' +
+        (when || 'the paid end date') +
+        '. Company name and inspections stay in the cloud. You can subscribe again later on this page.';
+    }
+    var actions = byId('fireSSubscribeCancelActions');
+    var box = byId('fireSSubscribeCancelConfirm');
+    if (actions) actions.hidden = true;
+    if (box) {
+      box.hidden = false;
+      try {
+        box.scrollIntoView({ block: 'nearest' });
+      } catch (_) {}
+    }
+  }
+
+  function keepSubscription() {
+    hideCancelConfirm();
+    setMessage('Subscription stays active. Auto-renew stays on.');
+  }
+
   function canAddSeat() {
     var role = homeRole();
     return (
@@ -465,8 +524,8 @@
       }
     } catch (_) {}
     if (cancelBtn) {
-      cancelBtn.hidden = false;
-      cancelBtn.disabled = !(canManage() || !!data.can_cancel) || cancelled;
+      cancelBtn.hidden = cancelled || mode === 'seat';
+      cancelBtn.disabled = !!cancelled;
     }
     var billingActions = byId('fireSCompanyBillingActions');
     if (billingActions) billingActions.hidden = mode === 'seat';
@@ -553,6 +612,7 @@
       box.hidden = true;
       if (cancelPanel) cancelPanel.hidden = true;
       if (againPanel) againPanel.hidden = true;
+      hideCancelConfirm();
       return;
     }
     if (cancelPanel) cancelPanel.hidden = false;
@@ -605,16 +665,13 @@
       }
     }
     if (keep) keep.textContent = cat.statusKeepDataNote();
-    if (cancelPanel) cancelPanel.hidden = false;
+    if (cancelPanel) cancelPanel.hidden = !!cancelled;
+    if (cancelled) hideCancelConfirm();
     if (againPanel) againPanel.hidden = true;
     if (cancelBtn) {
       cancelBtn.hidden = false;
-      cancelBtn.disabled = !canManage() || cancelled;
-      cancelBtn.textContent = cancelled
-        ? 'Already cancelled'
-        : canManage()
-          ? 'Cancel subscription'
-          : 'Only the Owner can cancel';
+      cancelBtn.disabled = !!cancelled;
+      cancelBtn.textContent = cancelled ? 'Already cancelled' : 'Cancel subscription';
     }
     if (save && mode !== 'seat') {
       save.style.display = cancelled ? 'none' : '';
@@ -638,7 +695,7 @@
 
   function cancelSubscription() {
     var cat = catalog();
-    if (!canManage()) {
+    if (!mayCancel()) {
       setMessage('Only the Owner can cancel this subscription.', true);
       return;
     }
@@ -648,18 +705,6 @@
       paintSubscribeStatus();
       return;
     }
-    var when = cat.formatLongDate ? cat.formatLongDate(cat.currentRenewsOn()) : cat.currentRenewsOn();
-    var ok = window.confirm(
-      'Cancel this subscription?\n\n' +
-        '1. Only the Owner can cancel.\n' +
-        '2. Auto-renew stops.\n' +
-        '3. This login stays until ' +
-        (when || 'the paid end date') +
-        '.\n' +
-        '4. Company name and inspections stay in the cloud.\n' +
-        '5. You can subscribe again later on this page. Then pay on PayFast.'
-    );
-    if (!ok) return;
     cat.cancelBilling();
     try {
       var sb = window.supabaseClient;
@@ -1080,20 +1125,29 @@
     var reminderRenew = byId('fireSExpiryReminderRenewBtn');
     var reminderCancel = byId('fireSExpiryReminderCancelBtn');
     var cancelBtn = byId('fireSSubscribeCancelBtn');
+    var cancelConfirm = byId('fireSSubscribeCancelConfirmBtn');
+    var cancelKeep = byId('fireSSubscribeCancelKeepBtn');
     var againBtn = byId('fireSSubscribeAgainBtn');
     var billingSub = byId('fireSBillingSubscribeBtn');
     var billingCancel = byId('fireSBillingCancelBtn');
     if (back) back.addEventListener('click', goHome);
     if (save) save.addEventListener('click', savePlan);
     if (payBtn) payBtn.addEventListener('click', payNow);
-    if (cancelBtn) cancelBtn.addEventListener('click', cancelSubscription);
+    if (cancelBtn) cancelBtn.addEventListener('click', askCancelSubscription);
+    if (cancelConfirm) cancelConfirm.addEventListener('click', cancelSubscription);
+    if (cancelKeep) cancelKeep.addEventListener('click', keepSubscription);
     if (againBtn) againBtn.addEventListener('click', subscribeAgain);
     if (billingSub) billingSub.addEventListener('click', billingSubscribe);
-    if (billingCancel) billingCancel.addEventListener('click', cancelSubscription);
+    if (billingCancel) billingCancel.addEventListener('click', askCancelSubscription);
     if (seatBtn) seatBtn.addEventListener('click', subscribeSeat);
     if (reminderClose) reminderClose.addEventListener('click', closeExpiryReminder);
     if (reminderRenew) reminderRenew.addEventListener('click', renewFromReminder);
-    if (reminderCancel) reminderCancel.addEventListener('click', cancelSubscription);
+    if (reminderCancel) {
+      reminderCancel.addEventListener('click', function () {
+        openSubscribe();
+        askCancelSubscription();
+      });
+    }
     if (btn) {
       btn.addEventListener('click', function (event) {
         event.preventDefault();

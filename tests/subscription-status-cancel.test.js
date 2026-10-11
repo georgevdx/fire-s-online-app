@@ -48,7 +48,9 @@ assert.ok(
     livePage[0].indexOf('id="fireSSubscribeCancelPanel"') < livePage[0].indexOf('id="fireSCompanyBillingPanel"'),
   'Live Cancel subscription must sit under Pay, above Company billing'
 );
-assert.ok(/canManage\(\) \|\| !!data\.can_cancel/.test(liveSubscribe));
+assert.ok(/function askCancelSubscription\(/.test(liveSubscribe));
+assert.ok(/id="fireSSubscribeCancelConfirmBtn"/.test(liveHtml));
+assert.ok(/Keep subscription/.test(liveHtml));
 assert.ok(/can_cancel: canManage\(\)/.test(liveSubscribe));
 assert.ok(
   /'owner'/.test(read('SUPABASE_live_cancel_owner.sql')) &&

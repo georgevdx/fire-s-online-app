@@ -145,11 +145,12 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.119-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
-assert.ok(/fire-s-subscribe.js\?v=1-38-howto/.test(stagingHtml));
-assert.ok(/canManage\(\) \|\| !!data\.can_cancel/.test(stagingSubscribe));
+assert.ok(/fire-s-subscribe.js\?v=1-39-cancel-confirm/.test(stagingHtml));
+assert.ok(/function askCancelSubscription\(/.test(stagingSubscribe));
+assert.ok(/id="fireSSubscribeCancelConfirmBtn"/.test(stagingHtml));
 assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
 assert.ok(/fire-s-entitlement.js\?v=1-3-123-paid-home/.test(stagingHtml));
-assert.ok(/fire-s-subscribe.css\?v=1-14-howto/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.css\?v=1-15-cancel-confirm/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
 assert.ok(/\.fire-s-company-billing-list/.test(stagingCss));

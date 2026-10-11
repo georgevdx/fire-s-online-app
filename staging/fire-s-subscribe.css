@@ -457,3 +457,57 @@ body.fire-s-role-inspector #fireSPayfastReturnBanner {
   min-height: 48px;
   width: 100%;
 }
+
+.fire-s-subscribe-cancel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fire-s-subscribe-cancel-actions[hidden] {
+  display: none !important;
+}
+
+.fire-s-subscribe-cancel-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+}
+
+.fire-s-subscribe-cancel-confirm[hidden] {
+  display: none !important;
+}
+
+.fire-s-subscribe-cancel-confirm p {
+  margin: 0 0 10px;
+  color: #7f1d1d;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.fire-s-cancel-go {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: none !important;
+  min-height: 48px;
+  font-weight: 800;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel .fire-s-cancel-go,
+html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-cancel-go,
+html[data-fire-s-theme="light"] .fire-s-subscribe-cancel .fire-s-cancel-go,
+html[data-fire-s-theme="light"] .fire-s-company-billing .fire-s-cancel-go {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel-confirm,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-cancel-confirm p {
+  background: #fff1f2 !important;
+  color: #7f1d1d !important;
+  -webkit-text-fill-color: #7f1d1d !important;
+}
