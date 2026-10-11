@@ -115,7 +115,44 @@
     return !!(last && last.backendReady);
   }
 
+  function paidWindowOpen(info) {
+    var data = info || last;
+    if (!data) return false;
+    var status = text(data.status);
+    var reason = text(data.reason);
+    var sub = text(data.subscription_status).toLowerCase();
+    var marked =
+      status === 'subscription_cancelled' ||
+      sub === 'cancelled' ||
+      reason === 'cancelled_until_period_end' ||
+      reason === 'subscription_cancelled';
+    if (!marked) return false;
+    if (reason === 'cancelled_until_period_end' && data.allowed === true) return true;
+    var until = data.access_until || data.subscription_paid_through || data.subscription_expires_at;
+    if (!until) return false;
+    var end = Date.parse(until);
+    if (!isFinite(end)) return false;
+    var nowMs = Date.parse(data.server_now || '');
+    if (!isFinite(nowMs)) nowMs = Date.now();
+    return end > nowMs;
+  }
+
+  function paidThroughLabel(info) {
+    var data = info || last || {};
+    var until = data.access_until || data.subscription_paid_through || data.subscription_expires_at || '';
+    var parsed = Date.parse(until);
+    if (until && isFinite(parsed)) {
+      try {
+        return new Date(parsed).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch (_) {
+        return String(until).slice(0, 10);
+      }
+    }
+    return until ? String(until).slice(0, 10) : '';
+  }
+
   function isCancelledCompany() {
+    if (paidWindowOpen(last)) return false;
     var status = text(last && last.status);
     var reason = text(last && last.reason);
     return status === 'subscription_cancelled' ||
@@ -127,6 +164,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return true;
     if (isCancelledCompany()) return false;
     return last.allowed === true;
   }
@@ -135,6 +173,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return true;
     if (isCancelledCompany()) return false;
     return last.can_finalise === true;
   }
@@ -143,6 +182,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return true;
     if (isCancelledCompany()) return false;
     return last.can_create === true;
   }
@@ -151,6 +191,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return true;
     if (isCancelledCompany()) return false;
     return last.can_read === true || last.allowed === true;
   }
@@ -159,6 +200,7 @@
     if (isSuperAdmin()) return true;
     if (isLocalWorkspace()) return true;
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return true;
     if (isCancelledCompany()) return false;
     return last.can_export === true || last.can_read === true || last.allowed === true;
   }
@@ -213,6 +255,7 @@
     if (memberRole() === 'new_company' || !companyId()) return false;
     if (accessGateOpen()) return false;
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return false;
     if (last && last.staff_must_sign_out === true) return true;
     var status = text(last && last.status);
     var reason = text(last && last.reason);
@@ -261,6 +304,7 @@
     // loading. Paid companies would see Cancelled / Subscription required
     // and then the real Home once the snapshot arrives.
     if (!hasSnapshot()) return false;
+    if (paidWindowOpen(last)) return false;
     var status = text(last && last.status);
     var reason = text(last && last.reason);
     if (isCancelledCompany()) return true;
@@ -623,7 +667,10 @@
       return 'A payment did not go through. Fire-S stays available during the grace period. Subscribe on PayFast.';
     }
     if (reason === 'cancelled_until_period_end') {
-      return 'This subscription is cancelled. Inspections stay in the cloud and stay locked until a new subscription is active.';
+      var when = paidThroughLabel(info);
+      return when
+        ? 'Auto-renew is off. This login stays open until ' + when + '.'
+        : 'Auto-renew is off. This login stays open until the paid-through date.';
     }
     if (reason === 'subscription_cancelled') {
       return 'This subscription is cancelled. Inspections stay in the cloud and stay locked until a new subscription is active.';
@@ -726,6 +773,15 @@
     if (reason === 'past_due_grace' || (status === 'subscription_past_due' && data.allowed === true)) {
       headline = 'Payment past due';
       detail = humanMessage('past_due_grace', data);
+      urgency = 'mid';
+      return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
+    }
+    if (paidWindowOpen(data)) {
+      var openUntil = paidThroughLabel(data);
+      headline = 'Subscription cancelled';
+      detail = openUntil
+        ? 'Auto-renew is off. This login stays open until ' + openUntil + '.'
+        : 'Auto-renew is off. This login stays open until the paid-through date.';
       urgency = 'mid';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
     }
@@ -1139,6 +1195,18 @@
     } catch (_) {}
     showBlockerIfNeeded();
     paintSubscribeHints(copy);
+    var lockedNow = false;
+    try {
+      lockedNow = inspectionAccessLocked();
+    } catch (_) {}
+    if (paint.__fireSHomeLock !== lockedNow) {
+      paint.__fireSHomeLock = lockedNow;
+      try {
+        if (hasSnapshot() && typeof root.fireSApplyCleanHomeRoles === 'function') {
+          root.fireSApplyCleanHomeRoles();
+        }
+      } catch (_) {}
+    }
     try {
       enforceStaffSignOut();
     } catch (_) {}

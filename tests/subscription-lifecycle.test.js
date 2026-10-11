@@ -32,7 +32,7 @@ assert.strictEqual(sql, migration, 'SQL Editor copy must match the migration');
 assert.ok(/payment_grace_days integer/.test(sql));
 assert.ok(/payment_grace_days set default 7/.test(sql));
 assert.ok(/cancel_keeps_access_until_paid_through boolean/.test(sql));
-assert.ok(/cancel_keeps_access_until_paid_through set default false/.test(sql));
+assert.ok(/cancel_keeps_access_until_paid_through set default true/.test(sql));
 assert.ok(/One row, not scattered in app code/.test(sql));
 assert.ok(/grace_ends_at timestamptz/.test(sql));
 assert.ok(/last_payment_failed_at timestamptz/.test(sql));
@@ -145,11 +145,11 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.119-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
-assert.ok(/fire-s-subscribe.js\?v=1-40-cancel-show/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.js\?v=1-41-paid-window/.test(stagingHtml));
 assert.ok(/function askCancelSubscription\(/.test(stagingSubscribe));
 assert.ok(/id="fireSSubscribeCancelConfirmBtn"/.test(stagingHtml));
 assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
-assert.ok(/fire-s-entitlement.js\?v=1-3-123-paid-home/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-124-paid-window/.test(stagingHtml));
 assert.ok(/fire-s-subscribe.css\?v=1-16-cancel-show/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
@@ -252,8 +252,8 @@ const cancelCopy = ent.fireSEntitlement.displayCopy({
   can_read: true,
   backendReady: true
 });
-assert.strictEqual(cancelCopy.urgency, 'block');
-assert.ok(/locked until a new subscription is active/i.test(cancelCopy.detail));
+assert.strictEqual(cancelCopy.urgency, 'mid');
+assert.ok(/stays open until the paid-through date/i.test(cancelCopy.detail));
 
 const cancelExpiredCopy = ent.fireSEntitlement.displayCopy({
   status: 'subscription_cancelled',

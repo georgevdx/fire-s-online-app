@@ -16,7 +16,7 @@ alter table public.fire_s_entitlement_config
 
 update public.fire_s_entitlement_config
    set payment_grace_days = coalesce(payment_grace_days, 7),
-       cancel_keeps_access_until_paid_through = false,
+       cancel_keeps_access_until_paid_through = true,
        updated_at = now()
  where id = 1;
 
@@ -25,7 +25,7 @@ alter table public.fire_s_entitlement_config
 alter table public.fire_s_entitlement_config
   alter column payment_grace_days set not null;
 alter table public.fire_s_entitlement_config
-  alter column cancel_keeps_access_until_paid_through set default false;
+  alter column cancel_keeps_access_until_paid_through set default true;
 alter table public.fire_s_entitlement_config
   alter column cancel_keeps_access_until_paid_through set not null;
 
@@ -45,7 +45,7 @@ alter table public.fire_s_company_subscriptions
 comment on column public.fire_s_entitlement_config.payment_grace_days is
   'Days of paid access after a failed renewal. One row, not scattered in app code.';
 comment on column public.fire_s_entitlement_config.cancel_keeps_access_until_paid_through is
-  'When true, cancelled companies keep app access until current_period_end. When false (default), cancel locks inspections immediately. Rows stay (keep_data).';
+  'When true (default), cancelled companies keep app access until current_period_end. When false, cancel locks inspections immediately. Rows stay (keep_data).';
 
 create or replace function public.fire_s_payment_grace_days()
 returns integer

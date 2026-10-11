@@ -735,7 +735,15 @@
         });
       }
     } catch (_) {}
-    setMessage('Cancelled. Auto-renew is off. Company name and inspections stay saved. Login with this same email to subscribe again.');
+    var until = '';
+    try {
+      until = cat.formatLongDate ? cat.formatLongDate(cat.currentRenewsOn()) : cat.currentRenewsOn();
+    } catch (_) {}
+    setMessage(
+      until
+        ? 'Cancelled. Auto-renew is off. This login stays open until ' + until + '. Company name and inspections stay saved.'
+        : 'Cancelled. Auto-renew is off. This login stays open until the paid-through date. Company name and inspections stay saved.'
+    );
     try {
       if (window.fireSPayfast && typeof window.fireSPayfast.hideReturnBanner === 'function') {
         window.fireSPayfast.hideReturnBanner();

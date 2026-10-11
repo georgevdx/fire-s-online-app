@@ -3,22 +3,22 @@
 --
 -- Cancelled companies KEEP every inspection row in the cloud (keep_data).
 -- The paid-through date (current_period_end) stays on the row for billing.
--- App and inspection SELECT stay closed until a new subscription is active,
--- unless cancel_keeps_access_until_paid_through is true.
+-- App and inspection SELECT stay open until current_period_end.
+-- After that date they stay closed until a new subscription is active.
 -- Super Admin keeps access. Nothing is deleted. Sit live later.
 
 begin;
 
 update public.fire_s_entitlement_config
-   set cancel_keeps_access_until_paid_through = false,
+   set cancel_keeps_access_until_paid_through = true,
        updated_at = now()
  where id = 1;
 
 alter table public.fire_s_entitlement_config
-  alter column cancel_keeps_access_until_paid_through set default false;
+  alter column cancel_keeps_access_until_paid_through set default true;
 
 comment on column public.fire_s_entitlement_config.cancel_keeps_access_until_paid_through is
-  'When true, cancelled companies keep app access until current_period_end. When false (default), cancel locks inspections immediately. Rows stay (keep_data).';
+  'When true (default), cancelled companies keep app access until current_period_end. When false, cancel locks inspections immediately. Rows stay (keep_data).';
 
 create or replace function public.fire_s_cancel_keeps_access()
 returns boolean

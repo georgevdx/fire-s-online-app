@@ -64,7 +64,7 @@ assert.ok(/'can_read', true/.test(getter), 'super_admin overlay still grants rea
 assert.ok(/fire_s_company_can_read_inspections/.test(lockSql));
 assert.ok(/fire_s_inspections_select/.test(lockSql));
 assert.ok(/fire_s_inspections_entitlement_delete_guard/.test(lockSql));
-assert.ok(/cancel_keeps_access_until_paid_through = false/.test(lockSql));
+assert.ok(/cancel_keeps_access_until_paid_through = true/.test(lockSql));
 assert.ok(/status = 'cancelled' then\s+return v_period/s.test(sliceFn(lockSql, 'fire_s_subscription_access_until')));
 
 assert.ok(!/projectListSection: true/.test(liveEntitlement), 'live cancelled list must lock until a new subscription is active');
@@ -86,6 +86,9 @@ assert.ok(/function inspectionHomeLocked\(/.test(read('staging/fire-s-clean-home
 assert.ok(/applyLockedSubscribeHome/.test(read('staging/fire-s-clean-home-roles.js')));
 assert.ok(/if \(inspectionHomeLocked\(\)\) \{\s*wrapAllCommandCards\(\);\s*applyLockedSubscribeHome\(\);\s*return;/s.test(read('staging/fire-s-clean-home-roles.js')), 'locked Home must not first paint Gateway then hide it');
 assert.ok(/if \(inspectionHomeLocked\(\)\) \{\s*applyCleanHome\(\);\s*return;/s.test(read('staging/fire-s-clean-home-roles.js')), 'locked Home must skip the command-centre layer');
+assert.ok(/if \(inspectionHomeLocked\(\)\) \{\s*wrapAllCommandCards\(\);\s*applyLockedSubscribeHome\(\);\s*return;/s.test(read('fire-s-clean-home-roles.js')), 'live locked Home must stay on the subscribe home');
+assert.ok(/if \(inspectionHomeLocked\(\)\) \{\s*applyCleanHome\(\);\s*return;/s.test(read('fire-s-clean-home-roles.js')), 'live locked Home must not expand the command centre again');
+assert.ok(/function paidWindowOpen\(/.test(liveEntitlement) && /function paidWindowOpen\(/.test(stagingEntitlement));
 assert.ok(!/setInterval\(function \(\) \{\s*if \(!inspectionAccessLocked\(\)\) return;\s*wrapNavFns\(\);/s.test(stagingEntitlement), 'do not re-hide Home cards on a 400ms timer');
 assert.ok(/body\.fire-s-entitlement-blocked #homeSection \.home-hero/.test(stagingCss));
 assert.ok(/body\.fire-s-entitlement-blocked #fireSTrialBanner/.test(stagingCss));
@@ -109,7 +112,7 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-123-paid-home/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-124-paid-window/.test(stagingHtml));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
@@ -246,8 +249,8 @@ const oldPaidThroughCopy = ent.fireSEntitlement.displayCopy({
   can_read: true,
   backendReady: true
 });
-assert.strictEqual(oldPaidThroughCopy.urgency, 'block', 'cancelled companies stay locked until a new subscription is active');
-assert.ok(/locked until a new subscription is active/i.test(oldPaidThroughCopy.detail));
+assert.strictEqual(oldPaidThroughCopy.urgency, 'mid', 'a cancelled login stays open until the paid-through date');
+assert.ok(/stays open until the paid-through date/i.test(oldPaidThroughCopy.detail));
 assert.strictEqual(
   ent.fireSEntitlement.inspectionAccessLocked(),
   false,
@@ -363,11 +366,65 @@ openGate.style.display = 'none';
   await paidThroughClient.fireSEntitlement.getCompanyEntitlement('co1');
   assert.strictEqual(
     paidThroughClient.fireSEntitlement.inspectionAccessLocked(),
-    true,
-    'cancelled companies stay locked until a new subscription is active'
+    false,
+    'a cancelled login stays open until the paid-through date'
   );
-  assert.strictEqual(paidThroughClient.fireSEntitlement.canRead(), false);
-  assert.strictEqual(paidThroughClient.fireSEntitlement.operationallyAllowed(), false);
+  assert.strictEqual(paidThroughClient.fireSEntitlement.canRead(), true);
+  assert.strictEqual(paidThroughClient.fireSEntitlement.operationallyAllowed(), true);
+  assert.strictEqual(paidThroughClient.fireSEntitlement.homeWorkAllowed(), true);
+
+  const datedClient = loadEntitlement();
+  datedClient.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: false,
+          can_create: false,
+          can_finalise: false,
+          can_write_draft: false,
+          can_read: false,
+          can_export: false,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'subscription_required',
+          subscription_status: 'cancelled',
+          access_until: '2026-10-26T00:00:00.000Z',
+          server_now: '2026-10-11T12:00:00.000Z',
+          super_admin: false,
+          backendReady: true
+        }
+      };
+    }
+  };
+  await datedClient.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(datedClient.fireSEntitlement.inspectionAccessLocked(), false, 'server paid-through still in the future keeps Home open');
+  assert.strictEqual(datedClient.fireSEntitlement.canRead(), true);
+  const datedCopy = datedClient.fireSEntitlement.displayCopy(datedClient.fireSEntitlement.snapshot());
+  assert.strictEqual(datedCopy.urgency, 'mid');
+  assert.ok(/stays open until/i.test(datedCopy.detail));
+
+  const expiredDated = loadEntitlement();
+  expiredDated.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: false,
+          can_read: false,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'subscription_required',
+          subscription_status: 'cancelled',
+          access_until: '2026-10-01T00:00:00.000Z',
+          server_now: '2026-10-11T12:00:00.000Z',
+          backendReady: true
+        }
+      };
+    }
+  };
+  await expiredDated.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(expiredDated.fireSEntitlement.inspectionAccessLocked(), true, 'after the paid-through date Home stays locked');
 
   const flash = loadEntitlement();
   flash.supabaseClient = {

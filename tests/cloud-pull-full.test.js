@@ -48,7 +48,7 @@ assertPullSource(
   liveLists,
   'Live',
   '1-3-67-pdf',
-  '1-3-home-lookup',
+  '1-4-paid-window',
   '108-81-cancel',
   'fire-s-108-81-cancel'
 );

@@ -600,6 +600,21 @@
     });
   }
 
+  function inspectionHomeLocked() {
+    try {
+      if (root.fireSEntitlement && typeof root.fireSEntitlement.homeWorkAllowed === 'function') {
+        return root.fireSEntitlement.homeWorkAllowed() !== true;
+      }
+      return !!(
+        root.fireSEntitlement &&
+        typeof root.fireSEntitlement.inspectionAccessLocked === 'function' &&
+        root.fireSEntitlement.inspectionAccessLocked()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function refresh() {
     if (root.__fireSHomeCountsFrozen) return;
     if (root.__fireSCloudPullSettled === false) return;
@@ -607,7 +622,7 @@
     if (!panel) return;
     bindPanel(panel);
     bindLookup();
-    if (!canShowLists()) {
+    if (inspectionHomeLocked() || !canShowLists()) {
       hidePanel(panel);
       return;
     }
