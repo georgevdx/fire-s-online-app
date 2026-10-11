@@ -145,7 +145,7 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.119-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
-assert.ok(/fire-s-subscribe.js\?v=1-41-paid-window/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.js\?v=1-42-trial-clear/.test(stagingHtml));
 assert.ok(/function askCancelSubscription\(/.test(stagingSubscribe));
 assert.ok(/id="fireSSubscribeCancelConfirmBtn"/.test(stagingHtml));
 assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
@@ -356,13 +356,88 @@ assert.ok(/Payment past due/.test(ent.fireSEntitlement.statusLabel({
   assert.strictEqual(nodes.fireSBillingPlan.textContent, 'standard');
   assert.strictEqual(nodes.fireSBillingInterval.textContent, 'annual');
   assert.strictEqual(nodes.fireSBillingStatus.textContent, 'past_due');
-  assert.strictEqual(nodes.fireSBillingTrial.textContent, '2026-09-01');
+  assert.strictEqual(nodes.fireSBillingTrial.textContent, '—');
   assert.strictEqual(nodes.fireSBillingPaidThrough.textContent, '2026-10-01');
   assert.strictEqual(nodes.fireSBillingNext.textContent, '2026-10-01');
   assert.strictEqual(nodes.fireSBillingLastPaid.textContent, '2026-09-01');
   assert.strictEqual(nodes.fireSBillingGrace.hidden, false);
   assert.ok(/Grace period until 2026-10-08/.test(nodes.fireSBillingGrace.textContent));
   assert.strictEqual(nodes.fireSBillingCancelBtn.hidden, false);
+
+  sandbox.supabaseClient.rpc = async function () {
+    return {
+      data: {
+        plan: 'standard',
+        billing_interval: 'monthly',
+        subscription_status: 'cancelled',
+        status: 'subscription_cancelled',
+        trial_ends_at: '2026-10-15T00:00:00Z',
+        paid_through: null,
+        next_billing_at: '2026-10-29T00:00:00Z',
+        last_successful_payment_at: null
+      }
+    };
+  };
+  sandbox.fireSPaintSubscribeCurrent();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(nodes.fireSBillingStatus.textContent, 'cancelled');
+  assert.strictEqual(nodes.fireSBillingTrial.textContent, '—');
+  assert.strictEqual(nodes.fireSBillingNext.textContent, 'Stopped');
+
+  sandbox.supabaseClient.rpc = async function () {
+    return {
+      data: {
+        plan: 'standard',
+        billing_interval: 'monthly',
+        subscription_status: 'active',
+        status: 'subscription_active',
+        trial_ends_at: '2026-10-15T00:00:00Z',
+        paid_through: '2026-11-11T00:00:00Z',
+        next_billing_at: '2026-11-11T00:00:00Z',
+        last_successful_payment_at: '2026-10-11T00:00:00Z'
+      }
+    };
+  };
+  sandbox.fireSPaintSubscribeCurrent();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(nodes.fireSBillingStatus.textContent, 'active');
+  assert.strictEqual(nodes.fireSBillingTrial.textContent, '—');
+  assert.strictEqual(nodes.fireSBillingPaidThrough.textContent, '2026-11-11');
+
+  sandbox.supabaseClient.rpc = async function () {
+    return {
+      data: {
+        plan: 'standard',
+        billing_interval: '',
+        subscription_status: 'trialing',
+        status: 'trial_active',
+        trial_ends_at: '2026-10-15T00:00:00Z',
+        paid_through: null,
+        next_billing_at: null,
+        last_successful_payment_at: null
+      }
+    };
+  };
+  sandbox.fireSPaintSubscribeCurrent();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(nodes.fireSBillingStatus.textContent, 'trialing');
+  assert.strictEqual(nodes.fireSBillingTrial.textContent, '2026-10-15');
+
+  function localFn(src, name) {
+    const start = src.indexOf('function ' + name + '(');
+    assert.ok(start >= 0, 'missing ' + name);
+    const end = src.indexOf('\n  function ', start + 1);
+    assert.ok(end > start, 'unterminated ' + name);
+    return src.slice(start, end);
+  }
+  assert.strictEqual(
+    localFn(liveSubscribe, 'billingTrialDate'),
+    localFn(stagingSubscribe, 'billingTrialDate'),
+    'Live and toets must clear trial expiry the same way'
+  );
 
   console.log('subscription-lifecycle.test.js: ok');
 })().catch(function (err) {

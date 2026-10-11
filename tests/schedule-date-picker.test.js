@@ -18,7 +18,7 @@ assert.ok(
     /id="followUpDate"[^>]*type="date"|type="date" id="followUpDate"/.test(stagingHtml) &&
     /class="fire-s-date-input"/.test(stagingHtml) &&
     /fire-s-schedule-assign\.js\?v=1-4-date-picker/.test(stagingHtml) &&
-    /fire-s-dark-type\.css\?v=1-11-date-picker/.test(stagingHtml) &&
+    /fire-s-dark-type\.css\?v=1-12-billing/.test(stagingHtml) &&
     /styles\.css\?v=1-3-123-pdf/.test(stagingHtml),
   'Toets scheduling must keep native date inputs and cache-bust the picker CSS'
 );
@@ -142,7 +142,7 @@ assert.ok(
   /id="inspectionDate"[\s\S]*class="fire-s-date-input"[\s\S]*type="date"/.test(liveHtml) &&
     /id="followUpDate"[^>]*class="fire-s-date-input"/.test(liveHtml) &&
     /fire-s-schedule-assign\.js\?v=1-3-date-picker/.test(liveHtml) &&
-    /fire-s-dark-type\.css\?v=1-6-date-picker/.test(liveHtml),
+    /fire-s-dark-type\.css\?v=1-7-billing/.test(liveHtml),
   'Live inspection dates must be native date inputs with a fresh picker script'
 );
 assert.ok(

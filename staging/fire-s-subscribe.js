@@ -494,6 +494,29 @@
     return text.slice(0, 10);
   }
 
+  function billingTrialDate(data) {
+    var row = data || {};
+    var status = String(row.subscription_status || '').trim().toLowerCase();
+    var ent = String(row.status || '').trim().toLowerCase();
+    var subscribed = {
+      active: 1,
+      paid: 1,
+      cancelled: 1,
+      canceled: 1,
+      past_due: 1,
+      payment_pending: 1,
+      expired: 1,
+      paused: 1,
+      subscription_active: 1,
+      subscription_cancelled: 1,
+      subscription_canceled: 1,
+      subscription_past_due: 1
+    };
+    if (subscribed[status] || subscribed[ent]) return '';
+    if (row.last_successful_payment_at || row.paid_through || row.subscription_started_at) return '';
+    return row.trial_ends_at;
+  }
+
   function paintCompanyBilling(info) {
     var data = info || {};
     function setText(id, value) {
@@ -503,7 +526,7 @@
     setText('fireSBillingPlan', data.plan || 'standard');
     setText('fireSBillingInterval', data.billing_interval || '—');
     setText('fireSBillingStatus', data.subscription_status || data.status || '—');
-    setText('fireSBillingTrial', formatBillingDate(data.trial_ends_at));
+    setText('fireSBillingTrial', formatBillingDate(billingTrialDate(data)));
     setText('fireSBillingPaidThrough', formatBillingDate(data.paid_through));
     setText(
       'fireSBillingNext',

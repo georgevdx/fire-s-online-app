@@ -15,7 +15,7 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-67-cancel/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-billing/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
     /service-worker\.js\?v=108-81-cancel/.test(liveHtml) &&
     /fire-s-108-81-cancel/.test(liveSw),
@@ -34,7 +34,7 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-121/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-122/.test(stagingHtml) &&
     /service-worker\.js\?v=108-80-toets-119/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),

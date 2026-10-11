@@ -837,6 +837,28 @@ html[data-fire-s-theme="dark"] input.expiry-date:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
+/* Company billing sits on a white card. Dark theme was painting the heading the same colour as the card. */
+html[data-fire-s-theme="dark"] .fire-s-company-billing {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-company-billing h3,
+html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-company-billing-list dt,
+html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-company-billing-list dd,
+html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-company-billing-note,
+html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-company-billing-keep {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-company-billing-list dt {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator,
 input.expiry-date::-webkit-calendar-picker-indicator,
 input.fire-s-date-input::-webkit-calendar-picker-indicator {
