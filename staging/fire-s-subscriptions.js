@@ -367,16 +367,24 @@
 
   function statusHeadline() {
     var interval = currentIntervalId();
-    var when = formatLongDate(ensureRenewsOn(interval));
     var period = interval === 'annual' ? 'year' : 'month';
     var status = billingStatus();
     if (status === 'cancelled') {
+      var renews = currentRenewsOn();
+      var whenCancel = formatLongDate(renews);
+      var leftDays = renews ? daysUntilDate(renews) : null;
+      var left = '';
+      if (leftDays === 1) left = '1 day left before this login ends on ' + whenCancel + '. ';
+      else if (typeof leftDays === 'number' && leftDays > 1) left = leftDays + ' days left before this login ends on ' + whenCancel + '. ';
+      else if (leftDays === 0) left = 'Ends today (' + whenCancel + '). ';
+      else left = 'This login stays until ' + whenCancel + '. ';
       return (
-        'Cancelled. This login stays until ' +
-        when +
-        '. It will not auto-renew. Subscribe again with this same company name — do not choose a new name on Access.'
+        'Cancelled. ' +
+        left +
+        'It will not auto-renew. Inspections stay open until then. Subscribe again with this same company name — do not choose a new name on Access.'
       );
     }
+    var when = formatLongDate(ensureRenewsOn(interval));
     if (status === 'active') {
       if (interval === 'annual') {
         return (
@@ -441,6 +449,14 @@
       guard += 1;
     }
     return rememberRenewsOn(renews);
+  }
+
+  function daysUntilDate(dateKey) {
+    var renews = todayKey(dateKey);
+    if (!renews) return null;
+    var a = new Date(todayKey() + 'T00:00:00');
+    var b = new Date(renews + 'T00:00:00');
+    return Math.round((b.getTime() - a.getTime()) / 86400000);
   }
 
   function daysUntilRenewal(intervalId) {

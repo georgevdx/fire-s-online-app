@@ -112,7 +112,7 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-124-paid-window/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-124-paid-days/.test(stagingHtml));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
@@ -403,6 +403,93 @@ openGate.style.display = 'none';
   const datedCopy = datedClient.fireSEntitlement.displayCopy(datedClient.fireSEntitlement.snapshot());
   assert.strictEqual(datedCopy.urgency, 'mid');
   assert.ok(/stays open until/i.test(datedCopy.detail));
+  assert.ok(/15 days left/.test(datedCopy.detail), datedCopy.detail);
+
+  const rowDated = loadEntitlement();
+  rowDated.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: false,
+          can_read: false,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'subscription_required',
+          subscription_status: 'cancelled',
+          server_now: '2026-10-11T12:00:00.000Z',
+          backendReady: true
+        }
+      };
+    },
+    from: function () {
+      return {
+        select: function () {
+          return {
+            eq: function () {
+              return {
+                maybeSingle: async function () {
+                  return { data: { status: 'cancelled', current_period_end: '2026-10-29T00:00:00.000Z' }, error: null };
+                }
+              };
+            }
+          };
+        }
+      };
+    }
+  };
+  await rowDated.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(rowDated.fireSEntitlement.inspectionAccessLocked(), false, 'subscription row paid-through keeps Home open after login');
+  const rowCopy = rowDated.fireSEntitlement.displayCopy(rowDated.fireSEntitlement.snapshot());
+  assert.ok(/18 days left/.test(rowCopy.detail), rowCopy.detail);
+  assert.ok(/29 Oct 2026/.test(rowCopy.detail), rowCopy.detail);
+
+  const deviceDated = loadEntitlement();
+  deviceDated.localStorage.setItem('fireS.billingRenewsOn', '2026-10-29');
+  deviceDated.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: false,
+          can_read: false,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'subscription_required',
+          subscription_status: 'cancelled',
+          server_now: '2026-10-11T12:00:00.000Z',
+          backendReady: true
+        }
+      };
+    }
+  };
+  await deviceDated.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(deviceDated.fireSEntitlement.inspectionAccessLocked(), false, 'saved renew date keeps Home open when the server omits the date');
+  const deviceCopy = deviceDated.fireSEntitlement.displayCopy(deviceDated.fireSEntitlement.snapshot());
+  assert.ok(/18 days left/.test(deviceCopy.detail), deviceCopy.detail);
+
+  const serverWins = loadEntitlement();
+  serverWins.localStorage.setItem('fireS.billingRenewsOn', '2026-10-29');
+  serverWins.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: false,
+          can_read: false,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'subscription_required',
+          subscription_status: 'cancelled',
+          access_until: '2026-10-01T00:00:00.000Z',
+          server_now: '2026-10-11T12:00:00.000Z',
+          backendReady: true
+        }
+      };
+    }
+  };
+  await serverWins.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(serverWins.fireSEntitlement.inspectionAccessLocked(), true, 'a past server paid-through date ends the login');
 
   const expiredDated = loadEntitlement();
   expiredDated.supabaseClient = {

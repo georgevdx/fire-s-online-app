@@ -55,13 +55,13 @@ assertShowPassword(liveHtml, liveStarted, liveCss, 'Live');
 
 assert.ok(
   /fire-s-get-started\.css\?v=2-22-howto/.test(stagingHtml) &&
-    /fire-s-get-started.js\?v=2-60-hold-sub/.test(stagingHtml) &&
+    /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the phone Access files'
 );
 assert.ok(
   /fire-s-get-started\.css\?v=2-20-services-ink/.test(liveHtml) &&
-    /fire-s-get-started\.js\?v=2-54-sub-hold/.test(liveHtml) &&
+    /fire-s-get-started\.js\?v=2-55-paid-days/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must cache-bust Show password Access files'
 );

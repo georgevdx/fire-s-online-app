@@ -957,6 +957,16 @@
 
   function shouldShowAccess() {
     if (isPasswordRecovery()) return true;
+    try {
+      if (
+        hasCompany() &&
+        window.fireSEntitlement &&
+        typeof window.fireSEntitlement.paidWindowOpen === 'function' &&
+        window.fireSEntitlement.paidWindowOpen()
+      ) {
+        return false;
+      }
+    } catch (_) {}
     var role = homeRole();
     if (
       role === 'inspector' ||

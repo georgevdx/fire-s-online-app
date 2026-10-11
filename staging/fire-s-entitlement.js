@@ -115,40 +115,120 @@
     return !!(last && last.backendReady);
   }
 
-  function paidWindowOpen(info) {
-    var data = info || last;
-    if (!data) return false;
-    var status = text(data.status);
-    var reason = text(data.reason);
-    var sub = text(data.subscription_status).toLowerCase();
-    var marked =
-      status === 'subscription_cancelled' ||
+  function cancelledMark(data) {
+    var status = text(data && data.status);
+    var reason = text(data && data.reason);
+    var sub = text(data && data.subscription_status).toLowerCase();
+    return status === 'subscription_cancelled' ||
       sub === 'cancelled' ||
       reason === 'cancelled_until_period_end' ||
       reason === 'subscription_cancelled';
-    if (!marked) return false;
-    if (reason === 'cancelled_until_period_end' && data.allowed === true) return true;
-    var until = data.access_until || data.subscription_paid_through || data.subscription_expires_at;
+  }
+
+  function serverPeriodEnd(info) {
+    var data = info || {};
+    return text(
+      data.access_until ||
+      data.subscription_paid_through ||
+      data.subscription_expires_at ||
+      data.paid_through ||
+      data.billing_renews_on
+    );
+  }
+
+  function catalogRenewsOn() {
+    try {
+      var access = root.currentCompanyAccess && root.currentCompanyAccess.billingRenewsOn;
+      if (access) return text(access);
+    } catch (_) {}
+    try {
+      if (root.fireSSubscriptionCatalog && typeof root.fireSSubscriptionCatalog.currentRenewsOn === 'function') {
+        var fromCat = root.fireSSubscriptionCatalog.currentRenewsOn();
+        if (fromCat) return text(fromCat);
+      }
+    } catch (_) {}
+    try {
+      var stored = root.localStorage && root.localStorage.getItem('fireS.billingRenewsOn');
+      if (stored) return text(stored);
+    } catch (_) {}
+    return '';
+  }
+
+  function activePaidRaw(info) {
+    var data = info || last || {};
+    var server = serverPeriodEnd(data);
+    if (server) return server;
+    if (cancelledMark(data)) return catalogRenewsOn();
+    return '';
+  }
+
+  function parsePeriodEnd(until) {
+    var raw = text(until);
+    if (!raw) return NaN;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return Date.parse(raw + 'T23:59:59.000Z');
+    return Date.parse(raw);
+  }
+
+  function paidWindowOpen(info) {
+    var data = info || last;
+    if (!data) return false;
+    if (!cancelledMark(data)) return false;
+    if (text(data.reason) === 'cancelled_until_period_end' && data.allowed === true) return true;
+    var until = serverPeriodEnd(data) || catalogRenewsOn();
     if (!until) return false;
-    var end = Date.parse(until);
+    var end = parsePeriodEnd(until);
     if (!isFinite(end)) return false;
     var nowMs = Date.parse(data.server_now || '');
     if (!isFinite(nowMs)) nowMs = Date.now();
     return end > nowMs;
   }
 
-  function paidThroughLabel(info) {
+  function daysUntilPaidEnd(info) {
+    var raw = activePaidRaw(info);
+    if (!raw) return null;
     var data = info || last || {};
-    var until = data.access_until || data.subscription_paid_through || data.subscription_expires_at || '';
-    var parsed = Date.parse(until);
-    if (until && isFinite(parsed)) {
+    var nowMs = Date.parse(data.server_now || '');
+    if (!isFinite(nowMs)) nowMs = Date.now();
+    var endDay;
+    var day = raw.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+      var parts = day.split('-');
+      endDay = Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    } else {
+      var end = parsePeriodEnd(raw);
+      if (!isFinite(end)) return null;
+      var finish = new Date(end);
+      endDay = Date.UTC(finish.getUTCFullYear(), finish.getUTCMonth(), finish.getUTCDate());
+    }
+    var start = new Date(nowMs);
+    var startDay = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+    return Math.round((endDay - startDay) / 86400000);
+  }
+
+  function paidThroughLabel(info) {
+    var until = activePaidRaw(info);
+    var day = until.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+      var parts = day.split('-');
       try {
-        return new Date(parsed).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+        return new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])))
+          .toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
       } catch (_) {
-        return String(until).slice(0, 10);
+        return day;
       }
     }
-    return until ? String(until).slice(0, 10) : '';
+    return until ? day : '';
+  }
+
+  function stampDevicePaidThrough(data) {
+    if (!data || serverPeriodEnd(data) || !cancelledMark(data)) return data;
+    var local = catalogRenewsOn();
+    if (!local || !isFinite(parsePeriodEnd(local))) return data;
+    var nowMs = Date.parse(data.server_now || '');
+    if (!isFinite(nowMs)) nowMs = Date.now();
+    if (parsePeriodEnd(local) <= nowMs) return data;
+    data.access_until = local;
+    return data;
   }
 
   function isCancelledCompany() {
@@ -778,9 +858,14 @@
     }
     if (paidWindowOpen(data)) {
       var openUntil = paidThroughLabel(data);
+      var left = daysUntilPaidEnd(data);
+      var leftLine = '';
+      if (left === 1) leftLine = '1 day left. ';
+      else if (typeof left === 'number' && left > 1) leftLine = left + ' days left. ';
+      else if (left === 0) leftLine = 'Ends today. ';
       headline = 'Subscription cancelled';
       detail = openUntil
-        ? 'Auto-renew is off. This login stays open until ' + openUntil + '.'
+        ? leftLine + 'Auto-renew is off. This login stays open until ' + openUntil + '.'
         : 'Auto-renew is off. This login stays open until the paid-through date.';
       urgency = 'mid';
       return { headline: headline, detail: detail, urgency: urgency, cta: cta, show: true, days: days, remaining: remaining, used: used, limit: limit };
@@ -841,10 +926,23 @@
   async function readCompanySubscription(sb, cid) {
     try {
       if (!sb || typeof sb.from !== 'function' || !cid) return null;
-      var res = await sb.from('fire_s_company_subscriptions').select('status,last_payment_at').eq('company_id', cid).maybeSingle();
-      return res && res.data ? res.data : null;
+      var wide = await sb.from('fire_s_company_subscriptions').select('status,last_payment_at,current_period_end').eq('company_id', cid).maybeSingle();
+      if (wide && !wide.error && wide.data) return wide.data;
+      var narrow = await sb.from('fire_s_company_subscriptions').select('status,last_payment_at').eq('company_id', cid).maybeSingle();
+      return narrow && !narrow.error && narrow.data ? narrow.data : null;
     } catch (_) {
       return null;
+    }
+  }
+
+  async function readBillingPaidThrough(sb, cid) {
+    try {
+      if (!sb || typeof sb.rpc !== 'function' || !cid) return '';
+      var res = await sb.rpc('fire_s_get_company_billing', { p_company_id: cid });
+      if (!res || res.error || !res.data || typeof res.data !== 'object') return '';
+      return text(res.data.access_until || res.data.paid_through || res.data.subscription_paid_through || res.data.billing_renews_on);
+    } catch (_) {
+      return '';
     }
   }
 
@@ -852,6 +950,10 @@
     if (!data || !row) return data;
     if (row.status) data.subscription_status = row.status;
     if (row.last_payment_at) data.last_payment_at = row.last_payment_at;
+    if (row.current_period_end && !serverPeriodEnd(data)) {
+      data.access_until = row.current_period_end;
+      data.subscription_paid_through = row.current_period_end;
+    }
     var sub = text(data.subscription_status).toLowerCase();
     var paid = sub === 'active' || sub === 'subscription_active' || !!data.last_payment_at;
     var pending = sub === 'payment_pending';
@@ -918,6 +1020,14 @@
         return last;
       }
       data = applySubscriptionRow(data, await readCompanySubscription(sb, cid));
+      if (!serverPeriodEnd(data) && cancelledMark(data)) {
+        var billedThrough = await readBillingPaidThrough(sb, cid);
+        if (billedThrough) {
+          data.access_until = data.access_until || billedThrough;
+          data.subscription_paid_through = data.subscription_paid_through || billedThrough;
+        }
+      }
+      stampDevicePaidThrough(data);
       last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data);
       lastAt = Date.now();
       paint();
@@ -1193,6 +1303,12 @@
         root.fireSPayfast.hideReturnBanner();
       }
     } catch (_) {}
+    if (paidWindowOpen(last) && companyId()) {
+      try {
+        var openGate = document.getElementById('fireSGetStarted');
+        if (openGate && openGate.style) openGate.style.display = 'none';
+      } catch (_) {}
+    }
     showBlockerIfNeeded();
     paintSubscribeHints(copy);
     var lockedNow = false;
@@ -1543,6 +1659,7 @@
     canRead: canRead,
     canExport: canExport,
     inspectionAccessLocked: inspectionAccessLocked,
+    paidWindowOpen: paidWindowOpen,
     staffMustSignOut: staffMustSignOut,
     enforceStaffSignOut: enforceStaffSignOut,
     homeWorkAllowed: homeWorkAllowed,

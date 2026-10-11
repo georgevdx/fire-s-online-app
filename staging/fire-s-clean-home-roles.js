@@ -420,6 +420,13 @@
       shell.setAttribute('hidden', 'true');
       shell.setAttribute('aria-hidden', 'true');
     }
+    if (hasLinkedCompany()) {
+      const access = byId('fireSGetStarted');
+      if (access) {
+        access.hidden = true;
+        access.style.setProperty('display', 'none', 'important');
+      }
+    }
     show('cmdSubscribeBtn');
     show('cmdUserManualBtn');
     show('cmdChangePasswordBtn');
