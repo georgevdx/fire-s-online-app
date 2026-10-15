@@ -736,6 +736,7 @@
     hide('cmdTestSamplesBtn');
     hide('cmdSubscribeBtn');
     hide('cmdInspectorsBtn');
+    hide('cmdHiraBtn');
     hide('inspectorBoardHomeBar');
 
     cardText(
@@ -854,6 +855,7 @@
     hide('cmdReportsBtn');
     hide('cmdTestSamplesBtn');
     hide('cmdInspectorsBtn');
+    hide('cmdHiraBtn');
     hide('inspectorBoardHomeBar');
 
     // Force Gateway visible even if older inspector CSS left it hidden.

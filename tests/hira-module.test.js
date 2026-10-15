@@ -64,7 +64,7 @@ assert.strictEqual(summary.overdue, 1);
 
 const stagingHtml = read('staging/index.html');
 const liveHtml = read('index.html');
-assert.ok(/id="cmdHiraBtn"/.test(stagingHtml), 'Toets Home must offer OHS HIRA');
+assert.ok(/id="cmdHiraBtn" hidden/.test(stagingHtml), 'OHS HIRA stays on toets but is hidden for now');
 assert.ok(/id="fireSHiraSection"/.test(stagingHtml) && /id="fireSHiraRoot"/.test(stagingHtml));
 assert.ok(/fire-s-hira\.js\?v=1-0-hira/.test(stagingHtml));
 assert.ok(/fire-s-hira\.css\?v=1-0-hira/.test(stagingHtml));
@@ -72,7 +72,7 @@ assert.ok(!/id="cmdHiraBtn"/.test(liveHtml) && !/fire-s-hira\.js/.test(liveHtml)
 
 const roles = read('staging/fire-s-clean-home-roles.js');
 assert.ok(/'cmdHiraBtn'/.test(roles));
-assert.ok(/hide\('cmdHiraBtn'\)/.test(roles));
+assert.ok((roles.match(/hide\('cmdHiraBtn'\)/g) || []).length >= 3, 'Owner, manager and viewer homes hide OHS HIRA');
 assert.ok(!/'cmdHiraBtn'/.test(read('fire-s-clean-home-roles.js')));
 
 console.log('hira-module.test.js: ok');
