@@ -94,7 +94,7 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-12-fullscreen-fit/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-13-fullscreen-scroll/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
@@ -103,9 +103,8 @@ assert.ok(
 assert.ok(
   /function leaveFullscreen\(/.test(stagingDash) &&
     /shell\.classList\.add\('is-fullscreen'\)/.test(stagingDash) &&
-    /fullBleed \? 118 : 268/.test(stagingDash) &&
-    /fullBleed \? 104 : 188/.test(stagingDash),
-  'Toets full screen must redraw the age chart short enough to keep its axis on screen'
+    !/fullBleed/.test(stagingDash),
+  'Toets full screen keeps the same charts and only changes the shell'
 );
 assert.ok(!/is-fullscreen/.test(liveDash), 'Live dashboard stays until this layout is sat live');
 assert.ok(
@@ -125,9 +124,9 @@ assert.ok(
   'Dark title bar text must outrank the paper-island colour'
 );
 assert.ok(
-  /\.pbi-shell:fullscreen #managementDashboardBody[\s\S]{0,280}overflow-y: auto/.test(stagingDashCss) &&
-    /\.pbi-shell:fullscreen \.pbi-chart-age[\s\S]{0,220}max-height: none/.test(stagingDashCss),
-  'Toets full screen must scroll the shell and keep the age chart full width'
+  /\.pbi-shell:fullscreen[\s\S]{0,700}overflow-y: auto !important/.test(stagingDashCss) &&
+    /\.pbi-shell:fullscreen \.pbi-chart-age[\s\S]{0,240}max-height: none/.test(stagingDashCss),
+  'Toets full screen must scroll so the age axis, legend and lower charts stay reachable'
 );
 assert.ok(!/\.pbi-shell:fullscreen/.test(liveDashCss), 'Live dashboard styles stay until this layout is sat live');
 assert.ok(
@@ -135,7 +134,7 @@ assert.ok(
   'Live dashboard styles keep their current cache key'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-7-fullscreen-fit/.test(stagingHtml),
+  /fire-s-management-dashboard\.css\?v=1-8-fullscreen-scroll/.test(stagingHtml),
   'Toets dashboard styles must cache-bust the full-screen fit'
 );
 
