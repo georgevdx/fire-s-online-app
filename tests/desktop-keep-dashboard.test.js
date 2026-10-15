@@ -94,7 +94,7 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-15-fullscreen-axis/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-16-fullscreen-pages/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
@@ -104,11 +104,14 @@ assert.ok(
   /function leaveFullscreen\(/.test(stagingDash) &&
     /shell\.classList\.add\('is-fullscreen'\)/.test(stagingDash) &&
     /function syncFullscreenCharts\(/.test(stagingDash) &&
-    /const height = fullScreen \? 96 : 268/.test(stagingDash) &&
-    /const height = fullScreen \? 104 : 188/.test(stagingDash) &&
+    /data-pbi-page="actions"/.test(stagingHtml) &&
+    /id="pbiPages"/.test(stagingHtml) &&
+    /managementPage === 'actions'/.test(stagingDash) &&
+    /dataset\.ageBox/.test(stagingDash) &&
+    !/fullScreen \? 96/.test(stagingDash) &&
     !/function fitFullscreenLayout\(/.test(stagingDash) &&
     !/\.style\.zoom/.test(stagingDash),
-  'Toets full screen redraws a short age chart so the axis and legend fit at 100% zoom'
+  'Toets full screen is one page at a time, chosen with Show'
 );
 assert.ok(!/is-fullscreen/.test(liveDash), 'Live dashboard stays until this layout is sat live');
 assert.ok(
@@ -128,10 +131,11 @@ assert.ok(
   'Dark title bar text must outrank the paper-island colour'
 );
 assert.ok(
-  /\.pbi-shell:fullscreen[\s\S]{0,700}overflow-y: auto !important/.test(stagingDashCss) &&
-    /\.pbi-shell:fullscreen \.pbi-chart-age[\s\S]{0,240}max-height: none/.test(stagingDashCss) &&
+  /\.pbi-shell:fullscreen[\s\S]{0,900}overflow-y: auto !important/.test(stagingDashCss) &&
+    /\.pbi-shell:fullscreen \.pbi-pages[\s\S]{0,220}display: flex/.test(stagingDashCss) &&
+    /\.pbi-pages button\.is-on/.test(stagingDashCss) &&
     /html\.fire-s-desktop-view \.pbi-shell:fullscreen \.pbi-row-2 \.pbi-tile\.is-chart[\s\S]{0,500}min-height: 0/.test(stagingDashCss),
-  'Toets full screen keeps a short age chart on the first screen and scrolls to the lower blocks'
+  'Toets full screen shows the page choices and still scrolls when a page is taller'
 );
 assert.ok(!/\.pbi-shell:fullscreen/.test(liveDashCss), 'Live dashboard styles stay until this layout is sat live');
 assert.ok(
@@ -139,8 +143,8 @@ assert.ok(
   'Live dashboard styles keep their current cache key'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-9-fullscreen-axis/.test(stagingHtml),
-  'Toets dashboard styles must cache-bust the full-screen axis fit'
+  /fire-s-management-dashboard\.css\?v=1-10-fullscreen-pages/.test(stagingHtml),
+  'Toets dashboard styles must cache-bust the full-screen pages'
 );
 
 function loadDashboardCharts() {

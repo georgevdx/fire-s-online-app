@@ -82,6 +82,39 @@
   background: #fff;
 }
 
+.pbi-pages {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pbi-pages-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #605e5c;
+}
+
+.pbi-pages button {
+  border: 1px solid #c8c6c4;
+  background: #fff;
+  color: #252423;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pbi-pages button.is-on {
+  background: #252423;
+  color: #fff;
+  border-color: #252423;
+}
+
 .pbi-kpi-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -508,6 +541,24 @@ html[data-fire-s-theme="dark"] .pbi-shell .pbi-filters select {
   border-color: #334155 !important;
 }
 
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-pages-label {
+  color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-pages button {
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-pages button.is-on {
+  background: #f2c811 !important;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+  border-color: #f2c811 !important;
+}
+
 html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi,
 html[data-fire-s-theme="dark"] .pbi-shell .pbi-tile {
   background: #111827 !important;
@@ -613,14 +664,14 @@ html[data-fire-s-theme="dark"] .pbi-chart .pbi-donut-track {
   stroke: #1e293b !important;
 }
 
-/* Full screen is the same dashboard, edge to edge, and it scrolls.
-   The shell used to lock at the viewport with overflow hidden, so everything
-   under the age chart — its axis, the legend, worst premises, recurring
-   findings and activity — was cut off with no way to reach it. */
+/* Full screen is one page. Show picks Overview, Actions, Premises or Activity,
+   and that choice fills the page. The shell still scrolls if a page is taller
+   than the screen. */
 .pbi-shell:fullscreen,
 .pbi-shell:-webkit-full-screen,
 .pbi-shell.is-fullscreen {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   max-width: none;
@@ -634,6 +685,76 @@ html[data-fire-s-theme="dark"] .pbi-chart .pbi-donut-track {
   background: #f3f2f1;
   scrollbar-width: auto;
   scrollbar-color: #f2c811 #1e293b;
+}
+
+.pbi-shell:fullscreen .pbi-pages,
+.pbi-shell:-webkit-full-screen .pbi-pages,
+.pbi-shell.is-fullscreen .pbi-pages {
+  display: flex;
+}
+
+.pbi-shell:fullscreen #managementDashboardBody,
+.pbi-shell:-webkit-full-screen #managementDashboardBody,
+.pbi-shell.is-fullscreen #managementDashboardBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-focus,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-focus,
+.pbi-shell.is-fullscreen .pbi-ops.is-focus {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions > .pbi-row,
+.pbi-shell:fullscreen .pbi-ops.is-premises > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-premises > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-premises > .pbi-row,
+.pbi-shell:fullscreen .pbi-ops.is-activity > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-activity > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-activity > .pbi-row {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-tile,
+.pbi-shell:fullscreen .pbi-ops.is-premises .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-premises .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-premises .pbi-tile,
+.pbi-shell:fullscreen .pbi-ops.is-activity .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-activity .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-activity .pbi-tile {
+  height: 100%;
+  min-height: 0;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-tile-body,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-tile-body,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-tile-body,
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-chart-block,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-chart-block,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-chart-block {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-chart-age,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-chart-age,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-chart-age {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
 }
 
 .pbi-shell.is-fullscreen:not(:fullscreen) {

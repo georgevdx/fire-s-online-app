@@ -961,14 +961,12 @@
     const yTitle = (axis && axis.y) || 'Count';
     const xTitle = (axis && axis.x) || 'Period';
     const stroke = color || '#22c55e';
-    const shell = byId('pbiShell');
-    const fullScreen = !!(shell && (document.fullscreenElement === shell || shell.classList.contains('is-fullscreen')));
     const width = 480;
-    const height = fullScreen ? 104 : 188;
+    const height = 188;
     const padL = 42;
     const padR = 10;
-    const padT = fullScreen ? 12 : 16;
-    const padB = fullScreen ? 32 : 40;
+    const padT = 16;
+    const padB = 40;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const { top, ticks } = axis && Number(axis.top) > 0
@@ -1098,13 +1096,13 @@
     const yTitle = (axis && axis.y) || 'Action items';
     const xTitle = (axis && axis.x) || 'Age';
     const shell = byId('pbiShell');
-    const fullScreen = !!(shell && (document.fullscreenElement === shell || shell.classList.contains('is-fullscreen')));
+    const fitted = shell && managementPage === 'actions' && fullscreenOn(shell) ? Number(shell.dataset.ageBox) : 0;
     const width = 720;
-    const height = fullScreen ? 96 : 268;
+    const height = fitted >= 120 && fitted <= 420 ? Math.round(fitted) : 268;
     const padL = 52;
     const padR = 18;
-    const padT = fullScreen ? 6 : 16;
-    const padB = fullScreen ? 28 : 48;
+    const padT = height >= 200 ? 16 : 8;
+    const padB = height >= 200 ? 48 : 32;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const totals = list.map(row => seriesList.reduce((sum, item) => sum + (Number(row[item.key]) || 0), 0));
@@ -1129,7 +1127,7 @@
       return `
         ${stacks}
         <text class="pbi-ink" x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
-        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + (fullScreen ? 9 : 14)}" font-size="${fullScreen ? 8 : 9}" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
+        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + (height >= 200 ? 14 : 11)}" font-size="${height >= 200 ? 9 : 8}" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
       `;
     }).join('');
     const legend = seriesList.map(item =>
@@ -1142,7 +1140,7 @@
         <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         ${columns}
         <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
-        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - (fullScreen ? 3 : 22)}" text-anchor="middle" font-size="${fullScreen ? 9 : 10}" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - (height >= 200 ? 22 : 4)}" text-anchor="middle" font-size="${height >= 200 ? 10 : 9}" font-weight="600" fill="#323130">${esc(xTitle)}</text>
       </svg>
       <div class="pbi-legend pbi-series-legend">${legend}</div>
     </div>`;
@@ -1562,43 +1560,40 @@
     if (title) title.textContent = `${company} · live inspection data`;
 
     const shell = byId('pbiShell');
-    if (shell) shell.dataset.chartMode = fullscreenOn(shell) ? 'short' : 'page';
+    const focus = fullscreenOn(shell);
+    const page = focus ? managementPage : 'all';
+    if (shell) shell.dataset.chartMode = focus ? 'focus' : 'board';
+    paintPageButtons();
 
-    host.innerHTML = `
-      <div class="pbi-ops">
-        <div class="pbi-kpi-row is-four">
+    const kpiRow = `<div class="pbi-kpi-row is-four">
           ${kpi('Portfolio compliance', `${ops.compliancePct}%`, ops.compliancePct >= 70 ? 'is-ok' : 'is-warn', deltaHint(ops.delta), { type: 'compliant' })}
           ${kpi('Critical / High open', ops.criticalHigh, ops.criticalHigh ? 'is-warn' : 'is-ok', 'Open action items', { type: 'criticalHigh' })}
           ${kpi('Overdue inspections', ops.overdueInspections, ops.overdueInspections ? 'is-warn' : 'is-ok', 'Past due date', { type: 'overdue' })}
           ${kpi('Due this week', ops.dueWeek, ops.dueWeek ? 'is-gold' : '', `Today ${ops.dueToday} · This month ${ops.dueMonth}`, { type: 'dueWeek' })}
-        </div>
-        <div class="pbi-row pbi-row-2">
-          ${tile(
-            'Compliance status',
-            'Tap a colour to open those premises',
-            donutChart(ops.portfolio, COMPLIANCE_COLORS),
-            'is-chart'
-          )}
-          ${tile(
-            'Compliance trend',
-            'Compliant share of completed inspections. A blank month had no completed inspection.',
-            lineChart(ops.trend, '#22c55e', { y: 'Compliance %', x: 'Month', top: 100 }),
-            'is-chart'
-          )}
-        </div>
-        <div class="pbi-row pbi-row-1">
-          ${tile(
-            'Actions by priority and age',
-            'Critical, High, Medium and Low stacked by how long the item has been open. Tap a block or colour.',
-            stackedColumnChart(
-              ops.ageRows,
-              PRIORITIES.map(key => ({ key, color: PRIORITY_COLORS[key] })),
-              { y: 'Action items', x: 'Age (days)' }
-            ),
-            'is-chart'
-          )}
-        </div>
-        <div class="pbi-row pbi-row-2">
+        </div>`;
+    const statusTile = tile(
+      'Compliance status',
+      'Tap a colour to open those premises',
+      donutChart(ops.portfolio, COMPLIANCE_COLORS),
+      'is-chart'
+    );
+    const trendTile = tile(
+      'Compliance trend',
+      'Compliant share of completed inspections. A blank month had no completed inspection.',
+      lineChart(ops.trend, '#22c55e', { y: 'Compliance %', x: 'Month', top: 100 }),
+      'is-chart'
+    );
+    const actionsTile = tile(
+      'Actions by priority and age',
+      'Critical, High, Medium and Low stacked by how long the item has been open. Tap a block or colour.',
+      stackedColumnChart(
+        ops.ageRows,
+        PRIORITIES.map(key => ({ key, color: PRIORITY_COLORS[key] })),
+        { y: 'Action items', x: 'Age (days)' }
+      ),
+      'is-chart'
+    );
+    const premisesTiles = `
           ${tile(
             'Worst performing premises',
             'Highest open actions and overdue first. Tap a bar.',
@@ -1610,14 +1605,20 @@
             'Premises sharing a section. The % is the running share of every section.',
             paretoChart(ops.recurring, '#fb923c', { y: 'Premises', x: 'Section' }),
             'is-chart'
-          )}
-        </div>
-        <div class="pbi-row pbi-row-1">
-          ${tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-feed')}
-        </div>
-        ${activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''}
-      </div>
-    `;
+          )}`;
+    const activityTile = tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-feed');
+    const showAll = page === 'all';
+    const blocks = [
+      showAll || page === 'overview' ? kpiRow : '',
+      showAll || page === 'overview' ? `<div class="pbi-row pbi-row-2">${statusTile}${trendTile}</div>` : '',
+      showAll || page === 'actions' ? `<div class="pbi-row pbi-row-1">${actionsTile}</div>` : '',
+      showAll || page === 'premises' ? `<div class="pbi-row pbi-row-2">${premisesTiles}</div>` : '',
+      showAll || page === 'activity' ? `<div class="pbi-row pbi-row-1">${activityTile}</div>` : '',
+      activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''
+    ].join('');
+
+    host.innerHTML = `<div class="pbi-ops ${showAll ? 'is-board' : 'is-focus'} is-${page}">${blocks}</div>`;
+    if (focus && page === 'actions') scheduleAgeFit();
   }
 
   function setMessage(message) {
@@ -1643,12 +1644,95 @@
     return !!(shell && (document.fullscreenElement === shell || shell.classList.contains('is-fullscreen')));
   }
 
+  const MANAGEMENT_PAGES = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'actions', label: 'Actions' },
+    { id: 'premises', label: 'Premises' },
+    { id: 'activity', label: 'Activity' }
+  ];
+  let managementPage = 'overview';
+  let ageFitScheduled = false;
+
+  function loadManagementPage() {
+    try {
+      const saved = localStorage.getItem('fireSManagementPage');
+      if (MANAGEMENT_PAGES.some(item => item.id === saved)) managementPage = saved;
+    } catch (_) {}
+  }
+
+  function ensurePageBar() {
+    if (byId('pbiPages') || typeof document.querySelector !== 'function') return;
+    const filters = document.querySelector('#pbiShell .pbi-filters');
+    if (!filters) return;
+    const bar = document.createElement('div');
+    bar.id = 'pbiPages';
+    bar.className = 'pbi-pages';
+    bar.innerHTML = '<span class="pbi-pages-label">Show</span>' + MANAGEMENT_PAGES.map(item =>
+      `<button type="button" data-pbi-page="${item.id}">${item.label}</button>`
+    ).join('');
+    filters.appendChild(bar);
+  }
+
+  function paintPageButtons() {
+    const bar = byId('pbiPages');
+    if (!bar) return;
+    bar.querySelectorAll('[data-pbi-page]').forEach(btn => {
+      const on = btn.getAttribute('data-pbi-page') === managementPage;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function onPageClick(event) {
+    const btn = event.target.closest('[data-pbi-page]');
+    if (!btn) return;
+    event.preventDefault();
+    const id = btn.getAttribute('data-pbi-page');
+    if (!MANAGEMENT_PAGES.some(item => item.id === id) || id === managementPage) return;
+    managementPage = id;
+    try { localStorage.setItem('fireSManagementPage', id); } catch (_) {}
+    const shell = byId('pbiShell');
+    if (shell) delete shell.dataset.ageBox;
+    activeDrill = null;
+    render();
+    if (shell) shell.scrollTop = 0;
+  }
+
+  function scheduleAgeFit() {
+    if (ageFitScheduled) return;
+    ageFitScheduled = true;
+    requestAnimationFrame(() => {
+      ageFitScheduled = false;
+      fitAgePage();
+    });
+  }
+
+  function fitAgePage() {
+    const shell = byId('pbiShell');
+    if (!shell || !fullscreenOn(shell) || managementPage !== 'actions') return;
+    const age = shell.querySelector('.pbi-chart-age');
+    const tileBody = age && age.closest('.pbi-tile-body');
+    if (!age || !tileBody) return;
+    const legend = tileBody.querySelector('.pbi-series-legend');
+    const availW = tileBody.clientWidth;
+    const legendH = legend ? legend.offsetHeight + 8 : 0;
+    const availH = tileBody.clientHeight - legendH;
+    if (availW < 200 || availH < 100) return;
+    const viewH = Math.max(120, Math.min(420, Math.round(720 * availH / availW)));
+    const current = age.viewBox && age.viewBox.baseVal ? age.viewBox.baseVal.height : 0;
+    if (Math.abs(current - viewH) < 8) return;
+    shell.dataset.ageBox = String(viewH);
+    render();
+    shell.scrollTop = 0;
+  }
+
   function syncFullscreenCharts() {
     const shell = byId('pbiShell');
     const host = byId('managementDashboardBody');
     if (!shell || !host || !host.querySelector('.pbi-ops')) return;
-    const want = fullscreenOn(shell) ? 'short' : 'page';
+    const want = fullscreenOn(shell) ? 'focus' : 'board';
     if (shell.dataset.chartMode === want) return;
+    if (!fullscreenOn(shell)) delete shell.dataset.ageBox;
     render();
   }
 
@@ -1856,6 +1940,12 @@ in
     const range = byId('pbiRangeFilter');
     const inspector = byId('pbiInspectorFilter');
     const host = byId('managementDashboardBody');
+    ensurePageBar();
+    const pages = byId('pbiPages');
+    if (pages && !pages.__fireSBound) {
+      pages.__fireSBound = true;
+      pages.addEventListener('click', onPageClick);
+    }
     if (back && !back.__fireSBound) {
       back.__fireSBound = true;
       back.addEventListener('click', goHome);
@@ -1885,6 +1975,7 @@ in
   }
 
   function boot() {
+    loadManagementPage();
     bind();
     if (!document.__fireSFullscreenBound) {
       document.__fireSFullscreenBound = true;
