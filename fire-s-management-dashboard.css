@@ -9,7 +9,7 @@
   background: #f3f2f1;
   border: 1px solid #e1dfdd;
   border-radius: 6px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .pbi-titlebar {
@@ -80,6 +80,49 @@
   border: 1px solid #c8c6c4;
   border-radius: 3px;
   background: #fff;
+}
+
+.pbi-pages {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-left: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pbi-pages-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #605e5c;
+}
+
+.pbi-pages button {
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  flex: 0 0 auto;
+  border: 1px solid #c8c6c4;
+  background: #fff;
+  color: #252423;
+  border-radius: 999px;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600;
+  line-height: 1.3 !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pbi-pages button.is-on {
+  background: #252423;
+  color: #fff;
+  border-color: #252423;
 }
 
 .pbi-kpi-row {
@@ -508,6 +551,24 @@ html[data-fire-s-theme="dark"] .pbi-shell .pbi-filters select {
   border-color: #334155 !important;
 }
 
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-pages-label {
+  color: #94a3b8 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-pages button {
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell .pbi-pages button.is-on {
+  background: #f2c811 !important;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+  border-color: #f2c811 !important;
+}
+
 html[data-fire-s-theme="dark"] .pbi-shell .pbi-kpi,
 html[data-fire-s-theme="dark"] .pbi-shell .pbi-tile {
   background: #111827 !important;
@@ -611,4 +672,233 @@ html[data-fire-s-theme="dark"] .pbi-chart .pbi-dot {
 
 html[data-fire-s-theme="dark"] .pbi-chart .pbi-donut-track {
   stroke: #1e293b !important;
+}
+
+/* Full screen is one laptop page. Show is a row of small chips, and the
+   chosen blocks share the screen so the age chart does not need a scrollbar. */
+.pbi-shell:fullscreen,
+.pbi-shell:-webkit-full-screen,
+.pbi-shell.is-fullscreen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden !important;
+  box-sizing: border-box;
+  background: #f3f2f1;
+}
+
+.pbi-shell:fullscreen .pbi-pages,
+.pbi-shell:-webkit-full-screen .pbi-pages,
+.pbi-shell.is-fullscreen .pbi-pages {
+  display: flex;
+}
+
+.pbi-shell:fullscreen #managementDashboardBody,
+.pbi-shell:-webkit-full-screen #managementDashboardBody,
+.pbi-shell.is-fullscreen #managementDashboardBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-focus,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-focus,
+.pbi-shell.is-fullscreen .pbi-ops.is-focus {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions > .pbi-row,
+.pbi-shell:fullscreen .pbi-ops.is-premises > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-premises > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-premises > .pbi-row,
+.pbi-shell:fullscreen .pbi-ops.is-activity > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-activity > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-activity > .pbi-row {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-tile,
+.pbi-shell:fullscreen .pbi-ops.is-premises .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-premises .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-premises .pbi-tile,
+.pbi-shell:fullscreen .pbi-ops.is-activity .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-activity .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-activity .pbi-tile {
+  height: 100%;
+  min-height: 0;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-tile-body,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-tile-body,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-tile-body,
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-chart-block,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-chart-block,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-chart-block {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-actions .pbi-chart-age,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-actions .pbi-chart-age,
+.pbi-shell.is-fullscreen .pbi-ops.is-actions .pbi-chart-age {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+.pbi-shell.is-fullscreen:not(:fullscreen) {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  width: 100vw;
+  height: 100dvh;
+}
+
+html[data-fire-s-theme="dark"] .pbi-shell:fullscreen,
+html[data-fire-s-theme="dark"] .pbi-shell:-webkit-full-screen,
+html[data-fire-s-theme="dark"] .pbi-shell.is-fullscreen {
+  background: #0b1220;
+}
+
+.pbi-shell:fullscreen .pbi-titlebar,
+.pbi-shell:-webkit-full-screen .pbi-titlebar,
+.pbi-shell.is-fullscreen .pbi-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-kpi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-kpi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-kpi-row {
+  flex: 0 0 auto;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit .pbi-tile {
+  padding: 6px 10px 8px;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit .pbi-insight,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit .pbi-insight,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit .pbi-insight {
+  margin: 0 0 4px;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit .pbi-donut,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit .pbi-donut,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit .pbi-donut {
+  min-height: 0;
+  gap: 6px 14px;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit .pbi-donut .pbi-chart,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit .pbi-donut .pbi-chart,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit .pbi-donut .pbi-chart {
+  width: 88px !important;
+  height: 88px !important;
+  max-width: 88px;
+  flex: 0 0 88px;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-row,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-row,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-row {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-row > .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-row > .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-row > .pbi-tile {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age),
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age),
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) {
+  flex: 1.6 1 0;
+  min-height: 120px;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) > .pbi-tile,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) > .pbi-tile,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) > .pbi-tile {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) .pbi-tile-body,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) .pbi-tile-body,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) .pbi-tile-body,
+.pbi-shell:fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) .pbi-chart-block,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) .pbi-chart-block,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit > .pbi-row:has(.pbi-chart-age) .pbi-chart-block {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pbi-shell:fullscreen .pbi-ops.is-fit .pbi-chart-age,
+.pbi-shell:-webkit-full-screen .pbi-ops.is-fit .pbi-chart-age,
+.pbi-shell.is-fullscreen .pbi-ops.is-fit .pbi-chart-age {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+.pbi-shell:fullscreen .pbi-chart-age,
+.pbi-shell:-webkit-full-screen .pbi-chart-age,
+.pbi-shell.is-fullscreen .pbi-chart-age {
+  display: block;
+  width: 100%;
+  max-height: none;
+}
+
+/* The compliance row's 280px floor pushed the age chart off a 100% laptop
+   screen. In full screen that row follows the shorter chart. */
+html.fire-s-desktop-view .pbi-shell:fullscreen .pbi-row-2 .pbi-tile.is-chart,
+html.fire-s-desktop-view .pbi-shell:-webkit-full-screen .pbi-row-2 .pbi-tile.is-chart,
+html.fire-s-desktop-view .pbi-shell.is-fullscreen .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-shell:fullscreen .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-shell:-webkit-full-screen .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-shell.is-fullscreen .pbi-row-2 .pbi-tile.is-chart {
+  min-height: 0;
 }

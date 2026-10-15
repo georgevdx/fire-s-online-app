@@ -1018,7 +1018,7 @@
         : '';
       return `<g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">${mark}${tick}</g>`;
     }).join('');
-    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
       ${yGrid(padL, padT, plotW, plotH, ticks, top)}
       <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
@@ -1095,12 +1095,14 @@
     if (!list.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
     const yTitle = (axis && axis.y) || 'Action items';
     const xTitle = (axis && axis.x) || 'Age';
+    const shell = byId('pbiShell');
+    const fitted = shell && fullscreenOn(shell) ? Number(shell.dataset.ageBox) : 0;
     const width = 720;
-    const height = 268;
+    const height = fitted >= 40 && fitted <= 420 ? Math.round(fitted) : 268;
     const padL = 52;
     const padR = 18;
-    const padT = 16;
-    const padB = 48;
+    const padT = height >= 200 ? 16 : 8;
+    const padB = height >= 200 ? 48 : 36;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const totals = list.map(row => seriesList.reduce((sum, item) => sum + (Number(row[item.key]) || 0), 0));
@@ -1125,20 +1127,20 @@
       return `
         ${stacks}
         <text class="pbi-ink" x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
-        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 14}" font-size="9" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
+        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + (height >= 200 ? 14 : 13)}" font-size="${height >= 200 ? 9 : 8}" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
       `;
     }).join('');
     const legend = seriesList.map(item =>
       `<button type="button" class="pbi-legend-btn" ${drillAttr({ type: 'priority', key: item.key })}><i class="pbi-swatch" style="background:${item.color}"></i>${esc(item.key)}</button>`
     ).join('');
     return `<div class="pbi-chart-block">
-      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="280" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="${fitted >= 40 && fitted <= 420 ? '100%' : height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
         ${yGrid(padL, padT, plotW, plotH, ticks, top)}
         <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         ${columns}
         <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
-        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 22}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - (height >= 200 ? 16 : 6)}" text-anchor="middle" font-size="${height >= 200 ? 10 : 9}" font-weight="600" fill="#323130">${esc(xTitle)}</text>
       </svg>
       <div class="pbi-legend pbi-series-legend">${legend}</div>
     </div>`;
@@ -1557,60 +1559,74 @@
     const title = byId('pbiCompanyLabel');
     if (title) title.textContent = `${company} · live inspection data`;
 
-    host.innerHTML = `
-      <div class="pbi-ops">
-        <div class="pbi-kpi-row is-four">
+    const shell = byId('pbiShell');
+    const focus = fullscreenOn(shell);
+    const on = function (id) { return shownIds.indexOf(id) >= 0; };
+    const fillAge = !!(focus && on('actions'));
+    if (shell && !fillAge) delete shell.dataset.ageBox;
+    if (shell) shell.dataset.chartMode = focus ? 'focus' : 'board';
+    paintPageButtons();
+
+    const kpiRow = `<div class="pbi-kpi-row is-four">
           ${kpi('Portfolio compliance', `${ops.compliancePct}%`, ops.compliancePct >= 70 ? 'is-ok' : 'is-warn', deltaHint(ops.delta), { type: 'compliant' })}
           ${kpi('Critical / High open', ops.criticalHigh, ops.criticalHigh ? 'is-warn' : 'is-ok', 'Open action items', { type: 'criticalHigh' })}
           ${kpi('Overdue inspections', ops.overdueInspections, ops.overdueInspections ? 'is-warn' : 'is-ok', 'Past due date', { type: 'overdue' })}
           ${kpi('Due this week', ops.dueWeek, ops.dueWeek ? 'is-gold' : '', `Today ${ops.dueToday} · This month ${ops.dueMonth}`, { type: 'dueWeek' })}
-        </div>
-        <div class="pbi-row pbi-row-2">
-          ${tile(
-            'Compliance status',
-            'Tap a colour to open those premises',
-            donutChart(ops.portfolio, COMPLIANCE_COLORS),
-            'is-chart'
-          )}
-          ${tile(
-            'Compliance trend',
-            'Compliant share of completed inspections. A blank month had no completed inspection.',
-            lineChart(ops.trend, '#22c55e', { y: 'Compliance %', x: 'Month', top: 100 }),
-            'is-chart'
-          )}
-        </div>
-        <div class="pbi-row pbi-row-1">
-          ${tile(
-            'Actions by priority and age',
-            'Critical, High, Medium and Low stacked by how long the item has been open. Tap a block or colour.',
-            stackedColumnChart(
-              ops.ageRows,
-              PRIORITIES.map(key => ({ key, color: PRIORITY_COLORS[key] })),
-              { y: 'Action items', x: 'Age (days)' }
-            ),
-            'is-chart'
-          )}
-        </div>
-        <div class="pbi-row pbi-row-2">
-          ${tile(
-            'Worst performing premises',
-            'Highest open actions and overdue first. Tap a bar.',
-            barChart(ops.worst, '#f87171', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
-            'is-chart'
-          )}
-          ${tile(
-            'Recurring findings',
-            'Premises sharing a section. The % is the running share of every section.',
-            paretoChart(ops.recurring, '#fb923c', { y: 'Premises', x: 'Section' }),
-            'is-chart'
-          )}
-        </div>
-        <div class="pbi-row pbi-row-1">
-          ${tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-feed')}
-        </div>
-        ${activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''}
-      </div>
-    `;
+        </div>`;
+    const statusTile = tile(
+      'Compliance status',
+      'Tap a colour to open those premises',
+      donutChart(ops.portfolio, COMPLIANCE_COLORS),
+      'is-chart'
+    );
+    const trendTile = tile(
+      'Compliance trend',
+      'Compliant share of completed inspections. A blank month had no completed inspection.',
+      lineChart(ops.trend, '#22c55e', { y: 'Compliance %', x: 'Month', top: 100 }),
+      'is-chart'
+    );
+    const actionsTile = tile(
+      'Actions by priority and age',
+      'Critical, High, Medium and Low stacked by how long the item has been open. Tap a block or colour.',
+      stackedColumnChart(
+        ops.ageRows,
+        PRIORITIES.map(key => ({ key, color: PRIORITY_COLORS[key] })),
+        { y: 'Action items', x: 'Age (days)' }
+      ),
+      'is-chart'
+    );
+    const premisesTile = tile(
+      'Worst performing premises',
+      'Highest open actions and overdue first. Tap a bar.',
+      barChart(ops.worst, '#f87171', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
+      'is-chart'
+    );
+    const findingsTile = tile(
+      'Recurring findings',
+      'Premises sharing a section. The % is the running share of every section.',
+      paretoChart(ops.recurring, '#fb923c', { y: 'Premises', x: 'Section' }),
+      'is-chart'
+    );
+    const activityTile = tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-feed');
+    const statusTrend = (on('status') ? statusTile : '') + (on('trend') ? trendTile : '');
+    const premisesFindings = (on('premises') ? premisesTile : '') + (on('findings') ? findingsTile : '');
+    const pairClass = function (left, right) {
+      return left && right ? 'pbi-row-2' : 'pbi-row-1';
+    };
+    const blocks = [
+      on('numbers') ? kpiRow : '',
+      statusTrend ? `<div class="pbi-row ${pairClass(on('status'), on('trend'))}">${statusTrend}</div>` : '',
+      on('actions') ? `<div class="pbi-row pbi-row-1">${actionsTile}</div>` : '',
+      premisesFindings ? `<div class="pbi-row ${pairClass(on('premises'), on('findings'))}">${premisesFindings}</div>` : '',
+      on('activity') ? `<div class="pbi-row pbi-row-1">${activityTile}</div>` : '',
+      activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''
+    ].join('');
+
+    host.innerHTML = `<div class="pbi-ops ${focus ? 'is-focus is-fit' : 'is-board'}">${blocks}</div>`;
+    if (fillAge) {
+      if (!shell || !shell.dataset.ageBox) ageFitTries = 0;
+      scheduleAgeFit();
+    }
   }
 
   function setMessage(message) {
@@ -1627,7 +1643,138 @@
     });
   }
 
+  function paintFullscreenButton(on) {
+    const full = byId('pbiFullscreenBtn');
+    if (full) full.textContent = on ? 'Exit full screen' : 'Full screen';
+  }
+
+  function fullscreenOn(shell) {
+    return !!(shell && (document.fullscreenElement === shell || shell.classList.contains('is-fullscreen')));
+  }
+
+  const SHOW_OPTIONS = [
+    { id: 'numbers', label: 'Numbers' },
+    { id: 'status', label: 'Status' },
+    { id: 'trend', label: 'Trend' },
+    { id: 'actions', label: 'Actions' },
+    { id: 'premises', label: 'Premises' },
+    { id: 'findings', label: 'Findings' },
+    { id: 'activity', label: 'Activity' }
+  ];
+  let shownIds = ['numbers', 'actions'];
+  let ageFitScheduled = false;
+  let ageFitTries = 0;
+
+  function loadShown() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('fireSManagementShow') || '');
+      if (!Array.isArray(saved)) return;
+      const ids = saved.filter(id => SHOW_OPTIONS.some(item => item.id === id));
+      if (ids.length) shownIds = ids;
+    } catch (_) {}
+  }
+
+  function saveShown() {
+    try { localStorage.setItem('fireSManagementShow', JSON.stringify(shownIds)); } catch (_) {}
+  }
+
+  function ensurePageBar() {
+    if (byId('pbiPages') || typeof document.querySelector !== 'function') return;
+    const filters = document.querySelector('#pbiShell .pbi-filters');
+    if (!filters) return;
+    const bar = document.createElement('div');
+    bar.id = 'pbiPages';
+    bar.className = 'pbi-pages';
+    bar.innerHTML = '<span class="pbi-pages-label">Show</span>' + SHOW_OPTIONS.map(item =>
+      `<button type="button" data-pbi-show="${item.id}">${item.label}</button>`
+    ).join('');
+    filters.appendChild(bar);
+  }
+
+  function paintPageButtons() {
+    const bar = byId('pbiPages');
+    if (!bar) return;
+    bar.querySelectorAll('[data-pbi-show]').forEach(btn => {
+      const on = shownIds.indexOf(btn.getAttribute('data-pbi-show')) >= 0;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function onPageClick(event) {
+    const btn = event.target.closest('[data-pbi-show]');
+    if (!btn) return;
+    event.preventDefault();
+    const id = btn.getAttribute('data-pbi-show');
+    if (!SHOW_OPTIONS.some(item => item.id === id)) return;
+    const has = shownIds.indexOf(id) >= 0;
+    if (has && shownIds.length === 1) return;
+    shownIds = has ? shownIds.filter(item => item !== id) : shownIds.concat(id);
+    saveShown();
+    const shell = byId('pbiShell');
+    if (shell) delete shell.dataset.ageBox;
+    activeDrill = null;
+    render();
+    if (shell) shell.scrollTop = 0;
+  }
+
+  function scheduleAgeFit() {
+    if (ageFitScheduled) return;
+    ageFitScheduled = true;
+    requestAnimationFrame(() => {
+      ageFitScheduled = false;
+      fitAgePage();
+    });
+  }
+
+  function fitAgePage() {
+    const shell = byId('pbiShell');
+    if (!shell || !fullscreenOn(shell) || !shell.querySelector('.pbi-ops.is-fit .pbi-chart-age')) return;
+    const age = shell.querySelector('.pbi-chart-age');
+    const tileBody = age && age.closest('.pbi-tile-body');
+    if (!age || !tileBody) return;
+    const block = age.closest('.pbi-chart-block') || tileBody;
+    const legend = block.querySelector('.pbi-series-legend');
+    const availW = block.clientWidth || age.clientWidth;
+    const legendH = legend ? legend.offsetHeight + 6 : 0;
+    const availH = block.clientHeight - legendH;
+    if (availW < 200 || availH < 36) return;
+    const viewH = Math.max(40, Math.min(420, Math.round(720 * availH / availW)));
+    const current = age.viewBox && age.viewBox.baseVal ? age.viewBox.baseVal.height : 0;
+    if (Math.abs(current - viewH) < 8) {
+      ageFitTries = 0;
+      return;
+    }
+    if (ageFitTries >= 4) return;
+    ageFitTries += 1;
+    shell.dataset.ageBox = String(viewH);
+    render();
+    shell.scrollTop = 0;
+  }
+
+  function syncFullscreenCharts() {
+    const shell = byId('pbiShell');
+    const host = byId('managementDashboardBody');
+    if (!shell || !host || !host.querySelector('.pbi-ops')) return;
+    const want = fullscreenOn(shell) ? 'focus' : 'board';
+    if (shell.dataset.chartMode === want) return;
+    if (!fullscreenOn(shell)) delete shell.dataset.ageBox;
+    render();
+  }
+
+  function leaveFullscreen() {
+    const shell = byId('pbiShell');
+    nativeFullscreen = false;
+    if (shell) shell.classList.remove('is-fullscreen');
+    paintFullscreenButton(false);
+    syncFullscreenCharts();
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
   function goHome() {
+    leaveFullscreen();
     try {
       if (typeof window.fireSLeaveDesktopDashboard === 'function') {
         window.fireSLeaveDesktopDashboard();
@@ -1744,16 +1891,42 @@ in
     setMessage('Saved inspections CSV, findings CSV, and a Power Query file for Power BI Desktop.');
   }
 
+  let nativeFullscreen = false;
+
   async function enterFullscreen() {
     const shell = byId('pbiShell');
     if (!shell) return;
+    const on = document.fullscreenElement === shell || shell.classList.contains('is-fullscreen');
+    if (on) {
+      leaveFullscreen();
+      return;
+    }
+    shell.classList.add('is-fullscreen');
+    paintFullscreenButton(true);
+    syncFullscreenCharts();
+    shell.scrollTop = 0;
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        return;
-      }
       if (shell.requestFullscreen) await shell.requestFullscreen();
     } catch (_) {}
+  }
+
+  function onFullscreenChange() {
+    const shell = byId('pbiShell');
+    if (!shell) return;
+    if (document.fullscreenElement === shell) {
+      nativeFullscreen = true;
+      shell.classList.add('is-fullscreen');
+      paintFullscreenButton(true);
+      syncFullscreenCharts();
+      shell.scrollTop = 0;
+      return;
+    }
+    if (nativeFullscreen) {
+      nativeFullscreen = false;
+      shell.classList.remove('is-fullscreen');
+      paintFullscreenButton(false);
+      syncFullscreenCharts();
+    }
   }
 
   function onDashboardClick(event) {
@@ -1793,6 +1966,12 @@ in
     const range = byId('pbiRangeFilter');
     const inspector = byId('pbiInspectorFilter');
     const host = byId('managementDashboardBody');
+    ensurePageBar();
+    const pages = byId('pbiPages');
+    if (pages && !pages.__fireSBound) {
+      pages.__fireSBound = true;
+      pages.addEventListener('click', onPageClick);
+    }
     if (back && !back.__fireSBound) {
       back.__fireSBound = true;
       back.addEventListener('click', goHome);
@@ -1822,7 +2001,19 @@ in
   }
 
   function boot() {
+    loadShown();
     bind();
+    if (!document.__fireSFullscreenBound) {
+      document.__fireSFullscreenBound = true;
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        const shell = byId('pbiShell');
+        if (!shell || !shell.classList.contains('is-fullscreen')) return;
+        if (document.fullscreenElement) return;
+        leaveFullscreen();
+      });
+    }
     const btn = byId('cmdManagementDashboardBtn');
     if (btn && !btn.__fireSBound) {
       btn.__fireSBound = true;
@@ -1833,6 +2024,7 @@ in
     }
   }
 
+  window.fireSExitManagementFullscreen = leaveFullscreen;
   window.fireSOpenManagementDashboard = openDashboard;
   window.fireSRenderManagementDashboard = render;
   window.fireSDashboardCharts = {

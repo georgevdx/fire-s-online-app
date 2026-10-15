@@ -35,10 +35,20 @@
   }
 
   function closeOverlayIfOpen() {
-    if (document.fullscreenElement) {
-      try {
-        document.exitFullscreen();
-      } catch (_) {}
+    const dash = byId('pbiShell');
+    if ((dash && dash.classList.contains('is-fullscreen')) || document.fullscreenElement) {
+      if (typeof window.fireSExitManagementFullscreen === 'function') {
+        window.fireSExitManagementFullscreen();
+      } else {
+        if (dash) dash.classList.remove('is-fullscreen');
+        const full = byId('pbiFullscreenBtn');
+        if (full) full.textContent = 'Full screen';
+        if (document.fullscreenElement) {
+          try {
+            document.exitFullscreen();
+          } catch (_) {}
+        }
+      }
       return true;
     }
 

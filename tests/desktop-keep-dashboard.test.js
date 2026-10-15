@@ -86,7 +86,7 @@ assert.ok(/1\.3\.119-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.11
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-3-keep-dash/.test(liveHtml) &&
     /fire-s-startup-stability\.js\?v=1-14-sub-hold/.test(liveHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-11-completed-stats/.test(liveHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-20-sit-live/.test(liveHtml) &&
     /fire-s-get-started\.js\?v=2-55-paid-days/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must cache-bust the desktop landing fix'
@@ -117,7 +117,16 @@ assert.ok(
     !/\.style\.zoom/.test(stagingDash),
   'Toets full screen is one page, and Show toggles which blocks are on it'
 );
-assert.ok(!/is-fullscreen/.test(liveDash), 'Live dashboard stays until this layout is sat live');
+assert.ok(
+  /function leaveFullscreen\(/.test(liveDash) &&
+    /shell\.classList\.add\('is-fullscreen'\)/.test(liveDash) &&
+    /is-focus is-fit/.test(liveDash) &&
+    /data-pbi-show="actions"/.test(liveHtml) &&
+    /id="pbiPages"/.test(liveHtml) &&
+    /fireSExitManagementFullscreen/.test(read('fire-s-phone-back.js')) &&
+    /fire-s-phone-back\.js\?v=1-4-fullscreen-exit/.test(liveHtml),
+  'Live full screen matches the toets laptop fit'
+);
 assert.ok(
   /value: completed \? Math\.round\(\(monthCompliant\[label\] \/ completed\) \* 100\) : null/.test(liveDash),
   'A month with no completed inspection must not plot as 0% compliance'
@@ -143,10 +152,15 @@ assert.ok(
     /html\.fire-s-desktop-view \.pbi-shell:fullscreen \.pbi-row-2 \.pbi-tile\.is-chart[\s\S]{0,500}min-height: 0/.test(stagingDashCss),
   'Toets full screen uses small Show chips and fits the age chart without a page scroll'
 );
-assert.ok(!/\.pbi-shell:fullscreen/.test(liveDashCss), 'Live dashboard styles stay until this layout is sat live');
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-6-dark-graphs/.test(liveHtml),
-  'Live dashboard styles keep their current cache key'
+  /\.pbi-shell:fullscreen[\s\S]{0,900}overflow: hidden !important/.test(liveDashCss) &&
+    /\.pbi-pages button[\s\S]{0,280}width: auto !important/.test(liveDashCss) &&
+    /\.pbi-ops\.is-fit > \.pbi-row:has\(\.pbi-chart-age\)[\s\S]{0,420}flex: 1\.6 1 0/.test(liveDashCss),
+  'Live full screen uses small Show chips and fits the age chart'
+);
+assert.ok(
+  /fire-s-management-dashboard\.css\?v=1-14-sit-live/.test(liveHtml),
+  'Live dashboard styles must cache-bust the laptop fit'
 );
 assert.ok(
   /fire-s-management-dashboard\.css\?v=1-13-laptop-fit/.test(stagingHtml),
