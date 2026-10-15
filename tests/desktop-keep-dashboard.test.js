@@ -94,13 +94,20 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-11-completed-stats/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-12-fullscreen-fit/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
 );
 
-assert.strictEqual(liveDash, stagingDash, 'Live and toets management dashboard script must match');
+assert.ok(
+  /function leaveFullscreen\(/.test(stagingDash) &&
+    /shell\.classList\.add\('is-fullscreen'\)/.test(stagingDash) &&
+    /fullBleed \? 118 : 268/.test(stagingDash) &&
+    /fullBleed \? 104 : 188/.test(stagingDash),
+  'Toets full screen must redraw the age chart short enough to keep its axis on screen'
+);
+assert.ok(!/is-fullscreen/.test(liveDash), 'Live dashboard stays until this layout is sat live');
 assert.ok(
   /value: completed \? Math\.round\(\(monthCompliant\[label\] \/ completed\) \* 100\) : null/.test(liveDash),
   'A month with no completed inspection must not plot as 0% compliance'
@@ -112,15 +119,24 @@ assert.ok(
 );
 const liveDashCss = read('fire-s-management-dashboard.css');
 const stagingDashCss = read('staging/fire-s-management-dashboard.css');
-assert.strictEqual(liveDashCss, stagingDashCss, 'Live and toets management dashboard styles must match');
 assert.ok(
-  /html\[data-fire-s-theme="dark"\] \.pbi-shell \.pbi-titlebar :is\(h3, p, span, button, div\)/.test(liveDashCss),
+  /html\[data-fire-s-theme="dark"\] \.pbi-shell \.pbi-titlebar :is\(h3, p, span, button, div\)/.test(liveDashCss) &&
+    /html\[data-fire-s-theme="dark"\] \.pbi-shell \.pbi-titlebar :is\(h3, p, span, button, div\)/.test(stagingDashCss),
   'Dark title bar text must outrank the paper-island colour'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-6-dark-graphs/.test(liveHtml) &&
-    /fire-s-management-dashboard\.css\?v=1-6-dark-graphs/.test(stagingHtml),
-  'Dashboard styles must cache-bust with the dark graph update'
+  /\.pbi-shell:fullscreen #managementDashboardBody[\s\S]{0,280}overflow-y: auto/.test(stagingDashCss) &&
+    /\.pbi-shell:fullscreen \.pbi-chart-age[\s\S]{0,220}max-height: none/.test(stagingDashCss),
+  'Toets full screen must scroll the shell and keep the age chart full width'
+);
+assert.ok(!/\.pbi-shell:fullscreen/.test(liveDashCss), 'Live dashboard styles stay until this layout is sat live');
+assert.ok(
+  /fire-s-management-dashboard\.css\?v=1-6-dark-graphs/.test(liveHtml),
+  'Live dashboard styles keep their current cache key'
+);
+assert.ok(
+  /fire-s-management-dashboard\.css\?v=1-7-fullscreen-fit/.test(stagingHtml),
+  'Toets dashboard styles must cache-bust the full-screen fit'
 );
 
 function loadDashboardCharts() {

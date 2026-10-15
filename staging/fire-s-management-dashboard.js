@@ -961,12 +961,14 @@
     const yTitle = (axis && axis.y) || 'Count';
     const xTitle = (axis && axis.x) || 'Period';
     const stroke = color || '#22c55e';
+    const shell = byId('pbiShell');
+    const fullBleed = !!(shell && shell.classList.contains('is-fullscreen'));
     const width = 480;
-    const height = 188;
+    const height = fullBleed ? 104 : 188;
     const padL = 42;
     const padR = 10;
-    const padT = 16;
-    const padB = 40;
+    const padT = fullBleed ? 12 : 16;
+    const padB = fullBleed ? 32 : 40;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const { top, ticks } = axis && Number(axis.top) > 0
@@ -1018,7 +1020,7 @@
         : '';
       return `<g ${drillAttr(item.drill)} style="cursor:${item.drill ? 'pointer' : 'default'}">${mark}${tick}</g>`;
     }).join('');
-    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="176" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+    return `<svg class="pbi-chart" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
       ${yGrid(padL, padT, plotW, plotH, ticks, top)}
       <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
       <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
@@ -1095,12 +1097,14 @@
     if (!list.length) return '<div class="pbi-empty">No data for this graph yet.</div>';
     const yTitle = (axis && axis.y) || 'Action items';
     const xTitle = (axis && axis.x) || 'Age';
+    const shell = byId('pbiShell');
+    const fullBleed = !!(shell && shell.classList.contains('is-fullscreen'));
     const width = 720;
-    const height = 268;
+    const height = fullBleed ? 118 : 268;
     const padL = 52;
     const padR = 18;
-    const padT = 16;
-    const padB = 48;
+    const padT = fullBleed ? 8 : 16;
+    const padB = fullBleed ? 32 : 48;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const totals = list.map(row => seriesList.reduce((sum, item) => sum + (Number(row[item.key]) || 0), 0));
@@ -1125,20 +1129,20 @@
       return `
         ${stacks}
         <text class="pbi-ink" x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
-        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + 14}" font-size="9" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
+        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + (fullBleed ? 12 : 14)}" font-size="9" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
       `;
     }).join('');
     const legend = seriesList.map(item =>
       `<button type="button" class="pbi-legend-btn" ${drillAttr({ type: 'priority', key: item.key })}><i class="pbi-swatch" style="background:${item.color}"></i>${esc(item.key)}</button>`
     ).join('');
     return `<div class="pbi-chart-block">
-      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="280" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
         ${yGrid(padL, padT, plotW, plotH, ticks, top)}
         <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         ${columns}
         <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
-        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 22}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(xTitle)}</text>
       </svg>
       <div class="pbi-legend pbi-series-legend">${legend}</div>
     </div>`;
@@ -1627,7 +1631,25 @@
     });
   }
 
+  function paintFullscreenButton(on) {
+    const full = byId('pbiFullscreenBtn');
+    if (full) full.textContent = on ? 'Exit full screen' : 'Full screen';
+  }
+
+  function leaveFullscreen() {
+    const shell = byId('pbiShell');
+    const was = !!(shell && shell.classList.contains('is-fullscreen'));
+    nativeFullscreen = false;
+    if (shell) shell.classList.remove('is-fullscreen');
+    paintFullscreenButton(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    if (was) render();
+  }
+
   function goHome() {
+    leaveFullscreen();
     try {
       if (typeof window.fireSLeaveDesktopDashboard === 'function') {
         window.fireSLeaveDesktopDashboard();
@@ -1744,16 +1766,40 @@ in
     setMessage('Saved inspections CSV, findings CSV, and a Power Query file for Power BI Desktop.');
   }
 
+  let nativeFullscreen = false;
+
   async function enterFullscreen() {
     const shell = byId('pbiShell');
     if (!shell) return;
+    const on = document.fullscreenElement === shell || shell.classList.contains('is-fullscreen');
+    if (on) {
+      leaveFullscreen();
+      return;
+    }
+    shell.classList.add('is-fullscreen');
+    paintFullscreenButton(true);
+    render();
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        return;
-      }
       if (shell.requestFullscreen) await shell.requestFullscreen();
     } catch (_) {}
+  }
+
+  function onFullscreenChange() {
+    const shell = byId('pbiShell');
+    if (!shell) return;
+    if (document.fullscreenElement === shell) {
+      nativeFullscreen = true;
+      shell.classList.add('is-fullscreen');
+      paintFullscreenButton(true);
+      return;
+    }
+    if (nativeFullscreen) {
+      nativeFullscreen = false;
+      const was = shell.classList.contains('is-fullscreen');
+      shell.classList.remove('is-fullscreen');
+      paintFullscreenButton(false);
+      if (was) render();
+    }
   }
 
   function onDashboardClick(event) {
@@ -1823,6 +1869,17 @@ in
 
   function boot() {
     bind();
+    if (!document.__fireSFullscreenBound) {
+      document.__fireSFullscreenBound = true;
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        const shell = byId('pbiShell');
+        if (!shell || !shell.classList.contains('is-fullscreen')) return;
+        if (document.fullscreenElement) return;
+        leaveFullscreen();
+      });
+    }
     const btn = byId('cmdManagementDashboardBtn');
     if (btn && !btn.__fireSBound) {
       btn.__fireSBound = true;
@@ -1833,6 +1890,7 @@ in
     }
   }
 
+  window.fireSExitManagementFullscreen = leaveFullscreen;
   window.fireSOpenManagementDashboard = openDashboard;
   window.fireSRenderManagementDashboard = render;
   window.fireSDashboardCharts = {

@@ -37,7 +37,7 @@ assert.ok(
 );
 assert.ok(
   /fireSIndependentReportOverlayOpen/.test(phoneBack) &&
-    /fire-s-phone-back.js\?v=1-4-temp-pw/.test(html),
+    /fire-s-phone-back.js\?v=1-5-fullscreen-fit/.test(html),
   'Phone Back must close the report overlay first'
 );
 assert.ok(
