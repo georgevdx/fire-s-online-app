@@ -666,3 +666,14 @@ html[data-fire-s-theme="dark"] .pbi-shell.is-fullscreen {
   height: auto;
   max-height: none;
 }
+
+/* The compliance row's 280px floor pushed the age chart off a 100% laptop
+   screen. In full screen that row follows the shorter chart. */
+html.fire-s-desktop-view .pbi-shell:fullscreen .pbi-row-2 .pbi-tile.is-chart,
+html.fire-s-desktop-view .pbi-shell:-webkit-full-screen .pbi-row-2 .pbi-tile.is-chart,
+html.fire-s-desktop-view .pbi-shell.is-fullscreen .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-shell:fullscreen .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-shell:-webkit-full-screen .pbi-row-2 .pbi-tile.is-chart,
+body.fire-s-desktop-view .pbi-shell.is-fullscreen .pbi-row-2 .pbi-tile.is-chart {
+  min-height: 0;
+}

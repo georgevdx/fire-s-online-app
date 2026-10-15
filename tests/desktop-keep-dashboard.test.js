@@ -94,7 +94,7 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-13-fullscreen-scroll/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-15-fullscreen-axis/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
@@ -103,8 +103,12 @@ assert.ok(
 assert.ok(
   /function leaveFullscreen\(/.test(stagingDash) &&
     /shell\.classList\.add\('is-fullscreen'\)/.test(stagingDash) &&
-    !/fullBleed/.test(stagingDash),
-  'Toets full screen keeps the same charts and only changes the shell'
+    /function syncFullscreenCharts\(/.test(stagingDash) &&
+    /const height = fullScreen \? 96 : 268/.test(stagingDash) &&
+    /const height = fullScreen \? 104 : 188/.test(stagingDash) &&
+    !/function fitFullscreenLayout\(/.test(stagingDash) &&
+    !/\.style\.zoom/.test(stagingDash),
+  'Toets full screen redraws a short age chart so the axis and legend fit at 100% zoom'
 );
 assert.ok(!/is-fullscreen/.test(liveDash), 'Live dashboard stays until this layout is sat live');
 assert.ok(
@@ -125,8 +129,9 @@ assert.ok(
 );
 assert.ok(
   /\.pbi-shell:fullscreen[\s\S]{0,700}overflow-y: auto !important/.test(stagingDashCss) &&
-    /\.pbi-shell:fullscreen \.pbi-chart-age[\s\S]{0,240}max-height: none/.test(stagingDashCss),
-  'Toets full screen must scroll so the age axis, legend and lower charts stay reachable'
+    /\.pbi-shell:fullscreen \.pbi-chart-age[\s\S]{0,240}max-height: none/.test(stagingDashCss) &&
+    /html\.fire-s-desktop-view \.pbi-shell:fullscreen \.pbi-row-2 \.pbi-tile\.is-chart[\s\S]{0,500}min-height: 0/.test(stagingDashCss),
+  'Toets full screen keeps a short age chart on the first screen and scrolls to the lower blocks'
 );
 assert.ok(!/\.pbi-shell:fullscreen/.test(liveDashCss), 'Live dashboard styles stay until this layout is sat live');
 assert.ok(
@@ -134,8 +139,8 @@ assert.ok(
   'Live dashboard styles keep their current cache key'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-8-fullscreen-scroll/.test(stagingHtml),
-  'Toets dashboard styles must cache-bust the full-screen fit'
+  /fire-s-management-dashboard\.css\?v=1-9-fullscreen-axis/.test(stagingHtml),
+  'Toets dashboard styles must cache-bust the full-screen axis fit'
 );
 
 function loadDashboardCharts() {
