@@ -94,7 +94,7 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-18-page-picks/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-19-laptop-fit/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
@@ -108,6 +108,9 @@ assert.ok(
     /data-pbi-show="findings"/.test(stagingHtml) &&
     /id="pbiPages"/.test(stagingHtml) &&
     /shownIds\.indexOf\(id\) >= 0/.test(stagingDash) &&
+    /is-focus is-fit/.test(stagingDash) &&
+    /pbi-ops\.is-fit \.pbi-chart-age/.test(stagingDash) &&
+    /fitted >= 40 && fitted <= 420/.test(stagingDash) &&
     /dataset\.ageBox/.test(stagingDash) &&
     !/fullScreen \? 96/.test(stagingDash) &&
     !/function fitFullscreenLayout\(/.test(stagingDash) &&
@@ -132,11 +135,13 @@ assert.ok(
   'Dark title bar text must outrank the paper-island colour'
 );
 assert.ok(
-  /\.pbi-shell:fullscreen[\s\S]{0,900}overflow-y: auto !important/.test(stagingDashCss) &&
+  /\.pbi-shell:fullscreen[\s\S]{0,900}overflow: hidden !important/.test(stagingDashCss) &&
+    /\.pbi-pages button[\s\S]{0,280}width: auto !important/.test(stagingDashCss) &&
     /\.pbi-shell:fullscreen \.pbi-pages[\s\S]{0,220}display: flex/.test(stagingDashCss) &&
     /\.pbi-pages button\.is-on/.test(stagingDashCss) &&
+    /\.pbi-ops\.is-fit > \.pbi-row:has\(\.pbi-chart-age\)[\s\S]{0,420}flex: 1\.6 1 0/.test(stagingDashCss) &&
     /html\.fire-s-desktop-view \.pbi-shell:fullscreen \.pbi-row-2 \.pbi-tile\.is-chart[\s\S]{0,500}min-height: 0/.test(stagingDashCss),
-  'Toets full screen shows the page choices and still scrolls when a page is taller'
+  'Toets full screen uses small Show chips and fits the age chart without a page scroll'
 );
 assert.ok(!/\.pbi-shell:fullscreen/.test(liveDashCss), 'Live dashboard styles stay until this layout is sat live');
 assert.ok(
@@ -144,8 +149,8 @@ assert.ok(
   'Live dashboard styles keep their current cache key'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-12-page-picks/.test(stagingHtml),
-  'Toets dashboard styles must cache-bust the page picks'
+  /fire-s-management-dashboard\.css\?v=1-13-laptop-fit/.test(stagingHtml),
+  'Toets dashboard styles must cache-bust the laptop fit'
 );
 
 function loadDashboardCharts() {

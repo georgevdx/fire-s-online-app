@@ -1098,11 +1098,11 @@
     const shell = byId('pbiShell');
     const fitted = shell && fullscreenOn(shell) ? Number(shell.dataset.ageBox) : 0;
     const width = 720;
-    const height = fitted >= 120 && fitted <= 420 ? Math.round(fitted) : 268;
+    const height = fitted >= 40 && fitted <= 420 ? Math.round(fitted) : 268;
     const padL = 52;
     const padR = 18;
     const padT = height >= 200 ? 16 : 8;
-    const padB = height >= 200 ? 48 : 32;
+    const padB = height >= 200 ? 48 : 36;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const totals = list.map(row => seriesList.reduce((sum, item) => sum + (Number(row[item.key]) || 0), 0));
@@ -1127,20 +1127,20 @@
       return `
         ${stacks}
         <text class="pbi-ink" x="${x + barW / 2}" y="${yCursor - 3}" font-size="8" text-anchor="middle" fill="#323130">${total}</text>
-        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + (height >= 200 ? 14 : 11)}" font-size="${height >= 200 ? 9 : 8}" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
+        <text class="pbi-tick" x="${x + barW / 2}" y="${padT + plotH + (height >= 200 ? 14 : 13)}" font-size="${height >= 200 ? 9 : 8}" text-anchor="middle" fill="#605e5c">${esc(row.label)}</text>
       `;
     }).join('');
     const legend = seriesList.map(item =>
       `<button type="button" class="pbi-legend-btn" ${drillAttr({ type: 'priority', key: item.key })}><i class="pbi-swatch" style="background:${item.color}"></i>${esc(item.key)}</button>`
     ).join('');
     return `<div class="pbi-chart-block">
-      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
+      <svg class="pbi-chart pbi-chart-age" viewBox="0 0 ${width} ${height}" width="100%" height="${fitted >= 40 && fitted <= 420 ? '100%' : height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(yTitle)} by ${esc(xTitle)}">
         ${yGrid(padL, padT, plotW, plotH, ticks, top)}
         <line class="pbi-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         <line class="pbi-axis" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#c8c6c4" stroke-width="1"></line>
         ${columns}
         <text class="pbi-axis-title" transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" font-size="10" font-weight="600" fill="#323130">${esc(yTitle)}</text>
-        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - (height >= 200 ? 22 : 4)}" text-anchor="middle" font-size="${height >= 200 ? 10 : 9}" font-weight="600" fill="#323130">${esc(xTitle)}</text>
+        <text class="pbi-axis-title" x="${padL + plotW / 2}" y="${height - (height >= 200 ? 16 : 6)}" text-anchor="middle" font-size="${height >= 200 ? 10 : 9}" font-weight="600" fill="#323130">${esc(xTitle)}</text>
       </svg>
       <div class="pbi-legend pbi-series-legend">${legend}</div>
     </div>`;
@@ -1562,7 +1562,7 @@
     const shell = byId('pbiShell');
     const focus = fullscreenOn(shell);
     const on = function (id) { return shownIds.indexOf(id) >= 0; };
-    const fillAge = !!(focus && on('actions') && !on('status') && !on('trend') && !on('premises') && !on('findings') && !on('activity'));
+    const fillAge = !!(focus && on('actions'));
     if (shell && !fillAge) delete shell.dataset.ageBox;
     if (shell) shell.dataset.chartMode = focus ? 'focus' : 'board';
     paintPageButtons();
@@ -1622,8 +1622,11 @@
       activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''
     ].join('');
 
-    host.innerHTML = `<div class="pbi-ops ${focus ? 'is-focus' : 'is-board'}${fillAge ? ' is-actions' : ''}">${blocks}</div>`;
-    if (fillAge) scheduleAgeFit();
+    host.innerHTML = `<div class="pbi-ops ${focus ? 'is-focus is-fit' : 'is-board'}">${blocks}</div>`;
+    if (fillAge) {
+      if (!shell || !shell.dataset.ageBox) ageFitTries = 0;
+      scheduleAgeFit();
+    }
   }
 
   function setMessage(message) {
@@ -1660,6 +1663,7 @@
   ];
   let shownIds = ['numbers', 'actions'];
   let ageFitScheduled = false;
+  let ageFitTries = 0;
 
   function loadShown() {
     try {
@@ -1725,18 +1729,24 @@
 
   function fitAgePage() {
     const shell = byId('pbiShell');
-    if (!shell || !fullscreenOn(shell) || !shell.querySelector('.pbi-ops.is-actions')) return;
+    if (!shell || !fullscreenOn(shell) || !shell.querySelector('.pbi-ops.is-fit .pbi-chart-age')) return;
     const age = shell.querySelector('.pbi-chart-age');
     const tileBody = age && age.closest('.pbi-tile-body');
     if (!age || !tileBody) return;
-    const legend = tileBody.querySelector('.pbi-series-legend');
-    const availW = tileBody.clientWidth;
-    const legendH = legend ? legend.offsetHeight + 8 : 0;
-    const availH = tileBody.clientHeight - legendH;
-    if (availW < 200 || availH < 100) return;
-    const viewH = Math.max(120, Math.min(420, Math.round(720 * availH / availW)));
+    const block = age.closest('.pbi-chart-block') || tileBody;
+    const legend = block.querySelector('.pbi-series-legend');
+    const availW = block.clientWidth || age.clientWidth;
+    const legendH = legend ? legend.offsetHeight + 6 : 0;
+    const availH = block.clientHeight - legendH;
+    if (availW < 200 || availH < 36) return;
+    const viewH = Math.max(40, Math.min(420, Math.round(720 * availH / availW)));
     const current = age.viewBox && age.viewBox.baseVal ? age.viewBox.baseVal.height : 0;
-    if (Math.abs(current - viewH) < 8) return;
+    if (Math.abs(current - viewH) < 8) {
+      ageFitTries = 0;
+      return;
+    }
+    if (ageFitTries >= 4) return;
+    ageFitTries += 1;
     shell.dataset.ageBox = String(viewH);
     render();
     shell.scrollTop = 0;
