@@ -1561,7 +1561,7 @@
 
     const shell = byId('pbiShell');
     const focus = fullscreenOn(shell);
-    const on = function (id) { return !focus || shownIds.indexOf(id) >= 0; };
+    const on = function (id) { return shownIds.indexOf(id) >= 0; };
     const fillAge = !!(focus && on('actions') && !on('status') && !on('trend') && !on('premises') && !on('findings') && !on('activity'));
     if (shell && !fillAge) delete shell.dataset.ageBox;
     if (shell) shell.dataset.chartMode = focus ? 'focus' : 'board';

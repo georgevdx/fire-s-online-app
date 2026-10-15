@@ -9,7 +9,7 @@
   background: #f3f2f1;
   border: 1px solid #e1dfdd;
   border-radius: 6px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .pbi-titlebar {
@@ -83,7 +83,7 @@
 }
 
 .pbi-pages {
-  display: none;
+  display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;

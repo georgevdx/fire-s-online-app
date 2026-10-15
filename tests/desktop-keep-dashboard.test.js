@@ -94,7 +94,7 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-17-fullscreen-picks/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-18-page-picks/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
@@ -144,8 +144,8 @@ assert.ok(
   'Live dashboard styles keep their current cache key'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-11-fullscreen-picks/.test(stagingHtml),
-  'Toets dashboard styles must cache-bust the full-screen picks'
+  /fire-s-management-dashboard\.css\?v=1-12-page-picks/.test(stagingHtml),
+  'Toets dashboard styles must cache-bust the page picks'
 );
 
 function loadDashboardCharts() {
