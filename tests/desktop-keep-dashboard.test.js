@@ -94,7 +94,7 @@ assert.ok(
 assert.ok(
   /fire-s-desktop-access\.js\?v=1-4-subscribe-first/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-15-hira/.test(stagingHtml) &&
-    /fire-s-management-dashboard\.js\?v=1-16-fullscreen-pages/.test(stagingHtml) &&
+    /fire-s-management-dashboard\.js\?v=1-17-fullscreen-picks/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the desktop landing fix'
@@ -104,14 +104,15 @@ assert.ok(
   /function leaveFullscreen\(/.test(stagingDash) &&
     /shell\.classList\.add\('is-fullscreen'\)/.test(stagingDash) &&
     /function syncFullscreenCharts\(/.test(stagingDash) &&
-    /data-pbi-page="actions"/.test(stagingHtml) &&
+    /data-pbi-show="actions"/.test(stagingHtml) &&
+    /data-pbi-show="findings"/.test(stagingHtml) &&
     /id="pbiPages"/.test(stagingHtml) &&
-    /managementPage === 'actions'/.test(stagingDash) &&
+    /shownIds\.indexOf\(id\) >= 0/.test(stagingDash) &&
     /dataset\.ageBox/.test(stagingDash) &&
     !/fullScreen \? 96/.test(stagingDash) &&
     !/function fitFullscreenLayout\(/.test(stagingDash) &&
     !/\.style\.zoom/.test(stagingDash),
-  'Toets full screen is one page at a time, chosen with Show'
+  'Toets full screen is one page, and Show toggles which blocks are on it'
 );
 assert.ok(!/is-fullscreen/.test(liveDash), 'Live dashboard stays until this layout is sat live');
 assert.ok(
@@ -143,8 +144,8 @@ assert.ok(
   'Live dashboard styles keep their current cache key'
 );
 assert.ok(
-  /fire-s-management-dashboard\.css\?v=1-10-fullscreen-pages/.test(stagingHtml),
-  'Toets dashboard styles must cache-bust the full-screen pages'
+  /fire-s-management-dashboard\.css\?v=1-11-fullscreen-picks/.test(stagingHtml),
+  'Toets dashboard styles must cache-bust the full-screen picks'
 );
 
 function loadDashboardCharts() {

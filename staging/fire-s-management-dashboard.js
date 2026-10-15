@@ -1096,7 +1096,7 @@
     const yTitle = (axis && axis.y) || 'Action items';
     const xTitle = (axis && axis.x) || 'Age';
     const shell = byId('pbiShell');
-    const fitted = shell && managementPage === 'actions' && fullscreenOn(shell) ? Number(shell.dataset.ageBox) : 0;
+    const fitted = shell && fullscreenOn(shell) ? Number(shell.dataset.ageBox) : 0;
     const width = 720;
     const height = fitted >= 120 && fitted <= 420 ? Math.round(fitted) : 268;
     const padL = 52;
@@ -1561,7 +1561,9 @@
 
     const shell = byId('pbiShell');
     const focus = fullscreenOn(shell);
-    const page = focus ? managementPage : 'all';
+    const on = function (id) { return !focus || shownIds.indexOf(id) >= 0; };
+    const fillAge = !!(focus && on('actions') && !on('status') && !on('trend') && !on('premises') && !on('findings') && !on('activity'));
+    if (shell && !fillAge) delete shell.dataset.ageBox;
     if (shell) shell.dataset.chartMode = focus ? 'focus' : 'board';
     paintPageButtons();
 
@@ -1593,32 +1595,35 @@
       ),
       'is-chart'
     );
-    const premisesTiles = `
-          ${tile(
-            'Worst performing premises',
-            'Highest open actions and overdue first. Tap a bar.',
-            barChart(ops.worst, '#f87171', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
-            'is-chart'
-          )}
-          ${tile(
-            'Recurring findings',
-            'Premises sharing a section. The % is the running share of every section.',
-            paretoChart(ops.recurring, '#fb923c', { y: 'Premises', x: 'Section' }),
-            'is-chart'
-          )}`;
+    const premisesTile = tile(
+      'Worst performing premises',
+      'Highest open actions and overdue first. Tap a bar.',
+      barChart(ops.worst, '#f87171', { y: 'Premises', x: 'Open actions' }, { maxRows: 8, labelMax: 22, padL: 128 }),
+      'is-chart'
+    );
+    const findingsTile = tile(
+      'Recurring findings',
+      'Premises sharing a section. The % is the running share of every section.',
+      paretoChart(ops.recurring, '#fb923c', { y: 'Premises', x: 'Section' }),
+      'is-chart'
+    );
     const activityTile = tile('Activity', 'Latest completions, action items and due dates. Tap a line.', activityHtml(ops.feed), 'is-feed');
-    const showAll = page === 'all';
+    const statusTrend = (on('status') ? statusTile : '') + (on('trend') ? trendTile : '');
+    const premisesFindings = (on('premises') ? premisesTile : '') + (on('findings') ? findingsTile : '');
+    const pairClass = function (left, right) {
+      return left && right ? 'pbi-row-2' : 'pbi-row-1';
+    };
     const blocks = [
-      showAll || page === 'overview' ? kpiRow : '',
-      showAll || page === 'overview' ? `<div class="pbi-row pbi-row-2">${statusTile}${trendTile}</div>` : '',
-      showAll || page === 'actions' ? `<div class="pbi-row pbi-row-1">${actionsTile}</div>` : '',
-      showAll || page === 'premises' ? `<div class="pbi-row pbi-row-2">${premisesTiles}</div>` : '',
-      showAll || page === 'activity' ? `<div class="pbi-row pbi-row-1">${activityTile}</div>` : '',
+      on('numbers') ? kpiRow : '',
+      statusTrend ? `<div class="pbi-row ${pairClass(on('status'), on('trend'))}">${statusTrend}</div>` : '',
+      on('actions') ? `<div class="pbi-row pbi-row-1">${actionsTile}</div>` : '',
+      premisesFindings ? `<div class="pbi-row ${pairClass(on('premises'), on('findings'))}">${premisesFindings}</div>` : '',
+      on('activity') ? `<div class="pbi-row pbi-row-1">${activityTile}</div>` : '',
       activeDrill ? `<div class="pbi-row pbi-row-1">${tile('Filtered list', '', drillPanelHtml(ops), 'is-drill')}</div>` : ''
     ].join('');
 
-    host.innerHTML = `<div class="pbi-ops ${showAll ? 'is-board' : 'is-focus'} is-${page}">${blocks}</div>`;
-    if (focus && page === 'actions') scheduleAgeFit();
+    host.innerHTML = `<div class="pbi-ops ${focus ? 'is-focus' : 'is-board'}${fillAge ? ' is-actions' : ''}">${blocks}</div>`;
+    if (fillAge) scheduleAgeFit();
   }
 
   function setMessage(message) {
@@ -1644,20 +1649,29 @@
     return !!(shell && (document.fullscreenElement === shell || shell.classList.contains('is-fullscreen')));
   }
 
-  const MANAGEMENT_PAGES = [
-    { id: 'overview', label: 'Overview' },
+  const SHOW_OPTIONS = [
+    { id: 'numbers', label: 'Numbers' },
+    { id: 'status', label: 'Status' },
+    { id: 'trend', label: 'Trend' },
     { id: 'actions', label: 'Actions' },
     { id: 'premises', label: 'Premises' },
+    { id: 'findings', label: 'Findings' },
     { id: 'activity', label: 'Activity' }
   ];
-  let managementPage = 'overview';
+  let shownIds = ['numbers', 'actions'];
   let ageFitScheduled = false;
 
-  function loadManagementPage() {
+  function loadShown() {
     try {
-      const saved = localStorage.getItem('fireSManagementPage');
-      if (MANAGEMENT_PAGES.some(item => item.id === saved)) managementPage = saved;
+      const saved = JSON.parse(localStorage.getItem('fireSManagementShow') || '');
+      if (!Array.isArray(saved)) return;
+      const ids = saved.filter(id => SHOW_OPTIONS.some(item => item.id === id));
+      if (ids.length) shownIds = ids;
     } catch (_) {}
+  }
+
+  function saveShown() {
+    try { localStorage.setItem('fireSManagementShow', JSON.stringify(shownIds)); } catch (_) {}
   }
 
   function ensurePageBar() {
@@ -1667,8 +1681,8 @@
     const bar = document.createElement('div');
     bar.id = 'pbiPages';
     bar.className = 'pbi-pages';
-    bar.innerHTML = '<span class="pbi-pages-label">Show</span>' + MANAGEMENT_PAGES.map(item =>
-      `<button type="button" data-pbi-page="${item.id}">${item.label}</button>`
+    bar.innerHTML = '<span class="pbi-pages-label">Show</span>' + SHOW_OPTIONS.map(item =>
+      `<button type="button" data-pbi-show="${item.id}">${item.label}</button>`
     ).join('');
     filters.appendChild(bar);
   }
@@ -1676,21 +1690,23 @@
   function paintPageButtons() {
     const bar = byId('pbiPages');
     if (!bar) return;
-    bar.querySelectorAll('[data-pbi-page]').forEach(btn => {
-      const on = btn.getAttribute('data-pbi-page') === managementPage;
+    bar.querySelectorAll('[data-pbi-show]').forEach(btn => {
+      const on = shownIds.indexOf(btn.getAttribute('data-pbi-show')) >= 0;
       btn.classList.toggle('is-on', on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
   }
 
   function onPageClick(event) {
-    const btn = event.target.closest('[data-pbi-page]');
+    const btn = event.target.closest('[data-pbi-show]');
     if (!btn) return;
     event.preventDefault();
-    const id = btn.getAttribute('data-pbi-page');
-    if (!MANAGEMENT_PAGES.some(item => item.id === id) || id === managementPage) return;
-    managementPage = id;
-    try { localStorage.setItem('fireSManagementPage', id); } catch (_) {}
+    const id = btn.getAttribute('data-pbi-show');
+    if (!SHOW_OPTIONS.some(item => item.id === id)) return;
+    const has = shownIds.indexOf(id) >= 0;
+    if (has && shownIds.length === 1) return;
+    shownIds = has ? shownIds.filter(item => item !== id) : shownIds.concat(id);
+    saveShown();
     const shell = byId('pbiShell');
     if (shell) delete shell.dataset.ageBox;
     activeDrill = null;
@@ -1709,7 +1725,7 @@
 
   function fitAgePage() {
     const shell = byId('pbiShell');
-    if (!shell || !fullscreenOn(shell) || managementPage !== 'actions') return;
+    if (!shell || !fullscreenOn(shell) || !shell.querySelector('.pbi-ops.is-actions')) return;
     const age = shell.querySelector('.pbi-chart-age');
     const tileBody = age && age.closest('.pbi-tile-body');
     if (!age || !tileBody) return;
@@ -1975,7 +1991,7 @@ in
   }
 
   function boot() {
-    loadManagementPage();
+    loadShown();
     bind();
     if (!document.__fireSFullscreenBound) {
       document.__fireSFullscreenBound = true;
