@@ -287,7 +287,7 @@
           <li><strong>Q&amp;A Checklist</strong> — questions start already open, with the first question in the list. Tap Expand or Collapse if you need to hide them. Tap Compliant, Action Required or N/A. Action Required becomes a finding.</li>
           <li><strong>Photo Evidence</strong> — take or choose pictures. Add a short note on each photo.</li>
           <li><strong>Inspector Comments / Conclusion</strong> — write the close-out note.</li>
-          <li><strong>Schedule Next Inspection</strong> — follow-up date or recurring cycle if needed.</li>
+          <li><strong>Schedule Next Inspection</strong> — corrective follow-up, a dedicated booking, or a recurring cycle. The cycle stands apart and can stay booked on a different date. Cancel a future or overdue booking if it is no longer needed.</li>
           <li>Save. The last action on an inspection is the <strong>client PDF</strong> (next chapter).</li>
         </ol>
         <p>The Passport / Workspace strip stays hidden while you fill, so the questions stay on screen.</p>
@@ -310,7 +310,7 @@
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
-          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
+          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. Recurring cycle bookings also stay listed under Already booked, even if a corrective follow-up or dedicated inspection is on another date. Finish and finalise an inspection and it leaves that list unless a cycle or follow-up is still booked. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — open the premises. If a report is ready, tap Latest Report or Export PDF. There is no Reports card under Schedule.</li>
           <li><strong>Request Fire Consultant Services</strong> — request consultancy, write a comment if you reviewed the app or found a problem, or ask for support.</li>
         </ul>
