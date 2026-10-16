@@ -402,6 +402,49 @@
     };
   }
 
+  function mergeCycle(project, cycle) {
+    return {
+      ...project,
+      answers: Array.isArray(cycle?.answers) ? cycle.answers : [],
+      inspectionAnswers: [],
+      photos: Array.isArray(cycle?.photos) ? cycle.photos : [],
+      actions: Array.isArray(cycle?.actions) ? cycle.actions : [],
+      completedAt: cycle?.completedAt || cycle?.archivedAt || cycle?.inspectionDate || '',
+      inspectionDate: cycle?.inspectionDate || cycle?.completedAt || '',
+      inspectorName: cycle?.inspectorName || project?.inspectorName,
+      occupancy: cycle?.occupancy || project?.occupancy,
+      finalComments: cycle?.finalComments || ''
+    };
+  }
+
+  // Action charts must use the same finalised inspection as Latest Report.
+  // A completed live workspace can still hold an older answer set.
+  function actionSource(project) {
+    const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+    let historyIndex = -1;
+    try {
+      if (typeof latestInspectionHistoryIndex === 'function') {
+        historyIndex = Number(latestInspectionHistoryIndex(project));
+      }
+    } catch (_) {
+      historyIndex = -1;
+    }
+    if (!Number.isFinite(historyIndex)) historyIndex = -1;
+    const cycle = historyIndex >= 0 ? history[historyIndex] : null;
+    if (cycle && answeredCount(cycle) > 0) {
+      return { historyIndex, project: mergeCycle(project, cycle) };
+    }
+    const fallback = latestCompletedCycle(project);
+    if (fallback && fallback !== project) {
+      const index = history.indexOf(fallback);
+      return {
+        historyIndex: index >= 0 ? index : -1,
+        project: mergeCycle(project, fallback)
+      };
+    }
+    return { historyIndex: -1, project };
+  }
+
   function complianceStatus(project) {
     const cycle = latestCompletedCycle(project);
     if (cycle) {
@@ -642,9 +685,12 @@
     list.forEach(project => {
       const status = complianceStatus(project);
       const cycle = latestCompletedCycle(project);
-      const scored = scoredProject(project);
+      const source = actionSource(project);
       portfolio[status] = (portfolio[status] || 0) + 1;
-      const actions = actionRecords(scored);
+      const actions = actionRecords(source.project).map(item => ({
+        ...item,
+        historyIndex: source.historyIndex
+      }));
       allActions.push(...actions);
       const findings = actions.length;
       const critical = actions.filter(item => item.priority === 'Critical').length;
@@ -1453,11 +1499,24 @@
     return 'projects';
   }
 
-  function openInspectionFromDashboard(projectId, itemIndex) {
+  function openInspectionFromDashboard(projectId, itemIndex, historyIndex, itemNumber, question) {
+    const hasFinding = itemIndex != null && itemIndex !== '';
+    if (hasFinding && typeof window.fireSOpenActionReport === 'function') {
+      try {
+        const opened = window.fireSOpenActionReport({
+          projectId,
+          itemIndex,
+          historyIndex,
+          itemNumber,
+          question
+        });
+        if (opened !== false) return;
+      } catch (_) {}
+    }
     const section = byId('managementDashboardSection');
     if (section) section.style.display = 'none';
     try {
-      if (itemIndex != null && itemIndex !== '' && typeof openFindingInspection === 'function') {
+      if (hasFinding && typeof openFindingInspection === 'function') {
         openFindingInspection(projectId, Number(itemIndex));
         return;
       }
@@ -1507,7 +1566,7 @@
                 <td>${esc(row.priority)}</td>
                 <td>${row.ageDays}d</td>
                 <td>${esc(row.responsible)}</td>
-                <td><button type="button" class="pbi-open-btn" data-pbi-open="${esc(row.projectId)}" data-pbi-item="${row.itemIndex}">Open</button></td>
+                <td><button type="button" class="pbi-open-btn" data-pbi-open="${esc(row.projectId)}" data-pbi-item="${row.itemIndex}" data-pbi-history="${row.historyIndex}" data-pbi-number="${esc(row.itemNumber)}" data-pbi-question="${esc(row.question)}">Open</button></td>
               </tr>`).join('')}</tbody>
           </table></div>`
         : '<div class="pbi-empty">No Action Items in this slice.</div>')
@@ -1942,7 +2001,10 @@ in
       event.preventDefault();
       openInspectionFromDashboard(
         openBtn.getAttribute('data-pbi-open'),
-        openBtn.getAttribute('data-pbi-item')
+        openBtn.getAttribute('data-pbi-item'),
+        openBtn.getAttribute('data-pbi-history'),
+        openBtn.getAttribute('data-pbi-number'),
+        openBtn.getAttribute('data-pbi-question')
       );
       return;
     }
@@ -2027,6 +2089,7 @@ in
   window.fireSExitManagementFullscreen = leaveFullscreen;
   window.fireSOpenManagementDashboard = openDashboard;
   window.fireSRenderManagementDashboard = render;
+  window.fireSDashboardActionSource = actionSource;
   window.fireSDashboardCharts = {
     barChart,
     columnChart,
