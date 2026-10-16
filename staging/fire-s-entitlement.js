@@ -329,6 +329,14 @@
     return role === 'company_owner' || role === 'owner' || role === 'admin';
   }
 
+  function onOwnerCancelRoute() {
+    var status = text(last && last.status);
+    var reason = text(last && last.reason);
+    return status === 'subscription_cancelled' ||
+      reason === 'subscription_cancelled' ||
+      reason === 'cancelled_until_period_end';
+  }
+
   var staffSignOutStarted = false;
   function staffMustSignOut() {
     if (isLocalWorkspace() || isSuperAdmin() || isPayingOwner()) return false;
@@ -336,6 +344,9 @@
     if (accessGateOpen()) return false;
     if (!hasSnapshot()) return false;
     if (paidWindowOpen(last)) return false;
+    // Owner cancel is company-wide. Managers and Inspectors stay on that
+    // same lock (open until the paid-through date, then inspections locked).
+    if (onOwnerCancelRoute()) return false;
     if (last && last.staff_must_sign_out === true) return true;
     var status = text(last && last.status);
     var reason = text(last && last.reason);

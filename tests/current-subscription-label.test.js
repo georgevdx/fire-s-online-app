@@ -115,7 +115,7 @@ assert.ok(
   'Live must cache-bust the current-subscription type paint'
 );
 assert.ok(
-  /fire-s-subscribe.js\?v=1-42-trial-clear/.test(read('staging/index.html')) &&
+  /fire-s-subscribe.js\?v=1-43-same-cancel/.test(read('staging/index.html')) &&
     /fire-s-subscriptions.js\?v=1-21-paid-days/.test(read('staging/index.html')),
   'Toets must cache-bust the current-subscription type paint'
 );

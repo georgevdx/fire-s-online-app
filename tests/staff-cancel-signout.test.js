@@ -45,7 +45,7 @@ function fakeEl(id, nodes) {
   return nodes[id];
 }
 
-function load(role) {
+function load(role, entitlementData) {
   const nodes = {};
   let signedOut = 0;
   const sandbox = {
@@ -94,7 +94,7 @@ function load(role) {
   sandbox.supabaseClient = {
     rpc: async function () {
       return {
-        data: {
+        data: entitlementData || {
           status: 'subscription_cancelled',
           reason: 'subscription_cancelled',
           allowed: false,
@@ -116,20 +116,40 @@ function load(role) {
   const inspector = load('inspector');
   await inspector.fireSEntitlement.refresh(true);
   await Promise.resolve();
-  assert.strictEqual(inspector.fireSEntitlement.staffMustSignOut(), true, 'inspector on a cancelled company must sign out');
-  assert.ok(inspector.__signedOut() >= 1, 'inspector is logged out when the company is cancelled');
+  assert.strictEqual(inspector.fireSEntitlement.staffMustSignOut(), false, 'inspector follows the owner cancellation and stays signed in');
+  assert.strictEqual(inspector.__signedOut(), 0, 'inspector is not logged out when the company is cancelled');
+  assert.strictEqual(inspector.fireSEntitlement.inspectionAccessLocked(), true, 'inspector inspections lock with the owner cancellation');
 
   const manager = load('manager');
   await manager.fireSEntitlement.refresh(true);
   await Promise.resolve();
-  assert.strictEqual(manager.fireSEntitlement.staffMustSignOut(), true, 'manager on a cancelled company must sign out');
-  assert.ok(manager.__signedOut() >= 1, 'manager is logged out when the company is cancelled');
+  assert.strictEqual(manager.fireSEntitlement.staffMustSignOut(), false, 'manager follows the owner cancellation and stays signed in');
+  assert.strictEqual(manager.__signedOut(), 0, 'manager is not logged out when the company is cancelled');
+  assert.strictEqual(manager.fireSEntitlement.inspectionAccessLocked(), true, 'manager inspections lock with the owner cancellation');
 
   const owner = load('company_owner');
   await owner.fireSEntitlement.refresh(true);
   await Promise.resolve();
   assert.strictEqual(owner.fireSEntitlement.staffMustSignOut(), false, 'Owner stays signed in to pay on PayFast');
   assert.strictEqual(owner.__signedOut(), 0, 'Owner is not logged out');
+  assert.strictEqual(owner.fireSEntitlement.inspectionAccessLocked(), true, 'Owner inspections lock on the same cancellation');
+
+  const openInspector = load('inspector', {
+    status: 'subscription_cancelled',
+    reason: 'cancelled_until_period_end',
+    allowed: true,
+    can_read: true,
+    can_create: true,
+    can_finalise: true,
+    keep_data: true,
+    access_until: '2099-01-01T00:00:00.000Z'
+  });
+  await openInspector.fireSEntitlement.refresh(true);
+  await Promise.resolve();
+  assert.strictEqual(openInspector.fireSEntitlement.staffMustSignOut(), false, 'inspector stays signed in during the paid-through window');
+  assert.strictEqual(openInspector.__signedOut(), 0, 'inspector is not logged out while the cancelled company is still open');
+  assert.strictEqual(openInspector.fireSEntitlement.inspectionAccessLocked(), false, 'inspector keeps the same open window as the owner');
+  assert.strictEqual(openInspector.fireSEntitlement.paidWindowOpen(), true, 'paid-through window is the owner cancellation route');
 
   const admin = load('super_admin');
   await admin.fireSEntitlement.refresh(true);
