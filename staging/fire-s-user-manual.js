@@ -213,14 +213,18 @@
           <li>Wait one minute before you tap Forgot password again.</li>
           <li>Type a new password twice, tap <strong>Save</strong>, then <strong>Login</strong>.</li>
         </ol>
+        <h3>How a company is set up</h3>
+        <p>A company starts with one owner. Only the owner taps <strong>Subscribing New Company</strong> on Access. That creates the company name and the owner's own paid login.</p>
+        <p>Managers and Inspectors are extra people in that same company. Each person gets their own email and their own paid login. The owner adds that person and pays for that login on PayFast. Inspectors and managers never Subscribe, and they never pay. One owner payment does not cover the whole company.</p>
         <h3>Staff password (first time)</h3>
-        <p>Inspectors and managers never Subscribe. The owner already paid when they tapped Subscribe this email on the subscription page.</p>
         <ol>
-          <li>Your owner adds your email in <strong>Personnel</strong> as Inspector or Manager and gives you a temporary password. That is the subscription. The owner pays.</li>
-          <li>You can be anywhere. Open Fire-S on your phone.</li>
-          <li>On Access, type that same email and the temporary password, then tap <strong>Login</strong>.</li>
-          <li>Fire-S asks you to choose your own password. Type it twice and tap <strong>Save password</strong>.</li>
-          <li>Do <strong>not</strong> tap Subscribe. Subscribe is only for a new company owner.</li>
+          <li>The owner opens Home → <strong>Company personnel</strong> and taps <strong>Add inspector / manager</strong>.</li>
+          <li>The owner types that person's email, chooses <strong>Inspector</strong> or <strong>Manager</strong>, types a temporary password twice, then taps <strong>Subscribe this email</strong> and pays for that extra login.</li>
+          <li>A <strong>Manager</strong> runs operations: inspections, people, company details and the dashboard. An <strong>Inspector</strong> does the site visits and sees the work assigned to them. Same company, different work.</li>
+          <li>The owner tells them the email and the temporary password. They can work remotely. They open Fire-S on their own phone.</li>
+          <li>On Access they type that email and the temporary password, then tap <strong>Login</strong>.</li>
+          <li>Fire-S asks them to choose their own password. They type it twice and tap <strong>Save password</strong>.</li>
+          <li>They do <strong>not</strong> tap Subscribe. Subscribe on Access is only for a new company owner.</li>
         </ol>
         <h3>Change password later</h3>
         <p>Change password is not on Access. After Login, any Inspector, Manager, Owner or Viewer can open Home → <strong>Change password</strong>, type a new password twice, and save it.</p>
@@ -250,7 +254,7 @@
             : `<p>Inspectors never open Subscribe. If you see it on Access, go back and use Login or Create password. Your owner pays. You do not see the subscription fees.</p>`
         }
         <h3>Waiting</h3>
-        <p>After Create password you should land on Inspector Home. If you see Almost ready, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid when they added your email.</p>
+        <p>After Create password you should land on Inspector Home. If you see Almost ready, tap <strong>Check again</strong>. Do not tap Subscribe. Your owner already paid for this login when they added your email.</p>
       </article>
 
       <article class="user-manual-chapter">
@@ -327,7 +331,7 @@
           <li>Tap <strong>Save company details</strong>.</li>
         </ol>
         <h3>Company personnel</h3>
-        <p>Adding a person is a subscription you (the owner) place. The inspector or manager does not Subscribe and does not pay. They can work remotely. Inspector stats live on the same card.</p>
+        <p>The owner sets the company up, then adds each Manager and each Inspector as another login under that company name. The owner pays for every login. The inspector or manager does not Subscribe and does not pay. They can work remotely. Inspector stats live on the same card.</p>
         <ol>
           <li>Home → <strong>Company personnel</strong>.</li>
           <li>On the <strong>People</strong> tab: Tap <strong>Add inspector / manager</strong>. That opens the subscription page.</li>
@@ -366,7 +370,7 @@
         <h2>11. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
         ${
           showFees()
-            ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. Each extra person is another subscription. The main subscriber (owner) may invite inspectors to subscribe under the main company.</p>
+            ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. The owner pays for the owner's login when the company is created. Each Manager and each Inspector is another login under that company. The owner adds the email and pays for it. Inspectors and managers never Subscribe.</p>
         <p>Fire-S, the screens and the question list belong to Company S. You may use the app. You may not copy it or feed it to an AI to make a look-alike product.</p>
         <p>New companies: only the owner taps <strong>Subscribing New Company</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date. An annual subscription renews automatically until you cancel.</p>
@@ -376,9 +380,9 @@
         ${planTableHtml()}
         <div class="user-manual-note">
           ${esc(catalog().note || '')}
-          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays.
+          Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays for each login. A Manager and an Inspector do not pay.
         </div>`
-            : `<p>Your owner pays for Fire-S. Inspectors and other staff do not pay and never Subscribe. You never see the subscription fees. Phone and desktop share your login — do not enter the same email twice.</p>
+            : `<p>Your owner paid for your login when they added your email. Inspectors and managers never Subscribe and do not pay. You never see the subscription fees. Phone and desktop share your login — do not enter the same email twice.</p>
         <p>If your owner added your email, use <strong>Login</strong> with the temporary password they gave you. Then choose your own password. Do not tap Subscribe.</p>`
         }
         <h3>Install Fire-S on a phone</h3>
