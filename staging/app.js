@@ -43371,7 +43371,48 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       @media (max-width:760px) {
         .fire-s-cc-quick { grid-template-columns:repeat(2,minmax(0,1fr)); }
       }
+      #inspectionOpenGateBackdrop.inspection-open-gate-backdrop {
+        z-index:2147483400 !important;
+        pointer-events:auto !important;
+      }
+      .fire-s-cc-quick,
+      .fire-s-cc-quick button {
+        pointer-events:auto !important;
+        position:relative;
+        z-index:2;
+      }
+      body:has(#inspectionOpenGateBackdrop) #fireSBootScreen {
+        display:none !important;
+        pointer-events:none !important;
+      }
     `;
+  }
+
+  function releaseQuickActionClicks(){
+    const backdrop = document.getElementById('inspectionOpenGateBackdrop');
+    if (!backdrop) return;
+    backdrop.style.setProperty('z-index', '2147483400', 'important');
+    backdrop.style.setProperty('pointer-events', 'auto', 'important');
+    const boot = document.getElementById('fireSBootScreen');
+    if (boot) {
+      boot.classList.remove('is-on');
+      boot.style.setProperty('display', 'none', 'important');
+      boot.style.setProperty('pointer-events', 'none', 'important');
+    }
+    if (document.documentElement.classList.contains('fire-s-booting')) {
+      document.documentElement.classList.remove('fire-s-booting');
+      document.documentElement.classList.add('fire-s-ready');
+      const app = document.querySelector('.app');
+      if (app) {
+        app.style.opacity = '1';
+        app.style.pointerEvents = '';
+      }
+    }
+    try {
+      if (typeof window.fireSExitManagementFullscreen === 'function') {
+        window.fireSExitManagementFullscreen();
+      }
+    } catch (_) {}
   }
 
   function closeCentre(){
@@ -43530,7 +43571,11 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const project = resolveProject(projectIdentifier);
     const result = previousShowInspectionOpenGate.apply(this, arguments);
     decorate(resolveProject(projectIdentifier) || project);
-    window.setTimeout(() => decorate(resolveProject(projectIdentifier) || project), 40);
+    releaseQuickActionClicks();
+    window.setTimeout(() => {
+      decorate(resolveProject(projectIdentifier) || project);
+      releaseQuickActionClicks();
+    }, 40);
     return result;
   };
 

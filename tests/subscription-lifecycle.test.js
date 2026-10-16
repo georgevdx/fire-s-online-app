@@ -149,7 +149,7 @@ assert.ok(/fire-s-subscribe.js\?v=1-42-trial-clear/.test(stagingHtml));
 assert.ok(/function askCancelSubscription\(/.test(stagingSubscribe));
 assert.ok(/id="fireSSubscribeCancelConfirmBtn"/.test(stagingHtml));
 assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
-assert.ok(/fire-s-entitlement.js\?v=1-3-124-paid-days/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-125-gate/.test(stagingHtml));
 assert.ok(/fire-s-subscribe.css\?v=1-16-cancel-show/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));

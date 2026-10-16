@@ -162,19 +162,19 @@
   }
 
   function checklistItemFor(item, checklist) {
+    try {
+      if (typeof resolveChecklistItem === 'function') {
+        return resolveChecklistItem(checklist, item) || null;
+      }
+    } catch (_) {}
     const list = Array.isArray(checklist) ? checklist : [];
-    const idx = Number(item?.itemIndex);
-    if (Number.isFinite(idx) && idx >= 0 && list[idx]) return list[idx];
     const number = text(item?.itemNumber);
     if (number) {
-      const byNumber = list.find(row => String(row['Item Number']) === number);
+      const byNumber = list.find(row => text(row['Item Number'] || row.itemNumber) === number);
       if (byNumber) return byNumber;
     }
-    const question = text(item?.question || item?.text || item?.title || item?.['Checklist Item']);
-    if (question) {
-      const byText = list.find(row => text(row['Checklist Item']) === question);
-      if (byText) return byText;
-    }
+    const idx = Number(item?.itemIndex);
+    if (Number.isFinite(idx) && idx >= 0 && list[idx]) return list[idx];
     return null;
   }
 
@@ -210,12 +210,21 @@
   }
 
   function categoryOf(item, checklist) {
-    const named = text(item?.Section || item?.sectionName || item?.section);
-    if (named) return named;
     const row = checklistItemFor(item, checklist);
     const fromRow = text(row?.Section || row?.sectionName);
     if (fromRow) return fromRow;
+    const named = text(item?.Section || item?.sectionName || item?.section);
+    if (named) return named;
     return 'Unspecified category';
+  }
+
+  function actionLabel(item, row) {
+    return text(
+      row?.['Non Compliance Text'] ||
+      row?.['Checklist Item'] ||
+      item?.question ||
+      item?.text
+    );
   }
 
   function inspectorName(project) {
@@ -402,6 +411,53 @@
     };
   }
 
+  function mergeCycle(project, cycle) {
+    // Latest Report resolves the checklist from the archived inspection.
+    // The live premises can since have a different product or inspection type.
+    return {
+      ...project,
+      productType: text(cycle?.productType) || project?.productType,
+      inspectionType: text(cycle?.inspectionType) || project?.inspectionType,
+      occupancy: text(cycle?.occupancy) || project?.occupancy,
+      answers: Array.isArray(cycle?.answers) ? cycle.answers : [],
+      inspectionAnswers: [],
+      photos: Array.isArray(cycle?.photos) ? cycle.photos : [],
+      actions: Array.isArray(cycle?.actions) ? cycle.actions : [],
+      completedAt: cycle?.completedAt || cycle?.archivedAt || cycle?.inspectionDate || '',
+      inspectionDate: cycle?.inspectionDate || cycle?.completedAt || '',
+      inspectorName: cycle?.inspectorName || project?.inspectorName,
+      finalComments: cycle?.finalComments || ''
+    };
+  }
+
+  // Action charts must use the same finalised inspection as Latest Report.
+  // A completed live workspace can still hold an older answer set.
+  function actionSource(project) {
+    const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+    let historyIndex = -1;
+    try {
+      if (typeof latestInspectionHistoryIndex === 'function') {
+        historyIndex = Number(latestInspectionHistoryIndex(project));
+      }
+    } catch (_) {
+      historyIndex = -1;
+    }
+    if (!Number.isFinite(historyIndex)) historyIndex = -1;
+    const cycle = historyIndex >= 0 ? history[historyIndex] : null;
+    if (cycle && answeredCount(cycle) > 0) {
+      return { historyIndex, project: mergeCycle(project, cycle) };
+    }
+    const fallback = latestCompletedCycle(project);
+    if (fallback && fallback !== project) {
+      const index = history.indexOf(fallback);
+      return {
+        historyIndex: index >= 0 ? index : -1,
+        project: mergeCycle(project, fallback)
+      };
+    }
+    return { historyIndex: -1, project };
+  }
+
   function complianceStatus(project) {
     const cycle = latestCompletedCycle(project);
     if (cycle) {
@@ -443,7 +499,7 @@
         itemIndex,
         itemNumber: text(item?.itemNumber || row?.['Item Number'] || String(itemIndex + 1)),
         category: categoryOf(item, checklist),
-        question: text(item?.question || item?.text || row?.['Checklist Item']),
+        question: actionLabel(item, row),
         priority,
         ageDays,
         ageKey: bucket.key,
@@ -642,9 +698,12 @@
     list.forEach(project => {
       const status = complianceStatus(project);
       const cycle = latestCompletedCycle(project);
-      const scored = scoredProject(project);
+      const source = actionSource(project);
       portfolio[status] = (portfolio[status] || 0) + 1;
-      const actions = actionRecords(scored);
+      const actions = actionRecords(source.project).map(item => ({
+        ...item,
+        historyIndex: source.historyIndex
+      }));
       allActions.push(...actions);
       const findings = actions.length;
       const critical = actions.filter(item => item.priority === 'Critical').length;
@@ -1454,6 +1513,7 @@
   }
 
   function openInspectionFromDashboard(projectId, itemIndex) {
+    try { leaveFullscreen(); } catch (_) {}
     const section = byId('managementDashboardSection');
     if (section) section.style.display = 'none';
     try {
@@ -2027,6 +2087,7 @@ in
   window.fireSExitManagementFullscreen = leaveFullscreen;
   window.fireSOpenManagementDashboard = openDashboard;
   window.fireSRenderManagementDashboard = render;
+  window.fireSDashboardActionSource = actionSource;
   window.fireSDashboardCharts = {
     barChart,
     columnChart,
