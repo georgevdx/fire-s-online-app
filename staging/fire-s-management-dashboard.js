@@ -162,6 +162,11 @@
   }
 
   function checklistItemFor(item, checklist) {
+    try {
+      if (typeof resolveChecklistItem === 'function') {
+        return resolveChecklistItem(checklist, item) || null;
+      }
+    } catch (_) {}
     const list = Array.isArray(checklist) ? checklist : [];
     const number = text(item?.itemNumber);
     if (number) {
@@ -170,11 +175,6 @@
     }
     const idx = Number(item?.itemIndex);
     if (Number.isFinite(idx) && idx >= 0 && list[idx]) return list[idx];
-    const question = text(item?.question || item?.text || item?.title || item?.['Checklist Item']);
-    if (question) {
-      const byText = list.find(row => text(row['Checklist Item']) === question);
-      if (byText) return byText;
-    }
     return null;
   }
 
@@ -412,8 +412,13 @@
   }
 
   function mergeCycle(project, cycle) {
+    // Latest Report resolves the checklist from the archived inspection.
+    // The live premises can since have a different product or inspection type.
     return {
       ...project,
+      productType: text(cycle?.productType) || project?.productType,
+      inspectionType: text(cycle?.inspectionType) || project?.inspectionType,
+      occupancy: text(cycle?.occupancy) || project?.occupancy,
       answers: Array.isArray(cycle?.answers) ? cycle.answers : [],
       inspectionAnswers: [],
       photos: Array.isArray(cycle?.photos) ? cycle.photos : [],
@@ -421,7 +426,6 @@
       completedAt: cycle?.completedAt || cycle?.archivedAt || cycle?.inspectionDate || '',
       inspectionDate: cycle?.inspectionDate || cycle?.completedAt || '',
       inspectorName: cycle?.inspectorName || project?.inspectorName,
-      occupancy: cycle?.occupancy || project?.occupancy,
       finalComments: cycle?.finalComments || ''
     };
   }
