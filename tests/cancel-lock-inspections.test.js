@@ -112,11 +112,11 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-124-paid-days/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-125-gate/.test(stagingHtml));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
-assert.ok(/app\.js\?v=1-3-123-pdf/.test(stagingHtml));
+assert.ok(/app\.js\?v=1-3-125-filter/.test(stagingHtml));
 assert.ok(/Version 1\.3\.119-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/inspectionAccessLocked/.test(liveApp), 'live openProject must lock unpaid inspections');

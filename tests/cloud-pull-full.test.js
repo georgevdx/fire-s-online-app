@@ -58,7 +58,7 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-123-pdf',
+  '1-3-125-filter',
   '1-10-last-def',
   '108-80-toets-119',
   'fire-s-108-80-toets-119'
