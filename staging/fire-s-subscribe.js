@@ -324,7 +324,7 @@
     var copy = byId('fireSSubscribeCancelConfirmCopy');
     if (copy) {
       copy.textContent =
-        'Confirm cancel? Auto-renew stops. This login stays until ' +
+        'Confirm cancel? Auto-renew stops for this company. Managers and Inspectors follow this same cancellation. This login stays until ' +
         (when || 'the paid end date') +
         '. Company name and inspections stay in the cloud. You can subscribe again later on this page.';
     }
@@ -764,8 +764,8 @@
     } catch (_) {}
     setMessage(
       until
-        ? 'Cancelled. Auto-renew is off. This login stays open until ' + until + '. Company name and inspections stay saved.'
-        : 'Cancelled. Auto-renew is off. This login stays open until the paid-through date. Company name and inspections stay saved.'
+        ? 'Cancelled. Auto-renew is off for this company. Managers and Inspectors follow this same cancellation. This login stays open until ' + until + '. Company name and inspections stay saved.'
+        : 'Cancelled. Auto-renew is off for this company. Managers and Inspectors follow this same cancellation. This login stays open until the paid-through date. Company name and inspections stay saved.'
     );
     try {
       if (window.fireSPayfast && typeof window.fireSPayfast.hideReturnBanner === 'function') {

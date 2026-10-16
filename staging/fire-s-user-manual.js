@@ -375,7 +375,7 @@
         <p>New companies: only the owner taps <strong>Subscribing New Company</strong> on Access, then pays on PayFast. When the owner adds an email in Personnel, that extra login is also paid on PayFast.</p>
         <p>Owners open Home → <strong>Subscription</strong> to choose monthly or annual (annual is 2 months free) and to pay. After payment, the page shows that this login is active for one month or one year until the expiry date. An annual subscription renews automatically until you cancel.</p>
         <p>Seven days before the expiry date, Owner Home shows a reminder. Tap <strong>Renew</strong> to keep this login, or <strong>Cancel subscription</strong> to stop. Close hides the reminder until the next expiry date.</p>
-        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops. The login stays until the expiry date already shown. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud.</p>
+        <p>To cancel: only the Owner opens Home → <strong>Subscription</strong>, reads the numbered steps, taps <strong>Cancel subscription</strong>, and confirms. Auto-renew stops for the whole company. Every Manager and every Inspector follows that same cancellation. While the paid-through date is still open, their logins stay open with the Owner. After that date the inspections lock for them the same way they lock for the Owner, and they stay signed in on that locked Home. Cancelling or a failed payment does not delete the company name or inspections — that data stays in the cloud. The Owner subscribes again.</p>
         <p>To subscribe again: Login with the <strong>same owner email</strong>. Do not tap Subscribing New Company on Access and do not type a new company name. Open Home → <strong>Subscription</strong>, choose Monthly or Annual, tap <strong>Subscribe again</strong>, then pay on PayFast. Inspections stay in this same company.</p>
         ${planTableHtml()}
         <div class="user-manual-note">
@@ -383,7 +383,8 @@
           Roles (Inspector, Manager, Owner, Viewer) change what the person can do. They do not change who pays: the owner pays for each login. A Manager and an Inspector do not pay.
         </div>`
             : `<p>Your owner paid for your login when they added your email. Inspectors and managers never Subscribe and do not pay. You never see the subscription fees. Phone and desktop share your login — do not enter the same email twice.</p>
-        <p>If your owner added your email, use <strong>Login</strong> with the temporary password they gave you. Then choose your own password. Do not tap Subscribe.</p>`
+        <p>If your owner added your email, use <strong>Login</strong> with the temporary password they gave you. Then choose your own password. Do not tap Subscribe.</p>
+        <p>When the Owner cancels, your login follows that same cancellation. You stay signed in. The work locks with the company. The Owner subscribes again.</p>`
         }
         <h3>Install Fire-S on a phone</h3>
         <ol>

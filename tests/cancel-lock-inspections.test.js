@@ -112,7 +112,7 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-125-gate/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-126-same-cancel/.test(stagingHtml));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));

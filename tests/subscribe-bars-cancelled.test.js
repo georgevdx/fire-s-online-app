@@ -113,7 +113,10 @@ assert.ok(/role === 'new_company' && ownerEmail\(\)/.test(subscribe), 'cancelled
 assert.ok(/function preparePayCompany\(/.test(subscribe), 'PayFast must attach the linked company before checkout');
 assert.ok(/function existingCompanyPayError\(/.test(subscribe), 'existing cancelled company must not be told to create a company');
 assert.ok(/already exists/.test(subscribe));
-assert.ok(/staffMustSignOut/.test(entitlement), 'cancelled staff must stay signed out');
+assert.ok(
+  /function onOwnerCancelRoute\(\)[\s\S]*function staffMustSignOut\(\)[\s\S]*if \(onOwnerCancelRoute\(\)\) return false/.test(entitlement),
+  'cancelled managers and inspectors stay on the owner cancellation lock'
+);
 
 function fakeEl(id, nodes) {
   if (!nodes[id]) {
