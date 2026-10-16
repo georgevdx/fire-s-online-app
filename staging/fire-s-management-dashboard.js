@@ -163,13 +163,13 @@
 
   function checklistItemFor(item, checklist) {
     const list = Array.isArray(checklist) ? checklist : [];
-    const idx = Number(item?.itemIndex);
-    if (Number.isFinite(idx) && idx >= 0 && list[idx]) return list[idx];
     const number = text(item?.itemNumber);
     if (number) {
-      const byNumber = list.find(row => String(row['Item Number']) === number);
+      const byNumber = list.find(row => text(row['Item Number'] || row.itemNumber) === number);
       if (byNumber) return byNumber;
     }
+    const idx = Number(item?.itemIndex);
+    if (Number.isFinite(idx) && idx >= 0 && list[idx]) return list[idx];
     const question = text(item?.question || item?.text || item?.title || item?.['Checklist Item']);
     if (question) {
       const byText = list.find(row => text(row['Checklist Item']) === question);
@@ -210,12 +210,21 @@
   }
 
   function categoryOf(item, checklist) {
-    const named = text(item?.Section || item?.sectionName || item?.section);
-    if (named) return named;
     const row = checklistItemFor(item, checklist);
     const fromRow = text(row?.Section || row?.sectionName);
     if (fromRow) return fromRow;
+    const named = text(item?.Section || item?.sectionName || item?.section);
+    if (named) return named;
     return 'Unspecified category';
+  }
+
+  function actionLabel(item, row) {
+    return text(
+      row?.['Non Compliance Text'] ||
+      row?.['Checklist Item'] ||
+      item?.question ||
+      item?.text
+    );
   }
 
   function inspectorName(project) {
@@ -486,7 +495,7 @@
         itemIndex,
         itemNumber: text(item?.itemNumber || row?.['Item Number'] || String(itemIndex + 1)),
         category: categoryOf(item, checklist),
-        question: text(item?.question || item?.text || row?.['Checklist Item']),
+        question: actionLabel(item, row),
         priority,
         ageDays,
         ageKey: bucket.key,
@@ -1499,24 +1508,11 @@
     return 'projects';
   }
 
-  function openInspectionFromDashboard(projectId, itemIndex, historyIndex, itemNumber, question) {
-    const hasFinding = itemIndex != null && itemIndex !== '';
-    if (hasFinding && typeof window.fireSOpenActionReport === 'function') {
-      try {
-        const opened = window.fireSOpenActionReport({
-          projectId,
-          itemIndex,
-          historyIndex,
-          itemNumber,
-          question
-        });
-        if (opened !== false) return;
-      } catch (_) {}
-    }
+  function openInspectionFromDashboard(projectId, itemIndex) {
     const section = byId('managementDashboardSection');
     if (section) section.style.display = 'none';
     try {
-      if (hasFinding && typeof openFindingInspection === 'function') {
+      if (itemIndex != null && itemIndex !== '' && typeof openFindingInspection === 'function') {
         openFindingInspection(projectId, Number(itemIndex));
         return;
       }
@@ -1566,7 +1562,7 @@
                 <td>${esc(row.priority)}</td>
                 <td>${row.ageDays}d</td>
                 <td>${esc(row.responsible)}</td>
-                <td><button type="button" class="pbi-open-btn" data-pbi-open="${esc(row.projectId)}" data-pbi-item="${row.itemIndex}" data-pbi-history="${row.historyIndex}" data-pbi-number="${esc(row.itemNumber)}" data-pbi-question="${esc(row.question)}">Open</button></td>
+                <td><button type="button" class="pbi-open-btn" data-pbi-open="${esc(row.projectId)}" data-pbi-item="${row.itemIndex}">Open</button></td>
               </tr>`).join('')}</tbody>
           </table></div>`
         : '<div class="pbi-empty">No Action Items in this slice.</div>')
@@ -2001,10 +1997,7 @@ in
       event.preventDefault();
       openInspectionFromDashboard(
         openBtn.getAttribute('data-pbi-open'),
-        openBtn.getAttribute('data-pbi-item'),
-        openBtn.getAttribute('data-pbi-history'),
-        openBtn.getAttribute('data-pbi-number'),
-        openBtn.getAttribute('data-pbi-question')
+        openBtn.getAttribute('data-pbi-item')
       );
       return;
     }

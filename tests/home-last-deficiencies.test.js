@@ -15,7 +15,7 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 const stagingEntitlement = read('staging/fire-s-entitlement.js');
 
 assert.ok(
-  /app\.js\?v=1-3-124-action-open/.test(stagingHtml) &&
+  /app\.js\?v=1-3-123-pdf/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
     /fire-s-entitlement.js\?v=1-3-124-paid-days/.test(stagingHtml) &&
     /fireS\.toetsCacheDrop\.1-3-123/.test(stagingHtml) &&

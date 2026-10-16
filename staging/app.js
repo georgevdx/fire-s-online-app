@@ -22775,85 +22775,6 @@ function openLatestPremisesReport(project, focusMode) {
   generateArchivedInspectionReport(project.id, latestIndex);
 }
 
-function focusActionFinding(detail) {
-  const root = document.getElementById('reportSection');
-  if (!root || !detail) return;
-  const number = String(detail.itemNumber || '').trim();
-  const index = detail.itemIndex == null || detail.itemIndex === ''
-    ? ''
-    : String(detail.itemIndex);
-  const question = String(detail.question || '').trim().toLowerCase();
-  const nodes = Array.from(root.querySelectorAll('.nc-item'));
-  const hit = nodes.find(node => number && node.getAttribute('data-item-number') === number)
-    || nodes.find(node => index !== '' && node.getAttribute('data-item-index') === index)
-    || nodes.find(node => question && String(node.getAttribute('data-question') || '').trim().toLowerCase() === question);
-  if (!hit) return;
-  nodes.forEach(node => node.classList.remove('is-dashboard-focus'));
-  hit.classList.add('is-dashboard-focus');
-  try { hit.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
-}
-
-function fireSOpenActionReport(detail) {
-  const projectId = detail && detail.projectId;
-  const project = (typeof getProjects === 'function' ? getProjects() : []).find(
-    item => String(item && item.id) === String(projectId)
-  );
-  if (!project) {
-    alert('Inspection could not be found on this device. Sync / refresh may be required.');
-    return false;
-  }
-  if (typeof closeInspectionOpenGate === 'function') closeInspectionOpenGate();
-
-  const rawHistory = detail.historyIndex;
-  let historyIndex = rawHistory == null || rawHistory === '' ? null : Number(rawHistory);
-  if (!Number.isFinite(historyIndex)) {
-    historyIndex = typeof latestInspectionHistoryIndex === 'function'
-      ? latestInspectionHistoryIndex(project)
-      : -1;
-  }
-  const history = Array.isArray(project.inspectionHistory) ? project.inspectionHistory : [];
-  if (historyIndex >= 0 && !history[historyIndex]) historyIndex = -1;
-
-  try {
-    window.__fireSReportReturn = {
-      to: 'dashboard',
-      projectId: project.id,
-      title: 'Inspection Report',
-      focusFinding: {
-        itemIndex: detail.itemIndex,
-        itemNumber: detail.itemNumber,
-        question: detail.question
-      }
-    };
-  } catch (_) {}
-
-  if (historyIndex >= 0) {
-    generateArchivedInspectionReport(project.id, historyIndex);
-  } else {
-    const answers = Array.isArray(project.answers) && project.answers.length
-      ? project.answers
-      : (Array.isArray(project.inspectionAnswers) ? project.inspectionAnswers : []);
-    if (!answers.length) {
-      alert('No finalised inspection is available for this premises yet.');
-      return false;
-    }
-    liveReportContext = {
-      project,
-      inspection: Object.assign({}, project, {
-        answers,
-        photos: Array.isArray(project.photos) ? project.photos : []
-      })
-    };
-    generateArchivedInspectionReport(project.id, -1);
-  }
-
-  focusActionFinding(detail);
-  window.setTimeout(() => focusActionFinding(detail), 80);
-  return true;
-}
-
-window.fireSOpenActionReport = fireSOpenActionReport;
-
 async function openLatestPremisesPdf(project, focusMode) {
   if (!project || !project.id) return;
   if (!premisesHasLatestReport(project)) {
@@ -22921,7 +22842,6 @@ window.openLatestPremisesPdf = openLatestPremisesPdf;
       html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-bar span{color:#e2e8f0 !important}
       html[data-fire-s-theme="dark"] #${OVERLAY_ID} .fire-s-report-overlay-body{background:#0b1220}
       html[data-fire-s-theme="dark"] #${OVERLAY_ID} #reportSection{color:#0f172a !important;background:#fff}
-      #${OVERLAY_ID} .nc-item.is-dashboard-focus{outline:3px solid #176fb2;outline-offset:2px}
     `;
     document.head.appendChild(style);
   }
@@ -22958,10 +22878,7 @@ window.openLatestPremisesPdf = openLatestPremisesPdf;
       <div class="fire-s-report-overlay-body" id="fireSReportOverlayBody"></div>
     `;
     document.body.appendChild(node);
-    node.querySelector('#fireSReportBackQuick')?.addEventListener('click', () => {
-      const dest = currentReturn().to || 'command-centre';
-      closeOverlay({ to: dest });
-    });
+    node.querySelector('#fireSReportBackQuick')?.addEventListener('click', () => closeOverlay({ to: 'command-centre' }));
     node.querySelector('#fireSReportBackHome')?.addEventListener('click', () => closeOverlay({ to: 'home' }));
     node.querySelector('#fireSReportExportPdf')?.addEventListener('click', () => {
       if (typeof exportReport === 'function') exportReport();
@@ -22988,12 +22905,8 @@ window.openLatestPremisesPdf = openLatestPremisesPdf;
     mountReportSection(node);
     const title = node.querySelector('#fireSReportOverlayTitle');
     const ctx = currentReturn();
-    const back = node.querySelector('#fireSReportBackQuick');
     if (title) {
       title.textContent = text(ctx.title) || 'Inspection Report';
-    }
-    if (back) {
-      back.textContent = ctx.to === 'dashboard' ? 'Back to dashboard' : 'Back to Quick Actions';
     }
     node.classList.add('open');
     try { node.querySelector('#fireSReportOverlayBody')?.scrollTo(0, 0); } catch (_) {}
@@ -23013,7 +22926,6 @@ window.openLatestPremisesPdf = openLatestPremisesPdf;
       if (formSection) formSection.style.display = 'block';
       return;
     }
-    if (wanted === 'dashboard') return;
     if (wanted === 'command-centre' && projectId && typeof showInspectionOpenGate === 'function') {
       showInspectionOpenGate(projectId, focusMode);
       return;
@@ -23174,7 +23086,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
       }
 
       nonCompliance[sectionName].push({
-        itemIndex: answer.itemIndex,
         itemNumber,
         assessment: 'Action Required',
         assessmentName: item.Assessment || '',
@@ -23274,7 +23185,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
         }
 
         nonComplianceHtml += `
-          <div class="nc-item nc-${escapeHtml(String(item.severity).toLowerCase())}" data-item-number="${escapeHtml(String(item.itemNumber || ''))}" data-item-index="${escapeHtml(String(item.itemIndex ?? ''))}" data-question="${escapeHtml(item.checklistItem || '')}">
+          <div class="nc-item nc-${escapeHtml(String(item.severity).toLowerCase())}">
             <div class="finding-reference-line">
               <strong>Finding Reference:</strong>
               ${escapeHtml(item.findingReference)}
@@ -23284,17 +23195,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
               <strong>Priority:</strong>
               ${escapeHtml(item.severity)}
             </div>
-
-            ${
-              item.checklistItem && item.checklistItem !== item.text
-                ? `
-                  <div>
-                    <strong>Checklist item:</strong>
-                    ${escapeHtml(item.checklistItem)}
-                  </div>
-                `
-                : ''
-            }
 
             <div>
               <strong>Action Item:</strong>
