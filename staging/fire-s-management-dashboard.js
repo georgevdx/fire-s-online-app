@@ -1509,6 +1509,7 @@
   }
 
   function openInspectionFromDashboard(projectId, itemIndex) {
+    try { leaveFullscreen(); } catch (_) {}
     const section = byId('managementDashboardSection');
     if (section) section.style.display = 'none';
     try {

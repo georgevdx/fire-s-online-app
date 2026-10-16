@@ -166,6 +166,19 @@ function assertCentre(src, engine, label, options) {
 assertCentre(liveApp, liveEngine, 'Live', { closeAndDelete: true, independentReport: true });
 assertCentre(stagingApp, stagingEngine, 'Toets', { closeAndDelete: true, independentReport: true });
 assert.ok(
+  /#inspectionOpenGateBackdrop\.inspection-open-gate-backdrop \{\s*z-index:2147483400 !important/.test(v1Block(stagingApp)) &&
+    /body:has\(#inspectionOpenGateBackdrop\) #fireSBootScreen \{\s*display:none !important;\s*pointer-events:none !important/.test(v1Block(stagingApp)) &&
+    /function releaseQuickActionClicks\(/.test(v1Block(stagingApp)),
+  'Toets Quick Actions must stay above the boot screen and receive clicks'
+);
+assert.ok(
+  /inspectionOpenGateBackdrop/.test(read('staging/fire-s-entitlement.js').slice(
+    read('staging/fire-s-entitlement.js').indexOf('function hideInspectionWorkspaces'),
+    read('staging/fire-s-entitlement.js').indexOf('var HOME_LOCK_HIDE_IDS')
+  )),
+  'A locked toets session must put the Premises Command Centre away'
+);
+assert.ok(
   /app\.js\?v=1-3-67-pdf/.test(liveHtml),
   'Live must cache-bust Command Centre Latest Report'
 );

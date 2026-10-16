@@ -530,7 +530,7 @@
     INSPECTION_WORKSPACES.forEach(function (id) {
       hideNode(document.getElementById(id));
     });
-    ['openGateBackdrop', 'inspectionOpenGate', 'premisesCommandCentre', 'inspectorV4Root'].forEach(function (id) {
+    ['openGateBackdrop', 'inspectionOpenGate', 'inspectionOpenGateBackdrop', 'premisesCommandCentre', 'inspectorV4Root'].forEach(function (id) {
       hideNode(document.getElementById(id));
     });
   }

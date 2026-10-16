@@ -16,6 +16,15 @@ const html = read('staging/index.html');
 assert.ok(!/fireSOpenActionReport/.test(dashSrc) && !/fireSOpenActionReport/.test(appSrc));
 assert.ok(!/data-pbi-history/.test(dashSrc));
 assert.ok(/function openInspectionFromDashboard\(projectId, itemIndex\)/.test(dashSrc));
+assert.ok(
+  /leaveFullscreen\(\)/.test(
+    dashSrc.slice(
+      dashSrc.indexOf('function openInspectionFromDashboard'),
+      dashSrc.indexOf('function drillPanelHtml')
+    )
+  ),
+  'Opening a premises from the dashboard must leave fullscreen before Quick Actions'
+);
 assert.ok(/app\.js\?v=1-3-123-pdf/.test(html));
 assert.ok(/fire-s-management-dashboard\.js\?v=1-21-action-label/.test(html));
 
