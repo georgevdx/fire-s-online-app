@@ -2001,7 +2001,9 @@
   }
 
   function boot() {
+    var already = wired;
     wire();
+    if (!wired || already) return;
     render();
   }
 

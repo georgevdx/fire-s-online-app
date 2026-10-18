@@ -179,7 +179,7 @@ assert.ok(
   'A locked toets session must put the Premises Command Centre away'
 );
 assert.ok(
-  /app\.js\?v=1-3-67-pdf/.test(liveHtml),
+  /app\.js\?v=1-3-67-ready/.test(liveHtml),
   'Live must cache-bust Command Centre Latest Report'
 );
 assert.ok(

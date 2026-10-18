@@ -66,9 +66,26 @@
     wrapShowProjectList();
     assertGatewayLabel();
     try {
+      if (!window.__fireSAuthSettled) return;
+      if (window.__fireSSessionPending || window.__fireSLoggingIn) return;
       if (typeof window.fireSShouldShowAccess === 'function' && window.fireSShouldShowAccess()) {
         openAccessLogin();
       }
+    } catch (_) {}
+  }
+
+  function pinGatewayAfter(name) {
+    const original = window[name];
+    if (typeof original !== 'function' || original.__fireSGatewayPin) return;
+    const wrapped = function fireSGatewayPinAfter() {
+      const result = original.apply(this, arguments);
+      assertGatewayLabel();
+      return result;
+    };
+    wrapped.__fireSGatewayPin = true;
+    window[name] = wrapped;
+    try {
+      window.eval(name + ' = window.' + name + ';');
     } catch (_) {}
   }
 
@@ -76,10 +93,16 @@
 
   function boot() {
     wrapShowProjectList();
+    pinGatewayAfter('showHome');
+    pinGatewayAfter('renderHomeCommandCentre');
     assertGatewayLabel();
-    document.addEventListener('fire-s:auth-settled', settleAfterSplash, { once: true });
-    setTimeout(settleAfterSplash, 900);
-    setTimeout(assertGatewayLabel, 1600);
+    document.addEventListener('fire-s:auth-settled', settleAfterSplash);
+    settleAfterSplash();
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(assertGatewayLabel);
+    } else {
+      setTimeout(assertGatewayLabel, 0);
+    }
   }
 
   if (document.readyState === 'loading') {

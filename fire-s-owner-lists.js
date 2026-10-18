@@ -692,9 +692,7 @@
       root.setTimeout(wrapRefreshTargets, ms);
     } catch (_) {}
   });
-  [200, 800, 1600].forEach(ms => {
-    try {
-      root.setTimeout(refresh, ms);
-    } catch (_) {}
-  });
+  try {
+    root.setTimeout(refresh, 200);
+  } catch (_) {}
 })(typeof window !== 'undefined' ? window : this);

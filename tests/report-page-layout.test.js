@@ -37,7 +37,7 @@ function assertPdfPages(label, app, css) {
 assertPdfPages('Live', read('app.js'), read('styles.css'));
 assertPdfPages('Toets', read('staging/app.js'), read('staging/styles.css'));
 assert.ok(
-  /app\.js\?v=1-3-67-pdf/.test(read('index.html')) &&
+  /app\.js\?v=1-3-67-ready/.test(read('index.html')) &&
     /styles\.css\?v=1-3-67-pdf/.test(read('index.html')) &&
     /Version 1\.3\.67/.test(read('index.html')),
   'Live PDF files must cache-bust without changing version 1.3.67'

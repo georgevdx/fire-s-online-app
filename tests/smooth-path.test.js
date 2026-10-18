@@ -16,8 +16,8 @@ const html = read('staging/index.html');
 
 assert.ok(/const BOOT_MIN_MS = 0;/.test(stagingStartup), 'Toets splash must not keep a minimum wait');
 assert.ok(/const SPLASH_HOLD_MS = 0;/.test(stagingStartup), 'Toets splash must hide as soon as the screen is ready');
-assert.ok(/const BOOT_MIN_MS = 2200;/.test(liveStartup), 'Live splash timing stays until sit live');
-assert.ok(/const SPLASH_HOLD_MS = 2200;/.test(liveStartup), 'Live splash hold stays until sit live');
+assert.ok(/const BOOT_MIN_MS = 0;/.test(liveStartup), 'Live splash must not keep a minimum wait');
+assert.ok(/const SPLASH_HOLD_MS = 0;/.test(liveStartup), 'Live splash must hide as soon as the screen is ready');
 assert.ok(/scheduleReveal\('home', 180\)/.test(stagingStartup), 'Login splash still waits until Home is asked to open');
 assert.ok(/entitlementStillPending\(/.test(stagingStartup), 'Splash still waits for a real entitlement answer');
 assert.ok(!/,\s*1800\)/.test(stagingStartup), 'Background sync must not wait 1.8s after the splash');
@@ -33,7 +33,8 @@ assert.ok(
 );
 assert.ok(/if \(userLeftHome\(\)\) return;/.test(started), 'A late Home paint must leave an open inspection alone');
 assert.ok(
-  /\(event === 'INITIAL_SESSION' \|\| event === 'TOKEN_REFRESHED'\) && session/.test(read('staging/app.js')),
+  /\(event === 'INITIAL_SESSION' \|\| event === 'TOKEN_REFRESHED'\) && session/.test(read('staging/app.js')) &&
+    /\(event === 'INITIAL_SESSION' \|\| event === 'TOKEN_REFRESHED'\) && session/.test(read('app.js')),
   'A signed-out open must not show the other-instrument error'
 );
 
