@@ -66,7 +66,7 @@ assert.ok(
   'Live must cache-bust the projects sync-hop fix'
 );
 assert.ok(
-  /app\.js\?v=1-3-125-filter/.test(stagingHtml) &&
+  /app\.js\?v=1-3-126-quiet/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-120-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the projects sync-hop fix'
 );

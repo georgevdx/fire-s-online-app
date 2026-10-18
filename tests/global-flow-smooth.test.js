@@ -32,8 +32,8 @@ assert.ok(
   'Live must load the global-flow script'
 );
 assert.ok(
-  /fire-s-global-flow\.js\?v=1-1-copy/.test(html) &&
-    /app\.js\?v=1-3-125-filter/.test(html) &&
+  /fire-s-global-flow\.js\?v=1-2-ready/.test(html) &&
+    /app\.js\?v=1-3-126-quiet/.test(html) &&
     /fire-s-env.js\?v=1-3-120-toets/.test(html),
   'Toets-blad must load the global-flow script with a fresh cache tag'
 );

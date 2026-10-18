@@ -8,10 +8,12 @@
 (function fireSStartupStability() {
   'use strict';
 
-  const BOOT_MIN_MS = 2200;
+  // Show Access or Home the moment that screen is actually ready.
+  // The splash still stays up while a session or entitlement is unresolved.
+  const BOOT_MIN_MS = 0;
   const BOOT_MAX_MS = 4000;
   const BOOT_SESSION_MAX_MS = 12000;
-  const SPLASH_HOLD_MS = 2200;
+  const SPLASH_HOLD_MS = 0;
   let revealed = false;
   let revealTimer = null;
   let hardStopTimer = null;
@@ -249,13 +251,27 @@
     if (window.refreshSyncData.__fireSStartupWrapped) return;
 
     const original = window.refreshSyncData;
+    let queued = false;
+    let queuedThis = null;
+    let queuedArgs = null;
     const wrapped = function fireSStartupAwareRefreshSyncData() {
       if (document.documentElement.classList.contains('fire-s-booting')) {
-        setTimeout(() => {
-          try {
-            original.apply(this, arguments);
-          } catch (_) {}
-        }, 1800);
+        queuedThis = this;
+        queuedArgs = arguments;
+        if (!queued) {
+          queued = true;
+          const kick = () => {
+            if (document.documentElement.classList.contains('fire-s-booting')) {
+              setTimeout(kick, 40);
+              return;
+            }
+            queued = false;
+            try {
+              original.apply(queuedThis, queuedArgs);
+            } catch (_) {}
+          };
+          setTimeout(kick, 40);
+        }
         return Promise.resolve();
       }
       return original.apply(this, arguments);
@@ -298,7 +314,7 @@
       document.addEventListener(
         'fire-s:auth-settled',
         function () {
-          scheduleReveal('auth-settled', 80);
+          scheduleReveal('auth-settled', 0);
         },
         { once: true }
       );
@@ -306,20 +322,22 @@
 
     hardStopTimer = setTimeout(hardStop, BOOT_MAX_MS);
 
-    // Prefer reveal after role home settles — only if auth already knows.
+    // If auth is still unknown, try once more shortly. Skip this after the
+    // screen is already visible so Home does not repaint under the user.
     setTimeout(() => {
+      if (revealed) return;
       try {
         if (typeof window.fireSApplyCleanHomeRoles === 'function') {
           window.fireSApplyCleanHomeRoles();
         }
       } catch (_) {}
       if (window.__fireSAuthSettled && !sessionStillRestoring()) {
-        scheduleReveal('settled', 120);
+        scheduleReveal('settled', 0);
       }
-    }, 700);
+    }, 400);
 
     if (window.__fireSAuthSettled && !sessionStillRestoring()) {
-      scheduleReveal('auth-settled', 80);
+      scheduleReveal('auth-settled', 0);
     }
   }
 

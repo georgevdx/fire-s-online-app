@@ -268,12 +268,17 @@
     wrapShowHome();
     paint();
     watch();
-    [400, 900, 2000, 3200, 5000].forEach(ms => {
-      setTimeout(function () {
-        wrapShowHome();
-        paint();
-      }, ms);
-    });
+    let landingTries = 0;
+    const retryLanding = function () {
+      wrapShowHome();
+      paint();
+      landingTries += 1;
+      if (landingTries >= 4) return;
+      if (!wantsDesktop() || leftByUser || isBusyAwayFromHome()) return;
+      if (isShown(byId('managementDashboardSection'))) return;
+      setTimeout(retryLanding, 200);
+    };
+    setTimeout(retryLanding, 200);
   }
 
   window.fireSDesktopAddress = desktopAddress;

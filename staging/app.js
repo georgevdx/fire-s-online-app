@@ -114,7 +114,7 @@ const supabaseClient =
 window.supabaseClient = supabaseClient;
 
 if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthStateChange === 'function') {
-  supabaseClient.auth.onAuthStateChange(function (event) {
+  supabaseClient.auth.onAuthStateChange(function (event, session) {
     if (event === 'PASSWORD_RECOVERY') {
     window.__fireSPasswordRecovery = true;
     try {
@@ -133,7 +133,7 @@ if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.onAuthSt
     try {
       if (window.fireSOneInstrument) {
         if (event === 'SIGNED_OUT') window.fireSOneInstrument.stop();
-        else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        else if ((event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
           if (
             !window.__fireSPasswordRecovery &&
             !window.__fireSLoggingIn &&

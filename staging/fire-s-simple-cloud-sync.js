@@ -400,14 +400,13 @@
     init();
   }
 
-  [300, 1000, 2500].forEach(ms => setTimeout(applySimpleCloudUi, ms));
+  setTimeout(applySimpleCloudUi, 300);
 
   try {
     const client = window.supabaseClient;
     if (client?.auth?.onAuthStateChange) {
       client.auth.onAuthStateChange(() => {
         setTimeout(applySimpleCloudUi, 50);
-        setTimeout(applySimpleCloudUi, 400);
       });
     }
   } catch (_) {}

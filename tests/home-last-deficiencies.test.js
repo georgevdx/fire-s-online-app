@@ -15,8 +15,8 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 const stagingEntitlement = read('staging/fire-s-entitlement.js');
 
 assert.ok(
-  /app\.js\?v=1-3-125-filter/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
+  /app\.js\?v=1-3-126-quiet/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-11-still/.test(stagingHtml) &&
     /fire-s-entitlement.js\?v=1-3-126-same-cancel/.test(stagingHtml) &&
     /fireS\.toetsCacheDrop\.1-3-120/.test(stagingHtml) &&
     /Version 1\.3\.120-toets/.test(stagingHtml),

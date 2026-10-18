@@ -20,15 +20,6 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: 'window' }))
-      .then(windows => Promise.all((windows || []).map(client => {
-        try {
-          if (client && typeof client.navigate === 'function') {
-            return client.navigate(client.url);
-          }
-        } catch (_) {}
-        return undefined;
-      })))
   );
 });
 

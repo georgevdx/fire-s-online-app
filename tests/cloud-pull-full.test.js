@@ -58,8 +58,8 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-125-filter',
-  '1-10-last-def',
+  '1-3-126-quiet',
+  '1-11-still',
   '108-84-toets-120',
   'fire-s-108-84-toets-120'
 );

@@ -17,8 +17,8 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /Version 1\.3\.120-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-125-filter/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-10-last-def/.test(stagingHtml) &&
+    /app\.js\?v=1-3-126-quiet/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-11-still/.test(stagingHtml) &&
     /1\.3\.120-toets/.test(stagingEnv) &&
     /fire-s-108-84-toets-120/.test(stagingSw),
   'Toets must show 1.3.120-toets so a phone can tell it has the one company building count'

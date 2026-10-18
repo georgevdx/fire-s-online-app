@@ -140,12 +140,18 @@
     const extraDash = byId('fireSExecutiveDashboard1115');
 
     if (onGateway) {
-      if (command) command.setAttribute('aria-hidden', 'true');
-      if (home) home.setAttribute('aria-hidden', 'true');
-      if (extraDash) extraDash.style.setProperty('display', 'none', 'important');
+      if (command && command.getAttribute('aria-hidden') !== 'true') {
+        command.setAttribute('aria-hidden', 'true');
+      }
+      if (home && home.getAttribute('aria-hidden') !== 'true') {
+        home.setAttribute('aria-hidden', 'true');
+      }
+      if (extraDash && extraDash.style.display !== 'none') {
+        extraDash.style.setProperty('display', 'none', 'important');
+      }
     } else {
-      if (command) command.removeAttribute('aria-hidden');
-      if (home) home.removeAttribute('aria-hidden');
+      if (command && command.getAttribute('aria-hidden') != null) command.removeAttribute('aria-hidden');
+      if (home && home.getAttribute('aria-hidden') != null) home.removeAttribute('aria-hidden');
     }
 
     if (filling) hidePremisesDashboardChrome();

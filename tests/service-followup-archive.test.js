@@ -28,7 +28,7 @@ assert.ok(
   'Live Fire-S must be 1.3.67 after sit dit live'
 );
 assert.ok(
-  /app\.js\?v=1-3-125-filter/.test(stagingHtml) &&
+  /app\.js\?v=1-3-126-quiet/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-120-toets/.test(stagingHtml) &&
     /fire-s-service-requests\.js\?v=1-2-archive/.test(stagingHtml),
   'Toets-blad must cache-bust the archive follow-up files'

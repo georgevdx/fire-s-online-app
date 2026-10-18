@@ -1295,9 +1295,7 @@
 
   window.fireSApplyCleanHomeRoles = function fireSApplyCleanHomeRoles() {
     scheduleApply(0);
-    setTimeout(applyCleanHome, 120);
-    setTimeout(applyCleanHome, 600);
-    setTimeout(bindRoleTestRefresh, 50);
+    bindRoleTestRefresh();
   };
   window.refreshCleanHomeRoles = window.fireSApplyCleanHomeRoles;
 
@@ -1383,10 +1381,8 @@
     scheduleApply(0);
   }
 
-  [200, 800].forEach(ms => {
-    setTimeout(applyCleanHome, ms);
-    setTimeout(bindRoleTestRefresh, ms);
-  });
+  setTimeout(applyCleanHome, 200);
+  setTimeout(bindRoleTestRefresh, 200);
   bindRoleTestRefresh();
 
   try {
