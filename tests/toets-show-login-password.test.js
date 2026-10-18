@@ -54,7 +54,7 @@ assertShowPassword(stagingHtml, stagingStarted, stagingCss, 'Toets');
 assertShowPassword(liveHtml, liveStarted, liveCss, 'Live');
 
 assert.ok(
-  /fire-s-get-started\.css\?v=2-22-howto/.test(stagingHtml) &&
+  /fire-s-get-started\.css\?v=2-23-howto-ink/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml),
   'Toets-blad must cache-bust the phone Access files'

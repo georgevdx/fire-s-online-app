@@ -34,16 +34,17 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-123/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-80-toets-119/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-124/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-83-howto/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),
   'Toets-blad must register its own service worker so live cannot keep an old 1.3.107 page'
 );
 assert.ok(
   /cache: 'no-store'/.test(stagingSw) &&
+    stagingSw.indexOf('/\\.css$/i.test(path)') !== -1 &&
     /location\.href\)\.indexOf\(scope\)/.test(stagingHtml),
-  'Toets must drop any worker that still controls the toets page, including a live hijack'
+  'Toets must drop any worker that still controls the toets page and fetch CSS from the network'
 );
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&

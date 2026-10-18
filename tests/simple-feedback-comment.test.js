@@ -125,11 +125,11 @@ assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-125-filter/.test(stagingHtml) &&
     /fire-s-env.js\?v=1-3-119-toets/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-80-toets-119/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-83-howto/.test(stagingHtml) &&
     /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
     /TOETS-BLAD 1\.3\.119-toets/.test(read('staging/fire-s-env.js')) &&
     /1\.3\.119-toets/.test(read('staging/fire-s-env.js')) &&
-    /fire-s-108-80-toets-119/.test(read('staging/service-worker.js')),
+    /fire-s-108-83-howto/.test(read('staging/service-worker.js')),
   'Toets-blad must show 1.3.119-toets and drop the stuck 1.3.78 cache'
 );
 

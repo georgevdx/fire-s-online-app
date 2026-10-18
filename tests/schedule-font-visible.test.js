@@ -39,7 +39,7 @@ assert.ok(
 );
 assert.ok(
   /styles\.css\?v=1-3-123-pdf/.test(read('staging/index.html')) &&
-    /fire-s-dark-type\.css\?v=1-12-billing/.test(read('staging/index.html')),
+    /fire-s-dark-type\.css\?v=1-13-howto-ink/.test(read('staging/index.html')),
   'Toets must cache-bust Schedule font CSS'
 );
 

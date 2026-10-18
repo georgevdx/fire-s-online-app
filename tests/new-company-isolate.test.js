@@ -18,7 +18,7 @@ assert.ok(
   /Version 1\.3\.119-toets/.test(stagingHtml) &&
     /app\.js\?v=1-3-125-filter/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-61-paid-days/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-123/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-124/.test(stagingHtml),
   'Toets must cache-bust the clean new-company lists'
 );
 

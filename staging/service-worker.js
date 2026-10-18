@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-80-toets-119';
+const CACHE = 'fire-s-108-83-howto';
 const PRECACHE = [
   './manifest.json',
   './icon-192.png',
@@ -47,8 +47,9 @@ self.addEventListener('fetch', event => {
     req.mode === 'navigate' ||
     path.endsWith('/') ||
     /\.html$/i.test(path);
+  const fresh = isDoc || /\.css$/i.test(path);
   event.respondWith(
-    fetch(req, isDoc ? { cache: 'no-store' } : undefined)
+    fetch(req, fresh ? { cache: 'no-store' } : undefined)
       .then(res => {
         if (res && res.ok && !isDoc) {
           const copy = res.clone();

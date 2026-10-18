@@ -10,7 +10,7 @@
     (function fireSDropStuckToetsCache() {
       try {
         var WANT = '1.3.119-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-123';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-124';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -2062,7 +2062,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-80-toets-119')
+        navigator.serviceWorker.register('./service-worker.js?v=108-83-howto')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

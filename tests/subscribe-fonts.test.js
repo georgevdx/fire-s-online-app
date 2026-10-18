@@ -45,6 +45,12 @@ assert.strictEqual(
   read('staging/fire-s-dark-type.css'),
   'Live and toets last-loaded Dark Mode type must stay identical'
 );
+assert.ok(
+  /html\[data-fire-s-theme="dark"\] \.fire-s-billing-howto h4[\s\S]*color: #0b1220 !important[\s\S]*font-weight: 800 !important/.test(
+    read('staging/fire-s-dark-type.css')
+  ),
+  'How-to heading must be near-black on the white card'
+);
 
 assert.ok(
   /styles\.css\?v=1-3-67-pdf/.test(read('index.html')) &&
@@ -56,7 +62,7 @@ assert.ok(
 assert.ok(
   /styles\.css\?v=1-3-123-pdf/.test(read('staging/index.html')) &&
     /fire-s-fit-text\.css\?v=1-19-actovd/.test(read('staging/index.html')) &&
-    /fire-s-dark-type\.css\?v=1-12-billing/.test(read('staging/index.html')),
+    /fire-s-dark-type\.css\?v=1-13-howto-ink/.test(read('staging/index.html')),
   'Toets must cache-bust subscription paper font CSS'
 );
 
