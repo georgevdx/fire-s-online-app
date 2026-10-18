@@ -404,13 +404,14 @@ body.fire-s-clean-home.fire-s-role-pending-member .startup-route-grid {
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: #fff;
-  color: #334155;
+  color: #0f172a;
 }
 
 .fire-s-billing-howto h4 {
   margin: 0 0 8px;
   font-size: 1rem;
-  color: #0f172a;
+  font-weight: 800;
+  color: #0b1220;
 }
 
 .fire-s-billing-howto p {

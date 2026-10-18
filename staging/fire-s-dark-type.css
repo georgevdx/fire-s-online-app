@@ -859,6 +859,27 @@ html[data-fire-s-theme="dark"] .fire-s-company-billing .fire-s-company-billing-l
   -webkit-text-fill-color: #334155 !important;
 }
 
+/* How-to card is white paper. Dark theme was painting its type the same light grey as the subscribe intro. */
+html[data-fire-s-theme="dark"] .fire-s-billing-howto,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-intro .fire-s-billing-howto {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-billing-howto :is(h4, p, ol, li, strong, span, a) {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+html[data-fire-s-theme="dark"] .fire-s-billing-howto h4 {
+  color: #0b1220 !important;
+  -webkit-text-fill-color: #0b1220 !important;
+  font-weight: 800 !important;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator,
 input.expiry-date::-webkit-calendar-picker-indicator,
 input.fire-s-date-input::-webkit-calendar-picker-indicator {
