@@ -45,7 +45,7 @@ assert.ok(
 assert.ok(
   /app\.js\?v=1-3-125-filter/.test(read('staging/index.html')) &&
     /styles\.css\?v=1-3-123-pdf/.test(read('staging/index.html')) &&
-    /Version 1\.3\.119-toets/.test(read('staging/index.html')),
+    /Version 1\.3\.120-toets/.test(read('staging/index.html')),
   'Toets must use the same PDF page rules'
 );
 
