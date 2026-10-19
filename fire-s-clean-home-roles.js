@@ -79,11 +79,16 @@
       grid.insertBefore(btn, grid.firstElementChild);
     }
     if (!btn) return;
-    btn.hidden = false;
-    btn.removeAttribute('aria-hidden');
-    btn.removeAttribute('tabindex');
+    if (btn.hidden) btn.hidden = false;
+    if (typeof btn.getAttribute === 'function') {
+      if (btn.getAttribute('aria-hidden') != null) btn.removeAttribute('aria-hidden');
+      if (btn.getAttribute('tabindex') != null) btn.removeAttribute('tabindex');
+    } else {
+      btn.removeAttribute('aria-hidden');
+      btn.removeAttribute('tabindex');
+    }
     wrapCommandCardText(btn);
-    btn.style.removeProperty('display');
+    if (btn.style && btn.style.display) btn.style.removeProperty('display');
     if (getComputedStyle(btn).display === 'none') {
       btn.style.setProperty('display', 'flex', 'important');
     }
@@ -350,7 +355,7 @@
   function setText(selector, text) {
     const el =
       typeof selector === 'string' ? document.querySelector(selector) : selector;
-    if (el) el.textContent = text;
+    if (el && el.textContent !== text) el.textContent = text;
   }
 
   function inspectionHomeLocked() {
@@ -418,6 +423,13 @@
     }
     const el = byId(id);
     if (!el) return;
+    if (
+      typeof el.getAttribute === 'function' &&
+      !el.hidden &&
+      el.getAttribute('aria-hidden') == null &&
+      el.getAttribute('tabindex') == null &&
+      el.style.display !== 'none'
+    ) return;
     el.hidden = false;
     el.removeAttribute('aria-hidden');
     el.removeAttribute('tabindex');
@@ -430,6 +442,13 @@
   function hide(id) {
     const el = byId(id);
     if (!el) return;
+    if (
+      typeof el.getAttribute === 'function' &&
+      el.hidden &&
+      el.getAttribute('aria-hidden') === 'true' &&
+      el.getAttribute('tabindex') === '-1' &&
+      el.style.display === 'none'
+    ) return;
     el.hidden = true;
     el.setAttribute('aria-hidden', 'true');
     el.setAttribute('tabindex', '-1');
@@ -456,11 +475,11 @@
         }
       } catch (_) {}
     } else {
-      if (legacy) {
+      if (legacy && !(legacy.hidden && legacy.style.display === 'none')) {
         legacy.hidden = true;
         legacy.style.setProperty('display', 'none', 'important');
       }
-      if (ownerRow) {
+      if (ownerRow && !(ownerRow.hidden && ownerRow.style.display === 'none')) {
         ownerRow.hidden = true;
         ownerRow.style.setProperty('display', 'none', 'important');
       }
@@ -475,9 +494,9 @@
         el.style.removeProperty('display');
         el.removeAttribute('hidden');
       } else {
-        el.style.setProperty('display', 'none', 'important');
-        el.setAttribute('hidden', 'true');
-        el.innerHTML = '';
+        if (el.style.display !== 'none') el.style.setProperty('display', 'none', 'important');
+        if (typeof el.getAttribute !== 'function' || el.getAttribute('hidden') !== 'true') el.setAttribute('hidden', 'true');
+        if (el.innerHTML) el.innerHTML = '';
       }
     });
   }
@@ -506,14 +525,32 @@
     wrapCommandCardText(card);
     const titleEl = card.querySelector('.command-title, .route-title, strong');
     const copyEl = card.querySelector('.command-copy, .route-copy, p, small');
-    if (titleEl) titleEl.textContent = title;
-    if (copyEl) copyEl.textContent = copy;
-    card.setAttribute('aria-label', title);
-    card.title = title;
+    if (titleEl && titleEl.textContent !== title) titleEl.textContent = title;
+    if (copyEl && copyEl.textContent !== copy) copyEl.textContent = copy;
+    if (typeof card.getAttribute !== 'function' || card.getAttribute('aria-label') !== title) card.setAttribute('aria-label', title);
+    if (card.title !== title) card.title = title;
   }
 
   function setBodyRole(roleClass, cleanRoleKey) {
     if (!document.body) return;
+    const key = cleanRoleKey || roleClass.replace(/^fire-s-role-/, '').replace(/-/g, '_');
+    const roleClasses = [
+      'fire-s-role-inspector',
+      'fire-s-role-manager',
+      'fire-s-role-owner',
+      'fire-s-role-management',
+      'fire-s-role-guest',
+      'fire-s-role-viewer',
+      'fire-s-role-new-company',
+      'fire-s-role-pending-member'
+    ];
+    if (
+      document.body.classList.contains('fire-s-clean-home') &&
+      document.body.classList.contains(roleClass) &&
+      !document.body.classList.contains('fire-s-inspector-v4') &&
+      document.body.dataset.fireSCleanHomeRole === key &&
+      roleClasses.every(name => name === roleClass || !document.body.classList.contains(name))
+    ) return;
     document.body.classList.remove(
       'fire-s-role-inspector',
       'fire-s-role-manager',
@@ -527,8 +564,7 @@
     );
     document.body.classList.remove('fire-s-inspector-v4');
     document.body.classList.add('fire-s-clean-home', roleClass);
-    document.body.dataset.fireSCleanHomeRole =
-      cleanRoleKey || roleClass.replace(/^fire-s-role-/, '').replace(/-/g, '_');
+    document.body.dataset.fireSCleanHomeRole = key;
   }
 
   function setHero(kicker, title, subtitle) {
@@ -649,8 +685,10 @@
 
   function showHomeHero() {
     const homeHero = document.querySelector('#homeSection .home-hero');
-    if (homeHero) homeHero.style.removeProperty('display');
-    document.body.classList.remove('fire-s-inspector-v4');
+    if (homeHero && homeHero.style.display) homeHero.style.removeProperty('display');
+    if (document.body && document.body.classList.contains('fire-s-inspector-v4')) {
+      document.body.classList.remove('fire-s-inspector-v4');
+    }
     const shell = byId('inspectorV4Shell');
     if (shell) {
       shell.style.setProperty('display', 'none', 'important');
@@ -1058,16 +1096,15 @@
   function paintRecoveryBody(on) {
     try {
       if (!document.body) return;
+      const html = document.documentElement;
+      const bodyOn = document.body.classList.contains('fire-s-password-recovery');
+      const htmlOn = !!(html && html.classList.contains('fire-s-password-recovery'));
       if (on) {
-        document.body.classList.add('fire-s-password-recovery');
-        if (document.documentElement) {
-          document.documentElement.classList.add('fire-s-password-recovery');
-        }
+        if (!bodyOn) document.body.classList.add('fire-s-password-recovery');
+        if (html && !htmlOn) html.classList.add('fire-s-password-recovery');
       } else {
-        document.body.classList.remove('fire-s-password-recovery');
-        if (document.documentElement) {
-          document.documentElement.classList.remove('fire-s-password-recovery');
-        }
+        if (bodyOn) document.body.classList.remove('fire-s-password-recovery');
+        if (html && htmlOn) html.classList.remove('fire-s-password-recovery');
       }
     } catch (_) {}
   }

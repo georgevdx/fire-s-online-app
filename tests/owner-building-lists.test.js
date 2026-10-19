@@ -112,7 +112,7 @@ assert.ok(
   'Home building count and KPI cards must refresh after cloud setProjects'
 );
 assert.ok(
-  /fire-s-owner-lists\.js\?v=1-4-ready/.test(html),
+  /fire-s-owner-lists\.js\?v=1-4-still/.test(html),
   'Home must cache-bust the phone owner-list refresh'
 );
 

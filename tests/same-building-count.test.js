@@ -20,7 +20,7 @@ const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-ready/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-still/.test(liveHtml) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv) &&
     /fire-s-108-81-cancel/.test(liveSw),
   'Live must keep 1.3.67 and drop the old Home cache so the phone count fix sits'

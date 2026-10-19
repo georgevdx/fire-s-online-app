@@ -135,7 +135,7 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-ready/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-still/.test(liveHtml) &&
     /service-worker\.js\?v=108-81-cancel/.test(liveHtml) &&
     /fire-s-108-81-cancel/.test(read('service-worker.js')) &&
     /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(read('fire-s-env.js')),

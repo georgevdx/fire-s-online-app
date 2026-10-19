@@ -27048,7 +27048,8 @@ function fsExecutiveGetKpis() {
 
 function fsExecutiveSetText(id, text) {
   const el = document.getElementById(id);
-  if (el) el.textContent = text;
+  const next = text == null ? '' : String(text);
+  if (el && el.textContent !== next) el.textContent = next;
 }
 
 function fsExecutiveRelabelCards() {
@@ -27060,13 +27061,13 @@ function fsExecutiveRelabelCards() {
   labels.forEach(([buttonId, label]) => {
     const button = document.getElementById(buttonId);
     const labelEl = button?.querySelector('.stat-label');
-    if (labelEl) labelEl.textContent = label;
+    if (labelEl && labelEl.textContent !== label) labelEl.textContent = label;
   });
 
   const photoNumber = document.getElementById('cmdPhotoCount');
   const photoCard = photoNumber?.closest('.main-stat-card');
   const photoLabel = photoCard?.querySelector('.stat-label');
-  if (photoLabel) photoLabel.textContent = 'Inspections This Month';
+  if (photoLabel && photoLabel.textContent !== 'Inspections This Month') photoLabel.textContent = 'Inspections This Month';
 }
 
 function renderHomeCommandCentre() {
@@ -27406,7 +27407,7 @@ function fsActivitySetExecutiveLabels() {
   const photoNumber = document.getElementById('cmdPhotoCount');
   const photoCard = photoNumber?.closest('.main-stat-card');
   const photoLabel = photoCard?.querySelector('.stat-label');
-  if (photoLabel) photoLabel.textContent = 'Inspections This Month';
+  if (photoLabel && photoLabel.textContent !== 'Inspections This Month') photoLabel.textContent = 'Inspections This Month';
 }
 
 function renderHomeCommandCentre() {
@@ -27579,7 +27580,8 @@ function fsExecutiveGetKpis() {
 
 function fsDashboardSetText(id, value) {
   const el = document.getElementById(id);
-  if (el) el.textContent = value;
+  const next = value == null ? '' : String(value);
+  if (el && el.textContent !== next) el.textContent = next;
 }
 
 function fsDashboardSetLabel(buttonId, label) {
@@ -27587,10 +27589,10 @@ function fsDashboardSetLabel(buttonId, label) {
   if (!button) return;
 
   const statLabel = button.querySelector('.stat-label');
-  if (statLabel) statLabel.textContent = label;
+  if (statLabel && statLabel.textContent !== label) statLabel.textContent = label;
 
   const strong = button.querySelector('strong');
-  if (strong) strong.textContent = label;
+  if (strong && strong.textContent !== label) strong.textContent = label;
 }
 
 function fsDashboardRelabelAll() {
@@ -30132,14 +30134,13 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function renderReadOnlyExecutiveSnapshot() {
     const host = document.getElementById('fireSExecMiniDashboard');
-    if (!host) return;
+    if (!host) return false;
 
     const data = snapshotData();
     const healthText = data.health === null ? '—' : `${data.health}%`;
     const healthSub = data.health === null ? 'No scored data' : data.health >= 90 ? 'Excellent' : data.health >= 75 ? 'Good' : data.health >= 60 ? 'Attention' : 'Critical';
 
-    host.className = 'fire-s-exec-mini-dashboard fire-s-exec-readonly fire-s-snapshot-clean-v1111';
-    host.innerHTML = `
+    const nextHtml = `
       <div class="fire-s-snapshot-head-v1111">
         <div>
           <div class="fire-s-exec-kicker">Executive Snapshot</div>
@@ -30157,21 +30158,39 @@ if (!window.fireSMobileSmartCardsApplied) {
       </div>
       <div class="fire-s-snapshot-note-v1111">Snapshot tiles are information only and do not filter or navigate.</div>
     `;
+    if (host.getAttribute('data-fire-s-snapshot-html') === nextHtml) return false;
+    host.className = 'fire-s-exec-mini-dashboard fire-s-exec-readonly fire-s-snapshot-clean-v1111';
+    host.setAttribute('data-fire-s-snapshot-html', nextHtml);
+    host.innerHTML = nextHtml;
+    return true;
   }
 
   function polishPremisesCards() {
+    let changed = false;
     document.querySelectorAll('.premises-card-v118b').forEach(card => {
-      card.classList.add('premises-card-v1111-polished');
-      card.setAttribute('aria-label', 'Open premises');
-
+      if (!card.classList.contains('premises-card-v1111-polished')) {
+        card.classList.add('premises-card-v1111-polished');
+        changed = true;
+      }
+      if (card.getAttribute('aria-label') !== 'Open premises') {
+        card.setAttribute('aria-label', 'Open premises');
+        changed = true;
+      }
       const footer = card.querySelector('.premises-card-footer-v118b b');
-      if (footer) footer.textContent = 'Open premises →';
+      if (footer && footer.textContent !== 'Open premises →') {
+        footer.textContent = 'Open premises →';
+        changed = true;
+      }
     });
+    return changed;
   }
 
   function refreshUiPolish() {
+    if (refreshUiPolish.__painting) return;
+    refreshUiPolish.__painting = true;
     try { renderReadOnlyExecutiveSnapshot(); } catch (error) { console.warn('Executive Snapshot cleanup failed:', error); }
     try { polishPremisesCards(); } catch (error) { console.warn('Premises card polish failed:', error); }
+    refreshUiPolish.__painting = false;
   }
 
   // Keep the active filters owned by the Show Filters drawer only.
@@ -30183,6 +30202,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   });
 
   const observer = new MutationObserver(() => {
+    if (refreshUiPolish.__painting) return;
     if (observer.__fireSTimer) clearTimeout(observer.__fireSTimer);
     observer.__fireSTimer = setTimeout(refreshUiPolish, 80);
   });
@@ -31892,6 +31912,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (!container) return;
 
     const photos = readPhotos().map(normalise);
+    if (!photos.length && container.querySelector('.fire-s-photo-empty-v1116')) return;
     container.innerHTML = '';
 
     if (typeof updatePhotoUploadStatus === 'function') {
@@ -32959,7 +32980,10 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function setProjectsFreezeClass() {
-    document.body.classList.toggle('fire-s-freeze-projects-sync', isProjectsPageVisible());
+    const on = isProjectsPageVisible();
+    const has = document.body.classList.contains('fire-s-freeze-projects-sync');
+    if (on && !has) document.body.classList.add('fire-s-freeze-projects-sync');
+    else if (!on && has) document.body.classList.remove('fire-s-freeze-projects-sync');
   }
 
   function readProjectsSignature() {
@@ -34541,12 +34565,13 @@ function fireSApplyLifecycleUxLabels() {
 
   function setText(selectorOrEl, text){
     const el = typeof selectorOrEl === 'string' ? qs(selectorOrEl) : selectorOrEl;
-    if (el) el.textContent = text;
+    if (el && el.textContent !== text) el.textContent = text;
   }
 
   function show(id){
     const el = byId(id);
     if (!el) return;
+    if (!el.hidden && el.style.display !== 'none' && el.getAttribute('aria-hidden') == null && el.getAttribute('tabindex') == null) return;
     el.hidden = false;
     el.style.display = '';
     el.removeAttribute('aria-hidden');
@@ -34556,6 +34581,7 @@ function fireSApplyLifecycleUxLabels() {
   function hide(id){
     const el = byId(id);
     if (!el) return;
+    if (el.hidden && el.style.display === 'none' && el.getAttribute('aria-hidden') === 'true' && el.getAttribute('tabindex') === '-1') return;
     el.hidden = true;
     el.style.setProperty('display','none','important');
     el.setAttribute('aria-hidden','true');
@@ -34567,10 +34593,10 @@ function fireSApplyLifecycleUxLabels() {
     if (!card) return;
     const titleEl = card.querySelector('.command-title, strong, h3, h4, .route-title');
     const copyEl = card.querySelector('.command-copy, p, small, .route-copy');
-    if (titleEl) titleEl.textContent = title;
-    if (copyEl) copyEl.textContent = copy;
-    card.setAttribute('aria-label', title);
-    card.title = title;
+    if (titleEl && titleEl.textContent !== title) titleEl.textContent = title;
+    if (copyEl && copyEl.textContent !== copy) copyEl.textContent = copy;
+    if (card.getAttribute('aria-label') !== title) card.setAttribute('aria-label', title);
+    if (card.title !== title) card.title = title;
   }
 
   function closeCloud(){
@@ -34594,8 +34620,8 @@ function fireSApplyLifecycleUxLabels() {
   function clarifyNewButton(){
     const btn = byId('newProjectBtn');
     if (!btn) return;
-    btn.setAttribute('aria-label','New inspection at new site');
-    btn.setAttribute('title','New inspection at new site');
+    if (btn.getAttribute('aria-label') !== 'New inspection at new site') btn.setAttribute('aria-label','New inspection at new site');
+    if (btn.getAttribute('title') !== 'New inspection at new site') btn.setAttribute('title','New inspection at new site');
     const txt = String(btn.textContent || '').trim();
     if (/^\+?\s*new$/i.test(txt) || /new project/i.test(txt)) {
       btn.textContent = '+ New Inspection at New Site';
@@ -34980,16 +35006,19 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   function setText(id, value){
     const el = document.getElementById(id);
-    if (el) el.textContent = String(value);
+    const next = String(value);
+    if (!el || el.textContent === next) return;
+    if (id === 'cmdPhotoCount' && el.textContent === 'Open' && next !== 'Open') return;
+    el.textContent = next;
   }
 
   function setButtonLabel(buttonId, label){
     const btn = document.getElementById(buttonId);
     if (!btn) return;
     const labelEl = btn.querySelector('.stat-label, strong, .command-title');
-    if (labelEl) labelEl.textContent = label;
-    btn.setAttribute('aria-label', label);
-    btn.title = label;
+    if (labelEl && labelEl.textContent !== label) labelEl.textContent = label;
+    if (btn.getAttribute('aria-label') !== label) btn.setAttribute('aria-label', label);
+    if (btn.title !== label) btn.title = label;
   }
 
   function openGateway(filter, message){
@@ -35130,15 +35159,17 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   function updateAccessLabel(){
     const access = document.getElementById('mainCommandAccessStatus');
     if (!access) return;
+    if (window.__fireSCleanHomeOwnsRoleUi) return;
     const companyName =
       (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.companyName) ||
       (typeof currentCompanyAccess !== 'undefined' && currentCompanyAccess && currentCompanyAccess.companyName) ||
       'Local/Personal Workspace';
     const actual = actualRole();
     const viewing = viewAsRole();
-    access.textContent = actual === 'super_admin'
+    const next = actual === 'super_admin'
       ? `${companyName} · actual: super_admin · viewing: ${viewing}`
       : `${companyName} · ${viewing}`;
+    if (access.textContent !== next) access.textContent = next;
   }
 
   function applyAll(){
@@ -35225,16 +35256,19 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   function setText(id, value){
     const el = document.getElementById(id);
-    if (el) el.textContent = String(value);
+    const next = String(value);
+    if (!el || el.textContent === next) return;
+    if (id === 'cmdPhotoCount' && el.textContent === 'Open' && next !== 'Open') return;
+    el.textContent = next;
   }
 
   function setLabel(buttonId, label){
     const btn = document.getElementById(buttonId);
     if (!btn) return;
     const labelEl = btn.querySelector('.stat-label, strong, .command-title');
-    if (labelEl) labelEl.textContent = label;
-    btn.setAttribute('aria-label', label);
-    btn.title = label;
+    if (labelEl && labelEl.textContent !== label) labelEl.textContent = label;
+    if (btn.getAttribute('aria-label') !== label) btn.setAttribute('aria-label', label);
+    if (btn.title !== label) btn.title = label;
   }
 
   function openGatewayFilter(filter, message){
@@ -35475,16 +35509,19 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   function setText(id, value){
     const el = document.getElementById(id);
-    if (el) el.textContent = String(value);
+    const next = String(value);
+    if (!el || el.textContent === next) return;
+    if (id === 'cmdPhotoCount' && el.textContent === 'Open' && next !== 'Open') return;
+    el.textContent = next;
   }
 
   function setLabel(buttonId, label){
     const btn = document.getElementById(buttonId);
     if (!btn) return;
     const labelEl = btn.querySelector('.stat-label, strong, .command-title');
-    if (labelEl) labelEl.textContent = label;
-    btn.setAttribute('aria-label', label);
-    btn.title = label;
+    if (labelEl && labelEl.textContent !== label) labelEl.textContent = label;
+    if (btn.getAttribute('aria-label') !== label) btn.setAttribute('aria-label', label);
+    if (btn.title !== label) btn.title = label;
   }
 
   function showGatewayWithFilter(filter, message){
@@ -35781,17 +35818,20 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   function setText(id, value){
     const el = document.getElementById(id);
-    if (el) el.textContent = String(value);
+    const next = String(value);
+    if (!el || el.textContent === next) return;
+    if (id === 'cmdPhotoCount' && el.textContent === 'Open' && next !== 'Open') return;
+    el.textContent = next;
   }
 
   function setLabel(button, label, copy){
     if (!button) return;
     const title = button.querySelector('.stat-label, strong, .command-title');
     const subtitle = button.querySelector('.command-copy');
-    if (title) title.textContent = label;
-    if (subtitle && copy !== undefined) subtitle.textContent = copy;
-    button.setAttribute('aria-label', label);
-    button.title = label;
+    if (title && title.textContent !== label) title.textContent = label;
+    if (subtitle && copy !== undefined && subtitle.textContent !== copy) subtitle.textContent = copy;
+    if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+    if (button.title !== label) button.title = label;
   }
 
   function cloneButton(oldId, newId){
@@ -35856,8 +35896,10 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       gatewayBtn = renamedGateway;
     }
     if (gatewayBtn) {
-      gatewayBtn.hidden = false;
-      gatewayBtn.style.removeProperty('display');
+      if (!window.__fireSCleanHomeOwnsRoleUi) {
+        if (gatewayBtn.hidden) gatewayBtn.hidden = false;
+        if (gatewayBtn.style.display) gatewayBtn.style.removeProperty('display');
+      }
       setLabel(gatewayBtn, 'Inspection Gateway', 'Open, continue, search and manage inspections.');
       bind(gatewayBtn, 'all', 'Inspection Gateway opened.');
     }
@@ -36074,16 +36116,22 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   try { setInspectionGatewayQuickFilter = setFilter; } catch (_) {}
 
   function count(filter){ return projects().filter(p => unifiedMatcher(p, filter)).length; }
-  function text(id, value){ const el = document.getElementById(id); if (el) el.textContent = String(value); }
+  function text(id, value){
+    const el = document.getElementById(id);
+    const next = String(value);
+    if (!el || el.textContent === next) return;
+    if (id === 'cmdPhotoCount' && el.textContent === 'Open' && next !== 'Open') return;
+    el.textContent = next;
+  }
   function label(buttonId, value, copy){
     const btn = document.getElementById(buttonId);
     if (!btn) return;
     const title = btn.querySelector('.stat-label, .command-title, strong');
     const sub = btn.querySelector('.command-copy, small, em');
-    if (title) title.textContent = value;
-    if (sub && copy) sub.textContent = copy;
-    btn.setAttribute('aria-label', value);
-    btn.title = value;
+    if (title && title.textContent !== value) title.textContent = value;
+    if (sub && copy && sub.textContent !== copy) sub.textContent = copy;
+    if (btn.getAttribute('aria-label') !== value) btn.setAttribute('aria-label', value);
+    if (btn.title !== value) btn.title = value;
   }
 
   function openGateway(filter, message){
@@ -37367,6 +37415,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
 
   function updateKpiCardAttributesAndCounts(){
+    try { if (window.__fireS136A10Installed) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
     const gatewayVisible = gatewaySection && getComputedStyle(gatewaySection).display !== 'none';
@@ -37417,7 +37466,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   function fireSApplyKpiFilter136A3(filter, alreadyOnProjects){
     const key = setProjectFilterState(filter);
     if (!alreadyOnProjects) openProjectsOnly();
-    [0, 80, 220, 520, 1000].forEach(delay => setTimeout(() => renderWithFilter(key), delay));
+    renderWithFilter(key);
   }
 
   window.projectMatchesInspectionGatewayQuickFilter = hardMatcher;
@@ -37956,6 +38005,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }, true);
 
   function refreshKpiNumbers(){
+    try { if (window.__fireS136A10Installed) return; } catch (_) {}
     const map = [
       ['compliant', 'compliant'],
       ['scheduled', 'scheduled-new'],
@@ -38209,18 +38259,21 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       else if (text.includes('this month')) item = cardMap[3];
       if (!item) return;
       const [filter, value, title, filterLabel] = item;
-      card.setAttribute('data-fs-kpi-filter', filter);
+      const nextValue = String(value);
+      if (card.getAttribute('data-fs-kpi-filter') !== filter) card.setAttribute('data-fs-kpi-filter', filter);
       const numberEl = card.querySelector('.fs-kpi-number, .stat-number, .metric-number');
-      if (numberEl) numberEl.textContent = String(value);
-      else {
+      if (numberEl) {
+        const keepOpen = numberEl.id === 'cmdPhotoCount' && numberEl.textContent === 'Open';
+        if (!keepOpen && numberEl.textContent !== nextValue) numberEl.textContent = nextValue;
+      } else {
         const strongs = Array.from(card.querySelectorAll('strong'));
         const numeric = strongs.find(el => /^\d+$/.test((el.textContent || '').trim())) || strongs[0];
-        if (numeric) numeric.textContent = String(value);
+        if (numeric && numeric.textContent !== nextValue) numeric.textContent = nextValue;
       }
       const titleEl = card.querySelector('.fs-kpi-title, .stat-label');
-      if (titleEl) titleEl.textContent = title;
+      if (titleEl && titleEl.textContent !== title) titleEl.textContent = title;
       const filterEl = card.querySelector('.fs-kpi-filter-label');
-      if (filterEl) filterEl.textContent = filterLabel;
+      if (filterEl && filterEl.textContent !== filterLabel) filterEl.textContent = filterLabel;
     });
 
     const subtitle = document.getElementById('mainCommandSubtitle');
@@ -38520,14 +38573,20 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
 
   function setCardFilter(card, key, value, title, filterLabel){
-    card.setAttribute('data-fs-kpi-filter', key);
-    card.setAttribute('data-filter', key);
-    card.setAttribute('data-authoritative-kpi', key);
-    setNumber(card, value);
+    if (card.getAttribute('data-fs-kpi-filter') !== key) card.setAttribute('data-fs-kpi-filter', key);
+    if (card.getAttribute('data-filter') !== key) card.setAttribute('data-filter', key);
+    if (card.getAttribute('data-authoritative-kpi') !== key) card.setAttribute('data-authoritative-kpi', key);
+    const numberText = String(value);
+    const preferred = card.querySelector('.fs-kpi-number, .stat-number, .metric-number, .fire-s-kpi-number');
+    if (preferred) {
+      if (preferred.textContent !== numberText) preferred.textContent = numberText;
+    } else {
+      setNumber(card, value);
+    }
     const titleEl = card.querySelector('.fs-kpi-title, .stat-label, .metric-label');
-    if (titleEl && /compliant|scheduled|overdue|this month|inspection/i.test(titleEl.textContent || '')) titleEl.textContent = title;
+    if (titleEl && titleEl.textContent !== title && /compliant|scheduled|overdue|this month|inspection/i.test(titleEl.textContent || '')) titleEl.textContent = title;
     const filterEl = card.querySelector('.fs-kpi-filter-label');
-    if (filterEl) filterEl.textContent = filterLabel;
+    if (filterEl && filterEl.textContent !== filterLabel) filterEl.textContent = filterLabel;
   }
 
   function classifyCard(card){
@@ -38543,6 +38602,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
 
   function syncHomeKpis(){
+    try { if (window.__fireS136A10Installed) return; } catch (_) {}
     const c = counts();
     const valueMap = {
       compliant: c.compliant,
@@ -38589,6 +38649,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
 
   let syncTimer = null;
   function scheduleSync(){
+    try { if (window.__fireS136A10Installed) return; } catch (_) {}
     if (syncTimer) return;
     syncTimer = setTimeout(() => { syncTimer = null; syncHomeKpis(); }, 50);
   }
@@ -38971,6 +39032,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
 
   function syncHomeKpis(){
+    try { if (window.__fireS136A10Installed) return; } catch (_) {}
     const c = counts(baseProjects());
     const valueMap = { compliant: c.compliant, 'scheduled-new': c.scheduled, overdue: c.overdue, month: c.month };
     const cards = Array.from(document.querySelectorAll('.fs-kpi-card, .main-stat-card, [data-fs-kpi-filter], [data-authoritative-kpi]'));
@@ -39119,6 +39181,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     if (numeric) numeric.textContent = String(value);
   }
   function sync(){
+    try { if (window.__fireS136A10Installed) return; } catch (_) {}
     try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
     const gatewaySection = document.getElementById('projectListSection');
     const homeSection = document.getElementById('homeSection');
@@ -39358,6 +39421,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   function hideLegacyStatsRow(){
     const stats = document.querySelector('#mainCommandCentre .main-command-stats');
     if (!stats || stats.id === 'fireSOwnerKpiRow') return;
+    if (
+      stats.hidden &&
+      stats.style &&
+      stats.style.display === 'none' &&
+      typeof stats.getAttribute === 'function' &&
+      stats.getAttribute('aria-hidden') === 'true'
+    ) return;
     stats.hidden = true;
     stats.setAttribute('aria-hidden', 'true');
     stats.style.setProperty('display', 'none', 'important');
@@ -39374,7 +39444,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         )
       ) {
         const lockedRow = document.getElementById('fireSOwnerKpiRow');
-        if (lockedRow) {
+        if (lockedRow && !(lockedRow.hidden && lockedRow.style.display === 'none')) {
           lockedRow.hidden = true;
           lockedRow.style.setProperty('display', 'none', 'important');
         }
@@ -39389,8 +39459,10 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     const row = ensureOwnerKpiRow();
     if (!row) return;
     if (isInspectorOrGuestHome()) {
-      row.hidden = true;
-      row.style.setProperty('display', 'none', 'important');
+      if (!(row.hidden && row.style.display === 'none')) {
+        row.hidden = true;
+        row.style.setProperty('display', 'none', 'important');
+      }
       return;
     }
     const c = counts();
@@ -39405,9 +39477,11 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       row.setAttribute('data-fire-s-prod-kpis', html);
       row.innerHTML = html;
     }
-    row.hidden = false;
-    row.removeAttribute('aria-hidden');
-    row.style.setProperty('display', 'grid', 'important');
+    if (row.hidden || row.getAttribute('aria-hidden') || row.style.display !== 'grid') {
+      row.hidden = false;
+      row.removeAttribute('aria-hidden');
+      row.style.setProperty('display', 'grid', 'important');
+    }
     hideLegacyStatsRow();
     hideOwnerCountLine();
   }
@@ -39415,11 +39489,24 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');
     if (!subtitle) return;
     if (isInspectorOrGuestHome()) {
+      if (
+        typeof subtitle.getAttribute === 'function' &&
+        !subtitle.hidden &&
+        !subtitle.getAttribute('aria-hidden') &&
+        !subtitle.style.display
+      ) return;
       subtitle.hidden = false;
       subtitle.removeAttribute('aria-hidden');
       subtitle.style.removeProperty('display');
       return;
     }
+    if (
+      typeof subtitle.getAttribute === 'function' &&
+      subtitle.hidden &&
+      !subtitle.textContent &&
+      subtitle.getAttribute('aria-hidden') === 'true' &&
+      subtitle.style.display === 'none'
+    ) return;
     subtitle.textContent = '';
     subtitle.hidden = true;
     subtitle.setAttribute('aria-hidden', 'true');
@@ -44136,8 +44223,12 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const count = entries.length;
     const recoverableCount = entries.filter(isWithinRetention).length;
     const expiredCount = count - recoverableCount;
-    button.innerHTML = `Recycle Bin <span class="fire-s-recycle-count-v12">${count}</span>`;
-    button.title = `${recoverableCount} recoverable · ${expiredCount} expired`;
+    const marker = `${count}:${recoverableCount}`;
+    if (button.dataset.fireSRecycle !== marker) {
+      button.dataset.fireSRecycle = marker;
+      button.innerHTML = `Recycle Bin <span class="fire-s-recycle-count-v12">${count}</span>`;
+      button.title = `${recoverableCount} recoverable · ${expiredCount} expired`;
+    }
   }
 
   function decorateCommandCentre(projectIdentifier){

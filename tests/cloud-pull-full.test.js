@@ -47,8 +47,8 @@ assertPullSource(
   liveSw,
   liveLists,
   'Live',
-  '1-3-67-ready',
-  '1-4-ready',
+  '1-3-67-still',
+  '1-4-still',
   '108-81-cancel',
   'fire-s-108-81-cancel'
 );

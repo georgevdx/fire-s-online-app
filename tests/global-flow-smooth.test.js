@@ -27,8 +27,8 @@ assert.ok(
   'Live Fire-S must be 1.3.67 after sit dit live'
 );
 assert.ok(
-  /fire-s-global-flow\.js\?v=1-1-ready/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-ready/.test(liveHtml),
+  /fire-s-global-flow\.js\?v=1-1-still/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-still/.test(liveHtml),
   'Live must load the global-flow script'
 );
 assert.ok(

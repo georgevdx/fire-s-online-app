@@ -50,7 +50,7 @@ function assertLookupMarkup(label, html, css, lists, jsTag) {
   );
 }
 
-assertLookupMarkup('Live', liveHtml, liveCss, liveLists, '1-4-ready');
+assertLookupMarkup('Live', liveHtml, liveCss, liveLists, '1-4-still');
 assertLookupMarkup('Toets', stagingHtml, stagingCss, stagingLists, '1-11-calm');
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&

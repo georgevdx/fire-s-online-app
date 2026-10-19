@@ -106,7 +106,7 @@ assert.ok(
 assert.ok(/1\.3\.120-toets/.test(stagingEnv), 'Toets-blad version must be 1.3.120-toets');
 assert.ok(
   /fire-s-gateway-still\.js\?v=1-0-sync/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-ready/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-still/.test(liveHtml) &&
     /fire-s-env\.js\?v=1-3-67/.test(liveHtml),
   'Live must load the still script and cache-bust the hop fix'
 );
