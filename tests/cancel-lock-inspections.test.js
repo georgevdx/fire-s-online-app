@@ -114,8 +114,12 @@ assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss
 assert.ok(/display: none !important/.test(stagingCss));
 assert.ok(/fire-s-entitlement.js\?v=1-3-127-paid-days/.test(stagingHtml));
 assert.ok(/function snapshotBlocksCreate\(/.test(stagingEntitlement), 'New Site and premises cards share one create rule');
+assert.ok(/function snapshotBlocksCreate\(/.test(liveEntitlement), 'live New Site uses the same paid-window create rule');
 assert.ok(/if \(snapshotBlocksCreate\(info\)\)/.test(stagingEntitlement));
+assert.ok(/if \(snapshotBlocksCreate\(info\)\)/.test(liveEntitlement));
 assert.ok(/if \(snapshotBlocksCreate\(last\)\)/.test(stagingEntitlement));
+assert.ok(/if \(snapshotBlocksCreate\(last\)\)/.test(liveEntitlement));
+assert.ok(/fire-s-entitlement\.js\?v=1-3-67-new-site/.test(liveHtml));
 assert.ok(/if \(canCreate\(\) \|\| info\.can_create === true \|\| info\.allowed === true\)/.test(stagingEntitlement));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));

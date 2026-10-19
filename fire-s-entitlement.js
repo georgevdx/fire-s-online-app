@@ -1344,7 +1344,7 @@
     if (!info || !info.backendReady) {
       return deny('subscription_required');
     }
-    if (info.can_create === true || info.allowed === true) return true;
+    if (canCreate() || info.can_create === true || info.allowed === true) return true;
     openRequiredScreen();
     return deny(info.reason || 'subscription_required');
   }
@@ -1453,9 +1453,20 @@
       return;
     }
     if (!/newInspection|new-inspection|projectForm|createNewProject|inspect=new/i.test(bits)) return;
-    if (last && last.backendReady && last.can_create === false) {
+    if (snapshotBlocksCreate(last)) {
       sendLockedActionToSubscribe();
     }
+  }
+
+  // New Site and an existing premises share one create rule. A cancelled
+  // login with paid days left stays open (paidWindowOpen / canCreate) even
+  // when the snapshot still says can_create false.
+  function snapshotBlocksCreate(info) {
+    var data = info || last;
+    if (isSuperAdmin() || isLocalWorkspace()) return false;
+    if (!data || data.backendReady !== true) return false;
+    if (canCreate()) return false;
+    return data.can_create === false;
   }
 
   function wireRequiredScreen() {
@@ -1572,7 +1583,7 @@
         ));
       if (!creating) return;
       var info = last;
-      if (info && info.backendReady && info.can_create === false && !isSuperAdmin()) {
+      if (snapshotBlocksCreate(info)) {
         ev.preventDefault();
         ev.stopPropagation();
         deny(info.reason);
