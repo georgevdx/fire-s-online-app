@@ -643,12 +643,16 @@
     var allow = homeWorkAllowed();
     var locked = !allow;
     try {
-      document.documentElement.classList.toggle('fire-s-entitlement-blocked', locked);
-      document.documentElement.classList.toggle('fire-s-entitlement-allowed', allow);
-      if (document.body) {
-        document.body.classList.toggle('fire-s-entitlement-blocked', locked);
-        document.body.classList.toggle('fire-s-entitlement-allowed', allow);
-      }
+      var mark = function (el, name, on) {
+        if (!el || !el.classList) return;
+        var has = el.classList.contains(name);
+        if (on) { if (!has) el.classList.add(name); }
+        else if (has) el.classList.remove(name);
+      };
+      mark(document.documentElement, 'fire-s-entitlement-blocked', locked);
+      mark(document.documentElement, 'fire-s-entitlement-allowed', allow);
+      mark(document.body, 'fire-s-entitlement-blocked', locked);
+      mark(document.body, 'fire-s-entitlement-allowed', allow);
     } catch (_) {}
     return allow;
   }

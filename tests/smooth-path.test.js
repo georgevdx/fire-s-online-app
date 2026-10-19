@@ -39,8 +39,15 @@ assert.ok(
 );
 
 assert.ok(!/client\.navigate\(/.test(read('staging/service-worker.js')), 'A new service worker must not reload the page');
+const stagingApp = read('staging/app.js');
+assert.ok(/if \(window\.__fireS136A10Installed\) return/.test(stagingApp), 'Older KPI writers must stop once the stable Home row is installed');
+assert.ok(/data-fire-s-snapshot-html/.test(stagingApp), 'Gateway snapshot must not rewrite itself when the numbers are unchanged');
+assert.ok(/footer\.textContent !== 'Open premises →'/.test(stagingApp), 'Premises cards must not be rewritten on every DOM change');
+assert.ok(!/\[0, 80, 220, 520, 1000\]/.test(stagingApp), 'A KPI click must not repaint the gateway five times');
+assert.ok(/btn\.getAttribute\('aria-label'\) !== label/.test(stagingApp), 'Command cards must keep their label when it is already correct');
+
 assert.ok(/fire-s-startup-stability\.js\?v=1-16-ready/.test(html));
-assert.ok(/fire-s-global-flow\.js\?v=1-2-ready/.test(html));
+assert.ok(/fire-s-global-flow\.js\?v=1-2-calm/.test(html));
 assert.ok(/fire-s-get-started\.js\?v=2-62-once/.test(html));
 
 console.log('smooth-path.test.js: ok');

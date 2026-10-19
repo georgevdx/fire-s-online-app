@@ -41,8 +41,9 @@
         copy.textContent = GATEWAY_COPY;
       }
     }
-    btn.setAttribute('aria-label', 'Inspection Gateway');
-    btn.title = 'Inspection Gateway';
+    const currentLabel = typeof btn.getAttribute === 'function' ? btn.getAttribute('aria-label') : '';
+    if (currentLabel !== 'Inspection Gateway') btn.setAttribute('aria-label', 'Inspection Gateway');
+    if (btn.title !== 'Inspection Gateway') btn.title = 'Inspection Gateway';
   }
 
   function wrapShowProjectList() {

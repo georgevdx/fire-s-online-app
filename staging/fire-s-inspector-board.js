@@ -518,7 +518,7 @@
 
   function paintHome(state) {
     const bar = byId('inspectorBoardHomeBar');
-    if (bar) {
+    if (bar && !(bar.hidden && bar.getAttribute('aria-hidden') === 'true' && bar.style.display === 'none')) {
       bar.hidden = true;
       bar.setAttribute('aria-hidden', 'true');
       bar.style.setProperty('display', 'none', 'important');

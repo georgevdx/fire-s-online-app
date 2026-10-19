@@ -14,7 +14,7 @@ const stagingHtml = read('staging/index.html');
 
 assert.ok(
   /Version 1\.3\.120-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-126-quiet/.test(stagingHtml),
+    /app\.js\?v=1-3-126-calm/.test(stagingHtml),
   'Toets must cache-bust empty new-company Home KPI cards as 1.3.120-toets'
 );
 

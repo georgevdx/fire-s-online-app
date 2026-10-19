@@ -159,7 +159,7 @@
       const urlEl = byId('fireSDesktopAccessUrl');
       const note = byId('fireSDesktopAccessNote');
       if (inspectionHomeLocked()) {
-        if (box) {
+        if (box && !(box.hidden && box.getAttribute('aria-hidden') === 'true' && box.style.display === 'none')) {
           box.hidden = true;
           box.setAttribute('aria-hidden', 'true');
           if (box.style && typeof box.style.setProperty === 'function') {
@@ -172,10 +172,16 @@
         const url = desktopAddress();
         if (urlEl && urlEl.textContent !== url) urlEl.textContent = url;
         const hide = !isManagement();
-        if (box.style && typeof box.style.removeProperty === 'function') {
+        if (hide) {
+          if (!box.hidden) box.hidden = true;
+          if (box.getAttribute('aria-hidden') !== 'true') box.setAttribute('aria-hidden', 'true');
+          if (box.style && box.style.display !== 'none' && typeof box.style.setProperty === 'function') {
+            box.style.setProperty('display', 'none', 'important');
+          }
+        } else if (box.style && box.style.display && typeof box.style.removeProperty === 'function') {
           box.style.removeProperty('display');
+          if (box.hidden) box.hidden = false;
         }
-        if (box.hidden !== hide) box.hidden = hide;
         if (note && !note.dataset.fireSCopied) {
           const next = wantsDesktop()
             ? 'Desktop workspace is on. Owner and Manager land on the Management dashboard.'

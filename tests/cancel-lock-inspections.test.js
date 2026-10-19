@@ -94,7 +94,7 @@ assert.ok(/body\.fire-s-entitlement-blocked #homeSection \.home-hero/.test(stagi
 assert.ok(/body\.fire-s-entitlement-blocked #fireSTrialBanner/.test(stagingCss));
 assert.ok(/body\.fire-s-entitlement-blocked #fireSEntitlementBlocker/.test(stagingCss));
 assert.ok(/inspectionHomeLocked\(\) \|\| !canShowLists\(\)/.test(read('staging/fire-s-owner-lists.js')));
-assert.ok(/fire-s-owner-lists\.js\?v=1-11-still/.test(stagingHtml));
+assert.ok(/fire-s-owner-lists\.js\?v=1-11-calm/.test(stagingHtml));
 assert.ok(/inspectionAccessLocked\(\)\) \{\s*banner\.hidden = true/s.test(stagingEntitlement));
 assert.ok(/z-index: 2147483500/.test(stagingCss));
 assert.ok(/stay locked until a new subscription is active/.test(stagingEntitlement));
@@ -107,12 +107,12 @@ assert.ok(/if \(!hasSnapshot\(\)\) return false/.test(stagingEntitlement), 'do n
 assert.ok(/function hideDesktopAccess\(/.test(stagingEntitlement));
 assert.ok(/homeWorkAllowed/.test(read('staging/fire-s-desktop-access.js')));
 assert.ok(/homeWorkAllowed/.test(stagingApp), 'KPI paints must not revive the executive layer while locked');
-assert.ok(/fire-s-desktop-access\.js\?v=1-5-ready/.test(stagingHtml));
+assert.ok(/fire-s-desktop-access\.js\?v=1-5-calm/.test(stagingHtml));
 assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-roles.js')));
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-127-paid-days/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-127-calm/.test(stagingHtml));
 assert.ok(/function snapshotBlocksCreate\(/.test(stagingEntitlement), 'New Site and premises cards share one create rule');
 assert.ok(/function snapshotBlocksCreate\(/.test(liveEntitlement), 'live New Site uses the same paid-window create rule');
 assert.ok(/if \(snapshotBlocksCreate\(info\)\)/.test(stagingEntitlement));
@@ -124,7 +124,7 @@ assert.ok(/if \(canCreate\(\) \|\| info\.can_create === true \|\| info\.allowed 
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
-assert.ok(/app\.js\?v=1-3-126-quiet/.test(stagingHtml));
+assert.ok(/app\.js\?v=1-3-126-calm/.test(stagingHtml));
 assert.ok(/Version 1\.3\.120-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
 assert.ok(/inspectionAccessLocked/.test(liveApp), 'live openProject must lock unpaid inspections');

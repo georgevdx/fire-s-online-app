@@ -631,6 +631,12 @@
 
   function hidePanel(panel) {
     if (!panel) return;
+    if (
+      typeof panel.getAttribute === 'function' &&
+      panel.hidden &&
+      panel.getAttribute('aria-hidden') === 'true' &&
+      panel.style.display === 'none'
+    ) return;
     panel.hidden = true;
     panel.setAttribute('aria-hidden', 'true');
     panel.style.setProperty('display', 'none', 'important');
@@ -638,6 +644,12 @@
 
   function showPanel(panel) {
     if (!panel) return;
+    if (
+      typeof panel.getAttribute === 'function' &&
+      !panel.hidden &&
+      panel.getAttribute('aria-hidden') == null &&
+      panel.style.display === 'block'
+    ) return;
     panel.hidden = false;
     panel.removeAttribute('aria-hidden');
     panel.style.setProperty('display', 'block', 'important');

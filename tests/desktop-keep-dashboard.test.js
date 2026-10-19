@@ -92,7 +92,7 @@ assert.ok(
   'Live must cache-bust the desktop landing fix'
 );
 assert.ok(
-  /fire-s-desktop-access\.js\?v=1-5-ready/.test(stagingHtml) &&
+  /fire-s-desktop-access\.js\?v=1-5-calm/.test(stagingHtml) &&
     /fire-s-startup-stability\.js\?v=1-16-ready/.test(stagingHtml) &&
     /fire-s-management-dashboard\.js\?v=1-21-action-label/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-62-once/.test(stagingHtml) &&

@@ -206,11 +206,15 @@
     const exportOk = isLoggedIn && canSeeExportBackup(role);
 
     if (cloudMenuBtn) {
-      cloudMenuBtn.classList.toggle('connected', isLoggedIn);
-      cloudMenuBtn.textContent = isLoggedIn ? 'Cloud · Synced' : 'Cloud';
-      cloudMenuBtn.title = isLoggedIn
+      const wantConnected = cloudMenuBtn.classList.contains('connected');
+      if (isLoggedIn && !wantConnected) cloudMenuBtn.classList.add('connected');
+      if (!isLoggedIn && wantConnected) cloudMenuBtn.classList.remove('connected');
+      const cloudLabel = isLoggedIn ? 'Cloud · Synced' : 'Cloud';
+      if (cloudMenuBtn.textContent !== cloudLabel) cloudMenuBtn.textContent = cloudLabel;
+      const cloudTitle = isLoggedIn
         ? `Signed in as ${email || 'user'}`
         : 'Sign in to sync inspections';
+      if (cloudMenuBtn.title !== cloudTitle) cloudMenuBtn.title = cloudTitle;
     }
 
     if (connectedView) {
@@ -222,9 +226,10 @@
     }
 
     if (connectedLabel) {
-      connectedLabel.textContent = email
+      const connectedText = email
         ? `Signed in as ${email}`
         : 'Cloud: Connected';
+      if (connectedLabel.textContent !== connectedText) connectedLabel.textContent = connectedText;
     }
 
     if (help) {
@@ -280,8 +285,13 @@
       }
     }
 
-    document.body.classList.add('fire-s-simple-cloud');
-    document.body.dataset.fireSCloudRole = role || 'guest';
+    if (!document.body.classList.contains('fire-s-simple-cloud')) {
+      document.body.classList.add('fire-s-simple-cloud');
+    }
+    const cloudRole = role || 'guest';
+    if (document.body.dataset.fireSCloudRole !== cloudRole) {
+      document.body.dataset.fireSCloudRole = cloudRole;
+    }
   }
 
   function wrapRefreshMessages() {
