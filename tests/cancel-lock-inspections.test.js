@@ -112,7 +112,11 @@ assert.ok(/hide\('fireSDesktopAccess'\)/.test(read('staging/fire-s-clean-home-ro
 
 assert.ok(/body\.fire-s-entitlement-blocked #projectListSection/.test(stagingCss));
 assert.ok(/display: none !important/.test(stagingCss));
-assert.ok(/fire-s-entitlement.js\?v=1-3-126-same-cancel/.test(stagingHtml));
+assert.ok(/fire-s-entitlement.js\?v=1-3-127-paid-days/.test(stagingHtml));
+assert.ok(/function snapshotBlocksCreate\(/.test(stagingEntitlement), 'New Site and premises cards share one create rule');
+assert.ok(/if \(snapshotBlocksCreate\(info\)\)/.test(stagingEntitlement));
+assert.ok(/if \(snapshotBlocksCreate\(last\)\)/.test(stagingEntitlement));
+assert.ok(/if \(canCreate\(\) \|\| info\.can_create === true \|\| info\.allowed === true\)/.test(stagingEntitlement));
 assert.ok(/fire-s-entitlement.css\?v=1-3-114-hide-pw/.test(stagingHtml));
 assert.ok(/#fireSOwnerLists/.test(stagingCss));
 assert.ok(/fire-s-home-lock-panel/.test(stagingCss));
@@ -192,7 +196,9 @@ function loadEntitlement() {
     location: { hash: '', search: '', href: 'https://example.test/staging/' },
     document: {
       readyState: 'complete',
-      addEventListener: function () {},
+      addEventListener: function (type, fn) {
+        sandbox.__listeners.push({ type: type, fn: fn });
+      },
       getElementById: function (id) { return fakeEl(id, nodes); },
       body: { classList: { add: function () {}, toggle: function () {}, contains: function () { return false; } }, appendChild: function () {} },
       createElement: function () {
@@ -217,6 +223,7 @@ function loadEntitlement() {
     openGateway: function () { sandbox.__openedInspections += 1; }
   };
   sandbox.window = sandbox;
+  sandbox.__listeners = [];
   sandbox.currentUserProfile = {
     id: 'u1',
     email: 'a@b.c',
@@ -271,6 +278,26 @@ assert.strictEqual(
 openGate.hidden = true;
 openGate.style.display = 'none';
 
+function clickNewSite(client) {
+  const alerts = [];
+  const prev = client.alert;
+  client.alert = function (msg) { alerts.push(String(msg || '')); };
+  let prevented = false;
+  const ev = {
+    target: {
+      id: 'newProjectBtn',
+      closest: function () { return null; }
+    },
+    preventDefault: function () { prevented = true; },
+    stopPropagation: function () {}
+  };
+  (client.__listeners || []).forEach(function (row) {
+    if (row.type === 'click') row.fn(ev);
+  });
+  client.alert = prev;
+  return { prevented: prevented, alerts: alerts };
+}
+
 (async function runCancelledRpc() {
   const client = loadEntitlement();
   client.supabaseClient = {
@@ -306,6 +333,9 @@ openGate.style.display = 'none';
   client.openInspectionsCommand();
   client.openGateway();
   assert.strictEqual(client.__openedInspections, 0, 'Gateway / Inspections must stay on Home after expiry');
+  const expiredClick = clickNewSite(client);
+  assert.strictEqual(expiredClick.prevented, true, 'New Site stays blocked after the paid window ends');
+  assert.strictEqual(client.fireSEntitlement.canCreate(), false);
   client.fireSEntitlement.pinLockedHome();
   assert.strictEqual(client.__nodes.homeSection.hidden, false, 'locked users stay on Home');
   assert.strictEqual(client.__nodes.projectFormSection.hidden, true, 'inspection form stays closed');
@@ -400,6 +430,42 @@ openGate.style.display = 'none';
   await datedClient.fireSEntitlement.getCompanyEntitlement('co1');
   assert.strictEqual(datedClient.fireSEntitlement.inspectionAccessLocked(), false, 'server paid-through still in the future keeps Home open');
   assert.strictEqual(datedClient.fireSEntitlement.canRead(), true);
+  assert.strictEqual(datedClient.fireSEntitlement.canCreate(), true, 'paid days left allow a new site and a new cycle');
+  assert.strictEqual(datedClient.fireSEntitlement.paidWindowOpen(), true);
+  const openClick = clickNewSite(datedClient);
+  assert.strictEqual(openClick.prevented, false, '+ New Inspection at New Site stays available while paid days remain');
+  assert.strictEqual(openClick.alerts.length, 0, openClick.alerts.join(' '));
+  assert.strictEqual(await datedClient.fireSEntitlement.assertCanCreate(), true, 'an existing premises can start a cycle during the paid window');
+
+  const flaggedOpen = loadEntitlement();
+  flaggedOpen.supabaseClient = {
+    rpc: async function () {
+      return {
+        data: {
+          allowed: true,
+          can_create: false,
+          can_finalise: true,
+          can_read: true,
+          keep_data: true,
+          authority: 'server',
+          status: 'subscription_cancelled',
+          reason: 'cancelled_until_period_end',
+          subscription_status: 'cancelled',
+          access_until: '2026-10-29T00:00:00.000Z',
+          server_now: '2026-10-19T12:00:00.000Z',
+          backendReady: true
+        }
+      };
+    }
+  };
+  await flaggedOpen.fireSEntitlement.getCompanyEntitlement('co1');
+  assert.strictEqual(flaggedOpen.fireSEntitlement.canCreate(), true);
+  const flaggedCopy = flaggedOpen.fireSEntitlement.displayCopy(flaggedOpen.fireSEntitlement.snapshot());
+  assert.ok(/10 days left/.test(flaggedCopy.detail), flaggedCopy.detail);
+  const flaggedClick = clickNewSite(flaggedOpen);
+  assert.strictEqual(flaggedClick.prevented, false, 'can_create false must not block New Site while the paid window is open');
+  assert.strictEqual(flaggedClick.alerts.length, 0);
+  assert.strictEqual(await flaggedOpen.fireSEntitlement.assertCanCreate(), true);
   const datedCopy = datedClient.fireSEntitlement.displayCopy(datedClient.fireSEntitlement.snapshot());
   assert.strictEqual(datedCopy.urgency, 'mid');
   assert.ok(/stays open until/i.test(datedCopy.detail));
