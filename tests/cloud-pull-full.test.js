@@ -58,13 +58,17 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-124-toets',
-  '1-3-124-toets',
-  '108-84-toets-124',
-  'fire-s-108-84-toets-124'
+  '1-3-125-toets',
+  '1-3-125-toets',
+  '108-84-toets-125',
+  'fire-s-108-84-toets-125'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
+assert.ok(
+  /if \(mergedProjects\.length\) \{\s*try \{ setProjects\(mergedProjects\); \} catch \(_\) \{\}\s*\}/.test(stagingApp),
+  'Toets must save cloud buildings onto the phone before the Home count is painted'
+);
 assert.ok(
   /A short phone pull must not become the finished Home count/.test(liveApp) &&
     /A short phone pull must not become the finished Home count/.test(stagingApp) &&
