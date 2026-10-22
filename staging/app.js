@@ -8323,7 +8323,7 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
       ? false
       : !!inventoryFailed ||
         !!(expectedTotal && mergedLen < expectedTotal) ||
-        (!expectedTotal && (!mergedLen || (!!primary.incomplete && !!secondary.incomplete))),
+        (!expectedTotal && !!primary.incomplete && !!secondary.incomplete),
     expectedTotal: scopedExpected
   };
 }
@@ -8500,10 +8500,56 @@ function fireSDeletedProjectIdsStorageKey() {
     : 'fireyeDeletedProjectIds';
 }
 
+function fireSReadStoredProjectArray(key) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function fireSRestoreDeviceInspectionsIfMissing(current) {
+  const stored = Array.isArray(current) ? current : [];
+  if (stored.length) return stored;
+  try {
+    if (window.__fireSDeviceRestoreChecked) return stored;
+    window.__fireSDeviceRestoreChecked = true;
+  } catch (_) {
+    return stored;
+  }
+  const key = fireSProjectsStorageKey();
+  const pools = [
+    fireSReadStoredProjectArray(
+      key === 'fireyeProjects-staging' ? 'fireyeProjects' : 'fireyeProjects-staging'
+    )
+  ];
+  try {
+    const backup = JSON.parse(localStorage.getItem('fireyesaLastBackupJson') || 'null');
+    if (backup && Array.isArray(backup.projects)) pools.push(backup.projects);
+  } catch (_) {}
+  const byId = new Map();
+  pools.forEach(list => {
+    list.forEach(project => {
+      if (!project || !project.id) return;
+      const id = String(project.id);
+      if (typeof isProjectDeleted === 'function' && isProjectDeleted(id)) return;
+      if (!byId.has(id)) byId.set(id, project);
+    });
+  });
+  const restored = Array.from(byId.values());
+  if (!restored.length) return stored;
+  try {
+    localStorage.setItem(key, JSON.stringify(restored));
+  } catch (_) {}
+  return restored;
+}
+
 function getProjects() {
   const saved = localStorage.getItem(fireSProjectsStorageKey());
-  const list = saved ? JSON.parse(saved) : [];
-  if (!Array.isArray(list)) return [];
+  let list = saved ? JSON.parse(saved) : [];
+  if (!Array.isArray(list)) list = [];
+  list = fireSRestoreDeviceInspectionsIfMissing(list);
   if (typeof fireSApplyScheduleAfterVisit !== 'function') return list;
   return list.map(project => fireSApplyScheduleAfterVisit(project));
 }
@@ -27471,12 +27517,40 @@ function fireSFilterToCloudBuildings(list) {
 
 function fireSHomeCountableProjects(projects) {
   let list = Array.isArray(projects) ? projects : [];
+  const raw = list;
   try {
     if (typeof getVisibleProjectsForCurrentUser === 'function') {
       const visible = getVisibleProjectsForCurrentUser(list);
       if (Array.isArray(visible)) list = visible;
     }
   } catch (_) {}
+  if (!list.length && raw.length) {
+    let profile = null;
+    try { profile = currentUserProfile || window.currentUserProfile || null; } catch (_) {}
+    const profileName = String((profile && profile.companyName) || '').trim().toLowerCase();
+    list = raw.filter(project => {
+      if (!project) return false;
+      if (
+        typeof fireSIsHiddenFromCurrentLists === 'function' &&
+        fireSIsHiddenFromCurrentLists(project)
+      ) {
+        return false;
+      }
+      if (
+        profile &&
+        typeof fireSProjectOwnedByProfile === 'function' &&
+        fireSProjectOwnedByProfile(project, profile)
+      ) {
+        return true;
+      }
+      const projectCompanyId = String(
+        (project && (project.companyId || project.company_id)) || ''
+      ).trim();
+      if (!projectCompanyId) return true;
+      const projectName = String((project && project.companyName) || '').trim().toLowerCase();
+      return !!(profileName && projectName && profileName === projectName);
+    });
+  }
   try {
     if (typeof fireSFilterToCloudBuildings === 'function') {
       list = fireSFilterToCloudBuildings(list);
@@ -40581,8 +40655,16 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     stats.style.setProperty('display', 'none', 'important');
   }
   function renderKpis(){
-    try { if (window.__fireSHomeCountsFrozen) return; } catch (_) {}
-    try { if (window.__fireSCloudPullSettled === false) return; } catch (_) {}
+    try {
+      if (window.__fireSHomeCountsFrozen || window.__fireSCloudPullSettled === false) {
+        const painted = document.querySelectorAll('#fireSOwnerKpiRow .fs-prod-kpi-number');
+        let showing = false;
+        painted.forEach(node => {
+          if (String(node.textContent || '').trim() !== '0') showing = true;
+        });
+        if (showing) return;
+      }
+    } catch (_) {}
     try {
       if (
         window.fireSEntitlement &&
@@ -40721,7 +40803,12 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       const home = document.getElementById('homeSection');
       if (!home || getComputedStyle(home).display === 'none') return;
       const row = document.getElementById('fireSOwnerKpiRow');
-      if (!row || row.hidden || row.style.display === 'none' || !row.querySelector('.fs-prod-kpi-card')) {
+      const numbers = row ? row.querySelectorAll('.fs-prod-kpi-number') : [];
+      let allZero = !numbers.length;
+      numbers.forEach(node => {
+        if (String(node.textContent || '').trim() !== '0') allZero = false;
+      });
+      if (!row || row.hidden || row.style.display === 'none' || !row.querySelector('.fs-prod-kpi-card') || allZero) {
         renderKpis();
       }
     } catch (_) {}
