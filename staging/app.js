@@ -17866,8 +17866,10 @@ function noteInspectionUploadWaiting(projectId) {
   const openId = window.__fireSSavePopupProjectId;
   if (openId && projectId && String(openId) !== String(projectId)) return;
   if (detail.textContent.indexOf('uploaded to the server.') !== -1) return;
-  detail.textContent =
-    'Saved on this device. It will upload to the server automatically as soon as there is signal.';
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  detail.textContent = offline
+    ? 'Saved on this device. It will upload to the server automatically as soon as there is signal.'
+    : 'Saved on this device. Fire-S will send it to the server automatically.';
 }
 
 function saveProject(options) {
