@@ -478,7 +478,14 @@
       if (root.__fireSCloudPullSettled !== true) return false;
       if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
       const filter = root.__fireSCloudBuildingFilter;
-      return !!(filter && filter.ready === true);
+      if (filter && filter.ready === true) return true;
+      // A finished pull with no cloud buildings must show the inspections still on the device.
+      if (filter && filter.ready !== true) {
+        const ids = filter.ids || {};
+        const keys = filter.keys || {};
+        if (!Object.keys(ids).length && !Object.keys(keys).length) return true;
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -578,12 +585,23 @@
     } catch (_) {
       list = [];
     }
+    if (!Array.isArray(list)) list = [];
     try {
       if (typeof root.getVisibleProjectsForCurrentUser === 'function') {
-        list = root.getVisibleProjectsForCurrentUser(list) || list;
+        const visible = root.getVisibleProjectsForCurrentUser(list);
+        if (Array.isArray(visible) && visible.length) return visible;
+        if (
+          Array.isArray(visible) &&
+          !visible.length &&
+          list.length &&
+          typeof root.fireSDeviceRowsWhenCompanyFilterIsEmpty === 'function'
+        ) {
+          const kept = root.fireSDeviceRowsWhenCompanyFilterIsEmpty(list);
+          if (Array.isArray(kept) && kept.length) return kept;
+        }
       }
     } catch (_) {}
-    return Array.isArray(list) ? list : [];
+    return list;
   }
 
   function currentHomeRole() {
