@@ -5315,7 +5315,10 @@ async function safeDownloadNewerCloudInspections(options) {
       foreign.forEach(id => {
         if (id) blocked[String(id)] = true;
       });
-      window.__fireSForeignCompanyInspectionIds = blocked;
+      const knownCompany = String(
+        (currentUserProfile && currentUserProfile.companyId) || ''
+      ).trim();
+      window.__fireSForeignCompanyInspectionIds = knownCompany ? blocked : {};
     } catch (_) {}
 
     if (error && !(localBefore === 0 && mergedProjects.length > localBefore)) {
@@ -7927,7 +7930,12 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
           project.id &&
           blocked[String(project.id)]
         ) {
-          return false;
+          const sameCompany = String(
+            project.companyId || project.company_id || ''
+          ).trim();
+          if (!profileCompanyId || sameCompany !== profileCompanyId) {
+            return false;
+          }
         }
       } catch (_) {}
       const projectCompanyId = String(
@@ -8244,7 +8252,8 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
       return;
     }
     if (rowCompanyId && !activeCompanyId) {
-      if (id) foreignIds.push(id);
+      // The signed-in company is not known yet. Skip the row for this pull,
+      // but do not stamp it foreign — that hid the whole toets list.
       return;
     }
     if (!rowCompanyId && activeCompanyId) {
@@ -27378,11 +27387,15 @@ function fireSApplyCloudBuildingFilter(cloudRows) {
     const key = fireSPremisesBuildingKey(project);
     if (key) keys[key] = true;
   });
+  const hasCloudBuildings =
+    Object.keys(ids).length > 0 || Object.keys(keys).length > 0;
   try {
     window.__fireSCloudBuildingFilter = {
       ids: ids,
       keys: keys,
-      ready: true
+      // An empty cloud answer must not become "this company has no
+      // inspections". That hid every premises still stored on the device.
+      ready: hasCloudBuildings
     };
   } catch (_) {}
 }
@@ -27405,12 +27418,14 @@ function fireSFilterToCloudBuildings(list) {
   const keys = filter.keys || {};
   const hasIds = Object.keys(ids).length > 0;
   const hasKeys = Object.keys(keys).length > 0;
-  if (!hasIds && !hasKeys) return [];
-  return unique.filter(project => {
+  if (!hasIds && !hasKeys) return unique;
+  const matched = unique.filter(project => {
+    if (project && project.syncPending === true) return true;
     if (hasIds && ids[String((project && project.id) || '').trim()]) return true;
     const key = fireSPremisesBuildingKey(project);
     return !!(hasKeys && key && keys[key]);
   });
+  return matched.length ? matched : unique;
 }
 
 function fireSHomeCountableProjects(projects) {
