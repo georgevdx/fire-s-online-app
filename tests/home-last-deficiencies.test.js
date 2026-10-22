@@ -15,11 +15,11 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 const stagingEntitlement = read('staging/fire-s-entitlement.js');
 
 assert.ok(
-  /app\.js\?v=1-3-126-calm/.test(stagingHtml) &&
+  /app\.js\?v=1-3-121-toets/.test(stagingHtml) &&
     /fire-s-owner-lists\.js\?v=1-11-calm/.test(stagingHtml) &&
     /fire-s-entitlement.js\?v=1-3-127-calm/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-120/.test(stagingHtml) &&
-    /Version 1\.3\.120-toets/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-121/.test(stagingHtml) &&
+    /Version 1\.3\.121-toets/.test(stagingHtml),
   'Toets must cache-bust last-inspection Home counts without bumping the displayed version'
 );
 assert.ok(
