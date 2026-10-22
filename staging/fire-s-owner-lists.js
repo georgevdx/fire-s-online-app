@@ -1037,4 +1037,14 @@
   try {
     root.setTimeout(refresh, 200);
   } catch (_) {}
+  try {
+    if (typeof root.setInterval === 'function') {
+      root.setInterval(function fireSOwnerListsWaitTick() {
+        try {
+          if (companyCloudListReady() && pullState.done) return;
+          refresh();
+        } catch (_) {}
+      }, 2000);
+    }
+  } catch (_) {}
 })(typeof window !== 'undefined' ? window : this);
