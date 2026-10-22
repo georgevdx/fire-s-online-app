@@ -43,9 +43,9 @@ assert.ok(
   'Live PDF files must cache-bust without changing version 1.3.67'
 );
 assert.ok(
-  /app\.js\?v=1-3-122-toets/.test(read('staging/index.html')) &&
+  /app\.js\?v=1-3-123-toets/.test(read('staging/index.html')) &&
     /styles\.css\?v=1-3-123-pdf/.test(read('staging/index.html')) &&
-    /Version 1\.3\.122-toets/.test(read('staging/index.html')),
+    /Version 1\.3\.123-toets/.test(read('staging/index.html')),
   'Toets must use the same PDF page rules'
 );
 

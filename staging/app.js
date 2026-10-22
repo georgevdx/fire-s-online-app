@@ -8500,6 +8500,12 @@ function fireSDeletedProjectIdsStorageKey() {
     : 'fireyeDeletedProjectIds';
 }
 
+function fireSDeviceSnapshotKey() {
+  return fireSProjectsStorageKey() === 'fireyeProjects-staging'
+    ? 'fireyeProjects-staging-device-snapshot'
+    : 'fireyeProjects-device-snapshot';
+}
+
 function fireSReadStoredProjectArray(key) {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) || '[]');
@@ -8528,12 +8534,14 @@ function fireSRestoreDeviceInspectionsIfMissing(current) {
     const backup = JSON.parse(localStorage.getItem('fireyesaLastBackupJson') || 'null');
     if (backup && Array.isArray(backup.projects)) pools.push(backup.projects);
   } catch (_) {}
+  pools.push(fireSReadStoredProjectArray(fireSDeviceSnapshotKey()));
   const byId = new Map();
   pools.forEach(list => {
     list.forEach(project => {
       if (!project || !project.id) return;
       const id = String(project.id);
       if (typeof isProjectDeleted === 'function' && isProjectDeleted(id)) return;
+      if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) return;
       if (!byId.has(id)) byId.set(id, project);
     });
   });
@@ -8554,6 +8562,29 @@ function getProjects() {
   return list.map(project => fireSApplyScheduleAfterVisit(project));
 }
 
+function fireSRememberDeviceSnapshot(projects) {
+  const list = Array.isArray(projects) ? projects : [];
+  const keep = list.filter(project => {
+    if (!project || !project.id) return false;
+    try {
+      if (typeof isProjectDeleted === 'function' && isProjectDeleted(String(project.id))) {
+        return false;
+      }
+    } catch (_) {}
+    try {
+      if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
+        return false;
+      }
+    } catch (_) {}
+    return true;
+  });
+  if (!keep.length) return;
+  try {
+    localStorage.setItem(fireSDeviceSnapshotKey(), JSON.stringify(keep));
+    window.__fireSDeviceRestoreChecked = false;
+  } catch (_) {}
+}
+
 function setProjects(projects) {
   const previousProjects = getProjects();
   const storageKey = fireSProjectsStorageKey();
@@ -8561,6 +8592,7 @@ function setProjects(projects) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(projects));
     capturePendingUploadQueueChanges(previousProjects, projects);
+    fireSRememberDeviceSnapshot(projects);
   } catch (error) {
     if (error && error.name === 'QuotaExceededError') {
       const compactProjects =
@@ -8571,6 +8603,7 @@ function setProjects(projects) {
         JSON.stringify(compactProjects)
       );
       capturePendingUploadQueueChanges(previousProjects, compactProjects);
+      fireSRememberDeviceSnapshot(compactProjects);
 
       console.warn(
         'Storage quota reached. Saved compact inspections without heavy photo data.',
@@ -27515,6 +27548,109 @@ function fireSFilterToCloudBuildings(list) {
   return matched.length ? matched : unique;
 }
 
+function fireSRealCompanyName(name) {
+  const value = String(name || '').trim();
+  const n = value.toLowerCase();
+  if (
+    !n ||
+    n === 'your company' ||
+    n === 'your new company' ||
+    n === 'local workspace' ||
+    n === 'local / personal workspace'
+  ) {
+    return '';
+  }
+  return value;
+}
+
+function fireSReadCachedCompany() {
+  try {
+    if (typeof localStorage === 'undefined' || !localStorage) return null;
+    const raw =
+      localStorage.getItem('fireS.cachedCompany-staging') ||
+      localStorage.getItem('fireS.cachedCompany');
+    const cached = raw ? JSON.parse(raw) : null;
+    if (!cached || typeof cached !== 'object') return null;
+    return cached;
+  } catch (_) {
+    return null;
+  }
+}
+
+function fireSSignedInCompanyName() {
+  let profile = null;
+  try {
+    profile =
+      (typeof currentUserProfile !== 'undefined' && currentUserProfile) ||
+      (typeof window !== 'undefined' && window.currentUserProfile) ||
+      null;
+  } catch (_) {}
+  const fromProfile = fireSRealCompanyName(profile && profile.companyName);
+  if (fromProfile) return fromProfile;
+  try {
+    const access = typeof window !== 'undefined' ? window.currentCompanyAccess : null;
+    const fromAccess = fireSRealCompanyName(access && access.companyName);
+    if (fromAccess) return fromAccess;
+  } catch (_) {}
+  const cached = fireSReadCachedCompany();
+  return fireSRealCompanyName(cached && cached.name);
+}
+
+function fireSDeviceRowsWhenCompanyFilterIsEmpty(raw) {
+  let profile = null;
+  try {
+    profile =
+      (typeof currentUserProfile !== 'undefined' && currentUserProfile) ||
+      (typeof window !== 'undefined' && window.currentUserProfile) ||
+      null;
+  } catch (_) {}
+  const signedIn = fireSSignedInCompanyName().toLowerCase();
+  const companyId = String(
+    (profile && (profile.companyId || profile.company_id)) || ''
+  ).trim();
+  let isolated = false;
+  try {
+    if (
+      companyId &&
+      typeof fireSCompanyAdoptsLocalLeftovers === 'function' &&
+      !fireSCompanyAdoptsLocalLeftovers(companyId)
+    ) {
+      isolated = true;
+    }
+  } catch (_) {}
+  const cached = fireSReadCachedCompany();
+  const cachedId = String((cached && cached.id) || '').trim();
+  return (Array.isArray(raw) ? raw : []).filter(project => {
+    if (!project) return false;
+    if (
+      typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project)
+    ) {
+      return false;
+    }
+    try {
+      if (
+        profile &&
+        typeof fireSProjectOwnedByProfile === 'function' &&
+        fireSProjectOwnedByProfile(project, profile)
+      ) {
+        return true;
+      }
+    } catch (_) {}
+    const projectCompanyId = String(
+      (project && (project.companyId || project.company_id)) || ''
+    ).trim();
+    if (companyId && projectCompanyId && projectCompanyId === companyId) return true;
+    if (cachedId && projectCompanyId && projectCompanyId === cachedId) return true;
+    const projectName = fireSRealCompanyName(project && project.companyName).toLowerCase();
+    if (signedIn && projectName && projectName === signedIn) return true;
+    if (projectName && signedIn && projectName !== signedIn) return false;
+    if (projectName && !signedIn) return false;
+    if (isolated && projectCompanyId && projectCompanyId !== companyId) return false;
+    return true;
+  });
+}
+
 function fireSHomeCountableProjects(projects) {
   let list = Array.isArray(projects) ? projects : [];
   const raw = list;
@@ -27525,31 +27661,7 @@ function fireSHomeCountableProjects(projects) {
     }
   } catch (_) {}
   if (!list.length && raw.length) {
-    let profile = null;
-    try { profile = currentUserProfile || window.currentUserProfile || null; } catch (_) {}
-    const profileName = String((profile && profile.companyName) || '').trim().toLowerCase();
-    list = raw.filter(project => {
-      if (!project) return false;
-      if (
-        typeof fireSIsHiddenFromCurrentLists === 'function' &&
-        fireSIsHiddenFromCurrentLists(project)
-      ) {
-        return false;
-      }
-      if (
-        profile &&
-        typeof fireSProjectOwnedByProfile === 'function' &&
-        fireSProjectOwnedByProfile(project, profile)
-      ) {
-        return true;
-      }
-      const projectCompanyId = String(
-        (project && (project.companyId || project.company_id)) || ''
-      ).trim();
-      if (!projectCompanyId) return true;
-      const projectName = String((project && project.companyName) || '').trim().toLowerCase();
-      return !!(profileName && projectName && profileName === projectName);
-    });
+    list = fireSDeviceRowsWhenCompanyFilterIsEmpty(raw);
   }
   try {
     if (typeof fireSFilterToCloudBuildings === 'function') {
@@ -27561,6 +27673,7 @@ function fireSHomeCountableProjects(projects) {
 
 try {
   window.fireSHomeCountableProjects = fireSHomeCountableProjects;
+  window.fireSDeviceRowsWhenCompanyFilterIsEmpty = fireSDeviceRowsWhenCompanyFilterIsEmpty;
 } catch (_) {}
 
 function fireSChecklistAnswerValue(answer) {
@@ -40654,6 +40767,52 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     stats.setAttribute('aria-hidden', 'true');
     stats.style.setProperty('display', 'none', 'important');
   }
+  function deviceInspectionsOnPhone() {
+    let list = [];
+    try {
+      if (typeof window.getProjects === 'function') list = window.getProjects();
+    } catch (_) {}
+    if (!Array.isArray(list)) list = [];
+    return list.filter(project => {
+      if (!project) return false;
+      try {
+        if (typeof window.fireSIsHiddenFromCurrentLists === 'function') {
+          return !window.fireSIsHiddenFromCurrentLists(project);
+        }
+      } catch (_) {}
+      return true;
+    });
+  }
+  function phoneStoreSentence(count) {
+    const n = Number(count) || 0;
+    if (!n) return 'No inspections stored on this phone.';
+    if (n === 1) return '1 inspection stored on this phone.';
+    return n + ' inspections stored on this phone.';
+  }
+  function hidePhoneStoreLine() {
+    const line = document.getElementById('fireSPhoneStoreLine');
+    if (!line) return;
+    if (line.hidden && line.style.display === 'none') return;
+    line.hidden = true;
+    line.setAttribute('aria-hidden', 'true');
+    line.style.setProperty('display', 'none', 'important');
+  }
+  function paintPhoneStoreLine(row) {
+    if (!row || !row.parentNode) return;
+    let line = document.getElementById('fireSPhoneStoreLine');
+    if (!line) {
+      line = document.createElement('p');
+      line.id = 'fireSPhoneStoreLine';
+      line.className = 'fire-s-phone-store-line';
+      row.insertAdjacentElement('afterend', line);
+    }
+    const text = phoneStoreSentence(deviceInspectionsOnPhone().length);
+    if (line.textContent !== text) line.textContent = text;
+    line.hidden = false;
+    line.removeAttribute('aria-hidden');
+    line.style.cssText =
+      'display:block;margin:8px 0 0;padding:0 8px;font-size:1rem;font-weight:600;text-align:center;color:inherit;';
+  }
   function renderKpis(){
     try {
       if (window.__fireSHomeCountsFrozen || window.__fireSCloudPullSettled === false) {
@@ -40678,6 +40837,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
           lockedRow.hidden = true;
           lockedRow.style.setProperty('display', 'none', 'important');
         }
+        hidePhoneStoreLine();
         return;
       }
     } catch (_) {}
@@ -40693,6 +40853,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         row.hidden = true;
         row.style.setProperty('display', 'none', 'important');
       }
+      hidePhoneStoreLine();
       return;
     }
     const c = counts();
@@ -40714,6 +40875,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     }
     hideLegacyStatsRow();
     hideOwnerCountLine();
+    paintPhoneStoreLine(row);
   }
   function hideOwnerCountLine(){
     const subtitle = document.getElementById('mainCommandSubtitle') || document.querySelector('.main-command-top p');

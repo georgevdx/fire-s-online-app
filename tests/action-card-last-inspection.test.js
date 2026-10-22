@@ -45,9 +45,9 @@ assert.ok(
   'Dark Mode must keep the ACTION pill red with white type'
 );
 assert.ok(
-  /app\.js\?v=1-3-122-toets/.test(html) &&
-    /service-worker\.js\?v=108-84-toets-122/.test(html) &&
-    /Version 1\.3\.122-toets/.test(html),
+  /app\.js\?v=1-3-123-toets/.test(html) &&
+    /service-worker\.js\?v=108-84-toets-123/.test(html) &&
+    /Version 1\.3\.123-toets/.test(html),
   'Toets must cache-bust last-inspection Actions without bumping the displayed version'
 );
 
