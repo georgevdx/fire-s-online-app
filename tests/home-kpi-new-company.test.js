@@ -13,9 +13,9 @@ const stagingApp = read('staging/app.js');
 const stagingHtml = read('staging/index.html');
 
 assert.ok(
-  /Version 1\.3\.120-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-126-calm/.test(stagingHtml),
-  'Toets must cache-bust empty new-company Home KPI cards as 1.3.120-toets'
+  /Version 1\.3\.121-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-121-toets/.test(stagingHtml),
+  'Toets must cache-bust empty new-company Home KPI cards as 1.3.121-toets'
 );
 
 assert.ok(
@@ -77,8 +77,8 @@ sandbox.__fireSCloudBuildingFilter = { ids: {}, keys: {}, ready: true };
 let counted = sandbox.fireSHomeCountableProjects(leftovers);
 assert.strictEqual(
   counted.length,
-  0,
-  'new-company Home cards must be 0 when the company cloud has no buildings'
+  2,
+  'An empty cloud list must keep the inspections still stored on the device'
 );
 
 sandbox.__fireSCloudBuildingFilter = {
