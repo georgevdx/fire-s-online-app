@@ -1099,6 +1099,41 @@ function autoSaveProject() {
   if (currentProjectId) {
     const index = projects.findIndex(p => p.id === currentProjectId);
 
+    if (
+      index !== -1 &&
+      inspectionDraftComparable(projects[index]) === inspectionDraftComparable({
+        organisationName,
+        siteName,
+        streetNumber,
+        addressLine,
+        projectAddress,
+        gps,
+        inMall,
+        mallName,
+        unitNumber,
+        contactPerson: getEl('contactPerson').value.trim(),
+        contactTel: getEl('contactTel').value.trim(),
+        contactEmail: getEl('contactEmail').value.trim(),
+        productType,
+        inspectionType,
+        inspectorName,
+        inspectionDate,
+        occupancy,
+        followUpRequired: getEl('followUpRequired').value,
+        followUpDate: getEl('followUpDate').value,
+        followUpNotes: getEl('followUpNotes').value.trim(),
+        recurringCycleEnabled: getEl('recurringCycleEnabled').value === 'Yes',
+        recurringCycleNumber: getEl('recurringCycleNumber').value,
+        recurringCycleUnit: getEl('recurringCycleUnit').value,
+        recurringCycleNotes: getEl('recurringCycleNotes').value.trim(),
+        finalComments,
+        answers,
+        photos: currentPhotos || []
+      })
+    ) {
+      return;
+    }
+
     if (index !== -1) {
       const companyStamp = resolveProjectCompanyFields(
         projects[index],
@@ -6440,7 +6475,7 @@ function initApp() {
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
   getEl('saveBtn').addEventListener('click', function () {
-    saveProject({ notify: 'draft' });
+    saveProject({ notify: 'draft', unchangedNotice: true });
   });
   getEl('finishBtn').addEventListener('click', finishInspection);
   getEl('reportBtn').addEventListener('click', generateReport);
@@ -17794,7 +17829,59 @@ function ensureInspectionSavePopupStyles() {
   document.head.appendChild(style);
 }
 
+function inspectionDraftComparable(source) {
+  const text = value => String(value == null ? '' : value).trim();
+  const answers = Array.isArray(source && source.answers) ? source.answers : [];
+  const photos = Array.isArray(source && source.photos) ? source.photos : [];
+  return JSON.stringify({
+    organisationName: text(source && source.organisationName),
+    siteName: text(source && source.siteName),
+    streetNumber: text(source && source.streetNumber),
+    addressLine: text(source && source.addressLine),
+    projectAddress: text(source && source.projectAddress),
+    gps: text(source && source.gps),
+    inMall: text(source && source.inMall),
+    mallName: text(source && source.mallName),
+    unitNumber: text(source && source.unitNumber),
+    contactPerson: text(source && source.contactPerson),
+    contactTel: text(source && source.contactTel),
+    contactEmail: text(source && source.contactEmail),
+    productType: text(source && source.productType),
+    inspectionType: text(source && source.inspectionType),
+    inspectorName: text(source && source.inspectorName),
+    inspectionDate: text(source && source.inspectionDate),
+    occupancy: text(source && source.occupancy),
+    followUpRequired: text(source && source.followUpRequired),
+    followUpDate: text(source && source.followUpDate),
+    followUpNotes: text(source && source.followUpNotes),
+    recurringCycleEnabled: !!(source && source.recurringCycleEnabled === true),
+    recurringCycleNumber: text(source && source.recurringCycleNumber),
+    recurringCycleUnit: text(source && source.recurringCycleUnit),
+    recurringCycleNotes: text(source && source.recurringCycleNotes),
+    finalComments: text(source && source.finalComments),
+    answers: answers.map(answer => ({
+      itemIndex: Number(answer && answer.itemIndex),
+      itemNumber: text(answer && answer.itemNumber),
+      answer: text(answer && answer.answer),
+      note: text(answer && answer.note),
+      expiryDate: answer && answer.expiryDate ? text(answer.expiryDate) : '',
+      assessment: text(answer && answer.assessment)
+    })),
+    photos: photos.map(photo => ({
+      src: text(photo && photo.src),
+      storagePath: text(photo && photo.storagePath),
+      note: text(photo && photo.note),
+      timestamp: text(photo && photo.timestamp)
+    }))
+  });
+}
+
 function inspectionSavePopupDetail(kind, options) {
+  if (kind === 'unchanged') {
+    return options && options.pending === true
+      ? 'Nothing has changed since the last save. The saved copy will still upload to the server.'
+      : 'Nothing has changed since the last save.';
+  }
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   const parts = [
     offline
@@ -17813,8 +17900,11 @@ function inspectionSavePopupDetail(kind, options) {
 
 function showInspectionSavePopup(kind, options) {
   ensureInspectionSavePopupStyles();
-  const finished = kind === 'finished';
-  const title = finished ? 'Finished inspection saved' : 'Draft saved';
+  const title = kind === 'finished'
+    ? 'Finished inspection saved'
+    : kind === 'unchanged'
+      ? 'Draft already saved'
+      : 'Draft saved';
   const existing = document.getElementById('fireSSaveResultPopup');
   if (existing) existing.remove();
 
@@ -17822,6 +17912,7 @@ function showInspectionSavePopup(kind, options) {
 
   const backdrop = document.createElement('div');
   backdrop.id = 'fireSSaveResultPopup';
+  backdrop.dataset.saveKind = kind;
   backdrop.setAttribute('role', 'dialog');
   backdrop.setAttribute('aria-modal', 'true');
   backdrop.setAttribute('aria-labelledby', 'fireSSaveResultTitle');
@@ -17853,6 +17944,8 @@ function showInspectionSavePopup(kind, options) {
 }
 
 function noteInspectionUploaded(projectId) {
+  const popup = document.getElementById('fireSSaveResultPopup');
+  if (popup && popup.dataset.saveKind === 'unchanged') return;
   const detail = document.getElementById('fireSSaveResultDetail');
   if (!detail) return;
   const openId = window.__fireSSavePopupProjectId;
@@ -17861,6 +17954,8 @@ function noteInspectionUploaded(projectId) {
 }
 
 function noteInspectionUploadWaiting(projectId) {
+  const popup = document.getElementById('fireSSaveResultPopup');
+  if (popup && popup.dataset.saveKind === 'unchanged') return;
   const detail = document.getElementById('fireSSaveResultDetail');
   if (!detail) return;
   const openId = window.__fireSSavePopupProjectId;
@@ -17993,6 +18088,50 @@ const finalComments = getEl('finalComments').value.trim();
   const index = currentProjectId
     ? projects.findIndex(p => p.id === currentProjectId)
     : -1;
+
+  if (
+    options &&
+    options.unchangedNotice === true &&
+    index !== -1 &&
+    inspectionDraftComparable(projects[index]) === inspectionDraftComparable({
+      organisationName,
+      siteName,
+      streetNumber,
+      addressLine,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
+      productType,
+      inspectionType,
+      inspectorName,
+      inspectionDate,
+      occupancy,
+      followUpRequired,
+      followUpDate,
+      followUpNotes,
+      recurringCycleEnabled,
+      recurringCycleNumber,
+      recurringCycleUnit,
+      recurringCycleNotes,
+      finalComments,
+      answers,
+      photos: currentPhotos || []
+    })
+  ) {
+    showInspectionSavePopup('unchanged', {
+      pending: projects[index].syncPending === true
+    });
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent = 'Draft already saved. Nothing has changed.';
+    }
+    return true;
+  }
 
   if (currentProjectId && index !== -1) {
     const companyStamp = resolveProjectCompanyFields(
