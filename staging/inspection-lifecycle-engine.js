@@ -276,10 +276,13 @@
       const wrappedFinishInspection = function () {
         const completion = getDomCompletion();
         if (!completion.complete) {
-          if (typeof window.saveProject === 'function') window.saveProject();
-          alert(
-            `Inspection saved as incomplete.\n\n${completion.unanswered} checklist item${completion.unanswered === 1 ? '' : 's'} must still be answered before this inspection can be finalised and moved to Inspection History.`
-          );
+          const saved = typeof window.saveProject === 'function'
+            ? window.saveProject({
+                notify: 'draft',
+                unanswered: completion.unanswered
+              })
+            : false;
+          if (saved === false) return;
           const firstUnanswered = Array.from(document.querySelectorAll('.answer-select'))
             .find(field => !ANSWERED_VALUES.has(normalise(field.value)));
           firstUnanswered?.closest('.checklist-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });

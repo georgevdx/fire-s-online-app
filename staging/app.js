@@ -4938,6 +4938,49 @@ function showSyncTools() {
   // Old top-page backup tools must stay hidden.
 }
 
+function keepLocalEditsMadeDuringCloudPull(snapshotProjects, mergedProjects) {
+  const latest = getProjects();
+  const snapshotIds = new Set(
+    (Array.isArray(snapshotProjects) ? snapshotProjects : [])
+      .filter(project => project && project.id)
+      .map(project => String(project.id))
+  );
+  const mergedById = new Map();
+
+  (Array.isArray(mergedProjects) ? mergedProjects : []).forEach(project => {
+    if (project && project.id) mergedById.set(String(project.id), project);
+  });
+
+  latest.forEach(project => {
+    if (!project || !project.id) return;
+    const id = String(project.id);
+    if (typeof isProjectDeleted === 'function' && isProjectDeleted(id)) return;
+    if (
+      typeof fireSIsDeletedPremises === 'function' &&
+      fireSIsDeletedPremises(project)
+    ) {
+      return;
+    }
+
+    const localTime = project.lastSaved
+      ? new Date(project.lastSaved).getTime()
+      : 0;
+    const current = mergedById.get(id);
+    const currentTime = current && current.lastSaved
+      ? new Date(current.lastSaved).getTime()
+      : 0;
+    const createdDuringPull = !snapshotIds.has(id);
+    const pendingLocal = project.syncPending === true && localTime >= currentTime;
+
+    if (createdDuringPull || pendingLocal) {
+      mergedById.set(id, project);
+      queueInspectionForUpload(id);
+    }
+  });
+
+  return Array.from(mergedById.values());
+}
+
 function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
   const mergedMap = new Map();
 
@@ -5210,6 +5253,10 @@ async function safeDownloadNewerCloudInspections(options) {
       if (rows.length) {
         mergedProjects = mergeCloudRowsIntoProjects(localProjects, rows);
       }
+      mergedProjects = keepLocalEditsMadeDuringCloudPull(
+        localProjects,
+        mergedProjects
+      );
       reportPremisesProgress(incomplete);
       const now = Date.now();
       const shouldPersist = !incomplete || now - lastPaintAt > 1200;
@@ -5303,6 +5350,10 @@ async function safeDownloadNewerCloudInspections(options) {
     } catch (_) {}
     try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
+    mergedProjects = keepLocalEditsMadeDuringCloudPull(
+      localProjects,
+      mergedProjects
+    );
     setProjects(mergedProjects);
     paintHome(true);
     finishPremisesProgress();
@@ -6388,7 +6439,9 @@ function initApp() {
 
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
-  getEl('saveBtn').addEventListener('click', saveProject);
+  getEl('saveBtn').addEventListener('click', function () {
+    saveProject({ notify: 'draft' });
+  });
   getEl('finishBtn').addEventListener('click', finishInspection);
   getEl('reportBtn').addEventListener('click', generateReport);
   getEl('deleteBtn').addEventListener('click', deleteProject);
@@ -17456,18 +17509,26 @@ async function uploadPhotoToStorage(file, projectId) {
 }
 
 async function uploadSingleInspection(project) {
-  if (!navigator.onLine) return;
-  if (typeof supabaseClient === 'undefined') return;
   if (!project || !project.id) return;
+  if (!navigator.onLine) {
+    queueInspectionForUpload(project.id);
+    return;
+  }
+  if (typeof supabaseClient === 'undefined') {
+    queueInspectionForUpload(project.id);
+    return;
+  }
 
   const syncStatus = document.getElementById('syncStatus');
   const quiet = !!window.__fireSQuietCloudUpload;
 
   try {
     const { data: userData, error: userError } =
-      await supabaseClient.auth.getUser();
+      await withTimeout(supabaseClient.auth.getUser(), 12000);
 
     if (userError || !userData || !userData.user) {
+      queueInspectionForUpload(project.id);
+      noteInspectionUploadWaiting(project.id);
       if (syncStatus && !quiet) {
         syncStatus.textContent = 'Saved locally. Cloud not connected.';
       }
@@ -17485,13 +17546,16 @@ async function uploadSingleInspection(project) {
     // company_id NULL so owners could not see them.
     if (myCompanyId) {
       try {
-        const { data: memberRow, error: memberError } = await supabaseClient
-          .from('company_members')
-          .select('company_id, status')
-          .eq('company_id', myCompanyId)
-          .eq('user_id', myId)
-          .eq('status', 'active')
-          .maybeSingle();
+        const { data: memberRow, error: memberError } = await withTimeout(
+          supabaseClient
+            .from('company_members')
+            .select('company_id, status')
+            .eq('company_id', myCompanyId)
+            .eq('user_id', myId)
+            .eq('status', 'active')
+            .maybeSingle(),
+          8000
+        );
         if (!memberError && memberRow && !memberRow.company_id) {
           myCompanyId =
             String(currentUserProfile?.companyId || '').trim() ||
@@ -17505,13 +17569,16 @@ async function uploadSingleInspection(project) {
 
     if (!myCompanyId) {
       try {
-        const { data: anyMember } = await supabaseClient
-          .from('company_members')
-          .select('company_id')
-          .eq('user_id', myId)
-          .eq('status', 'active')
-          .limit(1)
-          .maybeSingle();
+        const { data: anyMember } = await withTimeout(
+          supabaseClient
+            .from('company_members')
+            .select('company_id')
+            .eq('user_id', myId)
+            .eq('status', 'active')
+            .limit(1)
+            .maybeSingle(),
+          8000
+        );
         if (anyMember?.company_id) {
           myCompanyId = String(anyMember.company_id).trim();
           if (currentUserProfile && !currentUserProfile.companyId) {
@@ -17545,11 +17612,14 @@ async function uploadSingleInspection(project) {
 
     if (hasStrippedPhotos) {
       try {
-        const { data: existingPhotoRows } = await supabaseClient
-          .from('inspections')
-          .select('inspection_data')
-          .eq('id', project.id)
-          .limit(1);
+        const { data: existingPhotoRows } = await withTimeout(
+          supabaseClient
+            .from('inspections')
+            .select('inspection_data')
+            .eq('id', project.id)
+            .limit(1),
+          8000
+        );
         if (existingPhotoRows?.[0]?.inspection_data?.photos) {
           projectToUpload = {
             ...projectToUpload,
@@ -17561,16 +17631,20 @@ async function uploadSingleInspection(project) {
 
     // ONLY path: security-definer RPC. No direct table insert/update fallback
     // (direct writes are what show the USING expression RLS error).
-    const rpc = await supabaseClient.rpc('fire_s_upsert_inspection', {
-      p_id: String(project.id),
-      p_inspection_data: projectToUpload,
-      p_company_id: companyFields.companyId
-        ? String(companyFields.companyId)
-        : null
-    });
+    const rpc = await withTimeout(
+      supabaseClient.rpc('fire_s_upsert_inspection', {
+        p_id: String(project.id),
+        p_inspection_data: projectToUpload,
+        p_company_id: companyFields.companyId
+          ? String(companyFields.companyId)
+          : null
+      }),
+      45000
+    );
 
     if (rpc.error) {
       console.error('fire_s_upsert_inspection failed:', rpc.error);
+      queueInspectionForUpload(project.id);
       markUploadQueueFailure(project.id, rpc.error);
       if (quiet) return;
 
@@ -17591,6 +17665,7 @@ async function uploadSingleInspection(project) {
           ? 'Cloud save needs SQL setup. In Supabase run SUPABASE_inspections_rls.sql, then Sync Now.'
           : `Cloud upload failed: ${msg}`;
       }
+      noteInspectionUploadWaiting(project.id);
       if (entitlementMsg) {
         try {
           if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
@@ -17606,14 +17681,16 @@ async function uploadSingleInspection(project) {
       companyFields.companyId ||
       null;
     removeInspectionFromUploadQueue(project.id);
-    markInspectionSynced(project.id, rpcCompany);
+    markInspectionSynced(project.id, rpcCompany, project.lastSaved);
 
     if (syncStatus && project.syncPending === false && !quiet) {
       syncStatus.textContent = 'Saved locally and uploaded to cloud.';
     }
   } catch (err) {
     console.error('Single upload failed:', err);
+    queueInspectionForUpload(project.id);
     markUploadQueueFailure(project.id, err);
+    noteInspectionUploadWaiting(project.id);
     if (syncStatus && !quiet) {
       syncStatus.textContent = `Saved locally. Cloud upload failed: ${err?.message || err}`;
     }
@@ -17645,8 +17722,7 @@ async function uploadAllLocalInspections() {
   }
 }
 
-function markInspectionSynced(projectId, companyIdFromCloud) {
-  removeInspectionFromUploadQueue(projectId);
+function markInspectionSynced(projectId, companyIdFromCloud, uploadedStamp) {
   const projects = getProjects();
 
   const index = projects.findIndex(
@@ -17654,6 +17730,26 @@ function markInspectionSynced(projectId, companyIdFromCloud) {
   );
 
   if (index === -1) return;
+
+  const localStamp = projects[index].lastSaved || '';
+  if (
+    uploadedStamp &&
+    localStamp &&
+    String(localStamp) !== String(uploadedStamp)
+  ) {
+    queueInspectionForUpload(projectId);
+    projects[index] = {
+      ...projects[index],
+      syncPending: true,
+      syncError: false
+    };
+    setProjects(projects);
+    noteInspectionUploadWaiting(projectId);
+    return;
+  }
+
+  removeInspectionFromUploadQueue(projectId);
+  noteInspectionUploaded(projectId);
 
   const companyId =
     String(
@@ -17684,7 +17780,97 @@ function markInspectionSynced(projectId, companyIdFromCloud) {
   updatePostSiteSyncReminder();
 }
 
-function saveProject() {
+function ensureInspectionSavePopupStyles() {
+  if (document.getElementById('fireSSaveResultStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'fireSSaveResultStyles';
+  style.textContent = `
+    #fireSSaveResultPopup{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.55)}
+    .fire-s-save-result-dialog{width:min(420px,100%);background:#fff;color:#0f172a;border-radius:14px;padding:22px 20px 16px;box-shadow:0 18px 50px rgba(15,23,42,.28);font-family:inherit}
+    .fire-s-save-result-dialog h2{margin:0 0 8px;font-size:1.25rem;line-height:1.25}
+    #fireSSaveResultDetail{margin:0 0 16px;font-size:1rem;line-height:1.45}
+    #fireSSaveResultOk{display:block;width:100%;min-height:48px;border:0;border-radius:10px;background:#166534;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+  `;
+  document.head.appendChild(style);
+}
+
+function inspectionSavePopupDetail(kind, options) {
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  const parts = [
+    offline
+      ? 'Saved on this device. It will upload to the server automatically as soon as there is signal.'
+      : 'Saved on this device. Uploading to the server now.'
+  ];
+  const unanswered = Number(options && options.unanswered);
+  if (kind === 'draft' && unanswered > 0) {
+    parts.push(
+      `${unanswered} question${unanswered === 1 ? '' : 's'} still need an answer before this can be a finished inspection.`
+    );
+  }
+  if (options && options.extra) parts.push(String(options.extra));
+  return parts.join(' ');
+}
+
+function showInspectionSavePopup(kind, options) {
+  ensureInspectionSavePopupStyles();
+  const finished = kind === 'finished';
+  const title = finished ? 'Finished inspection saved' : 'Draft saved';
+  const existing = document.getElementById('fireSSaveResultPopup');
+  if (existing) existing.remove();
+
+  window.__fireSSavePopupProjectId = currentProjectId || window.currentProjectId || '';
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'fireSSaveResultPopup';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'fireSSaveResultTitle');
+
+  const dialog = document.createElement('div');
+  dialog.className = 'fire-s-save-result-dialog';
+
+  const heading = document.createElement('h2');
+  heading.id = 'fireSSaveResultTitle';
+  heading.textContent = title;
+
+  const detail = document.createElement('p');
+  detail.id = 'fireSSaveResultDetail';
+  detail.textContent = inspectionSavePopupDetail(kind, options);
+
+  const ok = document.createElement('button');
+  ok.id = 'fireSSaveResultOk';
+  ok.type = 'button';
+  ok.textContent = 'OK';
+  ok.addEventListener('click', () => backdrop.remove());
+
+  dialog.append(heading, detail, ok);
+  backdrop.appendChild(dialog);
+  backdrop.addEventListener('click', event => {
+    if (event.target === backdrop) backdrop.remove();
+  });
+  document.body.appendChild(backdrop);
+  ok.focus();
+}
+
+function noteInspectionUploaded(projectId) {
+  const detail = document.getElementById('fireSSaveResultDetail');
+  if (!detail) return;
+  const openId = window.__fireSSavePopupProjectId;
+  if (openId && projectId && String(openId) !== String(projectId)) return;
+  detail.textContent = 'Saved on this device and uploaded to the server.';
+}
+
+function noteInspectionUploadWaiting(projectId) {
+  const detail = document.getElementById('fireSSaveResultDetail');
+  if (!detail) return;
+  const openId = window.__fireSSavePopupProjectId;
+  if (openId && projectId && String(openId) !== String(projectId)) return;
+  if (detail.textContent.indexOf('uploaded to the server.') !== -1) return;
+  detail.textContent =
+    'Saved on this device. It will upload to the server automatically as soon as there is signal.';
+}
+
+function saveProject(options) {
   if (isInspectionHistoryWriteProtected()) {
     clearTimeout(autoSaveTimer);
     return false;
@@ -17802,10 +17988,11 @@ const finalComments = getEl('finalComments').value.trim();
 
   const projects = getProjects();
 
-  if (currentProjectId) {
-  const index = projects.findIndex(p => p.id === currentProjectId);
+  const index = currentProjectId
+    ? projects.findIndex(p => p.id === currentProjectId)
+    : -1;
 
-  if (index !== -1) {
+  if (currentProjectId && index !== -1) {
     const companyStamp = resolveProjectCompanyFields(
       projects[index],
       accessMetadata
@@ -17886,11 +18073,10 @@ finalComments,
 photos: currentPhotos,
 lastSaved: new Date().toISOString()
     };
-  }
-} else {
+  } else {
     const companyStamp = resolveProjectCompanyFields({}, accessMetadata);
     const newProject = {
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      id: currentProjectId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
       
       companyId: companyStamp.companyId,
       company_id: companyStamp.company_id,
@@ -17963,6 +18149,7 @@ finalComments,
 lastSaved: new Date().toISOString()
     };
       currentProjectId = newProject.id;
+      window.currentProjectId = currentProjectId;
       projects.push(newProject);
       const previousSiteInspections = projects.filter(
       p =>
@@ -17998,28 +18185,32 @@ lastSaved: new Date().toISOString()
   renderProjectsList();
 
   const savedProject = projects.find(p => p.id === currentProjectId);
-  if (savedProject) {
-    currentInspectionSessionSnapshot = cloneInspectionProjectForWorkflow(savedProject);
-    currentInspectionSessionWasNew = false;
+  if (!savedProject) {
+    console.warn('Auto upload skipped: saved project not found.');
+    return false;
   }
 
-  if (savedProject) {
-  if (!navigator.onLine) {
-    setSyncStatusMessage('Saved offline. Will sync when signal returns.');
-    return true;
+  currentInspectionSessionSnapshot = cloneInspectionProjectForWorkflow(savedProject);
+  currentInspectionSessionWasNew = false;
+  queueInspectionForUpload(savedProject.id);
+
+  if (options && options.notify === 'draft') {
+    showInspectionSavePopup('draft', options);
   }
 
-  uploadSingleInspection(savedProject)
-    .catch(error => {
-      console.error('Auto upload after save failed:', error);
-      setSyncStatusMessage('Saved locally. Cloud upload failed.');
-    });
-} else {
-  console.warn('Auto upload skipped: saved project not found.');
-  return false;
-}
-
-
+  const skipUpload = !!(options && options.skipUpload);
+  if (!skipUpload) {
+    if (!navigator.onLine) {
+      setSyncStatusMessage('Saved offline. Will sync when signal returns.');
+    } else {
+      uploadSingleInspection(savedProject)
+        .catch(error => {
+          console.error('Auto upload after save failed:', error);
+          setSyncStatusMessage('Saved locally. Cloud upload failed.');
+          noteInspectionUploadWaiting(savedProject.id);
+        });
+    }
+  }
 
   return true;
 }
@@ -18204,7 +18395,7 @@ function confirmFinishInspectionWithWarnings(project) {
 }
 
 function finishInspection() {
-  if (saveProject() === false) {
+  if (saveProject({ skipUpload: true }) === false) {
     return;
   }
 
@@ -18227,6 +18418,19 @@ function finishInspection() {
     if (saveMessage) {
       saveMessage.textContent =
         'Finish cancelled. Review the Quick Links action items before finishing.';
+    }
+    showInspectionSavePopup('draft', {
+      extra: 'Finish cancelled. This draft stays on this device.'
+    });
+    if (navigator.onLine) {
+      const draftProject = getProjects().find(
+        project => project.id === currentProjectId
+      );
+      if (draftProject) {
+        uploadSingleInspection(draftProject).catch(error => {
+          console.warn('Draft upload after cancelled finish failed:', error);
+        });
+      }
     }
 
     return;
@@ -18269,6 +18473,8 @@ function finishInspection() {
       };
 
       setProjects(projects);
+      queueInspectionForUpload(projects[index].id);
+      showInspectionSavePopup('finished');
 
       const completedProject = projects[index];
 
@@ -18276,7 +18482,12 @@ function finishInspection() {
         uploadSingleInspection(completedProject)
           .catch(error => {
             console.warn('Completed inspection upload failed:', error);
+            noteInspectionUploadWaiting(completedProject.id);
           });
+      } else {
+        setSyncStatusMessage(
+          'Finished inspection saved on this device. It will upload when signal returns.'
+        );
       }
     }
   }
@@ -24652,6 +24863,7 @@ window.addEventListener('online', async () => {
   await resolvePendingGpsAddresses();
 
   runBackgroundSync('signal restored');
+  setTimeout(() => runBackgroundSync('signal restored retry'), 4000);
 });
 
 
@@ -34110,7 +34322,7 @@ function closeInspectionSession() {
 
   const saveAndClose = confirm('Close inspection?\n\nOK = Save & Close\nCancel = choose Discard or Continue');
   if (saveAndClose) {
-    if (saveProject() === false) {
+    if (saveProject({ notify: 'draft' }) === false) {
       return;
     }
     resetInspectionSessionState({ keepProjectId: false });
