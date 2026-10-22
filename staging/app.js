@@ -5161,44 +5161,49 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
 
 let fireSCloudPullInFlight = false;
 let fireSCloudPullGeneration = 0;
+let fireSCloudPullStartedAt = 0;
+
+function fireSStopCloudPullWait() {
+  try {
+    window.__fireSCloudPullGaveUp = true;
+    window.__fireSCloudPullSettled = true;
+    window.__fireSHomeCountsFrozen = false;
+  } catch (_) {}
+}
 
 async function safeDownloadNewerCloudInspections(options) {
     if (!navigator.onLine) {
-      try {
-        window.__fireSCloudPullSettled = !!(
-          window.__fireSCloudBuildingFilter &&
-          window.__fireSCloudBuildingFilter.ready
-        );
-      } catch (_) {}
+      fireSStopCloudPullWait();
       return;
     }
     if (typeof supabaseClient === 'undefined') {
-      try {
-        window.__fireSCloudPullSettled = !!(
-          window.__fireSCloudBuildingFilter &&
-          window.__fireSCloudBuildingFilter.ready
-        );
-      } catch (_) {}
+      fireSStopCloudPullWait();
       return;
     }
-    if (fireSCloudPullInFlight) return;
+    if (fireSCloudPullInFlight && Date.now() - fireSCloudPullStartedAt < 45000) return;
     fireSCloudPullInFlight = true;
-    try { window.__fireSCloudPullSettled = false; } catch (_) {}
+    fireSCloudPullStartedAt = Date.now();
+    try {
+      window.__fireSCloudPullGaveUp = false;
+      window.__fireSCloudPullSettled = false;
+    } catch (_) {}
     const pullToken = ++fireSCloudPullGeneration;
 
   const syncStatus = document.getElementById('syncStatus');
 
   try {
-    const { data: userData, error: userError } =
-      await supabaseClient.auth.getUser();
+    let userData = null;
+    let userError = null;
+    try {
+      const timedUser = await withTimeout(supabaseClient.auth.getUser(), 12000);
+      userData = timedUser && timedUser.data;
+      userError = timedUser && timedUser.error;
+    } catch (error) {
+      userError = error;
+    }
 
     if (userError || !userData || !userData.user) {
-      try {
-        window.__fireSCloudPullSettled = !!(
-          window.__fireSCloudBuildingFilter &&
-          window.__fireSCloudBuildingFilter.ready
-        );
-      } catch (_) {}
+      fireSStopCloudPullWait();
       return;
     }
 
@@ -5396,9 +5401,13 @@ async function safeDownloadNewerCloudInspections(options) {
         }, 1800);
         return;
       }
-      setTimeout(() => {
-        try { safeDownloadNewerCloudInspections({ retry: retry + 1 }); } catch (_) {}
-      }, 4000);
+      fireSStopCloudPullWait();
+      paintHome(true);
+      finishPremisesProgress();
+      if (syncStatus) {
+        syncStatus.textContent =
+          'Cloud download check stopped. Inspections on this phone were kept.';
+      }
       return;
     }
 
@@ -5427,6 +5436,7 @@ async function safeDownloadNewerCloudInspections(options) {
         fireSApplyCloudBuildingFilter(Array.isArray(data) ? data : []);
       }
     } catch (_) {}
+    try { window.__fireSCloudPullGaveUp = false; } catch (_) {}
     try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
     mergedProjects = retainDeviceInspections(
@@ -5443,12 +5453,7 @@ async function safeDownloadNewerCloudInspections(options) {
   } catch (err) {
     console.error('Safe download failed:', err);
     if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
-    try {
-      window.__fireSCloudPullSettled = !!(
-        window.__fireSCloudBuildingFilter &&
-        window.__fireSCloudBuildingFilter.ready
-      );
-    } catch (_) {}
+    fireSStopCloudPullWait();
   } finally {
     if (pullToken === fireSCloudPullGeneration) {
       fireSCloudPullInFlight = false;
@@ -8312,6 +8317,8 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     openInv.error ||
     (preferFiltered && filteredInv.error)
   );
+  const fetchesSettled = !primary.incomplete && !secondary.incomplete;
+  const shortOfExpected = !!(expectedTotal && mergedLen < expectedTotal);
   const scopedExpected = droppedForeign
     ? mergedLen
     : expectedTotal;
@@ -8319,11 +8326,15 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     data: scoped,
     foreignIds: foreignIds,
     error: scoped.length ? null : primary.error || secondary.error,
+    // A finished empty pull is complete. An inventory error must not keep
+    // Home on Loading after both inspection fetches have already ended.
     incomplete: droppedForeign
       ? false
-      : !!inventoryFailed ||
-        !!(expectedTotal && mergedLen < expectedTotal) ||
-        (!expectedTotal && !!primary.incomplete && !!secondary.incomplete),
+      : fetchesSettled
+        ? shortOfExpected
+        : !!inventoryFailed ||
+          shortOfExpected ||
+          (!expectedTotal && !!primary.incomplete && !!secondary.incomplete),
     expectedTotal: scopedExpected
   };
 }

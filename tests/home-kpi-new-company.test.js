@@ -13,9 +13,9 @@ const stagingApp = read('staging/app.js');
 const stagingHtml = read('staging/index.html');
 
 assert.ok(
-  /Version 1\.3\.123-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-123-toets/.test(stagingHtml),
-  'Toets must cache-bust empty new-company Home KPI cards as 1.3.123-toets'
+  /Version 1\.3\.124-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-124-toets/.test(stagingHtml),
+  'Toets must cache-bust empty new-company Home KPI cards as 1.3.124-toets'
 );
 
 assert.ok(
