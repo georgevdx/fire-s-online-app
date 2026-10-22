@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-126-toets',
-  '1-3-126-toets',
-  '108-84-toets-126',
-  'fire-s-108-84-toets-126'
+  '1-3-127-toets',
+  '1-3-127-toets',
+  '108-84-toets-127',
+  'fire-s-108-84-toets-127'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
@@ -78,6 +78,12 @@ assert.ok(
   /prefetchedFiltered/.test(stagingApp) &&
     /Company buildings first/.test(stagingApp),
   'Toets must fetch this company\'s buildings before the full-table scan'
+);
+assert.ok(
+  /function fireSWaitForCompanyId/.test(stagingApp) &&
+    /Android\|iPhone\|iPad\|iPod\|Mobile/.test(stagingApp) &&
+    /return \[10, 1\]/.test(stagingApp),
+  'Toets phone must wait for the company id and download small pages'
 );
 assert.ok(
   /A short phone pull must not become the finished Home count/.test(liveApp) &&

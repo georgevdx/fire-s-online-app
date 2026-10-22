@@ -1,4 +1,4 @@
-const CACHE = 'fire-s-108-84-toets-126';
+const CACHE = 'fire-s-108-84-toets-127';
 const PRECACHE = [
   './manifest.json',
   './icon-192.png',
@@ -38,7 +38,7 @@ self.addEventListener('fetch', event => {
     req.mode === 'navigate' ||
     path.endsWith('/') ||
     /\.html$/i.test(path);
-  const fresh = isDoc || /\.css$/i.test(path);
+  const fresh = isDoc || /\.css$/i.test(path) || /\.js$/i.test(path);
   event.respondWith(
     fetch(req, fresh ? { cache: 'no-store' } : undefined)
       .then(res => {

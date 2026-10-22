@@ -5217,6 +5217,16 @@ async function safeDownloadNewerCloudInspections(options) {
       return;
     }
 
+    // A phone often starts this pull from focus/visibility before the
+    // company id is on the profile. That pull used to finish empty and
+    // block the later one, so the laptop showed the buildings and the
+    // phone stayed on 0.
+    try {
+      if (typeof fireSWaitForCompanyId === 'function') {
+        await fireSWaitForCompanyId(12000);
+      }
+    } catch (_) {}
+
     const localProjects = getProjects();
     const localBefore = localProjects.length;
     let companyLocals = localBefore;
@@ -5322,7 +5332,11 @@ async function safeDownloadNewerCloudInspections(options) {
         expectedTotal = meta.expectedTotal;
       }
       const incomplete = !!(meta && meta.incomplete);
-      const cid = String((currentUserProfile && currentUserProfile.companyId) || '').trim();
+      const cid = String(
+        (typeof fireSKnownCompanyId === 'function' && fireSKnownCompanyId()) ||
+          (currentUserProfile && currentUserProfile.companyId) ||
+          ''
+      ).trim();
       const rows = (Array.isArray(cloudRows) ? cloudRows : []).filter(row => {
         const data = row && row.inspection_data;
         const rowCid = String(
@@ -8091,6 +8105,15 @@ function applyInspectionAccessFilter(query, userId) {
 async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   const selectCols = columns || 'inspection_data, updated_at, company_id';
   const pageSizes = [100, 40, 10, 1];
+  // A phone cannot finish a 100-row inspection_data page before the
+  // timeout, so the laptop showed the buildings and the phone stayed empty.
+  function pullPageSizes() {
+    try {
+      const ua = typeof navigator !== 'undefined' ? String(navigator.userAgent || '') : '';
+      if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return [10, 1];
+    } catch (_) {}
+    return pageSizes;
+  }
   const maxPages = 400;
   const timeoutMs = 15000;
   const retriesPerPage = 1;
@@ -8149,14 +8172,15 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
 
   async function fetchAll(makeQuery, expectedTotal) {
     const rows = [];
+    const sizes = pullPageSizes();
     let sizeIndex = 0;
-    let size = pageSizes[sizeIndex];
+    let size = sizes[sizeIndex];
     for (let page = 0; page < maxPages; page += 1) {
       const from = rows.length;
       let result = await fetchPage(makeQuery, from, size);
-      while (result.error && sizeIndex < pageSizes.length - 1) {
+      while (result.error && sizeIndex < sizes.length - 1) {
         sizeIndex += 1;
-        size = pageSizes[sizeIndex];
+        size = sizes[sizeIndex];
         result = await fetchPage(makeQuery, from, size);
       }
       if (result.error) {
@@ -8224,7 +8248,10 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     );
   }
 
-  const preferFiltered = !!(currentUserProfile && currentUserProfile.companyId);
+  const preferFiltered = !!(
+    (typeof fireSKnownCompanyId === 'function' && fireSKnownCompanyId()) ||
+    (currentUserProfile && currentUserProfile.companyId)
+  );
 
   function inventoryCount(inv) {
     if (!inv || inv.error) return 0;
@@ -8308,7 +8335,9 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     : await fetchAll(secondaryQuery, secondaryExpected);
   const merged = unionCloudRows(primary.data, secondary.data);
   const activeCompanyId = String(
-    (currentUserProfile && currentUserProfile.companyId) || ''
+    (typeof fireSKnownCompanyId === 'function' && fireSKnownCompanyId()) ||
+      (currentUserProfile && currentUserProfile.companyId) ||
+      ''
   ).trim();
   const foreignIds = [];
   const scoped = [];
@@ -8640,10 +8669,35 @@ function setProjects(projects) {
       const compactProjects =
         stripHeavyPhotoDataFromProjects(projects);
 
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(compactProjects)
-      );
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify(compactProjects)
+        );
+      } catch (compactError) {
+        const slimProjects = (projects || []).map(project => {
+          const slim = stripHeavyPhotoData(project) || project;
+          if (!slim || typeof slim !== 'object') return slim;
+          slim.photos = [];
+          if (Array.isArray(slim.inspectionHistory)) {
+            slim.inspectionHistory = slim.inspectionHistory.map(item => {
+              if (!item || typeof item !== 'object') return item;
+              const copy = Object.assign({}, item);
+              delete copy.photos;
+              return copy;
+            });
+          }
+          return slim;
+        });
+        localStorage.setItem(storageKey, JSON.stringify(slimProjects));
+        capturePendingUploadQueueChanges(previousProjects, slimProjects);
+        fireSRememberDeviceSnapshot(slimProjects);
+        console.warn(
+          'Storage quota reached. Saved inspections without photos so the phone can show them.',
+          compactError
+        );
+        return;
+      }
       capturePendingUploadQueueChanges(previousProjects, compactProjects);
       fireSRememberDeviceSnapshot(compactProjects);
 
@@ -27603,6 +27657,59 @@ function fireSRealCompanyName(name) {
     return '';
   }
   return value;
+}
+
+function fireSProfileCompanyId() {
+  try {
+    return String(
+      (typeof currentUserProfile !== 'undefined' &&
+        currentUserProfile &&
+        currentUserProfile.companyId) ||
+        ''
+    ).trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+function fireSKnownCompanyId() {
+  const fromProfile = fireSProfileCompanyId();
+  if (fromProfile) return fromProfile;
+  try {
+    const cached = fireSReadCachedCompany();
+    return String((cached && cached.id) || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+function fireSWaitForCompanyId(maxMs) {
+  const limit = Number(maxMs) || 0;
+  const started = Date.now();
+  return new Promise(resolve => {
+    const tick = () => {
+      const ready = fireSProfileCompanyId();
+      if (ready) {
+        resolve(ready);
+        return;
+      }
+      if (Date.now() - started >= limit) {
+        const cached = fireSKnownCompanyId();
+        if (cached && !fireSProfileCompanyId()) {
+          if (typeof currentUserProfile === 'undefined' || !currentUserProfile) {
+            currentUserProfile = { companyId: cached };
+          } else {
+            currentUserProfile.companyId = cached;
+          }
+          try { window.currentUserProfile = currentUserProfile; } catch (_) {}
+        }
+        resolve(cached);
+        return;
+      }
+      setTimeout(tick, 250);
+    };
+    tick();
+  });
 }
 
 function fireSReadCachedCompany() {
