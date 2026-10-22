@@ -5338,12 +5338,17 @@ async function safeDownloadNewerCloudInspections(options) {
         keepLocalEditsMadeDuringCloudPull(localProjects, mergedProjects),
         localProjects
       );
+      // Save each cloud batch onto the phone before the building count is
+      // painted. A slow pull was showing 6 buildings while the phone store
+      // was still empty, so the four tiles stayed at 0.
+      if (mergedProjects.length) {
+        try { setProjects(mergedProjects); } catch (_) {}
+      }
       reportPremisesProgress(incomplete);
       const now = Date.now();
-      const shouldPersist = !incomplete || now - lastPaintAt > 1200;
-      if (!shouldPersist) return;
+      const shouldPaint = !incomplete || now - lastPaintAt > 1200;
+      if (!shouldPaint) return;
       lastPaintAt = now;
-      setProjects(mergedProjects);
       if (incomplete && freezeHomeCounts) return;
       paintHome(false);
     }
@@ -5402,6 +5407,9 @@ async function safeDownloadNewerCloudInspections(options) {
         return;
       }
       fireSStopCloudPullWait();
+      if (mergedProjects.length) {
+        try { setProjects(mergedProjects); } catch (_) {}
+      }
       paintHome(true);
       finishPremisesProgress();
       if (syncStatus) {
@@ -40398,7 +40406,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
   function todayKey(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
-  function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.scheduledDate || p?.followUpDate); }
+  function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.syncedAt || p?.scheduledDate || p?.followUpDate); }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
   function answerValue(a){ return norm(a?.answer); }
   function noCount(p){ return answers(p).filter(a => answerValue(a) === 'no').length; }
@@ -40570,7 +40578,7 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     return `${year}-${month}-${day}`;
   }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
-  function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.scheduledDate || p?.followUpDate); }
+  function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.syncedAt || p?.scheduledDate || p?.followUpDate); }
   function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
   function answerValue(a){ return norm(a?.answer); }
   function hasAnsweredChecklist(p){ return answers(p).some(a => ['yes','no','na','n/a'].includes(answerValue(a))); }
