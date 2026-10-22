@@ -5161,13 +5161,22 @@ function mergeCloudRowsIntoProjects(localProjects, cloudRows) {
 
 let fireSCloudPullInFlight = false;
 let fireSCloudPullGeneration = 0;
-let fireSCloudPullStartedAt = 0;
 
 function fireSStopCloudPullWait() {
   try {
     window.__fireSCloudPullGaveUp = true;
     window.__fireSCloudPullSettled = true;
     window.__fireSHomeCountsFrozen = false;
+  } catch (_) {}
+  try {
+    if (typeof window.fireSRefreshOwnerLists === 'function') {
+      window.fireSRefreshOwnerLists();
+    }
+  } catch (_) {}
+  try {
+    if (typeof window.fireSProductionRenderKpis === 'function') {
+      window.fireSProductionRenderKpis();
+    }
   } catch (_) {}
 }
 
@@ -5180,9 +5189,10 @@ async function safeDownloadNewerCloudInspections(options) {
       fireSStopCloudPullWait();
       return;
     }
-    if (fireSCloudPullInFlight && Date.now() - fireSCloudPullStartedAt < 45000) return;
+    // A second pull used to start after 45s and throw away the first one
+    // before its buildings were written on the phone. Let this one finish.
+    if (fireSCloudPullInFlight) return;
     fireSCloudPullInFlight = true;
-    fireSCloudPullStartedAt = Date.now();
     try {
       window.__fireSCloudPullGaveUp = false;
       window.__fireSCloudPullSettled = false;
@@ -8240,11 +8250,20 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     return Array.from(map.values());
   }
 
-  const openInv = await fetchInventory(openIndexQuery);
+  // Company buildings first. The full-table scan was keeping Home on
+  // Loading, and a later pull was discarding these rows before they
+  // reached the phone.
   let filteredInv = { rows: [], count: 0, error: { message: 'skip' } };
+  let prefetchedFiltered = null;
   if (preferFiltered) {
     filteredInv = await fetchInventory(filteredIndexQuery);
-  } else if (openInv.error || !openInv.rows.length) {
+    const earlyCount = inventoryCount(filteredInv);
+    if (earlyCount) report([], earlyCount, true);
+    prefetchedFiltered = await fetchAll(filteredQuery, earlyCount || null);
+  }
+
+  const openInv = await fetchInventory(openIndexQuery);
+  if (!preferFiltered && (openInv.error || !openInv.rows.length)) {
     filteredInv = await fetchInventory(filteredIndexQuery);
   }
   const filteredCount = inventoryCount(filteredInv);
@@ -8269,7 +8288,7 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
 
   const expectedTotal =
     Math.max(filteredCount, openCount, inventoryCount(inventory)) || null;
-  report([], expectedTotal, true);
+  if (!(preferFiltered && filteredCount)) report([], expectedTotal, true);
 
   const primaryQuery = inventoryMode === 'filtered' ? filteredQuery : openQuery;
   const secondaryQuery = inventoryMode === 'filtered' ? openQuery : filteredQuery;
@@ -8277,12 +8296,16 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     inventoryMode === 'filtered'
       ? filteredCount || expectedTotal
       : openCount || expectedTotal;
-  const primary = await fetchAll(primaryQuery, primaryExpected);
+  const primary = (inventoryMode === 'filtered' && prefetchedFiltered)
+    ? prefetchedFiltered
+    : await fetchAll(primaryQuery, primaryExpected);
   const secondaryExpected =
     inventoryMode === 'filtered'
       ? openCount || expectedTotal
       : filteredCount || expectedTotal;
-  const secondary = await fetchAll(secondaryQuery, secondaryExpected);
+  const secondary = (inventoryMode !== 'filtered' && prefetchedFiltered)
+    ? prefetchedFiltered
+    : await fetchAll(secondaryQuery, secondaryExpected);
   const merged = unionCloudRows(primary.data, secondary.data);
   const activeCompanyId = String(
     (currentUserProfile && currentUserProfile.companyId) || ''

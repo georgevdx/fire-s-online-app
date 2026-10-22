@@ -18,12 +18,12 @@ const app = read('staging/app.js');
 const homeRoles = read('staging/fire-s-clean-home-roles.js');
 
 assert.ok(
-  /Version 1\.3\.125-toets/.test(html) &&
-    /appVersion: staging \? '1\.3\.125-toets'/.test(env) &&
-    /TOETS-BLAD 1\.3\.125-toets/.test(env) &&
-    /fireS\.toetsCacheDrop\.1-3-125/.test(html) &&
-    /service-worker\.js\?v=108-84-toets-125/.test(html) &&
-    /fire-s-108-84-toets-125/.test(sw),
+  /Version 1\.3\.126-toets/.test(html) &&
+    /appVersion: staging \? '1\.3\.126-toets'/.test(env) &&
+    /TOETS-BLAD 1\.3\.126-toets/.test(env) &&
+    /fireS\.toetsCacheDrop\.1-3-126/.test(html) &&
+    /service-worker\.js\?v=108-84-toets-126/.test(html) &&
+    /fire-s-108-84-toets-126/.test(sw),
   'Toets must leave 1.3.110 so a phone can tell it has this Access/services build'
 );
 

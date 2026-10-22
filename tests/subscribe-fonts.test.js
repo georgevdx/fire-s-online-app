@@ -75,8 +75,8 @@ assert.ok(
 
 assert.ok(
   /Version 1\.3\.67/.test(read('index.html')) &&
-    /Version 1\.3\.125-toets/.test(read('staging/index.html')),
-  'Displayed versions stay 1.3.67 live and 1.3.125-toets'
+    /Version 1\.3\.126-toets/.test(read('staging/index.html')),
+  'Displayed versions stay 1.3.67 live and 1.3.126-toets'
 );
 
 console.log('subscribe-fonts.test.js: ok');
