@@ -10,7 +10,7 @@
     (function fireSDropStuckToetsCache() {
       try {
         var WANT = '1.3.120-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-120';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-120-keep';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -2029,8 +2029,8 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-126-calm"></script>
-  <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
+  <script src="app.js?v=1-3-120-keep-on-sync"></script>
+  <script src="inspection-lifecycle-engine.js?v=1-2-save-notice"></script>
   <script src="inspector-v4.js?v=4-10-open-card"></script>
   <script src="fire-s-clean-home-roles.js?v=2-55-calm"></script>
   <script src="fire-s-owner-lists.js?v=1-11-calm"></script>
@@ -2062,7 +2062,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-84-toets-120')
+        navigator.serviceWorker.register('./service-worker.js?v=108-84-toets-120-keep')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })
