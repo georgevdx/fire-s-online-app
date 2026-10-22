@@ -16,12 +16,12 @@ const stagingEnv = read('staging/fire-s-env.js');
 const stagingSw = read('staging/service-worker.js');
 
 assert.ok(
-  /Version 1\.3\.123-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-123-toets/.test(stagingHtml) &&
-    /fire-s-owner-lists\.js\?v=1-3-123-toets/.test(stagingHtml) &&
-    /1\.3\.123-toets/.test(stagingEnv) &&
-    /fire-s-108-84-toets-123/.test(stagingSw),
-  'Toets must show 1.3.123-toets so a phone can tell it has the one company building count'
+  /Version 1\.3\.124-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-124-toets/.test(stagingHtml) &&
+    /fire-s-owner-lists\.js\?v=1-3-124-toets/.test(stagingHtml) &&
+    /1\.3\.124-toets/.test(stagingEnv) &&
+    /fire-s-108-84-toets-124/.test(stagingSw),
+  'Toets must show 1.3.124-toets so a phone can tell it has the one company building count'
 );
 assert.ok(
   /function fireSPremisesBuildingKey\(project\)/.test(stagingApp) &&
@@ -30,7 +30,7 @@ assert.ok(
     /window\.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings/.test(stagingApp) &&
     /fireSFilterToCloudBuildings\(visible\)/.test(stagingApp) &&
     /cache: 'no-store'/.test(stagingSw) &&
-    /fireS\.toetsCacheDrop\.1-3-123/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-124/.test(stagingHtml),
   'Toets must count unique cloud-backed buildings and drop the stuck 1.3.84 phone cache'
 );
 assert.ok(
@@ -322,6 +322,45 @@ assert.strictEqual(
   el(phoneLaptopEls, 'fireSOwnerListsCount').textContent,
   '7 buildings on the company inspection list',
   'An empty cloud answer must keep the buildings still stored on this device'
+);
+
+const stalledEls = {};
+const stalled = {
+  document: {
+    readyState: 'complete',
+    getElementById(id) {
+      return el(stalledEls, id);
+    },
+    addEventListener() {},
+    body: {
+      classList: {
+        contains(name) {
+          return name === 'fire-s-role-owner';
+        }
+      }
+    }
+  },
+  setTimeout() {},
+  getProjects() {
+    return [];
+  }
+};
+stalled.window = stalled;
+stalled.global = stalled;
+vm.runInNewContext(stagingLists, stalled);
+stalled.fireSRefreshOwnerLists();
+assert.strictEqual(
+  el(stalledEls, 'fireSOwnerListsCount').textContent,
+  'Loading buildings…',
+  'Home stays on Loading while the cloud check is still running'
+);
+stalled.__fireSCloudPullGaveUp = true;
+stalled.__fireSCloudPullSettled = true;
+stalled.fireSRefreshOwnerLists();
+assert.strictEqual(
+  el(stalledEls, 'fireSOwnerListsCount').textContent,
+  'No buildings on the company inspection list yet.',
+  'A cloud check that stops must leave Loading and show the empty device list'
 );
 
 console.log('stable-home-buildings.test.js: ok');

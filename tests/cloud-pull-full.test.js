@@ -58,10 +58,10 @@ assertPullSource(
   stagingSw,
   stagingLists,
   'Toets',
-  '1-3-123-toets',
-  '1-3-123-toets',
-  '108-84-toets-123',
-  'fire-s-108-84-toets-123'
+  '1-3-124-toets',
+  '1-3-124-toets',
+  '108-84-toets-124',
+  'fire-s-108-84-toets-124'
 );
 assert.ok(/function visiblePremises\(list\)/.test(liveApp) && /function visiblePremises\(list\)/.test(stagingApp));
 assert.ok(/__fireSHomeCountsFrozen/.test(stagingApp) && /incomplete && freezeHomeCounts/.test(stagingApp));
@@ -240,6 +240,21 @@ async function runFetchCases(appSrc, label) {
   const shortResult = await shortPage.fetch('user-1');
   assert.strictEqual(shortResult.incomplete, false, label + ': short first page must continue');
   assert.strictEqual(shortResult.data.length, 20, label + ': a short first page must not stop the pull when more rows remain');
+
+  if (label !== 'Toets') return;
+  const emptyBrokenInventory = loadFetch(appSrc, function spec(args) {
+    if (args.isIndex && args.filtered) {
+      return { data: null, count: null, error: { message: 'filtered inventory failed' } };
+    }
+    return { data: [], count: 0, error: null };
+  });
+  const emptyResult = await emptyBrokenInventory.fetch('user-1');
+  assert.strictEqual(emptyResult.data.length, 0);
+  assert.strictEqual(
+    emptyResult.incomplete,
+    false,
+    'A finished empty cloud pull must not stay incomplete when only the inventory count failed'
+  );
 }
 
 (async function runFetchTests() {

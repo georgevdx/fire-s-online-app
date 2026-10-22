@@ -42,10 +42,20 @@
   }
 
   function writeCount(countEl, visibleCount) {
-    if (!companyCloudListReady() || (pullState.loading && !pullState.done)) {
+    const stillWaiting = !companyCloudListReady() || (pullState.loading && !pullState.done);
+    if (stillWaiting) {
+      if (!pullState.waitingSince) pullState.waitingSince = Date.now();
+      if (Date.now() - pullState.waitingSince >= 20000) {
+        const stalled = Number(visibleCount) || 0;
+        countEl.textContent = stalled
+          ? stalled + (stalled === 1 ? ' building on the company inspection list' : ' buildings on the company inspection list')
+          : 'No buildings on the company inspection list yet.';
+        return;
+      }
       countEl.textContent = 'Loading buildings…';
       return;
     }
+    pullState.waitingSince = 0;
     const n = visibleCount || 0;
     countEl.textContent = n
       ? n + (n === 1 ? ' building on the company inspection list' : ' buildings on the company inspection list')
@@ -476,6 +486,7 @@
   function companyCloudListReady() {
     try {
       if (root.__fireSCloudPullSettled !== true) return false;
+      if (root.__fireSCloudPullGaveUp === true) return true;
       if (typeof root.fireSFilterToCloudBuildings !== 'function') return true;
       const filter = root.__fireSCloudBuildingFilter;
       if (filter && filter.ready === true) return true;
@@ -937,7 +948,12 @@
     }
     // Laptop leftover locals must not paint 7 while the phone still has the
     // company cloud's 5. Wait until that cloud building list is ready.
-    if (!companyCloudListReady()) {
+    const cloudStillLoading = !companyCloudListReady();
+    const cloudWaitExpired = !!(
+      pullState.waitingSince && Date.now() - pullState.waitingSince >= 20000
+    );
+    if (cloudStillLoading && !cloudWaitExpired) {
+      if (!pullState.waitingSince) pullState.waitingSince = Date.now();
       pullState.loading = true;
       pullState.done = false;
       const countEl = byId('fireSOwnerListsCount');
