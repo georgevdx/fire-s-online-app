@@ -4973,6 +4973,47 @@ function showSyncTools() {
   // Old top-page backup tools must stay hidden.
 }
 
+function retainDeviceInspections(incoming, snapshotProjects) {
+  const byId = new Map();
+
+  function hidden(project) {
+    return typeof fireSIsHiddenFromCurrentLists === 'function' &&
+      fireSIsHiddenFromCurrentLists(project);
+  }
+
+  function add(project, fromDevice) {
+    if (!project || !project.id) return;
+    const id = String(project.id);
+    if (typeof isProjectDeleted === 'function' && isProjectDeleted(id)) return;
+    const existing = byId.get(id);
+    if (!existing) {
+      byId.set(id, project);
+      return;
+    }
+    if (!fromDevice) return;
+    if (hidden(existing) && !hidden(project)) {
+      byId.set(id, project);
+      return;
+    }
+    if (project.syncPending === true) {
+      const deviceTime = Date.parse(project.lastSaved || '') || 0;
+      const incomingTime = Date.parse(existing.lastSaved || '') || 0;
+      if (deviceTime >= incomingTime) byId.set(id, project);
+    }
+  }
+
+  (Array.isArray(incoming) ? incoming : []).forEach(project => add(project, false));
+  (Array.isArray(snapshotProjects) ? snapshotProjects : []).forEach(project => add(project, true));
+
+  try {
+    const raw = localStorage.getItem(fireSProjectsStorageKey());
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(parsed)) parsed.forEach(project => add(project, true));
+  } catch (_) {}
+
+  return Array.from(byId.values());
+}
+
 function keepLocalEditsMadeDuringCloudPull(snapshotProjects, mergedProjects) {
   const latest = getProjects();
   const snapshotIds = new Set(
@@ -5288,9 +5329,9 @@ async function safeDownloadNewerCloudInspections(options) {
       if (rows.length) {
         mergedProjects = mergeCloudRowsIntoProjects(localProjects, rows);
       }
-      mergedProjects = keepLocalEditsMadeDuringCloudPull(
-        localProjects,
-        mergedProjects
+      mergedProjects = retainDeviceInspections(
+        keepLocalEditsMadeDuringCloudPull(localProjects, mergedProjects),
+        localProjects
       );
       reportPremisesProgress(incomplete);
       const now = Date.now();
@@ -5388,9 +5429,9 @@ async function safeDownloadNewerCloudInspections(options) {
     } catch (_) {}
     try { window.__fireSCloudPullSettled = true; } catch (_) {}
     try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
-    mergedProjects = keepLocalEditsMadeDuringCloudPull(
-      localProjects,
-      mergedProjects
+    mergedProjects = retainDeviceInspections(
+      keepLocalEditsMadeDuringCloudPull(localProjects, mergedProjects),
+      localProjects
     );
     setProjects(mergedProjects);
     paintHome(true);
