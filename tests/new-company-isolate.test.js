@@ -15,10 +15,10 @@ const stagingStarted = read('staging/fire-s-get-started.js');
 const stagingTeam = read('staging/fire-s-company-team.js');
 
 assert.ok(
-  /Version 1\.3\.128-toets/.test(stagingHtml) &&
-    /app\.js\?v=1-3-128-toets/.test(stagingHtml) &&
+  /Version 1\.3\.129-toets/.test(stagingHtml) &&
+    /app\.js\?v=1-3-129-toets/.test(stagingHtml) &&
     /fire-s-get-started.js\?v=2-62-once/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-128/.test(stagingHtml),
+    /fireS\.toetsCacheDrop\.1-3-129/.test(stagingHtml),
   'Toets must cache-bust the clean new-company lists'
 );
 

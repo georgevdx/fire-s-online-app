@@ -1,3 +1,22 @@
+// Leave a phone that is still painting an older toets page. Runs only from this
+// staging script, and only when the painted version is not 1.3.129-toets.
+(function fireSLeaveStuckToetsPage() {
+  try {
+    var path = String(location.pathname || '');
+    if (path.indexOf('/staging') === -1) return;
+    if (/[?&]toets=129(?:&|$)/.test(String(location.href || ''))) return;
+    var shown = '';
+    var node = document.getElementById('appVersion');
+    if (node) shown = String(node.textContent || '');
+    if (shown.indexOf('1.3.129-toets') !== -1) return;
+    if (sessionStorage.getItem('fireS.toetsJump.129') === '1') return;
+    sessionStorage.setItem('fireS.toetsJump.129', '1');
+    var next = new URL(location.href);
+    next.searchParams.set('toets', '129');
+    location.replace(next.toString());
+  } catch (e) {}
+})();
+
 // RC 1.2.2 Sprint 1 — Workflow Engine + colour-coded date-only Inspection History
 let currentFilter = 'all';
 let currentBetaFeedbackFilter = 'all';
