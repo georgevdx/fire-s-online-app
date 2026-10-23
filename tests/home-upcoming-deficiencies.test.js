@@ -14,7 +14,7 @@ const stagingLists = read('staging/fire-s-owner-lists.js');
 const stagingApp = read('staging/app.js');
 
 assert.ok(
-  /fire-s-owner-lists\.js\?v=1-3-127-toets/.test(stagingHtml) &&
+  /fire-s-owner-lists\.js\?v=1-3-128-toets/.test(stagingHtml) &&
     /function rowsForUniqueBuildings\(/.test(stagingLists) &&
     /Loading upcoming inspections/.test(stagingLists) &&
     /Loading buildings with deficiencies/.test(stagingLists) &&
