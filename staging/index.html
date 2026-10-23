@@ -9,8 +9,8 @@
   <script>
     (function fireSDropStuckToetsCache() {
       try {
-        var WANT = '1.3.127-toets';
-        var FLAG = 'fireS.toetsCacheDrop.1-3-127';
+        var WANT = '1.3.128-toets';
+        var FLAG = 'fireS.toetsCacheDrop.1-3-128';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -143,7 +143,7 @@
     <div class="boot-card">
       <img class="boot-mark" src="fire-s-logo.png" alt="Fire-S" fetchpriority="high">
       <p id="fireSBootStatus">Loading…</p>
-      <p class="brand-version">Version 1.3.127-toets</p>
+      <p class="brand-version">Version 1.3.128-toets</p>
     </div>
   </div>
   <div id="fireSLogoutScreen" aria-live="assertive">
@@ -167,7 +167,7 @@
     </h1>
 
     <p class="subtitle">Fire Safety </p>
-    <p id="appVersion" class="brand-version">Version 1.3.127-toets</p></div>
+    <p id="appVersion" class="brand-version">Version 1.3.128-toets</p></div>
   </div>
 
   <div class="fire-s-header-actions">
@@ -243,7 +243,7 @@
       <div id="cloudAdminPanel" class="cloud-admin-panel" style="display:none;">
         <div class="cloud-section-title">Workspace info</div>
         <div><strong>App:</strong> Fire-S</div>
-        <div><strong>Version:</strong> <span id="cloudVersion">1.3.127-toets</span></div>
+        <div><strong>Version:</strong> <span id="cloudVersion">1.3.128-toets</span></div>
         <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
         <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
@@ -2014,7 +2014,7 @@
     </section>
   </div>
 
-  <script src="fire-s-env.js?v=1-3-127-toets"></script>
+  <script src="fire-s-env.js?v=1-3-128-toets"></script>
   <script src="fire-s-password-reset.js?v=1-3-open-link"></script>
   <script src="supabase-js-v2.js?v=1"></script>
   <script src="fire-s-one-instrument.js?v=1-1-login-once"></script>
@@ -2029,11 +2029,11 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-127-toets"></script>
+  <script src="app.js?v=1-3-128-toets"></script>
   <script src="inspection-lifecycle-engine.js?v=1-2-save-notice"></script>
   <script src="inspector-v4.js?v=4-10-open-card"></script>
   <script src="fire-s-clean-home-roles.js?v=2-55-calm"></script>
-  <script src="fire-s-owner-lists.js?v=1-3-127-toets"></script>
+  <script src="fire-s-owner-lists.js?v=1-3-128-toets"></script>
   <script src="fire-s-simple-cloud-sync.js?v=2-3-calm"></script>
   <script src="fire-s-subscribe-notify.js?v=1-6-svc-req"></script>
   <script src="fire-s-company-team.js?v=2-24-isolate"></script>
@@ -2062,7 +2062,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=108-84-toets-127')
+        navigator.serviceWorker.register('./service-worker.js?v=108-84-toets-128')
           .then(() => {
             console.log('Fire-S toets service worker registered.');
           })

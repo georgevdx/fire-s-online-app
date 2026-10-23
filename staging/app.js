@@ -8656,67 +8656,134 @@ function fireSRememberDeviceSnapshot(projects) {
   } catch (_) {}
 }
 
+function fireSStorageQuotaError(error) {
+  if (!error) return false;
+  const name = String(error.name || '');
+  const message = String(error.message || '');
+  return (
+    name === 'QuotaExceededError' ||
+    name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    error.code === 22 ||
+    /quota/i.test(message)
+  );
+}
+
+function fireSDropBulkyLocalCopies() {
+  try { localStorage.removeItem(fireSDeviceSnapshotKey()); } catch (_) {}
+  try { localStorage.removeItem('fireyesaLastBackupJson'); } catch (_) {}
+  try { localStorage.removeItem('fireyesaLastBackup'); } catch (_) {}
+}
+
+function fireSSlimPhotoForStorage(photo) {
+  if (!photo || typeof photo !== 'object') return photo;
+  const preview = String(photo.previewSrc || photo.thumbnailSrc || '');
+  const src = String(photo.src || '');
+  const cloudSrc = src.indexOf('data:') === 0 ? '' : src;
+  const thumb = preview.length > 0 && preview.length < 120000 ? preview : '';
+  return {
+    id: photo.id,
+    timestamp: photo.timestamp || null,
+    note: photo.note ? String(photo.note).slice(0, 200) : '',
+    category: photo.category || 'General',
+    area: photo.area || '',
+    linkedQuestion: photo.linkedQuestion || '',
+    src: cloudSrc || thumb,
+    previewSrc: thumb,
+    thumbnailSrc: thumb,
+    uploadPending: photo.uploadPending === true,
+    uploadFallback: photo.uploadFallback === true || !cloudSrc
+  };
+}
+
+function fireSProjectForTightStorage(project) {
+  if (!project || typeof project !== 'object') return project;
+  const copy = Object.assign({}, project);
+  delete copy.signature;
+  delete copy.clientSignature;
+  delete copy.signatureDataUrl;
+  delete copy.reportHtml;
+  delete copy.pdfData;
+  copy.photos = Array.isArray(project.photos)
+    ? project.photos.map(fireSSlimPhotoForStorage)
+    : [];
+  copy.inspectionHistory = Array.isArray(project.inspectionHistory)
+    ? project.inspectionHistory.map(item => {
+        if (!item || typeof item !== 'object') return item;
+        const cycle = Object.assign({}, item);
+        delete cycle.photos;
+        delete cycle.signature;
+        delete cycle.signatureDataUrl;
+        delete cycle.reportHtml;
+        delete cycle.pdfData;
+        return cycle;
+      })
+    : [];
+  return copy;
+}
+
+function fireSStripStoredDataUrls(value, depth) {
+  if (depth > 8) return null;
+  if (typeof value === 'string') {
+    return value.indexOf('data:image') === 0 && value.length > 8000 ? '' : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => fireSStripStoredDataUrls(item, depth + 1));
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    Object.keys(value).forEach(key => {
+      out[key] = fireSStripStoredDataUrls(value[key], depth + 1);
+    });
+    return out;
+  }
+  return value;
+}
+
+function fireSStoreProjectsFittingQuota(storageKey, projects) {
+  const attempts = [
+    projects,
+    typeof stripHeavyPhotoDataFromProjects === 'function'
+      ? stripHeavyPhotoDataFromProjects(projects)
+      : projects,
+    (projects || []).map(fireSProjectForTightStorage),
+    fireSStripStoredDataUrls((projects || []).map(fireSProjectForTightStorage), 0)
+  ];
+  let droppedCopies = false;
+  let lastError = null;
+  for (let i = 0; i < attempts.length; i += 1) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(attempts[i]));
+      return attempts[i];
+    } catch (error) {
+      lastError = error;
+      if (!fireSStorageQuotaError(error)) throw error;
+      if (!droppedCopies) {
+        fireSDropBulkyLocalCopies();
+        droppedCopies = true;
+        i -= 1;
+      }
+    }
+  }
+  const message = 'This phone is out of storage. Close other sites or remove old photos, then save again.';
+  const failure = new Error(message);
+  failure.cause = lastError;
+  throw failure;
+}
+
 function setProjects(projects) {
   const previousProjects = getProjects();
   const storageKey = fireSProjectsStorageKey();
-
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(projects));
-    capturePendingUploadQueueChanges(previousProjects, projects);
-    fireSRememberDeviceSnapshot(projects);
-  } catch (error) {
-    if (error && error.name === 'QuotaExceededError') {
-      const compactProjects =
-        stripHeavyPhotoDataFromProjects(projects);
-
-      try {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify(compactProjects)
-        );
-      } catch (compactError) {
-        const slimProjects = (projects || []).map(project => {
-          const slim = stripHeavyPhotoData(project) || project;
-          if (!slim || typeof slim !== 'object') return slim;
-          slim.photos = [];
-          if (Array.isArray(slim.inspectionHistory)) {
-            slim.inspectionHistory = slim.inspectionHistory.map(item => {
-              if (!item || typeof item !== 'object') return item;
-              const copy = Object.assign({}, item);
-              delete copy.photos;
-              return copy;
-            });
-          }
-          return slim;
-        });
-        localStorage.setItem(storageKey, JSON.stringify(slimProjects));
-        capturePendingUploadQueueChanges(previousProjects, slimProjects);
-        fireSRememberDeviceSnapshot(slimProjects);
-        console.warn(
-          'Storage quota reached. Saved inspections without photos so the phone can show them.',
-          compactError
-        );
-        return;
-      }
-      capturePendingUploadQueueChanges(previousProjects, compactProjects);
-      fireSRememberDeviceSnapshot(compactProjects);
-
-      console.warn(
-        'Storage quota reached. Saved compact inspections without heavy photo data.',
-        error
-      );
-
-      const syncStatus = document.getElementById('syncStatus');
-
-      if (syncStatus) {
-        syncStatus.textContent =
-          'Storage limit reached. Inspections saved without large photo data on this device.';
-      }
-
-      return;
+  const stored = fireSStoreProjectsFittingQuota(storageKey, projects);
+  try { capturePendingUploadQueueChanges(previousProjects, stored); } catch (_) {}
+  try { fireSRememberDeviceSnapshot(stored); } catch (_) {
+    try { localStorage.removeItem(fireSDeviceSnapshotKey()); } catch (__) {}
+  }
+  if (stored !== projects) {
+    const syncStatus = document.getElementById('syncStatus');
+    if (syncStatus) {
+      syncStatus.textContent =
+        'Saved on this phone. Large photos were left out so the inspection could be stored.';
     }
-
-    throw error;
   }
 }
 
@@ -18546,7 +18613,16 @@ lastSaved: new Date().toISOString()
   }
     
     
-  setProjects(projects);
+  try {
+    setProjects(projects);
+  } catch (error) {
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent =
+        (error && error.message) || 'Inspection could not be saved on this phone.';
+    }
+    return false;
+  }
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
 
@@ -20343,7 +20419,15 @@ function saveCurrentPhotosToOpenProject() {
     lastSaved: new Date().toISOString()
   };
 
-  setProjects(projects);
+  try {
+    setProjects(projects);
+  } catch (error) {
+    const failure = new Error(
+      (error && error.message) || 'Photo could not be saved on this phone.'
+    );
+    failure.cause = error;
+    throw failure;
+  }
 }
 
 function createLocalPhotoFallback(file) {

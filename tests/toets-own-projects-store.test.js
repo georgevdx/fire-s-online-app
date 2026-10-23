@@ -16,7 +16,7 @@ assert.ok(
   /function fireSProjectsStorageKey\(/.test(stagingApp) &&
     /fireyeProjects-staging/.test(stagingApp) &&
     /localStorage\.getItem\(fireSProjectsStorageKey\(\)\)/.test(stagingApp) &&
-    /localStorage\.setItem\(storageKey, JSON\.stringify\(projects\)\)/.test(stagingApp),
+    /localStorage\.setItem\(storageKey, JSON\.stringify\(/.test(stagingApp),
   'Toets must store inspections in fireyeProjects-staging, not the live fireyeProjects key'
 );
 assert.ok(
