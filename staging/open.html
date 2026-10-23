@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire-S TOETS</title>
+  <script>
+    (function fireSOpenFreshToets() {
+      var next = 'index.html?toets=129';
+      var left = false;
+      function go() {
+        if (left) return;
+        left = true;
+        location.replace(next);
+      }
+      try {
+        var jobs = [];
+        if ('serviceWorker' in navigator) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all((regs || []).map(function (reg) {
+              var scope = String(reg && reg.scope || '');
+              try {
+                if (String(location.href).indexOf(scope) === 0) return reg.unregister();
+              } catch (_) {}
+              return undefined;
+            }));
+          }));
+        }
+        if (window.caches && caches.keys) {
+          jobs.push(caches.keys().then(function (keys) {
+            return Promise.all((keys || []).filter(function (key) {
+              return /toets|fire-s-108/i.test(String(key || ''));
+            }).map(function (key) {
+              return caches.delete(key);
+            }));
+          }));
+        }
+        Promise.all(jobs).then(go, go);
+        setTimeout(go, 2500);
+      } catch (e) {
+        go();
+      }
+    })();
+  </script>
+</head>
+<body>
+  <p>Opening Fire-S toets…</p>
+</body>
+</html>
