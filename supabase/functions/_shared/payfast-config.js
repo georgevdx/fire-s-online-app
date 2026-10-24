@@ -87,16 +87,75 @@ function prefixForMode(mode) {
   return mode === 'live' ? 'PAYFAST_LIVE_' : 'PAYFAST_SANDBOX_';
 }
 
+export function merchantSecretNames(mode) {
+  const prefix = prefixForMode(mode === 'live' ? 'live' : 'sandbox');
+  return {
+    merchantId: prefix + 'MERCHANT_ID',
+    merchantKey: prefix + 'MERCHANT_KEY',
+    passphrase: prefix + 'PASSPHRASE'
+  };
+}
+
+function merchantValue(env, modeName) {
+  return (
+    envGet(env, merchantSecretNames(modeName).merchantId) ||
+    envGet(env, 'PAYFAST_MERCHANT_ID')
+  );
+}
+
+function merchantKeyValue(env, modeName) {
+  return (
+    envGet(env, merchantSecretNames(modeName).merchantKey) ||
+    envGet(env, 'PAYFAST_MERCHANT_KEY')
+  );
+}
+
+function passphraseValue(env, modeName) {
+  return (
+    envGet(env, merchantSecretNames(modeName).passphrase) ||
+    envGet(env, 'PAYFAST_PASSPHRASE')
+  );
+}
+
+/** Secret names only — never values. Empty when mode itself is blocked. */
+export function missingMerchantSecretNames(env) {
+  let mode = 'sandbox';
+  try {
+    mode = resolvePayfastMode(env);
+  } catch (_) {
+    return [];
+  }
+  const names = merchantSecretNames(mode);
+  const missing = [];
+  if (!merchantValue(env, mode)) missing.push(names.merchantId);
+  if (!merchantKeyValue(env, mode)) missing.push(names.merchantKey);
+  if (!passphraseValue(env, mode)) missing.push(names.passphrase);
+  return missing;
+}
+
+/**
+ * User-facing checkout errors. Never echo secret values.
+ * Keep the word "passphrase" in missing-name messages so the owner can
+ * match the dashboard secret name.
+ */
+export function safePayfastErrorMessage(err) {
+  const message = String((err && err.message) || 'PayFast is not ready.');
+  if (/service_role|SUPABASE_SERVICE_ROLE/i.test(message)) {
+    return 'PayFast is not configured on the server.';
+  }
+  if (/=[A-Za-z0-9+/=_-]{12,}/.test(message) && /merchant|passphrase|secret/i.test(message)) {
+    return 'PayFast is not configured on the server.';
+  }
+  return message;
+}
+
 export function loadPayfastConfig(env) {
   const mode = resolvePayfastMode(env);
   const prefix = prefixForMode(mode);
 
-  const merchantId =
-    envGet(env, prefix + 'MERCHANT_ID') || envGet(env, 'PAYFAST_MERCHANT_ID');
-  const merchantKey =
-    envGet(env, prefix + 'MERCHANT_KEY') || envGet(env, 'PAYFAST_MERCHANT_KEY');
-  const passphrase =
-    envGet(env, prefix + 'PASSPHRASE') || envGet(env, 'PAYFAST_PASSPHRASE');
+  const merchantId = merchantValue(env, mode);
+  const merchantKey = merchantKeyValue(env, mode);
+  const passphrase = passphraseValue(env, mode);
 
   const processUrlOverride = envGet(env, prefix + 'PROCESS_URL');
   const processUrl = processUrlOverride || processUrlForMode(mode);
@@ -131,12 +190,23 @@ export function loadPayfastConfig(env) {
     envGet(env, 'PAYFAST_NOTIFY_URL') ||
     (supabaseUrl ? supabaseUrl + '/functions/v1/payfast-itn' : '');
 
-  if (!merchantId || !merchantKey || !passphrase) {
-    throw new Error(
+  const missing = missingMerchantSecretNames(env);
+  if (missing.length) {
+    const source =
+      mode === 'live'
+        ? 'www.payfast.co.za Settings → Developer Settings into those names on the live Supabase project (ispsdmglyylcwkufphnv)'
+        : 'sandbox.payfast.co.za Settings → Developer Settings into those names on Fire-S Test';
+    const err = new Error(
       'PayFast ' +
         mode +
-        ' merchant id, merchant key and passphrase must be set in server secrets.'
+        ' is missing server secrets: ' +
+        missing.join(', ') +
+        '. Paste Merchant ID, Merchant Key and Security Passphrase from ' +
+        source +
+        '. Do not leave the Update box empty before Save.'
     );
+    err.missingSecrets = missing;
+    throw err;
   }
   if (!notifyUrl) {
     throw new Error('PAYFAST_NOTIFY_URL or SUPABASE_URL is required for ITN.');
@@ -163,7 +233,13 @@ export function loadPayfastConfig(env) {
 
 /** Public snapshot for logs / health. Never includes secrets. */
 export function publicPayfastConfig(cfg) {
-  if (!cfg) return { mode: 'sandbox', configured: false };
+  if (!cfg || cfg.configured === false || !cfg.merchantId) {
+    return {
+      mode: (cfg && cfg.mode) || 'sandbox',
+      configured: false,
+      merchantIdConfigured: false
+    };
+  }
   return {
     mode: cfg.mode,
     sandbox: cfg.sandbox === true,
