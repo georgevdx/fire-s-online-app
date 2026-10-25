@@ -27580,7 +27580,10 @@ function fireSPremisesBuildingKey(project) {
     : function normFallback(value) {
         return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
       };
-  const clean = value => norm(value).replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
+  const clean = value => norm(value)
+    .replace(/[-–—_/\\|.,+]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const name = clean(
     typeof getProjectPremisesName === 'function'
       ? getProjectPremisesName(project)
@@ -27629,28 +27632,86 @@ function fireSBuildingRecency(project) {
   return best;
 }
 
-function fireSUniqueCurrentBuildings(list) {
+function fireSChoosePremisesCard(cluster, preferLaterOnTie) {
+  let best = cluster[0];
+  for (let i = 1; i < cluster.length; i += 1) {
+    const row = cluster[i];
+    const recency = fireSBuildingRecency(row);
+    const bestRecency = fireSBuildingRecency(best);
+    if (recency > bestRecency || (preferLaterOnTie && recency === bestRecency)) best = row;
+  }
+  return best;
+}
+
+// One card per name+site. A blank company joins that premises. Two company
+// ids stay two cards. Rows that only have an id are not grouped by name.
+function fireSClusterPremisesForDisplay(list, preferLaterOnTie) {
   const source = Array.isArray(list) ? list : [];
-  const seen = new Map();
-  for (let i = 0; i < source.length; i += 1) {
-    const project = source[i];
-    if (!project) continue;
+  const named = new Map();
+  const loose = new Map();
+  source.forEach(project => {
+    if (!project) return;
+    const building = fireSPremisesBuildingKey(project);
+    if (!building) return;
+    if (building.indexOf('id:') === 0) {
+      const current = loose.get(building);
+      if (!current) {
+        loose.set(building, project);
+        return;
+      }
+      const recency = fireSBuildingRecency(project);
+      const bestRecency = fireSBuildingRecency(current);
+      if (recency > bestRecency || (preferLaterOnTie && recency === bestRecency)) {
+        loose.set(building, project);
+      }
+      return;
+    }
+    if (!named.has(building)) named.set(building, []);
+    named.get(building).push(project);
+  });
+  const picked = [];
+  named.forEach(rows => {
+    const clusters = [];
+    rows.forEach(project => {
+      let cluster = null;
+      for (let i = 0; i < clusters.length; i += 1) {
+        const sameCompany = clusters[i].every(other => {
+          try {
+            return typeof fireSPremisesCompaniesCompatible !== 'function' ||
+              fireSPremisesCompaniesCompatible(other, project);
+          } catch (_) {
+            return true;
+          }
+        });
+        if (sameCompany) {
+          cluster = clusters[i];
+          break;
+        }
+      }
+      if (!cluster) {
+        cluster = [];
+        clusters.push(cluster);
+      }
+      cluster.push(project);
+    });
+    clusters.forEach(cluster => picked.push(fireSChoosePremisesCard(cluster, preferLaterOnTie)));
+  });
+  loose.forEach(project => picked.push(project));
+  return picked;
+}
+
+function fireSUniqueCurrentBuildings(list) {
+  const source = (Array.isArray(list) ? list : []).filter(project => {
+    if (!project) return false;
     if (
       typeof fireSIsHiddenFromCurrentLists === 'function' &&
       fireSIsHiddenFromCurrentLists(project)
     ) {
-      continue;
+      return false;
     }
-    const building = fireSPremisesBuildingKey(project);
-    if (!building) continue;
-    const company = String((project.companyId || project.company_id) || '').trim();
-    const key = company ? company + '\n' + building : building;
-    const current = seen.get(key);
-    if (!current || fireSBuildingRecency(project) > fireSBuildingRecency(current)) {
-      seen.set(key, project);
-    }
-  }
-  return Array.from(seen.values());
+    return true;
+  });
+  return fireSClusterPremisesForDisplay(source, false);
 }
 
 // Laptop-only leftovers (not in the company cloud) must not become a 7 while
@@ -28662,9 +28723,29 @@ function fireSSettleStoredPremises() {
   }
 }
 
+function fireSCollapsePremisesForDisplay(list) {
+  const rows = Array.isArray(list) ? list : [];
+  try {
+    if (typeof fireSVisibleCompanyBuildings === 'function') {
+      const unique = fireSVisibleCompanyBuildings(rows);
+      if (Array.isArray(unique)) return unique;
+    }
+  } catch (_) {}
+  try {
+    if (typeof fireSUniqueCurrentBuildings === 'function') {
+      const unique = fireSUniqueCurrentBuildings(rows);
+      if (Array.isArray(unique)) return unique;
+    }
+  } catch (_) {}
+  return rows;
+}
+
 window.fireSPremisesBuildingKey = fireSPremisesBuildingKey;
+window.fireSPremisesCompaniesCompatible = fireSPremisesCompaniesCompatible;
+window.fireSInspectionMoment = fireSInspectionMoment;
 window.fireSSettleDuplicatePremises = fireSSettleDuplicatePremises;
 window.fireSSettleStoredPremises = fireSSettleStoredPremises;
+window.fireSCollapsePremisesForDisplay = fireSCollapsePremisesForDisplay;
 setTimeout(fireSSettleStoredPremises, 800);
 setTimeout(fireSSettleStoredPremises, 4000);
 window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
@@ -39119,8 +39200,17 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     try {
       const list = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
       const safe = Array.isArray(list) ? list : [];
-      if (typeof fireSHomeCountableProjects === 'function') return fireSHomeCountableProjects(safe) || [];
-      return typeof getVisibleProjectsForCurrentUser === 'function' ? (getVisibleProjectsForCurrentUser(safe) || []) : safe;
+      let visible = typeof fireSHomeCountableProjects === 'function'
+        ? (fireSHomeCountableProjects(safe) || [])
+        : (typeof getVisibleProjectsForCurrentUser === 'function' ? (getVisibleProjectsForCurrentUser(safe) || []) : safe);
+      try {
+        const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+        if (typeof collapse === 'function') {
+          const unique = collapse(visible);
+          if (Array.isArray(unique)) visible = unique;
+        }
+      } catch (_) {}
+      return visible;
     } catch (_) { return []; }
   }
 
@@ -39531,6 +39621,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 
@@ -39659,7 +39756,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     try { if (typeof window.updateAppInfo === 'function') window.updateAppInfo(); else if (typeof updateAppInfo === 'function') updateAppInfo(); } catch (_) {}
     const base = baseFilteredProjects();
     const key = currentKey();
-    const filtered = sortProjects(base.filter(project => matchProject(project, key)));
+    let matched = base.filter(project => matchProject(project, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -39876,6 +39981,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         list = window.fireSHomeCountableProjects(list) || [];
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
+    } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
     } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
@@ -40117,7 +40229,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     syncKpiCards();
     const base = baseProjects();
     const key = activeFilter();
-    const filtered = sortProjects(base.filter(project => matchProject(project, key)));
+    let matched = base.filter(project => matchProject(project, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -40257,6 +40377,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         list = window.fireSHomeCountableProjects(list) || [];
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
+    } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
     } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
@@ -40586,6 +40713,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 
@@ -40712,7 +40846,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     const base = baseProjects();
     const key = activeFilter();
     setStatusDropdown(key);
-    const filtered = sortProjects(base.filter(project => matches(project, key)));
+    let matched = base.filter(project => matches(project, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -41607,6 +41749,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         if (Array.isArray(unique)) list = unique;
       }
     } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 
@@ -41789,7 +41938,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     const base = baseProjects();
     const key = activeFilter();
     setStatusDropdown(key);
-    const filtered = sortProjects(base.filter(p => matches(p, key)));
+    let matched = base.filter(p => matches(p, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -41844,6 +42001,8 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   window.fireSApplyMissionFilter136A6 = window.fireSApplyMissionFilter136A11;
   window.fireSApplyMissionFilter136A5 = window.fireSApplyMissionFilter136A11;
   window.setFilter = function(filter){ window.fireSApplyMissionFilter136A11(filter, true); };
+  window.setInspectionGatewayQuickFilter = function(filter){ window.fireSApplyMissionFilter136A11(filter, true); };
+  try { setInspectionGatewayQuickFilter = window.setInspectionGatewayQuickFilter; } catch (_) {}
 
   window.nextProjectPage = function(){
     const total = (Array.isArray(window.__fireS136A11FilteredProjects) ? window.__fireS136A11FilteredProjects.length : baseProjects().filter(p => matches(p, activeFilter())).length);
@@ -46600,4 +46759,168 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       try { afterSchedulePaint(); } catch (_) {}
     }, delay);
   });
+})();
+
+/* One visible card per name+site after any gateway paint, including a filter. */
+(function fireSDedupePremisesCardsOnPaint() {
+  if (window.__fireSDedupePremisesCardsOnPaint) return;
+  window.__fireSDedupePremisesCardsOnPaint = true;
+  let busy = false;
+
+  function companyOf(project) {
+    return String((project && (project.companyId || project.company_id)) || '').trim();
+  }
+
+  function compatible(left, right) {
+    try {
+      if (typeof window.fireSPremisesCompaniesCompatible === 'function') {
+        return !!window.fireSPremisesCompaniesCompatible(left, right);
+      }
+    } catch (_) {}
+    const leftCompany = companyOf(left);
+    const rightCompany = companyOf(right);
+    if (!leftCompany || !rightCompany) return true;
+    return leftCompany === rightCompany;
+  }
+
+  function momentOf(project) {
+    try {
+      if (typeof window.fireSInspectionMoment === 'function') {
+        return window.fireSInspectionMoment(project) || 0;
+      }
+    } catch (_) {}
+    const raw = project && (
+      project.completedAt || project.finalisedAt || project.inspectionDate || project.lastSaved || project.updatedAt || ''
+    );
+    const parsed = Date.parse(raw || '');
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function buildingOf(project) {
+    try {
+      if (typeof window.fireSPremisesBuildingKey === 'function') {
+        return window.fireSPremisesBuildingKey(project) || '';
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  function projectsById() {
+    let list = [];
+    try {
+      if (typeof window.getProjects === 'function') list = window.getProjects() || [];
+    } catch (_) {}
+    const map = new Map();
+    (Array.isArray(list) ? list : []).forEach(function (project) {
+      if (project && project.id != null) map.set(String(project.id), project);
+    });
+    return map;
+  }
+
+  function rewriteCounts(removed) {
+    if (!removed) return;
+    const paging = document.getElementById('projectPagingControls');
+    const span = paging && paging.querySelector('span');
+    if (span && span.textContent) {
+      span.textContent = span.textContent.replace(
+        /Showing\s+(\d+)\s*-\s*(\d+)\s+of\s+(\d+)/,
+        function (_, start, end, total) {
+          const nextEnd = Math.max(Number(start), Number(end) - removed);
+          const nextTotal = Math.max(0, Number(total) - removed);
+          if (!nextTotal) return 'Showing 0 of 0';
+          return 'Showing ' + start + ' - ' + nextEnd + ' of ' + nextTotal;
+        }
+      );
+    }
+    const root = document.getElementById('projectsList');
+    if (!root) return;
+    root.querySelectorAll(
+      '.fire-s-current-kpi-filter-banner span, .fire-s-136a8-result-note, .fire-s-136a5-result-note'
+    ).forEach(function (node) {
+      if (!node || !node.textContent) return;
+      node.textContent = node.textContent
+        .replace(/Showing\s+(\d+)\s+cards/, function (_, count) {
+          const next = Math.max(0, Number(count) - removed);
+          return 'Showing ' + next + ' card' + (next === 1 ? '' : 's');
+        })
+        .replace(/Showing\s+(\d+)\s+results/, function (_, count) {
+          const next = Math.max(0, Number(count) - removed);
+          return 'Showing ' + next + ' result' + (next === 1 ? '' : 's');
+        })
+        .replace(/(\d+)\s+matching cards/, function (_, count) {
+          const next = Math.max(0, Number(count) - removed);
+          return next + ' matching card' + (next === 1 ? '' : 's');
+        });
+    });
+  }
+
+  function dedupe() {
+    if (busy) return;
+    const list = document.getElementById('projectsList');
+    if (!list) return;
+    const cards = Array.from(list.querySelectorAll('[data-project-id]'));
+    if (cards.length < 2) return;
+    const byId = projectsById();
+    const groups = new Map();
+    cards.forEach(function (card) {
+      const project = byId.get(String(card.getAttribute('data-project-id') || ''));
+      if (!project) return;
+      const key = buildingOf(project);
+      if (!key || key.indexOf('id:') === 0) return;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push({ card: card, project: project });
+    });
+    const remove = [];
+    groups.forEach(function (rows) {
+      if (rows.length < 2) return;
+      const clusters = [];
+      rows.forEach(function (row) {
+        let cluster = null;
+        for (let i = 0; i < clusters.length; i += 1) {
+          if (clusters[i].every(function (other) { return compatible(other.project, row.project); })) {
+            cluster = clusters[i];
+            break;
+          }
+        }
+        if (!cluster) {
+          cluster = [];
+          clusters.push(cluster);
+        }
+        cluster.push(row);
+      });
+      clusters.forEach(function (cluster) {
+        if (cluster.length < 2) return;
+        let best = cluster[0];
+        cluster.slice(1).forEach(function (row) {
+          if (momentOf(row.project) >= momentOf(best.project)) best = row;
+        });
+        cluster.forEach(function (row) {
+          if (row !== best) remove.push(row.card);
+        });
+      });
+    });
+    if (!remove.length) return;
+    busy = true;
+    remove.forEach(function (card) {
+      if (card && card.parentNode) card.parentNode.removeChild(card);
+    });
+    rewriteCounts(remove.length);
+    busy = false;
+  }
+
+  window.fireSDedupeVisiblePremisesCards = dedupe;
+
+  function watch() {
+    const list = document.getElementById('projectsList');
+    if (!list || list.__fireSPremisesDedupe) return;
+    list.__fireSPremisesDedupe = true;
+    const observer = new MutationObserver(function () { dedupe(); });
+    observer.observe(list, { childList: true, subtree: true });
+    dedupe();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+  else watch();
+  setTimeout(watch, 400);
+  setTimeout(watch, 1600);
 })();

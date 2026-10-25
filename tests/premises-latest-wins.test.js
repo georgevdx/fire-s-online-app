@@ -93,6 +93,50 @@ assert.notStrictEqual(
   'Different shops at one mall stay separate premises'
 );
 
+const hyphenSaved = {
+  id: 'hyphen-saved',
+  organisationName: '15 on Bond - Hatfield',
+  siteName: 'Hatfield',
+  companyId: 'co-proof',
+  inspectionStatus: 'finalised',
+  inspectionFinalisedAt: '2026-10-22T18:00:00.000Z',
+  completedAt: '2026-10-22T18:00:00.000Z',
+  lastSaved: '2026-10-22T18:00:00.000Z',
+  answers: [{ assessment: 'Compliant' }]
+};
+const plainOlder = {
+  id: 'plain-older',
+  organisationName: '15 on Bond',
+  siteName: 'Hatfield',
+  companyId: 'co-proof',
+  inspectionStatus: 'finalised',
+  completedAt: '2026-10-22T09:00:00.000Z',
+  lastSaved: '2026-10-22T09:00:00.000Z',
+  answers: [{ answer: 'Yes' }]
+};
+assert.strictEqual(
+  helper.fireSPremisesBuildingKey(hyphenSaved),
+  helper.fireSPremisesBuildingKey(plainOlder),
+  'A hyphen in the name is the same name+site'
+);
+assert.strictEqual(
+  Array.from(helper.fireSUniqueCurrentBuildings([
+    plainOlder,
+    hyphenSaved,
+    { id: 'shop-14', organisationName: 'West End Mall', siteName: 'Shop 14', lastSaved: '2026-10-01T00:00:00.000Z' }
+  ]), project => project.id).sort().join(','),
+  'hyphen-saved,shop-14',
+  'A filter list keeps one card for the same name+site and leaves the other shop'
+);
+assert.strictEqual(
+  Array.from(helper.fireSUniqueCurrentBuildings([
+    { id: 'blank-co', organisationName: '15 on Bond', siteName: 'Hatfield', lastSaved: '2026-10-22T09:00:00.000Z' },
+    { id: 'tagged', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'a', lastSaved: '2026-10-22T18:00:00.000Z', photos: [{ id: 'p' }] }
+  ]), project => project.id).join(','),
+  'tagged',
+  'A premises with no company id joins the same name+site'
+);
+
 const settled = helper.fireSSettleDuplicatePremises([older, saved, {
   id: 'other-shop',
   organisationName: 'West End Mall',
@@ -227,8 +271,8 @@ const liveApp = read('app.js');
 const liveHtml = read('index.html');
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-premises/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-67-premises/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-premises-filter/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises-filter/.test(liveHtml) &&
     /service-worker\.js\?v=108-81-cancel/.test(liveHtml),
   'Live stays on 1.3.67 and drops the previous phone cache for the premises merge'
 );
@@ -294,6 +338,25 @@ assert.strictEqual(
   Array.from(liveHelper.fireSVisiblePremisesRows(liveCompanies.projects), project => project.id).sort().join(','),
   'co-a,co-b',
   'Live Gateway keeps one card per company when the premises name matches'
+);
+assert.strictEqual(
+  liveHelper.fireSPremisesBuildingKey(hyphenSaved),
+  liveHelper.fireSPremisesBuildingKey(plainOlder),
+  'Live treats a hyphenated name+site as the same premises'
+);
+assert.strictEqual(
+  Array.from(liveHelper.fireSCollapsePremisesForDisplay([
+    plainOlder,
+    hyphenSaved,
+    { id: 'shop-14', organisationName: 'West End Mall', siteName: 'Shop 14', lastSaved: '2026-10-01T00:00:00.000Z' }
+  ]), project => project.id).sort().join(','),
+  'hyphen-saved,shop-14',
+  'A live filter keeps one card for the same name+site'
+);
+assert.ok(
+  /window\.fireSDedupeVisiblePremisesCards/.test(liveApp) &&
+    /window\.fireSDedupeVisiblePremisesCards/.test(app),
+  'Gateway paint removes a second card with the same name+site'
 );
 
 const liveKpiStart = liveApp.indexOf('(function fireS136A10StableVisibleKpis(){');
