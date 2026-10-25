@@ -1,18 +1,18 @@
 // Leave a phone that is still painting an older toets page. Runs only from this
-// staging script, and only when the painted version is not 1.3.129-toets.
+// staging script, and only when the painted version is not 1.3.130-toets.
 (function fireSLeaveStuckToetsPage() {
   try {
     var path = String(location.pathname || '');
     if (path.indexOf('/staging') === -1) return;
-    if (/[?&]toets=129(?:&|$)/.test(String(location.href || ''))) return;
+    if (/[?&]toets=130(?:&|$)/.test(String(location.href || ''))) return;
     var shown = '';
     var node = document.getElementById('appVersion');
     if (node) shown = String(node.textContent || '');
-    if (shown.indexOf('1.3.129-toets') !== -1) return;
-    if (sessionStorage.getItem('fireS.toetsJump.129') === '1') return;
-    sessionStorage.setItem('fireS.toetsJump.129', '1');
+    if (shown.indexOf('1.3.130-toets') !== -1) return;
+    if (sessionStorage.getItem('fireS.toetsJump.130') === '1') return;
+    sessionStorage.setItem('fireS.toetsJump.130', '1');
     var next = new URL(location.href);
-    next.searchParams.set('toets', '129');
+    next.searchParams.set('toets', '130');
     location.replace(next.toString());
   } catch (e) {}
 })();
@@ -18133,8 +18133,8 @@ function ensureInspectionSavePopupStyles() {
   style.textContent = `
     #fireSSaveResultPopup{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.55)}
     .fire-s-save-result-dialog{width:min(420px,100%);background:#fff;color:#0f172a;border-radius:14px;padding:22px 20px 16px;box-shadow:0 18px 50px rgba(15,23,42,.28);font-family:inherit}
-    .fire-s-save-result-dialog h2{margin:0 0 8px;font-size:1.25rem;line-height:1.25}
-    #fireSSaveResultDetail{margin:0 0 16px;font-size:1rem;line-height:1.45}
+    .fire-s-save-result-dialog h2{margin:0 0 16px;font-size:1.25rem;line-height:1.3;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important}
+    #fireSSaveResultDetail{margin:0 0 16px;font-size:1rem;line-height:1.45;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important}
     #fireSSaveResultOk{display:block;width:100%;min-height:48px;border:0;border-radius:10px;background:#166534;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
   `;
   document.head.appendChild(style);
@@ -18188,17 +18188,7 @@ function inspectionDraftComparable(source) {
 }
 
 function inspectionSavePopupDetail(kind, options) {
-  if (kind === 'unchanged') {
-    return options && options.pending === true
-      ? 'Nothing has changed since the last save. The saved copy will still upload to the server.'
-      : 'Nothing has changed since the last save.';
-  }
-  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-  const parts = [
-    offline
-      ? 'Saved on this device. It will upload to the server automatically as soon as there is signal.'
-      : 'Saved on this device. Uploading to the server now.'
-  ];
+  const parts = [];
   const unanswered = Number(options && options.unanswered);
   if (kind === 'draft' && unanswered > 0) {
     parts.push(
@@ -18212,10 +18202,8 @@ function inspectionSavePopupDetail(kind, options) {
 function showInspectionSavePopup(kind, options) {
   ensureInspectionSavePopupStyles();
   const title = kind === 'finished'
-    ? 'Finished inspection saved'
-    : kind === 'unchanged'
-      ? 'Draft already saved'
-      : 'Draft saved';
+    ? 'Completed inspection saved'
+    : 'Inspection Draft saved';
   const existing = document.getElementById('fireSSaveResultPopup');
   if (existing) existing.remove();
 
@@ -18235,9 +18223,11 @@ function showInspectionSavePopup(kind, options) {
   heading.id = 'fireSSaveResultTitle';
   heading.textContent = title;
 
+  const detailText = inspectionSavePopupDetail(kind, options);
   const detail = document.createElement('p');
   detail.id = 'fireSSaveResultDetail';
-  detail.textContent = inspectionSavePopupDetail(kind, options);
+  detail.textContent = detailText;
+  if (!detailText) detail.hidden = true;
 
   const ok = document.createElement('button');
   ok.id = 'fireSSaveResultOk';
@@ -18256,26 +18246,26 @@ function showInspectionSavePopup(kind, options) {
 
 function noteInspectionUploaded(projectId) {
   const popup = document.getElementById('fireSSaveResultPopup');
-  if (popup && popup.dataset.saveKind === 'unchanged') return;
-  const detail = document.getElementById('fireSSaveResultDetail');
-  if (!detail) return;
-  const openId = window.__fireSSavePopupProjectId;
-  if (openId && projectId && String(openId) !== String(projectId)) return;
-  detail.textContent = 'Saved on this device and uploaded to the server.';
+  if (
+    popup &&
+    (popup.dataset.saveKind === 'unchanged' ||
+      popup.dataset.saveKind === 'draft' ||
+      popup.dataset.saveKind === 'finished')
+  ) {
+    return;
+  }
 }
 
 function noteInspectionUploadWaiting(projectId) {
   const popup = document.getElementById('fireSSaveResultPopup');
-  if (popup && popup.dataset.saveKind === 'unchanged') return;
-  const detail = document.getElementById('fireSSaveResultDetail');
-  if (!detail) return;
-  const openId = window.__fireSSavePopupProjectId;
-  if (openId && projectId && String(openId) !== String(projectId)) return;
-  if (detail.textContent.indexOf('uploaded to the server.') !== -1) return;
-  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-  detail.textContent = offline
-    ? 'Saved on this device. It will upload to the server automatically as soon as there is signal.'
-    : 'Saved on this device. Fire-S will send it to the server automatically.';
+  if (
+    popup &&
+    (popup.dataset.saveKind === 'unchanged' ||
+      popup.dataset.saveKind === 'draft' ||
+      popup.dataset.saveKind === 'finished')
+  ) {
+    return;
+  }
 }
 
 function saveProject(options) {
@@ -18439,7 +18429,7 @@ const finalComments = getEl('finalComments').value.trim();
     });
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
-      saveMessage.textContent = 'Draft already saved. Nothing has changed.';
+      saveMessage.textContent = 'Inspection Draft saved';
     }
     return true;
   }
