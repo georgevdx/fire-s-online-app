@@ -6308,7 +6308,9 @@ function initApp() {
 
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
-  getEl('saveBtn').addEventListener('click', saveProject);
+  getEl('saveBtn').addEventListener('click', function () {
+    saveProject({ notify: 'draft', unchangedNotice: true });
+  });
   getEl('finishBtn').addEventListener('click', finishInspection);
   getEl('reportBtn').addEventListener('click', generateReport);
   getEl('deleteBtn').addEventListener('click', deleteProject);
@@ -8256,40 +8258,134 @@ function getProjects() {
   return list.map(project => fireSApplyScheduleAfterVisit(project));
 }
 
+function fireSStorageQuotaError(error) {
+  if (!error) return false;
+  const name = String(error.name || '');
+  const message = String(error.message || '');
+  return (
+    name === 'QuotaExceededError' ||
+    name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    error.code === 22 ||
+    /quota/i.test(message)
+  );
+}
+
+function fireSDropBulkyLocalCopies() {
+  try { localStorage.removeItem(fireSDeviceSnapshotKey()); } catch (_) {}
+  try { localStorage.removeItem('fireyesaLastBackupJson'); } catch (_) {}
+  try { localStorage.removeItem('fireyesaLastBackup'); } catch (_) {}
+}
+
+function fireSSlimPhotoForStorage(photo) {
+  if (!photo || typeof photo !== 'object') return photo;
+  const preview = String(photo.previewSrc || photo.thumbnailSrc || '');
+  const src = String(photo.src || '');
+  const cloudSrc = src.indexOf('data:') === 0 ? '' : src;
+  const thumb = preview.length > 0 && preview.length < 120000 ? preview : '';
+  return {
+    id: photo.id,
+    timestamp: photo.timestamp || null,
+    note: photo.note ? String(photo.note).slice(0, 200) : '',
+    category: photo.category || 'General',
+    area: photo.area || '',
+    linkedQuestion: photo.linkedQuestion || '',
+    src: cloudSrc || thumb,
+    previewSrc: thumb,
+    thumbnailSrc: thumb,
+    uploadPending: photo.uploadPending === true,
+    uploadFallback: photo.uploadFallback === true || !cloudSrc
+  };
+}
+
+function fireSProjectForTightStorage(project) {
+  if (!project || typeof project !== 'object') return project;
+  const copy = Object.assign({}, project);
+  delete copy.signature;
+  delete copy.clientSignature;
+  delete copy.signatureDataUrl;
+  delete copy.reportHtml;
+  delete copy.pdfData;
+  copy.photos = Array.isArray(project.photos)
+    ? project.photos.map(fireSSlimPhotoForStorage)
+    : [];
+  copy.inspectionHistory = Array.isArray(project.inspectionHistory)
+    ? project.inspectionHistory.map(item => {
+        if (!item || typeof item !== 'object') return item;
+        const cycle = Object.assign({}, item);
+        delete cycle.photos;
+        delete cycle.signature;
+        delete cycle.signatureDataUrl;
+        delete cycle.reportHtml;
+        delete cycle.pdfData;
+        return cycle;
+      })
+    : [];
+  return copy;
+}
+
+function fireSStripStoredDataUrls(value, depth) {
+  if (depth > 8) return null;
+  if (typeof value === 'string') {
+    return value.indexOf('data:image') === 0 && value.length > 8000 ? '' : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => fireSStripStoredDataUrls(item, depth + 1));
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    Object.keys(value).forEach(key => {
+      out[key] = fireSStripStoredDataUrls(value[key], depth + 1);
+    });
+    return out;
+  }
+  return value;
+}
+
+function fireSStoreProjectsFittingQuota(storageKey, projects) {
+  const attempts = [
+    projects,
+    typeof stripHeavyPhotoDataFromProjects === 'function'
+      ? stripHeavyPhotoDataFromProjects(projects)
+      : projects,
+    (projects || []).map(fireSProjectForTightStorage),
+    fireSStripStoredDataUrls((projects || []).map(fireSProjectForTightStorage), 0)
+  ];
+  let droppedCopies = false;
+  let lastError = null;
+  for (let i = 0; i < attempts.length; i += 1) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(attempts[i]));
+      return attempts[i];
+    } catch (error) {
+      lastError = error;
+      if (!fireSStorageQuotaError(error)) throw error;
+      if (!droppedCopies) {
+        fireSDropBulkyLocalCopies();
+        droppedCopies = true;
+        i -= 1;
+      }
+    }
+  }
+  const message = 'This phone is out of storage. Close other sites or remove old photos, then save again.';
+  const failure = new Error(message);
+  failure.cause = lastError;
+  throw failure;
+}
+
 function setProjects(projects) {
   const previousProjects = getProjects();
   const storageKey = fireSProjectsStorageKey();
-
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(projects));
-    capturePendingUploadQueueChanges(previousProjects, projects);
-  } catch (error) {
-    if (error && error.name === 'QuotaExceededError') {
-      const compactProjects =
-        stripHeavyPhotoDataFromProjects(projects);
-
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(compactProjects)
-      );
-      capturePendingUploadQueueChanges(previousProjects, compactProjects);
-
-      console.warn(
-        'Storage quota reached. Saved compact inspections without heavy photo data.',
-        error
-      );
-
-      const syncStatus = document.getElementById('syncStatus');
-
-      if (syncStatus) {
-        syncStatus.textContent =
-          'Storage limit reached. Inspections saved without large photo data on this device.';
-      }
-
-      return;
+  const stored = fireSStoreProjectsFittingQuota(storageKey, projects);
+  try { capturePendingUploadQueueChanges(previousProjects, stored); } catch (_) {}
+  try { fireSRememberDeviceSnapshot(stored); } catch (_) {
+    try { localStorage.removeItem(fireSDeviceSnapshotKey()); } catch (__) {}
+  }
+  if (stored !== projects) {
+    const syncStatus = document.getElementById('syncStatus');
+    if (syncStatus) {
+      syncStatus.textContent =
+        'Saved on this phone. Large photos were left out so the inspection could be stored.';
     }
-
-    throw error;
   }
 }
 
@@ -17424,7 +17520,149 @@ function markInspectionSynced(projectId, companyIdFromCloud) {
   updatePostSiteSyncReminder();
 }
 
-function saveProject() {
+function ensureInspectionSavePopupStyles() {
+  if (document.getElementById('fireSSaveResultStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'fireSSaveResultStyles';
+  style.textContent = `
+    #fireSSaveResultPopup{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.55)}
+    .fire-s-save-result-dialog{width:min(420px,100%);background:#fff;color:#0f172a;border-radius:14px;padding:22px 20px 16px;box-shadow:0 18px 50px rgba(15,23,42,.28);font-family:inherit}
+    .fire-s-save-result-dialog h2{margin:0 0 16px;font-size:1.25rem;line-height:1.3;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important}
+    #fireSSaveResultDetail{margin:0 0 16px;font-size:1rem;line-height:1.45;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important}
+    #fireSSaveResultOk{display:block;width:100%;min-height:48px;border:0;border-radius:10px;background:#166534;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+  `;
+  document.head.appendChild(style);
+}
+
+function inspectionDraftComparable(source) {
+  const text = value => String(value == null ? '' : value).trim();
+  const answers = Array.isArray(source && source.answers) ? source.answers : [];
+  const photos = Array.isArray(source && source.photos) ? source.photos : [];
+  return JSON.stringify({
+    organisationName: text(source && source.organisationName),
+    siteName: text(source && source.siteName),
+    streetNumber: text(source && source.streetNumber),
+    addressLine: text(source && source.addressLine),
+    projectAddress: text(source && source.projectAddress),
+    gps: text(source && source.gps),
+    inMall: text(source && source.inMall),
+    mallName: text(source && source.mallName),
+    unitNumber: text(source && source.unitNumber),
+    contactPerson: text(source && source.contactPerson),
+    contactTel: text(source && source.contactTel),
+    contactEmail: text(source && source.contactEmail),
+    productType: text(source && source.productType),
+    inspectionType: text(source && source.inspectionType),
+    inspectorName: text(source && source.inspectorName),
+    inspectionDate: text(source && source.inspectionDate),
+    occupancy: text(source && source.occupancy),
+    followUpRequired: text(source && source.followUpRequired),
+    followUpDate: text(source && source.followUpDate),
+    followUpNotes: text(source && source.followUpNotes),
+    recurringCycleEnabled: !!(source && source.recurringCycleEnabled === true),
+    recurringCycleNumber: text(source && source.recurringCycleNumber),
+    recurringCycleUnit: text(source && source.recurringCycleUnit),
+    recurringCycleNotes: text(source && source.recurringCycleNotes),
+    finalComments: text(source && source.finalComments),
+    answers: answers.map(answer => ({
+      itemIndex: Number(answer && answer.itemIndex),
+      itemNumber: text(answer && answer.itemNumber),
+      answer: text(answer && answer.answer),
+      note: text(answer && answer.note),
+      expiryDate: answer && answer.expiryDate ? text(answer.expiryDate) : '',
+      assessment: text(answer && answer.assessment)
+    })),
+    photos: photos.map(photo => ({
+      src: text(photo && photo.src),
+      storagePath: text(photo && photo.storagePath),
+      note: text(photo && photo.note),
+      timestamp: text(photo && photo.timestamp)
+    }))
+  });
+}
+
+function inspectionSavePopupDetail(kind, options) {
+  const parts = [];
+  const unanswered = Number(options && options.unanswered);
+  if (kind === 'draft' && unanswered > 0) {
+    parts.push(
+      `${unanswered} question${unanswered === 1 ? '' : 's'} still need an answer before this can be a finished inspection.`
+    );
+  }
+  if (options && options.extra) parts.push(String(options.extra));
+  return parts.join(' ');
+}
+
+function showInspectionSavePopup(kind, options) {
+  ensureInspectionSavePopupStyles();
+  const title = kind === 'finished'
+    ? 'Completed inspection saved'
+    : 'Inspection Draft saved';
+  const existing = document.getElementById('fireSSaveResultPopup');
+  if (existing) existing.remove();
+
+  window.__fireSSavePopupProjectId = currentProjectId || window.currentProjectId || '';
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'fireSSaveResultPopup';
+  backdrop.dataset.saveKind = kind;
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'fireSSaveResultTitle');
+
+  const dialog = document.createElement('div');
+  dialog.className = 'fire-s-save-result-dialog';
+
+  const heading = document.createElement('h2');
+  heading.id = 'fireSSaveResultTitle';
+  heading.textContent = title;
+
+  const detailText = inspectionSavePopupDetail(kind, options);
+  const detail = document.createElement('p');
+  detail.id = 'fireSSaveResultDetail';
+  detail.textContent = detailText;
+  if (!detailText) detail.hidden = true;
+
+  const ok = document.createElement('button');
+  ok.id = 'fireSSaveResultOk';
+  ok.type = 'button';
+  ok.textContent = 'OK';
+  ok.addEventListener('click', () => backdrop.remove());
+
+  dialog.append(heading, detail, ok);
+  backdrop.appendChild(dialog);
+  backdrop.addEventListener('click', event => {
+    if (event.target === backdrop) backdrop.remove();
+  });
+  document.body.appendChild(backdrop);
+  ok.focus();
+}
+
+function noteInspectionUploaded(projectId) {
+  const popup = document.getElementById('fireSSaveResultPopup');
+  if (
+    popup &&
+    (popup.dataset.saveKind === 'unchanged' ||
+      popup.dataset.saveKind === 'draft' ||
+      popup.dataset.saveKind === 'finished')
+  ) {
+    return;
+  }
+}
+
+function noteInspectionUploadWaiting(projectId) {
+  const popup = document.getElementById('fireSSaveResultPopup');
+  if (
+    popup &&
+    (popup.dataset.saveKind === 'unchanged' ||
+      popup.dataset.saveKind === 'draft' ||
+      popup.dataset.saveKind === 'finished')
+  ) {
+    return;
+  }
+}
+
+function saveProject(options) {
   if (isInspectionHistoryWriteProtected()) {
     clearTimeout(autoSaveTimer);
     return false;
@@ -17541,6 +17779,49 @@ const finalComments = getEl('finalComments').value.trim();
   });
 
   const projects = getProjects();
+  const existingIndex = currentProjectId
+    ? projects.findIndex(p => p.id === currentProjectId)
+    : -1;
+
+  if (
+    options &&
+    options.unchangedNotice === true &&
+    existingIndex !== -1 &&
+    inspectionDraftComparable(projects[existingIndex]) === inspectionDraftComparable({
+      organisationName,
+      siteName,
+      streetNumber,
+      addressLine,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
+      productType,
+      inspectionType,
+      inspectorName,
+      inspectionDate,
+      occupancy,
+      followUpRequired,
+      followUpDate,
+      followUpNotes,
+      recurringCycleEnabled,
+      recurringCycleNumber,
+      recurringCycleUnit,
+      recurringCycleNotes,
+      finalComments,
+      answers,
+      photos: currentPhotos || []
+    })
+  ) {
+    showInspectionSavePopup('unchanged');
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) saveMessage.textContent = 'Inspection Draft saved';
+    return true;
+  }
 
   if (currentProjectId) {
   const index = projects.findIndex(p => p.id === currentProjectId);
@@ -17733,33 +18014,42 @@ lastSaved: new Date().toISOString()
   }
     
     
-  setProjects(projects);
+  try {
+    setProjects(projects);
+  } catch (error) {
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent =
+        (error && error.message) || 'Inspection could not be saved on this phone.';
+    }
+    return false;
+  }
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
 
   const savedProject = projects.find(p => p.id === currentProjectId);
-  if (savedProject) {
-    currentInspectionSessionSnapshot = cloneInspectionProjectForWorkflow(savedProject);
-    currentInspectionSessionWasNew = false;
+  if (!savedProject) {
+    console.warn('Auto upload skipped: saved project not found.');
+    return false;
   }
 
-  if (savedProject) {
+  currentInspectionSessionSnapshot = cloneInspectionProjectForWorkflow(savedProject);
+  currentInspectionSessionWasNew = false;
+  queueInspectionForUpload(savedProject.id);
+
+  if (options && options.notify === 'draft') {
+    showInspectionSavePopup('draft', options);
+  }
+
   if (!navigator.onLine) {
     setSyncStatusMessage('Saved offline. Will sync when signal returns.');
-    return true;
+  } else {
+    uploadSingleInspection(savedProject)
+      .catch(error => {
+        console.error('Auto upload after save failed:', error);
+        setSyncStatusMessage('Saved locally. Cloud upload failed.');
+      });
   }
-
-  uploadSingleInspection(savedProject)
-    .catch(error => {
-      console.error('Auto upload after save failed:', error);
-      setSyncStatusMessage('Saved locally. Cloud upload failed.');
-    });
-} else {
-  console.warn('Auto upload skipped: saved project not found.');
-  return false;
-}
-
-
 
   return true;
 }
@@ -18009,6 +18299,8 @@ function finishInspection() {
       };
 
       setProjects(projects);
+      queueInspectionForUpload(projects[index].id);
+      showInspectionSavePopup('finished');
 
       const completedProject = projects[index];
 
@@ -18017,6 +18309,10 @@ function finishInspection() {
           .catch(error => {
             console.warn('Completed inspection upload failed:', error);
           });
+      } else {
+        setSyncStatusMessage(
+          'Finished inspection saved on this device. It will upload when signal returns.'
+        );
       }
     }
   }
