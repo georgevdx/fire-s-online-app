@@ -8808,7 +8808,7 @@ function setProjects(projects) {
   try { fireSRememberDeviceSnapshot(stored); } catch (_) {
     try { localStorage.removeItem(fireSDeviceSnapshotKey()); } catch (__) {}
   }
-  if (stored !== projects) {
+  if (stored !== incoming) {
     const syncStatus = document.getElementById('syncStatus');
     if (syncStatus) {
       syncStatus.textContent =
@@ -27641,8 +27641,10 @@ function fireSUniqueCurrentBuildings(list) {
     ) {
       continue;
     }
-    const key = fireSPremisesBuildingKey(project);
-    if (!key) continue;
+    const building = fireSPremisesBuildingKey(project);
+    if (!building) continue;
+    const company = String((project.companyId || project.company_id) || '').trim();
+    const key = company ? company + '\n' + building : building;
     const current = seen.get(key);
     if (!current || fireSBuildingRecency(project) > fireSBuildingRecency(current)) {
       seen.set(key, project);
@@ -28135,6 +28137,7 @@ function fireSSettleDuplicatePremises(projects) {
   const groups = new Map();
   list.forEach((project, index) => {
     if (!project) return;
+    if (project.premisesSuperseded === true || project.supersededBy) return;
     if (typeof fireSIsHiddenFromCurrentLists === 'function' && fireSIsHiddenFromCurrentLists(project)) {
       return;
     }

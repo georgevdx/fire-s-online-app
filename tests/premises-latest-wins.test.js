@@ -121,6 +121,11 @@ const otherCompany = helper.fireSSettleDuplicatePremises([
   { id: 'co-b', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'b', lastSaved: '2026-10-22T12:00:00.000Z', completedAt: '2026-10-22T12:00:00.000Z', answers: [{ answer: 'Yes' }] }
 ]);
 assert.strictEqual(otherCompany.changed, false, 'the same name in another company is not a duplicate');
+assert.strictEqual(
+  Array.from(helper.fireSUniqueCurrentBuildings(otherCompany.projects), project => project.id).sort().join(','),
+  'co-a,co-b',
+  'Toets keeps one card per company when the premises name matches'
+);
 
 const kpiStart = app.indexOf('(function fireS136A10StableVisibleKpis(){');
 const kpiEnd = app.indexOf('(function fireS136A11ProjectKpiSingleMatcher(){', kpiStart);
@@ -216,6 +221,131 @@ assert.strictEqual(
   isCompliant({ id: 'blank', projectName: 'Empty site', answers: [] }),
   false,
   'A premises with no inspection stays Not Assessed'
+);
+
+const liveApp = read('app.js');
+const liveHtml = read('index.html');
+assert.ok(
+  /Version 1\.3\.67/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-premises/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises/.test(liveHtml) &&
+    /service-worker\.js\?v=108-81-cancel/.test(liveHtml),
+  'Live stays on 1.3.67 and drops the previous phone cache for the premises merge'
+);
+assert.ok(
+  /function fireSSettleDuplicatePremises\(/.test(liveApp) &&
+    /function fireSVisiblePremisesRows\(/.test(liveApp) &&
+    /fireSSettleDuplicatePremises\(projects\)/.test(liveApp) &&
+    /stored !== incoming/.test(liveApp) &&
+    /if \(finalised\) return noAnswerCount\(project\) > 0 \? 'ACTION' : 'COMPLIANT'/.test(liveApp),
+  'Live save must close older inspections and paint a finished inspection as Compliant or Action'
+);
+
+const liveStart = liveApp.indexOf('function fireSPremisesBuildingKey');
+const liveEnd = liveApp.indexOf('function fireSIsInspectionOverdue');
+assert.ok(liveStart > 0 && liveEnd > liveStart, 'live premises helpers must load');
+const liveHelper = {
+  window: {},
+  setTimeout() { return 0; },
+  console,
+  Date,
+  Map,
+  Set,
+  convertProjectToArchivedInspection: helper.convertProjectToArchivedInspection
+};
+vm.runInNewContext(liveApp.slice(liveStart, liveEnd), liveHelper);
+
+assert.strictEqual(
+  liveHelper.fireSPremisesBuildingKey(saved),
+  liveHelper.fireSPremisesBuildingKey(older),
+  'Live treats 15 on Bond + Hatfield as the same premises'
+);
+const liveSettled = liveHelper.fireSSettleDuplicatePremises([older, saved, {
+  id: 'other-shop',
+  organisationName: 'West End Mall',
+  siteName: 'Shop 12',
+  lastSaved: '2026-10-01T00:00:00.000Z'
+}]);
+assert.strictEqual(liveSettled.changed, true, 'Live must close the older duplicate on save');
+const liveVisible = liveHelper.fireSVisiblePremisesRows(liveSettled.projects);
+assert.strictEqual(
+  Array.from(liveVisible, project => project.id).sort().join(','),
+  'just-saved,other-shop',
+  'Live Gateway keeps the latest inspection and the unrelated shop'
+);
+const liveKeeper = liveSettled.projects.find(project => project.id === 'just-saved');
+const liveClosed = liveSettled.projects.find(project => project.id === 'already-there');
+assert.strictEqual(liveClosed.premisesSuperseded, true);
+assert.strictEqual(liveClosed.supersededBy, 'just-saved');
+assert.strictEqual(liveClosed.inspectionStatus, 'closed');
+assert.ok(
+  liveKeeper.inspectionHistory.some(item => item.sourceProjectId === 'already-there' || item.inspectionNumber === 'FS-OLD'),
+  'Live keeps the previous inspection in history'
+);
+const liveAgain = liveHelper.fireSSettleDuplicatePremises(liveSettled.projects);
+assert.strictEqual(liveAgain.changed, false, 'A second pass must leave the closed inspection closed');
+
+const liveCompanies = liveHelper.fireSSettleDuplicatePremises([
+  { id: 'co-a', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'a', lastSaved: '2026-10-22T18:00:00.000Z', photos: [{ id: 'p' }] },
+  { id: 'co-b', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'b', lastSaved: '2026-10-22T12:00:00.000Z', completedAt: '2026-10-22T12:00:00.000Z', answers: [{ answer: 'Yes' }] }
+]);
+assert.strictEqual(liveCompanies.changed, false, 'Live must not melt the same name across two companies');
+assert.strictEqual(
+  Array.from(liveHelper.fireSVisiblePremisesRows(liveCompanies.projects), project => project.id).sort().join(','),
+  'co-a,co-b',
+  'Live Gateway keeps one card per company when the premises name matches'
+);
+
+const liveKpiStart = liveApp.indexOf('(function fireS136A10StableVisibleKpis(){');
+const liveKpiEnd = liveApp.indexOf('(function fireS136A11ProjectKpiSingleMatcher(){', liveKpiStart);
+assert.ok(liveKpiStart > 0 && liveKpiEnd > liveKpiStart, 'live 136A10 matcher must exist');
+const liveWindow = {
+  __fireS136A10Installed: false,
+  setTimeout() { return 0; },
+  setInterval() { return 0; },
+  addEventListener() {}
+};
+const liveKpi = {
+  window: liveWindow,
+  document: {
+    readyState: 'complete',
+    body: {},
+    getElementById() { return null; },
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    addEventListener() {}
+  },
+  MutationObserver: class { observe() {} },
+  requestAnimationFrame(fn) { fn(); },
+  getComputedStyle() { return { display: 'none' }; },
+  setTimeout() { return 0; },
+  setInterval() { return 0; },
+  console,
+  Date,
+  Math,
+  Number,
+  String,
+  Array,
+  Object,
+  Boolean,
+  JSON
+};
+liveKpi.window = Object.assign(liveWindow, liveKpi);
+vm.runInNewContext(liveApp.slice(liveKpiStart, liveKpiEnd), liveKpi);
+assert.strictEqual(
+  liveKpi.window.fireSProductionIsCompliant(saved),
+  true,
+  'Live counts the just-finalised inspection as Compliant when nothing is open'
+);
+assert.strictEqual(
+  liveKpi.window.fireSProductionIsCompliant({
+    id: 'findings',
+    inspectionStatus: 'finalised',
+    inspectionFinalisedAt: '2026-10-22T18:00:00.000Z',
+    answers: [{ answer: 'Yes' }, { assessment: 'Action Required' }]
+  }),
+  false,
+  'Live must not call a finalised inspection Compliant when an item is still open'
 );
 
 console.log('premises-latest-wins.test.js: ok');

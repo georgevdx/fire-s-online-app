@@ -57,7 +57,7 @@ assert.ok(
   /function fireSApplyScheduleAfterVisit\(/.test(liveApp) &&
     /persistFinalisedLifecycle[\s\S]*fireSApplyScheduleAfterVisit\(row/.test(liveApp) &&
     /list\.map\(project => fireSApplyScheduleAfterVisit\(project\)\)/.test(liveApp) &&
-    /app\.js\?v=1-3-67-saved/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-premises/.test(liveHtml) &&
     /Version 1\.3\.67/.test(liveHtml),
   'Live must reset schedule after finalise and show 1.3.67'
 );
