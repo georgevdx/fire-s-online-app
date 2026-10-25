@@ -37,8 +37,8 @@ assert.ok(
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
-    /fireS\.toetsCacheDrop\.1-3-129/.test(stagingHtml) &&
-    /service-worker\.js\?v=108-84-toets-129/.test(stagingHtml) &&
+    /fireS\.toetsCacheDrop\.1-3-130/.test(stagingHtml) &&
+    /service-worker\.js\?v=108-84-toets-130/.test(stagingHtml) &&
     !/staging skips the live service worker/.test(stagingHtml) &&
     /Fire-S toets service worker registered/.test(stagingHtml),
   'Toets-blad must register its own service worker so live cannot keep an old 1.3.107 page'
@@ -51,17 +51,20 @@ assert.ok(
 );
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /Version 1\.3\.129-toets/.test(stagingHtml),
-  'Displayed versions stay 1.3.67 live and 1.3.129-toets so a phone can tell it has this build'
+    /Version 1\.3\.130-toets/.test(stagingHtml),
+  'Displayed versions stay 1.3.67 live and 1.3.130-toets so a phone can tell it has this build'
 );
 assert.ok(
   /updateViaCache: 'none'/.test(stagingHtml) &&
     !/client\.navigate\(/.test(stagingSw) &&
     /function fireSLeaveStuckToetsPage\(/.test(stagingApp) &&
-    /toets=129/.test(stagingOpen) &&
+    /toets=130/.test(stagingOpen) &&
     /location\.href\)\.indexOf\(scope\)/.test(stagingOpen) &&
-    /"start_url": "\.\/index\.html\?toets=129"/.test(stagingManifest),
-  'A stuck phone must open staging/open.html and land on index.html?toets=129'
+    /"start_url": "\.\/index\.html\?toets=130"/.test(stagingManifest) &&
+    /searchParams\.set\('toets', '130'\)/.test(stagingHtml) &&
+    /searchParams\.set\('toets', '130'\)/.test(stagingApp) &&
+    !/searchParams\.set\('toets', '129'\)/.test(stagingHtml + stagingApp),
+  'A stuck phone must open staging/open.html and land on index.html?toets=130'
 );
 
 console.log('version-goes-through.test.js: ok');

@@ -2,7 +2,7 @@
   "id": "https://georgevdx.github.io/fire-s-online-app/staging/",
   "name": "Fire-S TOETS",
   "short_name": "Fire-S TOETS",
-  "start_url": "./index.html?toets=129",
+  "start_url": "./index.html?toets=130",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
