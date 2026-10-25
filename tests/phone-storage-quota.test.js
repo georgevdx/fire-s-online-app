@@ -5,10 +5,10 @@ const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
 
-const stagingApp = fs.readFileSync(path.join(__dirname, '..', 'staging', 'app.js'), 'utf8');
-const start = stagingApp.indexOf('function fireSStorageQuotaError');
-const end = stagingApp.indexOf('function setProjects(projects)');
-assert.ok(start > 0 && end > start, 'quota save helpers must sit in front of setProjects');
+const sources = {
+  Toets: fs.readFileSync(path.join(__dirname, '..', 'staging', 'app.js'), 'utf8'),
+  Live: fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8')
+};
 
 function makeStorage(limit) {
   const mem = {
@@ -42,7 +42,10 @@ function makeStorage(limit) {
   };
 }
 
-function loadHelpers(localStorage) {
+function loadHelpers(source, localStorage) {
+  const start = source.indexOf('function fireSStorageQuotaError');
+  const end = source.indexOf('function setProjects(projects)');
+  assert.ok(start > 0 && end > start, 'quota save helpers must sit in front of setProjects');
   const sandbox = {
     localStorage: localStorage,
     stripHeavyPhotoDataFromProjects(projects) {
@@ -54,7 +57,7 @@ function loadHelpers(localStorage) {
     console: console
   };
   vm.runInNewContext(
-    stagingApp.slice(start, end) +
+    source.slice(start, end) +
       '\nthis.fireSStoreProjectsFittingQuota = fireSStoreProjectsFittingQuota;\n' +
       'this.fireSStorageQuotaError = fireSStorageQuotaError;',
     sandbox
@@ -63,7 +66,7 @@ function loadHelpers(localStorage) {
 }
 
 const storage = makeStorage(900);
-const helpers = loadHelpers(storage);
+const helpers = loadHelpers(sources.Toets, storage);
 const huge = 'data:image/jpeg;base64,' + 'A'.repeat(2000);
 const saved = helpers.fireSStoreProjectsFittingQuota('fireyeProjects-staging', [
   {
@@ -86,5 +89,22 @@ assert.strictEqual(storage.getItem('fireyesaLastBackupJson'), null);
 const unnamed = new Error('exceeded the quota');
 unnamed.code = 22;
 assert.strictEqual(helpers.fireSStorageQuotaError(unnamed), true);
+
+const liveStorage = makeStorage(900);
+const liveHelpers = loadHelpers(sources.Live, liveStorage);
+const liveSaved = liveHelpers.fireSStoreProjectsFittingQuota('fireyeProjects', [
+  {
+    id: 'site-1',
+    organisationName: 'Live Logo',
+    siteName: 'Site',
+    inspectionDate: '2026-10-25',
+    answers: [{ itemNumber: '1', answer: 'Yes' }],
+    photos: [{ id: 'p1', src: huge, previewSrc: 'data:image/jpeg;base64,thumb' }]
+  }
+]);
+const liveRaw = liveStorage.getItem('fireyeProjects');
+assert.ok(liveRaw && liveRaw.indexOf('Live Logo') !== -1 && liveRaw.indexOf(huge) === -1);
+assert.strictEqual(liveSaved[0].answers[0].answer, 'Yes');
+assert.strictEqual(liveStorage.getItem('snap'), null);
 
 console.log('phone-storage-quota.test.js: ok');
