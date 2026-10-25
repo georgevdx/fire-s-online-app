@@ -5083,10 +5083,16 @@ async function safeDownloadNewerCloudInspections(options) {
 
     function visiblePremises(list) {
       try {
+        let visible = Array.isArray(list) ? list : [];
         if (typeof getVisibleProjectsForCurrentUser === 'function') {
-          const visible = getVisibleProjectsForCurrentUser(list);
-          if (Array.isArray(visible)) return visible;
+          const filtered = getVisibleProjectsForCurrentUser(list);
+          if (Array.isArray(filtered)) visible = filtered;
         }
+        if (typeof fireSVisiblePremisesRows === 'function') {
+          const unique = fireSVisiblePremisesRows(visible);
+          if (Array.isArray(unique)) return unique;
+        }
+        return visible;
       } catch (_) {}
       return Array.isArray(list) ? list : [];
     }
@@ -29791,14 +29797,23 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function healthScore(project) {
     if (window.FireSHealthCentre?.calculate) {
-      try { return Number(window.FireSHealthCentre.calculate(project).score || 0); }
-      catch (_) {}
+      try {
+        const scored = Number(window.FireSHealthCentre.calculate(project).score || 0);
+        if (scored > 0) return scored;
+      } catch (_) {}
     }
 
-    const answers = Array.isArray(project?.answers) ? project.answers : [];
-    const yesNo = answers.filter(a => ['yes', 'no'].includes(String(a?.answer || '').trim().toLowerCase()));
+    const answers = typeof fireSChecklistRows === 'function'
+      ? fireSChecklistRows(project)
+      : (Array.isArray(project?.answers) ? project.answers : []);
+    const valueOf = answer => (
+      typeof fireSChecklistAnswerValue === 'function'
+        ? fireSChecklistAnswerValue(answer)
+        : String(answer?.answer || '').trim().toLowerCase()
+    );
+    const yesNo = answers.filter(answer => ['yes', 'no'].includes(valueOf(answer)));
     if (!yesNo.length) return 0;
-    const yes = yesNo.filter(a => String(a?.answer || '').trim().toLowerCase() === 'yes').length;
+    const yes = yesNo.filter(answer => valueOf(answer) === 'yes').length;
     return Math.round((yes / yesNo.length) * 100);
   }
 
@@ -29810,14 +29825,27 @@ if (!window.fireSMobileSmartCardsApplied) {
     return 'Critical';
   }
 
+  function uniquePremises(projects) {
+    try {
+      if (typeof window.fireSVisiblePremisesRows === 'function') {
+        const unique = window.fireSVisiblePremisesRows(projects);
+        if (Array.isArray(unique)) return unique;
+      }
+    } catch (_) {}
+    return (Array.isArray(projects) ? projects : []).filter(project => (
+      !(project && (project.premisesSuperseded === true || project.supersededBy))
+    ));
+  }
+
   function calc(projects) {
-    const count = projects.length;
-    const scores = projects.map(healthScore).filter(score => score > 0);
+    const unique = uniquePremises(projects);
+    const count = unique.length;
+    const scores = unique.map(healthScore).filter(score => score > 0);
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-    const actions = projects.reduce((sum, p) => sum + openActionCount(p), 0);
-    const overdue = projects.filter(isOverdue).length;
-    const photos = projects.reduce((sum, p) => sum + photoCount(p), 0);
-    const attention = projects.filter(p => healthScore(p) > 0 && healthScore(p) < 75).length;
+    const actions = unique.reduce((sum, p) => sum + openActionCount(p), 0);
+    const overdue = unique.filter(isOverdue).length;
+    const photos = unique.reduce((sum, p) => sum + photoCount(p), 0);
+    const attention = unique.filter(p => healthScore(p) > 0 && healthScore(p) < 75).length;
     return { count, avg, actions, overdue, photos, attention };
   }
 
@@ -30693,10 +30721,16 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function visibleProjectsSafe() {
-    const projects = getProjectsSafe();
+    let projects = getProjectsSafe();
     try {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(projects) || [];
+        projects = window.getVisibleProjectsForCurrentUser(projects) || [];
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSVisiblePremisesRows === 'function') {
+        const unique = window.fireSVisiblePremisesRows(projects);
+        if (Array.isArray(unique)) return unique;
       }
     } catch (_) {}
     return projects;

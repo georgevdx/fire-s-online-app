@@ -30856,14 +30856,23 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function healthScore(project) {
     if (window.FireSHealthCentre?.calculate) {
-      try { return Number(window.FireSHealthCentre.calculate(project).score || 0); }
-      catch (_) {}
+      try {
+        const scored = Number(window.FireSHealthCentre.calculate(project).score || 0);
+        if (scored > 0) return scored;
+      } catch (_) {}
     }
 
-    const answers = Array.isArray(project?.answers) ? project.answers : [];
-    const yesNo = answers.filter(a => ['yes', 'no'].includes(String(a?.answer || '').trim().toLowerCase()));
+    const answers = typeof fireSChecklistRows === 'function'
+      ? fireSChecklistRows(project)
+      : (Array.isArray(project?.answers) ? project.answers : []);
+    const valueOf = answer => (
+      typeof fireSChecklistAnswerValue === 'function'
+        ? fireSChecklistAnswerValue(answer)
+        : String(answer?.answer || '').trim().toLowerCase()
+    );
+    const yesNo = answers.filter(answer => ['yes', 'no'].includes(valueOf(answer)));
     if (!yesNo.length) return 0;
-    const yes = yesNo.filter(a => String(a?.answer || '').trim().toLowerCase() === 'yes').length;
+    const yes = yesNo.filter(answer => valueOf(answer) === 'yes').length;
     return Math.round((yes / yesNo.length) * 100);
   }
 
@@ -31780,10 +31789,16 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function visibleProjectsSafe() {
-    const projects = getProjectsSafe();
+    let projects = getProjectsSafe();
     try {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(projects) || [];
+        projects = window.getVisibleProjectsForCurrentUser(projects) || [];
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSVisibleCompanyBuildings === 'function') {
+        const unique = window.fireSVisibleCompanyBuildings(projects);
+        if (Array.isArray(unique)) return unique;
       }
     } catch (_) {}
     return projects;
