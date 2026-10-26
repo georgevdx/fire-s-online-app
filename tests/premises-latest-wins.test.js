@@ -160,6 +160,113 @@ assert.ok(
   'The previous inspection is kept in history'
 );
 
+const photoKeeper = {
+  id: 'visible-row',
+  organisationName: '15 on Bond Hatfield',
+  siteName: '',
+  companyId: 'co-proof',
+  inspectionDate: '2026-10-22',
+  lastSaved: '2026-10-26T08:00:00.000Z',
+  inspectionStatus: 'finalised',
+  photos: [{ id: 'slot-1' }, { id: 'slot-2' }, { id: 'slot-3' }]
+};
+const photoDonor = {
+  id: 'photo-row',
+  organisationName: '15 on Bond',
+  siteName: 'Hatfield',
+  companyId: 'co-proof',
+  inspectionDate: '2026-10-25',
+  lastSaved: '2026-10-25T12:00:00.000Z',
+  photos: [
+    { id: 'img-1', src: 'https://cdn.example/a.jpg' },
+    { id: 'img-2', src: 'https://cdn.example/b.jpg' },
+    { id: 'img-3', src: 'https://cdn.example/c.jpg' }
+  ]
+};
+const photoSettled = helper.fireSSettleDuplicatePremises([photoDonor, photoKeeper, {
+  id: 'shop-14',
+  organisationName: 'West End Mall',
+  siteName: 'Shop 14',
+  photos: [{ id: 'shop-photo', src: 'https://cdn.example/shop.jpg' }]
+}]);
+const photoLive = photoSettled.projects.find(project => project.id === 'visible-row');
+assert.strictEqual(
+  photoLive.photos.map(photo => photo.src).join(','),
+  'https://cdn.example/a.jpg,https://cdn.example/b.jpg,https://cdn.example/c.jpg',
+  'The open premises keeps the photos from the closed duplicate'
+);
+assert.strictEqual(
+  photoSettled.projects.find(project => project.id === 'shop-14').photos[0].src,
+  'https://cdn.example/shop.jpg',
+  'Another shop keeps its own photo'
+);
+const alreadyClosed = helper.fireSSettleDuplicatePremises([
+  {
+    id: 'keep',
+    organisationName: '15 on Bond',
+    siteName: 'Hatfield',
+    photos: [{ id: '1' }, { id: '2' }, { id: '3' }],
+    lastSaved: '2026-10-26T00:00:00.000Z'
+  },
+  {
+    id: 'old',
+    organisationName: '15 on Bond',
+    siteName: 'Hatfield',
+    premisesSuperseded: true,
+    supersededBy: 'keep',
+    photos: [
+      { src: 'https://cdn.example/1.jpg' },
+      { src: 'https://cdn.example/2.jpg' },
+      { src: 'https://cdn.example/3.jpg' }
+    ]
+  }
+]);
+assert.strictEqual(alreadyClosed.changed, true, 'A premises that already melted still gets its photos back');
+assert.strictEqual(
+  alreadyClosed.projects.find(project => project.id === 'keep').photos.map(photo => photo.src).join(','),
+  'https://cdn.example/1.jpg,https://cdn.example/2.jpg,https://cdn.example/3.jpg',
+  'Photo addresses from the closed row fill the open inspection'
+);
+const longSrc = 'data:image/jpeg;base64,' + 'a'.repeat(130000);
+const opened = helper.fireSPhotosForOpenInspection(
+  {
+    id: 'k',
+    organisationName: '15 on Bond',
+    siteName: 'Hatfield',
+    photos: [{ id: '1' }, { id: '2' }]
+  },
+  [{
+    id: 'old-data',
+    organisationName: '15 on Bond',
+    siteName: 'Hatfield',
+    supersededBy: 'k',
+    photos: [
+      { id: 'p1', src: longSrc },
+      { id: 'p2', src: 'https://cdn.example/p2.jpg' }
+    ]
+  }]
+);
+assert.strictEqual(helper.fireSPhotoImageSource(opened[0]), '', 'A large photo stays off the saved copy');
+assert.ok(helper.fireSReadDisplaySrc(opened[0]).indexOf('data:image/jpeg') === 0, 'The open inspection can still show the large photo');
+assert.strictEqual(opened[1].src, 'https://cdn.example/p2.jpg');
+const otherCompanyPhotos = helper.fireSPhotosForOpenInspection(
+  {
+    id: 'co-a',
+    companyId: 'co-a',
+    organisationName: '15 on Bond',
+    siteName: 'Hatfield',
+    photos: [{ id: '1' }]
+  },
+  [{
+    id: 'co-b',
+    companyId: 'co-b',
+    organisationName: '15 on Bond',
+    siteName: 'Hatfield',
+    photos: [{ src: 'https://cdn.example/secret.jpg' }]
+  }]
+);
+assert.ok(!helper.fireSPhotoImageSource(otherCompanyPhotos[0]), 'Another company does not supply the photos');
+
 const otherCompany = helper.fireSSettleDuplicatePremises([
   { id: 'co-a', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'a', lastSaved: '2026-10-22T18:00:00.000Z', photos: [{ id: 'p' }] },
   { id: 'co-b', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'b', lastSaved: '2026-10-22T12:00:00.000Z', completedAt: '2026-10-22T12:00:00.000Z', answers: [{ answer: 'Yes' }] }
@@ -271,8 +378,8 @@ const liveApp = read('app.js');
 const liveHtml = read('index.html');
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
-    /app\.js\?v=1-3-67-premises-filter/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-67-premises-buildings/.test(liveHtml) &&
+    /app\.js\?v=1-3-67-premises-photos/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises-photos/.test(liveHtml) &&
     /service-worker\.js\?v=108-81-cancel/.test(liveHtml),
   'Live stays on 1.3.67 and drops the previous phone cache for the premises merge'
 );
@@ -328,6 +435,12 @@ assert.ok(
 );
 const liveAgain = liveHelper.fireSSettleDuplicatePremises(liveSettled.projects);
 assert.strictEqual(liveAgain.changed, false, 'A second pass must leave the closed inspection closed');
+const livePhotos = liveHelper.fireSSettleDuplicatePremises([photoDonor, photoKeeper]);
+assert.strictEqual(
+  livePhotos.projects.find(project => project.id === 'visible-row').photos.map(photo => photo.src).join(','),
+  'https://cdn.example/a.jpg,https://cdn.example/b.jpg,https://cdn.example/c.jpg',
+  'Live puts the closed duplicate photos on the one open premises'
+);
 
 const liveCompanies = liveHelper.fireSSettleDuplicatePremises([
   { id: 'co-a', organisationName: '15 on Bond', siteName: 'Hatfield', companyId: 'a', lastSaved: '2026-10-22T18:00:00.000Z', photos: [{ id: 'p' }] },

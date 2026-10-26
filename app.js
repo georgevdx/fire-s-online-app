@@ -8475,6 +8475,9 @@ function buildPhotoPublicUrlFromStoragePath(storagePath) {
 }
 
 function getStoredPhotoSource(photo = {}) {
+  if (!photo || typeof photo !== 'object') return '';
+  const remembered = typeof fireSReadDisplaySrc === 'function' ? fireSReadDisplaySrc(photo) : '';
+  if (remembered) return remembered;
   const directSource = (
     photo.src ||
     photo.photoSrc ||
@@ -8498,7 +8501,7 @@ function getStoredPhotoSource(photo = {}) {
 
   if (directSource) return directSource;
 
-  return buildPhotoPublicUrlFromStoragePath(
+  const built = buildPhotoPublicUrlFromStoragePath(
     photo.storagePath ||
     photo.path ||
     photo.filePath ||
@@ -8506,18 +8509,33 @@ function getStoredPhotoSource(photo = {}) {
     photo.fullPath ||
     ''
   );
+  if (built) return built;
+  try {
+    if (typeof fireSLookupOpenPhotoSource === 'function') {
+      const found = fireSLookupOpenPhotoSource(photo);
+      if (found) return found;
+    }
+  } catch (_) {}
+  return '';
 }
 
 function normaliseInspectionPhotoSource(photo = {}) {
   if (!photo || typeof photo !== 'object') return photo;
 
   const source = getStoredPhotoSource(photo);
+  const storable = source && source.length < 120000 ? source : '';
 
-  if (source) {
-    photo.src = photo.src || source;
-    photo.previewSrc = photo.previewSrc || source;
-    photo.thumbnailSrc = photo.thumbnailSrc || photo.previewSrc || source;
-    photo.publicUrl = photo.publicUrl || source;
+  if (source && source.length >= 120000 && typeof fireSRememberDisplaySrc === 'function') {
+    fireSRememberDisplaySrc(photo, source);
+  }
+
+  if (storable) {
+    photo.src = photo.src || storable;
+    photo.previewSrc = photo.previewSrc || storable;
+    photo.thumbnailSrc = photo.thumbnailSrc || photo.previewSrc || storable;
+    if (!photo.publicUrl && storable.indexOf('data:') !== 0) photo.publicUrl = storable;
+    photo.sourceMissing = false;
+  } else if (source) {
     photo.sourceMissing = false;
   } else {
     photo.sourceMissing = true;
@@ -8560,6 +8578,59 @@ function getInspectionPhotoStorageFolder(projectOrId) {
   // New lifecycle workspaces receive their own storage namespace so photos
   // from an earlier inspection can never be recovered into a clean cycle.
   return inspectionId ? `${projectId}/${inspectionId}` : projectId;
+}
+
+async function fireSRestoreCloudPremisesPhotos(project, photos) {
+  const current = Array.isArray(photos) ? photos.slice() : [];
+  const localProjects = typeof getProjects === 'function' ? (getProjects() || []) : [];
+  const withLocal = typeof fireSPhotosForOpenInspection === 'function'
+    ? fireSPhotosForOpenInspection(Object.assign({}, project, { photos: current }), localProjects)
+    : current;
+  const stillMissing = withLocal.length > 0 && withLocal.every(photo => {
+    const source = typeof fireSPhotoImageSource === 'function' ? fireSPhotoImageSource(photo) : (photo && photo.src);
+    const remembered = typeof fireSReadDisplaySrc === 'function' ? fireSReadDisplaySrc(photo) : '';
+    return !source && !remembered;
+  });
+  if (!stillMissing) return withLocal;
+  if (typeof supabaseClient === 'undefined' || !supabaseClient || typeof supabaseClient.from !== 'function') {
+    return withLocal;
+  }
+  const ids = [];
+  if (project && project.id) ids.push(String(project.id));
+  localProjects.forEach(row => {
+    if (row && project && String(row.supersededBy || '') === String(project.id) && row.id) {
+      ids.push(String(row.id));
+    }
+  });
+  (project && project.inspectionHistory || []).forEach(item => {
+    if (item && item.sourceProjectId) ids.push(String(item.sourceProjectId));
+  });
+  const seen = new Set();
+  const cloudPhotos = [];
+  for (let i = 0; i < ids.length; i += 1) {
+    const id = ids[i];
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    try {
+      const { data } = await supabaseClient
+        .from('inspections')
+        .select('inspection_data')
+        .eq('id', id)
+        .limit(1);
+      const found = data && data[0] && data[0].inspection_data && data[0].inspection_data.photos;
+      if (Array.isArray(found)) found.forEach(photo => cloudPhotos.push(photo));
+    } catch (_) {}
+  }
+  if (!cloudPhotos.length || typeof fireSPhotosForOpenInspection !== 'function') return withLocal;
+  const donor = {
+    id: 'cloud-photo-donor',
+    supersededBy: project && project.id,
+    photos: cloudPhotos
+  };
+  return fireSPhotosForOpenInspection(
+    Object.assign({}, project, { photos: withLocal }),
+    [donor].concat(localProjects)
+  );
 }
 
 async function hydrateProjectPhotosFromCloudStorage(project) {
@@ -17026,10 +17097,18 @@ getEl('finalComments').value = project.finalComments || '';
 
   toggleMallFields();
 
-  currentPhotos = normaliseInspectionPhotoSources(project.photos || []);
+  const premisesPhotos = typeof fireSPhotosForOpenInspection === 'function'
+    ? fireSPhotosForOpenInspection(project, projects)
+    : (project.photos || []);
+  currentPhotos = normaliseInspectionPhotoSources(premisesPhotos);
   project.photos = currentPhotos;
   renderPhotos();
   hydrateProjectPhotosFromCloudStorage(project).then(photos => {
+    if (typeof fireSRestoreCloudPremisesPhotos === 'function') {
+      return fireSRestoreCloudPremisesPhotos(project, photos);
+    }
+    return photos;
+  }).then(photos => {
     if (currentProjectId === project.id && Array.isArray(photos)) {
       currentPhotos = normaliseInspectionPhotoSources(photos);
       project.photos = currentPhotos;
@@ -27064,6 +27143,190 @@ function fireSIsPremisesShell(project) {
   return true;
 }
 
+const fireSDisplayPhotoSources = new WeakMap();
+
+function fireSRememberDisplaySrc(photo, source) {
+  if (!photo || !source) return;
+  try { fireSDisplayPhotoSources.set(photo, source); } catch (_) {}
+}
+
+function fireSReadDisplaySrc(photo) {
+  if (!photo) return '';
+  try { return fireSDisplayPhotoSources.get(photo) || ''; } catch (_) { return ''; }
+}
+
+function fireSPhotoImageSource(photo) {
+  if (!photo || typeof photo !== 'object') return '';
+  const fields = [
+    'src', 'photoSrc', 'photoUrl', 'photoURL', 'imageSrc', 'image',
+    'dataUrl', 'dataURL', 'url', 'publicUrl', 'publicURL',
+    'signedUrl', 'signedURL', 'downloadUrl', 'downloadURL',
+    'thumbnailSrc', 'previewSrc'
+  ];
+  for (let i = 0; i < fields.length; i += 1) {
+    const value = photo[fields[i]];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+function fireSPremisesPhotoDonors(project, projects) {
+  const donors = [];
+  const seen = new Set();
+  const push = photo => {
+    const source = fireSPhotoImageSource(photo);
+    if (!source) return;
+    const key = [
+      (photo && photo.id) || '',
+      source.length,
+      source.slice(0, 64),
+      source.slice(-64)
+    ].join('|');
+    if (seen.has(key)) return;
+    seen.add(key);
+    donors.push(photo);
+  };
+  const list = Array.isArray(projects) ? projects : [];
+  list.forEach(row => {
+    if (!row || row === project) return;
+    if (project && String(row.id || '') === String(project.id || '')) return;
+    const closedIntoThis = !!(project && String(row.supersededBy || '') === String(project.id || ''));
+    let samePremises = false;
+    try {
+      samePremises = typeof fireSPremisesBuildingKey === 'function' &&
+        fireSPremisesBuildingKey(row) === fireSPremisesBuildingKey(project) &&
+        (typeof fireSPremisesCompaniesCompatible !== 'function' ||
+          fireSPremisesCompaniesCompatible(row, project));
+    } catch (_) {
+      samePremises = false;
+    }
+    if (!closedIntoThis && !samePremises) return;
+    (row.photos || []).forEach(push);
+    (row.inspectionHistory || []).forEach(item => {
+      (item && item.photos || []).forEach(push);
+    });
+  });
+  (project && project.inspectionHistory || []).forEach(item => {
+    (item && item.photos || []).forEach(push);
+  });
+  return donors;
+}
+
+function fireSCopyPhotoSource(target, donor) {
+  const source = fireSPhotoImageSource(donor);
+  if (!target || !source) return target;
+  if (source.length >= 120000) {
+    fireSRememberDisplaySrc(target, source);
+    return target;
+  }
+  if (!fireSPhotoImageSource(target)) {
+    target.src = target.src || source;
+    target.previewSrc = target.previewSrc || (donor && donor.previewSrc) || source;
+    target.thumbnailSrc = target.thumbnailSrc || target.previewSrc || source;
+    if (donor && donor.publicUrl && !target.publicUrl) target.publicUrl = donor.publicUrl;
+    if (donor && donor.storagePath && !target.storagePath) target.storagePath = donor.storagePath;
+  }
+  return target;
+}
+
+// The visible inspection keeps its photo slots. Image data that stayed on the
+// closed duplicate, or in that premises history, fills a slot that has no picture.
+function fireSPhotosForOpenInspection(project, projects) {
+  const own = Array.isArray(project && project.photos)
+    ? project.photos.map(photo => Object.assign({}, photo))
+    : [];
+  const donors = fireSPremisesPhotoDonors(project, projects);
+  const hasImage = photo => !!(fireSPhotoImageSource(photo) || fireSReadDisplaySrc(photo));
+  const matchDonor = photo => donors.find(donor => {
+    if (photo && photo.id && donor.id && String(photo.id) === String(donor.id)) return true;
+    if (photo && photo.timestamp && donor.timestamp && String(photo.timestamp) === String(donor.timestamp)) return true;
+    if (photo && photo.note && donor.note && String(photo.note).trim() && String(photo.note) === String(donor.note)) return true;
+    if (photo && photo.storagePath && donor.storagePath && String(photo.storagePath) === String(donor.storagePath)) return true;
+    return false;
+  });
+
+  if (!own.length || !donors.length) return own;
+
+  if (own.some(hasImage)) {
+    return own.map(photo => {
+      if (hasImage(photo)) return photo;
+      const donor = matchDonor(photo);
+      return donor ? fireSCopyPhotoSource(photo, donor) : photo;
+    });
+  }
+
+  const used = new Set();
+  own.forEach(photo => {
+    const donor = matchDonor(photo);
+    if (!donor) return;
+    used.add(donor);
+    fireSCopyPhotoSource(photo, donor);
+  });
+  if (!own.some(hasImage)) {
+    let donorIndex = 0;
+    own.forEach(photo => {
+      if (hasImage(photo)) return;
+      while (donorIndex < donors.length && used.has(donors[donorIndex])) donorIndex += 1;
+      if (donorIndex >= donors.length) return;
+      used.add(donors[donorIndex]);
+      fireSCopyPhotoSource(photo, donors[donorIndex]);
+      donorIndex += 1;
+    });
+  }
+  return own;
+}
+
+function fireSApplyRestoredPremisesPhotos(keeper, projects) {
+  if (!keeper) return false;
+  const original = Array.isArray(keeper.photos) ? keeper.photos : [];
+  const restored = fireSPhotosForOpenInspection(keeper, projects);
+  const stored = [];
+  let changed = false;
+  restored.forEach((photo, index) => {
+    if (index >= original.length) return;
+    const previous = original[index] || {};
+    const source = fireSPhotoImageSource(photo);
+    const shortSource = source && source.length < 120000 ? source : '';
+    const previousSource = fireSPhotoImageSource(previous);
+    const copy = Object.assign({}, previous);
+    if (shortSource && shortSource !== previousSource) {
+      copy.src = shortSource;
+      if (!copy.previewSrc || String(copy.previewSrc).length >= 120000) {
+        copy.previewSrc = (photo && photo.previewSrc) || shortSource;
+      }
+      if (!copy.thumbnailSrc || String(copy.thumbnailSrc).length >= 120000) {
+        copy.thumbnailSrc = (photo && photo.thumbnailSrc) || copy.previewSrc || shortSource;
+      }
+      changed = true;
+    }
+    stored.push(copy);
+  });
+  if (!changed) return false;
+  keeper.photos = stored;
+  return true;
+}
+
+function fireSLookupOpenPhotoSource(photo) {
+  if (!photo || typeof photo !== 'object') return '';
+  const remembered = fireSReadDisplaySrc(photo);
+  if (remembered) return remembered;
+  if (typeof getProjects !== 'function') return '';
+  let projects = [];
+  try { projects = getProjects() || []; } catch (_) { return ''; }
+  const currentId = typeof currentProjectId !== 'undefined' ? currentProjectId : '';
+  const project = (projects || []).find(row => row && String(row.id) === String(currentId));
+  if (!project) return '';
+  const restored = fireSPhotosForOpenInspection(project, projects);
+  const own = Array.isArray(project.photos) ? project.photos : [];
+  let index = own.findIndex(item => item === photo);
+  if (index < 0 && photo.id) {
+    index = own.findIndex(item => item && String(item.id) === String(photo.id));
+  }
+  const match = index >= 0 ? restored[index] : null;
+  if (!match) return '';
+  return fireSReadDisplaySrc(match) || fireSPhotoImageSource(match);
+}
+
 // One live card per premises. The latest real inspection stays open.
 // Older live rows are closed into its history and leave the current lists.
 function fireSSettleDuplicatePremises(projects) {
@@ -27181,10 +27444,21 @@ function fireSSettleDuplicatePremises(projects) {
       keeper.inspectionHistory = history;
       keeper.hasSiteHistory = history.length > 0;
       keeper.previousInspectionCount = history.length;
+      fireSApplyRestoredPremisesPhotos(keeper, list);
       keeper.syncPending = true;
       keeper.syncError = false;
       list[keeperIndex] = keeper;
     });
+  });
+
+  list.forEach((project, index) => {
+    if (!project || project.premisesSuperseded === true || project.supersededBy) return;
+    const next = Object.assign({}, project);
+    if (!fireSApplyRestoredPremisesPhotos(next, list)) return;
+    next.syncPending = true;
+    next.syncError = false;
+    list[index] = next;
+    changed = true;
   });
 
   return { projects: list, changed: changed };
@@ -27308,6 +27582,8 @@ window.fireSPremisesBuildingKey = fireSPremisesBuildingKey;
 window.fireSPremisesCompaniesCompatible = fireSPremisesCompaniesCompatible;
 window.fireSInspectionMoment = fireSInspectionMoment;
 window.fireSSettleDuplicatePremises = fireSSettleDuplicatePremises;
+window.fireSPhotosForOpenInspection = fireSPhotosForOpenInspection;
+window.fireSPhotoImageSource = fireSPhotoImageSource;
 window.fireSVisiblePremisesRows = fireSVisiblePremisesRows;
 window.fireSCollapsePremisesForDisplay = fireSCollapsePremisesForDisplay;
 window.fireSSettleStoredPremises = fireSSettleStoredPremises;
@@ -32013,9 +32289,13 @@ if (!window.fireSMobileSmartCardsApplied) {
     if (!photo.linkedQuestion) photo.linkedQuestion = '';
 
     const source = getPhotoSource(photo);
-    if (source && !photo.src) photo.src = source;
-    if (source && !photo.previewSrc) photo.previewSrc = source;
-    if (source && !photo.thumbnailSrc) photo.thumbnailSrc = source;
+    const storable = source && source.length < 120000 ? source : '';
+    if (source && source.length >= 120000 && typeof fireSRememberDisplaySrc === 'function') {
+      fireSRememberDisplaySrc(photo, source);
+    }
+    if (storable && !photo.src) photo.src = storable;
+    if (storable && !photo.previewSrc) photo.previewSrc = storable;
+    if (storable && !photo.thumbnailSrc) photo.thumbnailSrc = storable;
     photo.sourceMissing = !source;
 
     return photo;
