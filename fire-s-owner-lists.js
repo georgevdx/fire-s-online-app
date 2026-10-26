@@ -257,43 +257,134 @@
     return text(a).localeCompare(text(b), undefined, { sensitivity: 'base' });
   }
 
+  function isSuperseded(project) {
+    return !!(project && (project.premisesSuperseded === true || project.supersededBy));
+  }
+
+  function companyIdOf(project) {
+    return text(project && (project.companyId || project.company_id));
+  }
+
+  function companiesCompatible(left, right) {
+    try {
+      if (typeof root.fireSPremisesCompaniesCompatible === 'function') {
+        return !!root.fireSPremisesCompaniesCompatible(left, right);
+      }
+    } catch (_) {}
+    const leftCompany = companyIdOf(left);
+    const rightCompany = companyIdOf(right);
+    if (!leftCompany || !rightCompany) return true;
+    return leftCompany === rightCompany;
+  }
+
+  function premisesListKey(project) {
+    const label = text(buildingName(project))
+      .toLowerCase()
+      .replace(/[-–—_/\\|.,+]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (label && label !== 'unnamed building') return label;
+    return 'id:' + text(project && project.id);
+  }
+
+  function latestInspected(cluster) {
+    let best = cluster[0];
+    for (let i = 1; i < cluster.length; i += 1) {
+      const project = cluster[i];
+      if (lastInspectedKey(project) > lastInspectedKey(best)) best = project;
+    }
+    return best;
+  }
+
+  function keeperBuckets(projects) {
+    const source = (Array.isArray(projects) ? projects : []).filter(project =>
+      project && !isDeleted(project) && !isRecycleLeftover(project) && !isSuperseded(project)
+    );
+    const groups = Object.create(null);
+    source.forEach(project => {
+      const key = premisesListKey(project);
+      const groupKey = !key || key.indexOf('id:') === 0
+        ? 'id:' + text(project.id)
+        : key;
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(project);
+    });
+    const chosen = Object.create(null);
+    Object.keys(groups).forEach(key => {
+      const buckets = [];
+      groups[key].forEach(project => {
+        let bucket = null;
+        for (let i = 0; i < buckets.length; i += 1) {
+          if (buckets[i].every(other => companiesCompatible(other, project))) {
+            bucket = buckets[i];
+            break;
+          }
+        }
+        if (!bucket) {
+          bucket = [];
+          buckets.push(bucket);
+        }
+        bucket.push(project);
+      });
+      buckets.forEach(bucket => {
+        const best = latestInspected(bucket);
+        if (best && best.id != null) chosen[String(best.id)] = bucket;
+      });
+    });
+    return source.filter(project => chosen[String(project && project.id)]).map(project => ({
+      project,
+      bucket: chosen[String(project.id)]
+    }));
+  }
+
   function buildModel(projects, today) {
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
-    const active = (Array.isArray(projects) ? projects : []).filter(project =>
-      !isDeleted(project) && !isRecycleLeftover(project)
-    );
+    const keepers = keeperBuckets(projects);
 
-    const all = active
-      .map(project => ({
-        id: project && project.id,
-        name: buildingName(project),
-        lastInspected: lastInspectedKey(project)
-      }))
+    const all = keepers
+      .map(entry => {
+        let last = '';
+        entry.bucket.forEach(row => {
+          const value = lastInspectedKey(row);
+          if (value > last) last = value;
+        });
+        return {
+          id: entry.project && entry.project.id,
+          name: buildingName(entry.project),
+          lastInspected: last
+        };
+      })
       .sort((a, b) => compareName(a.name, b.name) || compareName(a.id, b.id));
 
-    const upcoming = active
-      .filter(project => {
-        if (isRecycleLeftover(project)) return false;
-        const due = nextDueKey(project);
-        return !!(due && due >= todayIso && due <= endIso);
-      })
-      .map(project => {
-        const due = nextDueKey(project);
+    const upcoming = keepers
+      .map(entry => {
+        let due = '';
+        let id = entry.project && entry.project.id;
+        entry.bucket.forEach(project => {
+          const next = nextDueKey(project);
+          if (!next || next < todayIso || next > endIso) return;
+          if (!due || next < due) {
+            due = next;
+            id = project && project.id;
+          }
+        });
+        if (!due) return null;
         return {
-          id: project && project.id,
-          name: buildingName(project),
+          id,
+          name: buildingName(entry.project),
           due,
           days: daysUntil(due, todayIso)
         };
       })
+      .filter(Boolean)
       .sort((a, b) => compareName(a.due, b.due) || compareName(a.name, b.name));
 
-    const deficiencies = active
-      .map(project => ({
-        id: project && project.id,
-        name: buildingName(project),
-        count: deficiencyCount(project)
+    const deficiencies = keepers
+      .map(entry => ({
+        id: entry.project && entry.project.id,
+        name: buildingName(entry.project),
+        count: deficiencyCount(entry.project)
       }))
       .filter(row => row.count > 0)
       .sort((a, b) => (b.count - a.count) || compareName(a.name, b.name));

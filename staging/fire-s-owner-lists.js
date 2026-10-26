@@ -427,14 +427,9 @@
         if (Array.isArray(unique)) return unique;
       }
     } catch (_) {}
-    const seen = Object.create(null);
-    return source.filter(project => {
-      if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
-      const key = text(buildingName(project)).toLowerCase() || ('id:' + text(project.id));
-      if (seen[key]) return false;
-      seen[key] = true;
-      return true;
-    });
+    return source.filter(project =>
+      project && !isDeleted(project) && !isRecycleLeftover(project) && !isSuperseded(project)
+    );
   }
 
   function buildingKey(project) {
@@ -502,10 +497,86 @@
     }
   }
 
+  function isSuperseded(project) {
+    return !!(project && (project.premisesSuperseded === true || project.supersededBy));
+  }
+
+  function companyIdOf(project) {
+    return text(project && (project.companyId || project.company_id));
+  }
+
+  function companiesCompatible(left, right) {
+    try {
+      if (typeof root.fireSPremisesCompaniesCompatible === 'function') {
+        return !!root.fireSPremisesCompaniesCompatible(left, right);
+      }
+    } catch (_) {}
+    const leftCompany = companyIdOf(left);
+    const rightCompany = companyIdOf(right);
+    if (!leftCompany || !rightCompany) return true;
+    return leftCompany === rightCompany;
+  }
+
+  function premisesListKey(project) {
+    const label = text(buildingName(project))
+      .toLowerCase()
+      .replace(/[-–—_/\\|.,+]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (label && label !== 'unnamed building') return label;
+    return 'id:' + text(project && project.id);
+  }
+
+  function latestInspected(cluster) {
+    let best = cluster[0];
+    for (let i = 1; i < cluster.length; i += 1) {
+      if (lastInspectedKey(cluster[i]) > lastInspectedKey(best)) best = cluster[i];
+    }
+    return best;
+  }
+
+  function collapseSameNameSite(projects) {
+    const source = (Array.isArray(projects) ? projects : []).filter(project =>
+      project && !isSuperseded(project)
+    );
+    const groups = Object.create(null);
+    source.forEach(project => {
+      const key = premisesListKey(project);
+      const groupKey = !key || key.indexOf('id:') === 0
+        ? 'id:' + text(project && project.id)
+        : key;
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(project);
+    });
+    const chosen = Object.create(null);
+    Object.keys(groups).forEach(key => {
+      const buckets = [];
+      groups[key].forEach(project => {
+        let bucket = null;
+        for (let i = 0; i < buckets.length; i += 1) {
+          if (buckets[i].every(other => companiesCompatible(other, project))) {
+            bucket = buckets[i];
+            break;
+          }
+        }
+        if (!bucket) {
+          bucket = [];
+          buckets.push(bucket);
+        }
+        bucket.push(project);
+      });
+      buckets.forEach(bucket => {
+        const best = latestInspected(bucket);
+        if (best && best.id != null) chosen[String(best.id)] = true;
+      });
+    });
+    return source.filter(project => chosen[String(project && project.id)]);
+  }
+
   function buildModel(projects, today) {
     const todayIso = todayKey(today);
     const endIso = addDays(todayIso, 30);
-    const active = uniqueActive(projects);
+    const active = collapseSameNameSite(uniqueActive(projects));
     const rows = rowsForUniqueBuildings(projects);
     const dueRows = scheduleRows(projects);
     const openIdByKey = Object.create(null);
