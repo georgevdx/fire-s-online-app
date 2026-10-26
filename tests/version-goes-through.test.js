@@ -18,7 +18,7 @@ const stagingManifest = read('staging/manifest.json');
 
 assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-67-saved/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
     /service-worker\.js\?v=108-81-cancel/.test(liveHtml) &&
     /fire-s-108-81-cancel/.test(liveSw),

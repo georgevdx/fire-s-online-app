@@ -8790,14 +8790,25 @@ function fireSStoreProjectsFittingQuota(storageKey, projects) {
 }
 
 function setProjects(projects) {
+  let incoming = projects;
+  try {
+    if (typeof fireSSettleDuplicatePremises === 'function') {
+      const settled = fireSSettleDuplicatePremises(projects);
+      if (settled && settled.changed && Array.isArray(settled.projects)) {
+        incoming = settled.projects;
+      }
+    }
+  } catch (error) {
+    console.warn('Could not close older premises inspections:', error);
+  }
   const previousProjects = getProjects();
   const storageKey = fireSProjectsStorageKey();
-  const stored = fireSStoreProjectsFittingQuota(storageKey, projects);
+  const stored = fireSStoreProjectsFittingQuota(storageKey, incoming);
   try { capturePendingUploadQueueChanges(previousProjects, stored); } catch (_) {}
   try { fireSRememberDeviceSnapshot(stored); } catch (_) {
     try { localStorage.removeItem(fireSDeviceSnapshotKey()); } catch (__) {}
   }
-  if (stored !== projects) {
+  if (stored !== incoming) {
     const syncStatus = document.getElementById('syncStatus');
     if (syncStatus) {
       syncStatus.textContent =
@@ -13314,16 +13325,21 @@ function getProjectExpiryAnswer(project, expiryStatus) {
 }
 
 function getProjectCompletionCounts(project) {
-  const answers = project.answers || [];
+  const answers = (project && (
+    (Array.isArray(project.answers) && project.answers.length && project.answers) ||
+    (Array.isArray(project.inspectionAnswers) && project.inspectionAnswers)
+  )) || [];
+  const normalised = answer => {
+    if (typeof fireSChecklistAnswerValue === 'function') {
+      return fireSChecklistAnswerValue(answer);
+    }
+    return String((answer && answer.answer) || '').trim().toLowerCase();
+  };
   const total = answers.length;
   const answered = answers.filter(answer =>
-    ['yes', 'no', 'n/a'].includes(
-      String(answer.answer || '').trim().toLowerCase()
-    )
+    ['yes', 'no', 'n/a', 'na'].includes(normalised(answer))
   ).length;
-  const noCount = answers.filter(answer =>
-    String(answer.answer || '').trim().toLowerCase() === 'no'
-  ).length;
+  const noCount = answers.filter(answer => normalised(answer) === 'no').length;
 
   return {
     total,
@@ -27547,6 +27563,7 @@ function fireSIsEmptyRecycleLeftoverPremises(project) {
 
 function fireSIsHiddenFromCurrentLists(project) {
   if (!project) return true;
+  if (project.premisesSuperseded === true || project.supersededBy) return true;
   if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
     return true;
   }
@@ -27554,39 +27571,45 @@ function fireSIsHiddenFromCurrentLists(project) {
   return false;
 }
 
-// Home counts buildings, not inspections. Same Organisation + Site is one
-// building even when laptop storage still has two live rows for it.
+// Home counts buildings, not inspections. "15 on Bond" + "Hatfield" is the
+// same premises as "15 on Bond Hatfield", even when the street line differs.
 function fireSPremisesBuildingKey(project) {
   if (!project) return '';
-  const nameFn = typeof getProjectPremisesName === 'function'
-    ? getProjectPremisesName
-    : function nameFallback(row) {
-        return String(
-          (row && (
-            row.organisationName ||
-            row.organizationName ||
-            row.businessName ||
-            row.clientName ||
-            row.premisesName ||
-            (!row.siteName ? row.projectName : '')
-          )) || ''
-        );
-      };
-  const siteFn = typeof getProjectPremisesSite === 'function'
-    ? getProjectPremisesSite
-    : function siteFallback(row) {
-        return String(
-          (row && (row.siteName || row.site_name || row.branchName || row.locationName)) || ''
-        );
-      };
   const norm = typeof normalizePremisesIdentityName === 'function'
     ? normalizePremisesIdentityName
     : function normFallback(value) {
         return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
       };
-  const name = norm(nameFn(project));
-  const site = norm(siteFn(project));
-  if (name || site) return name + '\u0001' + site;
+  const clean = value => norm(value)
+    .replace(/[-–—_/\\|.,+]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const name = clean(
+    typeof getProjectPremisesName === 'function'
+      ? getProjectPremisesName(project)
+      : (
+          project.organisationName ||
+          project.organizationName ||
+          project.businessName ||
+          project.clientName ||
+          project.premisesName ||
+          (!project.siteName ? project.projectName : '')
+        )
+  );
+  const site = clean(
+    typeof getProjectPremisesSite === 'function'
+      ? getProjectPremisesSite(project)
+      : (project.siteName || project.site_name || project.branchName || project.locationName || '')
+  );
+  let label = '';
+  if (name && site) {
+    if (name === site || name.endsWith(' ' + site) || name.startsWith(site + ' ')) label = name;
+    else label = (name + ' ' + site).replace(/\s+/g, ' ').trim();
+  } else {
+    label = name || site;
+  }
+  if (!label) label = clean(project.projectName || project.premisesIdentityName || '');
+  if (label) return label;
   const id = String(project.id || project.inspectionId || '').trim();
   return id ? 'id:' + id : '';
 }
@@ -27609,26 +27632,86 @@ function fireSBuildingRecency(project) {
   return best;
 }
 
-function fireSUniqueCurrentBuildings(list) {
+function fireSChoosePremisesCard(cluster, preferLaterOnTie) {
+  let best = cluster[0];
+  for (let i = 1; i < cluster.length; i += 1) {
+    const row = cluster[i];
+    const recency = fireSBuildingRecency(row);
+    const bestRecency = fireSBuildingRecency(best);
+    if (recency > bestRecency || (preferLaterOnTie && recency === bestRecency)) best = row;
+  }
+  return best;
+}
+
+// One card per name+site. A blank company joins that premises. Two company
+// ids stay two cards. Rows that only have an id are not grouped by name.
+function fireSClusterPremisesForDisplay(list, preferLaterOnTie) {
   const source = Array.isArray(list) ? list : [];
-  const seen = new Map();
-  for (let i = 0; i < source.length; i += 1) {
-    const project = source[i];
-    if (!project) continue;
+  const named = new Map();
+  const loose = new Map();
+  source.forEach(project => {
+    if (!project) return;
+    const building = fireSPremisesBuildingKey(project);
+    if (!building) return;
+    if (building.indexOf('id:') === 0) {
+      const current = loose.get(building);
+      if (!current) {
+        loose.set(building, project);
+        return;
+      }
+      const recency = fireSBuildingRecency(project);
+      const bestRecency = fireSBuildingRecency(current);
+      if (recency > bestRecency || (preferLaterOnTie && recency === bestRecency)) {
+        loose.set(building, project);
+      }
+      return;
+    }
+    if (!named.has(building)) named.set(building, []);
+    named.get(building).push(project);
+  });
+  const picked = [];
+  named.forEach(rows => {
+    const clusters = [];
+    rows.forEach(project => {
+      let cluster = null;
+      for (let i = 0; i < clusters.length; i += 1) {
+        const sameCompany = clusters[i].every(other => {
+          try {
+            return typeof fireSPremisesCompaniesCompatible !== 'function' ||
+              fireSPremisesCompaniesCompatible(other, project);
+          } catch (_) {
+            return true;
+          }
+        });
+        if (sameCompany) {
+          cluster = clusters[i];
+          break;
+        }
+      }
+      if (!cluster) {
+        cluster = [];
+        clusters.push(cluster);
+      }
+      cluster.push(project);
+    });
+    clusters.forEach(cluster => picked.push(fireSChoosePremisesCard(cluster, preferLaterOnTie)));
+  });
+  loose.forEach(project => picked.push(project));
+  return picked;
+}
+
+function fireSUniqueCurrentBuildings(list) {
+  const source = (Array.isArray(list) ? list : []).filter(project => {
+    if (!project) return false;
     if (
       typeof fireSIsHiddenFromCurrentLists === 'function' &&
       fireSIsHiddenFromCurrentLists(project)
     ) {
-      continue;
+      return false;
     }
-    const key = fireSPremisesBuildingKey(project);
-    if (!key) continue;
-    const current = seen.get(key);
-    if (!current || fireSBuildingRecency(project) > fireSBuildingRecency(current)) {
-      seen.set(key, project);
-    }
-  }
-  return Array.from(seen.values());
+    return true;
+  });
+  return fireSClusterPremisesForDisplay(source, false);
 }
 
 // Laptop-only leftovers (not in the company cloud) must not become a 7 while
@@ -27918,22 +28001,41 @@ try {
   window.fireSDeviceRowsWhenCompanyFilterIsEmpty = fireSDeviceRowsWhenCompanyFilterIsEmpty;
 } catch (_) {}
 
+function fireSChecklistRows(source) {
+  if (!source) return [];
+  if (Array.isArray(source.answers) && source.answers.length) return source.answers;
+  if (Array.isArray(source.inspectionAnswers) && source.inspectionAnswers.length) {
+    return source.inspectionAnswers;
+  }
+  if (source.snapshot) return fireSChecklistRows(source.snapshot);
+  return [];
+}
+
 function fireSChecklistAnswerValue(answer) {
-  return String(
+  const direct = String(
     (answer && (answer.answer || answer.value || answer.result || answer.finding)) || ''
   ).trim().toLowerCase();
+  if (direct === 'compliant' || direct === 'yes') return 'yes';
+  if (
+    direct === 'no' ||
+    direct === 'action required' ||
+    direct === 'critical' ||
+    direct === 'non-compliant' ||
+    direct === 'fail'
+  ) return 'no';
+  if (direct === 'n/a' || direct === 'na' || direct === 'not applicable') return 'n/a';
+  if (direct) return direct;
+  const assessment = String((answer && answer.assessment) || '').trim().toLowerCase();
+  if (assessment === 'compliant') return 'yes';
+  if (assessment === 'action required' || assessment === 'critical') return 'no';
+  if (assessment === 'n/a' || assessment === 'na' || assessment === 'not applicable') return 'n/a';
+  return '';
 }
 
 function fireSHasAnsweredChecklist(source) {
-  const answers = Array.isArray(source && source.answers)
-    ? source.answers
-    : (source && source.snapshot && Array.isArray(source.snapshot.answers)
-      ? source.snapshot.answers
-      : []);
-  return answers.some(answer => {
+  return fireSChecklistRows(source).some(answer => {
     const value = fireSChecklistAnswerValue(answer);
-    return value === 'yes' || value === 'no' || value === 'na' || value === 'n/a' ||
-      value === 'non-compliant' || value === 'fail';
+    return value === 'yes' || value === 'no' || value === 'n/a' || value === 'na';
   });
 }
 
@@ -27969,13 +28071,8 @@ function fireSCycleTimestamp(cycle) {
 
 function fireSOpenItemCount(cycle) {
   const src = cycle || {};
-  const answers = Array.isArray(src.answers)
-    ? src.answers
-    : (src.snapshot && Array.isArray(src.snapshot.answers) ? src.snapshot.answers : []);
-  const nos = answers.filter(answer => {
-    const value = fireSChecklistAnswerValue(answer);
-    return value === 'no' || value === 'non-compliant' || value === 'fail';
-  }).length;
+  const answers = fireSChecklistRows(src);
+  const nos = answers.filter(answer => fireSChecklistAnswerValue(answer) === 'no').length;
   if (nos > 0) return nos;
   const findings = Array.isArray(src.findings) ? src.findings : [];
   const openFindings = findings.filter(f => !/closed|complete|completed|resolved|done/i.test(String(f && f.status || ''))).length;
@@ -28045,6 +28142,178 @@ function fireSVisibleCompanyBuildings(list) {
     }
   } catch (_) {}
   return Array.isArray(list) ? list : [];
+}
+
+function fireSPremisesCompaniesCompatible(left, right) {
+  const companyOf = project => String(
+    (project && (project.companyId || project.company_id)) || ''
+  ).trim();
+  const leftCompany = companyOf(left);
+  const rightCompany = companyOf(right);
+  if (!leftCompany || !rightCompany) return true;
+  return leftCompany === rightCompany;
+}
+
+function fireSInspectionMoment(project) {
+  if (!project) return 0;
+  const stamps = [
+    project.inspectionFinalisedAt,
+    project.inspectionFinalizedAt,
+    project.finalisedAt,
+    project.finalizedAt,
+    project.completedAt,
+    project.checklistCompletedAt,
+    project.inspectionDate,
+    project.lastSaved,
+    project.updatedAt,
+    project.updated_at,
+    project.createdAt,
+    project.created_at
+  ];
+  let best = 0;
+  stamps.forEach(value => {
+    const parsed = Date.parse(value || '');
+    if (Number.isFinite(parsed) && parsed > best) best = parsed;
+  });
+  return best;
+}
+
+function fireSIsPremisesShell(project) {
+  if (!project) return true;
+  if (typeof fireSIsCompletedInspectionCycle === 'function' && fireSIsCompletedInspectionCycle(project)) {
+    return false;
+  }
+  if (typeof fireSHasAnsweredChecklist === 'function' && fireSHasAnsweredChecklist(project)) {
+    return false;
+  }
+  if (Array.isArray(project.photos) && project.photos.length) return false;
+  if (String(project.finalComments || '').trim()) return false;
+  return true;
+}
+
+// One live card per premises. The latest real inspection stays open.
+// Older live rows are closed into its history and leave the current lists.
+function fireSSettleDuplicatePremises(projects) {
+  const list = Array.isArray(projects) ? projects.map(project => project) : [];
+  const groups = new Map();
+  list.forEach((project, index) => {
+    if (!project) return;
+    if (project.premisesSuperseded === true || project.supersededBy) return;
+    if (typeof fireSIsHiddenFromCurrentLists === 'function' && fireSIsHiddenFromCurrentLists(project)) {
+      return;
+    }
+    const key = fireSPremisesBuildingKey(project);
+    if (!key || key.indexOf('id:') === 0) return;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(index);
+  });
+
+  let changed = false;
+  groups.forEach(indexes => {
+    if (indexes.length < 2) return;
+    const clusters = [];
+    indexes.forEach(index => {
+      const project = list[index];
+      let cluster = null;
+      for (let i = 0; i < clusters.length; i += 1) {
+        if (clusters[i].every(other => fireSPremisesCompaniesCompatible(list[other], project))) {
+          cluster = clusters[i];
+          break;
+        }
+      }
+      if (!cluster) {
+        cluster = [];
+        clusters.push(cluster);
+      }
+      cluster.push(index);
+    });
+
+    clusters.forEach(cluster => {
+      if (cluster.length < 2) return;
+      const ranked = cluster.slice().sort((left, right) => {
+        const leftShell = fireSIsPremisesShell(list[left]) ? 1 : 0;
+        const rightShell = fireSIsPremisesShell(list[right]) ? 1 : 0;
+        if (leftShell !== rightShell) return leftShell - rightShell;
+        return fireSInspectionMoment(list[right]) - fireSInspectionMoment(list[left]);
+      });
+      const keeperIndex = ranked[0];
+      const keeper = { ...list[keeperIndex] };
+      const history = Array.isArray(keeper.inspectionHistory) ? keeper.inspectionHistory.slice() : [];
+      const seen = new Set(history.map(item => String(
+        (item && (item.inspectionNumber || item.sourceInspectionNumber || item.sourceProjectId)) || ''
+      )).filter(Boolean));
+      const closedAt = new Date().toISOString();
+
+      ranked.slice(1).forEach(index => {
+        const older = list[index];
+        if (!older) return;
+        let archive = null;
+        try {
+          archive = typeof convertProjectToArchivedInspection === 'function'
+            ? convertProjectToArchivedInspection(older)
+            : null;
+        } catch (_) {
+          archive = null;
+        }
+        if (!archive) {
+          archive = {
+            archivedAt: closedAt,
+            archiveReason: 'closed_by_later_inspection',
+            sourceProjectId: older.id || '',
+            inspectionNumber: older.inspectionNumber || '',
+            inspectionDate: older.inspectionDate || '',
+            completedAt: older.completedAt || '',
+            lastSaved: older.lastSaved || '',
+            answers: older.answers || [],
+            photos: older.photos || [],
+            projectName: older.projectName || '',
+            organisationName: older.organisationName || '',
+            siteName: older.siteName || '',
+            projectAddress: older.projectAddress || ''
+          };
+        }
+        archive.archiveReason = 'closed_by_later_inspection';
+        archive.sourceProjectId = older.id || archive.sourceProjectId || '';
+        const token = String(archive.inspectionNumber || archive.sourceProjectId || '');
+        if (!token || !seen.has(token)) {
+          history.push(archive);
+          if (token) seen.add(token);
+        }
+        (Array.isArray(older.inspectionHistory) ? older.inspectionHistory : []).forEach(item => {
+          if (!item) return;
+          const itemToken = String(item.inspectionNumber || item.sourceInspectionNumber || item.sourceProjectId || '');
+          if (itemToken && seen.has(itemToken)) return;
+          history.push(item);
+          if (itemToken) seen.add(itemToken);
+        });
+        if (!keeper.companyId && !keeper.company_id && (older.companyId || older.company_id)) {
+          keeper.companyId = older.companyId || older.company_id;
+          keeper.company_id = older.company_id || older.companyId;
+          keeper.companyName = keeper.companyName || older.companyName || '';
+        }
+        list[index] = {
+          ...older,
+          premisesSuperseded: true,
+          supersededBy: keeper.id || '',
+          supersededAt: closedAt,
+          inspectionStatus: 'closed',
+          inspectionLifecycleStatus: 'closed',
+          syncPending: true,
+          syncError: false
+        };
+        changed = true;
+      });
+
+      keeper.inspectionHistory = history;
+      keeper.hasSiteHistory = history.length > 0;
+      keeper.previousInspectionCount = history.length;
+      keeper.syncPending = true;
+      keeper.syncError = false;
+      list[keeperIndex] = keeper;
+    });
+  });
+
+  return { projects: list, changed: changed };
 }
 
 function fireSPremisesRequiringAction(list) {
@@ -28432,7 +28701,53 @@ window.fireSIsCycledInspection = fireSIsCycledInspection;
 window.fireSIsDeletedPremises = fireSIsDeletedPremises;
 window.fireSIsEmptyRecycleLeftoverPremises = fireSIsEmptyRecycleLeftoverPremises;
 window.fireSIsHiddenFromCurrentLists = fireSIsHiddenFromCurrentLists;
+function fireSSettleStoredPremises() {
+  try {
+    const current = typeof getProjects === 'function' ? getProjects() : [];
+    const settled = fireSSettleDuplicatePremises(current);
+    if (!settled || !settled.changed) return;
+    setProjects(settled.projects);
+    (settled.projects || []).forEach(project => {
+      if (!project || project.syncPending !== true) return;
+      try {
+        if (typeof queueInspectionForUpload === 'function') {
+          queueInspectionForUpload(project.id);
+        }
+      } catch (_) {}
+    });
+    try {
+      if (typeof renderProjectsList === 'function') renderProjectsList({ force: true });
+    } catch (_) {}
+  } catch (error) {
+    console.warn('Could not close older premises inspections:', error);
+  }
+}
+
+function fireSCollapsePremisesForDisplay(list) {
+  const rows = Array.isArray(list) ? list : [];
+  try {
+    if (typeof fireSVisibleCompanyBuildings === 'function') {
+      const unique = fireSVisibleCompanyBuildings(rows);
+      if (Array.isArray(unique)) return unique;
+    }
+  } catch (_) {}
+  try {
+    if (typeof fireSUniqueCurrentBuildings === 'function') {
+      const unique = fireSUniqueCurrentBuildings(rows);
+      if (Array.isArray(unique)) return unique;
+    }
+  } catch (_) {}
+  return rows;
+}
+
 window.fireSPremisesBuildingKey = fireSPremisesBuildingKey;
+window.fireSPremisesCompaniesCompatible = fireSPremisesCompaniesCompatible;
+window.fireSInspectionMoment = fireSInspectionMoment;
+window.fireSSettleDuplicatePremises = fireSSettleDuplicatePremises;
+window.fireSSettleStoredPremises = fireSSettleStoredPremises;
+window.fireSCollapsePremisesForDisplay = fireSCollapsePremisesForDisplay;
+setTimeout(fireSSettleStoredPremises, 800);
+setTimeout(fireSSettleStoredPremises, 4000);
 window.fireSUniqueCurrentBuildings = fireSUniqueCurrentBuildings;
 window.fireSCloudBackedBuildings = fireSCloudBackedBuildings;
 window.fireSFilterToCloudBuildings = fireSFilterToCloudBuildings;
@@ -30622,14 +30937,23 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   function healthScore(project) {
     if (window.FireSHealthCentre?.calculate) {
-      try { return Number(window.FireSHealthCentre.calculate(project).score || 0); }
-      catch (_) {}
+      try {
+        const scored = Number(window.FireSHealthCentre.calculate(project).score || 0);
+        if (scored > 0) return scored;
+      } catch (_) {}
     }
 
-    const answers = Array.isArray(project?.answers) ? project.answers : [];
-    const yesNo = answers.filter(a => ['yes', 'no'].includes(String(a?.answer || '').trim().toLowerCase()));
+    const answers = typeof fireSChecklistRows === 'function'
+      ? fireSChecklistRows(project)
+      : (Array.isArray(project?.answers) ? project.answers : []);
+    const valueOf = answer => (
+      typeof fireSChecklistAnswerValue === 'function'
+        ? fireSChecklistAnswerValue(answer)
+        : String(answer?.answer || '').trim().toLowerCase()
+    );
+    const yesNo = answers.filter(answer => ['yes', 'no'].includes(valueOf(answer)));
     if (!yesNo.length) return 0;
-    const yes = yesNo.filter(a => String(a?.answer || '').trim().toLowerCase() === 'yes').length;
+    const yes = yesNo.filter(answer => valueOf(answer) === 'yes').length;
     return Math.round((yes / yesNo.length) * 100);
   }
 
@@ -31546,10 +31870,16 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function visibleProjectsSafe() {
-    const projects = getProjectsSafe();
+    let projects = getProjectsSafe();
     try {
       if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return window.getVisibleProjectsForCurrentUser(projects) || [];
+        projects = window.getVisibleProjectsForCurrentUser(projects) || [];
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.fireSVisibleCompanyBuildings === 'function') {
+        const unique = window.fireSVisibleCompanyBuildings(projects);
+        if (Array.isArray(unique)) return unique;
       }
     } catch (_) {}
     return projects;
@@ -38870,8 +39200,17 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     try {
       const list = typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
       const safe = Array.isArray(list) ? list : [];
-      if (typeof fireSHomeCountableProjects === 'function') return fireSHomeCountableProjects(safe) || [];
-      return typeof getVisibleProjectsForCurrentUser === 'function' ? (getVisibleProjectsForCurrentUser(safe) || []) : safe;
+      let visible = typeof fireSHomeCountableProjects === 'function'
+        ? (fireSHomeCountableProjects(safe) || [])
+        : (typeof getVisibleProjectsForCurrentUser === 'function' ? (getVisibleProjectsForCurrentUser(safe) || []) : safe);
+      try {
+        const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+        if (typeof collapse === 'function') {
+          const unique = collapse(visible);
+          if (Array.isArray(unique)) visible = unique;
+        }
+      } catch (_) {}
+      return visible;
     } catch (_) { return []; }
   }
 
@@ -39282,6 +39621,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 
@@ -39410,7 +39756,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     try { if (typeof window.updateAppInfo === 'function') window.updateAppInfo(); else if (typeof updateAppInfo === 'function') updateAppInfo(); } catch (_) {}
     const base = baseFilteredProjects();
     const key = currentKey();
-    const filtered = sortProjects(base.filter(project => matchProject(project, key)));
+    let matched = base.filter(project => matchProject(project, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -39627,6 +39981,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         list = window.fireSHomeCountableProjects(list) || [];
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
+    } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
     } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
@@ -39868,7 +40229,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     syncKpiCards();
     const base = baseProjects();
     const key = activeFilter();
-    const filtered = sortProjects(base.filter(project => matchProject(project, key)));
+    let matched = base.filter(project => matchProject(project, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -40008,6 +40377,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         list = window.fireSHomeCountableProjects(list) || [];
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
+    } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
     } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
@@ -40337,6 +40713,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
       } else if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
       else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
     } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 
@@ -40463,7 +40846,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     const base = baseProjects();
     const key = activeFilter();
     setStatusDropdown(key);
-    const filtered = sortProjects(base.filter(project => matches(project, key)));
+    let matched = base.filter(project => matches(project, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -40802,20 +41193,59 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   }
   function plannedDate(p){ return dateKey(p?.scheduledDate || p?.followUpDate || p?.nextInspectionDate || p?.nextDate || p?.inspectionDueDate || p?.dueDate); }
   function activityDate(p){ return dateKey(p?.inspectionDate || p?.completedAt || p?.finalisedAt || p?.lastSaved || p?.updatedAt || p?.createdAt || p?.syncedAt || p?.scheduledDate || p?.followUpDate); }
-  function answers(p){ return Array.isArray(p?.answers) ? p.answers : []; }
-  function answerValue(a){ return norm(a?.answer); }
+  function answers(p){
+    if (typeof fireSChecklistRows === 'function') return fireSChecklistRows(p);
+    if (Array.isArray(p?.answers) && p.answers.length) return p.answers;
+    if (Array.isArray(p?.inspectionAnswers) && p.inspectionAnswers.length) return p.inspectionAnswers;
+    return [];
+  }
+  function answerValue(a){
+    if (typeof fireSChecklistAnswerValue === 'function') return fireSChecklistAnswerValue(a);
+    const direct = norm(a?.answer || a?.value || a?.result || a?.finding || '');
+    if (direct === 'compliant' || direct === 'yes') return 'yes';
+    if (direct === 'action required' || direct === 'action-required' || direct === 'critical' || direct === 'non-compliant' || direct === 'fail' || direct === 'no') return 'no';
+    if (direct === 'n/a' || direct === 'na' || direct === 'not applicable' || direct === 'not-applicable') return 'n/a';
+    if (direct) return direct;
+    const assessment = norm(a?.assessment || '');
+    if (assessment === 'compliant') return 'yes';
+    if (assessment === 'action required' || assessment === 'action-required' || assessment === 'critical') return 'no';
+    if (assessment === 'n/a' || assessment === 'na' || assessment === 'not applicable' || assessment === 'not-applicable') return 'n/a';
+    return '';
+  }
   function hasAnsweredChecklist(p){ return answers(p).some(a => ['yes','no','na','n/a'].includes(answerValue(a))); }
   function noCount(p){ return answers(p).filter(a => answerValue(a) === 'no').length; }
+  function isFreshScheduledCycle(p){
+    return p?.scheduleFreshInspection === true || norm(p?.scheduledStatus) === 'scheduled';
+  }
   function isCompleted(p){
-    const status = norm(p?.status || p?.inspectionStatus || p?.scheduledStatus || p?.archiveStatus || '');
-    return Boolean(
+    if (isFreshScheduledCycle(p) && !p?.completedAt && !p?.finalisedAt && !p?.inspectionFinalisedAt && !p?.inspectionFinalizedAt) {
+      return false;
+    }
+    const status = norm([
+      p?.status,
+      p?.inspectionStatus,
+      p?.inspectionLifecycleStatus,
+      p?.scheduledStatus,
+      p?.archiveStatus
+    ].filter(Boolean).join(' '));
+    if (
       p?.completedAt ||
       p?.finalisedAt ||
+      p?.finalizedAt ||
       p?.inspectionFinalisedAt ||
+      p?.inspectionFinalizedAt ||
       status.includes('complete') ||
       status.includes('closed') ||
       status.includes('finalis')
-    );
+    ) return true;
+    try {
+      if (typeof getProjectCompletionCounts === 'function') {
+        const counts = getProjectCompletionCounts(p);
+        return !!(counts && counts.total > 0 && counts.unanswered === 0);
+      }
+    } catch (_) {}
+    const rows = answers(p);
+    return rows.length > 0 && rows.every(row => ['yes','no','na','n/a'].includes(answerValue(row)));
   }
   function isArchived(p){
     const status = norm(p?.status || p?.inspectionStatus || p?.archiveStatus || '');
@@ -40866,9 +41296,11 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   function isCompliant(p){
     // A premises stays Compliant when the latest completed cycle is all-clear,
     // even after refresh when answers live in Inspection History.
+    // A finalised inspection with no open items must not fall through as Not Assessed.
     if (isArchived(p)) return false;
     const cycle = latestCompletedCycle(p);
-    return Boolean(cycle && !hasOpenActions(cycle));
+    if (cycle) return !hasOpenActions(cycle);
+    return Boolean(isCompleted(p) && !hasOpenActions(p));
   }
   function openItemCount(cycle){
     const src = cycle || {};
@@ -41317,6 +41749,13 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
         if (Array.isArray(unique)) list = unique;
       }
     } catch (_) {}
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(list);
+        if (Array.isArray(unique)) list = unique;
+      }
+    } catch (_) {}
     return Array.isArray(list) ? list : [];
   }
 
@@ -41458,8 +41897,24 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     if (matches(project, 'scheduled-new')) return 'SCHEDULED';
     if (matches(project, 'inspection-attention')) return 'ACTION';
     if (matches(project, 'compliant')) return 'COMPLIANT';
-    const status = norm(project?.status || project?.inspectionStatus || '');
-    if (status.includes('complete') || status.includes('closed') || (Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length)) return 'COMPLETED / HISTORY';
+    const status = norm([
+      project?.status,
+      project?.inspectionStatus,
+      project?.inspectionLifecycleStatus,
+      project?.archiveStatus
+    ].filter(Boolean).join(' '));
+    const finalised = Boolean(
+      project?.completedAt ||
+      project?.finalisedAt ||
+      project?.finalizedAt ||
+      project?.inspectionFinalisedAt ||
+      project?.inspectionFinalizedAt ||
+      status.includes('complete') ||
+      status.includes('closed') ||
+      status.includes('finalis')
+    );
+    if (finalised) return actionCount(project) > 0 ? 'ACTION' : 'COMPLIANT';
+    if (Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length) return 'COMPLETED / HISTORY';
     return 'NOT ASSESSED';
   }
   function statusClass(project){
@@ -41483,7 +41938,15 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     const base = baseProjects();
     const key = activeFilter();
     setStatusDropdown(key);
-    const filtered = sortProjects(base.filter(p => matches(p, key)));
+    let matched = base.filter(p => matches(p, key));
+    try {
+      const collapse = window.fireSCollapsePremisesForDisplay || window.fireSVisibleCompanyBuildings;
+      if (typeof collapse === 'function') {
+        const unique = collapse(matched);
+        if (Array.isArray(unique)) matched = unique;
+      }
+    } catch (_) {}
+    const filtered = sortProjects(matched);
     const total = filtered.length;
     let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -41538,6 +42001,8 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
   window.fireSApplyMissionFilter136A6 = window.fireSApplyMissionFilter136A11;
   window.fireSApplyMissionFilter136A5 = window.fireSApplyMissionFilter136A11;
   window.setFilter = function(filter){ window.fireSApplyMissionFilter136A11(filter, true); };
+  window.setInspectionGatewayQuickFilter = function(filter){ window.fireSApplyMissionFilter136A11(filter, true); };
+  try { setInspectionGatewayQuickFilter = window.setInspectionGatewayQuickFilter; } catch (_) {}
 
   window.nextProjectPage = function(){
     const total = (Array.isArray(window.__fireS136A11FilteredProjects) ? window.__fireS136A11FilteredProjects.length : baseProjects().filter(p => matches(p, activeFilter())).length);
@@ -46294,4 +46759,168 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       try { afterSchedulePaint(); } catch (_) {}
     }, delay);
   });
+})();
+
+/* One visible card per name+site after any gateway paint, including a filter. */
+(function fireSDedupePremisesCardsOnPaint() {
+  if (window.__fireSDedupePremisesCardsOnPaint) return;
+  window.__fireSDedupePremisesCardsOnPaint = true;
+  let busy = false;
+
+  function companyOf(project) {
+    return String((project && (project.companyId || project.company_id)) || '').trim();
+  }
+
+  function compatible(left, right) {
+    try {
+      if (typeof window.fireSPremisesCompaniesCompatible === 'function') {
+        return !!window.fireSPremisesCompaniesCompatible(left, right);
+      }
+    } catch (_) {}
+    const leftCompany = companyOf(left);
+    const rightCompany = companyOf(right);
+    if (!leftCompany || !rightCompany) return true;
+    return leftCompany === rightCompany;
+  }
+
+  function momentOf(project) {
+    try {
+      if (typeof window.fireSInspectionMoment === 'function') {
+        return window.fireSInspectionMoment(project) || 0;
+      }
+    } catch (_) {}
+    const raw = project && (
+      project.completedAt || project.finalisedAt || project.inspectionDate || project.lastSaved || project.updatedAt || ''
+    );
+    const parsed = Date.parse(raw || '');
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function buildingOf(project) {
+    try {
+      if (typeof window.fireSPremisesBuildingKey === 'function') {
+        return window.fireSPremisesBuildingKey(project) || '';
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  function projectsById() {
+    let list = [];
+    try {
+      if (typeof window.getProjects === 'function') list = window.getProjects() || [];
+    } catch (_) {}
+    const map = new Map();
+    (Array.isArray(list) ? list : []).forEach(function (project) {
+      if (project && project.id != null) map.set(String(project.id), project);
+    });
+    return map;
+  }
+
+  function rewriteCounts(removed) {
+    if (!removed) return;
+    const paging = document.getElementById('projectPagingControls');
+    const span = paging && paging.querySelector('span');
+    if (span && span.textContent) {
+      span.textContent = span.textContent.replace(
+        /Showing\s+(\d+)\s*-\s*(\d+)\s+of\s+(\d+)/,
+        function (_, start, end, total) {
+          const nextEnd = Math.max(Number(start), Number(end) - removed);
+          const nextTotal = Math.max(0, Number(total) - removed);
+          if (!nextTotal) return 'Showing 0 of 0';
+          return 'Showing ' + start + ' - ' + nextEnd + ' of ' + nextTotal;
+        }
+      );
+    }
+    const root = document.getElementById('projectsList');
+    if (!root) return;
+    root.querySelectorAll(
+      '.fire-s-current-kpi-filter-banner span, .fire-s-136a8-result-note, .fire-s-136a5-result-note'
+    ).forEach(function (node) {
+      if (!node || !node.textContent) return;
+      node.textContent = node.textContent
+        .replace(/Showing\s+(\d+)\s+cards/, function (_, count) {
+          const next = Math.max(0, Number(count) - removed);
+          return 'Showing ' + next + ' card' + (next === 1 ? '' : 's');
+        })
+        .replace(/Showing\s+(\d+)\s+results/, function (_, count) {
+          const next = Math.max(0, Number(count) - removed);
+          return 'Showing ' + next + ' result' + (next === 1 ? '' : 's');
+        })
+        .replace(/(\d+)\s+matching cards/, function (_, count) {
+          const next = Math.max(0, Number(count) - removed);
+          return next + ' matching card' + (next === 1 ? '' : 's');
+        });
+    });
+  }
+
+  function dedupe() {
+    if (busy) return;
+    const list = document.getElementById('projectsList');
+    if (!list) return;
+    const cards = Array.from(list.querySelectorAll('[data-project-id]'));
+    if (cards.length < 2) return;
+    const byId = projectsById();
+    const groups = new Map();
+    cards.forEach(function (card) {
+      const project = byId.get(String(card.getAttribute('data-project-id') || ''));
+      if (!project) return;
+      const key = buildingOf(project);
+      if (!key || key.indexOf('id:') === 0) return;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push({ card: card, project: project });
+    });
+    const remove = [];
+    groups.forEach(function (rows) {
+      if (rows.length < 2) return;
+      const clusters = [];
+      rows.forEach(function (row) {
+        let cluster = null;
+        for (let i = 0; i < clusters.length; i += 1) {
+          if (clusters[i].every(function (other) { return compatible(other.project, row.project); })) {
+            cluster = clusters[i];
+            break;
+          }
+        }
+        if (!cluster) {
+          cluster = [];
+          clusters.push(cluster);
+        }
+        cluster.push(row);
+      });
+      clusters.forEach(function (cluster) {
+        if (cluster.length < 2) return;
+        let best = cluster[0];
+        cluster.slice(1).forEach(function (row) {
+          if (momentOf(row.project) >= momentOf(best.project)) best = row;
+        });
+        cluster.forEach(function (row) {
+          if (row !== best) remove.push(row.card);
+        });
+      });
+    });
+    if (!remove.length) return;
+    busy = true;
+    remove.forEach(function (card) {
+      if (card && card.parentNode) card.parentNode.removeChild(card);
+    });
+    rewriteCounts(remove.length);
+    busy = false;
+  }
+
+  window.fireSDedupeVisiblePremisesCards = dedupe;
+
+  function watch() {
+    const list = document.getElementById('projectsList');
+    if (!list || list.__fireSPremisesDedupe) return;
+    list.__fireSPremisesDedupe = true;
+    const observer = new MutationObserver(function () { dedupe(); });
+    observer.observe(list, { childList: true, subtree: true });
+    dedupe();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+  else watch();
+  setTimeout(watch, 400);
+  setTimeout(watch, 1600);
 })();
