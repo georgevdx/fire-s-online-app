@@ -389,7 +389,7 @@
         <h3>Install Fire-S on a phone</h3>
         <ol>
           <li>Open Fire-S in Chrome.</li>
-          <li>On Access tap <strong>Install on this phone</strong>, or Chrome menu → Add to Home screen.</li>
+          <li>In Chrome, open the menu and choose Add to Home screen.</li>
           <li>Google Play Store listing is a separate Company S upload. Until that listing is live, the home-screen icon is the download.</li>
         </ol>
       </article>
