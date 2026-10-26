@@ -60,8 +60,12 @@ assert.ok(
 );
 
 assert.ok(
-  /id="fireSLoginInstallBtn"/.test(html),
-  'Login after splash must still offer Install on this phone'
+  !/id="fireSLoginInstallBtn"/.test(html) &&
+    !/id="fireSInstallAppBtn"/.test(html) &&
+    !/Install on this phone/.test(html) &&
+    !/id="fireSLoginInstallBtn"/.test(read('index.html')) &&
+    !/Install on this phone/.test(read('index.html')),
+  'Access must not offer Install on this phone'
 );
 assert.ok(
   /id="fireSGetStartedStatus"[\s\S]*fire-s-legal-links[\s\S]*Open Terms and conditions[\s\S]*Open Privacy policy/.test(html),
