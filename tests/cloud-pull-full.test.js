@@ -49,8 +49,8 @@ assertPullSource(
   'Live',
   '1-3-67-premises',
   '1-4-still',
-  '108-81-cancel',
-  'fire-s-108-81-cancel'
+  '108-82-photos',
+  'fire-s-108-82-photos'
 );
 assertPullSource(
   stagingApp,
