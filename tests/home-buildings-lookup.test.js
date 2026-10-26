@@ -190,6 +190,58 @@ function runLookup(label, listsSrc) {
   const openedEnter = sandbox.fireSNavigateOwnerListLookup(true);
   assert.equal(openedEnter && openedEnter.id, 'clinic');
   assert.deepStrictEqual(opened, ['clinic'], label + ': Enter on unique lookup text must navigate to that premises');
+
+  const sameSite = sandbox.fireSBuildOwnerListModel([
+    {
+      id: 'bond-old',
+      organisationName: '15 on Bond',
+      siteName: 'Hatfield',
+      inspectionDate: '2026-10-22',
+      companyId: 'co-proof'
+    },
+    {
+      id: 'bond-new',
+      organisationName: '15 on Bond',
+      siteName: 'Hatfield',
+      inspectionDate: '2026-10-25',
+      companyId: 'co-proof'
+    },
+    {
+      id: 'shop-12',
+      organisationName: 'West End Mall',
+      siteName: 'Shop 12',
+      inspectionDate: '2026-10-01'
+    },
+    {
+      id: 'shop-14',
+      organisationName: 'West End Mall',
+      siteName: 'Shop 14',
+      inspectionDate: '2026-10-02'
+    },
+    {
+      id: 'other-company',
+      organisationName: '15 on Bond',
+      siteName: 'Hatfield',
+      inspectionDate: '2026-10-20',
+      companyId: 'other-co'
+    }
+  ], '2026-10-26');
+  const bondRows = sameSite.all.filter(row => row.name === '15 on Bond – Hatfield');
+  assert.equal(bondRows.length, 2, label + ': The same name and site is one row per company');
+  assert.equal(
+    bondRows.find(row => row.id === 'bond-new').lastInspected,
+    '2026-10-25',
+    label + ': All buildings keeps the latest inspection for that name and site'
+  );
+  assert.ok(
+    sameSite.all.some(row => row.id === 'shop-12') && sameSite.all.some(row => row.id === 'shop-14'),
+    label + ': Different shops stay separate on All buildings'
+  );
+  assert.equal(
+    sandbox.fireSRankOwnerListLookupMatches(sameSite.all, '15 on bond').filter(row => row.id === 'bond-old').length,
+    0,
+    label + ': Lookup must not offer the older duplicate of the same name and site'
+  );
 }
 
 runLookup('Live', liveLists);

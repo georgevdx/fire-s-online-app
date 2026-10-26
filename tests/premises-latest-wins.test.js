@@ -272,7 +272,7 @@ const liveHtml = read('index.html');
 assert.ok(
   /Version 1\.3\.67/.test(liveHtml) &&
     /app\.js\?v=1-3-67-premises-filter/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-67-premises-filter/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises-buildings/.test(liveHtml) &&
     /service-worker\.js\?v=108-81-cancel/.test(liveHtml),
   'Live stays on 1.3.67 and drops the previous phone cache for the premises merge'
 );
