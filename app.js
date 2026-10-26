@@ -8621,6 +8621,37 @@ async function fireSRestoreCloudPremisesPhotos(project, photos) {
       if (Array.isArray(found)) found.forEach(photo => cloudPhotos.push(photo));
     } catch (_) {}
   }
+  try {
+    if (supabaseClient.storage && supabaseClient.auth && typeof buildPhotoPublicUrlFromStoragePath === 'function') {
+      const userResult = await supabaseClient.auth.getUser();
+      const userId = userResult && userResult.data && userResult.data.user && userResult.data.user.id;
+      if (userId) {
+        const folderIds = Array.from(seen);
+        for (let folderIndex = 0; folderIndex < folderIds.length; folderIndex += 1) {
+          const safeId = String(folderIds[folderIndex] || '').replace(/[^a-zA-Z0-9_-]/g, '');
+          if (!safeId) continue;
+          const folderPath = userId + '/' + safeId;
+          const listed = await supabaseClient.storage.from('inspection-photos').list(folderPath, { limit: 100 });
+          const files = listed && listed.data;
+          if (!Array.isArray(files)) continue;
+          files.forEach(file => {
+            if (!file || !file.name || !file.metadata) return;
+            const storagePath = folderPath + '/' + file.name;
+            const source = buildPhotoPublicUrlFromStoragePath(storagePath);
+            if (!source) return;
+            cloudPhotos.push({
+              id: storagePath,
+              src: source,
+              previewSrc: source,
+              thumbnailSrc: source,
+              publicUrl: source,
+              storagePath: storagePath
+            });
+          });
+        }
+      }
+    }
+  } catch (_) {}
   if (!cloudPhotos.length || typeof fireSPhotosForOpenInspection !== 'function') return withLocal;
   const donor = {
     id: 'cloud-photo-donor',
@@ -40993,9 +41024,30 @@ try { window.fireSPaintLeftoverCommandSubtitle = fireSPaintLeftoverCommandSubtit
     if (matches(project, 'compliant')) return 'compliant';
     return 'neutral';
   }
+  function cardPhotoStrip(project) {
+    let list = photos(project);
+    try {
+      if (typeof fireSPhotosForOpenInspection === 'function' && typeof getProjects === 'function') {
+        const restored = fireSPhotosForOpenInspection(project, getProjects());
+        if (Array.isArray(restored) && restored.length) list = restored;
+      }
+    } catch (_) {}
+    const sources = [];
+    (Array.isArray(list) ? list : []).forEach(photo => {
+      let source = '';
+      try {
+        if (typeof fireSReadDisplaySrc === 'function') source = fireSReadDisplaySrc(photo) || '';
+        if (!source && typeof fireSPhotoImageSource === 'function') source = fireSPhotoImageSource(photo) || '';
+        if (!source && typeof getStoredPhotoSource === 'function') source = getStoredPhotoSource(photo) || '';
+      } catch (_) {}
+      if (source) sources.push(source);
+    });
+    if (!sources.length) return '';
+    return `<div class="fire-s-card-photo-strip">${sources.slice(0, 3).map(source => `<img src="${esc(source)}" alt="Premises photo" style="width:72px;height:54px;object-fit:cover;border-radius:8px;background:#0b1220;">`).join('')}</div>`;
+  }
   function cardHtml(project){
     const id = JSON.stringify(project?.id || '');
-    return `<article class="fire-s-136a8-card ${statusClass(project)}" data-project-id="${esc(project?.id || '')}" role="button" tabindex="0" onclick='fireSOpenProjectCard136A8(${id})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();fireSOpenProjectCard136A8(${id});}'><div class="fire-s-136a8-strip"></div><div class="fire-s-136a8-card-body"><div class="fire-s-136a8-card-top"><strong>${esc(title(project))}</strong><span>${esc(statusLabel(project))}</span></div>${address(project) ? `<p>${esc(address(project))}</p>` : ''}<div class="fire-s-136a8-card-meta"><div><small>Last</small><b>${esc(dateText(lastDate(project)))}</b></div><div><small>Next</small><b>${esc(dateText(plannedDate(project)))}</b></div><div><small>Actions</small><b>${noAnswerCount(project)}</b></div><div><small>Photos</small><b>${photos(project).length}</b></div></div><div class="fire-s-136a8-open">Open →</div></div></article>`;
+    return `<article class="fire-s-136a8-card ${statusClass(project)}" data-project-id="${esc(project?.id || '')}" role="button" tabindex="0" onclick='fireSOpenProjectCard136A8(${id})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();fireSOpenProjectCard136A8(${id});}'><div class="fire-s-136a8-strip"></div><div class="fire-s-136a8-card-body"><div class="fire-s-136a8-card-top"><strong>${esc(title(project))}</strong><span>${esc(statusLabel(project))}</span></div>${address(project) ? `<p>${esc(address(project))}</p>` : ''}<div class="fire-s-136a8-card-meta"><div><small>Last</small><b>${esc(dateText(lastDate(project)))}</b></div><div><small>Next</small><b>${esc(dateText(plannedDate(project)))}</b></div><div><small>Actions</small><b>${noAnswerCount(project)}</b></div><div><small>Photos</small><b>${photos(project).length}</b></div></div>${cardPhotoStrip(project)}<div class="fire-s-136a8-open">Open →</div></div></article>`;
   }
 
   function renderProjects(){

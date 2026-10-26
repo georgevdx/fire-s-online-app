@@ -39,7 +39,7 @@ assert.ok(/fire-s-subscriptions\.js\?v=1-18-paid-days/.test(liveHtml));
 assert.ok(/fire-s-subscribe\.js\?v=1-40-trial-clear/.test(liveHtml));
 assert.ok(/fire-s-payfast\.js\?v=1-17-sig/.test(liveHtml));
 assert.ok(/fire-s-entitlement\.js\?v=1-3-67-still/.test(liveHtml));
-assert.ok(/service-worker\.js\?v=108-81-cancel/.test(liveHtml));
+assert.ok(/service-worker\.js\?v=108-82-photos/.test(liveHtml));
 assert.ok(/pay on PayFast/.test(read('fire-s-user-manual.js')));
 assert.ok(/pays on PayFast/.test(read('terms.html')));
 assert.ok(!/The app does not take a card yet/.test(read('terms.html')));

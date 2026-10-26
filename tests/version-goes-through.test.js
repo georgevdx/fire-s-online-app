@@ -20,8 +20,8 @@ assert.ok(
   /function fireSDropStuckLiveCache\(/.test(liveHtml) &&
     /fireS\.liveCacheDrop\.1-3-67-premises/.test(liveHtml) &&
     /Cache-Control" content="no-cache, no-store, must-revalidate/.test(liveHtml) &&
-    /service-worker\.js\?v=108-81-cancel/.test(liveHtml) &&
-    /fire-s-108-81-cancel/.test(liveSw),
+    /service-worker\.js\?v=108-82-photos/.test(liveHtml) &&
+    /fire-s-108-82-photos/.test(liveSw),
   'Live must drop the stuck service worker so a phone can tell it has 1.3.67'
 );
 assert.ok(
@@ -31,9 +31,10 @@ assert.ok(
 );
 assert.ok(
   /cache: 'no-store'/.test(liveSw) &&
-    /isDoc \? \{ cache: 'no-store' \}/.test(liveSw) &&
+    /fresh \? \{ cache: 'no-store' \}/.test(liveSw) &&
+    liveSw.indexOf('/\\.js$/i.test(path)') !== -1 &&
     !/'\.\/index\.html'/.test(liveSw.split('self.addEventListener')[0]),
-  'Live must fetch HTML from the network, not from a precached index.html'
+  'Live must fetch HTML and scripts from the network, not from a precached index.html'
 );
 assert.ok(
   /function fireSDropStuckToetsCache\(/.test(stagingHtml) &&
