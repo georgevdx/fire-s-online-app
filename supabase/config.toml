@@ -9,3 +9,8 @@ entrypoint = "./functions/payfast-checkout/index.js"
 [functions.payfast-itn]
 verify_jwt = false
 entrypoint = "./functions/payfast-itn/index.js"
+
+# Owner cancel. Stops the PayFast recurring token. JWT required.
+[functions.payfast-cancel]
+verify_jwt = true
+entrypoint = "./functions/payfast-cancel/index.js"

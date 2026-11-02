@@ -299,3 +299,118 @@ export function checkoutAutoPostHtml(processUrl, fields) {
     '</body></html>'
   );
 }
+
+/**
+ * Subscription API signature. Alphabetical header names, PHP urlencode, MD5.
+ * Passphrase is part of the signed string and must not be sent as a header.
+ */
+export function payfastApiSignature(pairs, passphrase) {
+  const data = {};
+  Object.keys(pairs || {}).forEach(function (key) {
+    if (key === 'signature') return;
+    data[key] = text(pairs[key]);
+  });
+  if (text(passphrase)) data.passphrase = text(passphrase);
+  const param = Object.keys(data)
+    .sort()
+    .map(function (key) {
+      return key + '=' + phpUrlEncode(data[key]);
+    })
+    .join('&');
+  return md5hex(param);
+}
+
+/** PayFast wants the current time as YYYY-MM-DDTHH:MM:SS+02:00. */
+export function payfastApiTimestamp(now) {
+  const d = now instanceof Date ? now : new Date();
+  const shifted = new Date(d.getTime() + 2 * 60 * 60 * 1000);
+  const pad = function (n) {
+    return String(n).padStart(2, '0');
+  };
+  return (
+    shifted.getUTCFullYear() +
+    '-' +
+    pad(shifted.getUTCMonth() + 1) +
+    '-' +
+    pad(shifted.getUTCDate()) +
+    'T' +
+    pad(shifted.getUTCHours()) +
+    ':' +
+    pad(shifted.getUTCMinutes()) +
+    ':' +
+    pad(shifted.getUTCSeconds()) +
+    '+02:00'
+  );
+}
+
+export function payfastSubscriptionCancelUrl(mode, token) {
+  const safe = text(token);
+  if (!/^[A-Za-z0-9-]{8,80}$/.test(safe)) {
+    throw new Error('PayFast subscription token is missing.');
+  }
+  const base = 'https://api.payfast.co.za/subscriptions/' + safe + '/cancel';
+  return text(mode) === 'live' ? base : base + '?testing=true';
+}
+
+export function buildPayfastCancelRequest(cfg, token, now) {
+  const timestamp = payfastApiTimestamp(now);
+  const version = 'v1';
+  const signature = payfastApiSignature(
+    {
+      'merchant-id': text(cfg && cfg.merchantId),
+      version: version,
+      timestamp: timestamp
+    },
+    cfg && cfg.passphrase
+  );
+  return {
+    url: payfastSubscriptionCancelUrl(cfg && cfg.mode, token),
+    method: 'PUT',
+    headers: {
+      'merchant-id': text(cfg && cfg.merchantId),
+      version: version,
+      timestamp: timestamp,
+      signature: signature
+    }
+  };
+}
+
+export function payfastCancelSucceeded(status, bodyText) {
+  let parsed = null;
+  try {
+    parsed = JSON.parse(String(bodyText || ''));
+  } catch (_) {}
+  const data = parsed && parsed.data ? parsed.data : {};
+  const message = text(data.message || (parsed && parsed.message));
+  const already = /already/i.test(message);
+  const flag = data.response;
+  const httpOk = Number(status) >= 200 && Number(status) < 300;
+  const affirmed = flag === true || flag === 'true' || flag === 'True';
+  const denied = flag === false || flag === 'false' || flag === 'False';
+  if (already) return { ok: true, already: true, message: message || 'already cancelled' };
+  if (httpOk && !denied && (affirmed || flag == null || parsed == null)) {
+    return { ok: true, already: false, message: message || 'cancelled' };
+  }
+  return {
+    ok: false,
+    already: false,
+    message: message || 'PayFast did not cancel the subscription.'
+  };
+}
+
+export async function cancelPayfastSubscription(cfg, token, fetchImpl, now) {
+  const req = buildPayfastCancelRequest(cfg, token, now);
+  const doFetch = fetchImpl || fetch;
+  const res = await doFetch(req.url, {
+    method: 'PUT',
+    headers: req.headers
+  });
+  const body = await res.text();
+  const result = payfastCancelSucceeded(res.status, body);
+  if (!result.ok) {
+    const err = new Error('PayFast did not cancel the subscription.');
+    err.payfastStatus = res.status;
+    throw err;
+  }
+  return { ok: true, already: result.already === true };
+}

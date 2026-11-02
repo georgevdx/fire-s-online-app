@@ -307,7 +307,7 @@
       return;
     }
     var cat = catalog();
-    if (subscriptionAlreadyCancelled()) {
+    if (subscriptionAlreadyCancelled() && !payfastStopUnconfirmed) {
       setMessage('This subscription is already cancelled. Company data stays saved.');
       paintSubscribeStatus();
       return;
@@ -562,8 +562,10 @@
       }
     } catch (_) {}
     if (cancelBtn) {
-      cancelBtn.hidden = cancelled || mode === 'seat';
-      cancelBtn.disabled = !!cancelled;
+      var showStop = (!cancelled || payfastStopUnconfirmed) && mode !== 'seat';
+      cancelBtn.hidden = !showStop;
+      cancelBtn.disabled = !showStop;
+      cancelBtn.textContent = payfastStopUnconfirmed ? 'Stop PayFast debit' : 'Cancel subscription';
     }
     var billingActions = byId('fireSCompanyBillingActions');
     if (billingActions) billingActions.hidden = mode === 'seat';
@@ -703,14 +705,15 @@
       }
     }
     if (keep) keep.textContent = cat.statusKeepDataNote();
-    if (cancelPanel) cancelPanel.hidden = !!cancelled;
-    if (cancelled) hideCancelConfirm();
+    if (cancelPanel) cancelPanel.hidden = !!cancelled && !payfastStopUnconfirmed;
+    if (cancelled && !payfastStopUnconfirmed) hideCancelConfirm();
     if (againPanel) againPanel.hidden = true;
     if (cancelBtn) {
-      cancelBtn.hidden = !!cancelled;
-      if (cancelBtn.style) cancelBtn.style.display = cancelled ? 'none' : '';
-      cancelBtn.disabled = !!cancelled;
-      cancelBtn.textContent = cancelled ? 'Already cancelled' : 'Cancel subscription';
+      var showCancel = !cancelled || payfastStopUnconfirmed;
+      cancelBtn.hidden = !showCancel;
+      if (cancelBtn.style) cancelBtn.style.display = showCancel ? '' : 'none';
+      cancelBtn.disabled = !showCancel;
+      cancelBtn.textContent = payfastStopUnconfirmed ? 'Stop PayFast debit' : 'Cancel subscription';
     }
     if (save && mode !== 'seat') {
       save.style.display = cancelled ? 'none' : '';
@@ -718,7 +721,7 @@
     }
     var billingActions = byId('fireSCompanyBillingActions');
     if (billingActions) {
-      billingActions.hidden = cancelled || mode === 'seat';
+      billingActions.hidden = (cancelled && !payfastStopUnconfirmed) || mode === 'seat';
     }
     var required = byId('fireSSubscriptionRequiredPanel');
     if (required) required.hidden = true;
@@ -732,41 +735,65 @@
     paintPayfastControls();
   }
 
-  function cancelSubscription() {
+  var cancelBusy = false;
+  var payfastStopUnconfirmed = false;
+
+  async function cancelSubscription() {
     var cat = catalog();
+    if (cancelBusy) return;
     if (!mayCancel()) {
       setMessage('Only the Owner can cancel this subscription.', true);
       return;
     }
     if (!cat || !cat.cancelBilling) return;
-    if (subscriptionAlreadyCancelled()) {
+    if (subscriptionAlreadyCancelled() && !payfastStopUnconfirmed) {
       setMessage('This subscription is already cancelled. Company data stays saved.');
       paintSubscribeStatus();
       return;
     }
+    cancelBusy = true;
     cat.cancelBilling();
+    var remote = null;
     try {
-      var sb = window.supabaseClient;
-      if (sb && sb.rpc) {
-        sb.rpc('fire_s_cancel_company_subscription').then(function (res) {
+      if (window.fireSPayfast && typeof window.fireSPayfast.stopSubscription === 'function') {
+        remote = await window.fireSPayfast.stopSubscription();
+      }
+    } catch (_) {
+      remote = null;
+    }
+    if (!remote || !remote.localCancelled) {
+      try {
+        var sb = window.supabaseClient;
+        if (sb && sb.rpc) {
+          var res = await sb.rpc('fire_s_cancel_company_subscription');
           if (res && res.error) console.warn('Cancel subscription RPC', res.error);
-          try {
-            if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
-              window.fireSEntitlement.refresh(true);
-            }
-          } catch (_) {}
-        });
+        }
+      } catch (_) {}
+    }
+    try {
+      if (window.fireSEntitlement && window.fireSEntitlement.refresh) {
+        window.fireSEntitlement.refresh(true);
       }
     } catch (_) {}
     var until = '';
     try {
       until = cat.formatLongDate ? cat.formatLongDate(cat.currentRenewsOn()) : cat.currentRenewsOn();
     } catch (_) {}
-    setMessage(
-      until
-        ? 'Cancelled. Auto-renew is off for this company. Managers and Inspectors follow this same cancellation. This login stays open until ' + until + '. Company name and inspections stay saved.'
-        : 'Cancelled. Auto-renew is off for this company. Managers and Inspectors follow this same cancellation. This login stays open until the paid-through date. Company name and inspections stay saved.'
-    );
+    var payfastStopped = remote && (remote.payfastCancelled || remote.nothingToCancel);
+    payfastStopUnconfirmed = !payfastStopped;
+    if (payfastStopped) {
+      setMessage(
+        until
+          ? 'Cancelled. PayFast will not debit this card again. Managers and Inspectors follow this same cancellation. This login stays open until ' + until + '. Company name and inspections stay saved.'
+          : 'Cancelled. PayFast will not debit this card again. Managers and Inspectors follow this same cancellation. This login stays open until the paid-through date. Company name and inspections stay saved.'
+      );
+    } else {
+      setMessage(
+        'Cancelled in Fire-S. PayFast did not confirm the stop, so the card can still be debited. Cancel this subscription in the PayFast dashboard and refund any debit you did not ask for. Company name and inspections stay saved.',
+        true
+      );
+    }
+    cancelBusy = false;
     try {
       if (window.fireSPayfast && typeof window.fireSPayfast.hideReturnBanner === 'function') {
         window.fireSPayfast.hideReturnBanner();

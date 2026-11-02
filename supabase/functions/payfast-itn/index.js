@@ -1,7 +1,8 @@
 import { loadPayfastConfig, publicPayfastConfig } from '../_shared/payfast-config.js';
 import {
   parseItnFields,
-  verifyItnSignature
+  verifyItnSignature,
+  cancelPayfastSubscription
 } from '../_shared/payfast-sign.js';
 
 function envObject() {
@@ -109,6 +110,52 @@ async function applyItn(env, fields, payload) {
   return data;
 }
 
+async function storedSubscriptionToken(env, companyId) {
+  const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const id = String(companyId || '').trim();
+  if (!supabaseUrl || !serviceKey || !id) return '';
+  const res = await fetch(supabaseUrl + '/rest/v1/rpc/fire_s_payfast_subscription_token', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + serviceKey,
+      apikey: serviceKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_company_id: id })
+  });
+  if (!res.ok) return '';
+  const data = await res.json().catch(function () {
+    return null;
+  });
+  return typeof data === 'string' ? data.trim() : '';
+}
+
+async function stopRemoteSubscription(env, cfg, applied, fields) {
+  if (!applied || applied.payfast_cancel_required !== true) return;
+  let token = String((fields && fields.token) || '').trim();
+  if (!token) token = await storedSubscriptionToken(env, applied.company_id);
+  if (!token) {
+    logEvent('ITN_REMOTE_CANCEL_NO_TOKEN', { company_id: applied.company_id });
+    return;
+  }
+  try {
+    const result = await cancelPayfastSubscription(cfg, token);
+    logEvent('ITN_REMOTE_CANCEL', {
+      company_id: applied.company_id,
+      already: result.already === true
+    });
+  } catch (err) {
+    logEvent('ITN_REMOTE_CANCEL_FAILED', {
+      company_id: applied.company_id,
+      error: String((err && err.message) || 'PayFast cancel failed.').slice(0, 180)
+    });
+    const failure = new Error('PayFast cancel failed.');
+    failure.remoteCancel = true;
+    throw failure;
+  }
+}
+
 function payloadObject(params) {
   const out = {};
   if (params && typeof params.forEach === 'function') {
@@ -173,9 +220,12 @@ Deno.serve(async (req) => {
       pf_payment_id: fields.payfastPaymentId,
       payment_status: fields.paymentStatus,
       company_id: fields.companyId,
+      payfast_cancel_required: !!(applied && applied.payfast_cancel_required),
       public: publicPayfastConfig(cfg)
     });
-    return applied ? okResponse() : failResponse('INVALID', 400);
+    if (!applied) return failResponse('INVALID', 400);
+    await stopRemoteSubscription(env, cfg, applied, fields);
+    return okResponse();
   } catch (err) {
     logEvent('ITN_FAILED', { error: String((err && err.message) || 'PayFast ITN failed.') });
     return failResponse('INVALID', 400);
