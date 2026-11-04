@@ -279,11 +279,20 @@
   function hideCancelConfirm(restoreButton) {
     var box = byId('fireSSubscribeCancelConfirm');
     var btn = byId('fireSSubscribeCancelBtn');
+    var confirmBtn = byId('fireSSubscribeCancelConfirmBtn');
+    var keepBtn = byId('fireSSubscribeCancelKeepBtn');
     if (box) box.hidden = true;
-    if (restoreButton === false) return;
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (keepBtn) keepBtn.disabled = true;
+    // Keep subscription passes no flag. Restore Cancel only while this login is still active.
+    if (restoreButton === false || cancelConfirmed || subscriptionAlreadyCancelled()) return;
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (keepBtn) keepBtn.disabled = false;
     if (btn) {
       btn.hidden = false;
+      btn.disabled = false;
       if (btn.style) btn.style.display = '';
+      btn.textContent = 'Cancel subscription';
     }
   }
 
@@ -308,12 +317,15 @@
       setMessage('Only the Owner can cancel this subscription. Sign in as the Owner first.', true);
       return;
     }
-    var cat = catalog();
-    if (subscriptionAlreadyCancelled() && !payfastStopUnconfirmed) {
+    if (cancelConfirmed || subscriptionAlreadyCancelled()) {
+      if (payfastStopUnconfirmed) {
+        return cancelSubscription();
+      }
       setMessage('This subscription is already cancelled. Company data stays saved.');
       paintSubscribeStatus();
       return;
     }
+    var cat = catalog();
     var when = '';
     try {
       when =
@@ -332,7 +344,11 @@
     }
     var btn = byId('fireSSubscribeCancelBtn');
     var box = byId('fireSSubscribeCancelConfirm');
+    var confirmBtn = byId('fireSSubscribeCancelConfirmBtn');
+    var keepBtn = byId('fireSSubscribeCancelKeepBtn');
     if (btn) btn.hidden = true;
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (keepBtn) keepBtn.disabled = false;
     if (box) {
       box.hidden = false;
       try {
@@ -521,6 +537,24 @@
 
   function paintCompanyBilling(info) {
     var data = info || {};
+    if (cancelConfirmed) {
+      data = {
+        plan: data.plan,
+        billing_interval: data.billing_interval,
+        subscription_status: 'cancelled',
+        status: 'cancelled',
+        trial_ends_at: data.trial_ends_at,
+        paid_through: data.paid_through,
+        next_billing_at: null,
+        last_successful_payment_at: data.last_successful_payment_at,
+        in_grace: false,
+        grace_ends_at: data.grace_ends_at,
+        access_until: data.access_until,
+        can_subscribe: data.can_subscribe,
+        can_cancel: false,
+        keep_data: data.keep_data
+      };
+    }
     function setText(id, value) {
       var el = byId(id);
       if (el) el.textContent = value || '—';
@@ -692,18 +726,17 @@
     var serverActive = status === 'active' || status === 'trial' || status === 'past_due';
     var cancelled = status === 'cancelled' || cancelConfirmed || (localCancelled && !serverActive);
     box.hidden = false;
-    box.className = 'fire-s-subscribe-status is-' + status;
+    box.className = 'fire-s-subscribe-status is-' + (cancelled ? 'cancelled' : status);
     if (title) {
-      title.textContent =
-        status === 'active'
+      title.textContent = cancelled
+        ? 'Subscription cancelled'
+        : status === 'active'
           ? 'Active subscription'
-          : cancelled
-            ? 'Subscription cancelled'
-            : status === 'past_due'
-              ? 'Payment past due'
+          : status === 'past_due'
+            ? 'Payment past due'
             : status === 'trial'
               ? 'Free trial'
-            : 'Not paid yet';
+              : 'Not paid yet';
     }
     if (copy) {
       if (cancelled) {
@@ -712,11 +745,12 @@
           var untilRaw =
             (entitlement && (entitlement.access_until || entitlement.subscription_paid_through || entitlement.paid_through)) ||
             (cat.currentRenewsOn && cat.currentRenewsOn());
+          untilRaw = String(untilRaw || '').slice(0, 10);
           untilLabel = cat.formatLongDate ? cat.formatLongDate(untilRaw) : untilRaw || '';
         } catch (_) {}
         copy.textContent = untilLabel
-          ? 'This subscription is cancelled. This login stays open until ' + untilLabel + '. Company name and inspections stay saved.'
-          : 'This subscription is cancelled. This login stays open until the paid-through date. Company name and inspections stay saved.';
+          ? 'This login stays open until the paid-through date (' + untilLabel + '). The company name and inspections stay saved.'
+          : 'This login stays open until the paid-through date. The company name and inspections stay saved.';
       } else if (entitlement && entitlement.backendReady && window.fireSEntitlement && window.fireSEntitlement.displayCopy) {
         var shown = window.fireSEntitlement.displayCopy(entitlement);
         copy.textContent = shown.detail || shown.headline || cat.statusHeadline();
@@ -725,7 +759,10 @@
       }
     }
     if (keep) keep.textContent = cat.statusKeepDataNote();
-    if (cancelPanel) cancelPanel.hidden = !!cancelled;
+    if (cancelPanel) {
+      cancelPanel.hidden = !!cancelled;
+      if (cancelPanel.style) cancelPanel.style.display = cancelled ? 'none' : '';
+    }
     if (cancelled) hideCancelConfirm(false);
     if (againPanel) againPanel.hidden = true;
     if (cancelBtn) {
@@ -740,9 +777,17 @@
       save.style.display = cancelled ? 'none' : '';
       save.hidden = cancelled;
     }
+    var billingCancel = byId('fireSBillingCancelBtn');
+    if (billingCancel) {
+      var showBillingCancel = !cancelled && mode !== 'seat';
+      billingCancel.hidden = !showBillingCancel;
+      billingCancel.disabled = !showBillingCancel;
+      if (billingCancel.style) billingCancel.style.display = showBillingCancel ? '' : 'none';
+      billingCancel.textContent = 'Cancel subscription';
+    }
     var billingActions = byId('fireSCompanyBillingActions');
     if (billingActions) {
-      billingActions.hidden = (cancelled && !payfastStopUnconfirmed) || mode === 'seat';
+      billingActions.hidden = !!cancelled || mode === 'seat';
     }
     var required = byId('fireSSubscriptionRequiredPanel');
     if (required) required.hidden = true;

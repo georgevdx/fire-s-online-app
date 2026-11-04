@@ -157,7 +157,7 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.130-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
-assert.ok(/fire-s-subscribe.js\?v=1-45-cancelled-banner/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.js\?v=1-46-cancelled-banner/.test(stagingHtml));
 assert.ok(/stopSubscription/.test(stagingSubscribe));
 assert.ok(/PayFast will not debit this card again/.test(stagingSubscribe));
 assert.ok(/PayFast did not confirm the stop/.test(stagingSubscribe));

@@ -162,21 +162,32 @@
   <link rel="stylesheet" href="fire-s-dark-type.css?v=1-13-howto-ink">
   <link rel="stylesheet" href="fire-s-hira.css?v=1-0-hira">
   <style>
-    .fire-s-subscribe-status.is-cancelled {
+    #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled {
       border: 2px solid #b91c1c;
       background: #fef2f2;
       color: #7f1d1d;
+      padding: 18px 16px;
     }
-    .fire-s-subscribe-status.is-cancelled strong {
+    #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled strong {
+      display: block;
       font-size: 1.45rem;
       font-weight: 800;
+      color: #7f1d1d;
     }
-    html[data-fire-s-theme="dark"] .fire-s-subscribe-status.is-cancelled,
-    html[data-fire-s-theme="dark"] .fire-s-subscribe-status.is-cancelled :is(strong, p, span, small) {
+    html[data-fire-s-theme="dark"] #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled {
+      background: #fef2f2 !important;
+      border: 2px solid #b91c1c !important;
       color: #7f1d1d !important;
       -webkit-text-fill-color: #7f1d1d !important;
-      background: #fef2f2 !important;
-      border-color: #b91c1c !important;
+    }
+    html[data-fire-s-theme="dark"] #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled :is(strong, p, span, small) {
+      color: #7f1d1d !important;
+      -webkit-text-fill-color: #7f1d1d !important;
+      opacity: 1 !important;
+    }
+    html[data-fire-s-theme="dark"] #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled strong {
+      font-size: 1.45rem !important;
+      font-weight: 800 !important;
     }
   </style>
 </head>
@@ -2080,7 +2091,7 @@
   <script src="fire-s-subscriptions.js?v=1-21-paid-days"></script>
   <script src="fire-s-md5.js?v=2-19-0"></script>
   <script src="fire-s-payfast.js?v=1-16-stop-payfast"></script>
-  <script src="fire-s-subscribe.js?v=1-45-cancelled-banner"></script>
+  <script src="fire-s-subscribe.js?v=1-46-cancelled-banner"></script>
   <script src="fire-s-user-manual.js?v=1-50-same-cancel"></script>
   <script src="fire-s-management-dashboard.js?v=1-21-action-label"></script>
   <script src="fire-s-inspector-board.js?v=1-5-calm"></script>
