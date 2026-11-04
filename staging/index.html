@@ -168,11 +168,17 @@
       color: #7f1d1d;
       padding: 18px 16px;
     }
+    #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled,
+    #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled :is(strong, p, span, small) {
+      color: #7f1d1d !important;
+      -webkit-text-fill-color: #7f1d1d !important;
+    }
     #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled strong {
       display: block;
       font-size: 1.45rem;
       font-weight: 800;
-      color: #7f1d1d;
+      color: #7f1d1d !important;
+      -webkit-text-fill-color: #7f1d1d !important;
     }
     html[data-fire-s-theme="dark"] #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled {
       background: #fef2f2 !important;
