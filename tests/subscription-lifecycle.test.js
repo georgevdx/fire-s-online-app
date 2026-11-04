@@ -157,7 +157,7 @@ assert.ok(/id="fireSCompanyBillingPanel"/.test(stagingHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml), 'company billing sits live with PayFast');
 assert.ok(/Version 1\.3\.130-toets/.test(stagingHtml));
 assert.ok(/Version 1\.3\.67/.test(liveHtml));
-assert.ok(/fire-s-subscribe.js\?v=1-44-stop-payfast/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.js\?v=1-45-cancelled-banner/.test(stagingHtml));
 assert.ok(/stopSubscription/.test(stagingSubscribe));
 assert.ok(/PayFast will not debit this card again/.test(stagingSubscribe));
 assert.ok(/PayFast did not confirm the stop/.test(stagingSubscribe));
@@ -172,7 +172,7 @@ assert.ok(/function askCancelSubscription\(/.test(stagingSubscribe));
 assert.ok(/id="fireSSubscribeCancelConfirmBtn"/.test(stagingHtml));
 assert.ok(/can_cancel: canManage\(\)/.test(stagingSubscribe));
 assert.ok(/fire-s-entitlement.js\?v=1-3-127-calm/.test(stagingHtml));
-assert.ok(/fire-s-subscribe.css\?v=1-16-cancel-show/.test(stagingHtml));
+assert.ok(/fire-s-subscribe.css\?v=1-17-cancelled-banner/.test(stagingHtml));
 
 assert.ok(/\.fire-s-company-billing/.test(stagingCss));
 assert.ok(/\.fire-s-company-billing-list/.test(stagingCss));
