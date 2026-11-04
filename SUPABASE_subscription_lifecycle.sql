@@ -385,6 +385,7 @@ as $$
 declare
   v_sub public.fire_s_company_subscriptions%rowtype;
   v_cancel_at timestamptz;
+  v_checkout_at timestamptz;
   v_m text;
   v_paid public.fire_s_payment_events%rowtype;
   v_interval text;
@@ -421,8 +422,8 @@ begin
     return false;
   end if;
 
-  select e.m_payment_id
-    into v_m
+  select e.m_payment_id, e.created_at
+    into v_m, v_checkout_at
     from public.fire_s_payment_events e
    where e.company_id = p_company_id
      and e.event_type = 'checkout'
@@ -440,9 +441,20 @@ begin
     into v_paid
     from public.fire_s_payment_events e
    where e.company_id = p_company_id
-     and e.m_payment_id = v_m
      and e.payment_status = 'COMPLETE'
-   order by e.created_at desc
+     and (
+       e.m_payment_id = v_m
+       or (
+         v_checkout_at is not null
+         and e.created_at >= v_checkout_at
+         and (
+           e.amount is null
+           or abs(e.amount - 250) <= 0.01
+           or abs(e.amount - 2500) <= 0.01
+         )
+       )
+     )
+   order by case when e.m_payment_id = v_m then 0 else 1 end, e.created_at desc
    limit 1;
 
   if v_paid.id is null then
