@@ -36,7 +36,7 @@ assert.ok(!/No card is taken yet/.test(liveHtml));
 assert.ok(/class="fire-s-booting fire-s-entitlement-blocked"/.test(liveHtml));
 assert.ok(/id="fireSCompanyBillingPanel"/.test(liveHtml));
 assert.ok(/fire-s-subscriptions\.js\?v=1-18-paid-days/.test(liveHtml));
-assert.ok(/fire-s-subscribe\.js\?v=1-41-stop-payfast/.test(liveHtml));
+assert.ok(/fire-s-subscribe\.js\?v=1-46-cancelled-banner/.test(liveHtml));
 assert.ok(/fire-s-payfast\.js\?v=1-18-stop-payfast/.test(liveHtml));
 assert.ok(/stopSubscription/.test(livePayfast));
 assert.ok(/functions\/v1\/payfast-cancel/.test(livePayfast));
