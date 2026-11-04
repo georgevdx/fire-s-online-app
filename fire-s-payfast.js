@@ -179,6 +179,49 @@
     return text(res && res.data && res.data.session && res.data.session.access_token);
   }
 
+  async function stopSubscription() {
+    var e = env();
+    var base = text(e.supabaseUrl).replace(/\/$/, '');
+    if (!base) return { ok: false, error: 'PayFast is not ready on the server.' };
+    var token = '';
+    try {
+      token = await accessToken();
+    } catch (_) {}
+    if (!token) return { ok: false, error: 'Sign in first, then cancel.' };
+    var res;
+    try {
+      res = await fetch(base + '/functions/v1/payfast-cancel', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          apikey: text(e.supabaseAnonKey),
+          'Content-Type': 'application/json'
+        },
+        body: '{}'
+      });
+    } catch (err) {
+      return { ok: false, error: text(err && err.message) };
+    }
+    var data = null;
+    try {
+      data = await res.json();
+    } catch (_) {}
+    if (!res.ok || !data || data.ok !== true) {
+      return {
+        ok: false,
+        localCancelled: !!(data && data.localCancelled),
+        payfastCancelled: false,
+        error: (data && data.error) || 'PayFast did not confirm the stop.'
+      };
+    }
+    return {
+      ok: true,
+      localCancelled: true,
+      payfastCancelled: data.payfastCancelled !== false,
+      nothingToCancel: data.nothingToCancel === true
+    };
+  }
+
   async function startCheckout(info) {
     if (!isEnabled()) {
       return { ok: false, reason: 'disabled', error: 'PayFast is not ready on this page.' };
@@ -346,6 +389,7 @@
     payLabel: payLabel,
     checkoutUrl: checkoutUrl,
     startCheckout: startCheckout,
+    stopSubscription: stopSubscription,
     submitHostedCheckout: submitHostedCheckout,
     queryStatus: queryStatus,
     paintReturnBanner: paintReturnBanner,

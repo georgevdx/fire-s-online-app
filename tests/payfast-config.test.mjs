@@ -11,7 +11,12 @@ import {
   phpUrlEncode,
   resolveAuthoritativeCheckout,
   signatureParamString,
-  amountForInterval
+  amountForInterval,
+  payfastApiSignature,
+  payfastSubscriptionCancelUrl,
+  buildPayfastCancelRequest,
+  payfastCancelSucceeded,
+  cancelPayfastSubscription
 } from '../supabase/functions/_shared/payfast-sign.js';
 import { md5hex } from '../supabase/functions/_shared/payfast-md5.js';
 
@@ -198,5 +203,71 @@ assert.throws(
   () => assertSandboxCheckout(liveCfg),
   /sandbox-only/
 );
+
+const stamp = '2020-03-23T09:46:06+02:00';
+const signed = [
+  'merchant-id=' + phpUrlEncode('10000100'),
+  'passphrase=' + phpUrlEncode('salt-pass'),
+  'timestamp=' + phpUrlEncode(stamp),
+  'version=' + phpUrlEncode('v1')
+].join('&');
+assert.strictEqual(phpUrlEncode(stamp), '2020-03-23T09%3A46%3A06%2B02%3A00');
+const apiSig = payfastApiSignature(
+  { version: 'v1', timestamp: stamp, 'merchant-id': '10000100' },
+  'salt-pass'
+);
+assert.strictEqual(apiSig, md5hex(signed));
+assert.strictEqual(apiSig, crypto.createHash('md5').update(signed, 'utf8').digest('hex'));
+
+const when = new Date('2020-03-23T07:46:06Z');
+const liveCancel = buildPayfastCancelRequest(
+  { mode: 'live', merchantId: '10000100', passphrase: 'salt-pass' },
+  '2afa4575-5628-051a-d0ed-4e071b56a7b0',
+  when
+);
+assert.strictEqual(
+  liveCancel.url,
+  'https://api.payfast.co.za/subscriptions/2afa4575-5628-051a-d0ed-4e071b56a7b0/cancel'
+);
+assert.strictEqual(liveCancel.method, 'PUT');
+assert.strictEqual(liveCancel.headers.timestamp, stamp);
+assert.strictEqual(liveCancel.headers.signature, apiSig);
+assert.ok(!Object.prototype.hasOwnProperty.call(liveCancel.headers, 'passphrase'));
+assert.strictEqual(
+  payfastSubscriptionCancelUrl('sandbox', '2afa4575-5628-051a-d0ed-4e071b56a7b0'),
+  'https://api.payfast.co.za/subscriptions/2afa4575-5628-051a-d0ed-4e071b56a7b0/cancel?testing=true'
+);
+assert.throws(() => payfastSubscriptionCancelUrl('live', '../secret'), /token/);
+assert.strictEqual(payfastCancelSucceeded(200, '').ok, true);
+assert.strictEqual(
+  payfastCancelSucceeded(200, '{"data":{"response":true,"message":"Subscription cancelled"}}').ok,
+  true
+);
+assert.strictEqual(
+  payfastCancelSucceeded(400, '{"data":{"response":false,"message":"Subscription already cancelled"}}').already,
+  true
+);
+assert.strictEqual(
+  payfastCancelSucceeded(400, '{"data":{"response":false,"message":"Invalid signature"}}').ok,
+  false
+);
+
+const sent = {};
+const stopped = await cancelPayfastSubscription(
+  { mode: 'sandbox', merchantId: '10000100', passphrase: 'salt-pass' },
+  '2afa4575-5628-051a-d0ed-4e071b56a7b0',
+  async function (url, opts) {
+    sent.url = url;
+    sent.method = opts.method;
+    sent.headers = opts.headers;
+    return { status: 200, async text() { return '{"data":{"response":true}}'; } };
+  },
+  when
+);
+assert.strictEqual(stopped.ok, true);
+assert.ok(sent.url.indexOf('?testing=true') !== -1);
+assert.strictEqual(sent.method, 'PUT');
+assert.ok(!sent.headers.passphrase);
+assert.strictEqual(sent.headers['merchant-id'], '10000100');
 
 console.log('payfast-config.test.mjs: ok');
