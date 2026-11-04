@@ -351,6 +351,11 @@ declare
   v_prev text;
 begin
   perform set_config('fire_s.entitlement_write', 'on', true);
+  begin
+    perform public.fire_s_reopen_paid_checkout(p_company_id);
+  exception when others then
+    null;
+  end;
   v_info := public.fire_s_compute_entitlement(p_company_id);
   v_status := v_info->>'status';
   v_reason := v_info->>'reason';

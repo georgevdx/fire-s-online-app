@@ -158,9 +158,16 @@
 }
 
 .fire-s-subscribe-status.is-cancelled {
-  border-color: #cbd5e1;
-  background: #f8fafc;
-  color: #334155;
+  border: 2px solid #b91c1c;
+  background: #fef2f2;
+  color: #7f1d1d;
+  padding: 18px 16px;
+}
+
+.fire-s-subscribe-status.is-cancelled strong {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
 .fire-s-subscribe-status strong {
