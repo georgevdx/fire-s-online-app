@@ -110,7 +110,7 @@ assert.ok(
 );
 
 assert.ok(
-  /fire-s-subscribe\.js\?v=1-40-trial-clear/.test(read('index.html')) &&
+  /fire-s-subscribe\.js\?v=1-41-stop-payfast/.test(read('index.html')) &&
     /fire-s-subscriptions\.js\?v=1-18-paid-days/.test(read('index.html')),
   'Live must cache-bust the current-subscription type paint'
 );

@@ -789,7 +789,7 @@
       );
     } else {
       setMessage(
-        'Cancelled in Fire-S. PayFast did not confirm the stop, so the card can still be debited. Cancel this subscription in the PayFast dashboard and refund any debit you did not ask for. Company name and inspections stay saved.',
+        'Cancelled in Fire-S. PayFast did not confirm the stop, so the card can still be debited. Open PayFast and cancel this subscription there, then use Stop PayFast debit here to try again. Company name and inspections stay saved.',
         true
       );
     }

@@ -154,6 +154,8 @@ assert.ok(/fire-s-subscribe.js\?v=1-44-stop-payfast/.test(stagingHtml));
 assert.ok(/stopSubscription/.test(stagingSubscribe));
 assert.ok(/PayFast will not debit this card again/.test(stagingSubscribe));
 assert.ok(/PayFast did not confirm the stop/.test(stagingSubscribe));
+assert.ok(/stopSubscription/.test(liveSubscribe));
+assert.ok(/PayFast will not debit this card again/.test(liveSubscribe));
 assert.ok(/grant execute on function public\.fire_s_payfast_cancel_target\(uuid\) to service_role/.test(sql));
 assert.ok(/revoke all on function public\.fire_s_payfast_cancel_target\(uuid\) from authenticated/.test(sql));
 assert.ok(!/grant execute on function public\.fire_s_payfast_cancel_target\(uuid\) to authenticated/.test(sql));
