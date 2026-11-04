@@ -212,6 +212,12 @@ begin
     raise exception 'Not allowed to read another company billing';
   end if;
 
+  begin
+    perform public.fire_s_reopen_paid_checkout(v_company);
+  exception when others then
+    null;
+  end;
+
   select s.* into v_sub
     from public.fire_s_company_subscriptions s
    where s.company_id = v_company;

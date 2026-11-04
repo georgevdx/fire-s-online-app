@@ -5,6 +5,8 @@
 -- and localStorage cannot activate, cancel, or extend access.
 -- One failed payment does not delete data. Cancel keeps rows in the cloud
 -- but locks app inspection access until a new subscription is active.
+-- A new Subscribe payment (checkout started after cancel) reopens that same
+-- company. An old PayFast debit, with no new checkout, does not.
 -- Sit live later.
 
 begin;
@@ -330,6 +332,173 @@ begin
 end;
 $$;
 
+-- True only for a checkout started after this company was cancelled, and
+-- only when that merchant payment id has not already been completed.
+-- An older subscription debit uses the original id and stays false.
+create or replace function public.fire_s_payfast_explicit_reopen(
+  p_company_id uuid,
+  p_m_payment_id text,
+  p_except_event uuid,
+  p_cancelled_at timestamptz
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  v_m text := nullif(trim(p_m_payment_id), '');
+begin
+  if p_company_id is null or p_cancelled_at is null or v_m is null then
+    return false;
+  end if;
+  return exists (
+    select 1
+      from public.fire_s_payment_events e
+     where e.company_id = p_company_id
+       and e.m_payment_id = v_m
+       and e.event_type = 'checkout'
+       and e.payment_status = 'payment_pending'
+       and e.created_at > p_cancelled_at
+       and not exists (
+         select 1
+           from public.fire_s_payment_events done
+          where done.company_id = p_company_id
+            and done.m_payment_id = e.m_payment_id
+            and done.payment_status = 'COMPLETE'
+            and (p_except_event is null or done.id is distinct from p_except_event)
+       )
+  );
+end;
+$$;
+
+-- If Subscribe was started after cancel and PayFast already reported that
+-- payment COMPLETE, open the same company. Does nothing when there is no
+-- such payment, so an old debit cannot reopen a cancelled company.
+create or replace function public.fire_s_reopen_paid_checkout(p_company_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_sub public.fire_s_company_subscriptions%rowtype;
+  v_cancel_at timestamptz;
+  v_m text;
+  v_paid public.fire_s_payment_events%rowtype;
+  v_interval text;
+  v_start timestamptz;
+  v_end timestamptz;
+begin
+  if p_company_id is null then
+    return false;
+  end if;
+
+  perform set_config('fire_s.entitlement_write', 'on', true);
+
+  select s.*
+    into v_sub
+    from public.fire_s_company_subscriptions s
+   where s.company_id = p_company_id
+   for update;
+
+  if v_sub.id is null or v_sub.status = 'active' then
+    return false;
+  end if;
+
+  v_cancel_at := coalesce(
+    v_sub.cancelled_at,
+    (
+      select max(a.created_at)
+        from public.fire_s_entitlement_audit a
+       where a.company_id = p_company_id
+         and a.event in ('LIFECYCLE_CANCELLED', 'SUBSCRIPTION_CANCELLED')
+    )
+  );
+
+  if v_cancel_at is null then
+    return false;
+  end if;
+
+  select e.m_payment_id
+    into v_m
+    from public.fire_s_payment_events e
+   where e.company_id = p_company_id
+     and e.event_type = 'checkout'
+     and e.payment_status = 'payment_pending'
+     and e.m_payment_id is not null
+     and e.created_at > v_cancel_at
+   order by e.created_at desc
+   limit 1;
+
+  if v_m is null then
+    return false;
+  end if;
+
+  select e.*
+    into v_paid
+    from public.fire_s_payment_events e
+   where e.company_id = p_company_id
+     and e.m_payment_id = v_m
+     and e.payment_status = 'COMPLETE'
+   order by e.created_at desc
+   limit 1;
+
+  if v_paid.id is null then
+    return false;
+  end if;
+
+  v_interval := lower(coalesce(v_sub.billing_interval, 'monthly'));
+  if v_paid.amount is not null and abs(v_paid.amount - 2500) <= 0.01 then
+    v_interval := 'annual';
+  elsif v_paid.amount is not null and abs(v_paid.amount - 250) <= 0.01 then
+    v_interval := 'monthly';
+  end if;
+  if v_interval not in ('monthly', 'annual') then
+    v_interval := 'monthly';
+  end if;
+
+  v_start := coalesce(v_paid.occurred_at, v_paid.created_at, now());
+  v_end := v_start + case when v_interval = 'annual' then interval '1 year' else interval '1 month' end;
+
+  update public.fire_s_company_subscriptions s
+     set status = 'active',
+         provider = 'payfast',
+         billing_interval = v_interval,
+         subscription_started_at = coalesce(s.subscription_started_at, v_start),
+         current_period_start = v_start,
+         current_period_end = v_end,
+         cancelled_at = null,
+         grace_ends_at = null,
+         last_payment_failed_at = null,
+         last_failed_payment_id = null,
+         payfast_subscription_token = coalesce(nullif(trim(v_paid.payfast_token), ''), s.payfast_subscription_token),
+         payfast_payment_id = coalesce(nullif(trim(v_paid.payfast_payment_id), ''), s.payfast_payment_id),
+         last_payment_at = v_start,
+         next_billing_at = v_end,
+         updated_at = now()
+   where s.id = v_sub.id;
+
+  begin
+    perform public.fire_s_audit_entitlement(
+      p_company_id,
+      'LIFECYCLE_REACTIVATE',
+      jsonb_build_object(
+        'source', 'reopen_paid_checkout',
+        'm_payment_id', v_m,
+        'payfast_payment_id', v_paid.payfast_payment_id,
+        'keep_data', true
+      )
+    );
+  exception when others then
+    null;
+  end;
+
+  return true;
+end;
+$$;
+
 create or replace function public.fire_s_apply_payfast_itn(
   p_m_payment_id text,
   p_payfast_payment_id text,
@@ -379,6 +548,8 @@ declare
   v_fresh_checkout boolean := false;
   v_ignore_renewal boolean := false;
   v_cancel_remote boolean := false;
+  v_cancel_at timestamptz;
+  v_explicit_reopen boolean := false;
 begin
   if v_pf is null or length(v_pf) < 3 then
     raise exception 'Unknown company or payment reference';
@@ -455,6 +626,16 @@ begin
   end if;
 
   v_from_status := v_sub.status;
+
+  v_cancel_at := coalesce(
+    v_sub.cancelled_at,
+    (
+      select max(a.created_at)
+        from public.fire_s_entitlement_audit a
+       where a.company_id = v_company
+         and a.event in ('LIFECYCLE_CANCELLED', 'SUBSCRIPTION_CANCELLED')
+    )
+  );
 
   -- Owner cancel is the last word. A later PayFast debit is not a new request
   -- unless Subscribe was started again after that cancel.
@@ -563,21 +744,28 @@ begin
       ) into v_open_checkout;
     end if;
     v_fresh_checkout := v_open_checkout and not v_prior_complete;
+    v_explicit_reopen := public.fire_s_payfast_explicit_reopen(
+      v_company, v_m, v_event, v_cancel_at
+    );
 
     if v_status = 'COMPLETE' then
-      -- Cancelled or expired: never reopen from a PayFast notice.
+      -- A checkout started after cancel reopens this same company.
+      -- An old debit (no new checkout) must not.
       -- Active only because an earlier notice ignored cancel: put it back.
       -- payment_pending without a fresh checkout is the old subscription debiting.
       v_ignore_renewal :=
-        v_from_status in ('cancelled', 'expired')
-        or (
-          v_user_cancelled
-          and not v_fresh_checkout
-          and v_from_status is distinct from 'payment_pending'
-        )
-        or (
-          v_from_status = 'payment_pending'
-          and not v_fresh_checkout
+        not v_explicit_reopen
+        and (
+          v_from_status in ('cancelled', 'expired')
+          or (
+            v_user_cancelled
+            and not v_fresh_checkout
+            and v_from_status is distinct from 'payment_pending'
+          )
+          or (
+            v_from_status = 'payment_pending'
+            and not v_fresh_checkout
+          )
         );
       if v_ignore_renewal then
         if v_from_status in ('active', 'past_due') then
@@ -597,6 +785,7 @@ begin
         v_cancel_remote := true;
       else
       v_kind := case
+        when v_explicit_reopen then 'LIFECYCLE_REACTIVATE'
         when v_from_status = 'payment_pending' and v_sub.cancelled_at is not null then 'LIFECYCLE_REACTIVATE'
         when v_from_status in ('active', 'past_due')
          and v_sub.current_period_end is not null
@@ -697,7 +886,18 @@ begin
     select s.status into v_new_status
       from public.fire_s_company_subscriptions s
      where s.id = v_sub.id;
-    if v_user_cancelled and v_new_status in ('active', 'past_due') then
+    v_explicit_reopen := public.fire_s_payfast_explicit_reopen(
+      v_company, v_m, v_event, v_cancel_at
+    );
+    if v_explicit_reopen and v_status = 'COMPLETE' and v_new_status is distinct from 'active' then
+      if public.fire_s_reopen_paid_checkout(v_company) then
+        v_new_status := 'active';
+        v_applied := true;
+        v_extended := true;
+        v_audit := 'LIFECYCLE_REACTIVATE';
+      end if;
+      v_cancel_remote := false;
+    elsif v_user_cancelled and v_new_status in ('active', 'past_due') and not v_explicit_reopen then
       update public.fire_s_company_subscriptions s
          set status = 'cancelled',
              cancelled_at = coalesce(s.cancelled_at, now()),
@@ -707,8 +907,10 @@ begin
       v_new_status := 'cancelled';
       v_applied := true;
     end if;
-    if v_new_status in ('cancelled', 'expired')
-       or (v_user_cancelled and v_new_status in ('active', 'past_due', 'cancelled')) then
+    if not v_explicit_reopen and (
+      v_new_status in ('cancelled', 'expired')
+      or (v_user_cancelled and v_new_status in ('active', 'past_due', 'cancelled'))
+    ) then
       v_cancel_remote := true;
     end if;
   end if;
@@ -736,6 +938,7 @@ begin
         'payment_grace_days', v_grace,
         'user_cancelled', v_user_cancelled,
         'fresh_checkout', v_fresh_checkout,
+        'explicit_reopen', v_explicit_reopen,
         'payfast_cancel_required', v_cancel_remote,
         'keep_data', true
       )
@@ -1007,6 +1210,12 @@ begin
     raise exception 'Not allowed to read another company billing';
   end if;
 
+  begin
+    perform public.fire_s_reopen_paid_checkout(v_company);
+  exception when others then
+    null;
+  end;
+
   select s.* into v_sub
     from public.fire_s_company_subscriptions s
    where s.company_id = v_company;
@@ -1040,6 +1249,51 @@ begin
     'can_cancel', public.fire_s_is_super_admin() or public.fire_s_can_manage_company(v_company),
     'authority', 'server'
   );
+end;
+$$;
+
+create or replace function public.fire_s_refresh_entitlement_status(p_company_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_info jsonb;
+  v_status text;
+  v_reason text;
+  v_used int;
+  v_prev text;
+begin
+  perform set_config('fire_s.entitlement_write', 'on', true);
+  begin
+    perform public.fire_s_reopen_paid_checkout(p_company_id);
+  exception when others then
+    null;
+  end;
+  v_info := public.fire_s_compute_entitlement(p_company_id);
+  v_status := v_info->>'status';
+  v_reason := v_info->>'reason';
+  v_used := coalesce((v_info->>'trial_inspections_used')::int, 0);
+
+  select c.entitlement_status into v_prev
+  from public.companies c
+  where c.id = p_company_id;
+
+  update public.companies c
+     set entitlement_status = v_status,
+         trial_inspections_used = v_used,
+         entitlement_updated_at = now(),
+         updated_at = now()
+   where c.id = p_company_id;
+
+  if v_reason = 'trial_limit_reached' and coalesce(v_prev, '') is distinct from 'trial_limit_reached' then
+    perform public.fire_s_audit_entitlement(p_company_id, 'TRIAL_LIMIT_REACHED', v_info);
+  elsif v_reason = 'trial_expired' and coalesce(v_prev, '') is distinct from 'trial_expired' then
+    perform public.fire_s_audit_entitlement(p_company_id, 'TRIAL_EXPIRED', v_info);
+  end if;
+
+  return v_info;
 end;
 $$;
 
@@ -1084,6 +1338,16 @@ revoke all on function public.fire_s_note_payfast_remote_cancel(uuid, boolean, t
 revoke all on function public.fire_s_note_payfast_remote_cancel(uuid, boolean, text) from anon;
 revoke all on function public.fire_s_note_payfast_remote_cancel(uuid, boolean, text) from authenticated;
 grant execute on function public.fire_s_note_payfast_remote_cancel(uuid, boolean, text) to service_role;
+
+revoke all on function public.fire_s_payfast_explicit_reopen(uuid, text, uuid, timestamptz) from public;
+revoke all on function public.fire_s_payfast_explicit_reopen(uuid, text, uuid, timestamptz) from anon;
+revoke all on function public.fire_s_payfast_explicit_reopen(uuid, text, uuid, timestamptz) from authenticated;
+grant execute on function public.fire_s_payfast_explicit_reopen(uuid, text, uuid, timestamptz) to service_role;
+
+revoke all on function public.fire_s_reopen_paid_checkout(uuid) from public;
+revoke all on function public.fire_s_reopen_paid_checkout(uuid) from anon;
+revoke all on function public.fire_s_reopen_paid_checkout(uuid) from authenticated;
+grant execute on function public.fire_s_reopen_paid_checkout(uuid) to service_role;
 
 revoke all on function public.fire_s_compute_entitlement(uuid) from public;
 revoke all on function public.fire_s_compute_entitlement(uuid) from anon;
