@@ -15,6 +15,9 @@ const app = read('staging/app.js');
 const sql = read('STAGING_CLAIM_JOIN.sql');
 const bootstrap = read('STAGING_BOOTSTRAP.sql');
 const liveEnv = read('fire-s-env.js');
+const liveStarted = read('fire-s-get-started.js');
+const liveApp = read('app.js');
+const liveSql = read('SUPABASE_smooth_onboarding.sql');
 
 assert.ok(
   /function joinFromVisibleInvites\(/.test(started) &&
@@ -79,6 +82,30 @@ assert.strictEqual(
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv),
   'Live Fire-S must be 1.3.67 after sit dit live'
+);
+assert.ok(
+  /function fireSCompanyFromClaimRpc\(/.test(liveApp) &&
+    /const membership = loadedMembership \|\| claimedMembership/.test(liveApp) &&
+    /status\.eq\.active,status\.is\.null/.test(liveApp) &&
+    /var waitingNote = ''/.test(liveStarted) &&
+    /function joinFailMessage\(/.test(liveStarted) &&
+    /Version 1\.3\.67/.test(read('index.html')),
+  'Live must keep the claimed company and stay on version 1.3.67'
+);
+assert.ok(
+  /raw_user_meta_data ->> 'email'/.test(liveSql) &&
+    /coalesce\(status, 'active'\) <> 'active'/.test(liveSql) &&
+    /if v_existing is not null then/.test(liveSql),
+  'Live claim SQL must return an existing company and reactivate only an inactive invite seat'
+);
+const livePaste = read('SUPABASE_claim_join_live.sql');
+assert.ok(
+  /fireye-sync/.test(livePaste) &&
+    /Does not delete inspections/.test(livePaste) &&
+    /fire_s_claim_my_invites/.test(livePaste) &&
+    /company_invites i/.test(livePaste) &&
+    !/delete from public\.inspections/.test(livePaste),
+  'Live SQL paste must join the inspector without deleting inspections'
 );
 
 console.log('inspector-join-after-password.test.js: ok');

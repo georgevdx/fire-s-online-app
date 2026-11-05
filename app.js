@@ -7066,7 +7066,7 @@ async function fireSLoadActiveCompanyMembership(userId) {
           : 'company_id, role, status'
       )
       .eq('user_id', userId)
-      .eq('status', 'active');
+      .or('status.eq.active,status.is.null');
 
     const result = await withTimeout(query, 10000).catch(() => ({
       data: [],
@@ -7141,6 +7141,22 @@ async function fireSLoadActiveCompanyMembership(userId) {
 
 window.fireSLoadActiveCompanyMembership = fireSLoadActiveCompanyMembership;
 
+function fireSCompanyFromClaimRpc(claimRes) {
+  const row = Array.isArray(claimRes?.data) ? claimRes.data[0] : claimRes?.data;
+  if (!row || typeof row !== 'object') return null;
+  const companyId = String(row.out_company_id || row.company_id || '').trim();
+  if (!companyId) return null;
+  const name = String(row.out_company_name || row.company_name || '').trim();
+  return {
+    company_id: companyId,
+    role: row.out_role || row.role || 'inspector',
+    status: 'active',
+    companies: name
+      ? { name, status: 'active', plan: 'development' }
+      : null
+  };
+}
+
 async function loadUserAccessProfile() {
   const previousProfile = currentUserProfile;
   const previousCompanyId = previousProfile?.companyId || null;
@@ -7165,14 +7181,19 @@ async function loadUserAccessProfile() {
     const user = userData.user;
 
     // Claim any pending company invites for this email (owner added them earlier).
+    // Keep the company the RPC returns. A later membership select can time out
+    // or miss a blank status and used to wipe this, which put the inspector
+    // back on Almost ready after a successful join.
+    let claimedMembership = null;
     try {
-      await withTimeout(
+      const claimRes = await withTimeout(
         supabaseClient.rpc('fire_s_claim_my_invites'),
         8000
       );
+      claimedMembership = fireSCompanyFromClaimRpc(claimRes);
     } catch (_) {}
 
-    const [profileResult, membership] = await Promise.all([
+    const [profileResult, loadedMembership] = await Promise.all([
       withTimeout(
         supabaseClient
           .from('profiles')
@@ -7183,6 +7204,7 @@ async function loadUserAccessProfile() {
       ).catch(error => ({ data: null, error })),
       fireSLoadActiveCompanyMembership(user.id)
     ]);
+    const membership = loadedMembership || claimedMembership;
 
     const profile = profileResult?.data || null;
     const profileError = profileResult?.error || null;
