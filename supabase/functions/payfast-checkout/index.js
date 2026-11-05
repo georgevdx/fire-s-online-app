@@ -239,35 +239,60 @@ async function beginPending(env, checkout, actorUserId) {
     err.status = 503;
     throw err;
   }
-  const res = await fetch(supabaseUrl + '/rest/v1/rpc/fire_s_begin_payfast_checkout', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer ' + serviceKey,
-      apikey: serviceKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      p_company_id: checkout.companyId,
-      p_m_payment_id: checkout.mPaymentId,
-      p_plan_code: checkout.planCode,
-      p_billing_interval: checkout.interval,
-      p_amount: checkout.amountNumber,
-      p_kind: checkout.kind,
-      p_actor_user_id: actorUserId || null
-    })
-  });
-  const data = await res.json().catch(function () {
-    return null;
-  });
-  if (!res.ok) {
+  async function postBegin(body) {
+    const res = await fetch(supabaseUrl + '/rest/v1/rpc/fire_s_begin_payfast_checkout', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + serviceKey,
+        apikey: serviceKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(function () {
+      return null;
+    });
+    return { res: res, data: data };
+  }
+
+  const baseBody = {
+    p_company_id: checkout.companyId,
+    p_m_payment_id: checkout.mPaymentId,
+    p_plan_code: checkout.planCode,
+    p_billing_interval: checkout.interval,
+    p_amount: checkout.amountNumber,
+    p_kind: checkout.kind,
+    p_actor_user_id: actorUserId || null
+  };
+  let posted = null;
+  if (checkout.kind === 'seat' && checkout.seatEmail) {
+    posted = await postBegin(
+      Object.assign({}, baseBody, {
+        p_seat_email: checkout.seatEmail,
+        p_seat_role: checkout.seatRole || 'inspector'
+      })
+    );
+    const seatHint = String(
+      (posted.data &&
+        (posted.data.message || posted.data.hint || posted.data.details || posted.data.error)) ||
+        ''
+    );
+    if (!posted.res.ok && /could not find the function|PGRST202|schema cache/i.test(seatHint)) {
+      posted = await postBegin(baseBody);
+    }
+  } else {
+    posted = await postBegin(baseBody);
+  }
+  if (!posted.res.ok) {
     const hint =
-      (data && (data.message || data.hint || data.details || data.error)) ||
+      (posted.data &&
+        (posted.data.message || posted.data.hint || posted.data.details || posted.data.error)) ||
       'Could not start PayFast checkout. The payment was not sent.';
     const err = new Error(String(hint));
     err.status = 500;
     throw err;
   }
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(posted.data) ? posted.data[0] : posted.data;
   return row;
 }
 
