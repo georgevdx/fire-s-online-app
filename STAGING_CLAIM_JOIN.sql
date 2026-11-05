@@ -29,7 +29,8 @@ begin
 
   v_email := lower(trim(coalesce(
     nullif(auth.jwt() ->> 'email', ''),
-    (select email from auth.users where id = v_uid)
+    (select nullif(trim(u.email), '') from auth.users u where u.id = v_uid),
+    (select nullif(trim(u.raw_user_meta_data ->> 'email'), '') from auth.users u where u.id = v_uid)
   )));
   if v_email is null or v_email = '' then
     return;
@@ -52,6 +53,11 @@ begin
      where m.user_id = v_uid
        and m.company_id = v_existing
      limit 1;
+    update public.company_invites
+       set status = 'accepted'
+     where company_id = v_existing
+       and lower(trim(email)) = v_email
+       and coalesce(status, 'pending') = 'pending';
     out_company_id := v_existing;
     out_company_name := v_name;
     out_role := coalesce(v_role, 'inspector');
@@ -72,24 +78,41 @@ begin
     return;
   end if;
 
-  begin
-    insert into public.company_members (company_id, user_id, role, status)
-    values (r.company_id, v_uid, r.role, 'active')
-    on conflict (company_id, user_id)
-    do update set role = excluded.role, status = 'active';
-  exception when unique_violation then
-    select m.company_id, c.name, m.role
-      into out_company_id, out_company_name, out_role
-      from public.company_members m
-      left join public.companies c on c.id = m.company_id
-     where m.user_id = v_uid
-       and coalesce(m.status, 'active') = 'active'
-     limit 1;
-    if out_company_id is not null then
-      return next;
-    end if;
-    return;
-  end;
+  -- A removed row still occupies the one-login seat. Point that inactive
+  -- row at this pending invite so Check again opens Home. Active seats
+  -- already returned above, so this cannot move someone to a second company.
+  update public.company_members
+     set company_id = r.company_id,
+         role = coalesce(nullif(trim(r.role), ''), 'inspector'),
+         status = 'active'
+   where user_id = v_uid
+     and coalesce(status, 'active') <> 'active';
+
+  if not found then
+    begin
+      insert into public.company_members (company_id, user_id, role, status)
+      values (
+        r.company_id,
+        v_uid,
+        coalesce(nullif(trim(r.role), ''), 'inspector'),
+        'active'
+      )
+      on conflict (company_id, user_id)
+      do update set role = excluded.role, status = 'active';
+    exception when unique_violation then
+      select m.company_id, c.name, m.role
+        into out_company_id, out_company_name, out_role
+        from public.company_members m
+        left join public.companies c on c.id = m.company_id
+       where m.user_id = v_uid
+         and coalesce(m.status, 'active') = 'active'
+       limit 1;
+      if out_company_id is not null then
+        return next;
+      end if;
+      return;
+    end;
+  end if;
 
   update public.company_invites
      set status = 'accepted'

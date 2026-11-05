@@ -154,6 +154,22 @@ begin
     return NEW;
   end if;
 
+  -- Owner already added this email under People. Claiming that invite
+  -- opens Home. The inspector does not Subscribe.
+  if exists (
+    select 1
+    from public.company_invites i
+    where i.company_id = NEW.company_id
+      and lower(trim(i.email)) = lower(trim(coalesce(
+        (select u.email from auth.users u where u.id = NEW.user_id),
+        (select u.raw_user_meta_data ->> 'email' from auth.users u where u.id = NEW.user_id),
+        ''
+      )))
+      and lower(coalesce(i.status, 'pending')) = 'pending'
+  ) then
+    return NEW;
+  end if;
+
   v_info := public.fire_s_compute_entitlement(NEW.company_id);
   if coalesce((v_info->>'can_create')::boolean, false) is not true
      and coalesce((v_info->>'allowed')::boolean, false) is not true then

@@ -27,6 +27,11 @@ assert.ok(/A subscription is required to start a new inspection cycle/.test(sql)
 assert.ok(/A subscription is required to start new inspections/.test(sql));
 assert.ok(/A Fire-S subscription is required to add company logins/.test(sql));
 assert.ok(/m\.user_id = NEW\.user_id/.test(sql), 'existing login must reactivate without adding a seat');
+assert.ok(
+  /from public\.company_invites i/.test(sql) &&
+    /lower\(coalesce\(i\.status, 'pending'\)\) = 'pending'/.test(sql),
+  'An owner invite must not be blocked by the new-login entitlement guard'
+);
 assert.ok(/keep_data/.test(sql));
 assert.ok(/super_admin/.test(sql));
 assert.ok(/fire_s_require_company_write/.test(sql));
