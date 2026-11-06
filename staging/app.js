@@ -22650,8 +22650,7 @@ function handleAnswerChange(selectEl, options = {}) {
 (function installFireSCompanyDataAuditV16(){
   'use strict';
 
-  const VERSION = 'company-data-audit-v16';
-  const AUDIT_KEY = 'fireSDataManagementAuditV12';
+  const VERSION = 'company-data-audit-v17';
   const MODAL_ID = 'fireSCompanyDataAuditV16';
   const BUTTON_ID = 'fireSCompanyDataAuditBtnV16';
   const STYLE_ID = 'fireSCompanyDataAuditV16Styles';
@@ -22690,6 +22689,22 @@ function handleAnswerChange(selectEl, options = {}) {
     ]).has(currentRole());
   }
 
+  function projectsStorageKey(){
+    try {
+      if (typeof fireSProjectsStorageKey === 'function') return fireSProjectsStorageKey();
+    } catch (_) {}
+    try {
+      if (window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging) return 'fireyeProjects-staging';
+    } catch (_) {}
+    return 'fireyeProjects';
+  }
+
+  function auditStorageKey(){
+    return projectsStorageKey() === 'fireyeProjects-staging'
+      ? 'fireSDataManagementAuditV12-staging'
+      : 'fireSDataManagementAuditV12';
+  }
+
   function readProjects(){
     try {
       if (typeof getProjects === 'function') {
@@ -22698,16 +22713,21 @@ function handleAnswerChange(selectEl, options = {}) {
       }
     } catch (_) {}
     try {
-      const projects = JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+      const projects = JSON.parse(localStorage.getItem(projectsStorageKey()) || '[]');
       return Array.isArray(projects) ? projects : [];
     } catch (_) {
       return [];
     }
   }
 
+  function writeProjects(projects){
+    if (typeof setProjects === 'function') setProjects(projects);
+    else localStorage.setItem(projectsStorageKey(), JSON.stringify(projects));
+  }
+
   function readStoredAudit(){
     try {
-      const entries = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+      const entries = JSON.parse(localStorage.getItem(auditStorageKey()) || '[]');
       return Array.isArray(entries) ? entries : [];
     } catch (_) {
       return [];
@@ -22857,7 +22877,9 @@ function handleAnswerChange(selectEl, options = {}) {
       .fire-s-company-audit-v16-backdrop{position:fixed;inset:0;z-index:10160;display:grid;place-items:center;padding:16px;background:rgba(8,22,33,.68)}
       .fire-s-company-audit-v16-dialog{width:min(100%,860px);max-height:calc(100vh - 28px);overflow:auto;border:1px solid #d4dde4;border-radius:18px;background:#fff;box-shadow:0 28px 80px rgba(3,16,26,.35)}
       .fire-s-company-audit-v16-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px;border-bottom:1px solid #e3e9ed;background:#f8fafb}
-      .fire-s-company-audit-v16-head h3{margin:3px 0 0;color:#172e42;font-size:21px}
+      .fire-s-company-audit-v16-head h3,
+      .fire-s-company-audit-v16-title{margin:4px 0 0;color:#0b1220;font-size:22px;font-weight:900;line-height:1.25}
+      html[data-fire-s-theme="dark"] .fire-s-company-audit-v16-head :is(h3,.fire-s-company-audit-v16-title){color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important;font-size:22px !important;opacity:1 !important;font-family:Arial,sans-serif !important}
       .fire-s-company-audit-v16-eyebrow{display:block;color:#476276;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
       .fire-s-company-audit-v16-close{width:38px;height:38px;border:1px solid #cbd6de;border-radius:10px;background:#fff;color:#3f5667;font-size:20px;cursor:pointer}
       .fire-s-company-audit-v16-body{display:grid;gap:11px;padding:18px 20px 21px}
@@ -22869,6 +22891,8 @@ function handleAnswerChange(selectEl, options = {}) {
       .fire-s-company-audit-v16-item strong{display:block;color:#1e374a;font-size:13px;line-height:1.35}
       .fire-s-company-audit-v16-item span{display:block;margin-top:4px;color:#687b89;font-size:11px;line-height:1.4}
       .fire-s-company-audit-v16-empty{padding:18px;border:1px dashed #c9d5dd;border-radius:13px;color:#647684;text-align:center}
+      .fire-s-company-audit-v16-clear{justify-self:start;min-height:42px;padding:9px 13px;border:1px solid #b42323;border-radius:10px;background:#fff !important;color:#a11d1d !important;-webkit-text-fill-color:#a11d1d !important;font-weight:900;cursor:pointer}
+      .fire-s-company-audit-v16-clear:disabled{opacity:.45;cursor:not-allowed}
       @media(max-width:560px){
         .fire-s-company-audit-v16-backdrop{padding:7px;place-items:start center}
         .fire-s-company-audit-v16-dialog{max-height:calc(100vh - 14px);border-radius:14px}
@@ -22880,6 +22904,55 @@ function handleAnswerChange(selectEl, options = {}) {
 
   function closeAudit(){
     document.getElementById(MODAL_ID)?.remove();
+  }
+
+  function clearCompanyAudit(){
+    if (!canViewCompanyAudit()) {
+      alert('Only a Company Admin or Super Admin may clear the Data Audit Log.');
+      return false;
+    }
+    const visible = companyAuditEntries();
+    if (!visible.length) return false;
+    const confirmed = window.confirm(
+      'Clear the Data Audit Log? This removes the recorded events shown here. Inspections and premises are not deleted.'
+    );
+    if (!confirmed) return false;
+
+    const visibleKeys = new Set(visible.map(entryKey));
+    try {
+      const existing = JSON.parse(localStorage.getItem(auditStorageKey()) || '[]');
+      const kept = (Array.isArray(existing) ? existing : []).filter(entry =>
+        !visibleKeys.has(entryKey(entry))
+      );
+      localStorage.setItem(auditStorageKey(), JSON.stringify(kept));
+    } catch (_) {}
+
+    const projects = readProjects();
+    let changed = false;
+    const next = projects.map(project => {
+      const audit = Array.isArray(project?.dataManagementAudit)
+        ? project.dataManagementAudit
+        : [];
+      if (!audit.length) return project;
+      const kept = audit.filter(entry => !visibleKeys.has(entryKey({
+        ...entry,
+        projectId: project?.id || '',
+        premises: entry?.premises || premisesLabel(project),
+        companyId: project?.companyId || project?.company_id || ''
+      })));
+      if (kept.length === audit.length) return project;
+      changed = true;
+      return {
+        ...project,
+        dataManagementAudit: kept,
+        syncPending: true,
+        lastSaved: new Date().toISOString()
+      };
+    });
+    if (changed) writeProjects(next);
+    ensureGatewayButton();
+    showAudit();
+    return true;
   }
 
   function showAudit(){
@@ -22910,21 +22983,26 @@ function handleAnswerChange(selectEl, options = {}) {
       <div class="fire-s-company-audit-v16-dialog" role="dialog" aria-modal="true" aria-labelledby="fireSCompanyAuditTitleV16">
         <div class="fire-s-company-audit-v16-head">
           <div>
-            <span class="fire-s-company-audit-v16-eyebrow">Admin · Read-only</span>
-            <h3 id="fireSCompanyAuditTitleV16">Data Management Audit Log</h3>
+            <span class="fire-s-company-audit-v16-eyebrow">Admin</span>
+            <div class="fire-s-company-audit-v16-title" id="fireSCompanyAuditTitleV16" style="margin:4px 0 0;color:#0b1220;-webkit-text-fill-color:#0b1220;font-size:22px;font-weight:900;line-height:1.25;opacity:1;font-family:Arial,sans-serif">Data Management Audit Log</div>
           </div>
           <button type="button" class="fire-s-company-audit-v16-close" aria-label="Close">×</button>
         </div>
         <div class="fire-s-company-audit-v16-body">
           <div class="fire-s-company-audit-v16-note">
-            ${entries.length} recorded event${entries.length === 1 ? '' : 's'} · Newest activity appears first. Records remain visible here after an entire premises is permanently deleted.
+            ${entries.length} recorded event${entries.length === 1 ? '' : 's'} · Newest activity appears first. Clear removes these recorded events. Inspections and premises stay.
           </div>
+          <button type="button" class="fire-s-company-audit-v16-clear" id="fireSClearCompanyAuditV16" ${entries.length ? '' : 'disabled'}>Clear Data Audit Log</button>
           ${rows}
         </div>
       </div>
     `;
     document.body.appendChild(backdrop);
     backdrop.querySelector('.fire-s-company-audit-v16-close')?.addEventListener('click', closeAudit);
+    backdrop.querySelector('#fireSClearCompanyAuditV16')?.addEventListener('click', event => {
+      event.preventDefault();
+      clearCompanyAudit();
+    });
     backdrop.addEventListener('click', event => {
       if (event.target === backdrop) closeAudit();
     });
@@ -22996,10 +23074,12 @@ function handleAnswerChange(selectEl, options = {}) {
   }
   window.addEventListener('pageshow', scheduleButton);
   window.fireSOpenCompanyDataAuditV16 = showAudit;
+  window.fireSClearCompanyDataAuditV16 = clearCompanyAudit;
   window.FireSCompanyDataAuditV16 = {
     version: VERSION,
     canViewCompanyAudit,
     companyAuditEntries,
+    clearCompanyAudit,
     actionLabel
   };
 })();
