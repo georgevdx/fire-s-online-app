@@ -81,6 +81,71 @@
     return ['manager', 'company_owner', 'owner', 'super_admin', 'admin'].includes(currentRole());
   }
 
+  const HISTORY_CUTOFF = '2026-11-06';
+  const CLEARED_IDS_KEY = 'fireSManagementClearedIds';
+
+  function personBlob(parts) {
+    return parts.map(text).join(' ').toLowerCase();
+  }
+
+  function isHiddenPerson(blob) {
+    if (/johandb|\bjdb\b|\bjohan\b/.test(blob)) return true;
+    let profile = {};
+    try { profile = window.currentUserProfile || {}; } catch (_) {}
+    const email = text(profile.email).toLowerCase();
+    const name = text(profile.fullName || profile.name || profile.displayName).toLowerCase();
+    if (email && blob.includes(email)) return true;
+    if (name.length > 2 && blob.includes(name)) return true;
+    return false;
+  }
+
+  function projectPersonBlob(project) {
+    const named = text(project?.inspectorName || project?.assignedInspectorName);
+    if (named) {
+      return personBlob([named, project?.assignedInspectorEmail, project?.inspectorEmail]);
+    }
+    return personBlob([
+      project?.assignedInspectorEmail,
+      project?.inspectorEmail,
+      project?.createdByEmail,
+      project?.createdByName
+    ]);
+  }
+
+  function bornDay(project) {
+    const raw = text(
+      project?.inspectionCreatedAt ||
+      project?.workspaceCreatedAt ||
+      project?.createdAt ||
+      project?.created_at ||
+      project?.inspectionDate ||
+      project?.completedAt
+    );
+    return raw ? raw.slice(0, 10) : '';
+  }
+
+  function clearedIdSet(list) {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(CLEARED_IDS_KEY) || 'null'); } catch (_) {}
+    if (Array.isArray(saved)) return new Set(saved.map(String));
+    const ids = (list || []).map(project => String(project?.id || '')).filter(Boolean);
+    if (!ids.length) return new Set();
+    try { localStorage.setItem(CLEARED_IDS_KEY, JSON.stringify(ids)); } catch (_) {}
+    return new Set(ids);
+  }
+
+  function visibleDashboardProjects(list) {
+    const source = Array.isArray(list) ? list : [];
+    const gone = clearedIdSet(source);
+    return source.filter(project => {
+      const id = String(project?.id || '');
+      if (id && gone.has(id)) return false;
+      if (isHiddenPerson(projectPersonBlob(project))) return false;
+      const day = bornDay(project);
+      return !!day && day >= HISTORY_CUTOFF;
+    });
+  }
+
   function projects() {
     let list = [];
     try {
@@ -91,7 +156,7 @@
         list = getVisibleProjectsForCurrentUser(list) || list;
       }
     } catch (_) {}
-    return Array.isArray(list) ? list : [];
+    return visibleDashboardProjects(list);
   }
 
   function isCompleted(project) {
@@ -2027,6 +2092,10 @@ in
   window.fireSExitManagementFullscreen = leaveFullscreen;
   window.fireSOpenManagementDashboard = openDashboard;
   window.fireSRenderManagementDashboard = render;
+  window.fireSDashboardVisibleProjects = visibleDashboardProjects;
+  window.fireSDashboardHiddenPerson = function (email, name) {
+    return isHiddenPerson(personBlob([email, name]));
+  };
   window.fireSDashboardCharts = {
     barChart,
     columnChart,
