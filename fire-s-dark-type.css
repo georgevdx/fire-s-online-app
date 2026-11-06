@@ -804,6 +804,29 @@ html[data-fire-s-theme="dark"] .pbi-shell .pbi-open-btn {
   border-color: #94a3b8 !important;
 }
 
+/* Role and inspector menus open as a light list. Dark Mode was painting that type nearly white. */
+html[data-fire-s-theme="dark"] #fireSSeatRole,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-seat select,
+html[data-fire-s-theme="dark"] #inspectorBoardSelect,
+html[data-fire-s-theme="dark"] #inspectorBoardHomeSelect,
+html[data-fire-s-theme="dark"] .inspector-board-toolbar select,
+html[data-fire-s-theme="dark"] .inspector-board-home-bar select,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-card-actions select,
+html[data-fire-s-theme="dark"] #fireSSeatRole option,
+html[data-fire-s-theme="dark"] .fire-s-subscribe-seat select option,
+html[data-fire-s-theme="dark"] #inspectorBoardSelect option,
+html[data-fire-s-theme="dark"] #inspectorBoardHomeSelect option,
+html[data-fire-s-theme="dark"] .inspector-board-toolbar select option,
+html[data-fire-s-theme="dark"] .inspector-board-home-bar select option,
+html[data-fire-s-theme="dark"] #companyTeamSection .company-team-card-actions select option {
+  color-scheme: light !important;
+  color: #0b1220 !important;
+  -webkit-text-fill-color: #0b1220 !important;
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
 /* Date fields stay on light paper so the calendar icon and the date stay visible.
    Dark color-scheme hid both, so a tap during an inspection looked like nothing happened. */
 input[type="date"],
