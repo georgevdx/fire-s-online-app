@@ -133,7 +133,7 @@
   <link rel="stylesheet" href="fire-s-desktop-access.css?v=1-3-fit-layout">
   <link rel="stylesheet" href="fire-s-screen-lock.css?v=1-2-blank-click">
   <link rel="stylesheet" href="fire-s-entitlement.css?v=1-3-107-lock">
-  <link rel="stylesheet" href="fire-s-dark-type.css?v=1-7-billing">
+  <link rel="stylesheet" href="fire-s-dark-type.css?v=1-8-select-ink">
   <style>
     #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled {
       border: 2px solid #b91c1c;
@@ -189,6 +189,19 @@
     .fire-s-data-v12-card .fire-s-data-v12-section-title {
       font-size: 18px !important;
       line-height: 1.3 !important;
+    }
+    html[data-fire-s-theme="dark"] #fireSSeatRole,
+    html[data-fire-s-theme="dark"] #fireSSeatRole option,
+    html[data-fire-s-theme="dark"] #inspectorBoardSelect,
+    html[data-fire-s-theme="dark"] #inspectorBoardSelect option,
+    html[data-fire-s-theme="dark"] #inspectorBoardHomeSelect,
+    html[data-fire-s-theme="dark"] #inspectorBoardHomeSelect option {
+      color-scheme: light !important;
+      color: #0b1220 !important;
+      -webkit-text-fill-color: #0b1220 !important;
+      background-color: #ffffff !important;
+      opacity: 1 !important;
+      font-weight: 700 !important;
     }
   </style>
 </head>
