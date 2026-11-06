@@ -20,13 +20,18 @@ assert.ok(
   /function clearCompanyAudit\(/.test(panel) &&
     /Clear Data Audit Log/.test(panel) &&
     /Inspections and premises are not deleted/.test(panel) &&
+    /return currentRole\(\) === 'super_admin'/.test(panel) &&
     /fireSDataManagementAuditV12-staging/.test(panel) &&
     !/getItem\('fireyeProjects'\)/.test(panel),
   'Clear must remove the toets audit log without reading the live projects key'
 );
 assert.ok(
-  !/function clearCompanyAudit\(/.test(liveApp),
-  'Clear stays on the toets-blad until it is sat live'
+  /function clearCompanyAudit\(/.test(liveApp) &&
+    /return currentRole\(\) === 'super_admin'/.test(liveApp) &&
+    /Only a Super Admin may view the Data Audit Log/.test(liveApp) &&
+    /app\.js\?v=1-3-67-premises-audit/.test(read('index.html')) &&
+    /Version 1\.3\.67/.test(read('index.html')),
+  'Live Data Audit Log is Super Admin only and stays on version 1.3.67'
 );
 
 function fakeEl() {
@@ -47,7 +52,7 @@ function fakeEl() {
   };
 }
 
-function runClear(confirmResult) {
+function runClear(confirmResult, role) {
   const store = Object.create(null);
   const localStorage = {
     getItem(key) {
@@ -111,7 +116,7 @@ function runClear(confirmResult) {
     addEventListener() {},
     confirm() { return confirmResult; },
     currentUserProfile: {
-      role: 'company_admin',
+      role,
       companyId: 'co-1',
       fullName: 'Owner'
     }
@@ -131,7 +136,7 @@ function runClear(confirmResult) {
     localStorage,
     alert() {},
     confirm() { return confirmResult; },
-    getCurrentUserRole() { return 'company_admin'; },
+    getCurrentUserRole() { return role; },
     fireSProjectsStorageKey() { return 'fireyeProjects-staging'; },
     setProjects(projects) {
       localStorage.setItem('fireyeProjects-staging', JSON.stringify(projects));
@@ -148,44 +153,39 @@ function runClear(confirmResult) {
   return { cleared, store };
 }
 
-const declined = runClear(false);
+const hidden = runClear(true, 'company_admin');
+assert.strictEqual(hidden.cleared, false, 'A Company Admin must not clear the Data Audit Log');
+assert.ok(
+  JSON.parse(hidden.store['fireSDataManagementAuditV12-staging']).some(entry => entry.id === 'audit-ours'),
+  'A Company Admin must leave the audit events in place'
+);
+
+const declined = runClear(false, 'super_admin');
 assert.strictEqual(declined.cleared, false, 'Cancel must leave the Data Audit Log in place');
 assert.ok(
   JSON.parse(declined.store['fireSDataManagementAuditV12-staging']).some(entry => entry.id === 'audit-ours'),
-  'Cancel must keep this company audit event'
+  'Cancel must keep the audit event'
 );
 
-const cleared = runClear(true);
-assert.strictEqual(cleared.cleared, true, 'Clear must remove the events shown in the Data Audit Log');
+const cleared = runClear(true, 'super_admin');
+assert.strictEqual(cleared.cleared, true, 'Super Admin Clear must remove the events shown in the Data Audit Log');
 const stagingAudit = JSON.parse(cleared.store['fireSDataManagementAuditV12-staging']);
-assert.ok(!stagingAudit.some(entry => entry.id === 'audit-ours'), 'This company event must leave the toets audit log');
-assert.ok(stagingAudit.some(entry => entry.id === 'audit-other'), 'Another company event must stay in the toets audit log');
+assert.deepStrictEqual(stagingAudit, [], 'Super Admin Clear empties the toets audit log');
 const stagingProjects = JSON.parse(cleared.store['fireyeProjects-staging']);
 const ours = stagingProjects.find(project => project.id === 'p-ours');
 const other = stagingProjects.find(project => project.id === 'p-other');
 assert.deepStrictEqual(ours.dataManagementAudit, [], 'This premises audit trail must be cleared');
 assert.deepStrictEqual(ours.inspectionHistory, [{ inspectionNumber: 'FS-200' }], 'Clear must not delete inspection history');
-assert.strictEqual(other.dataManagementAudit[0].id, 'audit-other', 'Another company premises audit must stay');
+assert.deepStrictEqual(other.dataManagementAudit, [], 'Super Admin Clear removes every premises trail that was shown');
+assert.deepStrictEqual(other.inspectionHistory, [{ inspectionNumber: 'FS-300' }], 'Clear must not delete another company inspection history');
 assert.strictEqual(
-  JSON.parse(cleared.store.fireyeProjects)[0].id,
-  'live-premises',
+  JSON.parse(cleared.store.fireyeProjects)[0].dataManagementAudit[0].id,
+  'live-audit',
   'Clear on toets must not change live premises'
 );
 assert.ok(
   JSON.parse(cleared.store.fireSDataManagementAuditV12).some(entry => entry.id === 'live-stored'),
   'Clear on toets must not wipe the live audit log'
 );
-assert.strictEqual(
-  contextEntries(cleared),
-  0,
-  'This company Data Audit Log must be empty after Clear'
-);
-
-function contextEntries(result) {
-  return JSON.parse(result.store['fireSDataManagementAuditV12-staging'])
-    .filter(entry => entry.companyId === 'co-1').length +
-    JSON.parse(result.store['fireyeProjects-staging'])
-      .find(project => project.id === 'p-ours').dataManagementAudit.length;
-}
 
 console.log('data-audit-log-clear.test.js: ok');

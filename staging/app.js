@@ -22372,14 +22372,7 @@ function handleAnswerChange(selectEl, options = {}) {
   }
 
   function canViewAudit(){
-    return new Set([
-      'super_admin',
-      'company_owner',
-      'company_admin',
-      'owner',
-      'admin',
-      'local'
-    ]).has(currentRole());
+    return currentRole() === 'super_admin';
   }
 
   function readProjects(){
@@ -22536,7 +22529,7 @@ function handleAnswerChange(selectEl, options = {}) {
 
   function showAudit(projectId){
     if (!canViewAudit()) {
-      alert('Only a Company Admin or Super Admin may view the Data Management Audit Trail.');
+      alert('Only a Super Admin may view the Data Management Audit Trail.');
       return false;
     }
     const project = findProject(projectId);
@@ -22679,14 +22672,7 @@ function handleAnswerChange(selectEl, options = {}) {
   }
 
   function canViewCompanyAudit(){
-    return new Set([
-      'super_admin',
-      'company_owner',
-      'company_admin',
-      'owner',
-      'admin',
-      'local'
-    ]).has(currentRole());
+    return currentRole() === 'super_admin';
   }
 
   function projectsStorageKey(){
@@ -22908,7 +22894,7 @@ function handleAnswerChange(selectEl, options = {}) {
 
   function clearCompanyAudit(){
     if (!canViewCompanyAudit()) {
-      alert('Only a Company Admin or Super Admin may clear the Data Audit Log.');
+      alert('Only a Super Admin may clear the Data Audit Log.');
       return false;
     }
     const visible = companyAuditEntries();
@@ -22957,7 +22943,7 @@ function handleAnswerChange(selectEl, options = {}) {
 
   function showAudit(){
     if (!canViewCompanyAudit()) {
-      alert('Only a Company Admin or Super Admin may view the Data Audit Log.');
+      alert('Only a Super Admin may view the Data Audit Log.');
       return false;
     }
     ensureStyles();
