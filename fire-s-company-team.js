@@ -1003,6 +1003,21 @@
       });
   }
 
+  function hiddenTeamPerson(email, name) {
+    return typeof window.fireSDashboardHiddenPerson === 'function' &&
+      window.fireSDashboardHiddenPerson(email, name);
+  }
+
+  function visibleTeamPeople(people) {
+    return (people || []).filter(person => {
+      const profile = person.profiles || person;
+      return !hiddenTeamPerson(
+        profile.email || person.email,
+        profile.full_name || person.full_name || person.name
+      );
+    });
+  }
+
   function countMembersByRole(members) {
     const tallies = { inspector: 0, manager: 0, company_owner: 0 };
     members
@@ -1025,10 +1040,10 @@
       meta.textContent = 'No company linked yet';
       return;
     }
-    const activeMembers = members.filter(
+    const activeMembers = visibleTeamPeople(members).filter(
       m => text(m.status || 'active').toLowerCase() !== 'inactive'
     );
-    const pending = Array.isArray(pendingInvites) ? pendingInvites : [];
+    const pending = visibleTeamPeople(Array.isArray(pendingInvites) ? pendingInvites : []);
     const tallies = countMembersByRole(activeMembers);
     pending.forEach(invite => {
       const role = text(invite.role).toLowerCase() || 'inspector';
@@ -1214,7 +1229,7 @@
     if (!list) return;
     window.__fireSTeamMembersCache = Array.isArray(members) ? members : [];
 
-    const active = members.filter(m => text(m.status || 'active').toLowerCase() !== 'inactive');
+    const active = visibleTeamPeople(members).filter(m => text(m.status || 'active').toLowerCase() !== 'inactive');
     if (!active.length) {
       list.innerHTML =
         '<div class="company-team-empty">No personnel yet. Add someone by email above.</div>';

@@ -26,7 +26,7 @@ assert.ok(
   'Opening a premises from the dashboard must leave fullscreen before Quick Actions'
 );
 assert.ok(/app\.js\?v=1-3-130-toets/.test(html));
-assert.ok(/fire-s-management-dashboard\.js\?v=1-21-action-label/.test(html));
+assert.ok(/fire-s-management-dashboard\.js\?v=1-22-clear-history/.test(html));
 
 const checklist = [
   {

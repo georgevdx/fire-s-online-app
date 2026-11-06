@@ -63,10 +63,14 @@
     }
     try {
       if (typeof getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
-        return getVisibleProjectsForCurrentUser(list) || [];
+        list = getVisibleProjectsForCurrentUser(list) || [];
       }
     } catch (_) {}
-    return Array.isArray(list) ? list : [];
+    if (!Array.isArray(list)) list = [];
+    if (typeof window.fireSDashboardVisibleProjects === 'function') {
+      return window.fireSDashboardVisibleProjects(list);
+    }
+    return list;
   }
 
   function inspectorIdentity(project) {
@@ -402,6 +406,11 @@
           };
         })
         .filter(Boolean);
+      if (typeof window.fireSDashboardHiddenPerson === 'function') {
+        directoryCache = directoryCache.filter(
+          person => !window.fireSDashboardHiddenPerson(person.email, person.name)
+        );
+      }
     } catch (_) {}
     return directoryCache;
   }
