@@ -60,6 +60,11 @@ assert.ok(
   'Delete confirm panels must wire Recycle and Immediate actions'
 );
 assert.ok(
+  /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-head h3,/.test(panel) &&
+    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-card h4\{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important\}/.test(panel),
+  'Delete dialog headings must stay near-black and heavy on the white dialog in Dark Mode'
+);
+assert.ok(
   /app\.js\?v=1-3-130-toets/.test(html) &&
     /Version 1\.3\.130-toets/.test(html),
   'Toets must cache-bust Data Management delete without bumping the displayed version'

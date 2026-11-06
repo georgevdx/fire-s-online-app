@@ -46229,13 +46229,15 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
       .fire-s-data-v12-backdrop{position:fixed;inset:0;z-index:60050;display:grid;place-items:center;padding:16px;background:rgba(8,22,33,.68)}
       .fire-s-data-v12-dialog{width:min(100%,760px);max-height:calc(100vh - 28px);overflow:auto;border:1px solid #d4dde4;border-radius:18px;background:#fff;box-shadow:0 28px 80px rgba(3,16,26,.35)}
       .fire-s-data-v12-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px;border-bottom:1px solid #e3e9ed;background:#f8fafb}
-      .fire-s-data-v12-head h3{margin:3px 0 0;color:#172e42;font-size:21px}
+      .fire-s-data-v12-head h3{margin:3px 0 0;color:#0b1220;font-size:22px;font-weight:900;line-height:1.25}
       .fire-s-data-v12-eyebrow{display:block;color:#a62424;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
       .fire-s-data-v12-close{width:38px;height:38px;border:1px solid #cbd6de;border-radius:10px;background:#fff;color:#3f5667;font-size:20px;cursor:pointer}
       .fire-s-data-v12-body{display:grid;gap:13px;padding:18px 20px 21px}
       .fire-s-data-v12-safety{padding:12px 13px;border:1px solid #f1cf7a;border-radius:12px;background:#fff8e7;color:#6f4a00;font-size:12px;line-height:1.45}
       .fire-s-data-v12-card{padding:15px;border:1px solid #dbe4ea;border-radius:14px;background:#fff}
-      .fire-s-data-v12-card h4{margin:0;color:#1c3447;font-size:15px}
+      .fire-s-data-v12-card h4{margin:0;color:#0b1220;font-size:16px;font-weight:900;line-height:1.3}
+      html[data-fire-s-theme="dark"] .fire-s-data-v12-head h3,
+      html[data-fire-s-theme="dark"] .fire-s-data-v12-card h4{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important}
       .fire-s-data-v12-card p{margin:6px 0 12px;color:#617483;font-size:12px;line-height:1.45}
       .fire-s-data-v12-card select,.fire-s-data-v12-card input{width:100%;min-height:43px;box-sizing:border-box;margin:0 0 9px;padding:9px 11px;border:1px solid #cbd7df;border-radius:10px;background:#fff;color:#20384a}
       .fire-s-data-v12-card button,.fire-s-data-v12-recycle-button{min-height:42px;padding:9px 13px;border:1px solid #b42323;border-radius:10px;background:#fff;color:#a11d1d;font-weight:900;cursor:pointer}
