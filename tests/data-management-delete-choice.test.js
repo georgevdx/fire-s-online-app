@@ -60,10 +60,17 @@ assert.ok(
   'Delete confirm panels must wire Recycle and Immediate actions'
 );
 assert.ok(
-  /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-head h3,/.test(panel) &&
-    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-card h4\{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important\}/.test(panel) &&
-    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-head h3,/.test(liveApp) &&
-    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-card h4\{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important\}/.test(liveApp),
+  /class="fire-s-data-v12-title"/.test(panel) &&
+    /class="fire-s-data-v12-section-title"/.test(panel) &&
+    /font-size:26px !important/.test(panel) &&
+    /font-size:18px !important/.test(panel) &&
+    /class="fire-s-data-v12-title"/.test(liveApp) &&
+    /class="fire-s-data-v12-section-title"/.test(liveApp) &&
+    /font-size:26px !important/.test(liveApp) &&
+    /font-size:18px !important/.test(liveApp) &&
+    /\.fire-s-data-v12-card h4/.test(liveHtml) &&
+    /font-size: 26px !important/.test(liveHtml) &&
+    /font-size: 18px !important/.test(liveHtml),
   'Delete dialog headings must stay near-black and heavy on the white dialog in Dark Mode, on toets and live'
 );
 assert.ok(
