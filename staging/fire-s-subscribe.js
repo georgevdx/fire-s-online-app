@@ -29,6 +29,16 @@
     return !!(pf && pf.isEnabled && pf.isEnabled());
   }
 
+  // Toets may invite before PayFast so a sandbox 404 still leaves the person
+  // on Personnel. Production invites only after PayFast confirms the payment.
+  function inviteSeatBeforePayment() {
+    try {
+      return !!(window.FIRE_S_ENV && window.FIRE_S_ENV.isStaging);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function ownerEmail() {
     try {
       return String((window.currentUserProfile && window.currentUserProfile.email) || '')
@@ -1074,6 +1084,53 @@
     } catch (_) {}
   }
 
+  async function subscribeSeatAfterPayment(email, role) {
+    if (!payfastOn()) {
+      setMessage(
+        'PayFast must confirm this payment before this email is invited.',
+        true
+      );
+      return;
+    }
+    var cat = catalog();
+    var seatBtn = byId('fireSSubscribeSeatBtn');
+    if (seatBtn) seatBtn.disabled = true;
+    setMessage('Opening PayFast. This email is invited only after the payment is confirmed.');
+    try {
+      var intervalId = selectedBillingInterval();
+      if (cat && cat.persistCompanyPlan) {
+        try {
+          await cat.persistCompanyPlan('standard', intervalId);
+          paintCurrent();
+        } catch (_) {}
+      }
+      var seatPay = await payfast().startCheckout({
+        kind: 'seat',
+        company: companyName() || 'Fire-S',
+        email: ownerEmail(),
+        seatEmail: email,
+        seatRole: role,
+        interval: intervalId
+      });
+      if (!seatPay || seatPay.ok === false) {
+        setMessage(
+          (seatPay && seatPay.error) ||
+            'PayFast did not open. This email was not invited.',
+          true
+        );
+        return;
+      }
+      setMessage(
+        email +
+          ' is not on Personnel yet. They appear after PayFast confirms the payment.'
+      );
+    } catch (err) {
+      setMessage((err && err.message) || 'Could not open PayFast for this email.', true);
+    } finally {
+      if (seatBtn) seatBtn.disabled = false;
+    }
+  }
+
   async function subscribeSeat() {
     var emailInput = byId('fireSSeatEmail');
     var roleSelect = byId('fireSSeatRole');
@@ -1087,6 +1144,10 @@
     var passwordAgain = String((password2Input && password2Input.value) || '');
     if (!email || email.indexOf('@') < 0) {
       setMessage('Enter a valid email address.', true);
+      return;
+    }
+    if (!inviteSeatBeforePayment()) {
+      await subscribeSeatAfterPayment(email, role);
       return;
     }
     if (!password || !passwordAgain) {
@@ -1126,6 +1187,7 @@
           company: companyName() || 'Fire-S',
           email: ownerEmail(),
           seatEmail: email,
+          seatRole: role,
           interval: intervalId
         });
         if (seatPay && seatPay.ok === false) {

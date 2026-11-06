@@ -329,6 +329,7 @@
           kind: text(info && info.kind) || 'subscribe',
           interval: interval,
           seatEmail: text(info && info.seatEmail),
+          seatRole: text(info && info.seatRole),
           companyName: text(info && info.company)
         })
       });
