@@ -60,6 +60,26 @@ assert.ok(
   'Delete confirm panels must wire Recycle and Immediate actions'
 );
 assert.ok(
+  /class="fire-s-data-v12-title"/.test(panel) &&
+    /class="fire-s-data-v12-section-title"/.test(panel) &&
+    /font-size:26px !important/.test(panel) &&
+    /font-size:18px !important/.test(panel) &&
+    /class="fire-s-data-v12-title"/.test(liveApp) &&
+    /class="fire-s-data-v12-section-title"/.test(liveApp) &&
+    /font-size:26px !important/.test(liveApp) &&
+    /font-size:18px !important/.test(liveApp) &&
+    /\.fire-s-data-v12-card h4/.test(liveHtml) &&
+    /font-size: 26px !important/.test(liveHtml) &&
+    /font-size: 18px !important/.test(liveHtml),
+  'Delete dialog headings must stay near-black and heavy on the white dialog in Dark Mode, on toets and live'
+);
+assert.ok(
+  /app\.js\?v=1-3-67-premises-heading/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises-heading/.test(liveHtml) &&
+    /Version 1\.3\.67/.test(liveHtml),
+  'Live picks up the heading fix without bumping the displayed version'
+);
+assert.ok(
   /app\.js\?v=1-3-130-toets/.test(html) &&
     /Version 1\.3\.130-toets/.test(html),
   'Toets must cache-bust Data Management delete without bumping the displayed version'

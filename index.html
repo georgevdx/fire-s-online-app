@@ -10,7 +10,7 @@
     (function fireSDropStuckLiveCache() {
       try {
         var WANT = '1.3.67';
-        var FLAG = 'fireS.liveCacheDrop.1-3-67-premises-photos-phone';
+        var FLAG = 'fireS.liveCacheDrop.1-3-67-premises-heading';
         if (localStorage.getItem(FLAG) === WANT) return;
         if (!('serviceWorker' in navigator)) {
           try { localStorage.setItem(FLAG, WANT); } catch (_) {}
@@ -167,6 +167,28 @@
     html[data-fire-s-theme="dark"] #fireSSubscribeStatus.fire-s-subscribe-status.is-cancelled strong {
       font-size: 1.45rem !important;
       font-weight: 800 !important;
+    }
+  </style>
+  <style>
+    .fire-s-data-v12-head h3,
+    .fire-s-data-v12-head .fire-s-data-v12-title,
+    .fire-s-data-v12-card h4,
+    .fire-s-data-v12-card .fire-s-data-v12-section-title {
+      color: #0b1220 !important;
+      -webkit-text-fill-color: #0b1220 !important;
+      font-weight: 900 !important;
+      font-family: Arial, sans-serif !important;
+      opacity: 1 !important;
+    }
+    .fire-s-data-v12-head h3,
+    .fire-s-data-v12-head .fire-s-data-v12-title {
+      font-size: 26px !important;
+      line-height: 1.2 !important;
+    }
+    .fire-s-data-v12-card h4,
+    .fire-s-data-v12-card .fire-s-data-v12-section-title {
+      font-size: 18px !important;
+      line-height: 1.3 !important;
     }
   </style>
 </head>
@@ -1922,7 +1944,7 @@
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
   <script src="new-inspection-flow.js?v=106-1-hide-during-fill"></script>
   <script src="fire-s-service-requests.js?v=1-2-archive"></script>
-  <script src="app.js?v=1-3-67-premises-photos-phone"></script>
+  <script src="app.js?v=1-3-67-premises-heading"></script>
   <script src="inspection-lifecycle-engine.js?v=1-1-cc-place"></script>
   <script src="inspector-v4.js?v=4-10-live-open"></script>
     <script src="fire-s-clean-home-roles.js?v=2-45-still"></script>
