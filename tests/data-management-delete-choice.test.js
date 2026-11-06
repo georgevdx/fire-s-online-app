@@ -61,8 +61,16 @@ assert.ok(
 );
 assert.ok(
   /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-head h3,/.test(panel) &&
-    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-card h4\{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important\}/.test(panel),
-  'Delete dialog headings must stay near-black and heavy on the white dialog in Dark Mode'
+    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-card h4\{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important\}/.test(panel) &&
+    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-head h3,/.test(liveApp) &&
+    /html\[data-fire-s-theme="dark"\] \.fire-s-data-v12-card h4\{color:#0b1220 !important;-webkit-text-fill-color:#0b1220 !important;font-weight:900 !important\}/.test(liveApp),
+  'Delete dialog headings must stay near-black and heavy on the white dialog in Dark Mode, on toets and live'
+);
+assert.ok(
+  /app\.js\?v=1-3-67-premises-heading/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises-heading/.test(liveHtml) &&
+    /Version 1\.3\.67/.test(liveHtml),
+  'Live picks up the heading fix without bumping the displayed version'
 );
 assert.ok(
   /app\.js\?v=1-3-130-toets/.test(html) &&
