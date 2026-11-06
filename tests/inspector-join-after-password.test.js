@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const vm = require('vm');
 
 function read(name) {
   return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
@@ -14,6 +15,9 @@ const app = read('staging/app.js');
 const sql = read('STAGING_CLAIM_JOIN.sql');
 const bootstrap = read('STAGING_BOOTSTRAP.sql');
 const liveEnv = read('fire-s-env.js');
+const liveStarted = read('fire-s-get-started.js');
+const liveApp = read('app.js');
+const liveSql = read('SUPABASE_smooth_onboarding.sql');
 
 assert.ok(
   /function joinFromVisibleInvites\(/.test(started) &&
@@ -31,15 +35,77 @@ assert.ok(
   'Membership load must give claim enough time after Create password'
 );
 assert.ok(
+  /function fireSCompanyFromClaimRpc\(/.test(app) &&
+    /const membership = loadedMembership \|\| claimedMembership/.test(app) &&
+    /status\.eq\.active,status\.is\.null/.test(app),
+  'Profile load must keep the company claim returned, including a blank membership status'
+);
+assert.ok(
+  /var waitingNote = ''/.test(started) &&
+    /if \(waitingNote\) setStatus\(waitingNote, waitingNoteError\)/.test(started) &&
+    /function joinFailMessage\(/.test(started) &&
+    /Signed in as /.test(started),
+  'Check again must leave the signed-in email and the real reason on Almost ready'
+);
+assert.ok(
+  /raw_user_meta_data ->> 'email'/.test(sql) &&
+    /raw_user_meta_data ->> 'email'/.test(bootstrap) &&
+    /coalesce\(status, 'active'\) <> 'active'/.test(sql),
+  'Claim must match the login email and reactivate an inactive seat for that invite'
+);
+assert.ok(
   /auth\.jwt\(\) ->> 'email'/.test(sql) &&
     /Do NOT run this on fireye-sync/.test(sql) &&
     /auth\.jwt\(\) ->> 'email'/.test(bootstrap),
   'Fire-S Test SQL must join invited staff using the signed-in email'
 );
 assert.ok(/1\.3\.\d+-toets/.test(env), 'Toets-blad version must stay on 1.3.22-toets or newer');
+
+const claimFn = app.match(/function fireSCompanyFromClaimRpc\(claimRes\) \{[\s\S]*?\n\}/);
+assert.ok(claimFn, 'claim result parser must be present');
+const claimSandbox = {};
+vm.runInNewContext(
+  claimFn[0] + '\nthis.fireSCompanyFromClaimRpc = fireSCompanyFromClaimRpc;',
+  claimSandbox
+);
+const keptCompany = claimSandbox.fireSCompanyFromClaimRpc({
+  data: [{ out_company_id: 'company-1', out_company_name: 'Acme Fire', out_role: 'inspector' }]
+});
+assert.strictEqual(keptCompany.company_id, 'company-1');
+assert.strictEqual(keptCompany.role, 'inspector');
+assert.strictEqual(keptCompany.companies.name, 'Acme Fire');
+assert.strictEqual(claimSandbox.fireSCompanyFromClaimRpc({ data: [] }), null);
+assert.strictEqual(
+  claimSandbox.fireSCompanyFromClaimRpc({ data: [{ out_company_id: '  ' }] }),
+  null
+);
 assert.ok(
   /appVersion: staging \? '1\.3\.27-toets' : '1\.3\.67'/.test(liveEnv),
   'Live Fire-S must be 1.3.67 after sit dit live'
+);
+assert.ok(
+  /function fireSCompanyFromClaimRpc\(/.test(liveApp) &&
+    /const membership = loadedMembership \|\| claimedMembership/.test(liveApp) &&
+    /status\.eq\.active,status\.is\.null/.test(liveApp) &&
+    /var waitingNote = ''/.test(liveStarted) &&
+    /function joinFailMessage\(/.test(liveStarted) &&
+    /Version 1\.3\.67/.test(read('index.html')),
+  'Live must keep the claimed company and stay on version 1.3.67'
+);
+assert.ok(
+  /raw_user_meta_data ->> 'email'/.test(liveSql) &&
+    /coalesce\(status, 'active'\) <> 'active'/.test(liveSql) &&
+    /if v_existing is not null then/.test(liveSql),
+  'Live claim SQL must return an existing company and reactivate only an inactive invite seat'
+);
+const livePaste = read('SUPABASE_claim_join_live.sql');
+assert.ok(
+  /fireye-sync/.test(livePaste) &&
+    /Does not delete inspections/.test(livePaste) &&
+    /fire_s_claim_my_invites/.test(livePaste) &&
+    /company_invites i/.test(livePaste) &&
+    !/delete from public\.inspections/.test(livePaste),
+  'Live SQL paste must join the inspector without deleting inspections'
 );
 
 console.log('inspector-join-after-password.test.js: ok');
