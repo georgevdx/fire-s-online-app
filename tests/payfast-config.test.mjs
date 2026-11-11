@@ -146,6 +146,19 @@ assert.strictEqual(trusted.amountNumber, 250);
 assert.strictEqual(trusted.companyId, 'co-1');
 assert.ok(trusted.mPaymentId.indexOf('evil') === -1);
 
+const seatCheckout = resolveAuthoritativeCheckout(
+  { companyId: 'co-1', companyName: 'Acme', email: 'owner@acme.test' },
+  { kind: 'seat', seatEmail: 'Inspector@Acme.test', seatRole: 'manager', interval: 'monthly' }
+);
+assert.strictEqual(seatCheckout.kind, 'seat');
+assert.strictEqual(seatCheckout.seatEmail, 'inspector@acme.test');
+assert.strictEqual(seatCheckout.seatRole, 'manager');
+const unsafeRole = resolveAuthoritativeCheckout(
+  { companyId: 'co-1', email: 'owner@acme.test' },
+  { kind: 'seat', seatEmail: 'inspector@acme.test', seatRole: 'owner' }
+);
+assert.strictEqual(unsafeRole.seatRole, 'inspector');
+
 assert.strictEqual(payfastBuyerEmail(sandboxCfg, 'johandb@live.com'), 'fires-toets-buyer@example.com');
 assert.strictEqual(payfastBuyerEmail(liveCfg, 'johandb@live.com'), '');
 assert.strictEqual(
