@@ -57,7 +57,7 @@ function assertSameCountSource(app, label, alwaysUnion) {
     /function queueLocalPremisesMissingFromCloud\(/.test(app) &&
       /queueLocalPremisesMissingFromCloud\(/.test(app) &&
       /retry < 4/.test(app),
-    label + ' must re-queue laptop-only premises after a complete company pull'
+    label + ' must finish the company pull before uploading premises that are not on the cloud list'
   );
 }
 assertSameCountSource(liveApp, 'Live', false);
@@ -206,8 +206,8 @@ async function runAppCases(appSrc, label) {
     ],
     five
   );
-  assert.strictEqual(queuedCount, 3, label);
-  assert.deepStrictEqual(queued.sort(), ['own-0', 'own-1', 'own-2']);
+  assert.strictEqual(queuedCount, 0, label);
+  assert.deepStrictEqual(queued, []);
 
   const fStart = appSrc.indexOf('function fireSIsLocalProfileFallback');
   const fEnd = appSrc.indexOf('\nfunction getProjectCloudMetadata');
