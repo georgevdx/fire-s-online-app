@@ -5304,9 +5304,10 @@ async function safeDownloadNewerCloudInspections(options) {
       }
     } catch (_) {}
 
-    const localProjects = getProjects();
+    let localProjects = getProjects();
     const localBefore = localProjects.length;
     let companyLocals = localBefore;
+    let authoritativeCompanyIds = null;
     try {
       if (typeof fireSHomeCountableProjects === 'function') {
         companyLocals = fireSHomeCountableProjects(localProjects).length;
@@ -5435,10 +5436,22 @@ async function safeDownloadNewerCloudInspections(options) {
       if (rows.length) {
         mergedProjects = mergeCloudRowsIntoProjects(localProjects, rows);
       }
+      if (authoritativeCompanyIds && authoritativeCompanyIds.length) {
+        mergedProjects = fireSDropPremisesOutsideCompanyList(
+          mergedProjects,
+          authoritativeCompanyIds
+        );
+      }
       mergedProjects = retainDeviceInspections(
         keepLocalEditsMadeDuringCloudPull(localProjects, mergedProjects),
         localProjects
       );
+      if (authoritativeCompanyIds && authoritativeCompanyIds.length) {
+        mergedProjects = fireSDropPremisesOutsideCompanyList(
+          mergedProjects,
+          authoritativeCompanyIds
+        );
+      }
       // Save each cloud batch onto the phone before the building count is
       // painted. A slow pull was showing 6 buildings while the phone store
       // was still empty, so the four tiles stayed at 0.
@@ -5454,10 +5467,26 @@ async function safeDownloadNewerCloudInspections(options) {
       paintHome(false);
     }
 
+    function applyAuthoritativeCompanyIds(ids) {
+      if (pullToken !== fireSCloudPullGeneration) return;
+      if (!Array.isArray(ids) || !ids.length) return;
+      authoritativeCompanyIds = ids.map(id => String(id));
+      mergedProjects = forgetPremisesRemovedFromCloud(
+        getProjects(),
+        authoritativeCompanyIds.map(id => ({ id: id }))
+      );
+      localProjects = mergedProjects;
+      try { setProjects(mergedProjects); } catch (_) {}
+      try { window.__fireSHomeCountsFrozen = false; } catch (_) {}
+      try { window.__fireSCloudPullSettled = true; } catch (_) {}
+      paintHome(true);
+    }
+
     const pulled = await fetchCompanyInspectionsFromCloud(
       userData.user.id,
       'inspection_data, updated_at, company_id',
-      applyCloudRows
+      applyCloudRows,
+      applyAuthoritativeCompanyIds
     );
     const data = pulled && pulled.data;
     const error = pulled && pulled.error;
@@ -5530,7 +5559,13 @@ async function safeDownloadNewerCloudInspections(options) {
           currentUserProfile.companyName
         );
       }
-      if (!incomplete && Array.isArray(data) && data.length) {
+      if (authoritativeCompanyIds && authoritativeCompanyIds.length) {
+        mergedProjects = fireSDropPremisesOutsideCompanyList(
+          mergedProjects,
+          authoritativeCompanyIds
+        );
+        try { setProjects(mergedProjects); } catch (_) {}
+      } else if (!incomplete && Array.isArray(data) && data.length) {
         mergedProjects = forgetPremisesRemovedFromCloud(mergedProjects, data);
         try { setProjects(mergedProjects); } catch (_) {}
       } else if (!incomplete && Array.isArray(data)) {
@@ -8143,6 +8178,44 @@ function fireSMayUploadPremises(project) {
   return fireSIsUnsyncedNewPremises(project, inventory, true);
 }
 
+function fireSDropPremisesOutsideCompanyList(projects, ids) {
+  const cloudIds = new Set((Array.isArray(ids) ? ids : []).map(id => String(id)));
+  if (!cloudIds.size) return Array.isArray(projects) ? projects.slice() : [];
+  const inventory = fireSReadCloudInventory();
+  const kept = [];
+  (Array.isArray(projects) ? projects : []).forEach(project => {
+    if (!project || !project.id) return;
+    const id = String(project.id);
+    const keep =
+      cloudIds.has(id) ||
+      fireSIsUnsyncedNewPremises(project, inventory, true) ||
+      (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project));
+    if (keep) {
+      kept.push(project);
+      return;
+    }
+    if (typeof markProjectDeleted === 'function') markProjectDeleted(id);
+    if (typeof removeInspectionFromUploadQueue === 'function') {
+      removeInspectionFromUploadQueue(id);
+    }
+  });
+  return kept;
+}
+
+function fireSLimitToCloudInventory(projects) {
+  const list = Array.isArray(projects) ? projects : [];
+  const inventory = fireSReadCloudInventory();
+  if (!inventory || inventory.complete !== true || !inventory.ids || !inventory.ids.length) {
+    return list;
+  }
+  const cloudIds = new Set(inventory.ids.map(id => String(id)));
+  return list.filter(project => {
+    if (!project || !project.id) return false;
+    if (cloudIds.has(String(project.id))) return true;
+    return fireSIsUnsyncedNewPremises(project, inventory, true);
+  });
+}
+
 function forgetPremisesRemovedFromCloud(projects, cloudRows) {
   const cloudIds = new Set();
   (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
@@ -8342,11 +8415,12 @@ function fireSFilterProjectsForProfile(projects, profile, isAdmin) {
 }
 
 function getVisibleProjectsForCurrentUser(projects) {
-  return fireSFilterProjectsForProfile(
+  const visible = fireSFilterProjectsForProfile(
     projects,
     currentUserProfile,
     typeof isSuperAdmin === 'function' && isSuperAdmin()
   );
+  return fireSLimitToCloudInventory(visible);
 }
 
 function getProjectCloudMetadata(project, userId) {
@@ -8406,7 +8480,7 @@ function applyInspectionAccessFilter(query, userId) {
   return query;
 }
 
-async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
+async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk, onCompanyIds) {
   const selectCols = columns || 'inspection_data, updated_at, company_id';
   const pageSizes = [100, 40, 10, 1];
   // A phone cannot finish a 100-row inspection_data page before the
@@ -8564,6 +8638,32 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
     return Math.max(listed, counted);
   }
 
+  function companyIdsFromIndex(inv) {
+    if (!inv || inv.error || !Array.isArray(inv.rows) || !inv.rows.length) return [];
+    const counted = typeof inv.count === 'number' ? inv.count : inv.rows.length;
+    if (inv.rows.length < counted) return [];
+    const companyId = String(
+      (typeof currentUserProfile !== 'undefined' &&
+        currentUserProfile &&
+        currentUserProfile.companyId) ||
+        ''
+    ).trim();
+    const ids = [];
+    inv.rows.forEach(row => {
+      const rowCompany = String((row && (row.company_id || row.companyId)) || '').trim();
+      if (companyId && rowCompany !== companyId) return;
+      const id = String((row && row.id) || '').trim();
+      if (id && ids.indexOf(id) === -1) ids.push(id);
+    });
+    return ids;
+  }
+
+  function publishCompanyIds(inv) {
+    const ids = companyIdsFromIndex(inv);
+    if (!ids.length || typeof onCompanyIds !== 'function') return;
+    try { onCompanyIds(ids); } catch (_) {}
+  }
+
   function unionCloudRows(left, right) {
     const map = new Map();
     function add(list) {
@@ -8588,6 +8688,7 @@ async function fetchCompanyInspectionsFromCloud(userId, columns, onChunk) {
   let prefetchedFiltered = null;
   if (preferFiltered) {
     filteredInv = await fetchInventory(filteredIndexQuery);
+    publishCompanyIds(filteredInv);
     const earlyCount = inventoryCount(filteredInv);
     if (earlyCount) report([], earlyCount, true);
     prefetchedFiltered = await fetchAll(filteredQuery, earlyCount || null);
