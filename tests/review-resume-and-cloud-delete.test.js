@@ -9,28 +9,37 @@ function read(name) {
   return fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
 }
 
-const app = read('staging/app.js');
+const apps = [
+  ['Toets', read('staging/app.js')],
+  ['Live', read('app.js')]
+];
 
-assert.ok(
-  /keepSavedAnswers: true/.test(app) &&
-    /applySavedInspectionAnswers\(project\)/.test(app) &&
-    /liveAnswersWouldWipeStored\(/.test(app),
-  'Review & Finalise must reopen the saved answers and must not save a blank checklist over them'
-);
-assert.ok(
-  !/renderPhotos\(\);\s*if \(typeof updateDisplay === 'function'\) updateDisplay\(\);/.test(app),
-  'Photo recovery must not rebuild the checklist after the answers were filled in'
-);
-assert.ok(
-  /fireSInspectionLockedFinal\(projects\[index\]\)/.test(app) &&
-    /function fireSCycleFinalisedInHistory\(/.test(app),
-  'A finished inspection must stay finished instead of dropping back to Review & Finalise'
-);
-assert.ok(
-  /function forgetPremisesRemovedFromCloud\(/.test(app) &&
-    /forgetPremisesRemovedFromCloud\(mergedProjects, data\)/.test(app),
-  'A complete cloud pull must drop inspections that were deleted from the database'
-);
+apps.forEach(function (entry) {
+  const label = entry[0];
+  const app = entry[1];
+  assert.ok(
+    /keepSavedAnswers: true/.test(app) &&
+      /applySavedInspectionAnswers\(project\)/.test(app) &&
+      /liveAnswersWouldWipeStored\(/.test(app),
+    label + ': Review & Finalise must reopen the saved answers and must not save a blank checklist over them'
+  );
+  assert.ok(
+    !/renderPhotos\(\);\s*if \(typeof updateDisplay === 'function'\) updateDisplay\(\);/.test(app),
+    label + ': Photo recovery must not rebuild the checklist after the answers were filled in'
+  );
+  assert.ok(
+    /fireSInspectionLockedFinal\(projects\[index\]\)/.test(app) &&
+      /function fireSCycleFinalisedInHistory\(/.test(app),
+    label + ': A finished inspection must stay finished instead of dropping back to Review & Finalise'
+  );
+  assert.ok(
+    /function forgetPremisesRemovedFromCloud\(/.test(app) &&
+      /forgetPremisesRemovedFromCloud\(mergedProjects, data\)/.test(app),
+    label + ': A complete cloud pull must drop inspections that were deleted from the database'
+  );
+});
+
+const app = apps[0][1];
 
 const answerStart = app.indexOf('function inspectionAnswersHaveValues');
 const answerEnd = app.indexOf('function clearInspectionAnswerUiState');
