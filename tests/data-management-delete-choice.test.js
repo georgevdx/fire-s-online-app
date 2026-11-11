@@ -74,8 +74,8 @@ assert.ok(
   'Delete dialog headings must stay near-black and heavy on the white dialog in Dark Mode, on toets and live'
 );
 assert.ok(
-  /app\.js\?v=1-3-67-premises-keep/.test(liveHtml) &&
-    /fireS\.liveCacheDrop\.1-3-67-premises-keep/.test(liveHtml) &&
+  /app\.js\?v=1-3-67-premises-company/.test(liveHtml) &&
+    /fireS\.liveCacheDrop\.1-3-67-premises-company/.test(liveHtml) &&
     /Version 1\.3\.67/.test(liveHtml),
   'Live picks up the heading fix without bumping the displayed version'
 );
