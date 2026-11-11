@@ -7486,6 +7486,85 @@ async function fireSLoadActiveCompanyMembership(userId) {
 
 window.fireSLoadActiveCompanyMembership = fireSLoadActiveCompanyMembership;
 
+function fireSCachedCompanyStorageKey() {
+  try {
+    if (
+      typeof fireSProjectsStorageKey === 'function' &&
+      fireSProjectsStorageKey() === 'fireyeProjects-staging'
+    ) {
+      return 'fireS.cachedCompany-staging';
+    }
+  } catch (_) {}
+  return 'fireS.cachedCompany';
+}
+
+function fireSReadCachedCompany() {
+  try {
+    const key = fireSCachedCompanyStorageKey();
+    if (
+      key === 'fireS.cachedCompany-staging' &&
+      !localStorage.getItem(key) &&
+      localStorage.getItem('fireS.cachedCompany')
+    ) {
+      localStorage.setItem(key, localStorage.getItem('fireS.cachedCompany'));
+    }
+    const raw = localStorage.getItem(key);
+    const cached = raw ? JSON.parse(raw) : null;
+    const companyId = String((cached && cached.id) || '').trim();
+    const companyName = String((cached && cached.name) || '').trim();
+    if (!companyId || fireSIsGenericCompanyName(companyName)) return null;
+    return { companyId: companyId, companyName: companyName };
+  } catch (_) {
+    return null;
+  }
+}
+
+function fireSCompanyFromLocalPremises(email) {
+  try {
+    if (typeof getProjects !== 'function') return null;
+    const want = String(email || '').trim().toLowerCase();
+    const counts = {};
+    getProjects().forEach(project => {
+      if (!project) return;
+      if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
+        return;
+      }
+      const companyId = String(project.companyId || project.company_id || '').trim();
+      const companyName = String(project.companyName || '').trim();
+      if (!companyId || fireSIsGenericCompanyName(companyName)) return;
+      const createdBy = String(project.createdByEmail || '').trim().toLowerCase();
+      if (want && createdBy && createdBy !== want) return;
+      if (!counts[companyId]) {
+        counts[companyId] = { companyId: companyId, companyName: companyName, n: 0 };
+      }
+      counts[companyId].n += 1;
+    });
+    const ranked = Object.keys(counts)
+      .map(id => counts[id])
+      .sort((a, b) => b.n - a.n);
+    return ranked[0] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function fireSKeptCompany(liveCompanyId, previousCompanyId, previousCompanyName, email) {
+  const live = String(liveCompanyId || '').trim();
+  if (live) return { companyId: live, companyName: '' };
+  const previous = String(previousCompanyId || '').trim();
+  if (previous) {
+    return {
+      companyId: previous,
+      companyName: String(previousCompanyName || '').trim()
+    };
+  }
+  const local = fireSCompanyFromLocalPremises(email);
+  if (local && local.companyId) return local;
+  const cached = fireSReadCachedCompany();
+  if (cached && cached.companyId) return cached;
+  return { companyId: '', companyName: '' };
+}
+
 async function loadUserAccessProfile() {
   const previousProfile = currentUserProfile;
   const previousCompanyId = previousProfile?.companyId || null;
@@ -7537,7 +7616,13 @@ async function loadUserAccessProfile() {
       console.error('Profile load failed:', profileError);
     }
 
-    const companyId = membership?.company_id || null;
+    const keptCompany = fireSKeptCompany(
+      membership?.company_id,
+      previousCompanyId,
+      previousCompanyName,
+      user.email
+    );
+    const companyId = keptCompany.companyId || null;
     if (
       previousCompanyId &&
       companyId &&
@@ -7556,9 +7641,11 @@ async function loadUserAccessProfile() {
       : embeddedCompany;
     const embeddedName = String(embeddedRow?.name || '').trim();
     const cachedName = fireSRecalledCompanyName(companyId);
+    const keptName = String((keptCompany && keptCompany.companyName) || '').trim();
     const immediateName =
       (!fireSIsGenericCompanyName(embeddedName) ? embeddedName : '') ||
       cachedName ||
+      (!fireSIsGenericCompanyName(keptName) ? keptName : '') ||
       (companyId &&
       previousCompanyId === companyId &&
       !fireSIsGenericCompanyName(previousCompanyName)
