@@ -176,6 +176,7 @@
           <li>First visual — Loading</li>
           <li>Access — Login, passwords, register company</li>
           <li>Home for each level</li>
+          <li>Phone, laptop and Sync Now</li>
           <li>Inspection Gateway</li>
           <li>Fill an inspection (first to last action)</li>
           <li>Client PDF and sharing</li>
@@ -271,7 +272,23 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>4. Inspection Gateway</h2>
+        <h2>4. Phone, laptop and Sync Now</h2>
+        <p>A phone and a laptop with the same email are one login and one company. The cloud holds that company's premises. Home numbers, including <strong>Compliant Sites</strong>, follow that cloud list.</p>
+        <ol>
+          <li>Be online.</li>
+          <li>Open <strong>Cloud</strong> and tap <strong>Sync Now</strong>.</li>
+          <li>Wait until the status says <strong>All changes synced.</strong> Compliant Sites on this device then matches the cloud list.</li>
+        </ol>
+        <p>Sync Now brings the cloud list down first, then sends new work from this device. It keeps the company. You are not asked to name the company again.</p>
+        <p>Until Sync Now has finished, this device can still show old copies that only live on that phone or laptop. After it finishes, premises that were removed from the cloud drop off this device. A removed premises does not come back on the next sync.</p>
+        <p>Prefer <strong>Sync Now</strong>. Upload only, Download only and Merge sync are advanced tools. Do not use Upload only to push an old local list over the cloud.</p>
+        <p>Only one instrument at a time may stay signed in. Login on the laptop signs the phone out, and the other way around. The premises stay in the cloud either way.</p>
+        <h3>Remove a premises</h3>
+        <p>Move it to the <strong>Recycle Bin</strong> (kept for 30 days) or delete it immediately. Then run <strong>Sync Now</strong> on the other device. That device drops the premises.</p>
+      </article>
+
+      <article class="user-manual-chapter">
+        <h2>5. Inspection Gateway</h2>
         <ol>
           <li>On Home tap <strong>Inspection Gateway</strong>.</li>
           <li>Search by site, address, inspector, number or date.</li>
@@ -282,7 +299,7 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>5. Fill an inspection — first action to last action</h2>
+        <h2>6. Fill an inspection — first action to last action</h2>
         <p>Open a site (or start a new one). Work top to bottom:</p>
         <ol>
           <li><strong>Inspection Information</strong> — site name, address, occupancy, inspector, date.</li>
@@ -294,11 +311,14 @@
           <li><strong>Schedule Next Inspection</strong> — follow-up date or recurring cycle if needed.</li>
           <li>Save. The last action on an inspection is the <strong>client PDF</strong> (next chapter).</li>
         </ol>
+        <p>Tap <strong>Save</strong> as you go. Answers you already chose stay on the form. Coming back, including <strong>Review &amp; Finalise</strong>, does not make you fill the checklist again.</p>
+        <p>When every question is answered, Fire-S says the checklist is completed. Tap <strong>Review Inspection</strong> to read those same answers, or <strong>Continue Editing</strong>. Tap <strong>Finish</strong> only when you are ready to finalise. If any question is still open, Finish saves a draft and takes you to the first unanswered question.</p>
+        <p><strong>Review &amp; Finalise</strong> on the premises is only for a checklist that is complete and not yet finalised. It opens the same answers. After you finalise, that inspection leaves Scheduled priority. Open the finished record with <strong>Latest Inspection</strong> or <strong>Latest Report</strong>.</p>
         <p>The Passport / Workspace strip stays hidden while you fill, so the questions stay on screen.</p>
       </article>
 
       <article class="user-manual-chapter">
-        <h2>6. Client PDF and sharing — last action on a job</h2>
+        <h2>7. Client PDF and sharing — last action on a job</h2>
         <ol>
           <li>Open the inspection.</li>
           <li>Tap <strong>Report</strong> or <strong>PDF</strong>.</li>
@@ -310,7 +330,7 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>7. Findings, schedule and reports</h2>
+        <h2>8. Findings, schedule and reports</h2>
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
@@ -321,7 +341,7 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>8. Company details, people and inspectors</h2>
+        <h2>9. Company details, people and inspectors</h2>
         <p>Owner and Manager only.</p>
         <h3>Company details</h3>
         <ol>
@@ -347,7 +367,7 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>9. Management dashboard (tablet / PC)</h2>
+        <h2>10. Management dashboard (tablet / PC)</h2>
         <p>Owner and Manager: Home → <strong>Management dashboard</strong>.</p>
         <p>On a computer, type the desktop address from Home. After login, Fire-S opens the Management dashboard in a wide layout. Inspectors keep the phone layout. Access still shows first if you are not signed in — Login is on that same page.</p>
         <p>Turn a tablet sideways, or open Fire-S on a laptop / PC. The first screen is a short management view, not a wall of graphs. Tap a number or a coloured graph piece to open the exact premises or Action Items underneath.</p>
@@ -362,12 +382,12 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>10. Levels — what each person can do</h2>
+        <h2>11. Levels — what each person can do</h2>
         ${roleTableHtml()}
       </article>
 
       <article class="user-manual-chapter">
-        <h2>11. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
+        <h2>12. ${showFees() ? 'Subscriptions' : 'Who pays'}</h2>
         ${
           showFees()
             ? `<p>Fire-S is a paid subscription: <strong>R250 per month per login</strong> or <strong>R2 500 per year per login</strong> (2 months free). Phone and desktop with the same email count as one login — do not enter the same email twice. The owner pays for the owner's login when the company is created. Each Manager and each Inspector is another login under that company. The owner adds the email and pays for it. Inspectors and managers never Subscribe.</p>
@@ -395,7 +415,7 @@
       </article>
 
       <article class="user-manual-chapter">
-        <h2>12. Download this manual</h2>
+        <h2>13. Download this manual</h2>
         <ol>
           <li>On Home tap <strong>User manual</strong>.</li>
           <li>Tap <strong>Download PDF</strong> (or <strong>Download HTML</strong> if PDF is blocked).</li>
