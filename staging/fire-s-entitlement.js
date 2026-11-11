@@ -988,6 +988,66 @@
     return data;
   }
 
+  var OFFLINE_REPLAY_KEY = 'fireS.entitlementOfflineReplay';
+
+  function offlineNow() {
+    try {
+      return !!(root.navigator && root.navigator.onLine === false);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function networkFailure(err) {
+    var msg = text(err && (err.message || err));
+    return /failed to fetch|networkerror|network request failed|load failed|offline|internet connection appears/i.test(msg);
+  }
+
+  function rememberServerSnapshot(data) {
+    try {
+      if (!data || data.backendReady !== true || !root.localStorage) return;
+      if (data.source === 'offline-replay') return;
+      var uid = text(root.currentUserProfile && root.currentUserProfile.id);
+      var cid = companyId();
+      if (!uid || uid === 'local-user' || !cid) return;
+      var snapshot = JSON.parse(JSON.stringify(data));
+      snapshot.authority = 'server';
+      snapshot.backendReady = true;
+      delete snapshot.source;
+      delete snapshot.error;
+      root.localStorage.setItem(OFFLINE_REPLAY_KEY, JSON.stringify({
+        userId: uid,
+        companyId: cid,
+        snapshot: snapshot
+      }));
+    } catch (_) {}
+  }
+
+  function replayOfflineSnapshot(expectedCompanyId) {
+    // Last server answer for this signed-in company, and only while the
+    // phone has no signal. An online call still waits for the server.
+    if (!offlineNow()) return null;
+    try {
+      if (!root.localStorage) return null;
+      var packed = JSON.parse(root.localStorage.getItem(OFFLINE_REPLAY_KEY) || 'null');
+      if (!packed || !packed.snapshot) return null;
+      if (packed.snapshot.authority !== 'server' || packed.snapshot.backendReady !== true) return null;
+      var uid = text(root.currentUserProfile && root.currentUserProfile.id);
+      var cid = text(expectedCompanyId) || companyId();
+      if (!uid || packed.userId !== uid) return null;
+      if (!cid || packed.companyId !== cid) return null;
+      last = Object.assign({}, packed.snapshot, {
+        backendReady: true,
+        source: 'offline-replay',
+        authority: 'server'
+      });
+      lastAt = Date.now();
+      return last;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function check(targetCompanyId) {
     var sb = getSb();
     var cid = text(targetCompanyId) || companyId();
@@ -1005,6 +1065,13 @@
       paint();
       return last;
     }
+    if (offlineNow()) {
+      var replayed = replayOfflineSnapshot(cid);
+      if (replayed) {
+        paint();
+        return replayed;
+      }
+    }
     if (!sb || !sb.rpc || !cid) {
       holdPending('none');
       paint();
@@ -1013,6 +1080,13 @@
     try {
       var res = await rpcEntitlement(sb, cid);
       if (res && res.error) {
+        if (offlineNow() || networkFailure(res.error)) {
+          var replayedErr = replayOfflineSnapshot(cid);
+          if (replayedErr) {
+            paint();
+            return replayedErr;
+          }
+        }
         var missing = /could not find the function|schema cache|PGRST202|404/i.test(text(res.error.message));
         holdPending(missing ? 'missing-rpc' : 'rpc-error');
         last.error = text(res.error.message);
@@ -1045,9 +1119,17 @@
       stampDevicePaidThrough(data);
       last = Object.assign({ backendReady: true, source: 'rpc', authority: 'server' }, data);
       lastAt = Date.now();
+      rememberServerSnapshot(last);
       paint();
       return last;
     } catch (err) {
+      if (offlineNow() || networkFailure(err)) {
+        var replayedCatch = replayOfflineSnapshot(cid);
+        if (replayedCatch) {
+          paint();
+          return replayedCatch;
+        }
+      }
       holdPending('rpc-error');
       last.error = text(err && err.message);
       paint();
