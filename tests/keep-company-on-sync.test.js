@@ -106,4 +106,50 @@ function loadHelpers(source) {
   assert.strictEqual(notMine.companyId, '', file);
 });
 
+['app.js', 'staging/app.js'].forEach(file => {
+  const source = read(file);
+  const start = source.indexOf('function fireSCloudInventoryStorageKey()');
+  const end = source.indexOf('function forgetPremisesRemovedFromCloud');
+  assert.ok(start > 0 && end > start, file);
+  const store = {};
+  const removed = [];
+  const sandbox = {
+    localStorage: {
+      getItem(key) {
+        return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
+      },
+      setItem(key, value) {
+        store[key] = String(value);
+      }
+    },
+    fireSProjectsStorageKey() {
+      return 'fireyeProjects';
+    },
+    fireSCloudRowInspectionId(row) {
+      return String((row && (row.id || (row.inspection_data && row.inspection_data.id))) || '').trim();
+    },
+    markProjectDeleted(id) {
+      removed.push(String(id));
+    },
+    removeInspectionFromUploadQueue() {}
+  };
+  vm.runInNewContext(source.slice(start, end), sandbox);
+  const projects = [
+    { id: 'alpha', companyId: 'co-super', companyName: 'Company test Super' },
+    { id: 'extra-1', syncPending: true },
+    { id: 'extra-2' }
+  ];
+  assert.strictEqual(
+    sandbox.fireSLimitToCloudInventory(projects).length,
+    3,
+    file + ' shows every local premises until a company list exists'
+  );
+  sandbox.fireSRememberCloudInventory([{ id: 'alpha' }]);
+  const shown = sandbox.fireSLimitToCloudInventory(projects).map(project => project.id).join('|');
+  assert.strictEqual(shown, 'alpha', file + ' home count must open the company list');
+  const kept = sandbox.fireSDropPremisesOutsideCompanyList(projects, ['alpha']);
+  assert.strictEqual(kept.map(project => project.id).join('|'), 'alpha', file);
+  assert.ok(removed.indexOf('extra-1') !== -1 && removed.indexOf('extra-2') !== -1, file);
+});
+
 console.log('keep-company-on-sync.test.js: ok');
