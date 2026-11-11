@@ -29,7 +29,7 @@ assert.ok(
   /function clearCompanyAudit\(/.test(liveApp) &&
     /return currentRole\(\) === 'super_admin'/.test(liveApp) &&
     /Only a Super Admin may view the Data Audit Log/.test(liveApp) &&
-    /app\.js\?v=1-3-67-premises-audit/.test(read('index.html')) &&
+    /app\.js\?v=1-3-67-premises-review/.test(read('index.html')) &&
     /Version 1\.3\.67/.test(read('index.html')),
   'Live Data Audit Log is Super Admin only and stays on version 1.3.67'
 );

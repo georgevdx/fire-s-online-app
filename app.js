@@ -831,6 +831,42 @@ function guardPremisesNameBeforeWrite(options = {}) {
 // RC 1.1.19B - Inspection Session Guard
 // Prevents stale inspection data from carrying into a new site.
 // =====================================================
+function inspectionAnswersHaveValues(answers) {
+  return (Array.isArray(answers) ? answers : []).some(item =>
+    String(item?.answer || item?.value || item?.response || '').trim()
+  );
+}
+
+function applySavedInspectionAnswers(project) {
+  if (!project) return;
+  const answers = Array.isArray(project.answers)
+    ? project.answers
+    : (Array.isArray(project.inspectionAnswers) ? project.inspectionAnswers : []);
+  answers.forEach(item => {
+    if (!item || item.itemIndex == null) return;
+    const field = document.getElementById(`check_${item.itemIndex}`);
+    if (field) {
+      field.value = item.answer || '';
+      field.dataset.assessment = normaliseProfessionalAssessment(item.assessment, item.answer);
+    }
+    const noteField = document.getElementById(`note_${item.itemIndex}`);
+    if (noteField) noteField.value = item.note || '';
+    const expiryField = document.querySelector(`.expiry-date[data-index="${item.itemIndex}"]`);
+    if (expiryField) expiryField.value = item.expiryDate || '';
+    if (field && typeof setProfessionalAssessment === 'function') {
+      setProfessionalAssessment(
+        item.itemIndex,
+        normaliseProfessionalAssessment(field.dataset.assessment, field.value),
+        { skipAutoSave: true }
+      );
+    }
+  });
+}
+
+function liveAnswersWouldWipeStored(storedAnswers, liveAnswers) {
+  return inspectionAnswersHaveValues(storedAnswers) && !inspectionAnswersHaveValues(liveAnswers);
+}
+
 function clearInspectionAnswerUiState() {
   document.querySelectorAll('.answer-select').forEach(field => {
     field.value = '';
@@ -1098,6 +1134,14 @@ function autoSaveProject() {
 
   if (currentProjectId) {
     const index = projects.findIndex(p => p.id === currentProjectId);
+
+    if (
+      index !== -1 &&
+      liveAnswersWouldWipeStored(projects[index].answers, answers)
+    ) {
+      applySavedInspectionAnswers(projects[index]);
+      return;
+    }
 
     if (index !== -1) {
       const companyStamp = resolveProjectCompanyFields(
@@ -1592,6 +1636,22 @@ function fireSInspectionWasFinalised(project) {
     lifecycle === 'closed' ||
     status === 'closed'
   );
+}
+
+function fireSCycleFinalisedInHistory(project) {
+  const number = String(project?.inspectionNumber || '').trim();
+  if (!number) return false;
+  const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory : [];
+  return history.some(item => {
+    const itemNumber = String(
+      item?.inspectionNumber || item?.sourceInspectionNumber || ''
+    ).trim();
+    return itemNumber === number && Boolean(item?.completedAt || item?.archivedAt);
+  });
+}
+
+function fireSInspectionLockedFinal(project) {
+  return fireSInspectionWasFinalised(project) || fireSCycleFinalisedInHistory(project);
 }
 
 function fireSSchedulePatchIfChanged(project, patch) {
@@ -5231,9 +5291,13 @@ async function safeDownloadNewerCloudInspections(options) {
           currentUserProfile.companyName
         );
       }
+      if (!incomplete && Array.isArray(data) && data.length) {
+        mergedProjects = forgetPremisesRemovedFromCloud(mergedProjects, data);
+        try { setProjects(mergedProjects); } catch (_) {}
+      }
       if (!incomplete) {
         queueLocalPremisesMissingFromCloud(
-          localProjects,
+          mergedProjects,
           Array.isArray(data) ? data : []
         );
       }
@@ -7617,6 +7681,39 @@ function fireSCloudRowInspectionId(row) {
   ).trim();
 }
 
+function fireSPremisesWasConfirmedOnCloud(project) {
+  if (!project || !project.id) return false;
+  if (project.syncedAt) return true;
+  return project.syncPending === false;
+}
+
+function forgetPremisesRemovedFromCloud(projects, cloudRows) {
+  const cloudIds = new Set();
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id = fireSCloudRowInspectionId(row);
+    if (id) cloudIds.add(id);
+  });
+  if (!cloudIds.size) return Array.isArray(projects) ? projects.slice() : [];
+  const kept = [];
+  (Array.isArray(projects) ? projects : []).forEach(project => {
+    if (!project || !project.id) return;
+    const id = String(project.id);
+    const removed =
+      !cloudIds.has(id) &&
+      fireSPremisesWasConfirmedOnCloud(project) &&
+      !(typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project));
+    if (!removed) {
+      kept.push(project);
+      return;
+    }
+    if (typeof markProjectDeleted === 'function') markProjectDeleted(id);
+    if (typeof removeInspectionFromUploadQueue === 'function') {
+      removeInspectionFromUploadQueue(id);
+    }
+  });
+  return kept;
+}
+
 /**
  * After a complete company pull, re-queue local premises the cloud did not
  * return. Laptop-only leftovers then upload with company_id so the phone
@@ -7659,6 +7756,12 @@ function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
         : true;
     if (cid && !projectCid && !adoptLeftovers) return;
     if (cloudIds.has(String(project.id))) return;
+    if (fireSPremisesWasConfirmedOnCloud(project)) {
+      if (typeof removeInspectionFromUploadQueue === 'function') {
+        removeInspectionFromUploadQueue(project.id);
+      }
+      return;
+    }
     queueInspectionForUpload(project.id);
     queued += 1;
   });
@@ -16990,7 +17093,8 @@ function openProject(projectId, focusMode, options = {}) {
   window.currentProject = project;
  
   const shouldStartFreshScheduledInspection =
-  project.scheduleFreshInspection === true;
+  project.scheduleFreshInspection === true &&
+  !options.keepSavedAnswers;
 
 const isFollowUpScheduledCycle =
   project.scheduledReason === 'follow_up' ||
@@ -17144,38 +17248,19 @@ getEl('finalComments').value = project.finalComments || '';
       currentPhotos = normaliseInspectionPhotoSources(photos);
       project.photos = currentPhotos;
       renderPhotos();
-      if (typeof updateDisplay === 'function') updateDisplay();
+      const savedProject = (typeof getProjects === 'function' ? getProjects() : []).find(
+        item => item.id === project.id
+      ) || project;
+      if (currentProjectId === project.id) {
+        applySavedInspectionAnswers(savedProject);
+      }
     }
   }).catch(error => {
     console.warn('Photo recovery check failed:', error);
   });
   updateDisplay();
   clearInspectionAnswerUiState();
-
-  if (project.answers) {
-   project.answers.forEach(item => {
-      const field = document.getElementById(`check_${item.itemIndex}`);
-     if (field) {
-        field.value = item.answer;
-        field.dataset.assessment = normaliseProfessionalAssessment(item.assessment, item.answer);
-     }
-
-      const noteField = document.getElementById(`note_${item.itemIndex}`);
-      if (noteField) {
-      noteField.value = item.note || '';
-      }
-
-      const expiryField =
-        document.querySelector(`.expiry-date[data-index="${item.itemIndex}"]`);
-      if (expiryField) {
-        expiryField.value = item.expiryDate || '';
-      }
-
-      if (field) {
-        setProfessionalAssessment(item.itemIndex, normaliseProfessionalAssessment(field.dataset.assessment, field.value), { skipAutoSave: true });
-      }
-    });
-  }
+  applySavedInspectionAnswers(project);
 
 if (ENABLE_GUIDED_INSPECTION_WORKFLOW) {
   currentProject = project;
@@ -17914,6 +17999,14 @@ const finalComments = getEl('finalComments').value.trim();
   const existingIndex = currentProjectId
     ? projects.findIndex(p => p.id === currentProjectId)
     : -1;
+
+  if (
+    existingIndex !== -1 &&
+    liveAnswersWouldWipeStored(projects[existingIndex].answers, answers)
+  ) {
+    applySavedInspectionAnswers(projects[existingIndex]);
+    return false;
+  }
 
   if (
     options &&
@@ -41765,6 +41858,13 @@ archiveProjectCurrentInspectionAndStartBlank = function fireSPhase3ArchiveAndSta
     const index = projects.findIndex(project => String(project.id) === String(id));
     if (index < 0) return null;
 
+    if (
+      typeof fireSInspectionLockedFinal === 'function' &&
+      fireSInspectionLockedFinal(projects[index])
+    ) {
+      return projects[index];
+    }
+
     const now = new Date().toISOString();
     projects[index] = {
       ...projects[index],
@@ -43872,7 +43972,13 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
 
     // A completed cycle may still retain its answers for reporting. Those
     // historical answers must never make the record look like current work.
-    if (isFinalisedRecord) {
+    // Finish also copies this inspection number into History. That lock must
+    // survive if a later save drops completedAt, otherwise Review & Finalise
+    // appears again for an inspection that was already finished.
+    const cycleAlreadyFinalised =
+      typeof fireSCycleFinalisedInHistory === 'function' &&
+      fireSCycleFinalisedInHistory(project);
+    if (isFinalisedRecord || cycleAlreadyFinalised) {
       return { lifecycle:'NONE', label:'No Current Inspection', percentage:0, hasCurrent:false, photos:0, answered:0, total:0 };
     }
     if (['ready_for_review', 'ready for review', 'review'].includes(explicit) || (total > 0 && answered >= total)) {
@@ -44126,8 +44232,30 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         : workspace.lifecycle === 'READY_FOR_REVIEW'
           ? 'Review & Finalise'
           : 'New Inspection';
-    quick.appendChild(copyButton(startButton, quickInspectionLabel, 'fire-s-cc-quick-primary'));
-    quick.appendChild(copyButton(latestButton, 'Latest Inspection'));
+    const hasSavedWork =
+      workspace.lifecycle === 'IN_PROGRESS' ||
+      workspace.lifecycle === 'READY_FOR_REVIEW';
+    const alreadyFinalised = workspace.lifecycle === 'NONE' && history.length > 0;
+    if (hasSavedWork) {
+      const resumeBtn = document.createElement('button');
+      resumeBtn.type = 'button';
+      resumeBtn.className = 'fire-s-cc-quick-primary';
+      resumeBtn.textContent = quickInspectionLabel;
+      resumeBtn.addEventListener('click', () => {
+        closeCentre();
+        if (typeof openProject === 'function') {
+          openProject(project.id, null, { bypassOpenGate: true, keepSavedAnswers: true });
+        }
+      });
+      quick.appendChild(resumeBtn);
+      quick.appendChild(copyButton(latestButton, 'Latest Inspection'));
+    } else if (alreadyFinalised) {
+      quick.appendChild(copyButton(latestButton, 'Latest Inspection', 'fire-s-cc-quick-primary'));
+      quick.appendChild(copyButton(startButton, 'New Inspection'));
+    } else {
+      quick.appendChild(copyButton(startButton, quickInspectionLabel, 'fire-s-cc-quick-primary'));
+      quick.appendChild(copyButton(latestButton, 'Latest Inspection'));
+    }
     quick.appendChild(copyButton(historyButton, 'Inspection History'));
     if (history.length) {
       const reportBtn = document.createElement('button');
