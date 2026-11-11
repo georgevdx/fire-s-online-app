@@ -90,8 +90,15 @@ const cloudEnd = app.indexOf('function fireSIsLocalProfileFallback');
 const queued = [];
 const removedFromQueue = [];
 const deletedIds = {};
+const inventoryStore = {};
 const cloudSandbox = {
   currentUserProfile: { companyId: 'co-1' },
+  localStorage: {
+    getItem(key) {
+      return Object.prototype.hasOwnProperty.call(inventoryStore, key) ? inventoryStore[key] : null;
+    },
+    setItem(key, value) { inventoryStore[key] = String(value); }
+  },
   fireSIsDeletedPremises(project) {
     return !!(project && project.deletedAt);
   },
@@ -115,17 +122,37 @@ const local = [
   { id: 'laptop-only', companyId: 'co-1' }
 ];
 const kept = cloudSandbox.forgetPremisesRemovedFromCloud(local, cloudRows);
+assert.strictEqual(kept.map(project => project.id).sort().join('|'), 'today');
 assert.strictEqual(
-  kept.map(project => project.id).sort().join('|'),
-  'laptop-only|new-on-phone|today'
+  Object.keys(deletedIds).sort().join('|'),
+  'laptop-only|new-on-phone|old-1|old-2'
 );
-assert.strictEqual(Object.keys(deletedIds).sort().join('|'), 'old-1|old-2');
 
 queued.length = 0;
 const queuedCount = cloudSandbox.queueLocalPremisesMissingFromCloud(local, cloudRows);
-assert.strictEqual(queuedCount, 2);
-assert.strictEqual(queued.map(id => id).sort().join('|'), 'laptop-only|new-on-phone');
+assert.strictEqual(queuedCount, 0);
+assert.strictEqual(queued.length, 0);
 assert.ok(removedFromQueue.indexOf('old-1') !== -1);
+assert.ok(removedFromQueue.indexOf('new-on-phone') !== -1);
+
+inventoryStore['fireS.cloudInventory'] = JSON.stringify({
+  ids: ['today'],
+  at: '2026-11-01T00:00:00.000Z',
+  previousAt: '',
+  complete: true
+});
+const fresh = {
+  id: 'fresh',
+  companyId: 'co-1',
+  syncPending: true,
+  deviceCreatedAt: '2026-11-10T12:00:00.000Z'
+};
+const keptFresh = cloudSandbox.forgetPremisesRemovedFromCloud(local.concat([fresh]), cloudRows);
+assert.strictEqual(keptFresh.map(project => project.id).sort().join('|'), 'fresh|today');
+queued.length = 0;
+const freshQueued = cloudSandbox.queueLocalPremisesMissingFromCloud([fresh, local[2]], cloudRows);
+assert.strictEqual(freshQueued, 1);
+assert.strictEqual(queued.join('|'), 'fresh');
 
 const emptyKept = cloudSandbox.forgetPremisesRemovedFromCloud(local, []);
 assert.strictEqual(emptyKept.length, local.length, 'an empty cloud reply must not wipe the phone');

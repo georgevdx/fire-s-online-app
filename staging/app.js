@@ -4440,7 +4440,6 @@ async function runBackgroundSync(reason = 'background') {
       setSyncStatusMessage(`Syncing changes... (${reason})`);
     }
 
-    await uploadPendingInspections();
     await safeDownloadNewerCloudInspections();
     await uploadPendingInspections();
 
@@ -4493,7 +4492,6 @@ async function refreshSyncData(options) {
   }
 
   try {
-    await uploadPendingInspections();
     await safeDownloadNewerCloudInspections({ forcePaint: forcePaint });
     await uploadPendingInspections();
 
@@ -5522,9 +5520,8 @@ async function safeDownloadNewerCloudInspections(options) {
       return;
     }
 
-    // Laptop leftover locals (untagged / never uploaded) stay at 8 while the
-    // phone only has the 5 company-tagged cloud rows. Stamp and push them so
-    // the next phone pull sees the same company list.
+    // A complete cloud list is the company list. Drop premises that are only
+    // on this device before anything is uploaded, and remember that list.
     try {
       const cid = currentUserProfile && currentUserProfile.companyId;
       if (cid) {
@@ -5536,6 +5533,8 @@ async function safeDownloadNewerCloudInspections(options) {
       if (!incomplete && Array.isArray(data) && data.length) {
         mergedProjects = forgetPremisesRemovedFromCloud(mergedProjects, data);
         try { setProjects(mergedProjects); } catch (_) {}
+      } else if (!incomplete && Array.isArray(data)) {
+        try { fireSRememberCloudInventory(data); } catch (_) {}
       }
       if (!incomplete) {
         queueLocalPremisesMissingFromCloud(
@@ -7980,22 +7979,104 @@ function fireSPremisesWasConfirmedOnCloud(project) {
   return project.syncPending === false;
 }
 
+function fireSCloudInventoryStorageKey() {
+  try {
+    if (typeof fireSProjectsStorageKey === 'function' &&
+        fireSProjectsStorageKey() === 'fireyeProjects-staging') {
+      return 'fireS.cloudInventory-staging';
+    }
+  } catch (_) {}
+  return 'fireS.cloudInventory';
+}
+
+function fireSReadCloudInventory() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(fireSCloudInventoryStorageKey()) || 'null');
+    if (!raw || raw.complete !== true || !Array.isArray(raw.ids)) return null;
+    return {
+      ids: raw.ids.map(String),
+      at: String(raw.at || ''),
+      previousAt: String(raw.previousAt || ''),
+      complete: true
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+function fireSRememberCloudInventory(cloudRows) {
+  const ids = [];
+  (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
+    const id = fireSCloudRowInspectionId(row);
+    if (id && ids.indexOf(id) === -1) ids.push(id);
+  });
+  const previous = fireSReadCloudInventory();
+  if (!ids.length && previous && previous.ids.length) return previous;
+  const inventory = {
+    ids: ids,
+    at: new Date().toISOString(),
+    previousAt: previous && previous.at ? previous.at : '',
+    complete: true
+  };
+  try {
+    localStorage.setItem(fireSCloudInventoryStorageKey(), JSON.stringify(inventory));
+  } catch (_) {}
+  return inventory;
+}
+
+function fireSPremisesCreatedAtMs(project) {
+  if (!project) return NaN;
+  return Date.parse(
+    project.deviceCreatedAt ||
+      project.inspectionCreatedAt ||
+      project.workspaceCreatedAt ||
+      project.createdAt ||
+      ''
+  );
+}
+
+function fireSIsUnsyncedNewPremises(project, inventory, sincePreviousPull) {
+  if (!project || project.syncPending !== true || project.syncedAt) return false;
+  if (!inventory) return false;
+  const stamp = sincePreviousPull ? inventory.previousAt : inventory.at;
+  const marked = Date.parse(stamp || '');
+  const created = fireSPremisesCreatedAtMs(project);
+  return Number.isFinite(created) && Number.isFinite(marked) && created > marked;
+}
+
+function fireSMayUploadPremises(project) {
+  if (!project || !project.id) return false;
+  if (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project)) {
+    return true;
+  }
+  const inventory = fireSReadCloudInventory();
+  if (!inventory) return false;
+  if (!inventory.ids.length) return true;
+  if (inventory.ids.indexOf(String(project.id)) !== -1) return true;
+  return fireSIsUnsyncedNewPremises(project, inventory, true);
+}
+
 function forgetPremisesRemovedFromCloud(projects, cloudRows) {
   const cloudIds = new Set();
   (Array.isArray(cloudRows) ? cloudRows : []).forEach(row => {
     const id = fireSCloudRowInspectionId(row);
     if (id) cloudIds.add(id);
   });
-  if (!cloudIds.size) return Array.isArray(projects) ? projects.slice() : [];
+  const previous = fireSReadCloudInventory();
+  if (!cloudIds.size) {
+    try { fireSRememberCloudInventory([]); } catch (_) {}
+    return Array.isArray(projects) ? projects.slice() : [];
+  }
+  try { fireSRememberCloudInventory(cloudRows); } catch (_) {}
   const kept = [];
   (Array.isArray(projects) ? projects : []).forEach(project => {
     if (!project || !project.id) return;
     const id = String(project.id);
-    const removed =
-      !cloudIds.has(id) &&
-      fireSPremisesWasConfirmedOnCloud(project) &&
-      !(typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project));
-    if (!removed) {
+    const keep =
+      cloudIds.has(id) ||
+      fireSIsUnsyncedNewPremises(project, previous, false) ||
+      (typeof fireSIsDeletedPremises === 'function' && fireSIsDeletedPremises(project));
+    if (keep) {
       kept.push(project);
       return;
     }
@@ -8008,9 +8089,9 @@ function forgetPremisesRemovedFromCloud(projects, cloudRows) {
 }
 
 /**
- * After a complete company pull, re-queue local premises the cloud did not
- * return. Laptop-only leftovers then upload with company_id so the phone
- * can show the same building list.
+ * After a complete company pull, the cloud list is the company list.
+ * Premises that exist only on this device are taken off the upload queue.
+ * A premises created on this device after the previous complete pull may still upload.
  */
 function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
   const cloudIds = new Set();
@@ -8062,6 +8143,20 @@ function queueLocalPremisesMissingFromCloud(localProjects, cloudRows) {
         : true;
     if (cid && !projectCid && !adoptLeftovers) return;
     if (cloudIds.has(String(project.id))) return;
+    const inventory = typeof fireSReadCloudInventory === 'function'
+      ? fireSReadCloudInventory()
+      : null;
+    const cloudSaysTheseAreTheBuildings = cloudIds.size > 0 ||
+      !!(inventory && inventory.ids && inventory.ids.length);
+    if (
+      cloudSaysTheseAreTheBuildings &&
+      !fireSIsUnsyncedNewPremises(project, inventory, true)
+    ) {
+      if (typeof removeInspectionFromUploadQueue === 'function') {
+        removeInspectionFromUploadQueue(project.id);
+      }
+      return;
+    }
     if (fireSPremisesWasConfirmedOnCloud(project)) {
       if (typeof removeInspectionFromUploadQueue === 'function') {
         removeInspectionFromUploadQueue(project.id);
@@ -8654,6 +8749,11 @@ function capturePendingUploadQueueChanges(previousProjects, nextProjects) {
 }
 
 function getQueuedProjects(batchSize = FIRE_S_PENDING_UPLOAD_BATCH_SIZE) {
+  const inventory = typeof fireSReadCloudInventory === 'function'
+    ? fireSReadCloudInventory()
+    : null;
+  if (!inventory) return [];
+
   const projectsById = new Map(
     getProjects()
       .filter(project => project?.id)
@@ -8661,7 +8761,10 @@ function getQueuedProjects(batchSize = FIRE_S_PENDING_UPLOAD_BATCH_SIZE) {
   );
 
   const queue = getPendingUploadQueue();
-  const validQueue = queue.filter(item => projectsById.has(item.inspectionId));
+  const validQueue = queue.filter(item => {
+    const project = projectsById.get(item.inspectionId);
+    return !!(project && fireSMayUploadPremises(project));
+  });
 
   if (validQueue.length !== queue.length) {
     setPendingUploadQueue(validQueue);
@@ -9769,6 +9872,7 @@ function saveScheduledNewInspection() {
 
   const newProject = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    deviceCreatedAt: new Date().toISOString(),
 
     companyId: companyStamp.companyId,
     company_id: companyStamp.company_id,
@@ -18738,6 +18842,7 @@ lastSaved: new Date().toISOString()
     const companyStamp = resolveProjectCompanyFields({}, accessMetadata);
     const newProject = {
       id: currentProjectId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+      deviceCreatedAt: new Date().toISOString(),
       
       companyId: companyStamp.companyId,
       company_id: companyStamp.company_id,
