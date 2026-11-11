@@ -402,6 +402,7 @@
 
   function enterAppHome(msg) {
     loginReachedHome = true;
+    clearWaitingNote();
     clearJoiningAsStaff();
     if (msg) setStatus(msg);
     hideAccess();
@@ -475,6 +476,53 @@
   }
 
   var lastJoinError = '';
+  var waitingNote = '';
+  var waitingNoteError = false;
+
+  function noteWaiting(msg, isError) {
+    waitingNote = msg || '';
+    waitingNoteError = !!isError;
+  }
+
+  function clearWaitingNote() {
+    waitingNote = '';
+    waitingNoteError = false;
+  }
+
+  function signedInEmail() {
+    var email = text(profile() && profile().email).toLowerCase();
+    if (email) return email;
+    try {
+      return text(byId('fireSLoginEmail') && byId('fireSLoginEmail').value).toLowerCase();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function joinFailMessage(err) {
+    var msg = text(err);
+    var low = msg.toLowerCase();
+    var email = signedInEmail();
+    var who = email ? ' Signed in as ' + email + '.' : '';
+    if (
+      low.indexOf('fire_s_entitlement') >= 0 ||
+      low.indexOf('subscription is required') >= 0
+    ) {
+      return (
+        'The company subscription is not open for a new login.' +
+        who +
+        ' The owner must pay or start the trial, then tap Check again. Do not Subscribe.'
+      );
+    }
+    if (!msg) {
+      return (
+        'Still not in the company.' +
+        who +
+        ' Ask the owner: People → Add inspector / manager → this same email. Then tap Check again.'
+      );
+    }
+    return msg + who;
+  }
 
   function delay(ms) {
     return new Promise(function (resolve) {
@@ -613,10 +661,25 @@
 
   async function joinCompanyAfterLogin() {
     var claimed = 0;
+    var kept = null;
     var i;
+    var snap;
     for (i = 0; i < 3; i += 1) {
       claimed = await claimInvitesQuiet();
+      snap = profile();
+      if (snap && snap.companyId) {
+        kept = {
+          id: snap.companyId,
+          name: snap.companyName || '',
+          role: snap.role || 'inspector'
+        };
+      }
       await refreshMembership();
+      // Profile reload can miss the row the claim just returned and clear
+      // companyId. Put it back or Home falls through to Almost ready.
+      if (!hasCompany() && kept && kept.id) {
+        rememberJoinedCompany(kept.id, kept.name, kept.role);
+      }
       if (claimed > 0 || hasCompany()) return claimed || 1;
       await delay(400);
     }
@@ -916,11 +979,11 @@
   function showRegister() {
     var role = homeRole();
     if (role === 'pending_member') {
-      showWaiting();
-      setStatus(
+      noteWaiting(
         'Your owner already added you. Use Login or Create password. Do not Subscribe.',
         true
       );
+      showWaiting();
       return;
     }
     // Phone Access can still carry a leftover Create-password flag or company
@@ -976,7 +1039,8 @@
       startBtn.style.display = hideOwner ? 'none' : '';
       startBtn.hidden = hideOwner;
     }
-    setStatus('');
+    if (waitingNote) setStatus(waitingNote, waitingNoteError);
+    else setStatus('');
   }
 
   function shouldShowAccess() {
@@ -1187,12 +1251,13 @@
     if (await finishPendingSubscribeIfAny()) return;
     var invited = isJoiningAsStaff() || (await hasPendingInviteQuiet());
     if (invited) {
-      showWaiting();
-      setStatus(
+      noteWaiting(
         lastJoinError
-          ? lastJoinError
-          : 'Your owner already added you and pays for this email. Tap Check again to open Home. Do not Subscribe.'
+          ? joinFailMessage(lastJoinError)
+          : 'Your owner already added you and pays for this email. Tap Check again to open Home. Do not Subscribe.',
+        !!lastJoinError
       );
+      showWaiting();
       return;
     }
     if (canRegisterCompany()) {
@@ -1200,10 +1265,13 @@
       showCompanyOnly();
       return;
     }
-    showWaiting();
-    setStatus(
-      lastJoinError || 'Signed in. Tap Check again. If Home does not open, ask your owner to add this email under People again.'
+    noteWaiting(
+      lastJoinError
+        ? joinFailMessage(lastJoinError)
+        : 'Signed in. Tap Check again. If Home does not open, ask your owner to add this email under People again.',
+      !!lastJoinError
     );
+    showWaiting();
   }
 
   function accessRedirectUrl() {
@@ -1748,7 +1816,8 @@
   }
 
   async function doCheckAgain() {
-    setStatus('Joining the company…');
+    noteWaiting('Joining the company…', false);
+    showWaiting();
     try {
       var claimed = await joinCompanyAfterLogin();
       refreshHomeChrome();
@@ -1758,14 +1827,11 @@
         enterAppHome(claimed > 0 ? 'You are on the team.' : 'Access updated.');
         return;
       }
-      setStatus(
-        lastJoinError ||
-          'Still not in the company. Ask your owner: People → Add inspector / manager → this same email. Then tap Check again.',
-        true
-      );
+      noteWaiting(joinFailMessage(lastJoinError), true);
       showWaiting();
     } catch (e) {
-      setStatus((e && e.message) || 'Could not refresh access.', true);
+      noteWaiting(joinFailMessage((e && e.message) || 'Could not refresh access.'), true);
+      showWaiting();
     }
   }
 
