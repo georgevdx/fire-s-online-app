@@ -8927,6 +8927,84 @@ function normaliseInspectionPhotoSources(photos = []) {
   return (Array.isArray(photos) ? photos : []).map(normaliseInspectionPhotoSource);
 }
 
+function fireSPhotoEvidenceKey(photo) {
+  if (!photo || typeof photo !== 'object') return '';
+  const path = String(photo.storagePath || photo.path || photo.filePath || photo.objectPath || '').trim();
+  if (path) return 'path:' + path.replace(/^\/+/, '');
+  const src = String(photo.src || photo.publicUrl || photo.url || '').trim();
+  if (src && src.indexOf('data:') !== 0) {
+    const clean = src.split('?')[0];
+    const marker = '/inspection-photos/';
+    const at = clean.indexOf(marker);
+    if (at !== -1) {
+      try {
+        return 'path:' + decodeURIComponent(clean.slice(at + marker.length));
+      } catch (_) {
+        return 'path:' + clean.slice(at + marker.length);
+      }
+    }
+    return 'src:' + clean;
+  }
+  const id = String(photo.id || '').trim();
+  if (id) return 'id:' + id;
+  const stamp = [
+    photo.timestamp || '',
+    photo.note || '',
+    photo.linkedQuestion || ''
+  ].join('|');
+  if (stamp !== '||') return 'meta:' + stamp;
+  return '';
+}
+
+function fireSHistoryCopiesCurrentVisit(project, item) {
+  const currentNumber = String(
+    (project && (project.inspectionNumber || project.currentInspectionId)) || ''
+  ).trim();
+  const itemNumber = String(
+    (item && (item.inspectionNumber || item.sourceInspectionNumber)) || ''
+  ).trim();
+  return Boolean(currentNumber && itemNumber && currentNumber === itemNumber);
+}
+
+function fireSEvidencePhotoBag(project) {
+  const keys = new Set();
+  let unnamed = 0;
+  const add = (photo, copiesCurrent) => {
+    if (!photo) return;
+    const key = fireSPhotoEvidenceKey(photo);
+    if (!key) {
+      if (!copiesCurrent) unnamed += 1;
+      return;
+    }
+    keys.add(key);
+  };
+  (Array.isArray(project && project.photos) ? project.photos : []).forEach(photo => add(photo, false));
+  (Array.isArray(project && project.inspectionHistory) ? project.inspectionHistory : []).forEach(item => {
+    const copiesCurrent = fireSHistoryCopiesCurrentVisit(project, item);
+    (Array.isArray(item && item.photos) ? item.photos : []).forEach(photo => add(photo, copiesCurrent));
+  });
+  return { keys: keys, unnamed: unnamed };
+}
+
+function fireSEvidencePhotoCount(project) {
+  const bag = fireSEvidencePhotoBag(project);
+  return bag.keys.size + bag.unnamed;
+}
+
+function fireSEvidencePhotoCountList(projects) {
+  const keys = new Set();
+  let unnamed = 0;
+  (Array.isArray(projects) ? projects : []).forEach(project => {
+    const bag = fireSEvidencePhotoBag(project);
+    bag.keys.forEach(key => keys.add(key));
+    unnamed += bag.unnamed;
+  });
+  return keys.size + unnamed;
+}
+
+window.fireSEvidencePhotoCount = fireSEvidencePhotoCount;
+window.fireSEvidencePhotoCountList = fireSEvidencePhotoCountList;
+
 function normaliseProjectPhotoSources(project) {
   if (!project || typeof project !== 'object') return project;
 
@@ -29990,9 +30068,8 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function photoCount(project) {
-    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
-    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
-    return current + history;
+    if (typeof fireSEvidencePhotoCount === 'function') return fireSEvidencePhotoCount(project);
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
   }
 
   function healthScore(project) {
@@ -30075,7 +30152,9 @@ if (!window.fireSMobileSmartCardsApplied) {
   function renderStatsBar(projects) {
     const count = projects.length;
     const actions = projects.reduce((sum, p) => sum + actionCount(p), 0);
-    const photos = projects.reduce((sum, p) => sum + photoCount(p), 0);
+    const photos = typeof fireSEvidencePhotoCountList === 'function'
+      ? fireSEvidencePhotoCountList(projects)
+      : projects.reduce((sum, p) => sum + photoCount(p), 0);
     const scored = projects.map(healthScore).filter(v => v !== null && v !== undefined);
     const avg = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : '—';
     return `
@@ -30621,9 +30700,8 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function photoCount(project) {
-    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
-    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
-    return current + history;
+    if (typeof fireSEvidencePhotoCount === 'function') return fireSEvidencePhotoCount(project);
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
   }
 
   function healthScore(project) {
@@ -30675,7 +30753,9 @@ if (!window.fireSMobileSmartCardsApplied) {
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     const actions = unique.reduce((sum, p) => sum + openActionCount(p), 0);
     const overdue = unique.filter(isOverdue).length;
-    const photos = unique.reduce((sum, p) => sum + photoCount(p), 0);
+    const photos = typeof fireSEvidencePhotoCountList === 'function'
+      ? fireSEvidencePhotoCountList(unique)
+      : unique.reduce((sum, p) => sum + photoCount(p), 0);
     const attention = unique.filter(p => healthScore(p) > 0 && healthScore(p) < 75).length;
     return { count, avg, actions, overdue, photos, attention };
   }
@@ -31072,9 +31152,8 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function photoCount(project) {
-    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
-    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
-    return current + history;
+    if (typeof fireSEvidencePhotoCount === 'function') return fireSEvidencePhotoCount(project);
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
   }
 
   function projectTitle(project) {
@@ -31584,7 +31663,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function answers(project) { return Array.isArray(project?.answers) ? project.answers : []; }
-  function photos(project) { return (Array.isArray(project?.photos) ? project.photos.length : 0) + (project?.inspectionHistory || []).reduce((s, h) => s + ((h?.photos || []).length), 0); }
+  function photos(project) { return typeof fireSEvidencePhotoCount === 'function' ? fireSEvidencePhotoCount(project) : (Array.isArray(project?.photos) ? project.photos.length : 0); }
 
   function actionCount(project) {
     if (Array.isArray(project?.actions) && project.actions.length) {
@@ -31878,9 +31957,8 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function photoCount(project) {
-    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
-    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
-    return current + history;
+    if (typeof fireSEvidencePhotoCount === 'function') return fireSEvidencePhotoCount(project);
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
   }
 
   function lastInspection(project) {
@@ -32326,9 +32404,8 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function photoCount(project) {
-    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
-    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
-    return current + history;
+    if (typeof fireSEvidencePhotoCount === 'function') return fireSEvidencePhotoCount(project);
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
   }
 
   function topActions(project) {
@@ -32546,7 +32623,7 @@ if (!window.fireSMobileSmartCardsApplied) {
   function norm(v){ return String(v || '').trim().toLowerCase(); }
   function yesNo(p){ return ans(p).filter(a => ['yes','no'].includes(norm(a.answer))); }
   function noCount(p){ return ans(p).filter(a => norm(a.answer)==='no').length; }
-  function photos(p){ return (Array.isArray(p?.photos)?p.photos.length:0) + (p?.inspectionHistory||[]).reduce((s,h)=>s+((h.photos||[]).length),0); }
+  function photos(p){ return typeof fireSEvidencePhotoCount === 'function' ? fireSEvidencePhotoCount(p) : (Array.isArray(p?.photos) ? p.photos.length : 0); }
   function isOverdue(p){ const d=String(p?.followUpDate || p?.scheduledDate || '').slice(0,10); return d && d < new Date().toISOString().slice(0,10); }
   function compliance(list){
     let yes=0,total=0;

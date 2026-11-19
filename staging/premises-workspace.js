@@ -123,13 +123,8 @@
   }
 
   function photoCount(project) {
-    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
-    const history = (project?.inspectionHistory || []).reduce(
-      (sum, item) => sum + ((item?.photos || []).length),
-      0
-    );
-
-    return current + history;
+    if (typeof window.fireSEvidencePhotoCount === 'function') return window.fireSEvidencePhotoCount(project);
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
   }
 
   function historyCount(project) {
