@@ -91,10 +91,19 @@
     return d || '0000-01-01';
   }
 
+  function isOpenBooking(project) {
+    if (!project) return false;
+    var status = lower(project.scheduledStatus);
+    var type = lower(project.scheduleType);
+    if (status !== 'scheduled') return false;
+    return type === 'new_site' || type === 'existing_site' || project.scheduleFreshInspection === true;
+  }
+
   function scheduledPriorityList(projects, identity) {
     return (Array.isArray(projects) ? projects : [])
       .filter(function (project) {
-        return isMyInspection(project, identity) && !isFinalizedInspection(project);
+        return isMyInspection(project, identity) &&
+          (isOpenBooking(project) || !isFinalizedInspection(project));
       })
       .slice()
       .sort(function (a, b) {

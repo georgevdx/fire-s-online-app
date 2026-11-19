@@ -79,10 +79,12 @@ assert.ok(
 
 assert.ok(
   /function notifyInspectorAssignment\(/.test(notify) &&
-    /formsubmit\.co\/ajax\/' \+ encodeURIComponent\(email\)/.test(notify) &&
+    /functions\/v1\/fire-s-mail/.test(notify) &&
+    /body\.ok === true/.test(notify) &&
     /Fire-S: inspection booked for you/.test(notify) &&
-    /root\.fireSNotifyInspectorAssignment = notifyInspectorAssignment/.test(notify),
-  'Assigned inspectors must get an email with premises details'
+    /root\.fireSNotifyInspectorAssignment = notifyInspectorAssignment/.test(notify) &&
+    /root\.fireSSendRecoveryEmail = sendRecoveryEmail/.test(notify),
+  'Assigned inspectors are emailed only when the mailer accepts the message'
 );
 assert.ok(
   /notifyCompanyS === false/.test(notify) &&

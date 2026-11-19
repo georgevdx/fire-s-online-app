@@ -1059,6 +1059,12 @@
       return 'Wrong password for that email. Try again, or use Forgot password. Do not use Create password again if this email already exists.';
     }
     if (
+      low.indexOf('email_address_not_authorized') >= 0 ||
+      low.indexOf('not authorized') >= 0
+    ) {
+      return 'The reset was not emailed. The built-in cloud mailer only sends to Supabase team addresses until Custom SMTP is switched on.';
+    }
+    if (
       low.indexOf('rate') >= 0 ||
       low.indexOf('only request this after') >= 0 ||
       low.indexOf('over_email_send_rate_limit') >= 0
@@ -1235,16 +1241,46 @@
       setStatus('Cloud is not ready yet. Wait a moment and try again.', true);
       return;
     }
-    setStatus('Sending password reset email…');
+    var hasLogin = await emailHasRegisteredPassword(email);
+    if (hasLogin === false) {
+      setStatus(
+        'No password is registered for ' +
+          email +
+          '. Tap Create password. Forgot password only emails an address that already has a login.',
+        true
+      );
+      return;
+    }
+    setStatus('Sending password reset email to ' + email + '…');
     try {
       var redirectTo = accessRedirectUrl();
+      if (window.fireSSendRecoveryEmail) {
+        var sent = await window.fireSSendRecoveryEmail({ email: email, redirectTo: redirectTo });
+        if (sent && sent.ok) {
+          setStatus(
+            'Check Inbox AND Junk for ' +
+              email +
+              '. Open the link in that email — Fire-S opens on Choose a new password. Tap Forgot password only once, then wait a minute.'
+          );
+          return;
+        }
+        if (sent && sent.reason === 'no-login') {
+          setStatus(
+            'No login is registered for ' +
+              email +
+              '. Tap Create password. Forgot password only emails an address that already has a login.',
+            true
+          );
+          return;
+        }
+      }
       var opts = redirectTo ? { redirectTo: redirectTo } : undefined;
       var res = await sb.auth.resetPasswordForEmail(email, opts);
       if (res.error) throw res.error;
       setStatus(
         'Check Inbox AND Junk for ' +
           email +
-          '. The email is from Supabase, not Fire-S. Open the link in that email — Fire-S opens on Choose a new password. Tap Forgot password only once, then wait a minute.'
+          '. The built-in cloud mailer only delivers to Supabase team addresses. Other registered emails do not get the message until Custom SMTP is switched on. Tap Forgot password only once, then wait a minute.'
       );
     } catch (e) {
       setStatus(authErrorMessage(e), true);

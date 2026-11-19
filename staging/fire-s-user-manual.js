@@ -277,7 +277,7 @@
           <li>Search by site, address, inspector, number or date.</li>
           <li>Use filters such as overdue, this month, or completed.</li>
           <li>Tap a card to open that inspection.</li>
-          <li>Use <strong>Schedule</strong> to book a future inspection. Owner and Manager can pick an <strong>existing site</strong> or a <strong>new site</strong>, then pick the inspector who must visit. You do not have to open a new inspection form first for a site that already exists. That inspector gets an email with the premises details.</li>
+          <li>Use <strong>Schedule</strong> to book a future inspection. Owner and Manager can pick an <strong>existing site</strong> or a <strong>new site</strong>, then pick the inspector who must visit. You do not have to open a new inspection form first for a site that already exists. That inspector gets an email with the premises details. Upcoming inspections shows the booking when the date is within 30 days.</li>
         </ol>
       </article>
 
@@ -314,7 +314,7 @@
         <ul>
           <li><strong>Premises Requiring Action</strong> — sites with No answers or open actions.</li>
           <li><strong>Overdue Inspections</strong> — booked work that is late.</li>
-          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
+          <li><strong>Schedule</strong> — Owner/Manager: book an existing site or a new site, pick the inspector who must visit, Save. You do not open a new inspection form first for a site that already exists. That inspector gets an email with the premises details and sees the booking on Home under Scheduled priority. Upcoming inspections shows it when the date is within 30 days. If they have more than one, Home shows the list. Finish and finalise an inspection and it leaves that list. If it is not assigned to them, they use Inspection Gateway.</li>
           <li><strong>Reports</strong> — open the premises. If a report is ready, tap Latest Report or Export PDF. There is no Reports card under Schedule.</li>
           <li><strong>Request Fire Consultant Services</strong> — request consultancy, write a comment if you reviewed the app or found a problem, or ask for support.</li>
         </ul>

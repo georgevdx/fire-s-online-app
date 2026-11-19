@@ -14,3 +14,9 @@ entrypoint = "./functions/payfast-itn/index.js"
 [functions.payfast-cancel]
 verify_jwt = true
 entrypoint = "./functions/payfast-cancel/index.js"
+
+# Forgot-password mail is requested while logged out, so the function
+# checks the caller itself. Assignment mail still requires a user JWT.
+[functions.fire-s-mail]
+verify_jwt = false
+entrypoint = "./functions/fire-s-mail/index.js"

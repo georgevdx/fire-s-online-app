@@ -9386,6 +9386,31 @@ function scheduleExistingInspection() {
   openSchedulePanel('existing');
 }
 
+function reportScheduledSave(saveMessage, siteLabel, scheduledDate, assigned, mailed) {
+  const who = (assigned && (assigned.name || assigned.email)) || '';
+  const base = `${siteLabel} scheduled for ${scheduledDate}.`;
+  const upcoming = ' It shows on Upcoming inspections when that date is within 30 days.';
+  const show = function (message) {
+    if (saveMessage) saveMessage.textContent = message;
+  };
+  if (!assigned || !assigned.email) {
+    show(base + upcoming);
+    return;
+  }
+  show(base + ' Sending the premises email to ' + who + '.');
+  Promise.resolve(mailed)
+    .then(function (result) {
+      if (result && result.ok) {
+        show(base + ' ' + who + ' was emailed the premises details.' + upcoming);
+        return;
+      }
+      show(base + upcoming + ' The email to ' + who + ' did not go out.');
+    })
+    .catch(function () {
+      show(base + upcoming + ' The email to ' + who + ' did not go out.');
+    });
+}
+
 function saveScheduledExistingInspection() {
   if (!canCreateInspection()) {
     alert(
@@ -9503,10 +9528,11 @@ function saveScheduledExistingInspection() {
       console.warn('Scheduled existing inspection upload failed:', error);
     });
 
+  let mailed = Promise.resolve({ ok: false, skipped: 'no-email' });
   try {
     if (assigned.email && typeof window.fireSNotifyInspectorAssignment === 'function') {
       const accessMetadata = getAccessMetadata();
-      window.fireSNotifyInspectorAssignment({
+      mailed = window.fireSNotifyInspectorAssignment({
         email: assigned.email,
         inspectorName: assigned.name,
         organisation: stamped.organisationName,
@@ -9524,14 +9550,10 @@ function saveScheduledExistingInspection() {
   } catch (_) {}
 
   const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    const siteLabel =
-      [stamped.organisationName, stamped.siteName].filter(Boolean).join(' ') ||
-      'Existing site';
-    saveMessage.textContent = assigned.email
-      ? `${siteLabel} scheduled for ${scheduledDate}. ${assigned.name || assigned.email} gets an email with the premises details.`
-      : `${siteLabel} scheduled for ${scheduledDate}.`;
-  }
+  const siteLabel =
+    [stamped.organisationName, stamped.siteName].filter(Boolean).join(' ') ||
+    'Existing site';
+  reportScheduledSave(saveMessage, siteLabel, scheduledDate, assigned, mailed);
 }
 
 function saveScheduledNewInspection() {
@@ -9722,9 +9744,10 @@ function saveScheduledNewInspection() {
       console.warn('Scheduled new inspection upload failed:', error);
     });
 
+  let mailed = Promise.resolve({ ok: false, skipped: 'no-email' });
   try {
     if (assigned.email && typeof window.fireSNotifyInspectorAssignment === 'function') {
-      window.fireSNotifyInspectorAssignment({
+      mailed = window.fireSNotifyInspectorAssignment({
         email: assigned.email,
         inspectorName: assigned.name,
         organisation: organisationName,
@@ -9742,11 +9765,7 @@ function saveScheduledNewInspection() {
   } catch (_) {}
 
   const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    saveMessage.textContent = assigned.email
-      ? `New inspection scheduled for ${scheduledDate}. ${assigned.name || assigned.email} gets an email with the premises details.`
-      : `New inspection scheduled for ${scheduledDate}.`;
-  }
+  reportScheduledSave(saveMessage, 'New inspection', scheduledDate, assigned, mailed);
 }
 
 window.saveScheduledNewInspection = saveScheduledNewInspection;
