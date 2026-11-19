@@ -73,6 +73,46 @@ async function validateWithPayfast(cfg, rawBody) {
   return res.ok && textBody.indexOf('VALID') === 0;
 }
 
+async function grantPaidSeat(env, mPaymentId) {
+  const id = String(mPaymentId || '').trim();
+  if (!id) return null;
+  const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!supabaseUrl || !serviceKey) return null;
+  const res = await fetch(supabaseUrl + '/rest/v1/rpc/fire_s_grant_paid_seat', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + serviceKey,
+      apikey: serviceKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_m_payment_id: id })
+  });
+  const data = await res.json().catch(function () {
+    return null;
+  });
+  if (!res.ok) {
+    const hint = String(
+      (data && (data.message || data.hint || data.details || data.error)) ||
+        'Paid seat was not invited.'
+    );
+    if (/could not find the function|PGRST202|schema cache/i.test(hint)) {
+      logEvent('ITN_SEAT_GRANT_MISSING', { m_payment_id: id });
+      return null;
+    }
+    if (/Seat email required/i.test(hint)) {
+      logEvent('ITN_SEAT_EMAIL_MISSING', { m_payment_id: id });
+      return null;
+    }
+    throw new Error(hint);
+  }
+  logEvent('ITN_SEAT_GRANTED', {
+    m_payment_id: id,
+    status: data && (data.status || data.out_status)
+  });
+  return data;
+}
+
 async function applyItn(env, fields, payload) {
   const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -224,6 +264,12 @@ Deno.serve(async (req) => {
       public: publicPayfastConfig(cfg)
     });
     if (!applied) return failResponse('INVALID', 400);
+    if (
+      String(fields.paymentStatus || '').toUpperCase() === 'COMPLETE' &&
+      fields.planCode === 'seat'
+    ) {
+      await grantPaidSeat(env, fields.mPaymentId);
+    }
     await stopRemoteSubscription(env, cfg, applied, fields);
     return okResponse();
   } catch (err) {

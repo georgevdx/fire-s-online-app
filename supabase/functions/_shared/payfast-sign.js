@@ -98,13 +98,24 @@ export function newMerchantPaymentId(kind) {
 
 /**
  * Plan, price, company and m_payment_id are decided here.
- * Untrusted body may only suggest interval/kind/seat email.
+ * Untrusted body may only suggest interval/kind/seat email/seat role.
  * Never read amount, price, plan, companyId or mPaymentId from the browser.
  */
 export function resolveAuthoritativeCheckout(trusted, untrustedBody) {
   const body = untrustedBody || {};
   const interval = text(body.interval).toLowerCase() === 'annual' ? 'annual' : 'monthly';
   const kind = text(body.kind).toLowerCase() === 'seat' ? 'seat' : 'subscribe';
+  const seatRoleRaw = text(body.seatRole).toLowerCase();
+  const seatRole =
+    kind === 'seat' &&
+    (seatRoleRaw === 'inspector' ||
+      seatRoleRaw === 'manager' ||
+      seatRoleRaw === 'viewer' ||
+      seatRoleRaw === 'company_owner')
+      ? seatRoleRaw
+      : kind === 'seat'
+        ? 'inspector'
+        : '';
   const companyId = text(trusted && trusted.companyId);
   const email = text(trusted && trusted.email).toLowerCase();
   if (!companyId) {
@@ -123,6 +134,7 @@ export function resolveAuthoritativeCheckout(trusted, untrustedBody) {
     companyName: text(trusted && trusted.companyName) || 'Fire-S',
     email: email,
     seatEmail: kind === 'seat' ? text(body.seatEmail).toLowerCase() : '',
+    seatRole: seatRole,
     mPaymentId: newMerchantPaymentId(kind)
   };
 }
