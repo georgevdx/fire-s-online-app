@@ -341,30 +341,19 @@ function combineStreetAddress(streetNumber, addressLine) {
     .join(' ');
 }
 
-async function loadJson(url) {
-  const cacheBust = `v=manual-sprint-202b-${Date.now()}`;
-  const separator = url.includes('?') ? '&' : '?';
-  const requestUrl = `${url}${separator}${cacheBust}`;
-
-  const response = await fetch(requestUrl, {
-    cache: 'no-store',
-    headers: {
-      'Accept': 'application/json,text/plain,*/*'
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`${url} failed to load: ${response.status} ${response.statusText}`);
-  }
-
-  const text = await response.text();
-  const trimmed = text.trim();
+function parseJsonText(url, text) {
+  const trimmed = String(text || '').trim();
 
   if (!trimmed) {
     throw new Error(`${url} loaded as an empty file.`);
   }
 
-  if (trimmed.startsWith('let ') || trimmed.startsWith('const ') || trimmed.startsWith('function ')) {
+  if (
+    trimmed.startsWith('<') ||
+    trimmed.startsWith('let ') ||
+    trimmed.startsWith('const ') ||
+    trimmed.startsWith('function ')
+  ) {
     throw new Error(`${url} returned JavaScript instead of JSON. Replace the JSON file on the server and clear browser cache.`);
   }
 
@@ -372,6 +361,62 @@ async function loadJson(url) {
     return JSON.parse(trimmed);
   } catch (error) {
     throw new Error(`${url} is not valid JSON: ${error.message}`);
+  }
+}
+
+async function rememberFieldJson(url, text) {
+  try {
+    if (!window.caches) return;
+    const cache = await caches.open('fire-s-108-84-toets-130');
+    await cache.put(url, new Response(text, {
+      headers: { 'Content-Type': 'application/json; charset=utf-8' }
+    }));
+  } catch (_) {}
+}
+
+async function readFieldJson(url) {
+  try {
+    if (!window.caches) return '';
+    const cache = await caches.open('fire-s-108-84-toets-130');
+    const hit = await cache.match(url);
+    if (!hit) return '';
+    return await hit.text();
+  } catch (_) {
+    return '';
+  }
+}
+
+async function loadJson(url) {
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (offline) {
+    const cached = await readFieldJson(url);
+    if (cached) return parseJsonText(url, cached);
+  }
+
+  const cacheBust = `v=manual-sprint-202b-${Date.now()}`;
+  const separator = url.includes('?') ? '&' : '?';
+  const requestUrl = `${url}${separator}${cacheBust}`;
+
+  try {
+    const response = await fetch(requestUrl, {
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json,text/plain,*/*'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`${url} failed to load: ${response.status} ${response.statusText}`);
+    }
+
+    const text = await response.text();
+    const data = parseJsonText(url, text);
+    rememberFieldJson(url, text);
+    return data;
+  } catch (error) {
+    const cached = await readFieldJson(url);
+    if (cached) return parseJsonText(url, cached);
+    throw error;
   }
 }
 
