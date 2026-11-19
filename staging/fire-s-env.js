@@ -77,7 +77,7 @@
       'font-family:Arial,sans-serif;font-size:0.95rem;line-height:1.35;text-align:center;';
     if (stagingCloudReady) {
       bar.textContent =
-        'TOETS-BLAD 1.3.130-toets — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie.';
+        'TOETS-BLAD 1.3.130-toets — nie vir kliënte. Data sit in Fire-S Test, nie in die regte wolk nie. Geen regte intekening-betaling nie.';
     } else {
       bar.textContent =
         'TOETS-BLAD 1.3.130-toets — nie vir kliënte. Die toets-wolk is nog nie gekoppel nie. Moenie hier Subscribe asof dit live is nie.';

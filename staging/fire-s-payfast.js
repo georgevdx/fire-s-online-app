@@ -183,7 +183,27 @@
     return false;
   }
 
+  function hostedPayfastAction(html) {
+    var match = /action\s*=\s*["']([^"']+)["']/i.exec(String(html || ''));
+    return match ? text(match[1]) : '';
+  }
+
+  function closedTestLivePayment(html) {
+    var e = env();
+    if (!e.isStaging) return null;
+    var action = hostedPayfastAction(html);
+    if (/^https:\/\/sandbox\.payfast\.co\.za\/eng\/process(?:[/?#]|$)/i.test(action)) return null;
+    return {
+      ok: false,
+      reason: 'closed-test',
+      error:
+        'Closed testing does not take a real subscription payment. PayFast stays on the sandbox until testing is finished.'
+    };
+  }
+
   function submitHostedCheckout(html) {
+    var blocked = closedTestLivePayment(html);
+    if (blocked) return blocked;
     var doc = root.document;
     if (!doc) return { ok: false, reason: 'no-dom', error: 'PayFast is not ready on this page.' };
     if (merchantPaysSelf(html)) {

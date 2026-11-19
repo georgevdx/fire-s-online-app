@@ -144,6 +144,12 @@ assert.ok(
   const buyer = pf.submitHostedCheckout(buyerHtml);
   assert.ok(buyer && buyer.ok, 'test buyer email must still open PayFast');
   assert.ok(written.indexOf('fires-toets-buyer@example.com') !== -1);
+
+  const liveHtml =
+    '<form id="payfast" method="POST" action="https://www.payfast.co.za/eng/process"><input type="hidden" name="amount" value="250.00"></form>';
+  const livePayment = pf.submitHostedCheckout(liveHtml);
+  assert.ok(livePayment && livePayment.ok === false && livePayment.reason === 'closed-test');
+  assert.ok(written.indexOf('www.payfast.co.za') === -1, 'closed testing must not open a real PayFast payment');
 })();
 
 (function testHideOkBannerWhenCancelled() {

@@ -2,9 +2,11 @@
 
 ## Toetsblad first, live only when asked
 
-Put every forward change on the **toets-blad** (`staging/`) first.
+Put every forward change on the **toets-blad** (`staging/`) first. Open the toets-blad and run the change there before editing root live files or publishing to `main`.
 
-Do **not** sit live until the user says so (`sit live`, `sit dit live`, or equivalent). Sitting live means changing root live files (`app.js`, `index.html`, `service-worker.js`, live `fire-s-*.js`) and publishing them.
+Do **not** sit live until the user says so (`sit live`, `sit dit live`, or equivalent). Sitting live means changing root live files (`app.js`, `index.html`, `service-worker.js`, live `fire-s-*.js`) and publishing them. Do not push live files to `main` until the user has seen the toets-blad and says sit live.
+
+Closed testing takes no real subscription payment until the user says testing is finished. The toets-blad and Fire-S Test stay on the PayFast sandbox. Do not point that checkout at `www.payfast.co.za`.
 
 After a sit-live, copy the same workflow onto the toets-blad so the two apps do not drift. The user must not get a different Inspection Gateway, Premises Command Centre, Home count, or report path on toets versus live.
 

@@ -20,6 +20,8 @@ const DEFAULT_SANDBOX_PUBLIC =
   'https://georgevdx.github.io/fire-s-online-app/staging/index.html';
 const DEFAULT_LIVE_PUBLIC =
   'https://georgevdx.github.io/fire-s-online-app/index.html';
+/** Fire-S Test. Closed testing must not charge a real subscription. */
+const CLOSED_TEST_PROJECT = 'ejqgzpkfcwocmtvwufwp';
 
 export function text(value) {
   return String(value == null ? '' : value).trim();
@@ -31,8 +33,26 @@ function envGet(env, key) {
   return text(env[key]);
 }
 
+export function isClosedTestPayfastEnv(env) {
+  const supabaseUrl = envGet(env, 'SUPABASE_URL').toLowerCase();
+  const publicUrl = envGet(env, 'FIRE_S_PUBLIC_URL').toLowerCase();
+  const notifyUrl = envGet(env, 'PAYFAST_NOTIFY_URL').toLowerCase();
+  if (supabaseUrl.indexOf(CLOSED_TEST_PROJECT) !== -1) return true;
+  if (notifyUrl.indexOf(CLOSED_TEST_PROJECT) !== -1) return true;
+  if (publicUrl.indexOf('/staging') !== -1) return true;
+  return false;
+}
+
 export function resolvePayfastMode(env) {
   const requested = text(envGet(env, 'PAYFAST_MODE') || 'sandbox').toLowerCase();
+  if (isClosedTestPayfastEnv(env)) {
+    if (requested === 'live') {
+      throw new Error(
+        'Closed testing cannot take a real PayFast subscription payment. Keep PAYFAST_MODE=sandbox until testing is finished.'
+      );
+    }
+    return 'sandbox';
+  }
   if (requested !== 'live') return 'sandbox';
   const allow = text(envGet(env, 'PAYFAST_ALLOW_LIVE')).toLowerCase();
   if (allow !== 'true') {

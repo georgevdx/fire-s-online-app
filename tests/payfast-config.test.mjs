@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import crypto from 'node:crypto';
-import { loadPayfastConfig, resolvePayfastMode, processUrlForMode, publicPayfastConfig } from '../supabase/functions/_shared/payfast-config.js';
+import { loadPayfastConfig, resolvePayfastMode, isClosedTestPayfastEnv, processUrlForMode, publicPayfastConfig } from '../supabase/functions/_shared/payfast-config.js';
 import {
   assertSandboxCheckout,
   assertCheckoutMode,
@@ -33,6 +33,40 @@ assert.throws(
 assert.strictEqual(
   resolvePayfastMode({ PAYFAST_MODE: 'live', PAYFAST_ALLOW_LIVE: 'true' }),
   'live'
+);
+assert.strictEqual(
+  isClosedTestPayfastEnv({
+    SUPABASE_URL: 'https://ejqgzpkfcwocmtvwufwp.supabase.co',
+    PAYFAST_MODE: 'live',
+    PAYFAST_ALLOW_LIVE: 'true'
+  }),
+  true
+);
+assert.throws(
+  () =>
+    resolvePayfastMode({
+      SUPABASE_URL: 'https://ejqgzpkfcwocmtvwufwp.supabase.co',
+      PAYFAST_MODE: 'live',
+      PAYFAST_ALLOW_LIVE: 'true'
+    }),
+  /Closed testing cannot take a real PayFast/
+);
+assert.throws(
+  () =>
+    resolvePayfastMode({
+      FIRE_S_PUBLIC_URL: 'https://georgevdx.github.io/fire-s-online-app/staging/',
+      PAYFAST_MODE: 'live',
+      PAYFAST_ALLOW_LIVE: 'true'
+    }),
+  /Closed testing cannot take a real PayFast/
+);
+assert.strictEqual(
+  resolvePayfastMode({
+    SUPABASE_URL: 'https://ejqgzpkfcwocmtvwufwp.supabase.co',
+    FIRE_S_PUBLIC_URL: 'https://georgevdx.github.io/fire-s-online-app/staging/',
+    PAYFAST_ALLOW_LIVE: 'true'
+  }),
+  'sandbox'
 );
 
 const sandboxCfg = loadPayfastConfig({
