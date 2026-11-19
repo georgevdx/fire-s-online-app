@@ -26,7 +26,18 @@ assert.ok(
   'Live Fire-S must be 1.3.67'
 );
 
-assert.strictEqual(src, stagingSrc, 'Live and toets must share the one-instrument module');
+assert.ok(
+  /var CHECK_MS = 20000;/.test(src) && !/visibilitychange/.test(src),
+  'Live kick interval stays at 20 seconds until that change is sat live'
+);
+assert.ok(
+  /var CHECK_MS = 4000;/.test(stagingSrc) && /visibilitychange/.test(stagingSrc),
+  'Toets checks the other instrument every 4 seconds and again on focus'
+);
+assert.ok(
+  !/scope: 'others'/.test(src) && !/scope: 'others'/.test(stagingSrc),
+  'Neither instrument module may sign this phone out while logging in'
+);
 assert.ok(
   /fire-s-one-instrument\.js/.test(liveHtml) && /fire-s-one-instrument\.js/.test(stagingHtml),
   'Access pages must load the one-instrument script'

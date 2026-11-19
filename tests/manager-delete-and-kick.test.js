@@ -9,7 +9,9 @@ function read(name) {
 }
 
 const app = read('staging/app.js');
+const liveApp = read('app.js');
 const html = read('staging/index.html');
+const liveHtml = read('index.html');
 const instrument = read('staging/fire-s-one-instrument.js');
 const env = read('staging/fire-s-env.js');
 const liveEnv = read('fire-s-env.js');
@@ -43,6 +45,33 @@ assert.ok(
       app.slice(app.indexOf("appendAudit(updated, 'delete_entire_premises'"), app.indexOf('function isWithinRetention'))
     ),
   'Recycle Bin delete must upload the deleted stamp straight away'
+);
+
+function assertLiveDelete(src) {
+  const deleteAt = src.indexOf('async function deletePremisesFromCloud');
+  const deleteFn = src.slice(deleteAt, src.indexOf('async function permanentlyDeleteRecycleEntry'));
+  assert.ok(
+    /\.delete\(\)\s*\.eq\('id', projectId\)\s*\.select\('id'\)/.test(deleteFn) &&
+      !/applyInspectionDeleteFilter/.test(deleteFn),
+    'Live cloud delete must remove the row by id'
+  );
+  assert.ok(
+    /uploadSingleInspection\(/.test(deleteFn),
+    'Live delete must upload a deleted stamp when the row is not removed'
+  );
+  assert.ok(
+    /uploadPendingInspections\(\)/.test(
+      src.slice(src.indexOf("appendAudit(updated, 'delete_entire_premises'"), src.indexOf('function isWithinRetention'))
+    ),
+    'Live Recycle Bin delete must upload the deleted stamp straight away'
+  );
+}
+assertLiveDelete(liveApp);
+assert.ok(
+  /app\.js\?v=1-3-67-premises-delete/.test(liveHtml) &&
+    /Version 1\.3\.67/.test(liveHtml) &&
+    /Report Review/.test(liveHtml),
+  'Live stays on 1.3.67, loads the delete fix, and still shows Report Review'
 );
 
 assert.ok(/var CHECK_MS = 4000;/.test(instrument), 'The other instrument must be checked every 4 seconds');

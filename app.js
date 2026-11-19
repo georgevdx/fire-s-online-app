@@ -45075,7 +45075,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const immediate = mode === 'immediate';
     const metadata = nowMetadata('entire_premises');
     if (immediate) {
-      if (!await deletePremisesFromCloud(projectId, { silent: false })) return false;
+      if (!await deletePremisesFromCloud(projectId, { silent: false, project })) return false;
       appendAudit(project, 'immediate_delete_entire_premises', {
         immediate: true,
         retentionDays: 0
@@ -45108,6 +45108,10 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     try {
       if (typeof markProjectDeleted === 'function') markProjectDeleted(projectId);
     } catch (_) {}
+    try {
+      if (typeof queueInspectionForUpload === 'function') queueInspectionForUpload(projectId);
+      if (typeof uploadPendingInspections === 'function') uploadPendingInspections();
+    } catch (_) {}
     return true;
   }
 
@@ -45138,7 +45142,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
           Number.isFinite(premisesExpiry) &&
           premisesExpiry < Date.now()
         ) {
-          await deletePremisesFromCloud(project.id, { silent: true });
+          await deletePremisesFromCloud(project.id, { silent: true, project });
           try {
             if (typeof markProjectDeleted === 'function') markProjectDeleted(project.id);
           } catch (_) {}
@@ -45316,22 +45320,43 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
         return silent;
       }
 
-      let query = supabaseClient
+      // Delete by id. Filtering on company_id missed rows whose company
+      // lives only inside the inspection, so the delete reported success
+      // and the building came back on the next person's login.
+      const { data, error } = await supabaseClient
         .from('inspections')
         .delete()
-        .eq('id', projectId);
-
-      if (typeof applyInspectionDeleteFilter === 'function') {
-        query = applyInspectionDeleteFilter(query, userData.user.id);
-      }
-
-      const { error } = await query.select();
+        .eq('id', projectId)
+        .select('id');
       if (error) {
         console.error('Permanent premises deletion failed:', error);
         if (!silent) alert(`Permanent cloud deletion failed: ${error.message}`);
         return silent;
       }
-      return true;
+      if (Array.isArray(data) && data.length) return true;
+
+      const source = options && options.project;
+      if (source && typeof uploadSingleInspection === 'function') {
+        const stamp = new Date().toISOString();
+        await uploadSingleInspection({
+          ...source,
+          id: projectId,
+          deletedAt: source.deletedAt || stamp,
+          dataManagementDeletedAt: source.dataManagementDeletedAt || stamp,
+          deleteType: source.deleteType || 'permanently_deleted',
+          syncPending: true,
+          lastSaved: stamp
+        });
+        const pending = typeof getPendingUploadQueue === 'function'
+          ? getPendingUploadQueue()
+          : [];
+        const waiting = pending.some(item => String(item.inspectionId) === String(projectId));
+        if (!waiting) return true;
+      }
+      if (!silent) {
+        alert('Permanent cloud deletion did not remove the premises. It can still appear on another login.');
+      }
+      return false;
     } catch (error) {
       console.error('Permanent premises deletion failed:', error);
       if (!silent) {
@@ -45385,7 +45410,7 @@ window.shareSelectedHistoryReport = shareSelectedHistoryReport;
     const permanentAt = new Date().toISOString();
 
     if (kind === 'premises') {
-      if (!await deletePremisesFromCloud(projectId)) return false;
+      if (!await deletePremisesFromCloud(projectId, { project })) return false;
       appendAudit(project, 'permanent_delete_entire_premises', {
         recycleId,
         permanentAt,
