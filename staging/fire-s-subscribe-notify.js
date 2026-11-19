@@ -171,6 +171,76 @@
     };
   }
 
+  function mailEndpoint() {
+    var env = {};
+    try {
+      env = root.FIRE_S_ENV || {};
+    } catch (_) {}
+    var base = text(env.supabaseUrl).replace(/\/$/, '');
+    if (!base) return '';
+    return base + '/functions/v1/fire-s-mail';
+  }
+
+  function bearerToken() {
+    var env = {};
+    try {
+      env = root.FIRE_S_ENV || {};
+    } catch (_) {}
+    var anon = text(env.supabaseAnonKey);
+    var client = null;
+    try {
+      client = root.supabaseClient;
+    } catch (_) {}
+    if (!client || !client.auth || typeof client.auth.getSession !== 'function') {
+      return Promise.resolve(anon);
+    }
+    return Promise.resolve(client.auth.getSession())
+      .then(function (res) {
+        var token = res && res.data && res.data.session && res.data.session.access_token;
+        return text(token) || anon;
+      })
+      .catch(function () {
+        return anon;
+      });
+  }
+
+  function postFireSMail(payload) {
+    var url = mailEndpoint();
+    if (!url) return Promise.resolve({ ok: false, reason: 'no-cloud' });
+    return bearerToken().then(function (token) {
+      var env = {};
+      try {
+        env = root.FIRE_S_ENV || {};
+      } catch (_) {}
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          apikey: text(env.supabaseAnonKey),
+          Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify(payload || {})
+      })
+        .then(function (res) {
+          return res.json()
+            .catch(function () {
+              return {};
+            })
+            .then(function (body) {
+              return {
+                ok: !!(res.ok && body && body.ok === true),
+                status: res.status,
+                reason: text(body && body.reason)
+              };
+            });
+        })
+        .catch(function () {
+          return { ok: false, reason: 'network' };
+        });
+    });
+  }
+
   function notifyInspectorAssignment(info) {
     var email = text(info && info.email).toLowerCase();
     if (!email || email.indexOf('@') < 1) {
@@ -182,22 +252,26 @@
     } catch (_) {
       return Promise.resolve({ ok: false });
     }
-    return fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-      .then(function () {
-        return { ok: true };
-      })
-      .catch(function () {
-        return { ok: false };
-      });
+    return postFireSMail({
+      kind: 'assignment',
+      email: email,
+      fields: body
+    });
+  }
+
+  function sendRecoveryEmail(info) {
+    var email = text(info && info.email).toLowerCase();
+    if (!email || email.indexOf('@') < 1) {
+      return Promise.resolve({ ok: false, reason: 'no-email' });
+    }
+    return postFireSMail({
+      kind: 'recovery',
+      email: email,
+      redirectTo: text(info && info.redirectTo)
+    });
   }
 
   root.fireSNotifyInspectorAssignment = notifyInspectorAssignment;
   root.fireSNotifyInspectorAssignmentBuildBody = assignmentBody;
+  root.fireSSendRecoveryEmail = sendRecoveryEmail;
 })(window);

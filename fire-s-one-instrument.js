@@ -9,7 +9,7 @@
 
   var STORAGE_KEY = 'fireS.instrumentId';
   var META_KEY = 'fire_s_instrument_id';
-  var CHECK_MS = 20000;
+  var CHECK_MS = 4000;
   var TAKEN_MESSAGE =
     'This subscribed email is already in use on another instrument. Only one instrument at a time. Login here to use this instrument. That signs the other one out.';
 
@@ -171,9 +171,34 @@
     return { ok: true, instrumentId: id };
   }
 
+  function watchForeground(sb, storage) {
+    if (root.__fireSInstrumentForeground) return;
+    root.__fireSInstrumentForeground = true;
+    function nudge() {
+      var hidden = false;
+      try {
+        hidden = !!(root.document && root.document.hidden);
+      } catch (_) {}
+      if (hidden) return;
+      Promise.resolve(check(sb, storage)).catch(function () {});
+    }
+    try {
+      if (root.document && root.document.addEventListener) {
+        root.document.addEventListener('visibilitychange', nudge);
+      }
+    } catch (_) {}
+    try {
+      if (root.addEventListener) {
+        root.addEventListener('focus', nudge);
+        root.addEventListener('pageshow', nudge);
+      }
+    } catch (_) {}
+  }
+
   function start(sb, storage) {
     stop();
     if (!sb || isLoginInFlight()) return;
+    watchForeground(sb, storage);
     Promise.resolve(check(sb, storage)).catch(function () {});
     if (typeof root.setInterval !== 'function') return;
     timer = root.setInterval(function () {

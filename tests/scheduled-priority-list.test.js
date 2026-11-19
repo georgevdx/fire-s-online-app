@@ -85,6 +85,22 @@ const list = sandbox.fireSScheduledPriorityList(
 );
 
 assert.ok(list.length === 2, 'List must keep two open bookings and drop the finalised one');
+const rebooked = sandbox.fireSScheduledPriorityList(
+  [
+    {
+      id: 'again',
+      projectName: 'Alpha Catering',
+      scheduleType: 'existing_site',
+      scheduledStatus: 'scheduled',
+      scheduleFreshInspection: true,
+      scheduledDate: '2026-09-02',
+      status: 'completed',
+      assignedInspectorEmail: 'samplejdb@outlook.com'
+    }
+  ],
+  sample
+);
+assert.strictEqual(rebooked.length, 1, 'A new booking on a finished site must show for that inspector');
 assert.ok(list[0].id === 'soon' && list[1].id === 'later', 'Soonest scheduled date is first (scheduled priority)');
 assert.ok(
   !list.some(item => item.id === 'done' || item.id === 'other'),

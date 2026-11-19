@@ -190,13 +190,22 @@
   }
 
   function nextDueKey(project) {
+    const booked = dateKey(project && project.scheduledDate);
+    const type = text(project && project.scheduleType).toLowerCase();
+    const status = text(project && project.scheduledStatus).toLowerCase();
+    if (
+      booked &&
+      (status === 'scheduled' || type === 'new_site' || type === 'existing_site')
+    ) {
+      return booked;
+    }
     try {
       if (typeof root.fireSUltraNextInspectionDate === 'function') {
         const fromUltra = dateKey(root.fireSUltraNextInspectionDate(project));
         if (fromUltra) return fromUltra;
       }
     } catch (_) {}
-    if (project && project.scheduledDate) return dateKey(project.scheduledDate);
+    if (booked) return booked;
     if (project && project.followUpDate) return dateKey(project.followUpDate);
     return '';
   }
@@ -399,21 +408,47 @@
     };
   }
 
+  function isOpenBooking(project) {
+    if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+    const status = text(project.scheduledStatus).toLowerCase();
+    const type = text(project.scheduleType).toLowerCase();
+    if (status !== 'scheduled' && type !== 'new_site' && type !== 'existing_site') return false;
+    return !!dateKey(project.scheduledDate);
+  }
+
+  function withScheduledBookings(raw, visible) {
+    const list = Array.isArray(visible) ? visible.slice() : [];
+    const seen = Object.create(null);
+    list.forEach(project => {
+      if (project && project.id != null) seen[String(project.id)] = true;
+    });
+    (Array.isArray(raw) ? raw : []).forEach(project => {
+      if (!project || project.id == null || seen[String(project.id)]) return;
+      if (!isOpenBooking(project)) return;
+      seen[String(project.id)] = true;
+      list.push(project);
+    });
+    return list;
+  }
+
   function loadProjects() {
-    let list = [];
+    let raw = [];
     try {
       if (typeof root.getProjects === 'function') {
-        list = root.getProjects() || [];
+        raw = root.getProjects() || [];
       }
     } catch (_) {
-      list = [];
+      raw = [];
     }
+    if (!Array.isArray(raw)) raw = [];
+    let visible = raw;
     try {
       if (typeof root.getVisibleProjectsForCurrentUser === 'function') {
-        list = root.getVisibleProjectsForCurrentUser(list) || list;
+        const next = root.getVisibleProjectsForCurrentUser(raw);
+        if (Array.isArray(next)) visible = next;
       }
     } catch (_) {}
-    return Array.isArray(list) ? list : [];
+    return withScheduledBookings(raw, visible);
   }
 
   function currentHomeRole() {

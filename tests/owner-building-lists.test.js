@@ -223,6 +223,21 @@ const model = build([
     scheduledDate: '2026-08-01'
   },
   {
+    id: 'new-booked',
+    organisationName: 'Alpha Annex',
+    scheduleType: 'new_site',
+    scheduledStatus: 'scheduled',
+    scheduledDate: '2026-09-10',
+    followUpDate: '2027-01-01'
+  },
+  {
+    id: 'later-booked',
+    organisationName: 'Winter Site',
+    scheduleType: 'existing_site',
+    scheduledStatus: 'scheduled',
+    scheduledDate: '2026-12-20'
+  },
+  {
     id: 'recycle',
     organisationName: 'Recycle Leftover',
     scheduledDate: '2026-09-01',
@@ -230,15 +245,17 @@ const model = build([
   }
 ], today);
 
-assert.equal(model.count, 5, 'Deleted and recycle leftover premises must not count on the inspection list');
+assert.equal(model.count, 7, 'Deleted and recycle leftover premises must not count on the inspection list');
 assert.deepStrictEqual(
   model.all.map(row => row.name),
   [
+    'Alpha Annex',
     'Far Site',
     'Greenfield School',
     'Late Hall',
     'River Clinic',
-    'West End Mall – Shop 12'
+    'West End Mall – Shop 12',
+    'Winter Site'
   ]
 );
 assert.equal(
@@ -253,12 +270,17 @@ assert.equal(
 );
 assert.deepStrictEqual(
   model.upcoming.map(row => row.id),
-  ['clinic', 'school', 'mall'],
-  'Upcoming must be due in the next 30 days, not overdue, far, deleted, or recycle leftovers'
+  ['clinic', 'school', 'new-booked', 'mall'],
+  'Upcoming must list new and existing bookings inside 30 days, not overdue, far, deleted, or recycle leftovers'
 );
 assert.equal(model.upcoming[0].days, 6);
 assert.equal(model.upcoming[1].days, 12);
 assert.equal(model.upcoming[2].days, 17);
+assert.equal(model.upcoming[3].days, 17);
+assert.ok(
+  !model.upcoming.some(row => row.id === 'later-booked'),
+  'An existing-site booking further than 30 days stays off Upcoming'
+);
 assert.deepStrictEqual(
   model.deficiencies.map(row => ({ id: row.id, count: row.count })),
   [{ id: 'school', count: 2 }],

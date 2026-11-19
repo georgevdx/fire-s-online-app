@@ -117,6 +117,9 @@ const sandbox = {
     }
   },
   setTimeout() {},
+  getTodayDateString() {
+    return '2026-09-16';
+  },
   getProjects() {
     return stored.slice();
   }

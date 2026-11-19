@@ -128,6 +128,11 @@
 
   function todayKey(now) {
     if (now) return dateKey(now);
+    try {
+      if (typeof root.getTodayDateString === 'function') {
+        return dateKey(root.getTodayDateString());
+      }
+    } catch (_) {}
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -658,32 +663,59 @@
     };
   }
 
+  function isOpenBooking(project) {
+    if (!project || isDeleted(project) || isRecycleLeftover(project)) return false;
+    const status = text(project.scheduledStatus).toLowerCase();
+    const type = text(project.scheduleType).toLowerCase();
+    if (status !== 'scheduled' && type !== 'new_site' && type !== 'existing_site') return false;
+    return !!dateKey(project.scheduledDate);
+  }
+
+  function withScheduledBookings(raw, visible) {
+    const list = Array.isArray(visible) ? visible.slice() : [];
+    const seen = Object.create(null);
+    list.forEach(project => {
+      if (project && project.id != null) seen[String(project.id)] = true;
+    });
+    (Array.isArray(raw) ? raw : []).forEach(project => {
+      if (!project || project.id == null || seen[String(project.id)]) return;
+      if (!isOpenBooking(project)) return;
+      seen[String(project.id)] = true;
+      list.push(project);
+    });
+    return list;
+  }
+
   function loadProjects() {
-    let list = [];
+    let raw = [];
     try {
       if (typeof root.getProjects === 'function') {
-        list = root.getProjects() || [];
+        raw = root.getProjects() || [];
       }
     } catch (_) {
-      list = [];
+      raw = [];
     }
-    if (!Array.isArray(list)) list = [];
+    if (!Array.isArray(raw)) raw = [];
+    let visible = raw;
     try {
       if (typeof root.getVisibleProjectsForCurrentUser === 'function') {
-        const visible = root.getVisibleProjectsForCurrentUser(list);
-        if (Array.isArray(visible) && visible.length) return visible;
-        if (
-          Array.isArray(visible) &&
-          !visible.length &&
-          list.length &&
+        const next = root.getVisibleProjectsForCurrentUser(raw);
+        if (Array.isArray(next) && next.length) visible = next;
+        else if (
+          Array.isArray(next) &&
+          !next.length &&
+          raw.length &&
           typeof root.fireSDeviceRowsWhenCompanyFilterIsEmpty === 'function'
         ) {
-          const kept = root.fireSDeviceRowsWhenCompanyFilterIsEmpty(list);
-          if (Array.isArray(kept) && kept.length) return kept;
+          const kept = root.fireSDeviceRowsWhenCompanyFilterIsEmpty(raw);
+          if (Array.isArray(kept) && kept.length) visible = kept;
+          else if (Array.isArray(next)) visible = next;
+        } else if (Array.isArray(next)) {
+          visible = next;
         }
       }
     } catch (_) {}
-    return list;
+    return withScheduledBookings(raw, visible);
   }
 
   function currentHomeRole() {

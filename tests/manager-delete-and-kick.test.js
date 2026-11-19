@@ -68,10 +68,10 @@ function assertLiveDelete(src) {
 }
 assertLiveDelete(liveApp);
 assert.ok(
-  /app\.js\?v=1-3-67-premises-delete/.test(liveHtml) &&
+  /app\.js\?v=1-3-67-premises-mail/.test(liveHtml) &&
     /Version 1\.3\.67/.test(liveHtml) &&
-    /Report Review/.test(liveHtml),
-  'Live stays on 1.3.67, loads the delete fix, and still shows Report Review'
+    !/Report Review/.test(liveHtml),
+  'Live stays on 1.3.67, loads this fix, and has no Report Review card'
 );
 
 assert.ok(/var CHECK_MS = 4000;/.test(instrument), 'The other instrument must be checked every 4 seconds');

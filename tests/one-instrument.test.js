@@ -27,8 +27,8 @@ assert.ok(
 );
 
 assert.ok(
-  /var CHECK_MS = 20000;/.test(src) && !/visibilitychange/.test(src),
-  'Live kick interval stays at 20 seconds until that change is sat live'
+  /var CHECK_MS = 4000;/.test(src) && /visibilitychange/.test(src) && /pageshow/.test(src),
+  'Live checks the other instrument every 4 seconds and again when that screen is focused'
 );
 assert.ok(
   /var CHECK_MS = 4000;/.test(stagingSrc) && /visibilitychange/.test(stagingSrc),
